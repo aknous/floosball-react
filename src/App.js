@@ -1,12 +1,14 @@
 import './index.css';
 import Navbar from './Navigation/Navbar.js'
-import Example from './Example/Example'
+import Grid from './Navigation/Grid.js'
+//import Dashboard from './Navigation/Dashboard'
 function App() {
   return (
     <div>
-      <Navbar />
-      < Example />
+      <div><Navbar /></div>
+      <div><Grid /></div>
     </div>
+    
   );
 }
 
