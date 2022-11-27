@@ -1,12 +1,52 @@
 import './index.css';
-import Navbar from './Navigation/Navbar.js'
-import Grid from './Navigation/Grid.js'
-//import Dashboard from './Navigation/Dashboard'
+import React,{useEffect,useState} from 'react'
+import Navbar from './Components/Navbar.js'
+import GameBar from './Components/GameBar.js'
+import TeamGrid from './Views/Teams/TeamGrid'
+import Team from './Views/Teams/Team'
+import Stats from './Views/Stats/Stats'
+import Players from './Views/Players/PlayerTable'
+import Results from './Views/Results/Results'
+import { Route, Routes, Navigate } from 'react-router-dom';
+import axios from 'axios'
+
 function App() {
+  const [appVer, setAppVer] = useState([])
+  const getAppVer = async () => {
+    try {
+      const userAppVer = await axios.get('http://127.0.0.1:8000/info')
+
+      setAppVer(userAppVer.data);  // set State
+    
+    } catch (err) {
+      console.error(err.message);
+    }
+  };
+
+  useEffect(() => {
+    getAppVer()
+  }, [])
+
   return (
-    <div>
-      <div><Navbar /></div>
-      <div><Grid /></div>
+    <div className='bg-slate-200'>
+      <div>
+        <Navbar />
+        <GameBar />
+      </div>
+      <div>
+        <Routes>
+          <Route exact path='/' element={<Navigate to='/teams'/>} />
+          <Route exact path='/players' element={<Players />} />
+          <Route exact path='/stats' element={<Stats />} />
+          <Route exact path='/teams' element={<TeamGrid />} />
+          <Route exact path='/results' element={<Results />} />
+          <Route path='/team/:id' element={<Team />} />
+        </Routes>
+      </div>
+      <div className='w-full h-20'></div>
+      <div className='flex justify-end'>
+        <span className='text-slate-400 text-sm font-light mr-8 my-2'> floosball v{appVer}</span>
+      </div>
     </div>
     
   );
