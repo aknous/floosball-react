@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react'
+import {Link} from "react-router-dom";
 
 
 export default function GameStats(props) {
@@ -30,21 +31,21 @@ export default function GameStats(props) {
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.homeTeam.qb.name} <span className='font-light text-xs pl-1 pb-4'>- QB</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.homeTeam.qb.id}`} key={gameData.homeTeam.qb.id} className={"hover:underline"} >{gameData.homeTeam.qb.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- QB</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.qb.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passComp}</td>
-                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passAtt}</td>
-                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passCompPerc}%</td>
-                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passYards}</td>
-                        <td className='text-center'>{gameData.homeTeam.qb.gameStats['pass20+']}</td>
-                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.longest}</td>
-                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.tds}</td>
-                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.ints}</td>
+                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passing.comp}</td>
+                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passing.att}</td>
+                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passing.compPerc}%</td>
+                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passing.yards}</td>
+                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passing['20+']}</td>
+                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passing.longest}</td>
+                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passing.tds}</td>
+                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passing.ints}</td>
                     </tr>
                     <tr className='border-b-2 border-slate-200'>
                         <td></td>
@@ -52,21 +53,21 @@ export default function GameStats(props) {
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.awayTeam.qb.name} <span className='font-light text-xs pl-1 pb-4'>- QB</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.awayTeam.qb.id}`} key={gameData.awayTeam.qb.id} className={"hover:underline"} >{gameData.awayTeam.qb.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- QB</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.qb.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passComp}</td>
-                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passAtt}</td>
-                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passCompPerc}%</td>
-                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passYards}</td>
-                        <td className='text-center'>{gameData.awayTeam.qb.gameStats['pass20+']}</td>
-                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.longest}</td>
-                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.tds}</td>
-                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.ints}</td>
+                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passing.comp}</td>
+                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passing.att}</td>
+                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passing.compPerc}%</td>
+                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passing.yards}</td>
+                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passing['20+']}</td>
+                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passing.longest}</td>
+                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passing.tds}</td>
+                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passing.ints}</td>
                     </tr>
                 </tbody>
             </table>
@@ -92,21 +93,20 @@ export default function GameStats(props) {
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.homeTeam.rb.name} <span className='font-light text-xs pl-1 pb-4'>- RB</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.homeTeam.rb.id}`} key={gameData.homeTeam.rb.id} className={"hover:underline"} >{gameData.homeTeam.rb.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- RB</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.rb.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.carries}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.runYards}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.ypc}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats['run20+']}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.longest}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.runTds}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.fumblesLost}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.ints}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.rushing.carries}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.rushing.yards}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.rushing.ypc}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.rushing['20+']}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.rushing.longest}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.rushing.tds}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.rushing.fumblesLost}</td>
                     </tr>
                     <tr className='border-b-2 border-slate-200'>
                         <td></td>
@@ -114,21 +114,20 @@ export default function GameStats(props) {
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.awayTeam.rb.name} <span className='font-light text-xs pl-1 pb-4'>- RB</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.awayTeam.rb.id}`} key={gameData.awayTeam.rb.id} className={"hover:underline"} >{gameData.awayTeam.rb.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- RB</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.rb.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.carries}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.runYards}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.ypc}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats['run20+']}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.longest}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.runTds}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.fumblesLost}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.ints}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.rushing.carries}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.rushing.yards}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.rushing.ypc}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.rushing['20+']}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.rushing.longest}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.rushing.tds}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.rushing.fumblesLost}</td>
                     </tr>
                 </tbody>
             </table>
@@ -138,8 +137,8 @@ export default function GameStats(props) {
                     <tr>
                         <th></th>
                         <th></th>
-                        <th>Targ</th>
                         <th>Rec</th>
+                        <th>Targ</th>
                         <th>%</th>
                         <th>Yds</th>
                         <th>YPR</th>
@@ -155,75 +154,75 @@ export default function GameStats(props) {
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.homeTeam.wr1.name} <span className='font-light text-xs pl-1 pb-4'>- WR</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.homeTeam.wr1.id}`} key={gameData.homeTeam.wr1.id} className={"hover:underline"} >{gameData.homeTeam.wr1.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- WR</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.wr1.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.passTargets}</td>
-                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receptions}</td>
-                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.rcvPerc}%</td>
-                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.rcvYards}</td>
-                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.ypr}</td>
-                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats['pass20+']}</td>
-                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.longest}</td>
-                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.rcvTds}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.receptions}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.targets}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.rcvPerc}%</td>
+                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.ypr}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving['20+']}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.longest}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.tds}</td>
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.homeTeam.wr2.name} <span className='font-light text-xs pl-1 pb-4'>- WR</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.homeTeam.wr2.id}`} key={gameData.homeTeam.wr2.id} className={"hover:underline"} >{gameData.homeTeam.wr2.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- WR</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.wr2.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.passTargets}</td>
-                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receptions}</td>
-                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.rcvPerc}%</td>
-                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.rcvYards}</td>
-                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.ypr}</td>
-                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats['pass20+']}</td>
-                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.longest}</td>
-                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.rcvTds}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.receptions}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.targets}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.rcvPerc}%</td>
+                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.ypr}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving['20+']}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.longest}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.tds}</td>
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.homeTeam.te.name} <span className='font-light text-xs pl-1 pb-4'>- TE</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.homeTeam.te.id}`} key={gameData.homeTeam.te.id} className={"hover:underline"} >{gameData.homeTeam.te.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- TE</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.te.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.homeTeam.te.gameStats.passTargets}</td>
-                        <td className='text-center'>{gameData.homeTeam.te.gameStats.receptions}</td>
-                        <td className='text-center'>{gameData.homeTeam.te.gameStats.rcvPerc}%</td>
-                        <td className='text-center'>{gameData.homeTeam.te.gameStats.rcvYards}</td>
-                        <td className='text-center'>{gameData.homeTeam.te.gameStats.ypr}</td>
-                        <td className='text-center'>{gameData.homeTeam.te.gameStats['pass20+']}</td>
-                        <td className='text-center'>{gameData.homeTeam.te.gameStats.longest}</td>
-                        <td className='text-center'>{gameData.homeTeam.te.gameStats.rcvTds}</td>
+                        <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.receptions}</td>
+                        <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.targets}</td>
+                        <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.rcvPerc}%</td>
+                        <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.ypr}</td>
+                        <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving['20+']}</td>
+                        <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.longest}</td>
+                        <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.tds}</td>
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.homeTeam.rb.name} <span className='font-light text-xs pl-1 pb-4'>- RB</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.homeTeam.rb.id}`} key={gameData.homeTeam.rb.id} className={"hover:underline"} >{gameData.homeTeam.rb.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- RB</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.rb.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.passTargets}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.receptions}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.rcvPerc}%</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.rcvYards}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.ypr}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats['pass20+']}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.longest}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.rcvTds}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.receptions}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.targets}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.rcvPerc}%</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.ypr}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving['20+']}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.longest}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.tds}</td>
                     </tr>
                     <tr className='border-b-2 border-slate-200'>
                         <td></td>
@@ -231,76 +230,76 @@ export default function GameStats(props) {
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.awayTeam.wr1.name} <span className='font-light text-xs pl-1 pb-4'>- WR</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.awayTeam.wr1.id}`} key={gameData.awayTeam.wr1.id} className={"hover:underline"} >{gameData.awayTeam.wr1.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- WR</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.wr1.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.passTargets}</td>
-                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receptions}</td>
-                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.rcvPerc}%</td>
-                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.rcvYards}</td>
-                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.ypr}</td>
-                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats['pass20+']}</td>
-                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.longest}</td>
-                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.rcvTds}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.receptions}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.targets}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.rcvPerc}%</td>
+                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.ypr}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving['20+']}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.longest}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.tds}</td>
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.awayTeam.wr2.name} <span className='font-light text-xs pl-1 pb-4'>- WR</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.awayTeam.wr2.id}`} key={gameData.awayTeam.wr2.id} className={"hover:underline"} >{gameData.awayTeam.wr2.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- WR</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.wr2.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.passTargets}</td>
-                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receptions}</td>
-                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.rcvPerc}%</td>
-                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.rcvYards}</td>
-                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.ypr}</td>
-                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats['pass20+']}</td>
-                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.longest}</td>
-                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.rcvTds}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.receptions}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.targets}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.rcvPerc}%</td>
+                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.ypr}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving['20+']}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.longest}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.tds}</td>
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.awayTeam.te.name} <span className='font-light text-xs pl-1 pb-4'>- TE</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.awayTeam.te.id}`} key={gameData.awayTeam.te.id} className={"hover:underline"} >{gameData.awayTeam.te.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- TE</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.te.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.awayTeam.te.gameStats.passTargets}</td>
-                        <td className='text-center'>{gameData.awayTeam.te.gameStats.receptions}</td>
-                        <td className='text-center'>{gameData.awayTeam.te.gameStats.rcvPerc}%</td>
-                        <td className='text-center'>{gameData.awayTeam.te.gameStats.rcvYards}</td>
-                        <td className='text-center'>{gameData.awayTeam.te.gameStats.ypr}</td>
-                        <td className='text-center'>{gameData.awayTeam.te.gameStats['pass20+']}</td>
-                        <td className='text-center'>{gameData.awayTeam.te.gameStats.longest}</td>
-                        <td className='text-center'>{gameData.awayTeam.te.gameStats.rcvTds}</td>
+                        <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.receptions}</td>
+                        <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.targets}</td>
+                        <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.rcvPerc}%</td>
+                        <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.ypr}</td>
+                        <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving['20+']}</td>
+                        <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.longest}</td>
+                        <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.tds}</td>
                     </tr>
                     
                     <tr>
                         <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.awayTeam.rb.name} <span className='font-light text-xs pl-1 pb-4'>- RB</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.awayTeam.rb.id}`} key={gameData.awayTeam.rb.id} className={"hover:underline"} >{gameData.awayTeam.rb.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- RB</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.rb.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.passTargets}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.receptions}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.rcvPerc}%</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.rcvYards}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.ypr}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats['pass20+']}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.longest}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.rcvTds}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.receptions}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.targets}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.rcvPerc}%</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.ypr}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving['20+']}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.longest}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.tds}</td>
                     </tr>
                 </tbody>
             </table>
@@ -324,18 +323,18 @@ export default function GameStats(props) {
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.homeTeam.k.name} <span className='font-light text-xs pl-1 pb-4'>- K</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.homeTeam.k.id}`} key={gameData.homeTeam.k.id} className={"hover:underline"} >{gameData.homeTeam.k.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- K</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.k.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.homeTeam.k.gameStats.fgAtt}</td>
-                        <td className='text-center'>{gameData.homeTeam.k.gameStats.fgs}</td>
-                        <td className='text-center'>{gameData.homeTeam.k.gameStats.fgPerc}%</td>
-                        <td className='text-center'>{gameData.homeTeam.k.gameStats['fg45+']}</td>
-                        <td className='text-center'>{gameData.homeTeam.k.gameStats.longest}</td>
+                        <td className='text-center'>{gameData.homeTeam.k.gameStats.kicking.fgAtt}</td>
+                        <td className='text-center'>{gameData.homeTeam.k.gameStats.kicking.fgs}</td>
+                        <td className='text-center'>{gameData.homeTeam.k.gameStats.kicking.fgPerc}%</td>
+                        <td className='text-center'>{gameData.homeTeam.k.gameStats.kicking['fg45+']}</td>
+                        <td className='text-center'>{gameData.homeTeam.k.gameStats.kicking.longest}</td>
                     </tr>
                     <tr className='border-b-2 border-slate-200'>
                         <td></td>
@@ -343,18 +342,18 @@ export default function GameStats(props) {
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.awayTeam.k.name} <span className='font-light text-xs pl-1 pb-4'>- K</span>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.awayTeam.k.id}`} key={gameData.awayTeam.k.id} className={"hover:underline"} >{gameData.awayTeam.k.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- K</span>
                             <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.k.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
                         </td>
-                        <td className='text-center'>{gameData.awayTeam.k.gameStats.fgAtt}</td>
-                        <td className='text-center'>{gameData.awayTeam.k.gameStats.fgs}</td>
-                        <td className='text-center'>{gameData.awayTeam.k.gameStats.fgPerc}%</td>
-                        <td className='text-center'>{gameData.awayTeam.k.gameStats['fg45+']}</td>
-                        <td className='text-center'>{gameData.awayTeam.k.gameStats.longest}</td>
+                        <td className='text-center'>{gameData.awayTeam.k.gameStats.kicking.fgAtt}</td>
+                        <td className='text-center'>{gameData.awayTeam.k.gameStats.kicking.fgs}</td>
+                        <td className='text-center'>{gameData.awayTeam.k.gameStats.kicking.fgPerc}%</td>
+                        <td className='text-center'>{gameData.awayTeam.k.gameStats.kicking['fg45+']}</td>
+                        <td className='text-center'>{gameData.awayTeam.k.gameStats.kicking.longest}</td>
                     </tr>
                 </tbody>
             </table>
@@ -382,8 +381,8 @@ export default function GameStats(props) {
                               </td>
                         <td className='text-center'>{gameData.homeTeam.sacks}</td>
                         <td className='text-center'>{gameData.homeTeam.safeties}</td>
-                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.ints}</td>
-                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.fumblesLost}</td>
+                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passing.ints}</td>
+                        <td className='text-center'>{gameData.homeTeam.defense.fumRec}</td>
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
@@ -396,8 +395,8 @@ export default function GameStats(props) {
                               </td>
                         <td className='text-center'>{gameData.awayTeam.sacks}</td>
                         <td className='text-center'>{gameData.awayTeam.safeties}</td>
-                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.ints}</td>
-                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.fumblesLost}</td>
+                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passing.ints}</td>
+                        <td className='text-center'>{gameData.awayTeam.defense.fumRec}</td>
                     </tr>
                 </tbody>
             </table>
@@ -419,9 +418,9 @@ export default function GameStats(props) {
                     <tr>
                         <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
                         <td className='font-semibold pl-1'>{gameData.homeTeam.teamName} <span className='font-light text-xs pl-1 pb-4'></span></td>
-                        <td className='text-center'>{gameData.homeTeam.passYards}</td>
-                        <td className='text-center'>{gameData.homeTeam.rushYards}</td>
-                        <td className='text-center'>{gameData.homeTeam.totalYards}</td>
+                        <td className='text-center'>{gameData.homeTeam.offense.passYards}</td>
+                        <td className='text-center'>{gameData.homeTeam.offense.rushYards}</td>
+                        <td className='text-center'>{gameData.homeTeam.offense.totalYards}</td>
                         <td className='text-center'>{gameData.homeTeam.totalPlays}</td>
                         <td className='text-center'>{gameData.homeTeam['1stDowns']}</td>
                         <td className='text-center'>{gameData.homeTeam.turnovers}</td>
@@ -430,9 +429,9 @@ export default function GameStats(props) {
                     <tr>
                         <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
                         <td className='font-semibold pl-1'>{gameData.awayTeam.teamName} <span className='font-light text-xs pl-1 pb-4'></span></td>
-                        <td className='text-center'>{gameData.awayTeam.passYards}</td>
-                        <td className='text-center'>{gameData.awayTeam.rushYards}</td>
-                        <td className='text-center'>{gameData.awayTeam.totalYards}</td>
+                        <td className='text-center'>{gameData.awayTeam.offense.passYards}</td>
+                        <td className='text-center'>{gameData.awayTeam.offense.rushYards}</td>
+                        <td className='text-center'>{gameData.awayTeam.offense.totalYards}</td>
                         <td className='text-center'>{gameData.awayTeam.totalPlays}</td>
                         <td className='text-center'>{gameData.awayTeam['1stDowns']}</td>
                         <td className='text-center'>{gameData.awayTeam.turnovers}</td>

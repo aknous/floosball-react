@@ -29,34 +29,40 @@ function SeasonDataComponent() {
   }, [])
 
   return (
-    <div className='flex justify-end py-3 gap-x-4 text-white text-lg font-semibold w-96'>
+    <div className='flex justify-end py-3 gap-x-4 text-white text-lg font-semibold'>
       <div>
         Season {seasonData.season}
       </div>
       <div>
-        {seasonData.currentWeek <= 18 ? 'Week ' + seasonData.currentWeek : seasonData.currentWeek}
+        {seasonData.currentWeek <= 18 ? 'Week ' + seasonData.currentWeek : seasonData.currentWeekText}
       </div>
     </div>
   )
 }
 
 const navigation = [
+  { name: 'Dashboard', href: '#', current: false, path: '/dashboard' },
   { name: 'Stats', href: '#', current: false, path: '/stats' },
   { name: 'Teams', href: '#', current: false, path: '/teams' },
-  { name: 'Results', href: '#', current: false, path: '/results' },
   { name: 'Players', href: '#', current: false, path: '/players' },
+  { name: 'Results', href: '#', current: false, path: '/results' },
 ]
 
 export default function Navbar() {
   return (
     <div className='flex bg-slate-700 justify-between px-4 h-14'>
-      <div className='text-white text-left text-2xl font-semibold w-96 py-3'>floosball</div>
+      <NavLink
+        to = '/dashboard'
+        key='dashboard'
+      >
+        <div className='text-white text-left text-2xl font-semibold py-3'>floosball</div>
+      </NavLink>
       <div className="flex gap-x-1">
         {navigation.map((item) => (
           <NavLink
             to = {item.path}
             key={item.name}
-            className={({isActive})=>`my-2 w-24 rounded-md text-lg text-center font-semibold ${isActive ? 'bg-white text-slate-900' : 'text-white hover:bg-slate-500'}`}
+            className={({isActive})=>`my-2 w-28 rounded-md text-lg text-center font-semibold ${isActive ? 'bg-white text-slate-900' : 'text-white hover:bg-slate-500'}`}
           >
             <div className='my-1.5'>{item.name}</div>
           </NavLink>

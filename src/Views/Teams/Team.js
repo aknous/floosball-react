@@ -5,8 +5,8 @@ import {
   useParams,
 } from "react-router-dom";
 import { GiLaurelsTrophy } from 'react-icons/gi';
+import { CheckCircleIcon } from '@heroicons/react/solid'
 import axios from 'axios'
-import Schedule from '../../Components/Schedule';
 import Roster from '../../Components/Roster';
 import RosterHistory from '../../Components/RosterHistory';
   
@@ -42,10 +42,10 @@ export default function Team() {
     if (e.currentTarget.id === 'roster') {
       setMenu(1);
     }
-    else if (e.currentTarget.id === 'schedule') {
+    else if (e.currentTarget.id === 'teamHistory') {
       setMenu(2);
     }
-    else if (e.currentTarget.id === 'history') {
+    else if (e.currentTarget.id === 'transactions') {
       setMenu(3);
     }
   }
@@ -57,7 +57,7 @@ export default function Team() {
 
   return (
     team.roster ?
-      <div className='flex justify-center'>
+      <div className='flex justify-center h-screen'>
         <div className='mt-4 flex flex-col items-center w-4/5'>
           <div className='flex mt-8 w-full justify-center'>
             <div className='flex flex-col w-full'>
@@ -94,7 +94,7 @@ export default function Team() {
                   Roster
               </button>
               <button
-                  id={'schedule'}
+                  id={'teamHistory'}
                   onClick={handleClick}
                   className={classNames(
                     selectedMenu === 2
@@ -103,10 +103,10 @@ export default function Team() {
                       'w-1/4 py-4 px-1 text-center border-b-2 font-medium text-2xl'
                   )}
               >
-                  Schedule
+                  Team Stats
               </button>
               <button
-                  id={'history'}
+                  id={'transactions'}
                   onClick={handleClick}
                   className={classNames(
                     selectedMenu === 3
@@ -115,7 +115,7 @@ export default function Team() {
                       'w-1/4 py-4 px-1 text-center border-b-2 font-medium text-2xl'
                   )}
               >
-                  Player History
+                  Transactions
               </button>
             </nav>
           </div>
@@ -124,7 +124,42 @@ export default function Team() {
               <Roster roster={team.roster} reserves={team.reserves} defenseRatingStars={team.defenseRatingStars}/>
             }
             {selectedMenu === 2 &&
-              <Schedule schedule={team.schedule}/>
+              <table className="w-full divide-y divide-slate-300">
+                <thead className="bg-slate-50">
+                  <tr className="divide-x divide-slate-200">
+                    <td className='px-2 py-1 font-medium'>SZN</td>
+                    <td className='px-2 py-1 font-medium'>W</td>
+                    <td className='px-2 py-1 font-medium'>L</td>
+                    <td className='px-2 py-1 font-medium'>%</td>
+                    <td className='px-2 py-1 font-medium'>Place</td>
+                    <td className='px-2 py-1 font-medium'>Playoffs</td>
+                    <td className='px-2 py-1 font-medium'></td>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {team.history.map((data) => (
+                      <tr key={data.name} className={"divide-x divide-slate-200"}>
+                        <td className="whitespace-nowrap p-2 text-xl text-slate-700 font-normal">{data.season}</td>
+                        <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.wins}</td>
+                        <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.losses}</td>
+                        <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.winPerc}</td>
+                        <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.divPLace}</td>
+                        <td className="whitespace-nowrap p-2 flex justify-center">
+                          {data.madePlayoffs ? 
+                            <CheckCircleIcon className='h-8 w-8 text-emerald-500' />
+                            : null
+                          }
+                        </td>
+                        <td className="whitespace-nowrap p-2">
+                          {data.leagueChamp ? 
+                            <GiLaurelsTrophy className='text-3xl text-amber-500' />
+                            : null
+                          }
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
             }
             {selectedMenu === 3 &&
               <RosterHistory players={rosterHistory}/>

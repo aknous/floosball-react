@@ -20,7 +20,7 @@ export default function GameGrid() {
     getGames()
     const interval=setInterval(()=>{
       getGames()
-    },15000)
+    },5000)
        
      return()=>clearInterval(interval)
 

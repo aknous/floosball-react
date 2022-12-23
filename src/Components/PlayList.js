@@ -1,4 +1,5 @@
 import React,{useEffect,useState} from 'react'
+import { InformationCircleIcon } from '@heroicons/react/outline'
 import axios from 'axios'
 
 
@@ -8,29 +9,29 @@ function classNames(...classes) {
 
 export default function PlayList(props) {
 
-    const [scoringPlays, setScoringPlays] = useState([])
+    const [highlights, setHighlights] = useState([])
     const [plays, setPlays] = useState([])
     const [showPlays, setShowPlays] = useState(true);
-    const [showScoringPlays, setShowScoringPlays] = useState(false);
+    const [showHighlights, setShowHighlights] = useState(false);
 
     const handleClick = (e) => {
         if (e.currentTarget.id === 'plays') {
-            setShowScoringPlays(false);
+            setShowHighlights(false);
             setShowPlays(true);
             getPlays()
         }
-        else if (e.currentTarget.id === 'scoringPlays') {
+        else if (e.currentTarget.id === 'highlights') {
             setShowPlays(false);
-            setShowScoringPlays(true);
-            getScoringPlays();
+            setShowHighlights(true);
+            getHighlights();
         }
       }
     
-    const getScoringPlays = async () => {
+    const getHighlights = async () => {
         try {
-          const userScoringPlays = await axios.get(`http://127.0.0.1:8000/scoringPlays?id=${props.id}`)
+          const userHighlights = await axios.get(`http://127.0.0.1:8000/highlights?id=${props.id}`)
     
-          setScoringPlays(userScoringPlays.data);  // set State
+          setHighlights(userHighlights.data);  // set State
         
         } catch (err) {
           console.error(err.message);
@@ -49,23 +50,11 @@ export default function PlayList(props) {
       };
 
     useEffect(() => {
-        getPlays()
+        getPlays();
         const interval=setInterval(()=>{
-            if (showPlays) {
-                getPlays()
-            }
-         },15000)
-           
-         return()=>clearInterval(interval)
-    }, []);
-
-    useEffect(() => {
-        const interval=setInterval(()=>{
-            if (showScoringPlays) {
-                getScoringPlays()
-            }
-            
-         },15000)
+            getHighlights();
+            getPlays();
+         },5000)
            
          return()=>clearInterval(interval)
     }, []);
@@ -83,75 +72,87 @@ export default function PlayList(props) {
                         'w-1/4 py-4 px-1 text-center border-b-2 font-normal text-xl'
                     )}
                 >
-                    All Plays
+                    Game Feed
                 </button>
                 <button
-                    id={'scoringPlays'}
+                    id={'highlights'}
                     onClick={handleClick}
                     className={classNames(
-                        showScoringPlays
+                        showHighlights
                         ? 'border-slate-500 text-slate-600'
                         : 'border-transparent text-gray-500 hover:text-slate-700 hover:border-slate-300',
                         'w-1/4 py-4 px-1 text-center border-b-2 font-normal text-xl'
                     )}
                 >
-                    Scoring Plays
+                    Highlights
                 </button>
             </nav>
             <div className='flex-1 mx-2 overflow-auto'>
                 <ul className='divide-y-2 divide-slate-200'>
                     {showPlays ?
                         plays.map((data) => (
-                            <li className='p-2'>
-                                <div className='flex space-x-3'>
-                                    <div className='flex flex-col w-20'>
-                                        <h3 className="text-sm font-medium">{data.down}</h3>
-                                        <h3 className="text-sm font-medium">{data.yardLine}</h3>
-                                    </div>
-                                    <div className='py-2 w-8 h-8 rounded-full' style={{ backgroundColor: `${data.color}` }}></div>
-                                    <div className="flex-1 space-y-1">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-sm font-medium">{data.team}</h3>
-                                            <div className={`bg-slate-100 rounded-full ${data.isTd ? 'bg-green-100': ''} ${data.isFg ? 'bg-violet-100': ''} ${data.isSafety ? 'bg-rose-100': ''}`}>
-                                                <div className={`p-1 text-xs ${data.isTd ? 'text-green-700': ''} ${data.isFg ? 'text-violet-700': ''} ${data.isSafety ? 'text-rose-700': ''}`}>{data.result}</div>
+                            data.type === 'play' ?
+                                <li className='p-2'>
+                                    <div className='flex space-x-3 items-center'>
+                                        <div className='flex flex-col w-20'>
+                                            <h3 className="text-sm font-medium">{data.down}</h3>
+                                            <h3 className="text-sm font-medium">{data.yardLine}</h3>
+                                        </div>
+                                        <div className='py-2 w-8 h-8 rounded-full' style={{ backgroundColor: `${data.color}` }}></div>
+                                        <div className="flex-1 space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-base font-medium">{data.team}</h3>
+                                                <div className={`bg-slate-100 rounded-full ${data.result === 'Field Goal is No Good' ? 'bg-slate-600': ''} ${data.result === 'Turnover On Downs' ? 'bg-slate-600': ''} ${data.result === '1st Down' ? 'bg-green-100': ''} ${data.result === 'Punt' ? 'bg-slate-600': ''} ${data.result === 'Fumble' ? 'bg-red-500': ''} ${data.result === 'Interception' ? 'bg-red-500': ''} ${data.isTd ? 'bg-emerald-500': ''} ${data.isFg ? 'bg-indigo-500': ''} ${data.isSafety ? 'bg-rose-500': ''}`}>
+                                                    <div className={`p-1 text-xs mx-1 font-medium ${data.result === 'Field Goal is No Good' ? 'text-slate-100': ''} ${data.result === 'Turnover On Downs' ? 'text-slate-100': ''} ${data.result === '1st Down' ? 'text-green-700': ''} ${data.result === 'Punt' ? 'text-slate-100': ''} ${data.result === 'Fumble' ? 'text-white': ''} ${data.result === 'Interception' ? 'text-white': ''} ${data.isTd ? 'text-white': ''} ${data.isFg ? 'text-white': ''} ${data.isSafety ? 'text-white': ''}`}>{data.result}</div>
+                                                </div>
+                                            </div>
+                                            <div className='flex items-center justify-between'>
+                                                <p className='text-sm'>{data.playText}</p>
+                                                <span className={`text-xs text-slate-700 ${data.scoreChange ? 'visible' : 'invisible'}`}>{data.homeAbbr} {data.homeScore} | {data.awayAbbr} {data.awayScore}</span>
                                             </div>
                                         </div>
-                                        <div className='flex items-center justify-between'>
-                                            <p className='text-sm font-light'>{data.playText}</p>
-                                            <span className={`text-xs text-slate-700 ${data.scoreChange ? 'visible' : 'invisible'}`}>{data.homeAbbr} {data.homeScore} | {data.awayAbbr} {data.awayScore}</span>
+                                    </div>
+                                </li>
+                                :
+                                <li className='flex p-2 h-16 items-center justify-center'>
+                                    <div className='flex space-x-3 justify-center'>
+                                        <div className='flex space-x-1 items-center'>
+                                            <div className='h-6 w-6'><InformationCircleIcon /></div>
+                                            <div className="text-lg font-medium items-center">{data.text}</div>
                                         </div>
                                     </div>
-                                </div>
-                            </li>
+                                </li>
                         )): null
                     }
-                    {showScoringPlays ?
-                        scoringPlays.map((data) => (
-                            <li className='p-2'>
-                                <div className='flex items-center justify-center space-x-4 text-sm font-medium'>
-                                    {data.quarter === 5 ? <div>OT</div> : <div>Q{data.quarter}</div>}
-                                    <div>PR: {data.playsLeft%33}</div>
-                                </div>
-                                <div className='flex space-x-3'>
-                                    <div className='flex flex-col w-20'>
-                                        <h3 className="text-sm font-medium">{data.down}</h3>
-                                        <h3 className="text-sm font-medium">{data.yardLine}</h3>
+                    {showHighlights ?
+                        highlights.map((data) => (
+                            data.type === 'play' ?
+                                <li className='p-2'>
+                                    <div className='flex items-center justify-center space-x-4 text-sm font-medium'>
+                                        {data.quarter === 'OT' ? <div>{data.quarter}</div> : <div>Q{data.quarter}</div>}
+                                        <div>PR: {data.playsLeft}</div>
                                     </div>
-                                    <div className='py-2 w-8 h-8 rounded-full' style={{ backgroundColor: `${data.color}` }}></div>
-                                    <div className="flex-1 space-y-1">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-sm font-medium">{data.team}</h3>
-                                            <div className={`bg-slate-100 rounded-full ${data.isTd ? 'bg-green-100': ''} ${data.isFg ? 'bg-violet-100': ''} ${data.isSafety ? 'bg-rose-100': ''}`}>
-                                                <div className={`p-1 text-xs ${data.isTd ? 'text-green-700': ''} ${data.isFg ? 'text-violet-700': ''} ${data.isSafety ? 'text-rose-700': ''}`}>{data.result}</div>
+                                    <div className='flex space-x-3 items-center'>
+                                        <div className='flex flex-col w-20'>
+                                            <h3 className="text-sm font-medium">{data.down}</h3>
+                                            <h3 className="text-sm font-medium">{data.yardLine}</h3>
+                                        </div>
+                                        <div className='py-2 w-8 h-8 rounded-full' style={{ backgroundColor: `${data.color}` }}></div>
+                                        <div className="flex-1 space-y-1">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-base font-medium">{data.team}</h3>
+                                                <div className={`bg-slate-100 rounded-full ${data.result === 'Field Goal is No Good' ? 'bg-slate-600': ''} ${data.result === 'Turnover On Downs' ? 'bg-slate-600': ''} ${data.result === '1st Down' ? 'bg-green-100': ''} ${data.result === 'Punt' ? 'bg-slate-600': ''} ${data.result === 'Fumble' ? 'bg-red-500': ''} ${data.result === 'Interception' ? 'bg-red-500': ''} ${data.isTd ? 'bg-emerald-500': ''} ${data.isFg ? 'bg-indigo-500': ''} ${data.isSafety ? 'bg-rose-500': ''}`}>
+                                                    <div className={`p-1 text-xs mx-1 font-medium ${data.result === 'Field Goal is No Good' ? 'text-slate-100': ''} ${data.result === 'Turnover On Downs' ? 'text-slate-100': ''} ${data.result === '1st Down' ? 'text-green-700': ''} ${data.result === 'Punt' ? 'text-slate-100': ''} ${data.result === 'Fumble' ? 'text-white': ''} ${data.result === 'Interception' ? 'text-white': ''} ${data.isTd ? 'text-white': ''} ${data.isFg ? 'text-white': ''} ${data.isSafety ? 'text-white': ''}`}>{data.result}</div>
+                                                </div>
+                                            </div>
+                                            <div className='flex items-center justify-between'>
+                                                <p className='text-sm'>{data.playText}</p>
+                                                <span className={`text-xs text-slate-700 ${data.scoreChange ? 'visible' : 'invisible'}`}>{data.homeAbbr} {data.homeScore} | {data.awayAbbr} {data.awayScore}</span>
                                             </div>
                                         </div>
-                                        <div className='flex items-center justify-between'>
-                                            <p className='text-sm font-light'>{data.playText}</p>
-                                            <span className={`text-xs text-slate-700 ${data.scoreChange ? 'visible' : 'invisible'}`}>{data.homeAbbr} {data.homeScore} | {data.awayAbbr} {data.awayScore}</span>
-                                        </div>
                                     </div>
-                                </div>
-                            </li>
+                                </li>
+                                : null
                         )): null
                     }
                 </ul>

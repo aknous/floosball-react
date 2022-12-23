@@ -32,8 +32,8 @@ export default function TeamTable() {
     <div className='grid grid-cols-2 justify-center'>
       {teams.map((division) => 
         <div className='my-5 mx-10 text-3xl text-center font-semibold text-slate-700'>{division.divisionName} Division
-          <div className='pt-2'>
-            <table id="teamTable" className="rounded-lg shadow-lg min-w-full divide-y divide-slate-300">
+          <div className='bg-white rounded-lg shadow-lg pt-2'>
+            <table id="teamTable" className="min-w-full divide-y divide-slate-300">
               <thead className="bg-slate-50">
                 <tr className="">
                   <th>
@@ -55,7 +55,7 @@ export default function TeamTable() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 bg-white text-xl font-normal">
+              <tbody className="divide-y divide-slate-200 text-xl font-normal">
                 {division.teams.map((team) => (
                   <tr key={team.id} className={`hover:bg-slate-100 ${team.eliminated ? 'opacity-40' : ''}`}>
                     <td key={team.id} className="pl-2 py-2 w-48">

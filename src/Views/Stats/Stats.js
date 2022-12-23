@@ -1,4 +1,5 @@
-import React,{Fragment,useEffect,useState} from 'react'
+import React,{Fragment,useEffect,useState,useRef} from 'react'
+import {Link} from "react-router-dom";
 import { Menu, Transition } from '@headlessui/react'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import axios from 'axios'
@@ -8,11 +9,14 @@ function classNames(...classes) {
 }
 
 export default function Stats() {
-    const [selection, setSelection] = useState('Quarterback')
+    const [selection, setSelection] = useState('Passing')
     const [players, setPlayers] = useState([])
+
+    const dataLoaded = useRef(false)
 
     const getPlayers = async (pos) => {
         try {
+          dataLoaded.current = false
           const userPlayers = await axios.get(`http://127.0.0.1:8000/playerStats?pos=${pos}`)
   
           setPlayers(userPlayers.data);  // set State
@@ -21,23 +25,23 @@ export default function Stats() {
           console.error(err.message);
         }
       };
+    useEffect(() => {
+      dataLoaded.current = true
+    }, [players])
 
     useEffect(() => {
         switch (selection) {
-            case 'Quarterback':
-                getPlayers('QB');
+            case 'Passing':
+                getPlayers('Passing');
                 break;
-            case 'Running Back':
-                getPlayers('RB');
+            case 'Rushing':
+                getPlayers('Rushing');
                 break;
-            case 'Wide Receiver':
-                getPlayers('WR');
+            case 'Receiving':
+                getPlayers('Receiving');
                 break;
-            case 'Tight End':
-                getPlayers('TE');
-                break;
-            case 'Kicker':
-                getPlayers('K');
+            case 'Kicking':
+                getPlayers('Kicking');
                 break;
             case 'Defense':
                 getPlayers('D');
@@ -75,9 +79,9 @@ export default function Stats() {
                               active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                               'block px-4 py-2 text-sm'
                             )}
-                            onClick={() => setSelection('Quarterback')}
+                            onClick={() => setSelection('Passing')}
                           >
-                            Quarterback
+                            Passing
                           </span>
                         )}
                       </Menu.Item>
@@ -88,9 +92,9 @@ export default function Stats() {
                               active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                               'block px-4 py-2 text-sm'
                             )}
-                            onClick={() => setSelection('Running Back')}
+                            onClick={() => setSelection('Rushing')}
                           >
-                            Running Back
+                            Rushing
                           </span>
                         )}
                       </Menu.Item>
@@ -101,9 +105,9 @@ export default function Stats() {
                               active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                               'block px-4 py-2 text-sm'
                             )}
-                            onClick={() => setSelection('Wide Receiver')}
+                            onClick={() => setSelection('Receiving')}
                           >
-                            Wide Receiver
+                            Receiving
                           </span>
                         )}
                       </Menu.Item>
@@ -114,22 +118,9 @@ export default function Stats() {
                               active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
                               'block w-full px-4 py-2 text-left text-sm'
                             )}
-                            onClick={() => setSelection('Tight End')}
+                            onClick={() => setSelection('Kicking')}
                           >
-                            Tight End
-                          </span>
-                        )}
-                      </Menu.Item>
-                      <Menu.Item>
-                        {({ active }) => (
-                          <span
-                            className={classNames(
-                              active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
-                              'block w-full px-4 py-2 text-left text-sm'
-                            )}
-                            onClick={() => setSelection('Kicker')}
-                          >
-                            Kicker
+                            Kicking
                           </span>
                         )}
                       </Menu.Item>
@@ -151,16 +142,14 @@ export default function Stats() {
                 </Transition>
               </Menu>
             </div>
-            {selection === 'Quarterback' &&
-                <QuarterbackStats stats={players} />}
-            {selection === 'Running Back' &&
-                <RunningBackStats stats={players} />}
-            {selection === 'Wide Receiver' &&
-                <ReceiverStats stats={players} />}
-            {selection === 'Tight End' &&
-                <ReceiverStats stats={players} />}
-            {selection === 'Kicker' &&
-                <KickerStats stats={players} />}
+            {selection === 'Passing' &&
+                <PassingStats stats={players} />}
+            {selection === 'Rushing' &&
+                <RushingStats stats={players} />}
+            {selection === 'Receiving' &&
+                <ReceivingStats stats={players} />}
+            {selection === 'Kicking' &&
+                <KickingStats stats={players} />}
             {selection === 'Defense' &&
                 <DefenseStats stats={players} />}
         </div>
@@ -168,7 +157,7 @@ export default function Stats() {
     )
 }
 
-function QuarterbackStats(props) {
+function PassingStats(props) {
     const stats = props.stats
     return (
         <div className="px-4 mt-10 sm:px-6 lg:px-8">
@@ -176,13 +165,10 @@ function QuarterbackStats(props) {
               <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
                 <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
                   <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                    <table id="playerTable" className="min-w-full divide-y divide-slate-300">
+                    <table id="playerTable" className="w-full divide-y divide-slate-300">
                       <thead className="bg-slate-50">
                         <tr className="divide-x divide-slate-200">
                           <th scope="col" className="py-3.5 pl-4 text-left text-xl font-semibold text-slate-900 sm:pl-6">
-                            
-                          </th>
-                          <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
                             
                           </th>
                           <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
@@ -212,27 +198,28 @@ function QuarterbackStats(props) {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 bg-white">
-                        {stats.map((data) => (
-                          <tr key={data.name} className={"divide-x divide-slate-200"}
-                          >
-                            <td className="whitespace-nowrap py-4 pl-4 text-xl font-medium text-slate-900 sm:pl-6">
-                              {data.name}
-                            </td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.team}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-yellow-500">{[...Array(data.ratingStars)].map((star) => {        
-                                return (         
-                                  <span className="star">&#9733;</span>        
-                                );
-                              })}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.passComp}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.passAtt}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.passCompPerc}%</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.passYards}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.ypc}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.tds}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.ints}</td>
-                          </tr>
-                        ))}
+                        {stats ? 
+                          stats.map((data) => (
+                            <tr key={data.name} className={"divide-x divide-slate-200"}
+                            >
+                              <td className="whitespace-nowrap py-1 pl-1 text-xl font-medium text-slate-900 sm:pl-6">
+                                <Link to={`/players/${data.id}`} className='hover:underline'>{data.name}</Link>
+                                <div className="whitespace-nowrap text-sm text-yellow-500">{[...Array(data.ratingStars)].map((star) => {        
+                                  return (         
+                                    <span className="star">&#9733;</span>        
+                                  );
+                                })}</div>
+                              </td>
+                              <td className="whitespace-nowrap p-4 text-xl text-slate-700 font-normal">{data.abbr}</td>
+                              <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat2}</td>
+                              <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat1}</td>
+                              <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat3}%</td>
+                              <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat4}</td>
+                              <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat5}</td>
+                              <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat6}</td>
+                              <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat7}</td>
+                            </tr>
+                          )) : null}
                       </tbody>
                     </table>
                   </div>
@@ -243,7 +230,7 @@ function QuarterbackStats(props) {
     )
 }
 
-function RunningBackStats(props) {
+function RushingStats(props) {
     const stats = props.stats
     return (
         <div className="px-4 mt-10 sm:px-6 lg:px-8">
@@ -255,9 +242,6 @@ function RunningBackStats(props) {
                       <thead className="bg-slate-50">
                         <tr className="divide-x divide-slate-200">
                           <th scope="col" className="py-3.5 pl-4 text-left text-xl font-semibold text-slate-900 sm:pl-6">
-                            
-                          </th>
-                          <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
                             
                           </th>
                           <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
@@ -278,46 +262,26 @@ function RunningBackStats(props) {
                           <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
                             FUM
                           </th>
-                          <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
-                            Rec
-                          </th>
-                          <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
-                            Rcv Yds
-                          </th>
-                          <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
-                            YPR
-                          </th>
-                          <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
-                            Rcv TDs
-                          </th>
-                          <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
-                            Tot Yds
-                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 bg-white">
                         {stats.map((data) => (
                           <tr key={data.name} className={"divide-x divide-slate-200"}
                           >
-                            <td className="whitespace-nowrap py-4 pl-4 text-xl font-medium text-slate-900 sm:pl-6">
-                              {data.name}
-                            </td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.team}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-yellow-500">{[...Array(data.ratingStars)].map((star) => {        
+                            <td className="whitespace-nowrap py-1 pl-1 text-xl font-medium text-slate-900 sm:pl-6">
+                              <Link to={`/players/${data.id}`} className='hover:underline'>{data.name}</Link>
+                              <div className="whitespace-nowrap text-sm text-yellow-500">{[...Array(data.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
-                              })}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.carries}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.runYards}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.ypc}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.runTds}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.fumblesLost}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.receptions}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.rcvYards}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.ypr}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.rcvTds}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.totalYards}</td>
+                              })}</div>
+                            </td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.abbr}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat1}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat2}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat3}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat4}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat5}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -329,7 +293,7 @@ function RunningBackStats(props) {
         </div>
     )
 }
-function ReceiverStats(props) {
+function ReceivingStats(props) {
     const stats = props.stats
     return (
         <div className="px-4 mt-10 sm:px-6 lg:px-8">
@@ -341,9 +305,6 @@ function ReceiverStats(props) {
                       <thead className="bg-slate-50">
                         <tr className="divide-x divide-slate-200">
                           <th scope="col" className="py-3.5 pl-4 text-left text-xl font-semibold text-slate-900 sm:pl-6">
-                            
-                          </th>
-                          <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
                             
                           </th>
                           <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
@@ -373,21 +334,21 @@ function ReceiverStats(props) {
                         {stats.map((data) => (
                           <tr key={data.name} className={"divide-x divide-slate-200"}
                           >
-                            <td className="whitespace-nowrap py-4 pl-4 text-xl font-medium text-slate-900 sm:pl-6">
-                              {data.name}
-                            </td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.team}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-yellow-500">{[...Array(data.ratingStars)].map((star) => {        
+                            <td className="whitespace-nowrap py-1 pl-1 text-xl font-medium text-slate-900 sm:pl-6">
+                              <Link to={`/players/${data.id}`} className='hover:underline'>{data.name} <span className='text-xs font-normal'>{data.pos}</span></Link>
+                              <div className="whitespace-nowrap text-sm text-yellow-500">{[...Array(data.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
-                              })}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.receptions}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.passTargets}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.rcvPerc}%</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.rcvYards}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.ypr}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.rcvTds}</td>
+                              })}</div>
+                            </td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.abbr}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat1}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat2}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat3}%</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat4}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat5}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat6}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -399,7 +360,7 @@ function ReceiverStats(props) {
         </div>
     )
 }
-function KickerStats(props) {
+function KickingStats(props) {
     const stats = props.stats
     return (
         <div className="px-4 mt-10 sm:px-6 lg:px-8">
@@ -415,8 +376,6 @@ function KickerStats(props) {
                           <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
                           </th>
                           <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
-                          </th>
-                          <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
                             Field Goals
                           </th>
                           <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
@@ -425,24 +384,28 @@ function KickerStats(props) {
                           <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
                             Field Goal %
                           </th>
+                          <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
+                            Avg Yards
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 bg-white">
                         {stats.map((data) => (
                           <tr key={data.name} className={"divide-x divide-slate-200"}
                           >
-                            <td className="whitespace-nowrap py-4 pl-4 text-xl font-medium text-slate-900 sm:pl-6">
-                              {data.name}
-                            </td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.team}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-yellow-500">{[...Array(data.ratingStars)].map((star) => {        
+                            <td className="whitespace-nowrap py-1 pl-1 text-xl font-medium text-slate-900 sm:pl-6">
+                              <Link to={`/players/${data.id}`} className='hover:underline'>{data.name}</Link>
+                              <div className="whitespace-nowrap text-sm text-yellow-500">{[...Array(data.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
-                              })}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.fgs}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.fgAtt}</td>
-                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.fgPerc}%</td>
+                              })}</div>
+                            </td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.abbr}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat1}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat2}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat3}%</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat4}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -467,8 +430,6 @@ function DefenseStats(props) {
                     <thead className="bg-slate-50">
                       <tr className="divide-x divide-slate-200">
                         <th scope="col" className="py-3.5 pl-2 text-left text-sm font-semibold text-slate-900 sm:pl-6">
-                        </th>
-                        <th scope="col" className="px-4 py-3.5 text-left text-sm font-semibold text-slate-900">
                         </th>
                         <th scope="col" className="px-4 py-3.5 text-left text-sm font-semibold text-slate-900">
                           Sacks
@@ -515,27 +476,27 @@ function DefenseStats(props) {
                       {stats.map((data) => (
                         <tr key={data.name} className={"divide-x divide-slate-200"}
                         >
-                          <td className="whitespace-nowrap py-4 px-2 text-xl font-medium text-slate-900 sm:pl-6">
-                            {data.name}
+                          <td className="whitespace-nowrap py-1 px-1 text-xl font-medium text-slate-900 sm:pl-6">
+                            <Link to={`/team/${data.id}`} className='hover:underline'>{data.city} {data.name}</Link>
+                            <div className="whitespace-nowrap text-sm text-yellow-500">{[...Array(data.ratingStars)].map((star) => {        
+                                return (         
+                                  <span className="star">&#9733;</span>        
+                                );
+                              })}</div>
                           </td>
-                          <td className="whitespace-nowrap p-4 text-xl text-yellow-500">{[...Array(data.ratingStars)].map((star) => {        
-                              return (         
-                                <span className="star">&#9733;</span>        
-                              );
-                            })}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.sacks}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.ints}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.fumRec}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.passYardsAlwd}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.runYardsAlwd}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.totalYardsAlwd}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.avgYardsAlwd}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.runTdsAlwd}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.passTdsAlwd}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.tdsAlwd}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.avgTdsAlwd}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.ptsAlwd}</td>
-                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.seasonStats.avgPtsAlwd}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat1}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat2}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat3}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat4}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat5}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat6}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat7}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat8}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat9}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat10}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat11}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat12}</td>
+                          <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat13}</td>
                         </tr>
                       ))}
                     </tbody>

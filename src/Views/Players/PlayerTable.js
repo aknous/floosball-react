@@ -1,6 +1,8 @@
 /* This example requires Tailwind CSS v2.0+ */
 import React,{useEffect,useState} from 'react'
+import {Link} from "react-router-dom";
 import axios from 'axios'
+import { GiPlagueDoctorProfile } from 'react-icons/gi';
   
   export default function PlayerTable() {
     const URL = 'http://127.0.0.1:8000/players';
@@ -24,55 +26,31 @@ import axios from 'axios'
 
 
     return (
-      <div className="px-4 mt-20 sm:px-6 lg:px-8">
-        <div className="mt-8 flex flex-col">
-          <div className="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-            <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-              <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                <table id="playerTable" className="min-w-full divide-y divide-slate-300">
-                  <thead className="bg-slate-50">
-                    <tr className="divide-x divide-slate-200">
-                      <th scope="col" className="py-3.5 pl-4 text-left text-xl font-semibold text-slate-900 sm:pl-6">
-                        Name
-                      </th>
-                      <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
-                        Position
-                      </th>
-                      <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
-                        Rating
-                      </th>
-                      <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
-                        Team
-                      </th>
-                      <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
-                        Seasons
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 bg-white">
-                    {players.map((player) => (
-                      <tr key={player.id} className={"divide-x divide-slate-200"}
-                      >
-                        <td className="whitespace-nowrap py-4 pl-4 text-xl font-medium text-slate-900 sm:pl-6">
-                          {player.name}
-                        </td>
-                        <td className="whitespace-nowrap p-4 text-xl text-slate-500">{player.position}</td>
-                        <td className="whitespace-nowrap p-4 text-xl text-yellow-500">{[...Array(player.ratingStars)].map((star) => {        
-                            return (         
-                              <span className="star">&#9733;</span>        
-                            );
-                          })}</td>
-                        <td className="whitespace-nowrap p-4 text-xl text-slate-500">{player.team}</td>
-                        <td className="whitespace-nowrap p-4 text-xl text-slate-500">{player.seasons}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+      <div className='h-screen overflow-auto'>
+        <div className="px-4 grid grid-cols-6 gap-4">
+          {players.map((player) => (
+            <Link to={`/players/${player.id}`} key={player.id} className={"bg-white rounded-lg shadow-md p-2 hover:bg-slate-100"}>
+              <div className='flex flex-col justify-between'>
+                <div className="text-xl font-medium text-slate-900 truncate">
+                  {player.name}
+                </div>
+                <div className="text-base text-yellow-500">{[...Array(player.ratingStars)].map((star) => {        
+                    return (         
+                      <span className="star">&#9733;</span>        
+                    );
+                  })}
+                </div>
+                <div className='flex justify-between items-center'>
+                  <div className='text-base font-normal'>{player.rank}</div>
+                  <div className='text-lg font-medium px-2 text-slate-500'>{player.position}</div>
+                </div>
               </div>
-            </div>
-          </div>
+            </Link>
+          ))}
         </div>
       </div>
+      
     )
   }
+  
   

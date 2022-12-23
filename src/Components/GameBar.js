@@ -51,7 +51,7 @@ function GameComponent() {
       getGames()
       const interval=setInterval(()=>{
         getGames()
-       },15000)
+       },5000)
          
        return()=>clearInterval(interval)
   }, []);
@@ -84,7 +84,7 @@ function GameComponent() {
               </div>
               <div className='flex gap-x-8 mt-2 px-2 border-t-2 border-slate-700 justify-between'>
                 <span className="text-sm float-left">{game.status === "Final" ? "Final" : game.quarter === "OT" ? "OT" : game.isHalftime ? "Halftime" : "Q" + game.quarter}</span>
-                <span className="text-sm float-right">PR: {game.playsLeft%33}</span>
+                <span className="text-sm float-right">PR: {game.playsLeft}</span>
               </div>
             </div>
           </div>
@@ -165,8 +165,8 @@ function GameComponent() {
                           <div className='flex justify-center space-x-12 px-2 font-medium text-lg border-t-2 border-slate-500 py-1'>
                             {gameModal.quarter === 5 ? <div>OT</div> : gameModal.isHalftime ? <div>Halftime</div> : <div>Q{gameModal.quarter}</div>}
                             <div>{gameModal.downText}</div>
-                            <div className={`${gameModal.yardsToEZ <= 20 ? 'text-red-500 bg-red-100 rounded-full px-1' : ''}`}>{gameModal.yardLine}</div>
-                            <div>PR: {gameModal.playsLeft%33}</div>
+                            <div className={`${gameModal.yardsToEZ <= 20 ? 'text-red-500 bg-red-100 rounded-full px-2' : ''}`}>{gameModal.yardLine}</div>
+                            <div>PR: {gameModal.playsLeft}</div>
                           </div>
                         } 
                         {gameModal.status === 'Final' &&
