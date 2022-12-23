@@ -3,8 +3,8 @@ import { Dialog, Menu, Transition } from '@headlessui/react'
 import { Link } from "react-router-dom";
 import { ChevronDownIcon,XIcon } from '@heroicons/react/solid'
 import axios from 'axios'
-import PlayList from '/Users/andrew/Projects/floosball-react/src/Components/PlayList.js'
-import GameStats from '/Users/andrew/Projects/floosball-react/src/Components/GameStats.js'
+import PlayList from '/opt/floosball-react/src/Components/PlayList.js'
+import GameStats from '/opt/floosball-react/src/Components/GameStats.js'
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
