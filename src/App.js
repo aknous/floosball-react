@@ -13,6 +13,21 @@ import { Route, Routes, Navigate } from 'react-router-dom';
 import axios from 'axios'
 
 function App() {
+  const [appVer, setAppVer] = useState([])
+  const getAppVer = async () => {
+    try {
+      const userAppVer = await axios.get('http://127.0.0.1:8000/info')
+
+      setAppVer(userAppVer.data);  // set State
+    
+    } catch (err) {
+      console.error(err.message);
+    }
+  };
+
+  useEffect(() => {
+    getAppVer()
+  }, [])
   return (
     <div className='bg-slate-200'>
       <div>

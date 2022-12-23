@@ -7,7 +7,6 @@ import {
 import { GiLaurelsTrophy } from 'react-icons/gi';
 import { CheckCircleIcon } from '@heroicons/react/solid'
 import axios from 'axios'
-import Schedule from '../../Components/Schedule';
 import Roster from '../../Components/Roster';
 import RosterHistory from '../../Components/RosterHistory';
   
