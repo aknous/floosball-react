@@ -1,8 +1,4 @@
 import './index.css';
-<<<<<<< Updated upstream
-import Navbar from './Navigation/Navbar.js'
-import Example from './Example/Example'
-=======
 import React,{useEffect,useState} from 'react'
 import Navbar from './Components/Navbar.js'
 import GameBar from './Components/GameBar.js'
@@ -16,14 +12,8 @@ import Dashboard from './Views/Dashboard/Dashboard'
 import { Route, Routes, Navigate } from 'react-router-dom';
 import axios from 'axios'
 
->>>>>>> Stashed changes
 function App() {
   return (
-<<<<<<< Updated upstream
-    <div>
-      <Navbar />
-      < Example />
-=======
     <div className='bg-slate-200'>
       <div>
         <Navbar />
@@ -45,7 +35,6 @@ function App() {
       <div className='flex justify-end'>
         <span className='text-slate-400 text-sm font-light mr-8 my-2'> floosball v{appVer}</span>
       </div>
->>>>>>> Stashed changes
     </div>
   );
 }
