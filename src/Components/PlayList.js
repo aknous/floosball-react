@@ -29,7 +29,7 @@ export default function PlayList(props) {
     
     const getHighlights = async () => {
         try {
-          const userHighlights = await axios.get(`http://127.0.0.1:8000/highlights?id=${props.id}`)
+          const userHighlights = await axios.get(`http://floosball.com:8000/highlights?id=${props.id}`)
     
           setHighlights(userHighlights.data);  // set State
         
@@ -40,7 +40,7 @@ export default function PlayList(props) {
 
       const getPlays = async () => {
         try {
-          const userPlays = await axios.get(`http://127.0.0.1:8000/plays?id=${props.id}`)
+          const userPlays = await axios.get(`http://floosball.com:8000/plays?id=${props.id}`)
     
           setPlays(userPlays.data);  // set State
         

@@ -22,7 +22,7 @@ export default function Team() {
 
   const getTeam = async () => {
     try {
-      const userTeams = await axios.get(`http://127.0.0.1:8000/teams?id=${id}`)
+      const userTeams = await axios.get(`http://floosball.com:8000/teams?id=${id}`)
       setTeam(userTeams.data);  // set State
     } catch (err) {
       console.error(err.message);
@@ -31,7 +31,7 @@ export default function Team() {
 
   const getRosterHistory = async () => {
     try {
-      const userRosterHistory = await axios.get(`http://127.0.0.1:8000/rosterHistory?id=${id}`)
+      const userRosterHistory = await axios.get(`http://floosball.com:8000/rosterHistory?id=${id}`)
       setRosterHistory(userRosterHistory.data);  // set State
     } catch (err) {
       console.error(err.message);

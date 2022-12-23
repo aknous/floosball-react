@@ -3,7 +3,7 @@ import React,{useEffect,useState} from 'react'
 import axios from 'axios'
 import { NavLink } from 'react-router-dom';
 
-const SEASONURL = 'http://127.0.0.1:8000/seasonInfo';
+const SEASONURL = 'http://floosball.com:8000/seasonInfo';
 
 function SeasonDataComponent() {
   const [seasonData, setSeasonData] = useState([])

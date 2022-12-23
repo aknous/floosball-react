@@ -16,7 +16,7 @@ function App() {
   const [appVer, setAppVer] = useState([])
   const getAppVer = async () => {
     try {
-      const userAppVer = await axios.get('http://127.0.0.1:8000/info')
+      const userAppVer = await axios.get('http://floosball.com:8000/info')
 
       setAppVer(userAppVer.data);  // set State
     

@@ -17,7 +17,7 @@ export default function Stats() {
     const getPlayers = async (pos) => {
         try {
           dataLoaded.current = false
-          const userPlayers = await axios.get(`http://127.0.0.1:8000/playerStats?pos=${pos}`)
+          const userPlayers = await axios.get(`http://floosball.com:8000/playerStats?pos=${pos}`)
   
           setPlayers(userPlayers.data);  // set State
         

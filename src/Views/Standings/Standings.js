@@ -2,7 +2,7 @@
 import React,{useEffect,useState} from 'react'
 import axios from 'axios'
 
-const URL = 'http://127.0.0.1:8000/standings';
+const URL = 'http://floosball.com:8000/standings';
 
 
 function StandingsComponent() {

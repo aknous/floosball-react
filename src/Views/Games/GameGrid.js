@@ -5,7 +5,7 @@ import { ArrowCircleLeftIcon, ArrowCircleRightIcon } from '@heroicons/react/soli
   
 
 export default function GameGrid() {
-  const URL = 'http://127.0.0.1:8000/currentGames';
+  const URL = 'http://floosball.com:8000/currentGames';
   const [games, setGames] = useState([])
   const getGames = async () => {
     try {

@@ -5,7 +5,7 @@ import axios from 'axios'
   
 
 export default function TeamTable() {
-  const URL = 'http://127.0.0.1:8000/teams';
+  const URL = 'http://floosball.com:8000/teams';
   const [teams, setTeams] = useState([])
 
   const getTeams = async () => {

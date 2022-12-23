@@ -7,7 +7,7 @@ import axios from 'axios'
 import PlayList from './PlayList'
 import GameStats from './GameStats'
 
-const GAMESURL = 'http://127.0.0.1:8000/currentGames';
+const GAMESURL = 'http://floosball.com:8000/currentGames';
 
 
 function GameComponent() {
@@ -30,7 +30,7 @@ function GameComponent() {
 
   const getSelectedGame = async (id) => {
     try {
-      const userGame = await axios.get(`http://127.0.0.1:8000/gameStats?id=${id}`)
+      const userGame = await axios.get(`http://floosball.com:8000/gameStats?id=${id}`)
       .then((res) => 
         setGame(res.data)
         )  // set State

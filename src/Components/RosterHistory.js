@@ -15,7 +15,7 @@ export default function Roster(props) {
 
     const getSeasonData = async () => {
       try {
-        const userSeasonData = await axios.get('http://127.0.0.1:8000/seasonInfo')
+        const userSeasonData = await axios.get('http://floosball.com:8000/seasonInfo')
   
         setSeasonData(userSeasonData.data);
       

@@ -15,7 +15,7 @@ function TopPlayers(props) {
 
     const getPlayers = async () => {
         try {
-          const userPlayers = await axios.get(`http://127.0.0.1:8000/topPlayers?pos=${pos}`)
+          const userPlayers = await axios.get(`http://floosball.com:8000/topPlayers?pos=${pos}`)
     
           setPlayers(userPlayers.data);  // set State
         
@@ -68,7 +68,7 @@ export default function Dashboard() {
 
     const getHighlights = async () => {
         try {
-          const userHighlights = await axios.get('http://127.0.0.1:8000/highlights')
+          const userHighlights = await axios.get('http://floosball.com:8000/highlights')
     
           setHighlights(userHighlights.data);  // set State
         

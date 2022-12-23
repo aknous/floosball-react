@@ -21,7 +21,7 @@ export default function Results() {
 
     const getSeasonData = async () => {
       try {
-        const userSeasonData = await axios.get('http://127.0.0.1:8000/seasonInfo')
+        const userSeasonData = await axios.get('http://floosball.com:8000/seasonInfo')
   
         setSeasonData(userSeasonData.data);
       
@@ -32,7 +32,7 @@ export default function Results() {
 
     const getWeekData = async (week) => {
       try {
-        const userGameData = await axios.get(`http://127.0.0.1:8000/results?week=${week}`)
+        const userGameData = await axios.get(`http://floosball.com:8000/results?week=${week}`)
   
         setGames(userGameData.data);
       
@@ -43,7 +43,7 @@ export default function Results() {
 
     const getSelectedGame = async (id) => {
       try {
-        const userGame = await axios.get(`http://127.0.0.1:8000/gameStats?id=${id}`)
+        const userGame = await axios.get(`http://floosball.com:8000/gameStats?id=${id}`)
         .then((res) => 
           setGame(res.data)
           )  // set State

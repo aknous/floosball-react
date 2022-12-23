@@ -5,7 +5,7 @@ import axios from 'axios'
 import { GiPlagueDoctorProfile } from 'react-icons/gi';
   
   export default function PlayerTable() {
-    const URL = 'http://127.0.0.1:8000/players';
+    const URL = 'http://floosball.com:8000/players';
 
     const [players, setPlayers] = useState([])
 

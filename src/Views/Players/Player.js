@@ -16,7 +16,7 @@ export default function Player() {
 
   const getPlayer = async () => {
     try {
-      const userPlayer = await axios.get(`http://127.0.0.1:8000/players?id=${id}`)
+      const userPlayer = await axios.get(`http://floosball.com:8000/players?id=${id}`)
       setPlayer(userPlayer.data);  // set State
     } catch (err) {
       console.error(err.message);
