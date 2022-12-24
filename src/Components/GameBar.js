@@ -52,7 +52,6 @@ function GameComponent() {
       const interval=setInterval(()=>{
         getGames()
        },10000)
-         
        return()=>clearInterval(interval)
   }, []);
 
@@ -63,7 +62,7 @@ function GameComponent() {
       }
      },10000)
     return()=>clearInterval(interval)
-  });
+  }, []);
  
 
   return (
