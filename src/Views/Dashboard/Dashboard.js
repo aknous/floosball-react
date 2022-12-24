@@ -81,7 +81,7 @@ export default function Dashboard() {
         getHighlights();
         const interval=setInterval(()=>{
             getHighlights();
-        },5000)
+        },10000)
            
         return()=>clearInterval(interval)
     }, []);

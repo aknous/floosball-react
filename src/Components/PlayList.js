@@ -54,7 +54,7 @@ export default function PlayList(props) {
         const interval=setInterval(()=>{
             getHighlights();
             getPlays();
-         },5000)
+         },10000)
            
          return()=>clearInterval(interval)
     }, []);

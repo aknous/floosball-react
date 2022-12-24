@@ -51,7 +51,7 @@ function GameComponent() {
       getGames()
       const interval=setInterval(()=>{
         getGames()
-       },5000)
+       },10000)
          
        return()=>clearInterval(interval)
   }, []);
@@ -61,7 +61,7 @@ function GameComponent() {
       if (showModal) {
         getSelectedGame(selectedGame)
       }
-     },5000)
+     },10000)
     return()=>clearInterval(interval)
   });
  
