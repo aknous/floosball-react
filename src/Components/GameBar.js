@@ -56,13 +56,13 @@ function GameComponent() {
   }, []);
 
   useEffect(() => {
-    const interval=setInterval(()=>{
+    const newInterval=setInterval(()=>{
       if (showModal) {
         getSelectedGame(selectedGame)
       }
      },10000)
-    return()=>clearInterval(interval)
-  }, []);
+    return()=>clearInterval(newInterval)
+  }, selectedGame);
  
 
   return (
