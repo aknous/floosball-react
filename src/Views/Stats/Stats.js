@@ -477,7 +477,7 @@ function DefenseStats(props) {
                         <tr key={data.name} className={"divide-x divide-slate-200"}
                         >
                           <td className="whitespace-nowrap py-1 px-1 text-xl font-medium text-slate-900 sm:pl-6">
-                            <Link to={`/team/${data.id}`} className='hover:underline'>{data.city} {data.name}</Link>
+                            <Link to={`/team/${data.city}`} className='hover:underline'>{data.id} {data.name}</Link>
                             <div className="whitespace-nowrap text-sm text-yellow-500">{[...Array(data.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
