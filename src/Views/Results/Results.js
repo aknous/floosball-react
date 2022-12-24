@@ -65,7 +65,7 @@ export default function Results() {
         if (showModal) {
           getSelectedGame(selectedGame)
         }
-       },5000)
+       },10000)
       return()=>clearInterval(interval)
     });
   
