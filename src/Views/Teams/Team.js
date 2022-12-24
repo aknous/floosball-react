@@ -5,7 +5,7 @@ import {
   useParams,
 } from "react-router-dom";
 import { GiLaurelsTrophy } from 'react-icons/gi';
-import { CheckCircleIcon } from '@heroicons/react/solid'
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/solid'
 import axios from 'axios'
 import Roster from '../../Components/Roster';
 import RosterHistory from '../../Components/RosterHistory';
@@ -147,7 +147,8 @@ export default function Team() {
                         <td className="whitespace-nowrap p-2 flex justify-center">
                           {data.madePlayoffs ? 
                             <CheckCircleIcon className='h-8 w-8 text-emerald-500' />
-                            : null
+                            :
+                            <XCircleIcon className='h-8 w-8 text-rose-500' />
                           }
                         </td>
                         <td className="whitespace-nowrap p-2">
