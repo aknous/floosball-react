@@ -7,7 +7,7 @@ export default function GameStats(props) {
     const gameData = props.gameData
 
     return (
-        <div className="flex flex-col px-2 h-full overflow-y-auto">
+        <div className="flex flex-col w-full px-2 h-full overflow-y-auto">
             <div className='mt-2 text-xl font-medium text-center'>Passing</div>
             <table className="table-fixed min-w-full divide-y divide-slate-300 mb-2">
                 <thead className="bg-slate-700 text-white text-base font-light">

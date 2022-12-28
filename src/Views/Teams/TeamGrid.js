@@ -29,51 +29,30 @@ export default function TeamTable() {
   }, [])
 
   return (
-    <div className='grid grid-cols-2 justify-center'>
+    <div className='laptop:grid grid-cols-2 justify-center'>
       {teams.map((division) => 
-        <div className='my-5 mx-10 text-3xl text-center font-semibold text-slate-700'>{division.divisionName} Division
-          <div className='bg-white rounded-lg shadow-lg pt-2'>
+        <div className='my-5 mx-2 laptop:mx-10 text-lg laptop:text-3xl text-center font-semibold text-slate-700'>{division.divisionName} Division
+          <div className='bg-white rounded-lg shadow-lg'>
             <table id="teamTable" className="min-w-full divide-y divide-slate-300">
-              <thead className="bg-slate-50">
-                <tr className="">
-                  <th>
-                  </th>
-                  <th scope="col" className="text-center text-xl font-semibold text-slate-900 w-8">
-                    W
-                  </th>
-                  <th scope="col" className="text-center text-xl font-semibold text-slate-900 w-8">
-                    L
-                  </th>
-                  <th scope="col" className="text-center text-xl font-semibold text-slate-900 w-8">
-                    %
-                  </th>
-                  <th scope="col" className="text-center text-xl font-semibold text-slate-900 w-8">
-                    Streak
-                  </th>
-                  <th scope="col" className="pr-2 text-center text-xl font-semibold text-slate-900 w-8">
-                    +/-
-                  </th>
-                </tr>
-              </thead>
               <tbody className="divide-y divide-slate-200 text-xl font-normal">
                 {division.teams.map((team) => (
                   <tr key={team.id} className={`hover:bg-slate-100 ${team.eliminated ? 'opacity-40' : ''}`}>
-                    <td key={team.id} className="pl-2 py-2 w-48">
-                      <Link to={`/team/${team.id}`} className={`text-2xl font-semibold text-left hover:underline ${team.eliminated ? 'line-through' : ''}`} style={{ color: `${team.color}` }}>{team.city} {team.name}</Link>
+                    <td key={team.id} className="pl-2 py-3 w-36 laptop:w-48">
+                      <Link to={`/team/${team.id}`} className={`text-lg laptop:text-2xl font-semibold text-left truncate hover:underline ${team.eliminated ? 'line-through' : ''}`} style={{ color: `${team.color}` }}>{team.city} {team.name}</Link>
                     </td>
-                    <td className="text-center text-xl font-normal text-slate-900 w-8">
+                    <td className="text-center text-sm laptop:text-xl font-normal text-slate-900 w-8">
                       {team.wins}
                     </td>
-                    <td className="text-center text-xl font-normal text-slate-900 w-8">
+                    <td className="text-center text-sm laptop:text-xl font-normal text-slate-900 w-8">
                       {team.losses}
                     </td>
-                    <td className="text-center text-xl font-normal text-slate-900 w-8">
+                    <td className="text-center text-sm laptop:text-xl font-normal text-slate-900 w-8">
                       {team.winPerc}
                     </td>
-                    <td className="text-center text-xl font-normal text-slate-900 w-8">
+                    <td className="text-center text-sm laptop:text-xl font-normal text-slate-900 w-8">
                       {team.streak}
                     </td>
-                    <td className="text-center text-xl font-normal text-slate-900 w-8">
+                    <td className="text-center text-sm laptop:text-xl font-normal text-slate-900 w-8">
                       {team.pointDiff}
                     </td>
                   </tr>
@@ -81,7 +60,6 @@ export default function TeamTable() {
               </tbody>
             </table>
           </div>
-          
         </div>       
       )}
     </div>

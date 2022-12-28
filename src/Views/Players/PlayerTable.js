@@ -26,12 +26,12 @@ import { GiPlagueDoctorProfile } from 'react-icons/gi';
 
 
     return (
-      <div className='h-screen overflow-auto'>
-        <div className="px-4 grid grid-cols-6 gap-4">
+      <div className='h-screen mt-4 overflow-auto'>
+        <div className="px-4 grid grid-cols-2 tablet:grid-cols-4 laptop:grid-cols-6 gap-2 laptop:gap-4">
           {players.map((player) => (
             <Link to={`/players/${player.id}`} key={player.id} className={"bg-white rounded-lg shadow-md p-2 hover:bg-slate-100"}>
               <div className='flex flex-col justify-between'>
-                <div className="text-xl font-medium text-slate-900 truncate">
+                <div className="text-sm laptop:text-xl font-medium text-slate-900 truncate">
                   {player.name}
                 </div>
                 <div className="text-base text-yellow-500">{[...Array(player.ratingStars)].map((star) => {        
@@ -41,7 +41,7 @@ import { GiPlagueDoctorProfile } from 'react-icons/gi';
                   })}
                 </div>
                 <div className='flex justify-between items-center'>
-                  <div className='text-base font-normal'>{player.rank}</div>
+                  <div className='text-sm laptop:text-base font-normal'>{player.rank}</div>
                   <div className='text-lg font-medium px-2 text-slate-500'>{player.position}</div>
                 </div>
               </div>
