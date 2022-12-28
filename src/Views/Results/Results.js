@@ -92,7 +92,7 @@ export default function Results() {
     }, [week]);
 
     return (
-        <div className='flex flex-col mt-10 items-center gap-y-10 h-screen'>
+        <div className='flex flex-col mt-10 items-center gap-y-10 h-full'>
             <div className='flex justify-center'>
               <Menu as="div" className="items-center relative inline-block text-left mt-5">
                 <div>
@@ -133,26 +133,26 @@ export default function Results() {
                 </Transition>
               </Menu>
             </div>
-            <div className="grid grid-cols-2 w-2/4 justify-center content-center overflow-x-auto gap-6 p-4">
+            <div className="laptop:grid grid-cols-2 w-64 laptop:w-2/4 justify-center content-center overflow-x-auto gap-6 p-4">
               {games.map((game) => (
-                <button id={game.id} onClick={handleClick} className="flex justify-center">
-                  <div className="flex flex-col px-2 py-1 bg-white rounded-lg shadow-md w-3/4">
+                <button id={game.id} onClick={handleClick} className="flex justify-center w-full my-2 laptop:my-0">
+                  <div className="flex flex-col px-2 py-1 bg-white rounded-lg shadow-md w-full laptop:w-3/4">
                     <div className="flex justify-between">
                       <div className='flex items-center'>
-                        <div className="flex-grow text-3xl font-semibold text-left truncate" style={{ color: `${game.homeTeamColor}` }}>{game.homeTeam}</div>
-                        <div className="pl-2 text-base font-normal text-right">{game.homeTeamRecord}</div>
+                        <div className="flex-grow text-xl laptop:text-3xl font-semibold text-left truncate" style={{ color: `${game.homeTeamColor}` }}>{game.homeTeam}</div>
+                        <div className="pl-2 text-xs laptop:text-base font-normal text-right">{game.homeTeamRecord}</div>
                       </div>
-                      <div className="text-3xl font-semibold text-right">{game.homeScore}</div>
+                      <div className="text-2xl laptop:text-3xl font-semibold text-right">{game.homeScore}</div>
                     </div>
                     <div className="flex justify-between">
                       <div className='flex items-center'>
-                        <div className="flex-grow text-3xl font-semibold text-left truncate" style={{ color: `${game.awayTeamColor}` }}>{game.awayTeam}</div>
-                        <div className="pl-2 text-base font-normal text-right">{game.awayTeamRecord}</div>
+                        <div className="flex-grow text-xl laptop:text-3xl font-semibold text-left truncate" style={{ color: `${game.awayTeamColor}` }}>{game.awayTeam}</div>
+                        <div className="pl-2 text-xs laptop:text-base font-normal text-right">{game.awayTeamRecord}</div>
                       </div>
-                      <div className="text-3xl font-semibold truncate">{game.awayScore}</div>
+                      <div className="text-2xl laptop:text-3xl font-semibold truncate">{game.awayScore}</div>
                     </div>
                     <div className='flex gap-x-8 mt-2 border-t-2 border-slate-700 justify-between'>
-                      <span className="text-lg">{game.status}</span>
+                      <span className="text-sm laptop:text-lg">{game.status}</span>
                     </div>
                   </div>
                 </button>
