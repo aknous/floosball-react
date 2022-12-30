@@ -42,11 +42,14 @@ export default function Team() {
     if (e.currentTarget.id === 'roster') {
       setMenu(1);
     }
-    else if (e.currentTarget.id === 'teamHistory') {
+    else if (e.currentTarget.id === 'stats') {
       setMenu(2);
     }
-    else if (e.currentTarget.id === 'transactions') {
+    else if (e.currentTarget.id === 'teamHistory') {
       setMenu(3);
+    }
+    else if (e.currentTarget.id === 'transactions') {
+      setMenu(4);
     }
   }
 
@@ -94,7 +97,7 @@ export default function Team() {
                   Roster
               </button>
               <button
-                  id={'teamHistory'}
+                  id={'stats'}
                   onClick={handleClick}
                   className={classNames(
                     selectedMenu === 2
@@ -103,10 +106,10 @@ export default function Team() {
                       'w-1/4 py-4 px-1 text-center border-b-2 font-medium text-2xl'
                   )}
               >
-                  Team Stats
+                  Stats
               </button>
               <button
-                  id={'transactions'}
+                  id={'teamHistory'}
                   onClick={handleClick}
                   className={classNames(
                     selectedMenu === 3
@@ -115,7 +118,19 @@ export default function Team() {
                       'w-1/4 py-4 px-1 text-center border-b-2 font-medium text-2xl'
                   )}
               >
-                  Transactions
+                  History
+              </button>
+              <button
+                  id={'transactions'}
+                  onClick={handleClick}
+                  className={classNames(
+                    selectedMenu === 4
+                      ? 'border-slate-500 text-slate-900'
+                      : 'border-transparent text-gray-900 hover:text-slate-900 hover:border-slate-300',
+                      'w-1/4 py-4 px-1 text-center border-b-2 font-medium text-2xl'
+                  )}
+              >
+                  Free Agency
               </button>
             </nav>
           </div>
@@ -124,6 +139,46 @@ export default function Team() {
               <Roster roster={team.roster} reserves={team.reserves} defenseRatingStars={team.defenseRatingStars}/>
             }
             {selectedMenu === 2 &&
+              <div className='flex-col items center bg-white rounded-lg p-4'>
+                <div className='flex items-center'>
+                  <div className='w-44 text-2xl font-medium'>Offense:</div>
+                  <div className="whitespace-nowrap text-2xl text-yellow-500">{[...Array(team.offenseRatingStars)].map((star) => {        
+                    return (         
+                      <span className="star">&#9733;</span>        
+                    );
+                    })}
+                  </div>
+                </div>
+                <div className='flex items-center'>
+                  <div className='w-44 text-2xl font-medium'>Defense:</div>
+                  <div className="whitespace-nowrap text-2xl text-yellow-500 w-32">{[...Array(team.defenseRatingStars)].map((star) => {        
+                    return (         
+                      <span className="star">&#9733;</span>        
+                    );
+                    })}
+                  </div>
+                </div>
+                <div className='flex items-center'>
+                  <div className='w-44 text-2xl font-medium'>Run Defense:</div>
+                  <div className="whitespace-nowrap text-2xl text-yellow-500">{[...Array(team.runDefenseRating)].map((star) => {        
+                    return (         
+                      <span className="star">&#9733;</span>        
+                    );
+                    })}
+                  </div>
+                </div>
+                <div className='flex items-center'>
+                  <div className='w-44 text-2xl font-medium'>Pass Defense:</div>
+                  <div className="whitespace-nowrap text-2xl text-yellow-500">{[...Array(team.passDefenseRating)].map((star) => {        
+                    return (         
+                      <span className="star">&#9733;</span>        
+                    );
+                    })}
+                  </div>
+                </div>
+              </div>
+            }
+            {selectedMenu === 3 &&
               <table className="w-full divide-y divide-slate-300">
                 <thead className="bg-slate-50">
                   <tr className="divide-x divide-slate-200">
@@ -162,7 +217,7 @@ export default function Team() {
                 </tbody>
               </table>
             }
-            {selectedMenu === 3 &&
+            {selectedMenu === 4 &&
               <RosterHistory players={rosterHistory}/>
             }
           </div>

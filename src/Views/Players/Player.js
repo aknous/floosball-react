@@ -94,6 +94,15 @@ export default function Player() {
                   })}
                 </div>
               </div>
+              <div className='flex justify-between w-full'>
+                <div className='w-28'>Performance</div>
+                <div className="w-28 text-lg text-yellow-500">{[...Array(player.seasonPerformanceRating)].map((star) => {        
+                  return (         
+                    <span className="star">&#9733;</span>        
+                    );
+                  })}
+                </div>
+              </div>
             </div>
             <div className='rounded-lg shadow-xl mt-8 mb-4'>
               {player.position === 'QB' &&

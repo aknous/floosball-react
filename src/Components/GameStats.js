@@ -141,6 +141,7 @@ export default function GameStats(props) {
                         <th>Targ</th>
                         <th>%</th>
                         <th>Yds</th>
+                        <th>YAC</th>
                         <th>YPR</th>
                         <th>20+</th>
                         <th>Long</th>
@@ -165,6 +166,7 @@ export default function GameStats(props) {
                         <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.targets}</td>
                         <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.rcvPerc}%</td>
                         <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.yac}</td>
                         <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.ypr}</td>
                         <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving['20+']}</td>
                         <td className='text-center'>{gameData.homeTeam.wr1.gameStats.receiving.longest}</td>
@@ -183,6 +185,7 @@ export default function GameStats(props) {
                         <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.targets}</td>
                         <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.rcvPerc}%</td>
                         <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.yac}</td>
                         <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.ypr}</td>
                         <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving['20+']}</td>
                         <td className='text-center'>{gameData.homeTeam.wr2.gameStats.receiving.longest}</td>
@@ -201,6 +204,7 @@ export default function GameStats(props) {
                         <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.targets}</td>
                         <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.rcvPerc}%</td>
                         <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.yac}</td>
                         <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.ypr}</td>
                         <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving['20+']}</td>
                         <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.longest}</td>
@@ -219,6 +223,7 @@ export default function GameStats(props) {
                         <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.targets}</td>
                         <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.rcvPerc}%</td>
                         <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.yac}</td>
                         <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.ypr}</td>
                         <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving['20+']}</td>
                         <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.longest}</td>
@@ -241,6 +246,7 @@ export default function GameStats(props) {
                         <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.targets}</td>
                         <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.rcvPerc}%</td>
                         <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.yac}</td>
                         <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.ypr}</td>
                         <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving['20+']}</td>
                         <td className='text-center'>{gameData.awayTeam.wr1.gameStats.receiving.longest}</td>
@@ -259,6 +265,7 @@ export default function GameStats(props) {
                         <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.targets}</td>
                         <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.rcvPerc}%</td>
                         <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.yac}</td>
                         <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.ypr}</td>
                         <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving['20+']}</td>
                         <td className='text-center'>{gameData.awayTeam.wr2.gameStats.receiving.longest}</td>
@@ -277,6 +284,7 @@ export default function GameStats(props) {
                         <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.targets}</td>
                         <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.rcvPerc}%</td>
                         <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.yac}</td>
                         <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.ypr}</td>
                         <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving['20+']}</td>
                         <td className='text-center'>{gameData.awayTeam.te.gameStats.receiving.longest}</td>
@@ -296,6 +304,7 @@ export default function GameStats(props) {
                         <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.targets}</td>
                         <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.rcvPerc}%</td>
                         <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.yards}</td>
+                        <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.yac}</td>
                         <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.ypr}</td>
                         <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving['20+']}</td>
                         <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.longest}</td>

@@ -323,6 +323,9 @@ function ReceivingStats(props) {
                             Rcv Yds
                           </th>
                           <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
+                            YAC
+                          </th>
+                          <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
                             YPR
                           </th>
                           <th scope="col" className="px-4 py-3.5 text-left text-xl font-semibold text-slate-900">
@@ -349,6 +352,7 @@ function ReceivingStats(props) {
                             <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat4}</td>
                             <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat5}</td>
                             <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat6}</td>
+                            <td className="whitespace-nowrap p-4 text-xl text-slate-500">{data.stat7}</td>
                           </tr>
                         ))}
                       </tbody>
