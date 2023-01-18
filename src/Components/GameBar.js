@@ -70,7 +70,7 @@ export default function GameBar() {
       <div className="flex shrink-0 justify-left gap-x-1 laptop:gap-x-4 w-full">
         {games.map((game) => (
           <button id={game.id} onClick={handleClick}>
-            <div className={` w-32 laptop:w-full flex items-center px-2 bg-slate-50 text-slate-900 shadow-md rounded-lg my-1 laptop:my-4 ${game.yardsToEZ <= 20 && game.status === 'Active' ? "border-b-4 border-red-500" : ""}`}>
+            <div className={` w-36 laptop:w-full flex items-center px-2 bg-slate-50 text-slate-900 shadow-md rounded-lg my-1 laptop:my-4 ${game.yardsToEZ <= 20 && game.status === 'Active' ? "border-b-4 border-red-500" : ""}`}>
               <div className="flex-none rounded-lg w-full laptop:w-48">
                 <div className="flex">
                   <div className={`rounded-full h-1 laptop:h-2 w-1 laptop:w-2 bg-slate-700 self-center ${game.homeTeamPoss && game.status === 'Active' ? 'visible' : 'invisible'}`}></div>

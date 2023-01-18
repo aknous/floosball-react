@@ -92,7 +92,7 @@ export default function Dashboard() {
                 <div className='text-xl laptop:text-3xl font-semibold'>welcome to floosball.</div>
             </div>
             <div className='laptop:flex flex-row-reverse mt-4 laptop:mt-10'>
-                <div className='flex flex-col items-center laptop:w-2/5 mx-4'>
+                <div className='flex flex-col items-center laptop:w-2/5 mx-2 laptop:mx-4'>
                     <div className='text-lg laptop:text-xl font-semibold'>The Feed</div>
                     <div className='flex mx-2 bg-white rounded-lg shadow-md w-full h-96 laptop:h-142 overflow-x-auto laptop:overscroll-x-none'>
                         <ul className='divide-y-2 divide-slate-200 p-2 w-full'>
@@ -109,7 +109,7 @@ export default function Dashboard() {
                                                 </div>
                                             </div>
                                             <div className='flex items-center justify-between'>
-                                                <p className='w-48 laptop:w-72 text-xs laptop:text-sm'>{data.playText}</p>
+                                                <p className='w-48 laptop:w-auto text-xs laptop:text-sm truncate'>{data.playText}</p>
                                                 <span className={`text-xs text-slate-700 ${data.scoreChange ? 'visible' : 'invisible'}`}>{data.homeAbbr} {data.homeScore} | {data.awayAbbr} {data.awayScore}</span>
                                             </div>
                                         </div>
@@ -128,7 +128,7 @@ export default function Dashboard() {
                         </ul>
                     </div>
                 </div>
-                <div className='laptop:grid grid-cols-2 laptop:w-3/5 gap-x-6 mx-4'>
+                <div className='laptop:grid grid-cols-2 laptop:w-3/5 gap-x-6 mx-2 laptop:mx-4'>
                     <div className='flex flex-col items-center mt-4 laptop:mt-0'>
                         <div className='text-xl font-semibold'>Top QB's</div>
                         <TopPlayers pos='QB'/>

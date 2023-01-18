@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react'
 import {Link} from "react-router-dom";
+import { MinusSmIcon, TrendingUpIcon, TrendingDownIcon } from '@heroicons/react/solid'
 
 
 export default function Roster(props) {
@@ -11,7 +12,6 @@ export default function Roster(props) {
     return (
         <div className='flex justify-center gap-x-4'>
             <div className='flex flex-col items-center'>
-                <div className='text-2xl'>Starters</div>
                 <table className='divide-y mt-4 divide-slate-300 bg-white rounded-lg shadow-lg w-96'>
                     <tbody className='divide-y divide-slate-300'>
                       {roster.qb ?
@@ -142,32 +142,7 @@ export default function Roster(props) {
                       }
                     </tbody>
                 </table>
-            </div>
-            {reserves.length ? 
-                <div className='flex flex-col items-center'>
-                    <div className='text-2xl'>Reserves</div>
-                    <table className='min-w-full divide-y mt-4 divide-slate-300 bg-white rounded-lg shadow-lg'>
-                        <tbody className='divide-y divide-slate-300'>
-                            {reserves.map((player) => (
-                                <tr className="text-left">
-                                    <td className='px-4 py-2'>
-                                      <Link to={`/players/${player.id}`} className="whitespace-nowrap text-xl font-semibold text-slate-700 hover:underline">{player.name}</Link>
-                                      <div className="whitespace-nowrap text-lg text-yellow-500">{[...Array(player.ratingStars)].map((star) => {        
-                                        return (         
-                                          <span className="star">&#9733;</span>        
-                                        );
-                                        })}
-                                      </div>
-                                    </td>
-                                    <td className="whitespace-nowrap p-4 text-xl text-slate-500">{player.pos}</td>
-                                    <td className="whitespace-nowrap p-4 text-xl text-slate-500">{player.term} szns</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                : null
-            }       
+            </div>      
         </div>
     )
 }
