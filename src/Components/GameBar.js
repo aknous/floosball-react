@@ -82,7 +82,7 @@ export default function GameBar() {
                   <div className="pl-2 flex-grow text-sm laptop:text-xl font-semibold text-left truncate" style={{ color: `${game.awayTeamColor}` }}>{game.awayTeam}</div>
                   <div className="text-sm laptop:text-xl font-semibold truncate">{game.awayScore}</div>
                 </div>
-                <div className='flex gap-x-8 laptop:mt-2 px-2 border-t-2 border-slate-700 justify-between'>
+                <div className='flex-1 gap-x-8 laptop:mt-2 px-2 border-t-2 border-slate-700 justify-between'>
                   <span className="text-xs laptop:text-sm float-left">{game.status === "Final" ? "Final" : game.quarter === "OT" ? "OT" : game.isHalftime ? "Halftime" : "Q" + game.quarter}</span>
                   <span className="text-xs laptop:text-sm float-right">PR: {game.playsLeft}</span>
                 </div>

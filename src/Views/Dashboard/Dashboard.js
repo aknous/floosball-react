@@ -109,7 +109,7 @@ export default function Dashboard() {
                                                 </div>
                                             </div>
                                             <div className='flex items-center justify-between'>
-                                                <p className='w-48 laptop:w-auto text-xs laptop:text-sm truncate'>{data.playText}</p>
+                                                <p className='w-48 laptop:w-auto text-xs laptop:text-sm'>{data.playText}</p>
                                                 <span className={`text-xs text-slate-700 ${data.scoreChange ? 'visible' : 'invisible'}`}>{data.homeAbbr} {data.homeScore} | {data.awayAbbr} {data.awayScore}</span>
                                             </div>
                                         </div>

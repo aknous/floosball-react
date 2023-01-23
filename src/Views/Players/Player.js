@@ -5,6 +5,7 @@ import {
   useParams,
 } from "react-router-dom";
 import axios from 'axios'
+import { GiLaurelsTrophy } from 'react-icons/gi';
   
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
@@ -30,16 +31,28 @@ export default function Player() {
   return (
     player.attributes ?
       <div className='flex justify-center'>
-        <div className='mt-4 flex bg-white rounded-lg shadow-md flex-col items-center w-1/2'>
-          <div className='flex flex-col items-center mt-6'>
+        <div className='mt-4 px-2 flex bg-white rounded-lg shadow-md flex-col items-center w-full laptop:w-1/2'>
+          <div className='flex flex-col items-center mt-6 w-full'>
             <div className='flex items-center'>
               <div className='text-3xl text-center font-semibold'>{player.name}</div>
               <div className='text-lg font-light pl-1'> - {player.position}</div>
             </div>
             <div className='text-lg font-light pb-2 italic'>{player.rank}</div>
-            <div className='text-2xl text-center'>Team: <span className='font-medium' style={{ color: `${player.color}` }}>{player.city} {player.team}</span></div>
-            <div className='flex flex-col items-center w-60 mt-6'>
-              <div className='w-28 text-xl font-medium'>Attributes</div>
+            {player.championships ? 
+              <div className="flex justify-center gap-x-6 text-2xl text-amber-500">{player.championships.map((championship) => {        
+                return (  
+                  <div className='flex flex-col items-center'>
+                    <GiLaurelsTrophy className='text-4xl mx-2' />
+                    <div className='text-base font-normal text-slate-700'>Season {championship.Season}</div>
+                    <div className='text-lg font-semibold text-slate-700' style={{ color: `${championship.teamColor}` }}>{championship.team}</div>
+                  </div>               
+                );
+              })}</div> 
+              : null
+            }
+            <div className='text-2xl text-center mt-4'>Team: <span className='font-medium' style={{ color: `${player.color}` }}>{player.city} {player.team}</span></div>
+            <div className='flex flex-col items-center w-60 mt-2'>
+              <div className='w-28 text-xl font-medium mt-4'>Attributes</div>
               <div className='flex justify-between w-full mt-2'>
                 <div className='w-28 text-xl font-medium'>Overall</div>
                 <div className="w-28 text-2xl text-yellow-500">{[...Array(player.ratingStars)].map((star) => {        
@@ -104,7 +117,7 @@ export default function Player() {
                 </div>
               </div>
             </div>
-            <div className='rounded-lg shadow-xl mt-8 mb-4'>
+            <div className='laptop:rounded-lg shadow-xl mt-8 mb-4 w-full laptop:w-3/4 overflow-x-scroll'>
               {player.position === 'QB' &&
                 <QBStats stats={player.stats} />}
               {player.position === 'RB' &&
@@ -115,6 +128,14 @@ export default function Player() {
                 <RcvStats stats={player.stats} />}
               {player.position === 'K' &&
                 <KStats stats={player.stats} />}
+              {player.position === 'DB' &&
+                <DStats stats={player.stats} />}
+              {player.position === 'LB' &&
+                <DStats stats={player.stats} />}
+              {player.position === 'DE' &&
+                <DStats stats={player.stats} />}
+              {player.position === 'DL' &&
+                <DStats stats={player.stats} />}
             </div>
           </div>
         </div>
@@ -128,7 +149,7 @@ function QBStats(props) {
   const stats = props.stats
 
   return (
-    <table className="w-full divide-y divide-slate-300">
+    <table className="laptop:w-full divide-y divide-slate-300">
       <thead className="bg-slate-50">
         <tr className="divide-x divide-slate-200">
           <td className='px-2 py-1 font-medium'>SZN</td>
@@ -281,6 +302,46 @@ function KStats(props) {
               <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.kicking.fgAvg}</td>
               <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.kicking['fg45+']}</td>
               <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.kicking.longest}</td>
+            </tr>
+          )) : null}
+      </tbody>
+    </table>
+  )
+}
+
+function DStats(props) {
+  const stats = props.stats
+
+  return (
+    <table className="w-full divide-y divide-slate-300">
+      <thead className="bg-slate-50">
+        <tr className="divide-x divide-slate-200">
+          <td className='px-2 py-1 font-medium'>SZN</td>
+          <td className='px-2 py-1 font-medium'>Team</td>
+          <td className='px-2 py-1 font-medium'>GP</td>
+          <td className='px-2 py-1 font-medium'>Tacks</td>
+          <td className='px-2 py-1 font-medium'>Sacks</td>
+          <td className='px-2 py-1 font-medium'>Fum Rec</td>
+          <td className='px-2 py-1 font-medium'>Ints</td>
+          <td className='px-2 py-1 font-medium'>Dis</td>
+          <td className='px-2 py-1 font-medium'>Targ</td>
+          <td className='px-2 py-1 font-medium'>Dis%</td>
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-slate-200 bg-white">
+        {stats ? 
+          stats.map((data) => (
+            <tr key={data.name} className={"divide-x divide-slate-200"}>
+              <td className="whitespace-nowrap p-2 text-xl text-slate-700 font-normal">{data.season}</td>
+              <td className="whitespace-nowrap p-2 text-xl text-slate-500 font-semibold" style={{ color: `${data.color}` }}>{data.team}</td>
+              <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.gp}</td>
+              <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.defense.tackles}</td>
+              <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.defense.sacks}</td>
+              <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.defense.fumRec}</td>
+              <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.defense.ints}</td>
+              <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.defense.passDisruptions}</td>
+              <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.defense.passTargets}</td>
+              <td className="whitespace-nowrap p-2 text-xl text-slate-500">{data.defense.passDisPerc}%</td>
             </tr>
           )) : null}
       </tbody>

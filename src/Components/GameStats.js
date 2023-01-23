@@ -372,40 +372,193 @@ export default function GameStats(props) {
                     <tr>
                         <th></th>
                         <th></th>
+                        <th>Tackles</th>
                         <th>Sacks</th>
-                        <th>Safeties</th>
-                        <th>INT</th>
                         <th>FUM Rec</th>
+                        <th>INT</th>
+                        <th>Disrupts</th>
+                        <th>Targets</th>
+                        <th>Dis%</th>
                     </tr>
                 </thead>
                 <tbody>
+                    <tr className='border-b-2 border-slate-200'>
+                        <td></td>
+                        <td className='text-sm'>{gameData.homeTeam.teamName}</td>
+                    </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.homeTeam.teamName} <span className='font-light text-xs pl-1 pb-4'></span>
-                            <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.defenseRating)].map((star) => {        
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.homeTeam.db1.id}`} key={gameData.homeTeam.db1.id} className={"hover:underline"} >{gameData.homeTeam.db1.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- DB</span>
+                            <span className='pl-4 whitespace-nodbap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.db1.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
-                              </td>
-                        <td className='text-center'>{gameData.homeTeam.sacks}</td>
-                        <td className='text-center'>{gameData.homeTeam.safeties}</td>
-                        <td className='text-center'>{gameData.awayTeam.qb.gameStats.passing.ints}</td>
-                        <td className='text-center'>{gameData.homeTeam.defense.fumRec}</td>
+                        </td>
+                        <td className='text-center'>{gameData.homeTeam.db1.gameStats.defense.tackles}</td>
+                        <td className='text-center'>{gameData.homeTeam.db1.gameStats.defense.sacks}</td>
+                        <td className='text-center'>{gameData.homeTeam.db1.gameStats.defense.fumRec}</td>
+                        <td className='text-center'>{gameData.homeTeam.db1.gameStats.defense.ints}</td>
+                        <td className='text-center'>{gameData.homeTeam.db1.gameStats.defense.passDisruptions}</td>
+                        <td className='text-center'>{gameData.homeTeam.db1.gameStats.defense.passTargets}</td>
+                        <td className='text-center'>{gameData.homeTeam.db1.gameStats.defense.passDisPerc}%</td>
+                    </tr>
+                    <tr>
+                        <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.homeTeam.db2.id}`} key={gameData.homeTeam.db2.id} className={"hover:underline"} >{gameData.homeTeam.db2.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- DB</span>
+                            <span className='pl-4 whitespace-nodbap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.db2.ratingStars)].map((star) => {        
+                                return (         
+                                  <span className="star">&#9733;</span>        
+                                );
+                              })}</span>
+                        </td>
+                        <td className='text-center'>{gameData.homeTeam.db2.gameStats.defense.tackles}</td>
+                        <td className='text-center'>{gameData.homeTeam.db2.gameStats.defense.sacks}</td>
+                        <td className='text-center'>{gameData.homeTeam.db2.gameStats.defense.fumRec}</td>
+                        <td className='text-center'>{gameData.homeTeam.db2.gameStats.defense.ints}</td>
+                        <td className='text-center'>{gameData.homeTeam.db2.gameStats.defense.passDisruptions}</td>
+                        <td className='text-center'>{gameData.homeTeam.db2.gameStats.defense.passTargets}</td>
+                        <td className='text-center'>{gameData.homeTeam.db2.gameStats.defense.passDisPerc}%</td>
+                    </tr>
+                    <tr>
+                        <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.homeTeam.lb.id}`} key={gameData.homeTeam.lb.id} className={"hover:underline"} >{gameData.homeTeam.lb.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- LB</span>
+                            <span className='pl-4 whitespace-nodbap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.lb.ratingStars)].map((star) => {        
+                                return (         
+                                  <span className="star">&#9733;</span>        
+                                );
+                              })}</span>
+                        </td>
+                        <td className='text-center'>{gameData.homeTeam.lb.gameStats.defense.tackles}</td>
+                        <td className='text-center'>{gameData.homeTeam.lb.gameStats.defense.sacks}</td>
+                        <td className='text-center'>{gameData.homeTeam.lb.gameStats.defense.fumRec}</td>
+                        <td className='text-center'>{gameData.homeTeam.lb.gameStats.defense.ints}</td>
+                        <td className='text-center'>{gameData.homeTeam.lb.gameStats.defense.passDisruptions}</td>
+                        <td className='text-center'>{gameData.homeTeam.lb.gameStats.defense.passTargets}</td>
+                        <td className='text-center'>{gameData.homeTeam.lb.gameStats.defense.passDisPerc}%</td>
+                    </tr>
+                    <tr>
+                        <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.homeTeam.de.id}`} key={gameData.homeTeam.de.id} className={"hover:underline"} >{gameData.homeTeam.de.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- DE</span>
+                            <span className='pl-4 whitespace-nodbap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.de.ratingStars)].map((star) => {        
+                                return (         
+                                  <span className="star">&#9733;</span>        
+                                );
+                              })}</span>
+                        </td>
+                        <td className='text-center'>{gameData.homeTeam.de.gameStats.defense.tackles}</td>
+                        <td className='text-center'>{gameData.homeTeam.de.gameStats.defense.sacks}</td>
+                        <td className='text-center'>{gameData.homeTeam.de.gameStats.defense.fumRec}</td>
+                        <td className='text-center'>{gameData.homeTeam.de.gameStats.defense.ints}</td>
+                        <td className='text-center'>{gameData.homeTeam.de.gameStats.defense.passDisruptions}</td>
+                        <td className='text-center'>{gameData.homeTeam.de.gameStats.defense.passTargets}</td>
+                        <td className='text-center'>{gameData.homeTeam.de.gameStats.defense.passDisPerc}%</td>
+                    </tr>
+                    <tr>
+                        <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.homeTeam.dl.id}`} key={gameData.homeTeam.dl.id} className={"hover:underline"} >{gameData.homeTeam.dl.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- DL</span>
+                            <span className='pl-4 whitespace-nodbap p-4 text-base text-yellow-500'>{[...Array(gameData.homeTeam.dl.ratingStars)].map((star) => {        
+                                return (         
+                                  <span className="star">&#9733;</span>        
+                                );
+                              })}</span>
+                        </td>
+                        <td className='text-center'>{gameData.homeTeam.dl.gameStats.defense.tackles}</td>
+                        <td className='text-center'>{gameData.homeTeam.dl.gameStats.defense.sacks}</td>
+                        <td className='text-center'>{gameData.homeTeam.dl.gameStats.defense.fumRec}</td>
+                        <td className='text-center'>{gameData.homeTeam.dl.gameStats.defense.ints}</td>
+                        <td className='text-center'>{gameData.homeTeam.dl.gameStats.defense.passDisruptions}</td>
+                        <td className='text-center'>{gameData.homeTeam.dl.gameStats.defense.passTargets}</td>
+                        <td className='text-center'>{gameData.homeTeam.dl.gameStats.defense.passDisPerc}%</td>
+                    </tr>
+                    <tr className='border-b-2 border-slate-200'>
+                        <td></td>
+                        <td className='text-sm'>{gameData.awayTeam.teamName}</td>
                     </tr>
                     <tr>
                         <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
-                        <td className='font-semibold pl-1'>{gameData.awayTeam.teamName} <span className='font-light text-xs pl-1 pb-4'></span>
-                            <span className='pl-4 whitespace-nowrap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.defenseRating)].map((star) => {        
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.awayTeam.db1.id}`} key={gameData.awayTeam.db1.id} className={"hover:underline"} >{gameData.awayTeam.db1.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- DB</span>
+                            <span className='pl-4 whitespace-nodbap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.db1.ratingStars)].map((star) => {        
                                 return (         
                                   <span className="star">&#9733;</span>        
                                 );
                               })}</span>
-                              </td>
-                        <td className='text-center'>{gameData.awayTeam.sacks}</td>
-                        <td className='text-center'>{gameData.awayTeam.safeties}</td>
-                        <td className='text-center'>{gameData.homeTeam.qb.gameStats.passing.ints}</td>
-                        <td className='text-center'>{gameData.awayTeam.defense.fumRec}</td>
+                        </td>
+                        <td className='text-center'>{gameData.awayTeam.db1.gameStats.defense.tackles}</td>
+                        <td className='text-center'>{gameData.awayTeam.db1.gameStats.defense.sacks}</td>
+                        <td className='text-center'>{gameData.awayTeam.db1.gameStats.defense.fumRec}</td>
+                        <td className='text-center'>{gameData.awayTeam.db1.gameStats.defense.ints}</td>
+                        <td className='text-center'>{gameData.awayTeam.db1.gameStats.defense.passDisruptions}</td>
+                        <td className='text-center'>{gameData.awayTeam.db1.gameStats.defense.passTargets}</td>
+                        <td className='text-center'>{gameData.awayTeam.db1.gameStats.defense.passDisPerc}%</td>
+                    </tr>
+                    <tr>
+                        <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.awayTeam.db2.id}`} key={gameData.awayTeam.db2.id} className={"hover:underline"} >{gameData.awayTeam.db2.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- DB</span>
+                            <span className='pl-4 whitespace-nodbap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.db2.ratingStars)].map((star) => {        
+                                return (         
+                                  <span className="star">&#9733;</span>        
+                                );
+                              })}</span>
+                        </td>
+                        <td className='text-center'>{gameData.awayTeam.db2.gameStats.defense.tackles}</td>
+                        <td className='text-center'>{gameData.awayTeam.db2.gameStats.defense.sacks}</td>
+                        <td className='text-center'>{gameData.awayTeam.db2.gameStats.defense.fumRec}</td>
+                        <td className='text-center'>{gameData.awayTeam.db2.gameStats.defense.ints}</td>
+                        <td className='text-center'>{gameData.awayTeam.db2.gameStats.defense.passDisruptions}</td>
+                        <td className='text-center'>{gameData.awayTeam.db2.gameStats.defense.passTargets}</td>
+                        <td className='text-center'>{gameData.awayTeam.db2.gameStats.defense.passDisPerc}%</td>
+                    </tr>
+                    <tr>
+                        <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.awayTeam.lb.id}`} key={gameData.awayTeam.lb.id} className={"hover:underline"} >{gameData.awayTeam.lb.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- LB</span>
+                            <span className='pl-4 whitespace-nodbap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.lb.ratingStars)].map((star) => {        
+                                return (         
+                                  <span className="star">&#9733;</span>        
+                                );
+                              })}</span>
+                        </td>
+                        <td className='text-center'>{gameData.awayTeam.lb.gameStats.defense.tackles}</td>
+                        <td className='text-center'>{gameData.awayTeam.lb.gameStats.defense.sacks}</td>
+                        <td className='text-center'>{gameData.awayTeam.lb.gameStats.defense.fumRec}</td>
+                        <td className='text-center'>{gameData.awayTeam.lb.gameStats.defense.ints}</td>
+                        <td className='text-center'>{gameData.awayTeam.lb.gameStats.defense.passDisruptions}</td>
+                        <td className='text-center'>{gameData.awayTeam.lb.gameStats.defense.passTargets}</td>
+                        <td className='text-center'>{gameData.awayTeam.lb.gameStats.defense.passDisPerc}%</td>
+                    </tr>
+                    <tr>
+                        <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.awayTeam.de.id}`} key={gameData.awayTeam.de.id} className={"hover:underline"} >{gameData.awayTeam.de.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- DE</span>
+                            <span className='pl-4 whitespace-nodbap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.de.ratingStars)].map((star) => {        
+                                return (         
+                                  <span className="star">&#9733;</span>        
+                                );
+                              })}</span>
+                        </td>
+                        <td className='text-center'>{gameData.awayTeam.de.gameStats.defense.tackles}</td>
+                        <td className='text-center'>{gameData.awayTeam.de.gameStats.defense.sacks}</td>
+                        <td className='text-center'>{gameData.awayTeam.de.gameStats.defense.fumRec}</td>
+                        <td className='text-center'>{gameData.awayTeam.de.gameStats.defense.ints}</td>
+                        <td className='text-center'>{gameData.awayTeam.de.gameStats.defense.passDisruptions}</td>
+                        <td className='text-center'>{gameData.awayTeam.de.gameStats.defense.passTargets}</td>
+                        <td className='text-center'>{gameData.awayTeam.de.gameStats.defense.passDisPerc}%</td>
+                    </tr>
+                    <tr>
+                        <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
+                        <td className='font-semibold pl-1'><Link to={`/players/${gameData.awayTeam.dl.id}`} key={gameData.awayTeam.dl.id} className={"hover:underline"} >{gameData.awayTeam.dl.name}</Link> <span className='font-light text-xs pl-1 pb-4'>- DL</span>
+                            <span className='pl-4 whitespace-nodbap p-4 text-base text-yellow-500'>{[...Array(gameData.awayTeam.dl.ratingStars)].map((star) => {        
+                                return (         
+                                  <span className="star">&#9733;</span>        
+                                );
+                              })}</span>
+                        </td>
+                        <td className='text-center'>{gameData.awayTeam.dl.gameStats.defense.tackles}</td>
+                        <td className='text-center'>{gameData.awayTeam.dl.gameStats.defense.sacks}</td>
+                        <td className='text-center'>{gameData.awayTeam.dl.gameStats.defense.fumRec}</td>
+                        <td className='text-center'>{gameData.awayTeam.dl.gameStats.defense.ints}</td>
+                        <td className='text-center'>{gameData.awayTeam.dl.gameStats.defense.passDisruptions}</td>
+                        <td className='text-center'>{gameData.awayTeam.dl.gameStats.defense.passTargets}</td>
+                        <td className='text-center'>{gameData.awayTeam.dl.gameStats.defense.passDisPerc}%</td>
                     </tr>
                 </tbody>
             </table>

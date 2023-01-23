@@ -60,8 +60,8 @@ export default function Team() {
 
   return (
     team.roster ?
-      <div className='flex justify-center h-screen'>
-        <div className='mt-4 flex flex-col items-center w-4/5'>
+      <div className='flex justify-center'>
+        <div className='mt-4 flex flex-col items-center w-full laptop:w-4/5'>
           <div className='flex mt-8 w-full justify-center'>
             <div className='flex flex-col w-full'>
               <span className='text-3xl text-center font-medium'>{team.city}</span>
@@ -70,11 +70,11 @@ export default function Team() {
                   {team.wins}-{team.losses}
               </div>
               {team.championships ? 
-                <div className="flex justify-center gap-x-6 text-3xl text-amber-500 py-4">{team.championships.map((championship) => {        
+                <div className="flex justify-center gap-x-6 text-2xl text-amber-500 py-4">{team.championships.map((championship) => {        
                   return (  
                     <div className='flex flex-col items-center'>
                       <GiLaurelsTrophy className='text-4xl mx-2' />
-                      <div className='text-xl font-medium text-slate-700'>{championship}</div>
+                      <div className='text-base font-normal text-slate-700'>{championship}</div>
                     </div>               
                   );
                 })}</div> 
@@ -82,8 +82,8 @@ export default function Team() {
               }
             </div>
           </div>
-          <div className='flex justify-center mt-6 w-3/4'>
-            <nav className="-mb-px flex justify-center w-3/4" aria-label="Tabs">
+          <div className='flex justify-center mt-6 w-full laptop:w-3/4'>
+            <nav className="-mb-px flex justify-between laptop:justify-center laptop:w-3/4" aria-label="Tabs">
               <button
                   id={'roster'}
                   onClick={handleClick}
@@ -91,22 +91,10 @@ export default function Team() {
                     selectedMenu === 1
                       ? 'border-slate-500 text-slate-900'
                       : 'border-transparent text-gray-900 hover:text-slate-900 hover:border-slate-300',
-                      'w-1/4 py-4 px-1 text-center border-b-2 font-medium text-2xl'
+                      'w-28 py-4 px-1 text-center border-b-2 font-medium text-lg'
                   )}
               >
                   Roster
-              </button>
-              <button
-                  id={'stats'}
-                  onClick={handleClick}
-                  className={classNames(
-                    selectedMenu === 2
-                      ? 'border-slate-500 text-slate-900'
-                      : 'border-transparent text-gray-900 hover:text-slate-900 hover:border-slate-300',
-                      'w-1/4 py-4 px-1 text-center border-b-2 font-medium text-2xl'
-                  )}
-              >
-                  Stats
               </button>
               <button
                   id={'teamHistory'}
@@ -115,7 +103,7 @@ export default function Team() {
                     selectedMenu === 3
                       ? 'border-slate-500 text-slate-900'
                       : 'border-transparent text-gray-900 hover:text-slate-900 hover:border-slate-300',
-                      'w-1/4 py-4 px-1 text-center border-b-2 font-medium text-2xl'
+                      'w-28 py-4 px-1 text-center border-b-2 font-medium text-lg'
                   )}
               >
                   History
@@ -127,7 +115,7 @@ export default function Team() {
                     selectedMenu === 4
                       ? 'border-slate-500 text-slate-900'
                       : 'border-transparent text-gray-900 hover:text-slate-900 hover:border-slate-300',
-                      'w-1/4 py-4 px-1 text-center border-b-2 font-medium text-2xl'
+                      'w-28 py-4 px-1 text-center border-b-2 font-medium text-lg'
                   )}
               >
                   Free Agency
