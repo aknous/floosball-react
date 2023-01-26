@@ -44,11 +44,25 @@ import { GiPlagueDoctorProfile } from 'react-icons/gi';
         console.error(err.message);
       }
     };
+    const getFaPlayers = async () => {
+      try {
+        const userFaPlayers = await axios.get('http://floosball.com:8000/players?id=FA')
+        //const userFaPlayers = await axios.get('http://localhost:8000/players?id=FA')
+
+        setPlayers(userFaPlayers.data);  // set State
+      
+      } catch (err) {
+        console.error(err.message);
+      }
+    };
 
     useEffect(() => {
       switch (selection) {
           case 'Active':
               getPlayers();
+              break;
+          case 'FA':
+              getFaPlayers();
               break;
           case 'Retired':
               getRetiredPlayers();
@@ -70,6 +84,13 @@ import { GiPlagueDoctorProfile } from 'react-icons/gi';
               className={`relative inline-flex items-center rounded-l-md border border-slate-300 px-4 py-2 text-base font-medium ${selection === 'Active' ? 'bg-indigo-500 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'}`}
             >
               Active
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelection('FA')}
+              className={`relative -ml-px inline-flex items-center border border-slate-300 px-4 py-2 text-base font-medium ${selection === 'FA' ? 'bg-indigo-500 text-white' : 'bg-white text-slate-700 hover:bg-slate-100'}`}
+            >
+              Free Agents
             </button>
             <button
               type="button"
