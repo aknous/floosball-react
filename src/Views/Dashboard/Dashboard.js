@@ -65,6 +65,7 @@ function TopPlayers(props) {
 export default function Dashboard() {
 
     const [highlights, setHighlights] = useState([])
+    const [champ, setChamp] = useState([])
 
     const getHighlights = async () => {
         try {
@@ -77,8 +78,21 @@ export default function Dashboard() {
         }
       };
 
+    const getChamp = async () => {
+      try {
+        const userChamp = await axios.get('http://floosball.com:8000/champion')
+        //const userChamp = await axios.get('http://localhost:8000/champion')
+
+        setChamp(userChamp.data);  // set State
+      
+      } catch (err) {
+        console.error(err.message);
+      }
+    };
+
     useEffect(() => {
         getHighlights();
+        getChamp();
         const interval=setInterval(()=>{
             getHighlights();
         },10000)
@@ -88,9 +102,15 @@ export default function Dashboard() {
 
     return (
         <div className='h-full'>
-            <div className="py-2 flex shrink-0 justify-center mt-6 mx-10 divide-x-2 divide-slate-500">
+            <div className="py-2 flex shrink-0 justify-center mt-2 mx-10 divide-x-2 divide-slate-500">
                 <div className='text-xl laptop:text-3xl font-semibold'>welcome to floosball.</div>
             </div>
+            {champ?.team ? 
+                <div className="py-2 flex shrink-0 justify-center mx-10 divide-x-2 divide-slate-500">
+                    <div className='text-xl laptop:text-2xl font-medium'>reigning champion: <Link to={`/team/${champ.id}`} className='hover:underline' style={{ color: `${champ.color}` }}>{champ.team}</Link></div>
+                </div>
+                : null
+            }
             <div className='laptop:flex flex-row-reverse mt-4 laptop:mt-10'>
                 <div className='flex flex-col items-center laptop:w-2/5 mx-2 laptop:mx-4'>
                     <div className='text-lg laptop:text-xl font-semibold'>The Feed</div>
