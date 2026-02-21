@@ -15,6 +15,7 @@ import { Route, Routes, Navigate, BrowserRouter } from 'react-router-dom';
 import axios from 'axios'
 import { Disclosure, Dialog, Menu, Transition } from '@headlessui/react'
 import { supabase } from "./supabase/supabase";
+import { FloosballProvider } from './contexts/FloosballContext'
 import { ChakraProvider } from '@chakra-ui/react'
 import {
   Modal,
@@ -75,33 +76,35 @@ function App() {
   }, [])
   return (
     <ChakraProvider>
-      <div className='bg-slate-300 min-h-screen relative font-pixel'>
-        <div className='fixed w-full top-0 z-50'>
-          <Navbar onOpen={onOpen} authBool={authBool} />
+      <FloosballProvider>
+        <div className='bg-slate-300 min-h-screen relative font-pixel'>
+          <div className='fixed w-full top-0 z-50'>
+            <Navbar onOpen={onOpen} authBool={authBool} />
+          </div>
+          <div>
+            <Routes>
+              <Route exact path='/' element={<Navigate to='/dashboard' />} />
+              <Route exact path='/dashboard' element={<Dashboard />} />
+              <Route exact path='/players' element={<Players />} />
+              <Route exact path='/teams' element={<TeamGrid />} />
+              <Route exact path='/records' element={<Records />} />
+              <Route path='/team/:id' element={<Team />} />
+              <Route path='/players/:id' element={<Player />} />
+            </Routes>
+          </div>
+          <Modal isOpen={isOpen} onClose={onClose}>
+            <ModalOverlay />
+            <ModalContent>
+              <ModalBody>
+                <AuthModal onClose={onClose} />
+              </ModalBody>
+            </ModalContent>
+          </Modal>
+          <div className='flex justify-end z-50 bg-slate-300 w-full'>
+            <span className='text-slate-400 text-sm font-light mr-8 my-2 z-0'> floosball v{appVer}</span>
+          </div>
         </div>
-        <div>
-          <Routes>
-            <Route exact path='/' element={<Navigate to='/dashboard' />} />
-            <Route exact path='/dashboard' element={<Dashboard />} />
-            <Route exact path='/players' element={<Players />} />
-            <Route exact path='/teams' element={<TeamGrid />} />
-            <Route exact path='/records' element={<Records />} />
-            <Route path='/team/:id' element={<Team />} />
-            <Route path='/players/:id' element={<Player />} />
-          </Routes>
-        </div>
-        <Modal isOpen={isOpen} onClose={onClose}>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalBody>
-              <AuthModal onClose={onClose} />
-            </ModalBody>
-          </ModalContent>
-        </Modal>
-        <div className='flex justify-end z-50 bg-slate-300 w-full'>
-          <span className='text-slate-400 text-sm font-light mr-8 my-2 z-0'> floosball v{appVer}</span>
-        </div>
-      </div>
+      </FloosballProvider>
     </ChakraProvider>
   );
 }
