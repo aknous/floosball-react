@@ -3,8 +3,10 @@ import { Dialog, Menu, Transition } from '@headlessui/react'
 import { Link } from "react-router-dom";
 import { ChevronDownIcon,XIcon } from '@heroicons/react/solid'
 import axios from 'axios'
-import PlayList from '/opt/floosball-react/src/Components/PlayList.js'
-import GameStats from '/opt/floosball-react/src/Components/GameStats.js'
+//import PlayList from '/opt/floosball-react/src/Components/PlayList.js'
+//import GameStats from '/opt/floosball-react/src/Components/GameStats.js'
+import PlayList from '/Users/andrew/Projects/floosball-react/src/Components/PlayList.js'
+import GameStats from '/Users/andrew/Projects/floosball-react/src/Components/GameStats.js'
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
@@ -21,7 +23,8 @@ export default function Results() {
 
     const getSeasonData = async () => {
       try {
-        const userSeasonData = await axios.get('http://floosball.com:8000/seasonInfo')
+        //const userSeasonData = await axios.get('http://floosball.com:8000/seasonInfo')
+        const userSeasonData = await axios.get('http://localhost:8000/seasonInfo')
   
         setSeasonData(userSeasonData.data);
       
@@ -32,7 +35,8 @@ export default function Results() {
 
     const getWeekData = async (week) => {
       try {
-        const userGameData = await axios.get(`http://floosball.com:8000/results?week=${week}`)
+        //const userGameData = await axios.get(`http://floosball.com:8000/results?week=${week}`)
+        const userGameData = await axios.get(`http://localhost:8000/results?week=${week}`)
   
         setGames(userGameData.data);
       
@@ -43,7 +47,8 @@ export default function Results() {
 
     const getSelectedGame = async (id) => {
       try {
-        const userGame = await axios.get(`http://floosball.com:8000/gameStats?id=${id}`)
+        //const userGame = await axios.get(`http://floosball.com:8000/gameStats?id=${id}`)
+        const userGame = await axios.get(`http://localhost:8000/gameStats?id=${id}`)
         .then((res) => 
           setGame(res.data)
           )  // set State
@@ -53,6 +58,13 @@ export default function Results() {
         console.error(err.message);
       }
     };
+
+    const formatTime = (val) => {
+      var utc = new Date();
+      var offset = utc.getTimezoneOffset();
+      var datetime = new Date((val*1000) - (offset*60000));
+      return datetime.toLocaleString("en-US", {timeStyle: "short", dateStyle: "short"});
+    }
   
     const handleClick = (e) => {
       setSelectedGame(e.currentTarget.id)
@@ -152,7 +164,7 @@ export default function Results() {
                       <div className="text-2xl laptop:text-3xl font-semibold truncate">{game.awayScore}</div>
                     </div>
                     <div className='flex gap-x-8 mt-2 border-t-2 border-slate-700 justify-between'>
-                      <span className="text-sm laptop:text-lg">{game.status}</span>
+                      {game.status === 'Scheduled' ? formatTime(game.startTime) : <span className="text-sm laptop:text-lg">{game.status}</span>}
                     </div>
                   </div>
                 </button>

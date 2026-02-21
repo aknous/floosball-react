@@ -1,3 +1,58 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+    font-family: 'pressStart';
+    src: url('./fonts/Inconsolata-ExtraLight.ttf');
+    font-weight: 100;
+    font-style: normal;
+ }
+ @font-face {
+    font-family: 'pressStart';
+    src: url('./fonts/Inconsolata-Light.ttf');
+    font-weight: 200;
+    font-style: normal;
+ }
+ @font-face {
+    font-family: 'pressStart';
+    src: url('./fonts/Inconsolata-Regular.ttf');
+    font-weight: 300;
+    font-style: normal;
+ }
+ @font-face {
+    font-family: 'pressStart';
+    src: url('./fonts/Inconsolata-Medium.ttf');
+    font-weight: 400;
+    font-style: normal;
+ }
+ @font-face {
+    font-family: 'pressStart';
+    src: url('./fonts/Inconsolata-SemiBold.ttf');
+    font-weight: 500;
+    font-style: normal;
+ }
+ @font-face {
+    font-family: 'pressStart';
+    src: url('./fonts/Inconsolata-Bold.ttf');
+    font-weight: 600;
+    font-style: normal;
+ }
+ @font-face {
+    font-family: 'pressStart';
+    src: url('./fonts/Inconsolata-ExtraBold.ttf');
+    font-weight: 700;
+    font-style: normal;
+ }
+ @font-face {
+    font-family: 'pressStart';
+    src: url('./fonts/Inconsolata-Black.ttf');
+    font-weight: 800;
+    font-style: normal;
+ }
+ @font-face {
+    font-family: 'pressStart';
+    src: url('./fonts/Inconsolata-Black.ttf');
+    font-weight: 900;
+    font-style: normal;
+ }

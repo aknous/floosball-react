@@ -7,7 +7,8 @@ import axios from 'axios'
 import PlayList from './PlayList'
 import GameStats from './GameStats'
 
-const GAMESURL = 'http://floosball.com:8000/currentGames';
+//const GAMESURL = 'http://floosball.com:8000/currentGames';
+const GAMESURL = 'http://localhost:8000/currentGames';
 
 
 export default function GameBar() {
@@ -30,7 +31,8 @@ export default function GameBar() {
 
   const getSelectedGame = async (id) => {
     try {
-      const userGame = await axios.get(`http://floosball.com:8000/gameStats?id=${id}`)
+      //const userGame = await axios.get(`http://floosball.com:8000/gameStats?id=${id}`)
+      const userGame = await axios.get(`http://localhost:8000/gameStats?id=${id}`)
       .then((res) => 
         setGame(res.data)
         )  // set State

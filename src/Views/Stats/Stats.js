@@ -17,7 +17,8 @@ export default function Stats() {
     const getPlayers = async (pos) => {
         try {
           dataLoaded.current = false
-          const userPlayers = await axios.get(`http://floosball.com:8000/playerStats?pos=${pos}`)
+          //const userPlayers = await axios.get(`http://floosball.com:8000/playerStats?pos=${pos}`)
+          const userPlayers = await axios.get(`http://localhost:8000/playerStats?pos=${pos}`)
   
           setPlayers(userPlayers.data);  // set State
         
@@ -51,7 +52,7 @@ export default function Stats() {
       }, [selection]);
 
     return (
-        <div>
+        <div className='mt-14'>
             <div className='flex justify-center'>
               <Menu as="div" className="items-center relative inline-block text-left mt-5">
                 <div>
