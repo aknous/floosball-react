@@ -47,8 +47,12 @@ export const useWebSocket = <T = any>(
 
       ws.onmessage = (event: MessageEvent) => {
         try {
-          const message = JSON.parse(event.data) as T
-          setData(message)
+          const message = JSON.parse(event.data)
+          // Ignore heartbeat pings
+          if (message.type === 'ping') {
+            return
+          }
+          setData(message as T)
         } catch (err) {
           console.error('Failed to parse WebSocket message:', err)
         }

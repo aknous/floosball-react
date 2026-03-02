@@ -5,6 +5,11 @@
 export interface Team {
   id: string
   name: string
+  city: string
+  abbr: string
+  color: string
+  secondaryColor: string
+  tertiaryColor: string
   rating: number
   wins: number
   losses: number

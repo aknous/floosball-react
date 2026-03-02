@@ -1,38 +1,56 @@
 import { useState, useEffect } from 'react'
-import { useWebSocket } from './useWebSocket'
-import type { GameWebSocketEvent, PlayCompleteEvent } from '@/types/websocket'
+import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
+import type { GameStateEvent } from '@/types/websocket'
+
+type LastPlay = NonNullable<GameStateEvent['lastPlay']>
 
 export interface GameState {
-  gameId: string
+  gameId: number
   homeScore: number
   awayScore: number
   homeWinProbability: number
   awayWinProbability: number
   quarter: number
   timeRemaining: string
-  lastPlay: PlayCompleteEvent['play'] | null
-  plays: PlayCompleteEvent['play'][]
+  lastPlay: LastPlay | null
+  plays: LastPlay[]
   isComplete: boolean
+  possession: string | null
+  down: number | null
+  distance: number | null
 }
 
-export const useGameUpdates = (gameId: string) => {
-  const { data: event, connected, error } = useWebSocket<GameWebSocketEvent>(`/game/${gameId}`)
-  
+export const useGameUpdates = (
+  gameId: number,
+  initialHomeScore?: number,
+  initialAwayScore?: number,
+  initialQuarter?: number,
+  initialTimeRemaining?: string,
+  initialStatus?: 'Scheduled' | 'Active' | 'Final'
+) => {
+  const { event, connected, error } = useSeasonWebSocket()
+
   const [gameState, setGameState] = useState<GameState>({
     gameId,
-    homeScore: 0,
-    awayScore: 0,
+    homeScore: initialHomeScore ?? 0,
+    awayScore: initialAwayScore ?? 0,
     homeWinProbability: 50,
     awayWinProbability: 50,
-    quarter: 1,
-    timeRemaining: '15:00',
+    quarter: initialQuarter ?? 1,
+    timeRemaining: initialTimeRemaining ?? '15:00',
     lastPlay: null,
     plays: [],
-    isComplete: false
+    isComplete: initialStatus === 'Final',
+    possession: null,
+    down: null,
+    distance: null,
   })
 
   useEffect(() => {
     if (!event) return
+
+    if (!('gameId' in event)) return
+    if (Number(event.gameId) !== Number(gameId)) return
 
     switch (event.event) {
       case 'game_start':
@@ -43,31 +61,21 @@ export const useGameUpdates = (gameId: string) => {
         }))
         break
 
-      case 'play_complete':
-        setGameState(prev => ({
-          ...prev,
-          homeScore: event.homeScore || prev.homeScore,
-          awayScore: event.awayScore || prev.awayScore,
-          quarter: event.play.quarter || prev.quarter,
-          timeRemaining: event.play.timeRemaining || prev.timeRemaining,
-          lastPlay: event.play,
-          plays: [event.play, ...prev.plays]
-        }))
-        break
-
-      case 'score_update':
+      case 'game_state':
         setGameState(prev => ({
           ...prev,
           homeScore: event.homeScore,
-          awayScore: event.awayScore
-        }))
-        break
-
-      case 'win_probability_update':
-        setGameState(prev => ({
-          ...prev,
+          awayScore: event.awayScore,
           homeWinProbability: event.homeWinProbability,
-          awayWinProbability: event.awayWinProbability
+          awayWinProbability: event.awayWinProbability,
+          quarter: event.quarter,
+          timeRemaining: event.timeRemaining,
+          possession: event.possession ?? prev.possession,
+          down: event.down ?? prev.down,
+          distance: event.distance ?? prev.distance,
+          isComplete: event.status === 'Final',
+          lastPlay: event.lastPlay ?? prev.lastPlay,
+          plays: event.lastPlay ? [event.lastPlay, ...prev.plays] : prev.plays
         }))
         break
 
@@ -76,11 +84,15 @@ export const useGameUpdates = (gameId: string) => {
           ...prev,
           homeScore: event.finalScore.home,
           awayScore: event.finalScore.away,
+          homeWinProbability: event.homeWinProbability,
+          awayWinProbability: event.awayWinProbability,
+          quarter: 4,
+          timeRemaining: '0:00',
           isComplete: true
         }))
         break
     }
-  }, [event])
+  }, [event, gameId])
 
   return {
     gameState,

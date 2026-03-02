@@ -62,21 +62,31 @@ export interface PlayEvent {
   down: number
   distance: number
   yardLine: number
-  playType: 'run' | 'pass' | 'punt' | 'field_goal' | 'kickoff' | 'extra_point'
+  playType: string
   yardsGained: number
   description: string
+  playResult: string | null
   isTouchdown: boolean
   isTurnover: boolean
   isSack: boolean
+  scoreChange: boolean
+  homeTeamScore: number | null
+  awayTeamScore: number | null
   offensiveTeam: string
   defensiveTeam: string
+  // Win probability data
+  homeWinProbability?: number
+  awayWinProbability?: number
+  homeWpa?: number
+  awayWpa?: number
+  isBigPlay?: boolean
 }
 
 // Game Events
 
 export interface PlayCompleteEvent extends BaseWebSocketEvent {
   event: 'play_complete'
-  gameId: string
+  gameId: number
   play: PlayEvent
   homeScore: number
   awayScore: number
@@ -94,7 +104,7 @@ export interface PlayCompleteEvent extends BaseWebSocketEvent {
 
 export interface ScoreUpdateEvent extends BaseWebSocketEvent {
   event: 'score_update'
-  gameId: string
+  gameId: number
   homeScore: number
   awayScore: number
   scoringPlay: string
@@ -103,7 +113,7 @@ export interface ScoreUpdateEvent extends BaseWebSocketEvent {
 
 export interface GameStartEvent extends BaseWebSocketEvent {
   event: 'game_start'
-  gameId: string
+  gameId: number
   homeTeam: string
   awayTeam: string
   week: number
@@ -111,7 +121,7 @@ export interface GameStartEvent extends BaseWebSocketEvent {
 
 export interface GameEndEvent extends BaseWebSocketEvent {
   event: 'game_end'
-  gameId: string
+  gameId: number
   finalScore: {
     home: number
     away: number
@@ -119,11 +129,13 @@ export interface GameEndEvent extends BaseWebSocketEvent {
   winner: string
   homeTeam: string
   awayTeam: string
+  homeWinProbability: number
+  awayWinProbability: number
 }
 
 export interface WinProbabilityUpdateEvent extends BaseWebSocketEvent {
   event: 'win_probability_update'
-  gameId: string
+  gameId: number
   homeWinProbability: number
   awayWinProbability: number
   homeWpa: number
@@ -134,7 +146,7 @@ export interface WinProbabilityUpdateEvent extends BaseWebSocketEvent {
 
 export interface QuarterEndEvent extends BaseWebSocketEvent {
   event: 'quarter_end'
-  gameId: string
+  gameId: number
   quarter: number
   homeScore: number
   awayScore: number
@@ -142,7 +154,7 @@ export interface QuarterEndEvent extends BaseWebSocketEvent {
 
 export interface TurnoverEvent extends BaseWebSocketEvent {
   event: 'turnover'
-  gameId: string
+  gameId: number
   turnoverType: 'interception' | 'fumble'
   offensiveTeam: string
   defensiveTeam: string
@@ -151,16 +163,148 @@ export interface TurnoverEvent extends BaseWebSocketEvent {
 
 export interface PlayerStatsUpdateEvent extends BaseWebSocketEvent {
   event: 'player_stats_update'
-  gameId: string
+  gameId: number
   homePlayerStats: PlayerGameStats[]
   awayPlayerStats: PlayerGameStats[]
 }
 
 export interface TeamStatsUpdateEvent extends BaseWebSocketEvent {
   event: 'team_stats_update'
-  gameId: string
+  gameId: number
   homeTeamStats: TeamGameStats
   awayTeamStats: TeamGameStats
+}
+
+export interface GameStateUpdateEvent extends BaseWebSocketEvent {
+  event: 'game_state_update'
+  gameId: number
+  state: {
+    down: number
+    distance: number
+    yardLine: string
+    possession: string
+  }
+}
+
+// Comprehensive game state event (replaces score_update, play_complete, game_state_update)
+export interface GameStateEvent extends BaseWebSocketEvent {
+  event: 'game_state'
+  gameId: number
+  status: 'Active' | 'Scheduled' | 'Final'
+  homeScore: number
+  awayScore: number
+  quarterScores: {
+    home: {
+      q1: number
+      q2: number
+      q3: number
+      q4: number
+      ot: number
+    }
+    away: {
+      q1: number
+      q2: number
+      q3: number
+      q4: number
+      ot: number
+    }
+  }
+  possession: string | null  // Team abbreviation
+  homeTeamPoss: boolean  // True if home team has possession
+  awayTeamPoss: boolean  // True if away team has possession
+  quarter: number
+  timeRemaining: string
+  down: number | null
+  distance: number | null  // Yards to first down
+  yardLine: string | null  // e.g., 'BAL 25'
+  yardsToEndzone: number | null
+  yardsToSafety: number | null
+  isPossessionChange: boolean
+  lastPlay: {
+    playNumber: number
+    quarter: number
+    timeRemaining: string
+    down: number
+    distance: number
+    yardLine: string
+    playType: string
+    yardsGained: number
+    description: string
+    playResult: string | null
+    isTouchdown: boolean
+    isTurnover: boolean
+    isSack: boolean
+    scoreChange: boolean
+    homeTeamScore: number | null
+    awayTeamScore: number | null
+    offensiveTeam: string
+    defensiveTeam: string
+    homeWpa: number
+    awayWpa: number
+    isBigPlay: boolean
+  } | null
+  homeWinProbability: number
+  awayWinProbability: number
+  homeWpa: number
+  awayWpa: number
+  isHalftime: boolean
+  isOvertime: boolean
+  isUpsetAlert?: boolean
+  gameStats?: GameStats
+}
+
+export interface TeamGameStats {
+  passYards: number
+  passComp: number
+  passAtt: number
+  passTds: number
+  passInts: number
+  rushYards: number
+  rushCarries: number
+  rushTds: number
+  totalYards: number
+  turnovers: number
+  sacks: number
+  firstDowns: number
+  totalPlays: number
+  thirdDownConv: number
+  thirdDownAtt: number
+  fourthDownConv: number
+  fourthDownAtt: number
+}
+
+interface PlayerBase {
+  id: number
+  name: string
+  position: string | null
+  playerRating: number
+  ratingStars: number
+  fantasyPoints: number
+}
+
+export interface GameStats {
+  home: {
+    team: TeamGameStats
+    players: {
+      qb:  (PlayerBase & { att: number; comp: number; yards: number; tds: number; ints: number; ypc: number; longest: number } | null)
+      rb:  (PlayerBase & { carries: number; yards: number; tds: number; fumblesLost: number; ypc: number; longest: number } | null)
+      wr1: (PlayerBase & { receptions: number; targets: number; yards: number; tds: number; ypr: number; yac: number } | null)
+      wr2: (PlayerBase & { receptions: number; targets: number; yards: number; tds: number; ypr: number; yac: number } | null)
+      te:  (PlayerBase & { receptions: number; targets: number; yards: number; tds: number; ypr: number; yac: number } | null)
+      k:   (PlayerBase & { fgs: number; fgAtt: number; longest: number } | null)
+    }
+  }
+  away: {
+    team: TeamGameStats
+    players: {
+      qb:  (PlayerBase & { att: number; comp: number; yards: number; tds: number; ints: number; ypc: number; longest: number } | null)
+      rb:  (PlayerBase & { carries: number; yards: number; tds: number; fumblesLost: number; ypc: number; longest: number } | null)
+      wr1: (PlayerBase & { receptions: number; targets: number; yards: number; tds: number; ypr: number; yac: number } | null)
+      wr2: (PlayerBase & { receptions: number; targets: number; yards: number; tds: number; ypr: number; yac: number } | null)
+      te:  (PlayerBase & { receptions: number; targets: number; yards: number; tds: number; ypr: number; yac: number } | null)
+      k:   (PlayerBase & { fgs: number; fgAtt: number; longest: number } | null)
+    }
+  }
 }
 
 // Union type for all game events
@@ -174,6 +318,8 @@ export type GameWebSocketEvent =
   | TurnoverEvent
   | PlayerStatsUpdateEvent
   | TeamStatsUpdateEvent
+  | GameStateUpdateEvent
+  | GameStateEvent  // New comprehensive event
 
 // Season Events
 
@@ -200,6 +346,47 @@ export interface SeasonEndEvent extends BaseWebSocketEvent {
   champion: string
 }
 
+export interface LeagueNewsEvent extends BaseWebSocketEvent {
+  event: 'league_news'
+  text: string
+}
+
+export interface OffseasonStartEvent extends BaseWebSocketEvent {
+  event: 'offseason_start'
+  draftOrder: Array<{ name: string; abbr: string }>
+}
+
+export interface OffseasonPickEvent extends BaseWebSocketEvent {
+  event: 'offseason_pick'
+  teamName: string
+  teamAbbr: string
+  playerName: string
+  position: string
+  rating: number
+  tier: string
+}
+
+export interface OffseasonCutEvent extends BaseWebSocketEvent {
+  event: 'offseason_cut'
+  teamName: string
+  teamAbbr: string
+  playerName: string
+  position: string
+  rating: number
+  tier?: string
+}
+
+export interface OffseasonTeamCompleteEvent extends BaseWebSocketEvent {
+  event: 'offseason_team_complete'
+  teamName: string
+  teamAbbr: string
+}
+
+export interface OffseasonCompleteEvent extends BaseWebSocketEvent {
+  event: 'offseason_complete'
+  remainingFreeAgents: number
+}
+
 // Union type for all season events
 export type SeasonWebSocketEvent =
   | WeekStartEvent
@@ -208,6 +395,12 @@ export type SeasonWebSocketEvent =
   | SeasonEndEvent
   | GameStartEvent
   | GameEndEvent
+  | LeagueNewsEvent
+  | OffseasonStartEvent
+  | OffseasonPickEvent
+  | OffseasonCutEvent
+  | OffseasonTeamCompleteEvent
+  | OffseasonCompleteEvent
 
 // Standings Events
 

@@ -1,20 +1,24 @@
 import React from 'react'
-import { useCurrentGames } from '@/hooks/useCurrentGames'
+import { useGames } from '@/contexts/GamesContext'
 import { GameCard } from './GameCard'
 
 interface GameGridNewProps {
-  handleClick: (gameId: string) => void
+  handleClick?: (gameId: number) => void
 }
 
-export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick }) => {
-  const { games, loading, error } = useCurrentGames()
+export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {} }) => {
+  const { games, loading, error } = useGames()
+  
+  // Convert Map to array
+  const gamesArray = Array.from(games.values())
+  
 
   if (error) {
     return (
       <div className='mt-4 flex justify-center'>
         <div className='bg-red-50 border border-red-200 rounded-xl p-6 max-w-md'>
           <p className='text-red-800 font-semibold'>Failed to load games</p>
-          <p className='text-red-600 text-sm mt-2'>{error.message}</p>
+          <p className='text-red-600 text-sm mt-2'>{error}</p>
         </div>
       </div>
     )
@@ -24,13 +28,15 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick }) => {
     return (
       <div className='mt-4'>
         <div className='flex flex-col items-center'>
-          <ul className="grid grid-cols-3 desktop:grid-cols-3 gap-8">
+          <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 w-full">
             {[...Array(6)].map((_, i) => (
-              <li key={i} className='bg-white laptop:w-80 justify-self-center rounded-xl shadow-md animate-pulse'>
-                <div className='p-4 space-y-3'>
-                  <div className='h-8 bg-slate-200 rounded'></div>
-                  <div className='h-8 bg-slate-200 rounded'></div>
-                  <div className='h-6 bg-slate-200 rounded w-3/4'></div>
+              <li key={i} className='w-full flex justify-center'>
+                <div className='bg-white w-full max-w-sm rounded-xl shadow-md animate-pulse'>
+                  <div className='p-4 space-y-3'>
+                    <div className='h-8 bg-slate-200 rounded'></div>
+                    <div className='h-8 bg-slate-200 rounded'></div>
+                    <div className='h-6 bg-slate-200 rounded w-3/4'></div>
+                  </div>
                 </div>
               </li>
             ))}
@@ -40,7 +46,7 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick }) => {
     )
   }
 
-  if (games.length === 0) {
+  if (gamesArray.length === 0) {
     return (
       <div className='mt-4 flex justify-center'>
         <div className='bg-white rounded-xl shadow-md p-8 max-w-md text-center'>
@@ -52,19 +58,30 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick }) => {
   }
 
   return (
-    <div className='mt-4'>
-      <div className='flex flex-col items-center'>
-        <ul className="grid grid-cols-3 desktop:grid-cols-3 gap-8">
-          {games.map((game) => (
-            <li key={game.id}>
-              <GameCard 
-                gameId={game.id} 
+    <div>
+      <ul style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        {gamesArray.map((game) => (
+          <li key={game.id}>
+            <GameCard 
+                gameId={game.id}
+                homeTeam={game.homeTeam}
+                awayTeam={game.awayTeam}
+                homeTeamPoss={game.homeTeamPoss}
+                awayTeamPoss={game.awayTeamPoss}
+                homeScore={game.homeScore}
+                awayScore={game.awayScore}
+                quarter={game.quarter}
+                timeRemaining={game.timeRemaining}
+                status={game.status}
+                homeWinProbability={game.homeWinProbability}
+                awayWinProbability={game.awayWinProbability}
+                isUpsetAlert={game.isUpsetAlert}
+                isFeatured={game.isFeatured}
                 onClick={handleClick}
               />
             </li>
           ))}
         </ul>
-      </div>
     </div>
   )
 }

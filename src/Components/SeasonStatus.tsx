@@ -22,16 +22,6 @@ export const SeasonStatus: React.FC = () => {
           <span className="font-semibold">{seasonState.currentWeek}</span>
         </div>
 
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Active Games</span>
-          <span className="font-semibold">{seasonState.activeGames.length}</span>
-        </div>
-
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Completed Today</span>
-          <span className="font-semibold">{seasonState.completedGames.length}</span>
-        </div>
-
         {seasonState.seasonComplete && (
           <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded">
             <p className="text-sm text-green-800 font-semibold text-center">

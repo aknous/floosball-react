@@ -1,21 +1,25 @@
 import './index.css';
-import React, { Fragment, useEffect, useState } from 'react'
+import React, { Fragment, useEffect, useState, useRef } from 'react'
 import Navbar from './Components/Navbar.js'
-import GameBar from './Components/GameBar.js'
+import GameBar from './Components/GameBar'
 import TeamGrid from './Views/Teams/TeamGrid'
-import Team from './Views/Teams/Team'
-import Player from './Views/Players/Player'
+import Team from './Views/Teams/TeamPage'
+import Player from './Views/Players/PlayerPage'
 import Stats from './Views/Stats/Stats'
-import Players from './Views/Players/PlayerTable'
+import Players from './Views/Players/PlayersPage'
 import Results from './Views/Results/Results.js'
 import Records from './Views/Records/Records'
+import AdminPage from './Views/Admin/AdminPage'
 import Dashboard from './Views/Dashboard/Dashboard'
+import DashboardNew from './Views/Dashboard/DashboardNew'
 import { AuthModal } from './Components/Auth/AuthModals';
-import { Route, Routes, Navigate, BrowserRouter } from 'react-router-dom';
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios'
 import { Disclosure, Dialog, Menu, Transition } from '@headlessui/react'
 import { supabase } from "./supabase/supabase";
 import { FloosballProvider } from './contexts/FloosballContext'
+import { SeasonWebSocketProvider } from './contexts/SeasonWebSocketContext'
+import { GamesProvider } from './contexts/GamesContext'
 import { ChakraProvider } from '@chakra-ui/react'
 import {
   Modal,
@@ -28,82 +32,84 @@ import {
   useDisclosure,
 } from '@chakra-ui/react'
 
+// Separate component so useLocation works (needs to be inside Router from index.js)
+function AppLayout({ onOpen, authBool, isOpen, onClose }) {
+  const headerRef = useRef(null)
+  const [headerHeight, setHeaderHeight] = useState(64)
+
+  useEffect(() => {
+    if (!headerRef.current) return
+    const observer = new ResizeObserver(() => {
+      setHeaderHeight(headerRef.current.offsetHeight)
+    })
+    observer.observe(headerRef.current)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div className='bg-slate-300 min-h-screen relative font-pixel'>
+      <div ref={headerRef} className='fixed w-full top-0 z-50'>
+        <Navbar onOpen={onOpen} authBool={authBool} />
+        <GameBar />
+      </div>
+      <div style={{ paddingTop: headerHeight }}>
+        <Routes>
+          <Route exact path='/' element={<Navigate to='/dashboard' />} />
+          <Route exact path='/dashboard' element={<DashboardNew headerHeight={headerHeight} />} />
+          <Route exact path='/dashboard/old' element={<Dashboard />} />
+          <Route exact path='/players' element={<Players />} />
+          <Route exact path='/teams' element={<TeamGrid />} />
+          <Route exact path='/records' element={<Records />} />
+          <Route path='/team/:id' element={<Team />} />
+          <Route path='/players/:id' element={<Player />} />
+          <Route exact path='/admin' element={<AdminPage />} />
+        </Routes>
+      </div>
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalBody>
+            <AuthModal onClose={onClose} />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    </div>
+  )
+}
+
 function App() {
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const [appVer, setAppVer] = useState([])
   const [session, setSession] = useState(null)
   const [authBool, setAuthBool] = useState(false)
-
-  const getAppVer = async () => {
-    try {
-      //const userAppVer = await axios.get('http://floosball.com:8000/info')
-      const userAppVer = await axios.get('http://localhost:8000/info')
-
-      setAppVer(userAppVer.data);  // set State
-
-    } catch (err) {
-      console.error(err.message);
-    }
-  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
     })
-    console.log(session)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
     })
-
     return () => subscription.unsubscribe()
   }, [])
 
   useEffect(() => {
-    console.log(session?.user)
     if (session?.user.aud === "authenticated") {
       setAuthBool(true)
-    }
-    else {
+    } else {
       setAuthBool(false)
     }
   }, [session])
 
-
-  useEffect(() => {
-    getAppVer()
-  }, [])
   return (
     <ChakraProvider>
       <FloosballProvider>
-        <div className='bg-slate-300 min-h-screen relative font-pixel'>
-          <div className='fixed w-full top-0 z-50'>
-            <Navbar onOpen={onOpen} authBool={authBool} />
-          </div>
-          <div>
-            <Routes>
-              <Route exact path='/' element={<Navigate to='/dashboard' />} />
-              <Route exact path='/dashboard' element={<Dashboard />} />
-              <Route exact path='/players' element={<Players />} />
-              <Route exact path='/teams' element={<TeamGrid />} />
-              <Route exact path='/records' element={<Records />} />
-              <Route path='/team/:id' element={<Team />} />
-              <Route path='/players/:id' element={<Player />} />
-            </Routes>
-          </div>
-          <Modal isOpen={isOpen} onClose={onClose}>
-            <ModalOverlay />
-            <ModalContent>
-              <ModalBody>
-                <AuthModal onClose={onClose} />
-              </ModalBody>
-            </ModalContent>
-          </Modal>
-          <div className='flex justify-end z-50 bg-slate-300 w-full'>
-            <span className='text-slate-400 text-sm font-light mr-8 my-2 z-0'> floosball v{appVer}</span>
-          </div>
-        </div>
+        <SeasonWebSocketProvider>
+          <GamesProvider>
+            <AppLayout onOpen={onOpen} authBool={authBool} isOpen={isOpen} onClose={onClose} />
+          </GamesProvider>
+        </SeasonWebSocketProvider>
       </FloosballProvider>
     </ChakraProvider>
   );

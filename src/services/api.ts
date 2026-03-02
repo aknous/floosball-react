@@ -14,6 +14,7 @@ import type {
   PlayerFilters,
   TeamFilters,
 } from '@/types/api'
+import type { CurrentGame } from '@/hooks/useCurrentGames'
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -115,14 +116,14 @@ export const api = {
      * Get game statistics by ID
      */
     getStats: (gameId: string): Promise<GameStats> =>
-      axios.get<GameStats>(`${API_BASE_URL}/games/${gameId}`).then(getData),
+      axios.get<GameStats>(`${API_BASE_URL}/gameStats`, { params: { id: gameId } }).then(getData),
 
     /**
      * Get results for a specific week
      */
     getResultsByWeek: (week: number): Promise<GameResult[]> =>
       axios
-        .get<GameResult[]>(`${API_BASE_URL}/games/results`, {
+        .get<GameResult[]>(`${API_BASE_URL}/results`, {
           params: { week },
         })
         .then(getData),
@@ -130,8 +131,8 @@ export const api = {
     /**
      * Get currently live games
      */
-    getCurrentGames: (): Promise<GameStats[]> =>
-      axios.get<GameStats[]>(`${API_BASE_URL}/games/current`).then(getData),
+    getCurrentGames: (): Promise<CurrentGame[]> =>
+      axios.get<CurrentGame[]>(`${API_BASE_URL}/currentGames`).then(getData),
   },
 
   /**

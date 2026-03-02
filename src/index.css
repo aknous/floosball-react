@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes scoreFlash {
+  0%   { transform: scale(1);    color: #e2e8f0; }
+  25%  { transform: scale(1.35); color: #fbbf24; }
+  100% { transform: scale(1);    color: #e2e8f0; }
+}
+
+.score-updated {
+  animation: scoreFlash 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 @font-face {
     font-family: 'pressStart';
     src: url('./fonts/Inconsolata-ExtraLight.ttf');

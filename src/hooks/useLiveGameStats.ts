@@ -8,7 +8,7 @@ import type { GameWebSocketEvent } from '@/types/websocket'
  * @param gameEvent - WebSocket event data from useWebSocket
  */
 export const useLiveGameStats = (
-  gameId: string,
+  gameId: number,
   gameEvent: GameWebSocketEvent | null
 ) => {
   const [homePlayerStats, setHomePlayerStats] = useState<PlayerGameStats[]>([])

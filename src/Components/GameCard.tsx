@@ -1,135 +1,224 @@
-import React from 'react'
-import { useGameUpdates } from '@/hooks/useGameUpdates'
+import React, { useRef, useState, useEffect } from 'react'
+import TeamHoverCard from './TeamHoverCard'
 
-interface GameCardProps {
-  gameId: string
-  onClick: (gameId: string) => void
+interface Team {
+  id: string
+  name: string
+  city: string
+  abbr: string
+  color: string
+  secondaryColor: string
+  tertiaryColor: string
+  record: string
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ gameId, onClick }) => {
-  const { gameState, connected } = useGameUpdates(gameId)
+interface GameCardProps {
+  gameId: number
+  homeTeam: Team
+  awayTeam: Team
+  homeTeamPoss?: boolean
+  awayTeamPoss?: boolean
+  homeScore?: number
+  awayScore?: number
+  quarter?: number
+  timeRemaining?: string
+  status?: 'Scheduled' | 'Active' | 'Final'
+  homeWinProbability?: number
+  awayWinProbability?: number
+  isUpsetAlert?: boolean
+  isFeatured?: boolean
+  onClick: (gameId: number) => void
+}
 
-  const formatTime = (val: number) => {
-    const utc = new Date()
-    const offset = utc.getTimezoneOffset()
-    const datetime = new Date((val * 1000) - (offset * 60000))
-    return datetime.toLocaleString("en-US", { timeStyle: "short", dateStyle: "short" })
+export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, onClick }) => {
+  const isComplete = status === 'Final'
+  const isLive = status === 'Active' && (quarter ?? 0) > 0
+  const isFinal = isComplete
+
+  const prevHomeScore = useRef(homeScore)
+  const prevAwayScore = useRef(awayScore)
+  const [homeFlash, setHomeFlash] = useState(false)
+  const [awayFlash, setAwayFlash] = useState(false)
+
+  useEffect(() => {
+    if (prevHomeScore.current !== undefined && homeScore !== undefined && homeScore !== prevHomeScore.current) {
+      setHomeFlash(false)
+      requestAnimationFrame(() => setHomeFlash(true))
+      const t = setTimeout(() => setHomeFlash(false), 700)
+      prevHomeScore.current = homeScore
+      return () => clearTimeout(t)
+    }
+    prevHomeScore.current = homeScore
+  }, [homeScore])
+
+  useEffect(() => {
+    if (prevAwayScore.current !== undefined && awayScore !== undefined && awayScore !== prevAwayScore.current) {
+      setAwayFlash(false)
+      requestAnimationFrame(() => setAwayFlash(true))
+      const t = setTimeout(() => setAwayFlash(false), 700)
+      prevAwayScore.current = awayScore
+      return () => clearTimeout(t)
+    }
+    prevAwayScore.current = awayScore
+  }, [awayScore])
+
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: '#1e293b',
+    border: isUpsetAlert ? '2px solid #f97316' : isFeatured ? '2px solid #a78bfa' : isLive ? '2px solid #64748b' : '1px solid #334155',
+    borderRadius: '8px',
+    padding: '12px',
+    marginBottom: '12px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    width: '100%',
+    textAlign: 'left'
   }
 
-  // Determine game status for styling
-  const isFinal = gameState.isComplete
-  const isLive = !gameState.isComplete && gameState.quarter > 0
+  const teamRowStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '6px 0'
+  }
+
+  const teamNameStyle: React.CSSProperties = {
+    flex: 1,
+    fontSize: '16px',
+    fontWeight: '500',
+    minWidth: 0
+  }
+
+  const scoreStyle: React.CSSProperties = {
+    fontSize: '26px',
+    fontWeight: '700',
+    minWidth: '40px',
+    textAlign: 'right'
+  }
+
+  const statusStyle: React.CSSProperties = {
+    marginTop: '8px',
+    paddingTop: '8px',
+    borderTop: '1px solid #475569',
+    fontSize: '14px',
+    color: '#cbd5e1',
+    textAlign: 'center'
+  }
 
   return (
-    <button
-      className={`bg-white laptop:w-80 justify-self-center rounded-xl shadow-md hover:bg-slate-100 transition-all ${
-        isFinal ? 'opacity-90' : isLive ? 'ring-2 ring-blue-500 ring-opacity-50' : ''
-      }`}
-      onClick={() => onClick(gameId)}
-    >
-      <div className='flex items-center justify-between border-b border-slate-900'>
-        <div className='w-full flex flex-col my-1'>
-          <div className='flex flex-col'>
-            {/* Home Team */}
-            <div className='flex pb-1'>
-              <div className='items-center py-2'>
-                <div 
-                  className={`w-6 laptop:w-8 h-6 laptop:h-8 rounded-full mx-3 ${
-                    isLive ? 'ring-2 ring-offset-1 ring-slate-500' : ''
-                  }`}
-                  style={{ backgroundColor: '#3b82f6' }} // Replace with actual team color from API
-                />
-              </div>
-              <div className='flex flex-col grow'>
-                <div className='text-base text-left font-medium h-4'>Home City</div>
-                <div className='flex'>
-                  <div className='text-2xl text-left font-semibold h-7 align-top truncate'>Home Team</div>
-                  <div className='pl-2 text-xs pt-1 font-semibold text-center text-slate-900 place-self-center h-4'>
-                    0-0
-                  </div>
-                </div>
-              </div>
-              <div 
-                className={`w-14 justify-self-end place-self-center text-3xl font-semibold text-center mr-1 ${
-                  isFinal && gameState.homeScore > gameState.awayScore 
-                    ? 'bg-slate-900 text-white rounded-xl' 
-                    : ''
-                }`}
-              >
-                {gameState.homeScore}
-              </div>
-            </div>
-
-            {/* Away Team */}
-            <div className='flex pt-1 border-t border-slate-300'>
-              <div className='items-center py-2'>
-                <div 
-                  className={`w-6 laptop:w-8 h-6 laptop:h-8 rounded-full mx-3 ${
-                    isLive ? 'ring-2 ring-offset-1 ring-slate-500' : ''
-                  }`}
-                  style={{ backgroundColor: '#ef4444' }} // Replace with actual team color from API
-                />
-              </div>
-              <div className='flex flex-col grow'>
-                <div className='text-base text-left font-medium h-4'>Away City</div>
-                <div className='flex'>
-                  <div className='text-2xl text-left font-semibold h-7 align-top truncate'>Away Team</div>
-                  <div className='pl-2 text-xs pt-1 font-semibold text-center text-slate-900 place-self-center h-4'>
-                    0-0
-                  </div>
-                </div>
-              </div>
-              <div 
-                className={`w-14 place-self-center text-3xl font-semibold text-center mr-1 ${
-                  isFinal && gameState.awayScore > gameState.homeScore 
-                    ? 'bg-slate-900 text-white rounded-xl' 
-                    : ''
-                }`}
-              >
-                {gameState.awayScore}
-              </div>
+    <button onClick={() => onClick(gameId)} style={cardStyle}>
+      
+      {/* Home Team */}
+      <TeamHoverCard teamId={homeTeam.id}>
+        <div style={teamRowStyle}>
+          <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              outline: homeTeamPoss && !isFinal ? '3px solid #fff' : 'none',
+              outlineOffset: homeTeamPoss && !isFinal ? '2px' : '0',
+              flexShrink: 0
+            }}>
+            <img
+              src={`http://localhost:8000/api/teams/${homeTeam.id}/avatar?size=32&v=2`}
+              alt={homeTeam.name}
+              crossOrigin="anonymous"
+              style={{ width: '32px', height: '32px', display: 'block' }}
+            />
+          </div>
+          <div style={teamNameStyle}>
+            <div style={{ fontSize: '13px', color: '#cbd5e1', marginBottom: '2px' }}>{homeTeam.city}</div>
+            <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {homeTeam.name} <span style={{ fontSize: '13px', color: '#94a3b8' }}>({homeTeam.record})</span>
             </div>
           </div>
+          <div style={scoreStyle} className={homeFlash ? 'score-updated' : ''}>
+            {isLive || isFinal ? homeScore : '—'}
+          </div>
         </div>
-      </div>
+      </TeamHoverCard>
 
-      {/* Game Status Bar */}
-      <div className='flex text-slate-900 text-center gap-x-2 my-1 px-2 justify-between font-medium'>
-        {isFinal ? (
-          <span className="text-base">Final {gameState.quarter > 4 ? '- OT' : ''}</span>
-        ) : isLive ? (
-          <>
-            <span className="text-base">
-              {gameState.quarter > 4 ? 'OT' : `Q${gameState.quarter}`}
-            </span>
-            <span className="text-base">{gameState.timeRemaining}</span>
-            <div className='flex items-center gap-1'>
-              <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-              <span className="text-xs text-slate-600">
-                {connected ? 'Live' : 'Reconnecting...'}
-              </span>
+      {/* Away Team */}
+      <TeamHoverCard teamId={awayTeam.id}>
+        <div style={teamRowStyle}>
+          <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              outline: awayTeamPoss && !isFinal ? '3px solid #fff' : 'none',
+              outlineOffset: awayTeamPoss && !isFinal ? '2px' : '0',
+              flexShrink: 0
+            }}>
+            <img
+              src={`http://localhost:8000/api/teams/${awayTeam.id}/avatar?size=32&v=2`}
+              alt={awayTeam.name}
+              crossOrigin="anonymous"
+              style={{ width: '32px', height: '32px', display: 'block' }}
+            />
+          </div>
+          <div style={teamNameStyle}>
+            <div style={{ fontSize: '13px', color: '#cbd5e1', marginBottom: '2px' }}>{awayTeam.city}</div>
+            <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {awayTeam.name} <span style={{ fontSize: '13px', color: '#94a3b8' }}>({awayTeam.record})</span>
             </div>
-          </>
-        ) : (
-          <span className='text-base'>Scheduled</span>
-        )}
-      </div>
+          </div>
+          <div style={scoreStyle} className={awayFlash ? 'score-updated' : ''}>
+            {isLive || isFinal ? awayScore : '—'}
+          </div>
+        </div>
+      </TeamHoverCard>
 
-      {/* Win Probability Bar (for live games) */}
-      {isLive && (
-        <div className='px-2 pb-2'>
-          <div className='flex h-1.5 rounded overflow-hidden'>
-            <div 
-              className='bg-blue-500 transition-all duration-300'
-              style={{ width: `${gameState.homeWinProbability}%` }}
-            />
-            <div 
-              className='bg-red-500 transition-all duration-300'
-              style={{ width: `${gameState.awayWinProbability}%` }}
-            />
+      {/* Win Probability Bar */}
+      {(homeWinProbability !== undefined && awayWinProbability !== undefined) && (
+        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #475569' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8' }}>{homeWinProbability.toFixed(1)}%</span>
+            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>WIN PROB</span>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8' }}>{awayWinProbability.toFixed(1)}%</span>
+          </div>
+          <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', backgroundColor: '#475569' }}>
+            <div style={{ width: `${homeWinProbability}%`, backgroundColor: homeTeam.color, transition: 'width 0.5s ease' }} />
+            <div style={{ width: `${awayWinProbability}%`, backgroundColor: awayTeam.color, transition: 'width 0.5s ease' }} />
           </div>
         </div>
       )}
+
+      {/* Status Bar */}
+      <div style={statusStyle}>
+        {isFinal ? (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center' }}>
+            <span>Final {(quarter ?? 0) > 4 ? '(OT)' : ''}</span>
+            {isUpsetAlert && (
+              <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
+                UPSET
+              </div>
+            )}
+            {isFeatured && !isUpsetAlert && (
+              <div style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
+                FEATURED
+              </div>
+            )}
+          </div>
+        ) : isLive ? (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span>{(quarter ?? 0) > 4 ? 'OT' : `Q${quarter ?? 1}`}</span>
+            <span>•</span>
+            <span>{timeRemaining ?? '15:00'}</span>
+            {isUpsetAlert && (
+              <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
+                UPSET ALERT
+              </div>
+            )}
+            {isFeatured && !isUpsetAlert && (
+              <div style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
+                FEATURED
+              </div>
+            )}
+          </div>
+        ) : (
+          <span>Upcoming</span>
+        )}
+      </div>
+      
     </button>
   )
 }

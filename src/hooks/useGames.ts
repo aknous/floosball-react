@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '@/services/api'
 import type { GameStats, GameResult } from '@/types/api'
+import type { CurrentGame } from './useCurrentGames'
 
 /**
  * Custom hook for fetching game statistics
@@ -72,7 +73,7 @@ export const useWeekResults = (week: number) => {
  * Note: This will be replaced by WebSocket in Phase 2
  */
 export const useCurrentGames = () => {
-  const [games, setGames] = useState<GameStats[]>([])
+  const [games, setGames] = useState<CurrentGame[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
