@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { Stars } from '@/Components/Stars'
+import CoachAvatar from '@/Components/CoachAvatar'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -22,6 +23,18 @@ interface ScheduleEntry {
   oppScore: number
   status: string
   result: string | null
+}
+
+interface Coach {
+  name: string
+  overallRating: number
+  offensiveMind: number
+  defensiveMind: number
+  adaptability: number
+  aggressiveness: number
+  clockManagement: number
+  playerDevelopment: number
+  seasonsCoached: number
 }
 
 interface TeamData {
@@ -49,6 +62,7 @@ interface TeamData {
   roster: Record<string, RosterPlayer | null>
   schedule: ScheduleEntry[]
   history: any[]
+  coach: Coach | null
 }
 
 const ROSTER_SLOTS: [string, string][] = [
@@ -77,20 +91,39 @@ export default function TeamPage() {
     return <div style={{ padding: '48px', color: '#94a3b8', textAlign: 'center', backgroundColor: '#0f172a', minHeight: '100vh' }}>Team not found</div>
   }
 
-  const ratingBar = (value: number) => (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <div style={{ flex: 1, height: '5px', backgroundColor: '#334155', borderRadius: '3px', overflow: 'hidden' }}>
-        <div style={{ width: `${value}%`, height: '100%', backgroundColor: team.color, borderRadius: '3px' }} />
+  const ratingBar = (value: number) => {
+    const color = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
+    const pct = ((value - 60) / 40) * 100
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ flex: 1, height: '5px', backgroundColor: '#334155', borderRadius: '3px', overflow: 'hidden' }}>
+          <div style={{ width: `${pct}%`, height: '100%', backgroundColor: color, borderRadius: '3px' }} />
+        </div>
+        <span style={{ fontSize: '12px', color: '#cbd5e1', minWidth: '26px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
       </div>
-      <span style={{ fontSize: '12px', color: '#cbd5e1', minWidth: '26px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
-    </div>
-  )
+    )
+  }
 
   const sectionHeader = (label: string) => (
     <div style={{ padding: '10px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155' }}>
       <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{label}</span>
     </div>
   )
+
+  const calcStars = (rating: number) => Math.round((1 + ((rating - 60) / 40) * 4) * 2) / 2
+
+  const coachAttrBar = (value: number) => {
+    const color = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
+    const pct = value
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ flex: 1, height: '4px', backgroundColor: '#334155', borderRadius: '3px', overflow: 'hidden' }}>
+          <div style={{ width: `${pct}%`, height: '100%', backgroundColor: color, borderRadius: '3px' }} />
+        </div>
+        <span style={{ fontSize: '12px', color: '#cbd5e1', minWidth: '26px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f172a' }}>
@@ -108,12 +141,12 @@ export default function TeamPage() {
             style={{ width: '80px', height: '80px', flexShrink: 0 }}
           />
           <div>
-            <div style={{ fontSize: '13px', color: '#64748b' }}>{team.league} · {team.city}</div>
+            <div style={{ fontSize: '13px', color: '#94a3b8' }}>{team.league} · {team.city}</div>
             <div style={{ fontSize: '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{team.name}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', flexWrap: 'wrap' as const }}>
               <span style={{ fontSize: '15px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{team.wins}–{team.losses}</span>
-              <span style={{ fontSize: '13px', color: '#475569' }}>·</span>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>ELO {Math.round(team.elo)}</span>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>·</span>
+              <span style={{ fontSize: '13px', color: '#94a3b8' }}>ELO {Math.round(team.elo)}</span>
               {team.floosbowlChampion && (
                 <span style={{ backgroundColor: '#f59e0b', color: '#000', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>CHAMPION</span>
               )}
@@ -148,7 +181,7 @@ export default function TeamPage() {
                     ))}
                   </div>
                   <div style={{ fontSize: '13px', fontWeight: '600', color: '#f59e0b' }}>Floos Bowl</div>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>{team.floosbowlChampionships.length}× champion</div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>{team.floosbowlChampionships.length}× champion</div>
                 </div>
               )}
               {(team.leagueChampionships?.length ?? 0) > 0 && (
@@ -159,11 +192,11 @@ export default function TeamPage() {
                     ))}
                   </div>
                   <div style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1' }}>League Champ</div>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>{team.leagueChampionships.length}× champion</div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>{team.leagueChampionships.length}× champion</div>
                 </div>
               )}
               {!(team.floosbowlChampionships?.length) && !(team.leagueChampionships?.length) && (
-                <div style={{ fontSize: '13px', color: '#475569', fontStyle: 'italic' }}>No championships yet</div>
+                <div style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>No championships yet</div>
               )}
             </div>
           </div>
@@ -179,7 +212,7 @@ export default function TeamPage() {
                 { label: 'Pass Defense', value: team.defensePassCoverageRating },
               ].map(({ label, value }) => (
                 <div key={label}>
-                  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>{label}</div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>{label}</div>
                   {ratingBar(value)}
                 </div>
               ))}
@@ -201,7 +234,7 @@ export default function TeamPage() {
                     padding: '8px 14px',
                     borderBottom: idx < ROSTER_SLOTS.length - 1 ? '1px solid #1a2640' : 'none',
                   }}>
-                    <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{posLabel}</span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>{posLabel}</span>
                     {player ? (
                       <>
                         <div style={{ minWidth: 0 }}>
@@ -236,96 +269,135 @@ export default function TeamPage() {
 
         </div>
 
-        {/* Schedule */}
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
-          {sectionHeader('Schedule')}
-          <div style={{ display: 'grid', gridTemplateColumns: '32px 28px 1fr 44px 80px', gap: '8px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
-            {['WK', '', 'OPPONENT', 'RESULT', 'SCORE'].map((h, i) => (
-              <span key={i} style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textAlign: i >= 3 ? 'right' as const : 'left' as const }}>{h}</span>
-            ))}
-          </div>
-          {team.schedule.length === 0 && (
-            <div style={{ padding: '24px', textAlign: 'center', color: '#475569', fontSize: '13px' }}>No schedule available</div>
-          )}
-          {team.schedule.map((game, idx) => {
-            const resultColor = game.result === 'W' ? '#22c55e' : game.result === 'L' ? '#ef4444' : '#94a3b8'
-            const weekNum = game.week != null ? game.week + 1 : idx + 1
-            return (
-              <div key={game.gameId} style={{
-                display: 'grid',
-                gridTemplateColumns: '32px 28px 1fr 44px 80px',
-                gap: '8px',
-                alignItems: 'center',
-                padding: '7px 14px',
-                borderBottom: idx < team.schedule.length - 1 ? '1px solid #1a2640' : 'none',
-                backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
-              }}>
-                <span style={{ fontSize: '12px', color: '#64748b', fontVariantNumeric: 'tabular-nums' }}>{weekNum}</span>
-                <span style={{ fontSize: '11px', color: '#475569' }}>{game.isHome ? 'vs' : '@'}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
-                  <img
-                    src={`${API_BASE}/teams/${game.opponent.id}/avatar?size=20&v=2`}
-                    alt={game.opponent.abbr}
-                    style={{ width: '20px', height: '20px', flexShrink: 0 }}
-                  />
-                  <Link
-                    to={`/team/${game.opponent.id}`}
-                    style={{ fontSize: '13px', color: '#cbd5e1', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                  >
-                    {game.opponent.city} {game.opponent.name}
-                  </Link>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  {game.result ? (
-                    <span style={{ fontSize: '13px', fontWeight: '700', color: resultColor }}>{game.result}</span>
-                  ) : game.status === 'Active' ? (
-                    <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: '600' }}>LIVE</span>
-                  ) : (
-                    <span style={{ fontSize: '12px', color: '#334155' }}>—</span>
-                  )}
-                </div>
-                <div style={{ fontSize: '13px', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                  {game.status !== 'Scheduled' ? `${game.teamScore}–${game.oppScore}` : '—'}
+        {/* Head Coach */}
+        {team.coach && (
+          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
+            {sectionHeader('Head Coach')}
+            <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: '260px 1fr', gap: '24px', alignItems: 'start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <CoachAvatar name={team.coach.name} size={120} style={{ border: `3px solid ${team.color}` }} />
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>{team.coach.name}</div>
+                  <Stars stars={calcStars(team.coach.overallRating)} size={13} />
+                  <div style={{ marginTop: '4px', fontSize: '12px', color: '#94a3b8' }}>
+                    {team.coach.seasonsCoached} season{team.coach.seasonsCoached !== 1 ? 's' : ''}
+                  </div>
                 </div>
               </div>
-            )
-          })}
-        </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 24px' }}>
+                {([
+                  ['Offensive Mind', team.coach.offensiveMind],
+                  ['Defensive Mind', team.coach.defensiveMind],
+                  ['Adaptability', team.coach.adaptability],
+                  ['Aggressiveness', team.coach.aggressiveness],
+                  ['Clock Mgmt', team.coach.clockManagement],
+                  ['Player Dev', team.coach.playerDevelopment],
+                ] as [string, number][]).map(([label, val]) => (
+                  <div key={label}>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '3px' }}>{label}</div>
+                    {coachAttrBar(val)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
-        {/* Season History */}
-        {(team.history?.length ?? 0) > 0 && (
+        {/* Schedule + Season History side by side */}
+        <div style={{ display: 'grid', gridTemplateColumns: (team.history?.length ?? 0) > 0 ? '3fr 2fr' : '1fr', gap: '16px', alignItems: 'start' }}>
+
+          {/* Schedule */}
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-            {sectionHeader('Season History')}
-            <div style={{ display: 'grid', gridTemplateColumns: '56px 56px 60px 1fr', gap: '8px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
-              {['Season', 'W–L', 'Pts/G', 'Result'].map((h, i) => (
-                <span key={i} style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>{h}</span>
+            {sectionHeader('Schedule')}
+            <div style={{ display: 'grid', gridTemplateColumns: '32px 28px 1fr 44px 80px', gap: '8px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
+              {['WK', '', 'OPPONENT', 'RESULT', 'SCORE'].map((h, i) => (
+                <span key={i} style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: i >= 3 ? 'right' as const : 'left' as const }}>{h}</span>
               ))}
             </div>
-            {team.history.map((s: any, idx: number) => {
-              const result = s.floosbowlChamp ? 'Floos Bowl 🏆'
-                : s.leagueChamp ? 'League Champ 🥇'
-                : s.madePlayoffs ? 'Playoffs'
-                : '—'
-              const resultColor = s.floosbowlChamp ? '#f59e0b' : s.leagueChamp ? '#ca8a04' : s.madePlayoffs ? '#94a3b8' : '#475569'
+            {team.schedule.length === 0 && (
+              <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>No schedule available</div>
+            )}
+            {team.schedule.map((game, idx) => {
+              const resultColor = game.result === 'W' ? '#22c55e' : game.result === 'L' ? '#ef4444' : '#94a3b8'
+              const weekNum = game.week != null ? game.week + 1 : idx + 1
               return (
-                <div key={idx} style={{
+                <div key={game.gameId} style={{
                   display: 'grid',
-                  gridTemplateColumns: '56px 56px 60px 1fr',
+                  gridTemplateColumns: '32px 28px 1fr 44px 80px',
                   gap: '8px',
                   alignItems: 'center',
                   padding: '7px 14px',
-                  borderBottom: idx < team.history.length - 1 ? '1px solid #1a2640' : 'none',
+                  borderBottom: idx < team.schedule.length - 1 ? '1px solid #1a2640' : 'none',
                   backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
                 }}>
-                  <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>S{s.season}</span>
-                  <span style={{ fontSize: '13px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{s.wins}–{s.losses}</span>
-                  <span style={{ fontSize: '13px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{s.Offense?.avgPts?.toFixed(1) ?? '—'}</span>
-                  <span style={{ fontSize: '13px', color: resultColor }}>{result}</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>{weekNum}</span>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>{game.isHome ? 'vs' : '@'}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+                    <img
+                      src={`${API_BASE}/teams/${game.opponent.id}/avatar?size=20&v=2`}
+                      alt={game.opponent.abbr}
+                      style={{ width: '20px', height: '20px', flexShrink: 0 }}
+                    />
+                    <Link
+                      to={`/team/${game.opponent.id}`}
+                      style={{ fontSize: '13px', color: '#cbd5e1', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    >
+                      {game.opponent.city} {game.opponent.name}
+                    </Link>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    {game.result ? (
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: resultColor }}>{game.result}</span>
+                    ) : game.status === 'Active' ? (
+                      <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: '600' }}>LIVE</span>
+                    ) : (
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>—</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {game.status !== 'Scheduled' ? `${game.teamScore}–${game.oppScore}` : '—'}
+                  </div>
                 </div>
               )
             })}
           </div>
-        )}
+
+          {/* Season History */}
+          {(team.history?.length ?? 0) > 0 && (
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+              {sectionHeader('Season History')}
+              <div style={{ display: 'grid', gridTemplateColumns: '56px 56px 60px 1fr', gap: '8px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
+                {['Season', 'W–L', 'Pts/G', 'Result'].map((h, i) => (
+                  <span key={i} style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>{h}</span>
+                ))}
+              </div>
+              {team.history.map((s: any, idx: number) => {
+                const result = s.floosbowlChamp ? 'Floos Bowl 🏆'
+                  : s.leagueChamp ? 'League Champ 🥇'
+                  : s.madePlayoffs ? 'Playoffs'
+                  : '—'
+                const resultColor = s.floosbowlChamp ? '#f59e0b' : s.leagueChamp ? '#ca8a04' : s.madePlayoffs ? '#94a3b8' : '#64748b'
+                return (
+                  <div key={idx} style={{
+                    display: 'grid',
+                    gridTemplateColumns: '56px 56px 60px 1fr',
+                    gap: '8px',
+                    alignItems: 'center',
+                    padding: '7px 14px',
+                    borderBottom: idx < team.history.length - 1 ? '1px solid #1a2640' : 'none',
+                    backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+                  }}>
+                    <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>S{s.season}</span>
+                    <span style={{ fontSize: '13px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{s.wins}–{s.losses}</span>
+                    <span style={{ fontSize: '13px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{s.Offense?.avgPts?.toFixed(1) ?? '—'}</span>
+                    <span style={{ fontSize: '13px', color: resultColor }}>{result}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+        </div>
 
       </div>
     </div>

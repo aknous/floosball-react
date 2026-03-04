@@ -1,5 +1,6 @@
 import React from 'react'
 import { useGames } from '@/contexts/GamesContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { GameCard } from './GameCard'
 
 interface GameGridNewProps {
@@ -8,9 +9,17 @@ interface GameGridNewProps {
 
 export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {} }) => {
   const { games, loading, error } = useGames()
-  
-  // Convert Map to array
-  const gamesArray = Array.from(games.values())
+  const { user } = useAuth()
+  const favTeamId = user?.favoriteTeamId ?? null
+
+  // Convert Map to array, favorite team's game first
+  const gamesArray = Array.from(games.values()).sort((a, b) => {
+    const aIsFav = favTeamId !== null && (Number(a.homeTeam.id) === favTeamId || Number(a.awayTeam.id) === favTeamId)
+    const bIsFav = favTeamId !== null && (Number(b.homeTeam.id) === favTeamId || Number(b.awayTeam.id) === favTeamId)
+    if (aIsFav && !bIsFav) return -1
+    if (!aIsFav && bIsFav) return 1
+    return 0
+  })
   
 
   if (error) {
@@ -59,10 +68,15 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {}
 
   return (
     <div>
-      <ul style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-        {gamesArray.map((game) => (
+      <ul className="grid grid-cols-1 tablet:grid-cols-2 gap-3">
+        {gamesArray.map((game) => {
+          const isFavGame = favTeamId !== null && (Number(game.homeTeam.id) === favTeamId || Number(game.awayTeam.id) === favTeamId)
+          const favTeamColor = isFavGame
+            ? (Number(game.homeTeam.id) === favTeamId ? game.homeTeam.color : game.awayTeam.color)
+            : undefined
+          return (
           <li key={game.id}>
-            <GameCard 
+            <GameCard
                 gameId={game.id}
                 homeTeam={game.homeTeam}
                 awayTeam={game.awayTeam}
@@ -77,10 +91,13 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {}
                 awayWinProbability={game.awayWinProbability}
                 isUpsetAlert={game.isUpsetAlert}
                 isFeatured={game.isFeatured}
+                isFav={isFavGame}
+                favTeamColor={favTeamColor}
                 onClick={handleClick}
               />
             </li>
-          ))}
+          )
+        })}
         </ul>
     </div>
   )

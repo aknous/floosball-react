@@ -5,6 +5,7 @@ import { XIcon } from '@heroicons/react/solid'
 import PlayerHoverCard from './PlayerHoverCard'
 import TeamHoverCard from './TeamHoverCard'
 import { Stars } from './Stars'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 interface GameModalNewProps {
   onClose: () => void
@@ -33,28 +34,19 @@ function getResultColor(playResult: string): string | null {
   return '#64748b'
 }
 
-// Keep for the field graphic badge (unchanged behavior)
-function getBadgeColor(playResult: string): string {
-  if (!playResult) return '#3b82f6'
-  if (playResult.includes('2-Pt No Good')) return '#f59e0b'
-  if (playResult.includes('Touchdown')) return '#22c55e'
-  if (playResult === 'Field Goal is Good' || playResult === 'Safety') return '#22c55e'
-  if (playResult === 'Fumble' || playResult === 'Interception') return '#ef4444'
-  if (playResult === '4th Down') return '#f59e0b'
-  if (playResult === 'Turnover On Downs' || playResult === 'Punt'
-      || playResult === 'Field Goal is No Good'
-      || playResult === 'XP No Good') return '#f87171'
-  if (playResult === '2nd Down' || playResult === '3rd Down') return '#64748b'
-  return '#3b82f6'
-}
 
 export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) => {
   const [activeTab, setActiveTab] = useState<'box' | 'plays' | 'stats'>('plays')
   const [showHighlightsOnly, setShowHighlightsOnly] = useState(false)
+  const isMobile = useIsMobile()
   
   // Get game from central state and fetch plays
   const { games, fetchGamePlays } = useGames()
-  const gameData = useMemo(() => games.get(gameId), [games, gameId])
+  const liveGameData = useMemo(() => games.get(gameId), [games, gameId])
+  // Freeze last known data so the modal stays populated after week rollover clears the game
+  const frozenRef = useRef(liveGameData)
+  if (liveGameData) frozenRef.current = liveGameData
+  const gameData = frozenRef.current
 
   // Plays with WP data, in chronological order (oldest first), for the chart
   const wpPlays = useMemo(() => {
@@ -351,17 +343,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 50,
-        padding: '24px'
+        padding: isMobile ? '0' : '24px'
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: '#0f172a',
-          borderRadius: '12px',
+          borderRadius: isMobile ? '0' : '12px',
           width: '100%',
-          maxWidth: '1200px',
-          height: '90vh',
+          maxWidth: isMobile ? '100%' : '1200px',
+          height: isMobile ? '100dvh' : '90vh',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden'
@@ -382,17 +374,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           </button>
         </div>
 
-        {/* Body: two-column layout */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
+        {/* Body: two-column on desktop, stacked on mobile */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: isMobile ? 'auto' : 'hidden', minHeight: 0 }}>
 
           {/* Left panel: Scoreboard + Status + WP */}
           <div style={{
-            flex: '0 0 40%',
+            flex: isMobile ? '0 0 auto' : '0 0 40%',
             minWidth: 0,
-            borderRight: '1px solid #334155',
+            borderRight: isMobile ? 'none' : '1px solid #334155',
+            borderBottom: isMobile ? '1px solid #334155' : 'none',
             display: 'flex',
             flexDirection: 'column',
-            overflowY: 'auto'
+            overflowY: isMobile ? 'visible' : 'auto'
           }}>
 
             {/* Scores */}
@@ -523,7 +516,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
             {/* Field Position Visualization */}
             {gameData.status !== 'Scheduled' && (() => {
-              const FW = 600, FH = 160
+              const FW = 600, FH = 220
               const EZW = FW / 12 // end zone = 10/120 of total width ≈ 50 SVG units
 
               // Fixed layout: home end zone = LEFT, away end zone = RIGHT
@@ -727,21 +720,26 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                             {playDescription}
                           </p>
                         )}
-                        {playResult && isFieldBadgeResult(String(playResult)) && (
-                          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4px' }}>
-                            <span style={{
-                              fontSize: '11px',
-                              backgroundColor: getBadgeColor(String(playResult)),
-                              color: '#fff',
-                              textShadow: '0 1px 2px rgba(0,0,0,0.4)',
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              fontWeight: '600'
-                            }}>
-                              {playResult}
-                            </span>
-                          </div>
-                        )}
+                        {playResult && isFieldBadgeResult(String(playResult)) && (() => {
+                          const badgeColor = getResultColor(String(playResult)) ?? '#64748b'
+                          return (
+                            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4px' }}>
+                              <span style={{
+                                fontSize: '10px',
+                                color: badgeColor,
+                                border: `1px solid ${badgeColor}55`,
+                                backgroundColor: `${badgeColor}18`,
+                                padding: '1px 7px',
+                                borderRadius: '3px',
+                                fontWeight: '700',
+                                letterSpacing: '0.04em',
+                                textTransform: 'uppercase',
+                              }}>
+                                {playResult}
+                              </span>
+                            </div>
+                          )
+                        })()}
                       </>
                     )}
                   </div>
@@ -806,7 +804,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           </div>
 
           {/* Right panel: Tabs + scrollable content */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          <div style={{ flex: isMobile ? 'none' : 1, display: 'flex', flexDirection: 'column', overflow: isMobile ? 'visible' : 'hidden', minWidth: 0 }}>
 
             {/* Tab bar */}
             <div style={{ padding: '10px 16px', borderBottom: '1px solid #334155', flexShrink: 0, display: 'flex', gap: '4px' }}>
@@ -832,7 +830,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             </div>
 
             {/* Tab content — fills all remaining height */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+            <div style={{ flex: isMobile ? 'none' : 1, overflowY: isMobile ? 'visible' : 'auto', padding: '16px' }}>
               {activeTab === 'plays' && (
                 <>
                   {/* All / Highlights toggle */}
@@ -948,19 +946,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
                 // Renders a player name cell with position badge + star rating
                 const playerNameCell = (p: { id: number; name: string; position?: string | null; ratingStars?: number }) => (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
-                    {p.position && (
-                      <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', backgroundColor: '#0f172a', padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>
-                        {p.position}
-                      </span>
-                    )}
-                    <PlayerHoverCard playerId={p.id} playerName={p.name}>
-                      <span style={{ fontSize: '15px', color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                    </PlayerHoverCard>
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '2px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                      {p.position && (
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', backgroundColor: '#0f172a', padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>
+                          {p.position}
+                        </span>
+                      )}
+                      <PlayerHoverCard playerId={p.id} playerName={p.name}>
+                        <span style={{ fontSize: '15px', color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                      </PlayerHoverCard>
+                    </div>
                     {p.ratingStars != null && (
-                      <span style={{ flexShrink: 0 }}>
-                        <Stars stars={p.ratingStars} size={12} />
-                      </span>
+                      <Stars stars={p.ratingStars} size={12} />
                     )}
                   </div>
                 )

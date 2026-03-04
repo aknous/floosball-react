@@ -27,10 +27,12 @@ interface GameCardProps {
   awayWinProbability?: number
   isUpsetAlert?: boolean
   isFeatured?: boolean
+  isFav?: boolean
+  favTeamColor?: string
   onClick: (gameId: number) => void
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, onClick }) => {
+export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, isFav, favTeamColor, onClick }) => {
   const isComplete = status === 'Final'
   const isLive = status === 'Active' && (quarter ?? 0) > 0
   const isFinal = isComplete
@@ -65,6 +67,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
   const cardStyle: React.CSSProperties = {
     backgroundColor: '#1e293b',
     border: isUpsetAlert ? '2px solid #f97316' : isFeatured ? '2px solid #a78bfa' : isLive ? '2px solid #64748b' : '1px solid #334155',
+    boxShadow: isFav ? `inset 0 0 0 2px ${favTeamColor || '#3b82f6'}cc` : undefined,
     borderRadius: '8px',
     padding: '12px',
     marginBottom: '12px',

@@ -3,6 +3,15 @@ import ReactDOM from 'react-dom'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+interface CoachDetail {
+  name: string
+  overallRating: number
+  aggressiveness: number
+  clockManagement: number
+  adaptability: number
+  seasonsCoached: number
+}
+
 interface TeamDetail {
   id: number
   name: string
@@ -24,20 +33,23 @@ interface TeamDetail {
   clinchedTopSeed: boolean
   leagueChampion: boolean
   league: string
+  coach?: CoachDetail | null
 }
 
 const CARD_WIDTH = 260
-const CARD_HEIGHT_EST = 310
+const CARD_HEIGHT_EST = 420
 const OFFSET = 16
 
-const RatingBar: React.FC<{ label: string; value: number; color: string; bold?: boolean }> = ({ label, value, color, bold }) => (
+const ratingColor = (value: number) => value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
+
+const RatingBar: React.FC<{ label: string; value: number; bold?: boolean }> = ({ label, value, bold }) => (
   <div style={{ marginBottom: '8px' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
       <span style={{ fontSize: '13px', color: bold ? '#cbd5e1' : '#94a3b8', fontWeight: bold ? '700' : '400' }}>{label}</span>
       <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '700' }}>{Math.round(value)}</span>
     </div>
     <div style={{ height: bold ? '4px' : '3px', backgroundColor: '#334155', borderRadius: '2px' }}>
-      <div style={{ width: `${Math.min(100, value)}%`, height: '100%', backgroundColor: bold ? color : `${color}55`, borderRadius: '2px' }} />
+      <div style={{ width: `${Math.min(100, value)}%`, height: '100%', backgroundColor: ratingColor(value), borderRadius: '2px' }} />
     </div>
   </div>
 )
@@ -108,10 +120,27 @@ const Card: React.FC<{ data: TeamDetail; mouseX: number; mouseY: number }> = ({ 
         )}
 
         {/* Ratings */}
-        <RatingBar label="Overall" value={data.overallRating} color={color} bold />
-        <RatingBar label="Offense" value={data.offenseRating} color={color} />
-        <RatingBar label="Run Defense" value={data.defenseRunCoverageRating} color={color} />
-        <RatingBar label="Pass Defense" value={data.defensePassCoverageRating} color={color} />
+        <RatingBar label="Overall" value={data.overallRating} bold />
+        <RatingBar label="Offense" value={data.offenseRating} />
+        <RatingBar label="Run Defense" value={data.defenseRunCoverageRating} />
+        <RatingBar label="Pass Defense" value={data.defensePassCoverageRating} />
+
+        {/* Coach */}
+        {data.coach && (
+          <>
+            <div style={{ borderTop: '1px solid #334155', margin: '10px 0 8px' }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>HC</span>
+                <span style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1' }}>{data.coach.name}</span>
+              </div>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>{data.coach.seasonsCoached}s</span>
+            </div>
+            <RatingBar label="Aggressiveness" value={data.coach.aggressiveness} />
+            <RatingBar label="Clock Mgmt" value={data.coach.clockManagement} />
+            <RatingBar label="Adaptability" value={data.coach.adaptability} />
+          </>
+        )}
       </div>
     </div>,
     document.body

@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useGames } from '@/contexts/GamesContext'
 import { GameModalNew } from '@/Components/GameModalNew'
+import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 const GameBar: React.FC = () => {
   const location = useLocation()
   const { games, refetch } = useGames()
+  const { user } = useAuth()
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
 
   useEffect(() => { refetch() }, [])
@@ -15,7 +17,14 @@ const GameBar: React.FC = () => {
   // Hide on dashboard
   if (location.pathname === '/dashboard' || location.pathname === '/') return null
 
-  const gameList = Array.from(games.values())
+  const favTeamId = user?.favoriteTeamId ?? null
+  const gameList = Array.from(games.values()).sort((a, b) => {
+    const aIsFav = favTeamId !== null && (Number(a.homeTeam.id) === favTeamId || Number(a.awayTeam.id) === favTeamId)
+    const bIsFav = favTeamId !== null && (Number(b.homeTeam.id) === favTeamId || Number(b.awayTeam.id) === favTeamId)
+    if (aIsFav && !bIsFav) return -1
+    if (!aIsFav && bIsFav) return 1
+    return 0
+  })
   if (gameList.length === 0) return null
 
   return (
@@ -36,6 +45,10 @@ const GameBar: React.FC = () => {
           const isActive = game.status === 'Active'
           const homeColor = game.homeTeam.color || '#64748b'
           const awayColor = game.awayTeam.color || '#64748b'
+          const isFavGame = favTeamId !== null && (Number(game.homeTeam.id) === favTeamId || Number(game.awayTeam.id) === favTeamId)
+          const favColor = isFavGame
+            ? (Number(game.homeTeam.id) === favTeamId ? game.homeTeam.color : game.awayTeam.color) || '#3b82f6'
+            : null
 
           const statusText = isFinal
             ? (game.quarter && game.quarter > 4 ? 'Final/OT' : 'Final')
@@ -52,6 +65,7 @@ const GameBar: React.FC = () => {
                 flexDirection: 'column',
                 backgroundColor: '#1e293b',
                 border: `1px solid ${isActive ? '#334155' : '#1e293b'}`,
+                boxShadow: isFavGame ? `inset 0 0 0 2px ${favColor}cc` : undefined,
                 borderRadius: '8px',
                 padding: '6px 10px',
                 cursor: 'pointer',

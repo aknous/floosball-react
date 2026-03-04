@@ -375,17 +375,21 @@ export default function PlayerPage() {
     </div>
   )
 
-  const attrRow = (label: string, _stars: number, value: number, isOverall = false) => (
-    <div key={label} style={{ marginBottom: isOverall ? '16px' : '10px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
-        <span style={{ fontSize: isOverall ? '15px' : '13px', fontWeight: isOverall ? '700' : '400', color: isOverall ? '#e2e8f0' : '#94a3b8' }}>{label}</span>
-        <span style={{ fontSize: isOverall ? '22px' : '16px', fontWeight: '700', color: isOverall ? teamColor : '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+  const attrRow = (label: string, _stars: number, value: number, isOverall = false) => {
+    const barColor = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
+    const pct = ((value - 60) / 40) * 100
+    return (
+      <div key={label} style={{ marginBottom: isOverall ? '16px' : '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
+          <span style={{ fontSize: isOverall ? '15px' : '13px', fontWeight: isOverall ? '700' : '400', color: isOverall ? '#e2e8f0' : '#94a3b8' }}>{label}</span>
+          <span style={{ fontSize: isOverall ? '22px' : '16px', fontWeight: '700', color: isOverall ? teamColor : '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+        </div>
+        <div style={{ height: isOverall ? '6px' : '4px', backgroundColor: '#334155', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{ width: `${pct}%`, height: '100%', backgroundColor: barColor, borderRadius: '2px' }} />
+        </div>
       </div>
-      <div style={{ height: isOverall ? '6px' : '4px', backgroundColor: '#334155', borderRadius: '2px', overflow: 'hidden' }}>
-        <div style={{ width: `${Math.min(100, value)}%`, height: '100%', backgroundColor: isOverall ? teamColor : `${teamColor}66`, borderRadius: '2px' }} />
-      </div>
-    </div>
-  )
+    )
+  }
 
   const { attributes: att } = player
 

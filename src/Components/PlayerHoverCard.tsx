@@ -117,7 +117,7 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
             <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '700' }}>{data.playerRating}</span>
           </div>
           <div style={{ height: '4px', backgroundColor: '#334155', borderRadius: '2px' }}>
-            <div style={{ width: `${Math.min(100, data.playerRating)}%`, height: '100%', backgroundColor: color, borderRadius: '2px' }} />
+            <div style={{ width: `${Math.min(100, data.playerRating)}%`, height: '100%', backgroundColor: data.playerRating >= 85 ? '#22c55e' : data.playerRating >= 72 ? '#f59e0b' : '#ef4444', borderRadius: '2px' }} />
           </div>
         </div>
 
@@ -129,7 +129,7 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
               <span style={{ fontSize: '13px', color: '#64748b' }}>{s.value}</span>
             </div>
             <div style={{ height: '3px', backgroundColor: '#334155', borderRadius: '2px' }}>
-              <div style={{ width: `${Math.min(100, s.value)}%`, height: '100%', backgroundColor: `${color}55`, borderRadius: '2px' }} />
+              <div style={{ width: `${Math.min(100, s.value)}%`, height: '100%', backgroundColor: s.value >= 85 ? '#22c55e' : s.value >= 72 ? '#f59e0b' : '#ef4444', borderRadius: '2px' }} />
             </div>
           </div>
         ))}

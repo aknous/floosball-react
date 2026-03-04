@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Thin scrollbars globally */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: #334155;
+  border-radius: 2px;
+}
+
 @keyframes scoreFlash {
   0%   { transform: scale(1);    color: #e2e8f0; }
   25%  { transform: scale(1.35); color: #fbbf24; }

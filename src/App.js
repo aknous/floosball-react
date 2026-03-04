@@ -1,5 +1,5 @@
 import './index.css';
-import React, { Fragment, useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import Navbar from './Components/Navbar.js'
 import GameBar from './Components/GameBar'
 import TeamGrid from './Views/Teams/TeamGrid'
@@ -12,28 +12,14 @@ import Records from './Views/Records/Records'
 import AdminPage from './Views/Admin/AdminPage'
 import Dashboard from './Views/Dashboard/Dashboard'
 import DashboardNew from './Views/Dashboard/DashboardNew'
-import { AuthModal } from './Components/Auth/AuthModals';
-import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
-import axios from 'axios'
-import { Disclosure, Dialog, Menu, Transition } from '@headlessui/react'
-import { supabase } from "./supabase/supabase";
+import { Route, Routes, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext'
 import { FloosballProvider } from './contexts/FloosballContext'
 import { SeasonWebSocketProvider } from './contexts/SeasonWebSocketContext'
 import { GamesProvider } from './contexts/GamesContext'
 import { ChakraProvider } from '@chakra-ui/react'
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  useDisclosure,
-} from '@chakra-ui/react'
 
-// Separate component so useLocation works (needs to be inside Router from index.js)
-function AppLayout({ onOpen, authBool, isOpen, onClose }) {
+function AppLayout() {
   const headerRef = useRef(null)
   const [headerHeight, setHeaderHeight] = useState(64)
 
@@ -49,7 +35,7 @@ function AppLayout({ onOpen, authBool, isOpen, onClose }) {
   return (
     <div className='bg-slate-300 min-h-screen relative font-pixel'>
       <div ref={headerRef} className='fixed w-full top-0 z-50'>
-        <Navbar onOpen={onOpen} authBool={authBool} />
+        <Navbar />
         <GameBar />
       </div>
       <div style={{ paddingTop: headerHeight }}>
@@ -65,52 +51,22 @@ function AppLayout({ onOpen, authBool, isOpen, onClose }) {
           <Route exact path='/admin' element={<AdminPage />} />
         </Routes>
       </div>
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalBody>
-            <AuthModal onClose={onClose} />
-          </ModalBody>
-        </ModalContent>
-      </Modal>
     </div>
   )
 }
 
 function App() {
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const [session, setSession] = useState(null)
-  const [authBool, setAuthBool] = useState(false)
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    })
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  useEffect(() => {
-    if (session?.user.aud === "authenticated") {
-      setAuthBool(true)
-    } else {
-      setAuthBool(false)
-    }
-  }, [session])
-
   return (
     <ChakraProvider>
-      <FloosballProvider>
-        <SeasonWebSocketProvider>
-          <GamesProvider>
-            <AppLayout onOpen={onOpen} authBool={authBool} isOpen={isOpen} onClose={onClose} />
-          </GamesProvider>
-        </SeasonWebSocketProvider>
-      </FloosballProvider>
+      <AuthProvider>
+        <FloosballProvider>
+          <SeasonWebSocketProvider>
+            <GamesProvider>
+              <AppLayout />
+            </GamesProvider>
+          </SeasonWebSocketProvider>
+        </FloosballProvider>
+      </AuthProvider>
     </ChakraProvider>
   );
 }
