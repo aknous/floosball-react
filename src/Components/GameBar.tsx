@@ -63,9 +63,8 @@ const GameBar: React.FC = () => {
               style={{
                 display: 'inline-flex',
                 flexDirection: 'column',
-                backgroundColor: '#1e293b',
+                backgroundColor: isFavGame ? '#253348' : '#1e293b',
                 border: `1px solid ${isActive ? '#334155' : '#1e293b'}`,
-                boxShadow: isFavGame ? `inset 0 0 0 2px ${favColor}cc` : undefined,
                 borderRadius: '8px',
                 padding: '6px 10px',
                 cursor: 'pointer',

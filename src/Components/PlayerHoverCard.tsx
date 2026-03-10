@@ -23,6 +23,7 @@ interface PlayerDetail {
     att3?: string; att3Value?: number; att3stars?: number
     playmakingStars?: number; playmakingValue?: number
     xFactorStars?: number; xFactorValue?: number
+    seasonPerformanceRating?: number
   }
 }
 
@@ -74,7 +75,7 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
       border: '1px solid #334155',
       borderRadius: '10px',
       boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-      zIndex: 9999,
+      zIndex: 20000,
       overflow: 'hidden',
       pointerEvents: 'none',
     }}>
@@ -120,6 +121,28 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
             <div style={{ width: `${Math.min(100, data.playerRating)}%`, height: '100%', backgroundColor: data.playerRating >= 85 ? '#22c55e' : data.playerRating >= 72 ? '#f59e0b' : '#ef4444', borderRadius: '2px' }} />
           </div>
         </div>
+
+        {/* Performance indicator */}
+        {(() => {
+          const perfRating = data.attributes?.seasonPerformanceRating
+          if (perfRating == null || perfRating === 0) return null
+          const delta = perfRating - data.playerRating
+          let symbols = ''
+          let label = ''
+          let indicatorColor = ''
+          if (delta >= 20) { symbols = '+++'; label = 'Overperforming'; indicatorColor = '#22c55e' }
+          else if (delta >= 12) { symbols = '++'; label = 'Overperforming'; indicatorColor = '#22c55e' }
+          else if (delta >= 5) { symbols = '+'; label = 'Overperforming'; indicatorColor = '#4ade80' }
+          else if (delta <= -20) { symbols = '---'; label = 'Underperforming'; indicatorColor = '#ef4444' }
+          else if (delta <= -12) { symbols = '--'; label = 'Underperforming'; indicatorColor = '#ef4444' }
+          else if (delta <= -5) { symbols = '-'; label = 'Underperforming'; indicatorColor = '#f87171' }
+          else return null
+          return (
+            <div style={{ fontSize: '12px', color: indicatorColor, fontWeight: '600', marginBottom: '10px' }}>
+              {symbols} {label}
+            </div>
+          )
+        })()}
 
         {/* Skills */}
         {skills.map(s => (

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { Stars } from '@/Components/Stars'
 import CoachAvatar from '@/Components/CoachAvatar'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -73,6 +74,7 @@ export default function TeamPage() {
   const { id } = useParams<{ id: string }>()
   const [team, setTeam] = useState<TeamData | null>(null)
   const [loading, setLoading] = useState(true)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!id) return
@@ -110,7 +112,7 @@ export default function TeamPage() {
     </div>
   )
 
-  const calcStars = (rating: number) => Math.round((1 + ((rating - 60) / 40) * 4) * 2) / 2
+  const calcStars = (rating: number) => Math.min(5, Math.max(1, Math.floor((rating - 60) / 8) + 1))
 
   const coachAttrBar = (value: number) => {
     const color = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
@@ -132,17 +134,17 @@ export default function TeamPage() {
       <div style={{
         background: `linear-gradient(135deg, ${team.color}50 0%, #0f172a 55%)`,
         borderBottom: '1px solid #1e293b',
-        padding: '28px 24px'
+        padding: isMobile ? '20px 16px' : '28px 24px'
       }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '20px' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '14px' : '20px' }}>
           <img
-            src={`${API_BASE}/teams/${team.id}/avatar?size=80&v=2`}
+            src={`${API_BASE}/teams/${team.id}/avatar?size=${isMobile ? 56 : 80}&v=2`}
             alt={team.name}
-            style={{ width: '80px', height: '80px', flexShrink: 0 }}
+            style={{ width: isMobile ? '56px' : '80px', height: isMobile ? '56px' : '80px', flexShrink: 0 }}
           />
           <div>
-            <div style={{ fontSize: '13px', color: '#94a3b8' }}>{team.league} · {team.city}</div>
-            <div style={{ fontSize: '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{team.name}</div>
+            <div style={{ fontSize: isMobile ? '11px' : '13px', color: '#94a3b8' }}>{team.league} · {team.city}</div>
+            <div style={{ fontSize: isMobile ? '20px' : '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{team.name}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', flexWrap: 'wrap' as const }}>
               <span style={{ fontSize: '15px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{team.wins}–{team.losses}</span>
               <span style={{ fontSize: '13px', color: '#64748b' }}>·</span>
@@ -164,10 +166,10 @@ export default function TeamPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
 
         {/* Top row: Trophy Chest · Ratings · Roster */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '16px', marginBottom: '20px' }}>
 
           {/* Trophy Chest */}
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
@@ -273,9 +275,9 @@ export default function TeamPage() {
         {team.coach && (
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
             {sectionHeader('Head Coach')}
-            <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: '260px 1fr', gap: '24px', alignItems: 'start' }}>
+            <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '260px 1fr', gap: isMobile ? '16px' : '24px', alignItems: 'start' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <CoachAvatar name={team.coach.name} size={120} style={{ border: `3px solid ${team.color}` }} />
+                <CoachAvatar name={team.coach.name} size={isMobile ? 80 : 120} style={{ border: `3px solid ${team.color}` }} />
                 <div>
                   <div style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>{team.coach.name}</div>
                   <Stars stars={calcStars(team.coach.overallRating)} size={13} />
@@ -304,12 +306,13 @@ export default function TeamPage() {
         )}
 
         {/* Schedule + Season History side by side */}
-        <div style={{ display: 'grid', gridTemplateColumns: (team.history?.length ?? 0) > 0 ? '3fr 2fr' : '1fr', gap: '16px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (team.history?.length ?? 0) > 0 ? '3fr 2fr' : '1fr', gap: '16px', alignItems: 'start' }}>
 
           {/* Schedule */}
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
             {sectionHeader('Schedule')}
-            <div style={{ display: 'grid', gridTemplateColumns: '32px 28px 1fr 44px 80px', gap: '8px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
+            <div style={{ overflowX: 'auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '32px 28px 1fr 44px 80px', gap: '8px', padding: '6px 14px', borderBottom: '1px solid #334155', minWidth: isMobile ? '400px' : undefined }}>
               {['WK', '', 'OPPONENT', 'RESULT', 'SCORE'].map((h, i) => (
                 <span key={i} style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: i >= 3 ? 'right' as const : 'left' as const }}>{h}</span>
               ))}
@@ -329,6 +332,7 @@ export default function TeamPage() {
                   padding: '7px 14px',
                   borderBottom: idx < team.schedule.length - 1 ? '1px solid #1a2640' : 'none',
                   backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+                  minWidth: isMobile ? '400px' : undefined,
                 }}>
                   <span style={{ fontSize: '12px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>{weekNum}</span>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>{game.isHome ? 'vs' : '@'}</span>
@@ -360,6 +364,7 @@ export default function TeamPage() {
                 </div>
               )
             })}
+            </div>
           </div>
 
           {/* Season History */}

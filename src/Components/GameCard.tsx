@@ -29,10 +29,11 @@ interface GameCardProps {
   isFeatured?: boolean
   isFav?: boolean
   favTeamColor?: string
+  favTeamId?: number | null
   onClick: (gameId: number) => void
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, isFav, favTeamColor, onClick }) => {
+export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, isFav, favTeamColor, favTeamId, onClick }) => {
   const isComplete = status === 'Final'
   const isLive = status === 'Active' && (quarter ?? 0) > 0
   const isFinal = isComplete
@@ -65,9 +66,8 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
   }, [awayScore])
 
   const cardStyle: React.CSSProperties = {
-    backgroundColor: '#1e293b',
+    backgroundColor: isFav ? '#253348' : '#1e293b',
     border: isUpsetAlert ? '2px solid #f97316' : isFeatured ? '2px solid #a78bfa' : isLive ? '2px solid #64748b' : '1px solid #334155',
-    boxShadow: isFav ? `inset 0 0 0 2px ${favTeamColor || '#3b82f6'}cc` : undefined,
     borderRadius: '8px',
     padding: '12px',
     marginBottom: '12px',
@@ -132,6 +132,11 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             <div style={{ fontSize: '13px', color: '#cbd5e1', marginBottom: '2px' }}>{homeTeam.city}</div>
             <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {homeTeam.name} <span style={{ fontSize: '13px', color: '#94a3b8' }}>({homeTeam.record})</span>
+              {isFav && favTeamId != null && String(favTeamId) === String(homeTeam.id) && (
+                <svg viewBox="0 0 24 24" fill={favTeamColor || '#3b82f6'} style={{ width: '14px', height: '14px', display: 'inline-block', marginLeft: '5px', verticalAlign: 'middle' }}>
+                  <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clipRule="evenodd" />
+                </svg>
+              )}
             </div>
           </div>
           <div style={scoreStyle} className={homeFlash ? 'score-updated' : ''}>
@@ -162,6 +167,11 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             <div style={{ fontSize: '13px', color: '#cbd5e1', marginBottom: '2px' }}>{awayTeam.city}</div>
             <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {awayTeam.name} <span style={{ fontSize: '13px', color: '#94a3b8' }}>({awayTeam.record})</span>
+              {isFav && favTeamId != null && String(favTeamId) === String(awayTeam.id) && (
+                <svg viewBox="0 0 24 24" fill={favTeamColor || '#3b82f6'} style={{ width: '14px', height: '14px', display: 'inline-block', marginLeft: '5px', verticalAlign: 'middle' }}>
+                  <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clipRule="evenodd" />
+                </svg>
+              )}
             </div>
           </div>
           <div style={scoreStyle} className={awayFlash ? 'score-updated' : ''}>

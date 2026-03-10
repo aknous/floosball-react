@@ -234,28 +234,6 @@ export default function GameStats(props) {
             <td className='text-center'>{gameData.homeTeam.te.gameStats.receiving.tds}</td>
             <td className='text-center font-bold'>{gameData.homeTeam.te.gameStats.fantasyPoints}</td>
           </tr>
-          <tr>
-            <td style={{ backgroundColor: `${gameData.homeTeam.teamcolor}` }} className='w-2'></td>
-            <td className='font-semibold pl-1 flex items-center'>
-              <Link to={`/players/${gameData.homeTeam.rb.id}`} key={gameData.homeTeam.rb.id} className={"hover:underline"} ><span className='font-normal'>{gameData.homeTeam.rb.number} </span>{gameData.homeTeam.rb.name}</Link>
-              <div className={`bg-slate-100 flex items-center justify-center ml-2 w-5 h-5 rounded-full ${gameData.homeTeam.rb.playerTier === 5 && 'bg-yellow-500'} ${gameData.homeTeam.rb.playerTier === 4 && 'bg-purple-500'} ${gameData.homeTeam.rb.playerTier === 3 && 'bg-blue-500'} ${gameData.homeTeam.rb.playerTier === 2 && 'bg-emerald-500'} ${gameData.homeTeam.rb.playerTier === 1 && 'bg-gray-500'}`}>
-                <div className={`text-xs text-center text-white font-bold uppercase`}>
-                  {gameData.homeTeam.rb.playerTier === 5 && 'S'}
-                  {gameData.homeTeam.rb.playerTier === 4 && 'A'}
-                  {gameData.homeTeam.rb.playerTier === 3 && 'B'}
-                  {gameData.homeTeam.rb.playerTier === 2 && 'C'}
-                  {gameData.homeTeam.rb.playerTier === 1 && 'D'}
-                </div>
-              </div>
-            </td>
-            <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.receptions}</td>
-            <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.drops}</td>
-            <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.yards}</td>
-            <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.yac}</td>
-            <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.ypr}</td>
-            <td className='text-center'>{gameData.homeTeam.rb.gameStats.receiving.tds}</td>
-            <td className='text-center font-bold'>{gameData.homeTeam.rb.gameStats.fantasyPoints}</td>
-          </tr>
           <tr className='border-b-2 border-slate-200'>
             <td></td>
             <td className='text-sm'>{gameData.awayTeam.teamName}</td>
@@ -327,28 +305,6 @@ export default function GameStats(props) {
             <td className='text-center font-bold'>{gameData.awayTeam.te.gameStats.fantasyPoints}</td>
           </tr>
 
-          <tr>
-            <td style={{ backgroundColor: `${gameData.awayTeam.teamcolor}` }} className='w-2'></td>
-            <td className='font-semibold pl-1 flex items-center'>
-              <Link to={`/players/${gameData.awayTeam.rb.id}`} key={gameData.awayTeam.rb.id} className={"hover:underline"} ><span className='font-normal'>{gameData.awayTeam.rb.number} </span>{gameData.awayTeam.rb.name}</Link>
-              <div className={`bg-slate-100 flex items-center justify-center ml-2 w-5 h-5 rounded-full ${gameData.awayTeam.rb.playerTier === 5 && 'bg-yellow-500'} ${gameData.awayTeam.rb.playerTier === 4 && 'bg-purple-500'} ${gameData.awayTeam.rb.playerTier === 3 && 'bg-blue-500'} ${gameData.awayTeam.rb.playerTier === 2 && 'bg-emerald-500'} ${gameData.awayTeam.rb.playerTier === 1 && 'bg-gray-500'}`}>
-                <div className={`text-xs text-center text-white font-bold uppercase`}>
-                  {gameData.awayTeam.rb.playerTier === 5 && 'S'}
-                  {gameData.awayTeam.rb.playerTier === 4 && 'A'}
-                  {gameData.awayTeam.rb.playerTier === 3 && 'B'}
-                  {gameData.awayTeam.rb.playerTier === 2 && 'C'}
-                  {gameData.awayTeam.rb.playerTier === 1 && 'D'}
-                </div>
-              </div>
-            </td>
-            <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.receptions}</td>
-            <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.drops}</td>
-            <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.yards}</td>
-            <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.yac}</td>
-            <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.ypr}</td>
-            <td className='text-center'>{gameData.awayTeam.rb.gameStats.receiving.tds}</td>
-            <td className='text-center font-bold'>{gameData.awayTeam.rb.gameStats.fantasyPoints}</td>
-          </tr>
         </tbody>
       </table>
       <div className='text-center text-xl font-medium border-b-2'>Special Teams</div>

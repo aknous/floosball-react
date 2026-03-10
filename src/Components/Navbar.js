@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { NavLink } from 'react-router-dom'
 import axios from 'axios'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { LoginModal } from './Auth/LoginModal'
+import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { FavoriteTeamModal } from './Auth/FavoriteTeamModal'
+import { AuthModal } from './Auth/AuthModal'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -49,7 +51,6 @@ function UserDropdown({ onClose }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
 
-  const displayName = user?.username ? `@${user.username}` : user?.email?.split('@')[0]
   const favTeam = teams.find(t => t.id === user?.favoriteTeamId)
 
   return (
@@ -68,12 +69,15 @@ function UserDropdown({ onClose }) {
       }}
     >
       <div style={{ padding: '12px 14px', borderBottom: '1px solid #334155' }}>
-        <div style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {displayName}
+        <div style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {user?.username || 'Unknown'}
         </div>
-        {user?.username && (
-          <div style={{ fontSize: '11px', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {user.email}
+        {user?.floobits != null && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '6px' }}>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: '#eab308' }}>
+              {user.floobits.toLocaleString()}
+            </span>
+            <span style={{ fontSize: '9px', color: '#a16207', fontWeight: '600' }}>Floobits</span>
           </div>
         )}
       </div>
@@ -143,13 +147,15 @@ function UserDropdown({ onClose }) {
 
 export default function Navbar() {
   const { seasonState, lastEvent } = useFloosball()
-  const { user, logout } = useAuth()
+  const { user, logout, fantasyRoster, refetchRoster } = useAuth()
+  const { event: wsEvent } = useSeasonWebSocket()
   const [champion, setChampion] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [showLogin, setShowLogin] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showTeamPicker, setShowTeamPicker] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
   const isMobile = useIsMobile()
+  const isTablet = useIsMobile(1200)
 
   const fetchChampion = async () => {
     try {
@@ -164,6 +170,20 @@ export default function Navbar() {
     if (lastEvent?.event === 'season_end') fetchChampion()
   }, [lastEvent])
 
+  // Fantasy points from snapshot (single source of truth)
+  const { myEntry } = useFantasySnapshot(user?.id)
+  const fantasyPoints = fantasyRoster?.isLocked && myEntry
+    ? { totalPoints: myEntry.seasonTotal }
+    : null
+
+  // Re-fetch roster on game events
+  useEffect(() => {
+    if (!wsEvent) return
+    if (wsEvent.event === 'game_end' || wsEvent.event === 'season_end' || wsEvent.event === 'week_start' || wsEvent.event === 'week_end') {
+      refetchRoster()
+    }
+  }, [wsEvent, refetchRoster])
+
   useEffect(() => {
     if (!isMobile) setMenuOpen(false)
   }, [isMobile])
@@ -176,7 +196,7 @@ export default function Navbar() {
     }
   }, [user])
 
-  const displayName = user?.username ? `@${user.username}` : user?.email?.split('@')[0]
+  const displayName = user?.username || 'User'
 
   const userControls = user ? (
     <div style={{ position: 'relative' }}>
@@ -205,7 +225,7 @@ export default function Navbar() {
     </div>
   ) : (
     <button
-      onClick={() => setShowLogin(true)}
+      onClick={() => setShowAuthModal(true)}
       style={{
         padding: '5px 12px', borderRadius: '6px',
         backgroundColor: 'transparent',
@@ -229,11 +249,21 @@ export default function Navbar() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '32px', minWidth: 0 }}>
-              <NavLink to="/dashboard" style={{ textDecoration: 'none', flexShrink: 0 }} onClick={() => setMenuOpen(false)}>
+              <NavLink to="/dashboard" style={{ textDecoration: 'none', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setMenuOpen(false)}>
+                <svg width={isMobile ? 24 : 30} height={isMobile ? 24 : 30} viewBox="0 0 32 32" style={{ flexShrink: 0 }}>
+                  <circle cx="16" cy="16" r="16" fill="#3b82f6" />
+                  <g transform="rotate(-45 16 16)">
+                    <ellipse cx="16" cy="16" rx="10" ry="6.5" fill="#e2e8f0" />
+                    <line x1="6" y1="16" x2="26" y2="16" stroke="#3b82f6" strokeWidth="1.2" />
+                    <line x1="13" y1="13.2" x2="13" y2="18.8" stroke="#3b82f6" strokeWidth="1" />
+                    <line x1="16" y1="12.5" x2="16" y2="19.5" stroke="#3b82f6" strokeWidth="1" />
+                    <line x1="19" y1="13.2" x2="19" y2="18.8" stroke="#3b82f6" strokeWidth="1" />
+                  </g>
+                </svg>
                 <h1 style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '600', color: '#e2e8f0', margin: 0 }}>Floosball</h1>
               </NavLink>
 
-              {!isMobile && (
+              {!isMobile && !isTablet && (
                 <div style={{ display: 'flex', gap: '12px', fontSize: '14px', color: '#94a3b8' }}>
                   <span>Season {seasonState.seasonNumber}</span>
                   <span>•</span>
@@ -241,7 +271,7 @@ export default function Navbar() {
                 </div>
               )}
 
-              {!isMobile && champion && (
+              {!isMobile && !isTablet && champion && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', paddingLeft: '8px', borderLeft: '1px solid #334155' }}>
                   <img src={`${API_BASE}/teams/${champion.id}/avatar?size=20&v=2`} alt={champion.name}
                     style={{ width: '20px', height: '20px', flexShrink: 0 }} />
@@ -255,6 +285,14 @@ export default function Navbar() {
 
             {isMobile ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {user?.floobits != null && (
+                  <NavLink to="/cards" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '5px', backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#eab308' }}>
+                      {user.floobits.toLocaleString()}
+                    </span>
+                    <span style={{ fontSize: '9px', color: '#a16207' }}>F</span>
+                  </NavLink>
+                )}
                 <button
                   onClick={() => setMenuOpen(o => !o)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', color: '#94a3b8', flexShrink: 0 }}
@@ -272,16 +310,32 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                {['Dashboard', 'Players', 'Records'].map(label => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: isTablet ? '14px' : '24px' }}>
+                {['Dashboard', 'Players', 'Records', 'Fantasy', 'Cards', 'About'].map(label => (
                   <NavLink key={label} to={`/${label.toLowerCase()}`}
                     style={({ isActive }) => ({
                       color: isActive ? '#e2e8f0' : '#94a3b8',
-                      textDecoration: 'none', fontSize: '14px', fontWeight: '500', transition: 'color 0.2s'
+                      textDecoration: 'none', fontSize: isTablet ? '13px' : '14px', fontWeight: '500', transition: 'color 0.2s'
                     })}>
                     {label}
                   </NavLink>
                 ))}
+                {fantasyPoints && (
+                  <NavLink to="/fantasy" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', backgroundColor: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)' }}>
+                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#4ade80' }}>
+                      {fantasyPoints.totalPoints.toFixed(0)}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#22c55e' }}>FP</span>
+                  </NavLink>
+                )}
+                {user?.floobits != null && (
+                  <NavLink to="/cards" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '6px', backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#eab308' }}>
+                      {user.floobits.toLocaleString()}
+                    </span>
+                    <span style={{ fontSize: '10px', color: '#a16207' }}>F</span>
+                  </NavLink>
+                )}
                 {userControls}
               </div>
             )}
@@ -302,16 +356,31 @@ export default function Navbar() {
                   </>
                 )}
               </div>
-              {[['Dashboard', '/dashboard'], ['Players', '/players'], ['Records', '/records']].map(([label, path]) => (
+              {[['Dashboard', '/dashboard'], ['Players', '/players'], ['Records', '/records'], ['Fantasy', '/fantasy'], ['Cards', '/cards'], ['About', '/about']].map(([label, path]) => (
                 <NavLink key={label} to={path} onClick={() => setMenuOpen(false)}
                   style={({ isActive }) => navLinkStyle(isActive)}>
                   {label}
                 </NavLink>
               ))}
+              {fantasyPoints && (
+                <NavLink to="/fantasy" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 0' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#4ade80' }}>
+                    {fantasyPoints.totalPoints.toFixed(0)} FP
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#22c55e' }}>Fantasy Points</span>
+                </NavLink>
+              )}
               <div style={{ borderTop: '1px solid #1e293b', paddingTop: '12px', marginTop: '4px' }}>
                 {user ? (
                   <>
-                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px' }}>{displayName}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>{displayName}</span>
+                      {user.floobits != null && (
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#eab308' }}>
+                          {user.floobits.toLocaleString()} Floobits
+                        </span>
+                      )}
+                    </div>
                     <button
                       onClick={() => { logout(); setMenuOpen(false) }}
                       style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', color: '#64748b', padding: 0 }}
@@ -321,7 +390,7 @@ export default function Navbar() {
                   </>
                 ) : (
                   <button
-                    onClick={() => { setShowLogin(true); setMenuOpen(false) }}
+                    onClick={() => { setMenuOpen(false); setShowAuthModal(true) }}
                     style={{ background: 'none', border: '1px solid #475569', borderRadius: '5px', padding: '6px 12px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', color: '#94a3b8' }}
                   >
                     Sign In
@@ -334,8 +403,8 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <LoginModal visible={showLogin} onClose={() => setShowLogin(false)} />
       <FavoriteTeamModal visible={showTeamPicker} onClose={() => setShowTeamPicker(false)} />
+      <AuthModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </>
   )
 }

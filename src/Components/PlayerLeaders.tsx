@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
+import { useAuth } from '@/contexts/AuthContext'
 import PlayerHoverCard from './PlayerHoverCard'
 import { Stars } from './Stars'
 
@@ -12,32 +13,36 @@ type Position = typeof POSITIONS[number]
 const CATEGORIES: Record<Position, { key: string; label: string }[]> = {
   ALL: [{ key: 'fantasy_points', label: 'Fantasy Pts' }],
   QB:  [
-    { key: 'fantasy_points',  label: 'Fantasy Pts' },
-    { key: 'passing_yards',   label: 'Pass Yds' },
-    { key: 'passing_tds',     label: 'Pass TDs' },
+    { key: 'fantasy_points',      label: 'Fantasy Pts' },
+    { key: 'passing_yards',       label: 'Pass Yds' },
+    { key: 'passing_tds',         label: 'Pass TDs' },
+    { key: 'performance_rating',  label: 'Perf Rating' },
   ],
   RB:  [
-    { key: 'fantasy_points',  label: 'Fantasy Pts' },
-    { key: 'rushing_yards',   label: 'Rush Yds' },
-    { key: 'rushing_tds',     label: 'Rush TDs' },
-    { key: 'receiving_yards', label: 'Rec Yds' },
+    { key: 'fantasy_points',      label: 'Fantasy Pts' },
+    { key: 'rushing_yards',       label: 'Rush Yds' },
+    { key: 'rushing_tds',         label: 'Rush TDs' },
+    { key: 'performance_rating',  label: 'Perf Rating' },
   ],
   WR:  [
-    { key: 'fantasy_points',  label: 'Fantasy Pts' },
-    { key: 'receiving_yards', label: 'Rec Yds' },
-    { key: 'receiving_tds',   label: 'Rec TDs' },
-    { key: 'receptions',      label: 'Receptions' },
+    { key: 'fantasy_points',      label: 'Fantasy Pts' },
+    { key: 'receiving_yards',     label: 'Rec Yds' },
+    { key: 'receiving_tds',       label: 'Rec TDs' },
+    { key: 'receptions',          label: 'Receptions' },
+    { key: 'performance_rating',  label: 'Perf Rating' },
   ],
   TE:  [
-    { key: 'fantasy_points',  label: 'Fantasy Pts' },
-    { key: 'receiving_yards', label: 'Rec Yds' },
-    { key: 'receiving_tds',   label: 'Rec TDs' },
-    { key: 'receptions',      label: 'Receptions' },
+    { key: 'fantasy_points',      label: 'Fantasy Pts' },
+    { key: 'receiving_yards',     label: 'Rec Yds' },
+    { key: 'receiving_tds',       label: 'Rec TDs' },
+    { key: 'receptions',          label: 'Receptions' },
+    { key: 'performance_rating',  label: 'Perf Rating' },
   ],
   K:   [
-    { key: 'fantasy_points', label: 'Fantasy Pts' },
-    { key: 'fg_made',        label: 'FG Made' },
-    { key: 'fg_pct',         label: 'FG %' },
+    { key: 'fantasy_points',      label: 'Fantasy Pts' },
+    { key: 'fg_made',             label: 'FG Made' },
+    { key: 'fg_pct',              label: 'FG %' },
+    { key: 'performance_rating',  label: 'Perf Rating' },
   ],
 }
 
@@ -55,8 +60,9 @@ interface Leader {
 }
 
 const formatStat = (value: number, category: string): string => {
-  if (category === 'fantasy_points') return value.toFixed(1)
+  if (category === 'fantasy_points') return value.toFixed(0)
   if (category === 'fg_pct') return `${value.toFixed(1)}%`
+  if (category === 'performance_rating') return String(Math.round(value))
   return String(value)
 }
 
@@ -66,6 +72,7 @@ export const PlayerLeaders: React.FC = () => {
   const [leaders, setLeaders] = useState<Leader[]>([])
   const [loading, setLoading] = useState(true)
   const { event } = useSeasonWebSocket()
+  const { fantasyPlayerIds } = useAuth()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const positionRef = useRef(position)
   const categoryRef = useRef(category)
@@ -174,24 +181,27 @@ export const PlayerLeaders: React.FC = () => {
         <div style={{ padding: '24px', textAlign: 'center', color: '#475569', fontSize: '13px' }}>No data yet</div>
       ) : (
         <div>
-          {leaders.map((player, idx) => (
+          {leaders.map((player, idx) => {
+            const isOnRoster = fantasyPlayerIds.has(player.id)
+            return (
             <div
               key={player.id}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '16px 20px 1fr auto',
+                gridTemplateColumns: '14px 24px 1fr auto',
                 alignItems: 'center',
-                gap: '6px',
-                padding: '7px 10px',
+                gap: '5px',
+                padding: '5px 6px 5px 4px',
                 borderBottom: idx < leaders.length - 1 ? '1px solid #1a2640' : 'none',
-                backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+                backgroundColor: isOnRoster ? 'rgba(34,197,94,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+                borderLeft: isOnRoster ? '2px solid #22c55e' : '2px solid transparent',
               }}
             >
               <span style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{player.rank}</span>
               <img
-                src={`${API_BASE}/teams/${player.teamId}/avatar?size=20&v=2`}
+                src={`${API_BASE}/teams/${player.teamId}/avatar?size=24&v=2`}
                 alt=""
-                style={{ width: '20px', height: '20px', flexShrink: 0 }}
+                style={{ width: '24px', height: '24px', flexShrink: 0 }}
               />
               <div style={{ minWidth: 0 }}>
                 <PlayerHoverCard playerId={player.id} playerName={player.name}>
@@ -200,14 +210,18 @@ export const PlayerLeaders: React.FC = () => {
                     style={{ fontSize: '13px', color: '#e2e8f0', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                   >
                     {player.name}
+                    {isOnRoster && (
+                      <span style={{ marginLeft: '5px', fontSize: '9px', fontWeight: '700', color: '#22c55e', verticalAlign: 'middle' }}>
+                        FP
+                      </span>
+                    )}
                   </Link>
                 </PlayerHoverCard>
-                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                <div style={{ fontSize: '11px', color: '#cbd5e1' }}>
                   {player.teamAbbr}
-                  {position === 'ALL' && <span style={{ marginLeft: '4px', color: '#64748b' }}>· {player.position}</span>}
-                  {player.gamesPlayed > 0 && <span style={{ marginLeft: '4px', color: '#64748b' }}>· {player.gamesPlayed}G</span>}
+                  {position === 'ALL' && <span style={{ marginLeft: '4px', color: '#94a3b8' }}>· {player.position}</span>}
                 </div>
-                <div style={{ marginTop: '1px' }}>
+                <div style={{ marginTop: '-2px' }}>
                   <Stars stars={player.ratingStars} size={10} />
                 </div>
               </div>
@@ -215,7 +229,8 @@ export const PlayerLeaders: React.FC = () => {
                 {formatStat(player.statValue, category)}
               </span>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

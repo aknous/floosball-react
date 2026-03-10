@@ -40,9 +40,10 @@ interface LeagueStandings {
 interface StandingsProps {
   leagueIndex: number
   maxHeight?: number
+  viewMode?: 'standings' | 'powerRankings'
 }
 
-export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 280 }) => {
+export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 280, viewMode = 'standings' }) => {
   const [leagues, setLeagues] = useState<LeagueStandings[]>([])
   const [loading, setLoading] = useState(true)
   const { event } = useSeasonWebSocket()
@@ -96,6 +97,11 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
 
   if (!league) return null
 
+  const isPowerRankings = viewMode === 'powerRankings'
+  const displayTeams = isPowerRankings
+    ? [...league.standings].sort((a, b) => b.elo - a.elo)
+    : league.standings
+
   return (
     <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
       <div style={{ padding: '10px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155' }}>
@@ -105,16 +111,17 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
       </div>
 
       {/* Header row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 48px 44px 44px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isPowerRankings ? '20px 1fr 48px 44px' : '1fr 48px 44px 44px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
+        {isPowerRankings && <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>#</span>}
         <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Team</span>
         <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>ELO</span>
         <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>W-L</span>
-        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>PCT</span>
+        {!isPowerRankings && <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>PCT</span>}
       </div>
 
-      {league.standings.map((team, index) => {
+      {displayTeams.map((team, index) => {
         const PLAYOFF_SPOTS = 6
-        const isPlayoffCutline = index === PLAYOFF_SPOTS - 1
+        const isPlayoffCutline = !isPowerRankings && index === PLAYOFF_SPOTS - 1
         const isFav = user?.favoriteTeamId === team.id
         const leftBorder = team.floosbowlChampion ? '3px solid #f59e0b'
           : team.clinchedTopSeed ? '3px solid #ca8a04'
@@ -132,17 +139,22 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 48px 44px 44px',
+            gridTemplateColumns: isPowerRankings ? '20px 1fr 48px 44px' : '1fr 48px 44px 44px',
             alignItems: 'center',
             padding: `7px 14px 7px ${paddingLeft}`,
             borderLeft: leftBorder,
             borderBottom: isPlayoffCutline
               ? '2px solid #334155'
-              : index < league.standings.length - 1 ? '1px solid #1e293b' : 'none',
+              : index < displayTeams.length - 1 ? '1px solid #1e293b' : 'none',
             backgroundColor: rowBg,
-            opacity: rowOpacity,
+            opacity: isPowerRankings ? 1 : rowOpacity,
           }}
         >
+          {/* Rank (power rankings only) */}
+          {isPowerRankings && (
+            <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>{index + 1}</span>
+          )}
+
           {/* Team info */}
           <Link to={`/team/${team.id}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, textDecoration: 'none' }}>
             <img
@@ -173,19 +185,21 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
           </Link>
 
           {/* ELO */}
-          <div style={{ fontSize: '13px', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: isPowerRankings ? '14px' : '13px', fontWeight: isPowerRankings ? '700' : '400', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
             {Math.round(team.elo)}
           </div>
 
           {/* W-L */}
-          <div style={{ fontSize: '13px', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: '13px', color: isPowerRankings ? '#94a3b8' : '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
             {team.wins}-{team.losses}
           </div>
 
-          {/* PCT */}
-          <div style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-            {team.winPerc.replace(/^0/, '')}
-          </div>
+          {/* PCT (standings only) */}
+          {!isPowerRankings && (
+            <div style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+              {team.winPerc.replace(/^0/, '')}
+            </div>
+          )}
         </div>
         </TeamHoverCard>
         )

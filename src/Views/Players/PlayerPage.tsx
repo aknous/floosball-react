@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import PlayerAvatar from '@/Components/PlayerAvatar'
 import { Stars } from '@/Components/Stars'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { GiLaurelsTrophy, GiStarMedal } from 'react-icons/gi'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -212,7 +214,7 @@ function RBStatsTable({ stats, career }: { stats: any[]; career: any }) {
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
         <tr>
-          {['Season', 'Team', 'Carr', 'Yds', 'YPC', 'TDs', 'FUM', 'Rec', 'Rec Yds', 'Pts'].map(h => (
+          {['Season', 'Team', 'Carr', 'Yds', 'YPC', 'TDs', 'FUM', 'Pts'].map(h => (
             <th key={h} style={thStyle}>{h}</th>
           ))}
         </tr>
@@ -226,8 +228,6 @@ function RBStatsTable({ stats, career }: { stats: any[]; career: any }) {
           <td style={careerTdStyle}>{r.ypc ?? '—'}</td>
           <td style={careerTdStyle}>{r.tds ?? '—'}</td>
           <td style={careerTdStyle}>{r.fumblesLost ?? '—'}</td>
-          <td style={careerTdStyle}>{career?.receiving?.receptions ?? '—'}</td>
-          <td style={careerTdStyle}>{career?.receiving?.yards ?? '—'}</td>
           <td style={careerTdStyle}>{career?.fantasyPoints?.toFixed(1) ?? '—'}</td>
         </tr>
         {stats?.map((s, idx) => (
@@ -242,8 +242,6 @@ function RBStatsTable({ stats, career }: { stats: any[]; career: any }) {
             <td style={tdStyle}>{s.rushing?.ypc ?? '—'}</td>
             <td style={tdStyle}>{s.rushing?.tds ?? '—'}</td>
             <td style={tdStyle}>{s.rushing?.fumblesLost ?? '—'}</td>
-            <td style={tdStyle}>{s.receiving?.receptions ?? '—'}</td>
-            <td style={tdStyle}>{s.receiving?.yards ?? '—'}</td>
             <td style={tdStyle}>{s.fantasyPoints?.toFixed(1) ?? '—'}</td>
           </tr>
         ))}
@@ -348,6 +346,7 @@ export default function PlayerPage() {
   const { id } = useParams<{ id: string }>()
   const [player, setPlayer] = useState<PlayerData | null>(null)
   const [loading, setLoading] = useState(true)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!id) return
@@ -412,23 +411,23 @@ export default function PlayerPage() {
       <div style={{
         background: `linear-gradient(135deg, ${teamColor}50 0%, #0f172a 55%)`,
         borderBottom: '1px solid #1e293b',
-        padding: '28px 24px',
+        padding: isMobile ? '20px 16px' : '28px 24px',
       }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'auto 400px', gap: '32px', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', display: isMobile ? 'flex' : 'grid', flexDirection: 'column', gridTemplateColumns: isMobile ? undefined : 'auto 400px', gap: isMobile ? '20px' : '32px', alignItems: 'center', justifyContent: 'center' }}>
 
           {/* Left: Avatar + Jersey + Name */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? '12px' : '16px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
-              <PlayerAvatar name={player.name} size={144} style={{ border: `3px solid ${teamColor}` }} />
-              <div style={{ width: '144px' }}>
+              <PlayerAvatar name={player.name} size={isMobile ? 100 : 144} style={{ border: `3px solid ${teamColor}` }} />
+              <div style={{ width: isMobile ? '100px' : '144px' }}>
                 <PlayerJersey color={teamColor} secondary={teamSecondary} number={player.number} name={player.name} />
               </div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '13px', color: '#64748b' }}>
+              <div style={{ fontSize: isMobile ? '11px' : '13px', color: '#64748b' }}>
                 {POSITION_FULL[player.position] ?? player.position}
               </div>
-              <div style={{ fontSize: '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{player.name}</div>
+              <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{player.name}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '6px' }}>
                 <Stars stars={player.ratingStars} size={16} />
                 {player.rank && (
@@ -454,7 +453,7 @@ export default function PlayerPage() {
           </div>
 
           {/* Right: Attributes */}
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', width: isMobile ? '100%' : undefined }}>
             {sectionHeader('Attributes')}
             <div style={{ padding: '14px 16px' }}>
               {attrs.map((a, i) => attrRow(a.label, a.stars, a.value, i === 0))}
@@ -464,23 +463,31 @@ export default function PlayerPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
 
         {/* Championships + Career Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '16px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: '16px', alignItems: 'start' }}>
 
-          {/* Championships */}
+          {/* Awards */}
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', minWidth: '180px' }}>
-            {sectionHeader('Championships')}
+            {sectionHeader('Awards')}
             <div style={{ padding: '16px' }}>
-              {(player.championships?.length ?? 0) === 0 ? (
-                <div style={{ fontSize: '13px', color: '#475569', fontStyle: 'italic' }}>No championships yet</div>
+              {(player.mvpAwards?.length ?? 0) === 0 && (player.championships?.length ?? 0) === 0 ? (
+                <div style={{ fontSize: '13px', color: '#475569', fontStyle: 'italic' }}>No awards yet</div>
               ) : (
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '16px' }}>
-                  {player.championships.map((c: any, i: number) => (
-                    <div key={i} style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: '28px' }}>🏆</div>
-                      <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>S{c.Season}</div>
+                  {(player.mvpAwards ?? []).map((a: any, i: number) => (
+                    <div key={`mvp-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <GiStarMedal style={{ fontSize: '28px', color: '#fbbf24' }} />
+                      <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: '600', marginTop: '2px' }}>MVP</div>
+                      <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
+                      <div style={{ fontSize: '11px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
+                    </div>
+                  ))}
+                  {(player.championships ?? []).map((c: any, i: number) => (
+                    <div key={`champ-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <GiLaurelsTrophy style={{ fontSize: '28px', color: '#f59e0b' }} />
+                      <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', marginTop: '2px' }}>S{c.Season}</div>
                       <div style={{ fontSize: '11px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
                     </div>
                   ))}

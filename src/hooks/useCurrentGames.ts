@@ -62,6 +62,8 @@ export interface CurrentGame {
   isHalftime?: boolean
   isUpsetAlert?: boolean
   isFeatured?: boolean
+  homeTimeouts?: number
+  awayTimeouts?: number
   gameStats?: GameStats
   plays?: any[]
 }

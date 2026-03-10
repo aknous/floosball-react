@@ -1,122 +1,163 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import { useUser, useAuth as useClerkAuth } from '@clerk/react'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
-// Auth routes live at the root (not under /api)
-const API_ROOT = API_BASE.replace(/\/api\/?$/, '')
-const TOKEN_KEY = 'floosball_token'
 
 export interface AuthUser {
   id: number
   email: string
   username: string | null
   favoriteTeamId: number | null
+  pendingFavoriteTeamId: number | null
+  favoriteTeamLockedSeason: number | null
+  floobits: number
+}
+
+export interface FantasyRosterPlayer {
+  slot: string
+  playerId: number
+  playerName: string
+  position: string
+  teamId: number | null
+  teamName: string
+  teamAbbr: string
+  teamColor: string
+  ratingStars: number
+  pointsAtLock: number
+  seasonFantasyPoints: number
+  currentFantasyPoints: number
+  earnedPoints: number
+}
+
+export interface FantasyRosterData {
+  id: number
+  season: number
+  isLocked: boolean
+  lockedAt: string | null
+  totalPoints: number
+  cardBonusPoints: number
+  players: FantasyRosterPlayer[]
 }
 
 interface AuthContextType {
   user: AuthUser | null
-  token: string | null
+  getToken: () => Promise<string | null>
   loading: boolean
-  login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string, username?: string) => Promise<void>
+  fantasyPlayerIds: Set<number>
+  fantasyRoster: FantasyRosterData | null
   logout: () => void
   setFavoriteTeam: (teamId: number) => Promise<void>
+  refetchRoster: () => Promise<void>
+  updateFloobits: (balance: number) => void
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY))
-  const [loading, setLoading] = useState<boolean>(!!localStorage.getItem(TOKEN_KEY))
+  const { isSignedIn, isLoaded } = useUser()
+  const { getToken, signOut } = useClerkAuth()
+  const [appUser, setAppUser] = useState<AuthUser | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [fantasyRoster, setFantasyRoster] = useState<FantasyRosterData | null>(null)
 
-  const fetchMe = useCallback(async (tok: string): Promise<boolean> => {
+  // Wrap Clerk's getToken so consumers get null when not signed in
+  const getFreshToken = useCallback(async (): Promise<string | null> => {
+    if (!isSignedIn) return null
+    return await getToken()
+  }, [isSignedIn, getToken])
+
+  // Derive fantasyPlayerIds from roster data
+  const fantasyPlayerIds = React.useMemo(() => {
+    if (!fantasyRoster?.isLocked || !fantasyRoster.players) return new Set<number>()
+    return new Set(fantasyRoster.players.map(p => p.playerId))
+  }, [fantasyRoster])
+
+  // Fetch fantasy roster from REST (no polling — called once + on events)
+  const refetchRoster = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/users/me`, {
+      const tok = await getToken()
+      if (!tok) return
+      const res = await fetch(`${API_BASE}/fantasy/roster`, {
         headers: { Authorization: `Bearer ${tok}` },
       })
-      if (!res.ok) throw new Error('Unauthorized')
-      const data = await res.json()
-      setUser(data)
-      return true
+      if (!res.ok) return
+      const json = await res.json()
+      const roster = json?.data?.roster || json?.roster
+      setFantasyRoster(roster ?? null)
     } catch {
-      localStorage.removeItem(TOKEN_KEY)
-      setToken(null)
-      setUser(null)
-      return false
-    } finally {
-      setLoading(false)
+      // silent
     }
-  }, [])
+  }, [getToken])
 
-  // On mount, validate any stored token
+  // When Clerk auth state changes, fetch/create local user profile + roster
   useEffect(() => {
-    if (token) {
-      fetchMe(token)
-    } else {
+    if (!isLoaded) return
+    if (!isSignedIn) {
+      setAppUser(null)
+      setFantasyRoster(null)
       setLoading(false)
+      return
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const login = useCallback(async (email: string, password: string) => {
-    const formData = new URLSearchParams()
-    formData.append('username', email)
-    formData.append('password', password)
-
-    const res = await fetch(`${API_ROOT}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData,
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.detail || 'Login failed')
+    const syncUser = async () => {
+      try {
+        const tok = await getToken()
+        const res = await fetch(`${API_BASE}/users/me`, {
+          headers: { Authorization: `Bearer ${tok}` },
+        })
+        if (res.ok) {
+          setAppUser(await res.json())
+        }
+      } catch {
+        // silent
+      } finally {
+        setLoading(false)
+      }
     }
-    const { access_token } = await res.json()
-    localStorage.setItem(TOKEN_KEY, access_token)
-    setToken(access_token)
-    await fetchMe(access_token)
-  }, [fetchMe])
-
-  const register = useCallback(async (email: string, password: string, username?: string) => {
-    const body: Record<string, string> = { email, password }
-    if (username) body.username = username
-
-    const res = await fetch(`${API_ROOT}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(err.detail || 'Registration failed')
-    }
-    // Auto-login after successful register
-    await login(email, password)
-  }, [login])
+    syncUser()
+    refetchRoster()
+  }, [isSignedIn, isLoaded, getToken, refetchRoster])
 
   const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY)
-    setToken(null)
-    setUser(null)
+    signOut()
+    setAppUser(null)
+    setFantasyRoster(null)
+  }, [signOut])
+
+  const updateFloobits = useCallback((balance: number) => {
+    setAppUser(prev => prev ? { ...prev, floobits: balance } : prev)
   }, [])
 
   const setFavoriteTeam = useCallback(async (teamId: number) => {
-    if (!token) return
+    const tok = await getToken()
+    if (!tok) return
     const res = await fetch(`${API_BASE}/user/favorite-team`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${tok}`,
       },
       body: JSON.stringify({ teamId }),
     })
     if (res.ok) {
-      setUser(prev => prev ? { ...prev, favoriteTeamId: teamId } : prev)
+      const data = await res.json()
+      if (data.isPending) {
+        setAppUser(prev => prev ? { ...prev, pendingFavoriteTeamId: data.pendingFavoriteTeamId } : prev)
+      } else {
+        setAppUser(prev => prev ? {
+          ...prev,
+          favoriteTeamId: teamId,
+          pendingFavoriteTeamId: null,
+          favoriteTeamLockedSeason: data.favoriteTeamLockedSeason ?? prev.favoriteTeamLockedSeason,
+        } : prev)
+      }
     }
-  }, [token])
+  }, [getToken])
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, setFavoriteTeam }}>
+    <AuthContext.Provider value={{
+      user: appUser, getToken: getFreshToken, loading, fantasyPlayerIds,
+      fantasyRoster, logout, setFavoriteTeam, refetchRoster, updateFloobits,
+    }}>
       {children}
     </AuthContext.Provider>
   )

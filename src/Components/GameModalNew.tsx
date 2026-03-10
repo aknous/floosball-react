@@ -59,7 +59,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
   const isHighlightPlay = (play: any) =>
     !play._type && !play.event && !play.text &&
-    (play.isTouchdown || play.isTurnover || play.scoreChange || play.isBigPlay)
+    (play.isTouchdown || play.isTurnover || play.scoreChange || play.isBigPlay || play.isClutchPlay || play.isChokePlay)
 
   // Pre-process plays: inject drive separators between possession changes
   const processedPlays = useMemo(() => {
@@ -185,10 +185,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         null
 
     const isBigPlay = !!play.isBigPlay
+    const isClutchPlay = !!play.isClutchPlay
+    const isChokePlay = !!play.isChokePlay
     const homeGained = (play.homeWpa ?? 0) > 0
     const bigPlayTeamAbbr = homeGained ? gameData.homeTeam.abbr : gameData.awayTeam.abbr
     const bigPlayTeamColor = homeGained ? gameData.homeTeam.color : gameData.awayTeam.color
     const wpaValue = homeGained ? (play.homeWpa ?? 0) : (play.awayWpa ?? 0)
+    const hasAccent = isBigPlay || isClutchPlay || isChokePlay
 
     return (
       <div key={`${keyPrefix}-${index}`} style={{
@@ -197,9 +200,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         paddingLeft: '10px',
         paddingRight: '6px',
         borderBottom: '1px solid #334155',
-        boxShadow: isBigPlay ? 'inset 3px 0 0 #f59e0b' : 'none',
-        backgroundColor: isBigPlay ? '#1a1300' : 'transparent',
-        borderRadius: isBigPlay ? '4px' : '0',
+        boxShadow: isBigPlay ? 'inset 3px 0 0 #f59e0b'
+          : isClutchPlay ? 'inset 3px 0 0 #06b6d4'
+          : isChokePlay ? 'inset 3px 0 0 #ef4444'
+          : 'none',
+        backgroundColor: isBigPlay ? '#1a1300'
+          : isClutchPlay ? '#001a1f'
+          : isChokePlay ? '#1a0500'
+          : 'transparent',
+        borderRadius: hasAccent ? '4px' : '0',
         display: 'flex',
         gap: '12px'
       }}>
@@ -238,6 +247,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               {isBigPlay && (
                 <span style={{ color: '#d97706', fontWeight: '600' }}>
                   ⚡ <span style={{ color: bigPlayTeamColor }}>{bigPlayTeamAbbr}</span> +{wpaValue.toFixed(1)}%
+                </span>
+              )}
+              {isClutchPlay && (
+                <span style={{ color: '#06b6d4', fontWeight: '600', fontSize: '11px' }}>
+                  ◆ CLUTCH
+                </span>
+              )}
+              {isChokePlay && (
+                <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '11px' }}>
+                  ▼ CHOKE
                 </span>
               )}
             </div>
@@ -420,6 +439,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 </div>
               </TeamHoverCard>
 
+              {/* Home timeouts */}
+              {gameData.status === 'Active' && gameData.homeTimeouts != null && (
+                <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingBottom: '8px' }}>
+                  {[0, 1, 2].map(i => (
+                    <div key={i} style={{
+                      width: '8px', height: '8px', borderRadius: '50%',
+                      backgroundColor: i < gameData.homeTimeouts! ? '#f59e0b' : '#334155',
+                      transition: 'background-color 0.3s',
+                    }} />
+                  ))}
+                </div>
+              )}
+
               {/* Away team */}
               <TeamHoverCard teamId={gameData.awayTeam.id}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '12px', borderTop: '1px solid #334155' }}>
@@ -448,6 +480,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </div>
                 </div>
               </TeamHoverCard>
+
+              {/* Away timeouts */}
+              {gameData.status === 'Active' && gameData.awayTimeouts != null && (
+                <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingTop: '8px' }}>
+                  {[0, 1, 2].map(i => (
+                    <div key={i} style={{
+                      width: '8px', height: '8px', borderRadius: '50%',
+                      backgroundColor: i < gameData.awayTimeouts! ? '#f59e0b' : '#334155',
+                      transition: 'background-color 0.3s',
+                    }} />
+                  ))}
+                </div>
+              )}
 
               {/* Quarter-by-quarter breakdown */}
               {gameData.quarterScores && (

@@ -26,25 +26,36 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try {
       if (isInitial) setLoading(true)
       const response = await api.games.getCurrentGames()
+      const gamesNeedingPlays: number[] = []
       setGames(prev => {
         const gamesMap = new Map<number, CurrentGame>()
         response.forEach(game => {
           const gameId = Number(game.id)
           const existing = prev.get(gameId)
+          const existingPlays = existing?.plays ?? []
           gamesMap.set(gameId, {
             ...existing,
             ...game,
             id: gameId,
             // Preserve plays and WP data accumulated via WebSocket
-            plays: existing?.plays ?? (game as any).plays ?? [],
+            plays: existingPlays.length > 0 ? existingPlays : (game as any).plays ?? [],
             homeWinProbability: existing?.homeWinProbability ?? (game as any).homeWinProbability,
             awayWinProbability: existing?.awayWinProbability ?? (game as any).awayWinProbability,
           })
+          // If game is active or final but has no plays loaded, queue it for fetching
+          if (existingPlays.length === 0 && (game.status === 'Active' || game.status === 'Final')) {
+            gamesNeedingPlays.push(gameId)
+          }
         })
         return gamesMap
       })
       hasLoadedOnce.current = true
       setError(null)
+
+      // Fetch plays for games that need them (e.g., after page refresh)
+      for (const gameId of gamesNeedingPlays) {
+        fetchGamePlays(gameId)
+      }
     } catch (err) {
       console.error('Error fetching games:', err)
       setError('Failed to load games')
@@ -61,6 +72,13 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Update games from WebSocket events
   useEffect(() => {
     if (!event) return
+
+    // Handle week_end — clear games so live card bonus stops (storedCardBonus
+    // gets updated by the backend, preventing double-counting)
+    if (event.event === 'week_end') {
+      setGames(new Map())
+      return
+    }
 
     // Handle week_start event - refetch all games for new week
     if (event.event === 'week_start') {
@@ -199,6 +217,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           const enrichByPlayNumber = new Map<number, {
             homeWinProbability: number; awayWinProbability: number
             homeWpa?: number; awayWpa?: number; isBigPlay?: boolean
+            isClutchPlay?: boolean; isChokePlay?: boolean
           }>()
           ;(game.plays || []).forEach((p: any) => {
             if (p.playNumber != null && p.homeWinProbability != null) {
@@ -208,21 +227,19 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 homeWpa: p.homeWpa,
                 awayWpa: p.awayWpa,
                 isBigPlay: p.isBigPlay,
+                isClutchPlay: p.isClutchPlay,
+                isChokePlay: p.isChokePlay,
               })
             }
           })
 
-          // Merge: use API plays (complete history) enriched with any WP/WPA we have
+          // Merge: use API plays as base, overlay any enrichment from WebSocket
           const mergedPlays = gameData.plays.map((p: any) => {
             const enrich = enrichByPlayNumber.get(p.playNumber)
-            if (p.homeWinProbability != null) {
-              // API has WP — still overlay WebSocket isBigPlay if API is missing it
-              return enrich && p.isBigPlay == null ? { ...p, ...enrich } : p
-            }
             return enrich ? { ...p, ...enrich } : p
           })
 
-          updated.set(gameId, { ...game, plays: mergedPlays })
+          updated.set(gameId, { ...game, plays: mergedPlays, gameStats: gameData.gameStats ?? game.gameStats })
         }
         return updated
       })

@@ -75,8 +75,6 @@ const COLS: Record<PositionFilter, ColDef[]> = {
     { key: 'rypc',  label: 'YPC',    getValue: p => p.currentStats.rushing.ypc,        sortValue: p => p.currentStats.rushing.ypc },
     { key: 'rtds',  label: 'TDs',    getValue: p => p.currentStats.rushing.tds,        sortValue: p => p.currentStats.rushing.tds },
     { key: 'fum',   label: 'FUM',    getValue: p => p.currentStats.rushing.fumblesLost, sortValue: p => p.currentStats.rushing.fumblesLost },
-    { key: 'rec',   label: 'Rec',    getValue: p => p.currentStats.receiving.receptions, sortValue: p => p.currentStats.receiving.receptions },
-    { key: 'recyds',label: 'Rec Yds',getValue: p => p.currentStats.receiving.yards,    sortValue: p => p.currentStats.receiving.yards },
     FPT_COL,
   ],
   WR: [

@@ -80,6 +80,8 @@ export interface PlayEvent {
   homeWpa?: number
   awayWpa?: number
   isBigPlay?: boolean
+  isClutchPlay?: boolean
+  isChokePlay?: boolean
 }
 
 // Game Events
@@ -242,6 +244,8 @@ export interface GameStateEvent extends BaseWebSocketEvent {
     homeWpa: number
     awayWpa: number
     isBigPlay: boolean
+    isClutchPlay: boolean
+    isChokePlay: boolean
   } | null
   homeWinProbability: number
   awayWinProbability: number
@@ -280,6 +284,7 @@ interface PlayerBase {
   playerRating: number
   ratingStars: number
   fantasyPoints: number
+  totalFantasyPoints: number
 }
 
 export interface GameStats {
@@ -396,11 +401,21 @@ export type SeasonWebSocketEvent =
   | GameStartEvent
   | GameEndEvent
   | LeagueNewsEvent
+  | LeaderboardUpdateEvent
   | OffseasonStartEvent
   | OffseasonPickEvent
   | OffseasonCutEvent
   | OffseasonTeamCompleteEvent
   | OffseasonCompleteEvent
+
+// Leaderboard Events
+
+export interface LeaderboardUpdateEvent extends BaseWebSocketEvent {
+  event: 'leaderboard_update'
+  leaderboard: any[]
+  season?: number
+  week?: number
+}
 
 // Standings Events
 

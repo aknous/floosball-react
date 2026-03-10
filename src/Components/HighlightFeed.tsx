@@ -55,6 +55,8 @@ const getBadge = (play: any): { label: string; color: string } | null => {
     if (play.playType === 'FieldGoal') return { label: 'FG', color: '#22c55e' }
     return { label: 'SCORE', color: '#22c55e' }
   }
+  if (play.isClutchPlay) return { label: 'CLUTCH', color: '#06b6d4' }
+  if (play.isChokePlay) return { label: 'CHOKE', color: '#ef4444' }
   return null
 }
 
@@ -106,7 +108,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
 
       plays.forEach((play: any) => {
         if (!play.playNumber) return
-        if (!(play.isTouchdown || play.isTurnover || play.scoreChange || play.isBigPlay)) return
+        if (!(play.isTouchdown || play.isTurnover || play.scoreChange || play.isBigPlay || play.isClutchPlay || play.isChokePlay)) return
 
         // For turnovers (without TD), feature the defensive team — they benefited
         const isTurnoverOnly = play.isTurnover && !play.isTouchdown
