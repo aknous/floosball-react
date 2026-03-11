@@ -64,6 +64,8 @@ export interface CurrentGame {
   isFeatured?: boolean
   homeTimeouts?: number
   awayTimeouts?: number
+  momentum?: number
+  momentumTeam?: string | null
   gameStats?: GameStats
   plays?: any[]
 }

@@ -8,12 +8,11 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-const CATEGORY_COLORS: Record<string, string> = {
-  flat_fp: '#4ade80',
-  multiplier: '#a78bfa',
-  floobits: '#eab308',
-  conditional: '#60a5fa',
-  streak: '#fb923c',
+const OUTPUT_TYPE_COLORS: Record<string, string> = {
+  fp: '#4ade80',       // green — FP output
+  mult: '#a78bfa',     // purple — +FPx output
+  xmult: '#f472b6',    // magenta — xFPx output
+  floobits: '#eab308', // gold — floobits output
 }
 
 const EDITION_LABEL_COLORS: Record<string, string> = {
@@ -77,6 +76,62 @@ const HoverTooltip: React.FC<{ text: string; color?: string; children: React.Rea
   )
 }
 
+const EquippedCardSlot: React.FC<{
+  slot: EquippedSlot
+  slotNum: number
+  canEdit: boolean
+  onUnequip: (slotNum: number) => void
+}> = ({ slot, slotNum, canEdit, onUnequip }) => {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div style={{
+      position: 'relative',
+      transition: 'transform 0.15s',
+      transform: hovered ? 'translateY(-4px)' : 'none',
+    }}>
+      <TradingCard
+        card={slot.card}
+        size="sm"
+        glowColor={slot.isMatch ? '#22c55e' : undefined}
+        noHoverLift
+        onHoverChange={setHovered}
+      />
+
+      {slot.isMatch && (
+        <div style={{
+          position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
+          fontSize: '8px', color: '#22c55e', fontWeight: '700',
+          backgroundColor: 'rgba(34,197,94,0.15)',
+          padding: '2px 5px', borderRadius: '4px',
+          border: '1px solid rgba(34,197,94,0.3)',
+          pointerEvents: 'none',
+        }}>
+          MATCH
+        </div>
+      )}
+
+      {canEdit && (
+        <button
+          onClick={() => onUnequip(slotNum)}
+          style={{
+            position: 'absolute', top: -6, right: -6,
+            width: '22px', height: '22px',
+            borderRadius: '50%',
+            backgroundColor: '#ef4444',
+            border: '2px solid #1e293b',
+            color: '#fff', fontSize: '11px', fontWeight: '700',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 0,
+          }}
+        >
+          x
+        </button>
+      )}
+    </div>
+  )
+}
+
 const CardEquipment: React.FC = () => {
   const { getToken, fantasyPlayerIds } = useAuth()
   const { event: wsEvent } = useSeasonWebSocket()
@@ -134,7 +189,7 @@ const CardEquipment: React.FC = () => {
 
   useEffect(() => {
     if (!wsEvent) return
-    if (wsEvent.event === 'week_start' || wsEvent.event === 'week_end') {
+    if (wsEvent.event === 'week_start' || wsEvent.event === 'week_end' || wsEvent.event === 'game_start') {
       fetchEquipped()
     }
   }, [wsEvent, fetchEquipped])
@@ -332,8 +387,8 @@ const CardEquipment: React.FC = () => {
             const edLabelColor = EDITION_LABEL_COLORS[edition] ?? '#94a3b8'
             const effectName = slot.card.displayName || slot.card.effectConfig?.displayName || ''
             const tooltip = slot.card.tooltip || slot.card.effectConfig?.tooltip || ''
-            const category = slot.card.category || slot.card.effectConfig?.category || ''
-            const categoryColor = CATEGORY_COLORS[category] || '#94a3b8'
+            const outputType = slot.card.outputType || slot.card.effectConfig?.outputType || ''
+            const outputColor = OUTPUT_TYPE_COLORS[outputType] || '#94a3b8'
             return (
               <div
                 key={slotNum}
@@ -378,14 +433,14 @@ const CardEquipment: React.FC = () => {
                     >x</button>
                   )}
                 </div>
-                {/* Player name */}
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {/* Player name — tinted by card category */}
+                <div style={{ fontSize: '13px', fontWeight: '600', color: outputColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {slot.card.playerName}
                 </div>
                 {/* Effect name — hover for tooltip */}
                 {effectName && (
-                  <HoverTooltip text={tooltip} color={categoryColor}>
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: categoryColor, marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <HoverTooltip text={tooltip} color={outputColor}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: outputColor, marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {effectName}
                     </div>
                   </HoverTooltip>
@@ -413,47 +468,13 @@ const CardEquipment: React.FC = () => {
 
             if (slot) {
               return (
-                <div key={slotNum} style={{ position: 'relative' }}>
-                  <div style={{
-                    borderRadius: '14px',
-                    boxShadow: slot.isMatch
-                      ? '0 0 0 2px #22c55e, 0 0 12px rgba(34,197,94,0.3)'
-                      : 'none',
-                  }}>
-                    <TradingCard card={slot.card} size="sm" />
-                  </div>
-
-                  {slot.isMatch && (
-                    <div style={{
-                      position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
-                      fontSize: '8px', color: '#22c55e', fontWeight: '700',
-                      backgroundColor: 'rgba(34,197,94,0.15)',
-                      padding: '2px 5px', borderRadius: '4px',
-                      border: '1px solid rgba(34,197,94,0.3)',
-                    }}>
-                      MATCH
-                    </div>
-                  )}
-
-                  {canEdit && (
-                    <button
-                      onClick={() => handleUnequip(slotNum)}
-                      style={{
-                        position: 'absolute', top: -6, right: -6,
-                        width: '22px', height: '22px',
-                        borderRadius: '50%',
-                        backgroundColor: '#ef4444',
-                        border: '2px solid #1e293b',
-                        color: '#fff', fontSize: '11px', fontWeight: '700',
-                        cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        padding: 0,
-                      }}
-                    >
-                      x
-                    </button>
-                  )}
-                </div>
+                <EquippedCardSlot
+                  key={slotNum}
+                  slot={slot}
+                  slotNum={slotNum}
+                  canEdit={canEdit}
+                  onUnequip={handleUnequip}
+                />
               )
             }
 
@@ -463,7 +484,7 @@ const CardEquipment: React.FC = () => {
                 onClick={() => canEdit && setPickerSlot(slotNum)}
                 disabled={!canEdit}
                 style={{
-                  width: 160, height: 80,
+                  width: isMobile ? '100%' : 160, height: 80,
                   borderRadius: '10px',
                   border: '2px dashed #334155',
                   backgroundColor: 'rgba(30,41,59,0.5)',
@@ -485,7 +506,7 @@ const CardEquipment: React.FC = () => {
       )}
 
       {/* Draft mode confirmation banner */}
-      {expanded && isDraftMode && !loading && (
+      {isDraftMode && !loading && (
         <div style={{
           marginTop: '10px',
           padding: '8px 14px',

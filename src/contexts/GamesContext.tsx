@@ -21,7 +21,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const { event } = useSeasonWebSocket()
   const hasLoadedOnce = useRef(false)
 
-  const fetchGames = async () => {
+  const fetchGames = async (keepFinal = false) => {
     const isInitial = !hasLoadedOnce.current
     try {
       if (isInitial) setLoading(true)
@@ -29,6 +29,13 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const gamesNeedingPlays: number[] = []
       setGames(prev => {
         const gamesMap = new Map<number, CurrentGame>()
+        // When keepFinal is true, preserve Final games already in state
+        // so they don't vanish when the backend removes them from activeGames
+        if (keepFinal) {
+          prev.forEach((g, id) => {
+            if (g.status === 'Final') gamesMap.set(id, g)
+          })
+        }
         response.forEach(game => {
           const gameId = Number(game.id)
           const existing = prev.get(gameId)
@@ -37,10 +44,16 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             ...existing,
             ...game,
             id: gameId,
-            // Preserve plays and WP data accumulated via WebSocket
+            // Preserve WebSocket-accumulated state that REST API may not include or may have stale
             plays: existingPlays.length > 0 ? existingPlays : (game as any).plays ?? [],
             homeWinProbability: existing?.homeWinProbability ?? (game as any).homeWinProbability,
             awayWinProbability: existing?.awayWinProbability ?? (game as any).awayWinProbability,
+            possession: existing?.possession ?? (game as any).possession,
+            homeTeamPoss: existing?.homeTeamPoss ?? (game as any).homeTeamPoss,
+            awayTeamPoss: existing?.awayTeamPoss ?? (game as any).awayTeamPoss,
+            yardsToEndzone: existing?.yardsToEndzone ?? (game as any).yardsToEndzone,
+            momentum: existing?.momentum ?? (game as any).momentum,
+            momentumTeam: existing?.momentumTeam ?? (game as any).momentumTeam,
           })
           // If game is active or final but has no plays loaded, queue it for fetching
           if (existingPlays.length === 0 && (game.status === 'Active' || game.status === 'Final')) {
@@ -73,14 +86,8 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   useEffect(() => {
     if (!event) return
 
-    // Handle week_end — clear games so live card bonus stops (storedCardBonus
-    // gets updated by the backend, preventing double-counting)
-    if (event.event === 'week_end') {
-      setGames(new Map())
-      return
-    }
-
     // Handle week_start event - refetch all games for new week
+    // (replaces previous week's completed games with new scheduled games)
     if (event.event === 'week_start') {
       fetchGames()
       return
@@ -136,6 +143,8 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             isHalftime: event.isHalftime,
             isOvertime: event.isOvertime,
             isUpsetAlert: event.isUpsetAlert ?? game.isUpsetAlert,
+            momentum: event.momentum,
+            momentumTeam: event.momentumTeam,
             gameStats: event.gameStats ?? game.gameStats,
             plays: lastPlayData ? [lastPlayData, ...(game.plays || [])] : (game.plays || [])
           }
@@ -196,9 +205,12 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return updated
     })
 
-    // Refetch after game ends to pick up updated team records (wins/losses)
+    // Refetch after game ends to pick up updated team records (wins/losses).
+    // Use merge mode so Final games already in state aren't wiped out
+    // (the backend removes finished games from activeGames, so the API may
+    // return an empty list once the last game ends).
     if (event.event === 'game_end') {
-      fetchGames()
+      fetchGames(true)
     }
   }, [event])
 

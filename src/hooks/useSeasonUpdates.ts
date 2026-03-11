@@ -10,6 +10,7 @@ export interface SeasonState {
   activeGames: number[]
   completedGames: number[]
   seasonComplete: boolean
+  nextGameStartTime: string | null
 }
 
 export const useSeasonUpdates = () => {
@@ -21,7 +22,8 @@ export const useSeasonUpdates = () => {
     currentWeekText: 'Week 1',
     activeGames: [],
     completedGames: [],
-    seasonComplete: false
+    seasonComplete: false,
+    nextGameStartTime: null,
   })
 
   // Fetch initial season data from API
@@ -37,7 +39,8 @@ export const useSeasonUpdates = () => {
             currentWeek: result.data.current_week || 1,
             currentWeekText: result.data.current_week_text || 'Week 1',
             activeGames: result.data.active_games || [],
-            completedGames: result.data.completed_games || []
+            completedGames: result.data.completed_games || [],
+            nextGameStartTime: result.data.next_game_start_time || null,
           }))
         }
       } catch (err) {
@@ -69,7 +72,8 @@ export const useSeasonUpdates = () => {
           currentWeek: event.weekNumber,
           currentWeekText: (event as any).weekText ?? `Week ${event.weekNumber}`,
           activeGames: [],
-          completedGames: []
+          completedGames: [],
+          nextGameStartTime: null,
         }))
         break
 
@@ -92,7 +96,8 @@ export const useSeasonUpdates = () => {
         setSeasonState(prev => ({
           ...prev,
           activeGames: [],
-          completedGames: []
+          completedGames: [],
+          nextGameStartTime: (event as any).nextGameStartTime || null,
         }))
         break
 

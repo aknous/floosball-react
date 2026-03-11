@@ -68,5 +68,5 @@ export function useFantasyLivePoints(
     }, 0)
   }, [rosterPlayers, livePlayerMap])
 
-  return { getLiveEarnedPoints, totalPoints }
+  return { getLiveEarnedPoints, totalPoints, livePlayerMap }
 }

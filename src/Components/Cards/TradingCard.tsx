@@ -140,7 +140,7 @@ const TYPE_COLORS: Record<string, string> = {
  * Parse text for FP-type keywords and wrap them + their numeric prefix in colored spans.
  */
 function colorizeEffectText(text: string, baseColor: string): React.ReactNode {
-  const pattern = /([+-]?\d+\.?\d*x?\s*)(xFPx|\+?FPx|FP\b|Floobits\b|F\b)/g
+  const pattern = /([+-]?\d+\.?\d*x?\s*)?(xFPx|\+?FPx|FP\b|Floobits\b|F\b)/g
   const parts: React.ReactNode[] = []
   let lastIdx = 0
   let m: RegExpExecArray | null
@@ -190,11 +190,13 @@ export interface CardData {
   effectName?: string
   displayName?: string
   category?: string
+  outputType?: string
   tagline?: string
   tooltip?: string
   detail?: string
   sellValue: number
   isActive: boolean
+  isEquipped?: boolean
   acquiredAt: string | null
   acquiredVia: string
 }
@@ -203,8 +205,12 @@ interface TradingCardProps {
   card: CardData
   size?: 'sm' | 'md' | 'lg'
   selected?: boolean
+  onSelect?: () => void
   onClick?: () => void
   showSellValue?: boolean
+  glowColor?: string  // persistent outline/glow (e.g. green for roster match)
+  noHoverLift?: boolean  // disable translateY on hover (parent handles it)
+  onHoverChange?: (hovered: boolean) => void
 }
 
 const SIZES = {
@@ -399,7 +405,7 @@ const EffectNameBadge: React.FC<{
 }
 
 const TradingCard: React.FC<TradingCardProps> = ({
-  card, size = 'md', selected = false, onClick, showSellValue = false,
+  card, size = 'md', selected = false, onSelect, onClick, showSellValue = false, glowColor, noHoverLift, onHoverChange,
 }) => {
   const [hovered, setHovered] = useState(false)
   const [flipped, setFlipped] = useState(false)
@@ -412,6 +418,8 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const effectDetail = card.detail || card.effectConfig?.detail || ''
   const category = card.category || card.effectConfig?.category || ''
   const categoryColor = CATEGORY_COLORS[category] || '#94a3b8'
+  const outputType = card.outputType || card.effectConfig?.outputType || ''
+  const outputTypeColor = TYPE_COLORS[outputType] || categoryColor
   const secondaryLines = getSecondaryBonusLines(card.edition, card.effectConfig)
 
   const stars = Math.min(5, Math.max(1, Math.round((card.playerRating - 50) / 10)))
@@ -430,21 +438,23 @@ const TradingCard: React.FC<TradingCardProps> = ({
     width: d.width,
     height: d.height,
     borderRadius: '12px',
-    border: `2px solid ${selected ? '#3b82f6' : edStyle.borderColor}`,
+    border: `2px solid ${selected ? '#3b82f6' : glowColor || edStyle.borderColor}`,
     background: edStyle.bgGradient,
     fontFamily: 'pressStart',
-    cursor: onClick ? 'pointer' : 'default',
+    cursor: 'pointer',
     position: 'relative',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
     transition: 'transform 0.15s, box-shadow 0.15s',
-    transform: hovered && onClick ? 'translateY(-4px)' : 'none',
+    transform: !noHoverLift && hovered ? 'translateY(-4px)' : 'none',
     boxShadow: selected
       ? '0 0 0 2px #3b82f6, 0 4px 20px rgba(59,130,246,0.3)'
-      : edStyle.glowColor && hovered
-        ? `0 4px 20px ${edStyle.glowColor}`
-        : '0 2px 8px rgba(0,0,0,0.3)',
+      : glowColor
+        ? `0 0 0 2px ${glowColor}, 0 0 12px ${glowColor}40`
+        : edStyle.glowColor && hovered
+          ? `0 4px 20px ${edStyle.glowColor}`
+          : '0 2px 8px rgba(0,0,0,0.3)',
     opacity: card.isActive ? 1 : 0.7,
     flexShrink: 0,
   }
@@ -452,9 +462,9 @@ const TradingCard: React.FC<TradingCardProps> = ({
   return (
     <div
       style={containerStyle}
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onClick={() => { if (onClick) { onClick(); return; } setFlipped(f => !f); }}
+      onMouseEnter={() => { setHovered(true); onHoverChange?.(true) }}
+      onMouseLeave={() => { setHovered(false); onHoverChange?.(false) }}
     >
       {/* Header: edition + season + rookie */}
       <div style={{
@@ -557,7 +567,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
                 <EffectNameBadge
                   name={effectDisplayName}
                   tooltip={effectTooltip}
-                  color={categoryColor}
+                  color={outputTypeColor}
                   fontSize={d.font - 1}
                 />
               </div>
@@ -588,12 +598,21 @@ const TradingCard: React.FC<TradingCardProps> = ({
             />
           )}
 
-          {/* Sell value / expired badge */}
-          {(showSellValue || !card.isActive) && (
+          {/* Sell value / expired / equipped badges */}
+          {(showSellValue || !card.isActive || card.isEquipped) && (
             <div style={{
               position: 'absolute', bottom: d.pad - 2, right: d.pad,
               display: 'flex', gap: '4px', alignItems: 'center',
             }}>
+              {card.isEquipped && (
+                <span style={{
+                  fontSize: d.font - 4, color: '#60a5fa',
+                  backgroundColor: 'rgba(96,165,250,0.15)', padding: '1px 4px',
+                  borderRadius: '3px', border: '1px solid rgba(96,165,250,0.3)',
+                }}>
+                  Equipped
+                </span>
+              )}
               {!card.isActive && (
                 <span style={{
                   fontSize: d.font - 4, color: '#ef4444',
@@ -603,7 +622,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
                   Expired
                 </span>
               )}
-              {showSellValue && (
+              {showSellValue && !card.isEquipped && (
                 <span style={{ fontSize: d.font - 3, color: '#eab308', fontWeight: '600' }}>
                   {card.sellValue}
                 </span>
@@ -611,27 +630,32 @@ const TradingCard: React.FC<TradingCardProps> = ({
             </div>
           )}
 
-          {/* Flip button — appears on hover */}
-          {hovered && (
+          {/* Select overlay for collection selling — visible on hover or when selected */}
+          {onSelect && !card.isEquipped && (hovered || selected) && (
             <button
-              onClick={(e) => { e.stopPropagation(); setFlipped(true) }}
+              onClick={(e) => { e.stopPropagation(); onSelect() }}
               style={{
                 position: 'absolute',
-                bottom: d.pad - 2,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                fontSize: d.font - 4,
-                color: '#94a3b8',
-                backgroundColor: 'rgba(15,23,42,0.85)',
-                border: `1px solid ${edStyle.borderColor}60`,
+                top: d.pad - 2,
+                right: d.pad - 2,
+                width: '20px',
+                height: '20px',
                 borderRadius: '4px',
-                padding: '2px 8px',
+                border: `2px solid ${selected ? '#3b82f6' : '#475569'}`,
+                backgroundColor: selected ? '#3b82f6' : 'rgba(15,23,42,0.7)',
                 cursor: 'pointer',
-                fontFamily: 'pressStart',
-                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                transition: 'all 0.15s',
               }}
             >
-              Details
+              {selected && (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
             </button>
           )}
         </>
@@ -653,7 +677,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
               <EffectNameBadge
                 name={effectDisplayName}
                 tooltip={effectTooltip}
-                color={categoryColor}
+                color={outputTypeColor}
                 fontSize={d.font - 1}
               />
             </div>
@@ -707,24 +731,6 @@ const TradingCard: React.FC<TradingCardProps> = ({
             )}
           </div>
 
-          {/* Flip back button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); setFlipped(false) }}
-            style={{
-              marginTop: 'auto',
-              fontSize: d.font - 4,
-              color: '#94a3b8',
-              backgroundColor: 'rgba(255,255,255,0.06)',
-              border: `1px solid ${edStyle.borderColor}60`,
-              borderRadius: '4px',
-              padding: '4px 10px',
-              cursor: 'pointer',
-              fontFamily: 'pressStart',
-              alignSelf: 'center',
-            }}
-          >
-            Back
-          </button>
         </div>
       )}
     </div>

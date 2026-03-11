@@ -59,7 +59,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
   const isHighlightPlay = (play: any) =>
     !play._type && !play.event && !play.text &&
-    (play.isTouchdown || play.isTurnover || play.scoreChange || play.isBigPlay || play.isClutchPlay || play.isChokePlay)
+    (play.isTouchdown || play.isTurnover || play.scoreChange || play.isBigPlay || play.isClutchPlay || play.isChokePlay || play.isMomentumShift)
 
   // Pre-process plays: inject drive separators between possession changes
   const processedPlays = useMemo(() => {
@@ -187,11 +187,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const isBigPlay = !!play.isBigPlay
     const isClutchPlay = !!play.isClutchPlay
     const isChokePlay = !!play.isChokePlay
+    const isMomentumShift = !!play.isMomentumShift
     const homeGained = (play.homeWpa ?? 0) > 0
     const bigPlayTeamAbbr = homeGained ? gameData.homeTeam.abbr : gameData.awayTeam.abbr
     const bigPlayTeamColor = homeGained ? gameData.homeTeam.color : gameData.awayTeam.color
     const wpaValue = homeGained ? (play.homeWpa ?? 0) : (play.awayWpa ?? 0)
-    const hasAccent = isBigPlay || isClutchPlay || isChokePlay
+    const hasAccent = isBigPlay || isClutchPlay || isChokePlay || isMomentumShift
 
     return (
       <div key={`${keyPrefix}-${index}`} style={{
@@ -203,10 +204,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         boxShadow: isBigPlay ? 'inset 3px 0 0 #f59e0b'
           : isClutchPlay ? 'inset 3px 0 0 #06b6d4'
           : isChokePlay ? 'inset 3px 0 0 #ef4444'
+          : isMomentumShift ? 'inset 3px 0 0 #f97316'
           : 'none',
         backgroundColor: isBigPlay ? '#1a1300'
           : isClutchPlay ? '#001a1f'
           : isChokePlay ? '#1a0500'
+          : isMomentumShift ? '#1a0f00'
           : 'transparent',
         borderRadius: hasAccent ? '4px' : '0',
         display: 'flex',
@@ -257,6 +260,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               {isChokePlay && (
                 <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '11px' }}>
                   ▼ CHOKE
+                </span>
+              )}
+              {isMomentumShift && !isBigPlay && !isClutchPlay && !isChokePlay && (
+                <span style={{ color: '#f97316', fontWeight: '600', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                  <svg width="11" height="13" viewBox="0 0 12 16" fill="#f97316"><path d="M6 0C6 0 2 4 2 8c0 2.2 1.8 4 4 4s4-1.8 4-4C10 4 6 0 6 0zm0 10.5c-1.4 0-2.5-1.1-2.5-2.5 0-1.9 2.5-5.5 2.5-5.5s2.5 3.6 2.5 5.5c0 1.4-1.1 2.5-2.5 2.5z"/></svg>
+                  MOMENTUM SHIFT
                 </span>
               )}
             </div>
@@ -332,6 +341,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     segments.push({ pts: curPts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' '), color: curColor })
     return segments
   }, [chartPoints, gameData?.homeTeam.color, gameData?.awayTeam.color])
+
+  // Momentum indicator (matches GameCard logic)
+  const isLive = gameData?.status === 'Active'
+  const absMomentum = Math.abs(gameData?.momentum ?? 0)
+  const homeMomentum = isLive && gameData?.momentumTeam === gameData?.homeTeam.abbr
+  const awayMomentum = isLive && gameData?.momentumTeam === gameData?.awayTeam.abbr
+  const flameColor = absMomentum >= 25 ? '#f97316' : absMomentum >= 15 ? '#fb923c' : '#fdba74'
+  const flameGlow = absMomentum >= 25 ? '0 0 6px #f97316' : 'none'
 
   if (!gameData) {
     return (
@@ -429,6 +446,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     <div style={{ fontSize: '13px', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{gameData.homeTeam.city}</div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '18px', fontWeight: '600', color: '#e2e8f0' }}>{gameData.homeTeam.name}</span>
+                      {homeMomentum && (
+                        <svg viewBox="0 0 24 24" fill={flameColor} style={{ width: '16px', height: '16px', flexShrink: 0, filter: flameGlow !== 'none' ? `drop-shadow(${flameGlow})` : undefined, transition: 'all 0.5s ease' }}>
+                          <path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.42-7.1A13.5 13.5 0 0 1 10.5 5.8s.5 2.7 2.5 4.2c2-1.5 2.5-4.2 2.5-4.2s2.08 1.5 3.08 2.6C20.26 10.06 20 12.93 20 15.5 20 19.42 16.97 23 12 23Zm0-2c2.76 0 5-1.79 5-4.5 0-1.5-.5-3-1.5-4l-1 1c-1 1-2.5 1-3.5 0l-1-1c-1 1-1.5 2.5-1.5 4 0 2.71 2.24 4.5 5 4.5Z" />
+                        </svg>
+                      )}
                       <span style={{ fontSize: '13px', fontWeight: '500', color: '#94a3b8' }}>{gameData.homeTeam.record}</span>
                       {gameData.homeTeam.elo != null && <span style={{ fontSize: '13px', color: '#64748b' }}>ELO {Math.round(gameData.homeTeam.elo)}</span>}
                     </div>
@@ -471,6 +493,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     <div style={{ fontSize: '13px', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{gameData.awayTeam.city}</div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '18px', fontWeight: '600', color: '#e2e8f0' }}>{gameData.awayTeam.name}</span>
+                      {awayMomentum && (
+                        <svg viewBox="0 0 24 24" fill={flameColor} style={{ width: '16px', height: '16px', flexShrink: 0, filter: flameGlow !== 'none' ? `drop-shadow(${flameGlow})` : undefined, transition: 'all 0.5s ease' }}>
+                          <path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.42-7.1A13.5 13.5 0 0 1 10.5 5.8s.5 2.7 2.5 4.2c2-1.5 2.5-4.2 2.5-4.2s2.08 1.5 3.08 2.6C20.26 10.06 20 12.93 20 15.5 20 19.42 16.97 23 12 23Zm0-2c2.76 0 5-1.79 5-4.5 0-1.5-.5-3-1.5-4l-1 1c-1 1-2.5 1-3.5 0l-1-1c-1 1-1.5 2.5-1.5 4 0 2.71 2.24 4.5 5 4.5Z" />
+                        </svg>
+                      )}
                       <span style={{ fontSize: '13px', fontWeight: '500', color: '#94a3b8' }}>{gameData.awayTeam.record}</span>
                       {gameData.awayTeam.elo != null && <span style={{ fontSize: '13px', color: '#64748b' }}>ELO {Math.round(gameData.awayTeam.elo)}</span>}
                     </div>

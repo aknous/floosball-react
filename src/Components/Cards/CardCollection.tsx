@@ -66,7 +66,10 @@ const CardCollection: React.FC = () => {
 
   useEffect(() => { fetchCards() }, [fetchCards])
 
+  const equippedIds = new Set(cards.filter(c => c.isEquipped).map(c => c.id))
+
   const toggleSelect = (id: number) => {
+    if (equippedIds.has(id)) return  // Can't select equipped cards
     setSelectedIds(prev => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -191,7 +194,7 @@ const CardCollection: React.FC = () => {
               card={card}
               size={isMobile ? 'sm' : 'md'}
               selected={selectedIds.has(card.id)}
-              onClick={() => toggleSelect(card.id)}
+              onSelect={() => toggleSelect(card.id)}
               showSellValue
             />
           ))}

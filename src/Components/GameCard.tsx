@@ -27,16 +27,24 @@ interface GameCardProps {
   awayWinProbability?: number
   isUpsetAlert?: boolean
   isFeatured?: boolean
+  momentum?: number
+  momentumTeam?: string | null
   isFav?: boolean
   favTeamColor?: string
   favTeamId?: number | null
   onClick: (gameId: number) => void
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, isFav, favTeamColor, favTeamId, onClick }) => {
+export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, isFav, favTeamColor, favTeamId, onClick }) => {
   const isComplete = status === 'Final'
   const isLive = status === 'Active' && (quarter ?? 0) > 0
   const isFinal = isComplete
+
+  const absMomentum = Math.abs(momentum ?? 0)
+  const homeMomentum = isLive && momentumTeam === homeTeam.abbr
+  const awayMomentum = isLive && momentumTeam === awayTeam.abbr
+  const flameColor = absMomentum >= 25 ? '#f97316' : absMomentum >= 15 ? '#fb923c' : '#fdba74'
+  const flameGlow = absMomentum >= 25 ? '0 0 6px #f97316' : 'none'
 
   const prevHomeScore = useRef(homeScore)
   const prevAwayScore = useRef(awayScore)
@@ -132,6 +140,11 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             <div style={{ fontSize: '13px', color: '#cbd5e1', marginBottom: '2px' }}>{homeTeam.city}</div>
             <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {homeTeam.name} <span style={{ fontSize: '13px', color: '#94a3b8' }}>({homeTeam.record})</span>
+              {homeMomentum && (
+                <svg viewBox="0 0 24 24" fill={flameColor} style={{ width: '14px', height: '14px', display: 'inline-block', marginLeft: '4px', verticalAlign: 'middle', filter: flameGlow !== 'none' ? `drop-shadow(${flameGlow})` : undefined, transition: 'all 0.5s ease' }}>
+                  <path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.42-7.1A13.5 13.5 0 0 1 10.5 5.8s.5 2.7 2.5 4.2c2-1.5 2.5-4.2 2.5-4.2s2.08 1.5 3.08 2.6C20.26 10.06 20 12.93 20 15.5 20 19.42 16.97 23 12 23Zm0-2c2.76 0 5-1.79 5-4.5 0-1.5-.5-3-1.5-4l-1 1c-1 1-2.5 1-3.5 0l-1-1c-1 1-1.5 2.5-1.5 4 0 2.71 2.24 4.5 5 4.5Z" />
+                </svg>
+              )}
               {isFav && favTeamId != null && String(favTeamId) === String(homeTeam.id) && (
                 <svg viewBox="0 0 24 24" fill={favTeamColor || '#3b82f6'} style={{ width: '14px', height: '14px', display: 'inline-block', marginLeft: '5px', verticalAlign: 'middle' }}>
                   <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clipRule="evenodd" />
@@ -167,6 +180,11 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             <div style={{ fontSize: '13px', color: '#cbd5e1', marginBottom: '2px' }}>{awayTeam.city}</div>
             <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {awayTeam.name} <span style={{ fontSize: '13px', color: '#94a3b8' }}>({awayTeam.record})</span>
+              {awayMomentum && (
+                <svg viewBox="0 0 24 24" fill={flameColor} style={{ width: '14px', height: '14px', display: 'inline-block', marginLeft: '4px', verticalAlign: 'middle', filter: flameGlow !== 'none' ? `drop-shadow(${flameGlow})` : undefined, transition: 'all 0.5s ease' }}>
+                  <path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.42-7.1A13.5 13.5 0 0 1 10.5 5.8s.5 2.7 2.5 4.2c2-1.5 2.5-4.2 2.5-4.2s2.08 1.5 3.08 2.6C20.26 10.06 20 12.93 20 15.5 20 19.42 16.97 23 12 23Zm0-2c2.76 0 5-1.79 5-4.5 0-1.5-.5-3-1.5-4l-1 1c-1 1-2.5 1-3.5 0l-1-1c-1 1-1.5 2.5-1.5 4 0 2.71 2.24 4.5 5 4.5Z" />
+                </svg>
+              )}
               {isFav && favTeamId != null && String(favTeamId) === String(awayTeam.id) && (
                 <svg viewBox="0 0 24 24" fill={favTeamColor || '#3b82f6'} style={{ width: '14px', height: '14px', display: 'inline-block', marginLeft: '5px', verticalAlign: 'middle' }}>
                   <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clipRule="evenodd" />

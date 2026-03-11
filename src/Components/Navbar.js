@@ -5,10 +5,10 @@ import { useFloosball } from '@/contexts/FloosballContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useUser } from '@clerk/react'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { FavoriteTeamModal } from './Auth/FavoriteTeamModal'
 import { AuthModal } from './Auth/AuthModal'
-
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 const TrophySVG = () => (
@@ -27,21 +27,43 @@ const navLinkStyle = (isActive) => ({
   display: 'block',
 })
 
-function UserDropdown({ onClose }) {
-  const { user, logout, setFavoriteTeam } = useAuth()
-  const [teams, setTeams] = useState([])
-  const [hoveredTeamId, setHoveredTeamId] = useState(null)
-  const panelRef = useRef(null)
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return `${days}d ago`
+}
 
-  useEffect(() => {
-    axios.get(`${API_BASE}/teams`)
-      .then(res => {
-        const data = res.data
-        if (data?.success && Array.isArray(data?.data)) setTeams(data.data)
-        else if (Array.isArray(data)) setTeams(data)
+const notifTypeColors = {
+  leaderboard_weekly: '#f59e0b',
+  leaderboard_season: '#a78bfa',
+  season_fp_payout: '#eab308',
+  favorite_team: '#f43f5e',
+}
+
+function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker }) {
+  const { user, logout, getToken } = useAuth()
+  const [emailOptOut, setEmailOptOut] = useState(user?.emailOptOut ?? false)
+  const panelRef = useRef(null)
+  const unreadNotifs = notifications.filter(n => !n.isRead)
+
+  const toggleEmailOptOut = useCallback(async () => {
+    const newVal = !emailOptOut
+    setEmailOptOut(newVal)
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      await fetch(`${API_BASE}/users/me/preferences`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+        body: JSON.stringify({ emailOptOut: newVal }),
       })
-      .catch(() => {})
-  }, [])
+    } catch { /* silent */ }
+  }, [emailOptOut, getToken])
 
   useEffect(() => {
     const handler = (e) => {
@@ -50,8 +72,6 @@ function UserDropdown({ onClose }) {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [onClose])
-
-  const favTeam = teams.find(t => t.id === user?.favoriteTeamId)
 
   return (
     <div
@@ -72,57 +92,99 @@ function UserDropdown({ onClose }) {
         <div style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {user?.username || 'Unknown'}
         </div>
-        {user?.floobits != null && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '6px' }}>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#eab308' }}>
-              {user.floobits.toLocaleString()}
-            </span>
-            <span style={{ fontSize: '9px', color: '#a16207', fontWeight: '600' }}>Floobits</span>
+        {user?.email && (
+          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {user.email}
           </div>
         )}
       </div>
 
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid #334155' }}>
-        <div style={{ fontSize: '10px', fontWeight: '700', color: '#475569', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '8px' }}>
-          Favorite Team
-        </div>
-        {teams.length === 0 ? (
-          <div style={{ fontSize: '11px', color: '#475569' }}>Loading…</div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px' }}>
-            {teams.map(team => {
-              const isFav = user?.favoriteTeamId === team.id
-              const isHov = hoveredTeamId === team.id
-              return (
-                <button
-                  key={team.id}
-                  onClick={() => setFavoriteTeam(team.id)}
-                  onMouseEnter={() => setHoveredTeamId(team.id)}
-                  onMouseLeave={() => setHoveredTeamId(null)}
-                  title={`${team.city} ${team.name}`}
-                  style={{
-                    padding: 0, background: 'none', border: 'none', cursor: 'pointer',
-                    borderRadius: '4px',
-                    outline: isFav
-                      ? `2px solid ${team.color || '#3b82f6'}`
-                      : isHov ? '2px solid #475569' : '2px solid transparent',
-                    outlineOffset: '1px',
-                    transition: 'outline 0.1s',
-                  }}
-                >
-                  <img
-                    src={`${API_BASE}/teams/${team.id}/avatar?size=28&v=2`}
-                    alt={team.abbr}
-                    style={{ width: '28px', height: '28px', display: 'block' }}
-                  />
-                </button>
-              )
-            })}
-          </div>
+      <button
+        onClick={() => { onOpenTeamPicker(); onClose() }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+          padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #334155',
+          cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+          transition: 'background-color 0.15s',
+        }}
+        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'}
+        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+      >
+        {user?.favoriteTeamId && (
+          <img
+            src={`${API_BASE}/teams/${user.favoriteTeamId}/avatar?size=20&v=2`}
+            alt=""
+            style={{ width: '20px', height: '20px', flexShrink: 0 }}
+          />
         )}
-        {favTeam && (
-          <div style={{ marginTop: '7px', fontSize: '11px', color: '#94a3b8' }}>
-            {favTeam.city} {favTeam.name}
+        <span style={{ fontSize: '11px', color: '#cbd5e1', flex: 1 }}>
+          {user?.favoriteTeamId ? 'Change Favorite Team' : 'Pick Favorite Team'}
+        </span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </button>
+
+      <div style={{ padding: '8px 14px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: '11px', color: '#cbd5e1' }}>Email notifications</span>
+        <button
+          onClick={toggleEmailOptOut}
+          style={{
+            width: '32px', height: '18px', borderRadius: '9px', border: 'none',
+            backgroundColor: emailOptOut ? '#334155' : '#3b82f6',
+            cursor: 'pointer', position: 'relative', transition: 'background-color 0.2s',
+          }}
+        >
+          <div style={{
+            width: '14px', height: '14px', borderRadius: '7px',
+            backgroundColor: '#fff', position: 'absolute', top: '2px',
+            left: emailOptOut ? '2px' : '16px', transition: 'left 0.2s',
+          }} />
+        </button>
+      </div>
+
+      {/* Notifications */}
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid #334155' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            Notifications
+          </div>
+          {unreadNotifs.length > 0 && (
+            <button
+              onClick={onMarkAllRead}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#3b82f6', fontWeight: '600', padding: 0 }}
+            >
+              Mark all read
+            </button>
+          )}
+        </div>
+        {notifications.length === 0 ? (
+          <div style={{ fontSize: '11px', color: '#94a3b8' }}>No notifications yet</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '160px', overflowY: 'auto' }}>
+            {notifications.slice(0, 10).map(n => (
+              <div key={n.id} style={{
+                display: 'flex', gap: '8px', alignItems: 'flex-start',
+                padding: '5px 6px', borderRadius: '5px',
+                backgroundColor: n.isRead ? 'transparent' : 'rgba(59,130,246,0.06)',
+              }}>
+                <div style={{
+                  width: '6px', height: '6px', borderRadius: '3px', flexShrink: 0, marginTop: '4px',
+                  backgroundColor: n.isRead ? 'transparent' : (notifTypeColors[n.type] || '#3b82f6'),
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '11px', fontWeight: n.isRead ? '500' : '600', color: n.isRead ? '#cbd5e1' : '#e2e8f0', lineHeight: '1.3' }}>
+                    {n.title}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', lineHeight: '1.3', marginTop: '1px' }}>
+                    {n.message}
+                  </div>
+                  <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px' }}>
+                    {n.createdAt ? timeAgo(n.createdAt) : ''}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -147,15 +209,73 @@ function UserDropdown({ onClose }) {
 
 export default function Navbar() {
   const { seasonState, lastEvent } = useFloosball()
-  const { user, logout, fantasyRoster, refetchRoster } = useAuth()
+  const { user, logout, getToken, fantasyRoster, refetchRoster, refetchUser } = useAuth()
   const { event: wsEvent } = useSeasonWebSocket()
   const [champion, setChampion] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showTeamPicker, setShowTeamPicker] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [notifications, setNotifications] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const isMobile = useIsMobile()
   const isTablet = useIsMobile(1200)
+  const { user: clerkUser } = useUser()
+  const isAdmin = clerkUser?.publicMetadata?.role === 'admin'
+
+  // Poll for notification count
+  useEffect(() => {
+    if (!user) return
+    const fetchCount = async () => {
+      try {
+        const tok = await getToken()
+        if (!tok) return
+        const res = await fetch(`${API_BASE}/notifications/count`, {
+          headers: { Authorization: `Bearer ${tok}` },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setUnreadCount(data.unread || 0)
+        }
+      } catch { /* silent */ }
+    }
+    fetchCount()
+    const interval = setInterval(fetchCount, 30000)
+    return () => clearInterval(interval)
+  }, [user, getToken])
+
+  // Fetch full notifications when dropdown opens
+  useEffect(() => {
+    if (!showUserMenu || !user) return
+    const fetchNotifs = async () => {
+      try {
+        const tok = await getToken()
+        if (!tok) return
+        const res = await fetch(`${API_BASE}/notifications`, {
+          headers: { Authorization: `Bearer ${tok}` },
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setNotifications(data.notifications || [])
+        }
+      } catch { /* silent */ }
+    }
+    fetchNotifs()
+  }, [showUserMenu, user, getToken])
+
+  const markAllRead = useCallback(async () => {
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      await fetch(`${API_BASE}/notifications/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+        body: JSON.stringify({ all: true }),
+      })
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })))
+      setUnreadCount(0)
+    } catch { /* silent */ }
+  }, [getToken])
 
   const fetchChampion = async () => {
     try {
@@ -176,13 +296,16 @@ export default function Navbar() {
     ? { totalPoints: myEntry.seasonTotal }
     : null
 
-  // Re-fetch roster on game events
+  // Re-fetch roster on game events; refetch user balance on week/season end (prizes awarded)
   useEffect(() => {
     if (!wsEvent) return
     if (wsEvent.event === 'game_end' || wsEvent.event === 'season_end' || wsEvent.event === 'week_start' || wsEvent.event === 'week_end') {
       refetchRoster()
     }
-  }, [wsEvent, refetchRoster])
+    if (wsEvent.event === 'week_end' || wsEvent.event === 'season_end') {
+      refetchUser()
+    }
+  }, [wsEvent, refetchRoster, refetchUser])
 
   useEffect(() => {
     if (!isMobile) setMenuOpen(false)
@@ -220,8 +343,14 @@ export default function Navbar() {
         <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: '600', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {displayName}
         </span>
+        {unreadCount > 0 && (
+          <div style={{
+            width: '8px', height: '8px', borderRadius: '4px',
+            backgroundColor: '#ef4444', flexShrink: 0,
+          }} />
+        )}
       </button>
-      {showUserMenu && <UserDropdown onClose={() => setShowUserMenu(false)} />}
+      {showUserMenu && <UserDropdown onClose={() => setShowUserMenu(false)} notifications={notifications} onMarkAllRead={markAllRead} onOpenTeamPicker={() => setShowTeamPicker(true)} />}
     </div>
   ) : (
     <button
@@ -261,6 +390,7 @@ export default function Navbar() {
                   </g>
                 </svg>
                 <h1 style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '600', color: '#e2e8f0', margin: 0 }}>Floosball</h1>
+                <span style={{ fontSize: '9px', fontWeight: '700', color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)', padding: '2px 5px', borderRadius: '4px', letterSpacing: '0.5px', alignSelf: 'center', marginTop: isMobile ? '1px' : '2px' }}>BETA</span>
               </NavLink>
 
               {!isMobile && !isTablet && (
@@ -286,11 +416,11 @@ export default function Navbar() {
             {isMobile ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {user?.floobits != null && (
-                  <NavLink to="/cards" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 8px', borderRadius: '5px', backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#eab308' }}>
+                  <NavLink to="/cards" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '5px', backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#eab308' }}>
                       {user.floobits.toLocaleString()}
                     </span>
-                    <span style={{ fontSize: '9px', color: '#a16207' }}>F</span>
+                    <span style={{ fontSize: '11px', color: '#ca8a04' }}>F</span>
                   </NavLink>
                 )}
                 <button
@@ -311,7 +441,7 @@ export default function Navbar() {
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: isTablet ? '14px' : '24px' }}>
-                {['Dashboard', 'Players', 'Records', 'Fantasy', 'Cards', 'About'].map(label => (
+                {['Dashboard', 'Players', 'Fantasy', 'Cards', 'About'].map(label => (
                   <NavLink key={label} to={`/${label.toLowerCase()}`}
                     style={({ isActive }) => ({
                       color: isActive ? '#e2e8f0' : '#94a3b8',
@@ -329,11 +459,19 @@ export default function Navbar() {
                   </NavLink>
                 )}
                 {user?.floobits != null && (
-                  <NavLink to="/cards" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '6px', backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)' }}>
-                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#eab308' }}>
+                  <NavLink to="/cards" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)' }}>
+                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#eab308' }}>
                       {user.floobits.toLocaleString()}
                     </span>
-                    <span style={{ fontSize: '10px', color: '#a16207' }}>F</span>
+                    <span style={{ fontSize: '12px', color: '#ca8a04' }}>F</span>
+                  </NavLink>
+                )}
+                {isAdmin && (
+                  <NavLink to="/admin" style={({ isActive }) => ({
+                    color: isActive ? '#f87171' : '#64748b',
+                    textDecoration: 'none', fontSize: isTablet ? '13px' : '14px', fontWeight: '500', transition: 'color 0.2s',
+                  })}>
+                    Admin
                   </NavLink>
                 )}
                 {userControls}
@@ -356,7 +494,7 @@ export default function Navbar() {
                   </>
                 )}
               </div>
-              {[['Dashboard', '/dashboard'], ['Players', '/players'], ['Records', '/records'], ['Fantasy', '/fantasy'], ['Cards', '/cards'], ['About', '/about']].map(([label, path]) => (
+              {[['Dashboard', '/dashboard'], ['Players', '/players'], ['Fantasy', '/fantasy'], ['Cards', '/cards'], ['About', '/about'], ...(isAdmin ? [['Admin', '/admin']] : [])].map(([label, path]) => (
                 <NavLink key={label} to={path} onClick={() => setMenuOpen(false)}
                   style={({ isActive }) => navLinkStyle(isActive)}>
                   {label}

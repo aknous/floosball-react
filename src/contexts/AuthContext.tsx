@@ -11,6 +11,8 @@ export interface AuthUser {
   pendingFavoriteTeamId: number | null
   favoriteTeamLockedSeason: number | null
   floobits: number
+  hasCompletedOnboarding: boolean
+  emailOptOut: boolean
 }
 
 export interface FantasyRosterPlayer {
@@ -43,11 +45,13 @@ interface AuthContextType {
   user: AuthUser | null
   getToken: () => Promise<string | null>
   loading: boolean
+  betaBlocked: boolean
   fantasyPlayerIds: Set<number>
   fantasyRoster: FantasyRosterData | null
   logout: () => void
   setFavoriteTeam: (teamId: number) => Promise<void>
   refetchRoster: () => Promise<void>
+  refetchUser: () => Promise<void>
   updateFloobits: (balance: number) => void
 }
 
@@ -58,6 +62,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { getToken, signOut } = useClerkAuth()
   const [appUser, setAppUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const [betaBlocked, setBetaBlocked] = useState(false)
   const [fantasyRoster, setFantasyRoster] = useState<FantasyRosterData | null>(null)
 
   // Wrap Clerk's getToken so consumers get null when not signed in
@@ -89,6 +94,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [getToken])
 
+  const refetchUser = useCallback(async () => {
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      const res = await fetch(`${API_BASE}/users/me`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      })
+      if (res.ok) {
+        setBetaBlocked(false)
+        setAppUser(await res.json())
+      } else if (res.status === 403) {
+        setBetaBlocked(true)
+      }
+    } catch {
+      // silent
+    }
+  }, [getToken])
+
   // When Clerk auth state changes, fetch/create local user profile + roster
   useEffect(() => {
     if (!isLoaded) return
@@ -98,24 +121,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setLoading(false)
       return
     }
-    const syncUser = async () => {
-      try {
-        const tok = await getToken()
-        const res = await fetch(`${API_BASE}/users/me`, {
-          headers: { Authorization: `Bearer ${tok}` },
-        })
-        if (res.ok) {
-          setAppUser(await res.json())
-        }
-      } catch {
-        // silent
-      } finally {
-        setLoading(false)
-      }
-    }
-    syncUser()
+    refetchUser().finally(() => setLoading(false))
     refetchRoster()
-  }, [isSignedIn, isLoaded, getToken, refetchRoster])
+  }, [isSignedIn, isLoaded, refetchUser, refetchRoster])
 
   const logout = useCallback(() => {
     signOut()
@@ -155,8 +163,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   return (
     <AuthContext.Provider value={{
-      user: appUser, getToken: getFreshToken, loading, fantasyPlayerIds,
-      fantasyRoster, logout, setFavoriteTeam, refetchRoster, updateFloobits,
+      user: appUser, getToken: getFreshToken, loading, betaBlocked, fantasyPlayerIds,
+      fantasyRoster, logout, setFavoriteTeam, refetchRoster, refetchUser, updateFloobits,
     }}>
       {children}
     </AuthContext.Provider>

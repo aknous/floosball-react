@@ -57,6 +57,7 @@ const getBadge = (play: any): { label: string; color: string } | null => {
   }
   if (play.isClutchPlay) return { label: 'CLUTCH', color: '#06b6d4' }
   if (play.isChokePlay) return { label: 'CHOKE', color: '#ef4444' }
+  if (play.isMomentumShift) return { label: 'MOMENTUM', color: '#f97316' }
   return null
 }
 
@@ -108,7 +109,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
 
       plays.forEach((play: any) => {
         if (!play.playNumber) return
-        if (!(play.isTouchdown || play.isTurnover || play.scoreChange || play.isBigPlay || play.isClutchPlay || play.isChokePlay)) return
+        if (!(play.isTouchdown || play.isTurnover || play.scoreChange || play.isBigPlay || play.isClutchPlay || play.isChokePlay || play.isMomentumShift)) return
 
         // For turnovers (without TD), feature the defensive team — they benefited
         const isTurnoverOnly = play.isTurnover && !play.isTouchdown

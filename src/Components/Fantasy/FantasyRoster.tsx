@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import ReactDOM from 'react-dom'
 import axios from 'axios'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFantasyLivePoints } from '@/hooks/useFantasyLivePoints'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
-import type { CardBreakdownEntry, EquationSummary, ModifierInfo } from '@/hooks/useFantasySnapshot'
+import type { CardBreakdownEntry, EquationSummary, ModifierInfo, FavoriteTeamData, PlayerGameStats } from '@/hooks/useFantasySnapshot'
 import { Stars } from '@/Components/Stars'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { PlayerPicker } from './PlayerPicker'
 import type { PlayerCardInfo } from './PlayerPicker'
@@ -97,6 +99,40 @@ interface PlayerSummary {
   weekFP: number
 }
 
+const HoverTooltip: React.FC<{ text: string; color?: string; children: React.ReactNode }> = ({ text, color = '#94a3b8', children }) => {
+  const [show, setShow] = useState(false)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const ref = useRef<HTMLSpanElement>(null)
+
+  const handleEnter = () => {
+    if (!ref.current || !text) return
+    const rect = ref.current.getBoundingClientRect()
+    setPos({ x: rect.left + rect.width / 2, y: rect.top })
+    setShow(true)
+  }
+
+  return (
+    <span ref={ref} onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)} style={{ cursor: text ? 'help' : undefined }}>
+      {children}
+      {show && text && ReactDOM.createPortal(
+        <div style={{
+          position: 'fixed', left: pos.x, top: pos.y - 8,
+          transform: 'translate(-50%, -100%)',
+          backgroundColor: '#0f172a', border: `1px solid ${color}40`,
+          borderRadius: '8px', padding: '8px 12px',
+          fontSize: '10px', color: '#e2e8f0', lineHeight: '1.5',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 10010,
+          pointerEvents: 'none', fontFamily: 'pressStart',
+          maxWidth: '280px', textAlign: 'center',
+        }}>
+          {text}
+        </div>,
+        document.body
+      )}
+    </span>
+  )
+}
+
 const PointsBreakdownPanel: React.FC<{
   playerSummaries: PlayerSummary[]
   breakdowns: CardBreakdownEntry[]
@@ -108,7 +144,7 @@ const PointsBreakdownPanel: React.FC<{
   seasonTotal: number
   modifier?: ModifierInfo | null
 }> = ({ playerSummaries, breakdowns, equationSummary, weekPlayerFP, weekCardBonus, seasonEarnedFP, seasonCardBonus, seasonTotal, modifier }) => {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ formula: true })
   const toggle = (key: string) => setExpanded(prev => ({ ...prev, [key]: !prev[key] }))
 
   const rowStyle: React.CSSProperties = {
@@ -161,7 +197,7 @@ const PointsBreakdownPanel: React.FC<{
 
   // Colorize FP-type values in card effect text (e.g. "+1.1 FPx" → purple)
   const colorizeEffectText = (text: string, baseColor: string): React.ReactNode => {
-    const pattern = /([+-]?\d+\.?\d*x?\s*)(xFPx|\+?FPx|FP\b|Floobits\b|F\b)/g
+    const pattern = /([+-]?\d+\.?\d*x?\s*)?(xFPx|\+?FPx|FP\b|Floobits\b|F\b)/g
     const parts: React.ReactNode[] = []
     let lastIdx = 0
     let m: RegExpExecArray | null
@@ -294,10 +330,10 @@ const PointsBreakdownPanel: React.FC<{
               subLines.push({ label: b.conditionalLabel || 'Conditional bonus', chip: formatValue(b.conditionalBonus, 'fp') })
             }
             // Edition secondary bonuses
-            if ((b.secondaryFP ?? 0) > 0) subLines.push({ label: `${edTag} edition`, chip: formatValue(b.secondaryFP, 'fp') })
-            if ((b.secondaryMult ?? 0) > 0) subLines.push({ label: `${edTag} edition`, chip: formatValue(b.secondaryMult, 'mult'), negated: isGrounded })
-            if ((b.secondaryXMult ?? 0) > 1) subLines.push({ label: `${edTag} edition`, chip: formatValue(b.secondaryXMult, 'xmult'), negated: isGrounded })
-            if ((b.secondaryFloobits ?? 0) > 0) subLines.push({ label: `${edTag} edition`, chip: formatValue(b.secondaryFloobits, 'floobits') })
+            if ((b.secondaryFP ?? 0) > 0) subLines.push({ label: `${edTag} bonus`, chip: formatValue(b.secondaryFP, 'fp') })
+            if ((b.secondaryMult ?? 0) > 0) subLines.push({ label: `${edTag} bonus`, chip: formatValue(b.secondaryMult, 'mult'), negated: isGrounded })
+            if ((b.secondaryXMult ?? 0) > 1) subLines.push({ label: `${edTag} bonus`, chip: formatValue(b.secondaryXMult, 'xmult'), negated: isGrounded })
+            if ((b.secondaryFloobits ?? 0) > 0) subLines.push({ label: `${edTag} bonus`, chip: formatValue(b.secondaryFloobits, 'floobits') })
 
             // Zero state: show dimmed output type on header when no equation/results
             const hasOutput = eqSegments.length > 0 || eqResult
@@ -329,9 +365,11 @@ const PointsBreakdownPanel: React.FC<{
                   <span style={{ color: '#f1f5f9', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {b.playerName}
                   </span>
-                  <span style={{ color: CATEGORY_COLORS[b.category] ?? '#cbd5e1', fontSize: '11px', flexShrink: 0 }} title={b.detail || undefined}>
-                    {effectLabel}
-                  </span>
+                  <HoverTooltip text={b.detail || ''} color={(TYPE_COLORS as any)[b.outputType] ?? CATEGORY_COLORS[b.category] ?? '#cbd5e1'}>
+                    <span style={{ color: (TYPE_COLORS as any)[b.outputType] ?? CATEGORY_COLORS[b.category] ?? '#cbd5e1', fontSize: '11px', flexShrink: 0 }}>
+                      {effectLabel}
+                    </span>
+                  </HoverTooltip>
                   {b.matchMultiplied && (
                     <span style={{
                       color: '#60a5fa', fontSize: '10px', fontWeight: '700', flexShrink: 0,
@@ -343,7 +381,7 @@ const PointsBreakdownPanel: React.FC<{
                   )}
                 </div>
                 {/* Equation line with result right-aligned */}
-                {eqSegments.length > 0 && (
+                {(eqSegments.length > 0 || eqResult) && (
                   <div style={{ ...rowStyle, paddingLeft: '16px', opacity: eqNegated ? 0.45 : 1 }}>
                     <span style={{ fontSize: '11px', fontStyle: 'italic', textDecoration: eqNegated ? 'line-through' : 'none' }}>
                       {eqSegments.map((seg, j) => (
@@ -362,10 +400,10 @@ const PointsBreakdownPanel: React.FC<{
                     <span style={{ color: sub.chip.color, fontSize: '12px', fontWeight: '600', textDecoration: sub.negated ? 'line-through' : 'none' }}>{sub.chip.str}</span>
                   </div>
                 ))}
-                {/* Card player stats */}
+                {/* Roster player stats */}
                 {b.playerStatLine && (
                   <div style={{ paddingLeft: '16px', fontSize: '11px', color: '#cbd5e1', padding: '2px 0 2px 16px' }}>
-                    <span style={{ color: '#64748b' }}>Card player stats: </span>{b.playerStatLine}
+                    <span style={{ color: '#64748b' }}>Roster stats: </span>{b.playerStatLine}
                   </div>
                 )}
               </div>
@@ -494,10 +532,11 @@ const PointsBreakdownPanel: React.FC<{
 }
 
 export const FantasyRoster: React.FC = () => {
+  const isMobile = useIsMobile()
   const { user, getToken, refetchRoster } = useAuth()
   const { event: wsEvent } = useSeasonWebSocket()
   const [roster, setRoster] = useState<Roster | null>(null)
-  const { getLiveEarnedPoints } = useFantasyLivePoints(
+  const { getLiveEarnedPoints, livePlayerMap } = useFantasyLivePoints(
     roster?.isLocked ? roster.players : undefined,
   )
   const { myEntry, modifier, week } = useFantasySnapshot(user?.id)
@@ -513,6 +552,7 @@ export const FantasyRoster: React.FC = () => {
   const [swapSlot, setSwapSlot] = useState<string | null>(null)
   const [gamesActive, setGamesActive] = useState(false)
   const [showSwapHistory, setShowSwapHistory] = useState(false)
+  const [expandedSlot, setExpandedSlot] = useState<string | null>(null)
   // Local draft state for unsaved changes
   const [draftPlayers, setDraftPlayers] = useState<Map<string, FantasyRosterPlayer>>(new Map())
   const [dirty, setDirty] = useState(false)
@@ -528,6 +568,33 @@ export const FantasyRoster: React.FC = () => {
     for (const p of myEntry?.players ?? []) m.set(p.playerId, p.weekFP)
     return m
   }, [myEntry?.players])
+
+  // Get player stats: prefer live WS data during games, fall back to snapshot.
+  // WS data has stats spread flat on the player object (one category per position),
+  // while snapshot data has them nested under passing/rushing/receiving/kicking keys.
+  const getPlayerStats = useCallback((playerId: number, position: string): { stats: Record<string, any> | null; fp: number } => {
+    const liveData = livePlayerMap.get(playerId)
+    if (liveData?.gameStats) {
+      const gs = liveData.gameStats
+      // WS spreads the primary stat category flat — reconstruct nested format
+      const stats: Record<string, any> = {}
+      if (position === 'QB') {
+        stats.passing = { att: gs.att, comp: gs.comp, yards: gs.yards, tds: gs.tds, ints: gs.ints, longest: gs.longest }
+      } else if (position === 'RB') {
+        stats.rushing = { carries: gs.carries, yards: gs.yards, tds: gs.tds, longest: gs.longest, fumblesLost: gs.fumblesLost }
+      } else if (position === 'WR' || position === 'TE') {
+        stats.receiving = { targets: gs.targets, receptions: gs.receptions, yards: gs.yards, tds: gs.tds, yac: gs.yac, longest: gs.longest }
+      } else if (position === 'K') {
+        stats.kicking = { fgAtt: gs.fgAtt, fgs: gs.fgs, longest: gs.longest }
+      }
+      return { stats, fp: liveData.gameFantasyPoints }
+    }
+    const snapshotStats = myEntry?.playerGameStats?.[playerId]
+    if (snapshotStats) {
+      return { stats: snapshotStats, fp: snapshotStats.fantasyPoints }
+    }
+    return { stats: null, fp: 0 }
+  }, [livePlayerMap, myEntry?.playerGameStats])
 
   const fetchRoster = useCallback(async (force?: boolean) => {
     const tok = await getToken()
@@ -592,7 +659,7 @@ export const FantasyRoster: React.FC = () => {
   // Skip if user has unsaved draft changes to avoid clearing their selections
   useEffect(() => {
     if (!wsEvent) return
-    if (wsEvent.event === 'game_end' || wsEvent.event === 'season_end' || wsEvent.event === 'week_start' || wsEvent.event === 'week_end') {
+    if (wsEvent.event === 'game_end' || wsEvent.event === 'season_end' || wsEvent.event === 'week_start' || wsEvent.event === 'week_end' || wsEvent.event === 'game_start') {
       if (!dirtyRef.current) {
         fetchRoster()
       }
@@ -688,7 +755,7 @@ export const FantasyRoster: React.FC = () => {
 
   if (!user) {
     return (
-      <div style={cardStyle}>
+      <div style={cardStyleFn(isMobile)}>
         <div style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'center', padding: '40px 0' }}>
           Sign in to manage your fantasy roster
         </div>
@@ -698,7 +765,7 @@ export const FantasyRoster: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={cardStyle}>
+      <div style={cardStyleFn(isMobile)}>
         <div style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', padding: '40px 0' }}>Loading...</div>
       </div>
     )
@@ -729,8 +796,8 @@ export const FantasyRoster: React.FC = () => {
   }))
 
   return (
-    <div style={cardStyle}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+    <div style={cardStyleFn(isMobile)}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ fontSize: '16px', fontWeight: '700', color: '#f1f5f9' }}>My Roster</div>
@@ -782,7 +849,7 @@ export const FantasyRoster: React.FC = () => {
 
       {/* Roster / Breakdown tab bar */}
       {isLocked && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '6px' }}>
           {(['roster', 'breakdown'] as const).map(v => (
             <button
               key={v}
@@ -807,11 +874,13 @@ export const FantasyRoster: React.FC = () => {
         const isSteady = modifier.name === 'steady'
         return (
           <div style={{
-            fontSize: '13px', color: modStyle.color, lineHeight: '1.5',
-            marginBottom: '10px', padding: '8px 14px',
+            fontSize: isMobile ? '12px' : '13px', color: modStyle.color, lineHeight: '1.5',
+            marginBottom: '6px', padding: isMobile ? '6px 10px' : '6px 14px',
             backgroundColor: modStyle.bg, borderRadius: '8px',
             border: `1px solid ${modStyle.border}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            justifyContent: 'space-between', gap: isMobile ? '4px' : undefined,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.7 }}>
@@ -847,7 +916,7 @@ export const FantasyRoster: React.FC = () => {
       {!isLocked && (
         <div style={{
           fontSize: '13px', color: '#cbd5e1', lineHeight: '1.7',
-          marginBottom: '10px', padding: '10px 14px',
+          marginBottom: '6px', padding: '8px 14px',
           backgroundColor: '#1e293b', borderRadius: '8px', border: '1px solid #475569',
         }}>
           {draftPlayers.size === 0 ? (
@@ -865,11 +934,13 @@ export const FantasyRoster: React.FC = () => {
       {/* Swap Available Banner (roster view only) */}
       {isLocked && viewMode === 'roster' && swapsAvailable > 0 && (
         <div style={{
-          fontSize: '13px', color: '#fbbf24', lineHeight: '1.5',
-          marginBottom: '10px', padding: '8px 14px',
+          fontSize: isMobile ? '12px' : '13px', color: '#fbbf24', lineHeight: '1.5',
+          marginBottom: '6px', padding: isMobile ? '6px 10px' : '6px 14px',
           backgroundColor: 'rgba(251,191,36,0.1)', borderRadius: '8px',
           border: '1px solid rgba(251,191,36,0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'flex-start' : 'center',
+          justifyContent: 'space-between', gap: isMobile ? '4px' : undefined,
         }}>
           <span>{swapsAvailable} swap{swapsAvailable !== 1 ? 's' : ''} available{gamesActive ? ' (wait for games to end)' : ' — tap Swap on any slot'}</span>
           <span style={{ fontSize: '10px', color: '#94a3b8' }}>Cost: 1 Floobit each</span>
@@ -877,114 +948,254 @@ export const FantasyRoster: React.FC = () => {
       )}
 
       {/* Slots (roster view or unlocked) */}
-      {(!isLocked || viewMode === 'roster') && <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      {(!isLocked || viewMode === 'roster') && <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {SLOTS.map(slot => {
           const player = draftPlayers.get(slot.key)
+          const isExpanded = expandedSlot === slot.key
+          const { stats: playerStats, fp: gameFP } = player ? getPlayerStats(player.playerId, player.position) : { stats: null, fp: 0 }
           return (
-            <div
-              key={slot.key}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '10px 14px',
-                backgroundColor: player ? '#1e293b' : '#172033',
-                borderRadius: '10px', border: '1px solid #334155',
-              }}
-            >
-              <div style={{
-                width: '40px', textAlign: 'center', flexShrink: 0,
-                fontSize: '13px', fontWeight: '700',
-                color: player ? (player.teamColor || '#cbd5e1') : '#64748b',
-              }}>
-                {slot.key}
-              </div>
-              {player ? (
-                <>
-                  {player.teamId && (
-                    <img
-                      src={`${API_BASE}/teams/${player.teamId}/avatar?size=34&v=2`}
-                      alt={player.teamAbbr}
-                      style={{ width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0 }}
-                    />
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <PlayerHoverCard playerId={player.playerId} playerName={player.playerName}>
-                      <span style={{ fontSize: '13px', fontWeight: '600', color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
-                        {player.playerName}
-                      </span>
-                    </PlayerHoverCard>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>{player.teamAbbr}</span>
-                      <Stars stars={player.ratingStars} size={16} />
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    {isLocked ? (
-                      scoreView === 'season' ? (
-                        <>
-                          <div style={{ fontSize: '14px', fontWeight: '700', color: '#22c55e' }}>
-                            +{getLiveEarnedPoints(player).toFixed(0)}
-                          </div>
-                          <div style={{ fontSize: '10px', color: '#94a3b8' }}>earned</div>
-                        </>
-                      ) : (
-                        <>
-                          <div style={{ fontSize: '14px', fontWeight: '700', color: '#22c55e' }}>
-                            +{(weekFPByPlayer.get(player.playerId) ?? 0).toFixed(0)}
-                          </div>
-                          <div style={{ fontSize: '10px', color: '#94a3b8' }}>this week</div>
-                        </>
-                      )
-                    ) : (
-                      <div style={{ fontSize: '13px', color: '#cbd5e1', fontWeight: '600' }}>
-                        {player.currentFantasyPoints.toFixed(0)} FP
-                      </div>
+            <div key={slot.key} style={{ display: 'flex', flexDirection: 'column' }}>
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '10px',
+                  padding: isMobile ? '7px 10px' : '8px 14px',
+                  backgroundColor: player ? '#1e293b' : '#172033',
+                  borderRadius: isExpanded ? '10px 10px 0 0' : '10px',
+                  border: '1px solid #334155',
+                  borderBottom: isExpanded ? '1px solid #2d3d52' : '1px solid #334155',
+                  cursor: player && isLocked ? 'pointer' : undefined,
+                }}
+                onClick={() => {
+                  if (player && isLocked) setExpandedSlot(isExpanded ? null : slot.key)
+                }}
+              >
+                <div style={{
+                  width: isMobile ? '30px' : '40px', textAlign: 'center', flexShrink: 0,
+                  fontSize: isMobile ? '11px' : '13px', fontWeight: '700',
+                  color: player ? (player.teamColor || '#cbd5e1') : '#64748b',
+                }}>
+                  {slot.key}
+                </div>
+                {player ? (
+                  <>
+                    {player.teamId && (
+                      <img
+                        src={`${API_BASE}/teams/${player.teamId}/avatar?size=${isMobile ? 28 : 34}&v=2`}
+                        alt={player.teamAbbr}
+                        style={{ width: isMobile ? '28px' : '34px', height: isMobile ? '28px' : '34px', borderRadius: '50%', flexShrink: 0 }}
+                      />
                     )}
-                  </div>
-                  {!isLocked && (
-                    <button
-                      onClick={() => setPickerSlot(slot.key)}
-                      style={{
-                        background: 'none', border: '1px solid #475569', borderRadius: '6px',
-                        color: '#94a3b8', cursor: 'pointer', fontSize: '11px', padding: '6px 10px',
-                        fontFamily: 'inherit',
-                      }}
-                    >
-                      Change
-                    </button>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <PlayerHoverCard playerId={player.playerId} playerName={player.playerName}>
+                        <span style={{ fontSize: isMobile ? '12px' : '13px', fontWeight: '600', color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                          {player.playerName}
+                        </span>
+                      </PlayerHoverCard>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>{player.teamAbbr}</span>
+                        <Stars stars={player.ratingStars} size={16} />
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      {isLocked ? (
+                        scoreView === 'season' ? (
+                          <>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#22c55e' }}>
+                              +{getLiveEarnedPoints(player).toFixed(0)}
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>earned</div>
+                          </>
+                        ) : (
+                          <>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#22c55e' }}>
+                              +{(weekFPByPlayer.get(player.playerId) ?? 0).toFixed(0)}
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#94a3b8' }}>this week</div>
+                          </>
+                        )
+                      ) : (
+                        <div style={{ fontSize: '13px', color: '#cbd5e1', fontWeight: '600' }}>
+                          {player.currentFantasyPoints.toFixed(0)} FP
+                        </div>
+                      )}
+                    </div>
+                    {/* Chevron expand indicator (locked only) */}
+                    {isLocked && (
+                      <svg
+                        width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                        style={{ flexShrink: 0, transition: 'transform 0.15s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    )}
+                    {!isLocked && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPickerSlot(slot.key) }}
+                        style={{
+                          background: 'none', border: '1px solid #475569', borderRadius: '6px',
+                          color: '#94a3b8', cursor: 'pointer', fontSize: '11px', padding: '6px 10px',
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        Change
+                      </button>
+                    )}
+                    {canSwap && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setSwapSlot(slot.key) }}
+                        style={{
+                          background: 'none', border: '1px solid rgba(251,191,36,0.4)', borderRadius: '6px',
+                          color: '#fbbf24', cursor: 'pointer', fontSize: '11px', padding: '6px 10px',
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        Swap
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setPickerSlot(slot.key)}
+                    style={{
+                      flex: 1, background: 'none', border: '1px dashed #475569', borderRadius: '8px',
+                      color: '#94a3b8', cursor: 'pointer', fontSize: '12px', padding: '10px',
+                      fontFamily: 'inherit', textAlign: 'center',
+                    }}
+                  >
+                    Select {slot.label}
+                  </button>
+                )}
+              </div>
+              {/* Expanded stats panel */}
+              {isExpanded && player && (
+                <div style={{
+                  backgroundColor: '#1e293b', padding: isMobile ? '6px 10px' : '8px 14px',
+                  borderRadius: '0 0 10px 10px', border: '1px solid #334155', borderTop: 'none',
+                }}>
+                  {playerStats ? (() => {
+                    const pos = player.position
+                    const statItems: { label: string; value: string }[] = []
+                    if (pos === 'QB') {
+                      const p = playerStats.passing ?? {}
+                      statItems.push(
+                        { label: 'Comp/Att', value: `${p.comp ?? 0}/${p.att ?? 0}` },
+                        { label: 'Pass Yds', value: String(p.yards ?? 0) },
+                        { label: 'Pass TDs', value: String(p.tds ?? 0) },
+                        { label: 'INTs', value: String(p.ints ?? 0) },
+                      )
+                    } else if (pos === 'RB') {
+                      const r = playerStats.rushing ?? {}
+                      statItems.push(
+                        { label: 'Carries', value: String(r.carries ?? 0) },
+                        { label: 'Rush Yds', value: String(r.yards ?? 0) },
+                        { label: 'Rush TDs', value: String(r.tds ?? 0) },
+                      )
+                    } else if (pos === 'WR' || pos === 'TE') {
+                      const rc = playerStats.receiving ?? {}
+                      statItems.push(
+                        { label: 'Rec/Tgt', value: `${rc.receptions ?? 0}/${rc.targets ?? 0}` },
+                        { label: 'Rec Yds', value: String(rc.yards ?? 0) },
+                        { label: 'Rec TDs', value: String(rc.tds ?? 0) },
+                        { label: 'YAC', value: String(rc.yac ?? 0) },
+                      )
+                    } else if (pos === 'K') {
+                      const k = playerStats.kicking ?? {}
+                      statItems.push(
+                        { label: 'FG', value: `${k.fgs ?? 0}/${k.fgAtt ?? 0}` },
+                        { label: 'Longest', value: `${k.longest ?? 0} yds` },
+                      )
+                    }
+                    return (
+                      <div>
+                        <div style={{ fontSize: '10px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Game Stats</div>
+                        <div style={{
+                          display: 'flex', flexWrap: 'wrap', gap: isMobile ? '6px 12px' : '6px 20px',
+                        }}>
+                        {statItems.map(s => (
+                          <div key={s.label} style={{ display: 'flex', gap: '4px', alignItems: 'baseline' }}>
+                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>{s.label}</span>
+                            <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: '600' }}>{s.value}</span>
+                          </div>
+                        ))}
+                        <div style={{ display: 'flex', gap: '4px', alignItems: 'baseline' }}>
+                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>FP</span>
+                          <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: '600' }}>{(gameFP ?? 0).toFixed(1)}</span>
+                        </div>
+                        </div>
+                      </div>
+                    )
+                  })() : (
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>No stats yet</div>
                   )}
-                  {canSwap && (
-                    <button
-                      onClick={() => setSwapSlot(slot.key)}
-                      style={{
-                        background: 'none', border: '1px solid rgba(251,191,36,0.4)', borderRadius: '6px',
-                        color: '#fbbf24', cursor: 'pointer', fontSize: '11px', padding: '6px 10px',
-                        fontFamily: 'inherit',
-                      }}
-                    >
-                      Swap
-                    </button>
-                  )}
-                </>
-              ) : (
-                <button
-                  onClick={() => setPickerSlot(slot.key)}
-                  style={{
-                    flex: 1, background: 'none', border: '1px dashed #475569', borderRadius: '8px',
-                    color: '#94a3b8', cursor: 'pointer', fontSize: '12px', padding: '10px',
-                    fontFamily: 'inherit', textAlign: 'center',
-                  }}
-                >
-                  Select {slot.label}
-                </button>
+                </div>
               )}
             </div>
           )
         })}
       </div>}
 
+      {/* Favorite Team Slot */}
+      {myEntry?.favoriteTeamData && (viewMode === 'roster' || !isLocked) && (() => {
+        const ft = myEntry.favoriteTeamData
+        const streakText = ft.streak > 0 ? `W${ft.streak}` : ft.streak < 0 ? `L${Math.abs(ft.streak)}` : '--'
+        const streakColor = ft.streak > 0 ? '#22c55e' : ft.streak < 0 ? '#ef4444' : '#94a3b8'
+        return (
+          <div style={{ marginTop: '6px' }}>
+          <div style={{ fontSize: '10px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Team</div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px',
+            padding: isMobile ? '8px 10px' : '8px 14px',
+            backgroundColor: '#1e293b', borderRadius: '10px',
+            borderLeft: `3px solid ${ft.teamColor}`,
+            border: '1px solid #334155',
+          }}>
+            <img
+              src={`${API_BASE}/teams/${ft.teamId}/avatar?size=${isMobile ? 28 : 34}&v=2`}
+              alt={ft.teamAbbr}
+              style={{ width: isMobile ? '28px' : '34px', height: isMobile ? '28px' : '34px', borderRadius: '50%', flexShrink: 0 }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: isMobile ? '12px' : '13px', fontWeight: '600', color: '#f1f5f9' }}>
+                {ft.teamName}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', color: '#94a3b8' }}>ELO <span style={{ color: '#cbd5e1', fontWeight: '600' }}>{ft.elo.toFixed(0)}</span></span>
+                <span style={{ fontSize: '11px', color: '#94a3b8' }}>{ft.record}</span>
+                <span style={{ fontSize: '11px', color: streakColor, fontWeight: '600' }}>{streakText}</span>
+                {ft.gameScore && <span style={{ fontSize: '11px', color: ft.wonThisWeek ? '#22c55e' : '#ef4444', fontWeight: '600' }}>{ft.gameScore}</span>}
+              </div>
+            </div>
+            {(() => {
+              const [w, l] = ft.record.split('-').map(Number)
+              if ((w + l) < 1) return null
+              return (
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{
+                    fontSize: '10px', fontWeight: '600',
+                    color: ft.inPlayoffs ? '#22c55e' : '#94a3b8',
+                    display: 'flex', alignItems: 'center', gap: '3px',
+                  }}>
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                      {ft.inPlayoffs ? (
+                        <path d="M13.5 4.5L6.5 11.5L2.5 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      ) : (
+                        <path d="M4 4L12 12M12 4L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      )}
+                    </svg>
+                    {ft.inPlayoffs ? 'Playoff Spot' : 'Outside Playoffs'}
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+          </div>
+        )
+      })()}
+
       {/* Actions */}
       {!isLocked && (
-        <div style={{ marginTop: '16px' }}>
+        <div style={{ marginTop: '10px' }}>
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
               onClick={handleSave}
@@ -1096,12 +1307,12 @@ export const FantasyRoster: React.FC = () => {
   )
 }
 
-const cardStyle: React.CSSProperties = {
+const cardStyleFn = (mobile: boolean): React.CSSProperties => ({
   backgroundColor: '#1e293b',
   borderRadius: '14px',
   border: '1px solid #334155',
-  padding: '20px',
-}
+  padding: mobile ? '10px' : '16px',
+})
 
 const buttonStyle: React.CSSProperties = {
   flex: 1,

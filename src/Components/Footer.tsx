@@ -2,9 +2,32 @@ import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-const APP_VERSION = process.env.REACT_APP_VERSION || '0.2.0'
+const APP_VERSION = process.env.REACT_APP_VERSION || '0.3.1'
 
 const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+  {
+    version: 'v0.3.1',
+    date: '2026-03-10',
+    changes: [
+      'Fixed mid-week roster lock — weekly FP and card bonuses now only count post-lock stats',
+      'Fixed card effects using pre-lock TDs, yards, and other stats for match bonuses',
+      'Card lock button accessible when card equipment slots are collapsed',
+      'Momentum flame badge in game modal scoreboard',
+    ],
+  },
+  {
+    version: 'v0.3.0',
+    date: '2026-03-10',
+    changes: [
+      'Momentum system — teams go on runs with cascade multipliers and mental resistance',
+      'Momentum shift highlights in play feed and game modal',
+      'Card classifications (All-Pro, Champion) and weekly modifiers',
+      'Roster swap system with between-game unlock window',
+      'Detailed card effect breakdowns with equation display',
+      'Score formula panel showing full FP calculation',
+      'Flame indicator on game cards for momentum streaks',
+    ],
+  },
   {
     version: 'v0.2.0',
     date: '2026-03-06',
@@ -36,9 +59,11 @@ const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
 
 export const Footer: React.FC = () => {
   const [showChangelog, setShowChangelog] = useState(false)
+  const [showAllNotes, setShowAllNotes] = useState(false)
   const badgeRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const isMobile = useIsMobile()
+  const latest = CHANGELOG[0]
 
   useEffect(() => {
     if (!showChangelog) return
@@ -130,56 +155,161 @@ export const Footer: React.FC = () => {
                 fontSize: '13px',
                 fontWeight: '700',
                 color: '#e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
               }}>
-                Changelog
+                What's New
+                <span style={{ fontSize: '11px', fontWeight: '500', color: '#94a3b8' }}>{latest.date}</span>
               </div>
-              <div style={{ maxHeight: '320px', overflowY: 'auto', padding: '4px 0' }}>
-                {CHANGELOG.map((entry) => (
-                  <div key={entry.version} style={{ padding: '12px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <span style={{
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        color: '#3b82f6',
-                      }}>
-                        {entry.version}
-                      </span>
-                      <span style={{
-                        fontSize: '11px',
-                        color: '#94a3b8',
-                      }}>
-                        {entry.date}
-                      </span>
-                    </div>
-                    <ul style={{
-                      margin: 0,
-                      paddingLeft: '16px',
-                      listStyle: 'none',
+              <div style={{ padding: '12px 16px' }}>
+                <ul style={{
+                  margin: 0,
+                  paddingLeft: '16px',
+                  listStyle: 'none',
+                }}>
+                  {latest.changes.map((change, i) => (
+                    <li key={i} style={{
+                      fontSize: '12px',
+                      color: '#94a3b8',
+                      lineHeight: '1.6',
+                      position: 'relative',
+                      paddingLeft: '8px',
                     }}>
-                      {entry.changes.map((change, i) => (
-                        <li key={i} style={{
-                          fontSize: '12px',
-                          color: '#94a3b8',
-                          lineHeight: '1.6',
-                          position: 'relative',
-                          paddingLeft: '8px',
-                        }}>
-                          <span style={{
-                            position: 'absolute',
-                            left: '-8px',
-                            color: '#64748b',
-                          }}>•</span>
-                          {change}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+                      <span style={{
+                        position: 'absolute',
+                        left: '-8px',
+                        color: '#64748b',
+                      }}>•</span>
+                      {change}
+                    </li>
+                  ))}
+                </ul>
               </div>
+              {CHANGELOG.length > 1 && (
+                <div style={{ padding: '8px 16px 12px', borderTop: '1px solid #334155' }}>
+                  <button
+                    onClick={() => { setShowChangelog(false); setShowAllNotes(true) }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#3b82f6',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
+                    onMouseLeave={e => (e.currentTarget.style.color = '#3b82f6')}
+                  >
+                    View all release notes
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Full release notes modal */}
+      {showAllNotes && (
+        <div
+          onClick={() => setShowAllNotes(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 200,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: isMobile ? '92vw' : '480px',
+              maxHeight: '80vh',
+              backgroundColor: '#1e293b',
+              border: '1px solid #334155',
+              borderRadius: '12px',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid #334155',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <span style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0' }}>Release Notes</span>
+              <button
+                onClick={() => setShowAllNotes(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748b',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  padding: '0 4px',
+                  lineHeight: 1,
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#94a3b8')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ overflowY: 'auto', padding: '4px 0' }}>
+              {CHANGELOG.map((entry, idx) => (
+                <div key={entry.version} style={{
+                  padding: '16px 20px',
+                  borderBottom: idx < CHANGELOG.length - 1 ? '1px solid #334155' : 'none',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      color: idx === 0 ? '#3b82f6' : '#64748b',
+                    }}>
+                      {entry.version}
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>{entry.date}</span>
+                    {idx === 0 && (
+                      <span style={{
+                        fontSize: '10px',
+                        fontWeight: '700',
+                        color: '#22c55e',
+                        backgroundColor: 'rgba(34,197,94,0.12)',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                      }}>LATEST</span>
+                    )}
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: '16px', listStyle: 'none' }}>
+                    {entry.changes.map((change, i) => (
+                      <li key={i} style={{
+                        fontSize: '12px',
+                        color: '#94a3b8',
+                        lineHeight: '1.7',
+                        position: 'relative',
+                        paddingLeft: '8px',
+                      }}>
+                        <span style={{ position: 'absolute', left: '-8px', color: '#64748b' }}>•</span>
+                        {change}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </footer>
   )
 }

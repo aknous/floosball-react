@@ -107,7 +107,7 @@ const PasswordGate: React.FC<{ onAuth: (pw: string) => void }> = ({ onAuth }) =>
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      height: 'calc(100vh - 56px)',
+      height: '100vh',
       backgroundColor: '#0f172a',
     }}>
       <form
@@ -151,8 +151,68 @@ const PasswordGate: React.FC<{ onAuth: (pw: string) => void }> = ({ onAuth }) =>
 
 // ── Admin content ──────────────────────────────────────────────────────────
 
+interface AllowlistEntry {
+  email: string
+  addedAt: string
+}
+
 const AdminContent: React.FC<{ password: string }> = ({ password }) => {
   const headers = { 'Content-Type': 'application/json', 'X-Admin-Password': password }
+
+  // Beta allowlist
+  const [allowlist, setAllowlist] = useState<AllowlistEntry[]>([])
+  const [allowlistLoading, setAllowlistLoading] = useState(false)
+  const [allowlistInput, setAllowlistInput] = useState('')
+  const [allowlistError, setAllowlistError] = useState<string | null>(null)
+  const [allowlistSuccess, setAllowlistSuccess] = useState<string | null>(null)
+
+  const fetchAllowlist = useCallback(async () => {
+    setAllowlistLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/admin/beta/allowlist`, { headers })
+      if (res.ok) {
+        const data = await res.json()
+        setAllowlist(data.emails || [])
+      }
+    } catch { /* silent */ }
+    finally { setAllowlistLoading(false) }
+  }, [])
+
+  React.useEffect(() => { fetchAllowlist() }, [fetchAllowlist])
+
+  const handleAddEmails = async () => {
+    const emails = allowlistInput.split(/[,\n]/).map(e => e.trim()).filter(Boolean)
+    if (!emails.length) return
+    setAllowlistError(null)
+    setAllowlistSuccess(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/beta/allowlist`, {
+        method: 'POST', headers, body: JSON.stringify({ emails }),
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      const data = await res.json()
+      const addedCount = data.count ?? data.added?.length ?? 0
+      setAllowlistSuccess(`Added ${addedCount} email${addedCount !== 1 ? 's' : ''}`)
+      setAllowlistInput('')
+      fetchAllowlist()
+    } catch (e: any) {
+      setAllowlistError(e.message)
+    }
+  }
+
+  const handleRemoveEmail = async (email: string) => {
+    setAllowlistError(null)
+    setAllowlistSuccess(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/beta/allowlist/${encodeURIComponent(email)}`, {
+        method: 'DELETE', headers,
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      setAllowlist(prev => prev.filter(e => e.email !== email))
+    } catch (e: any) {
+      setAllowlistError(e.message)
+    }
+  }
 
   // Name pool
   const [namesInput, setNamesInput] = useState('')
@@ -206,9 +266,76 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
   }
 
   return (
-    <div style={{ backgroundColor: '#0f172a', minHeight: 'calc(100vh - 56px)', color: '#e2e8f0' }}>
+    <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', color: '#e2e8f0' }}>
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
       <h1 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '28px' }}>Admin Portal</h1>
+
+      {/* Beta Allowlist */}
+      <div style={sectionStyle}>
+        <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Beta Allowlist</h2>
+        <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+          Manage which emails can access the app during beta.
+        </p>
+        <div style={{ marginBottom: '12px' }}>
+          <div style={labelStyle}>Add Emails (comma or newline separated)</div>
+          <textarea
+            value={allowlistInput}
+            onChange={e => setAllowlistInput(e.target.value)}
+            rows={3}
+            style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+            placeholder={'user@example.com, another@example.com'}
+          />
+        </div>
+        <button
+          onClick={handleAddEmails}
+          disabled={!allowlistInput.trim()}
+          style={{ ...btnStyle, opacity: !allowlistInput.trim() ? 0.5 : 1 }}
+        >
+          Add Emails
+        </button>
+        {allowlistSuccess && (
+          <div style={{ marginTop: '10px', fontSize: '13px', color: '#22c55e' }}>{allowlistSuccess}</div>
+        )}
+        {allowlistError && (
+          <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{allowlistError}</div>
+        )}
+        {allowlistLoading ? (
+          <div style={{ marginTop: '16px', fontSize: '13px', color: '#64748b' }}>Loading...</div>
+        ) : allowlist.length > 0 ? (
+          <div style={{ marginTop: '16px' }}>
+            <div style={{ ...labelStyle, marginBottom: '8px' }}>
+              Allowed Emails ({allowlist.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {allowlist.map(entry => (
+                <div key={entry.email} style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  backgroundColor: '#0f172a', borderRadius: '5px',
+                  padding: '6px 10px', fontSize: '13px',
+                }}>
+                  <span style={{ color: '#e2e8f0', flex: 1 }}>{entry.email}</span>
+                  <span style={{ color: '#64748b', fontSize: '11px' }}>
+                    {new Date(entry.addedAt).toLocaleDateString()}
+                  </span>
+                  <button
+                    onClick={() => handleRemoveEmail(entry.email)}
+                    style={{
+                      background: 'none', border: 'none', color: '#ef4444',
+                      cursor: 'pointer', fontSize: '13px', padding: '2px 6px',
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div style={{ marginTop: '16px', fontSize: '13px', color: '#64748b' }}>
+            No emails on the allowlist yet.
+          </div>
+        )}
+      </div>
 
       {/* Name Pool */}
       <div style={sectionStyle}>

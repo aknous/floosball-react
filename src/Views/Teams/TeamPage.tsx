@@ -95,7 +95,7 @@ export default function TeamPage() {
 
   const ratingBar = (value: number) => {
     const color = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
-    const pct = ((value - 60) / 40) * 100
+    const pct = value
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <div style={{ flex: 1, height: '5px', backgroundColor: '#334155', borderRadius: '3px', overflow: 'hidden' }}>

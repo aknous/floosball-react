@@ -82,6 +82,7 @@ export interface PlayEvent {
   isBigPlay?: boolean
   isClutchPlay?: boolean
   isChokePlay?: boolean
+  isMomentumShift?: boolean
 }
 
 // Game Events
@@ -246,11 +247,14 @@ export interface GameStateEvent extends BaseWebSocketEvent {
     isBigPlay: boolean
     isClutchPlay: boolean
     isChokePlay: boolean
+    isMomentumShift: boolean
   } | null
   homeWinProbability: number
   awayWinProbability: number
   homeWpa: number
   awayWpa: number
+  momentum: number
+  momentumTeam: string | null
   isHalftime: boolean
   isOvertime: boolean
   isUpsetAlert?: boolean

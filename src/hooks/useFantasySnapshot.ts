@@ -57,6 +57,27 @@ export interface ModifierInfo {
   description: string
 }
 
+export interface FavoriteTeamData {
+  teamId: number
+  teamName: string
+  teamAbbr: string
+  teamColor: string
+  elo: number
+  record: string
+  streak: number
+  inPlayoffs: boolean
+  wonThisWeek: boolean | null
+  gameScore: string | null
+}
+
+export interface PlayerGameStats {
+  passing: Record<string, number>
+  rushing: Record<string, number>
+  receiving: Record<string, number>
+  kicking: Record<string, number>
+  fantasyPoints: number
+}
+
 export interface SnapshotEntry {
   rank: number
   userId: number
@@ -71,6 +92,8 @@ export interface SnapshotEntry {
   players: SnapshotPlayer[]
   cardBreakdowns: CardBreakdownEntry[]
   equationSummary?: EquationSummary
+  favoriteTeamData?: FavoriteTeamData | null
+  playerGameStats?: Record<number, PlayerGameStats>
 }
 
 interface SnapshotData {
@@ -177,60 +200,68 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
 
       if (wsSeason != null) setSeason(wsSeason)
 
-      const converted: SnapshotEntry[] = lb.map((e: any) => ({
-        rank: e.rank ?? 0,
-        userId: e.userId,
-        username: e.username,
-        seasonEarnedFP: e.rawPoints ?? 0,
-        seasonCardBonus: e.cardBonusPoints ?? 0,
-        seasonTotal: e.totalPoints ?? 0,
-        weekPlayerFP: e.weekPlayerFP ?? 0,
-        weekCardBonus: e.weekCardBonus ?? 0,
-        weekTotal: Math.round(((e.weekPlayerFP ?? 0) + (e.weekCardBonus ?? 0)) * 10) / 10,
-        lockedAt: e.lockedAt ?? null,
-        players: (e.players ?? []).map((p: any) => ({
-          slot: p.slot,
-          playerId: p.playerId,
-          playerName: p.playerName,
-          position: p.position,
-          teamAbbr: p.teamAbbr,
-          earnedPoints: p.earnedPoints ?? 0,
-          weekFP: p.weekFP ?? 0,
-        })),
-        cardBreakdowns: (e.cardBreakdowns ?? []).map((cb: any) => ({
-          slotNumber: cb.slotNumber ?? 0,
-          playerName: cb.playerName ?? '',
-          edition: cb.edition ?? 'base',
-          effectName: cb.effectName ?? '',
-          displayName: cb.displayName ?? '',
-          detail: cb.detail ?? '',
-          category: cb.category ?? '',
-          outputType: cb.outputType ?? 'fp',
-          primaryFP: cb.primaryFP ?? 0,
-          primaryMult: cb.primaryMult ?? 0,
-          primaryXMult: cb.primaryXMult ?? 0,
-          primaryFloobits: cb.primaryFloobits ?? 0,
-          preMatchFP: cb.preMatchFP ?? 0,
-          preMatchFloobits: cb.preMatchFloobits ?? 0,
-          preMatchMult: cb.preMatchMult ?? 0,
-          preMatchXMult: cb.preMatchXMult ?? 0,
-          matchMultiplied: cb.matchMultiplied ?? false,
-          matchMultiplier: cb.matchMultiplier ?? 1.5,
-          conditionalBonus: cb.conditionalBonus ?? 0,
-          conditionalLabel: cb.conditionalLabel ?? null,
-          secondaryFP: cb.secondaryFP ?? 0,
-          secondaryFloobits: cb.secondaryFloobits ?? 0,
-          secondaryMult: cb.secondaryMult ?? 0,
-          secondaryXMult: cb.secondaryXMult ?? 0,
-          totalFP: cb.totalFP ?? 0,
-          floobitsEarned: cb.floobitsEarned ?? 0,
-          playerStatLine: cb.playerStatLine ?? '',
-          equation: cb.equation ?? '',
-        })),
-        equationSummary: e.equationSummary ?? undefined,
-      }))
+      setEntries(prev => {
+        // Build lookup of previous entries to preserve fields the WS event doesn't include
+        const prevByUser = new Map(prev.map(p => [p.userId, p]))
 
-      setEntries(converted)
+        return lb.map((e: any) => {
+          const existing = prevByUser.get(e.userId)
+          return {
+            rank: e.rank ?? 0,
+            userId: e.userId,
+            username: e.username,
+            seasonEarnedFP: e.rawPoints ?? 0,
+            seasonCardBonus: e.cardBonusPoints ?? 0,
+            seasonTotal: e.totalPoints ?? 0,
+            weekPlayerFP: e.weekPlayerFP ?? 0,
+            weekCardBonus: e.weekCardBonus ?? 0,
+            weekTotal: Math.round(((e.weekPlayerFP ?? 0) + (e.weekCardBonus ?? 0)) * 10) / 10,
+            lockedAt: e.lockedAt ?? null,
+            players: (e.players ?? []).map((p: any) => ({
+              slot: p.slot,
+              playerId: p.playerId,
+              playerName: p.playerName,
+              position: p.position,
+              teamAbbr: p.teamAbbr,
+              earnedPoints: p.earnedPoints ?? 0,
+              weekFP: p.weekFP ?? 0,
+            })),
+            cardBreakdowns: (e.cardBreakdowns ?? []).map((cb: any) => ({
+              slotNumber: cb.slotNumber ?? 0,
+              playerName: cb.playerName ?? '',
+              edition: cb.edition ?? 'base',
+              effectName: cb.effectName ?? '',
+              displayName: cb.displayName ?? '',
+              detail: cb.detail ?? '',
+              category: cb.category ?? '',
+              outputType: cb.outputType ?? 'fp',
+              primaryFP: cb.primaryFP ?? 0,
+              primaryMult: cb.primaryMult ?? 0,
+              primaryXMult: cb.primaryXMult ?? 0,
+              primaryFloobits: cb.primaryFloobits ?? 0,
+              preMatchFP: cb.preMatchFP ?? 0,
+              preMatchFloobits: cb.preMatchFloobits ?? 0,
+              preMatchMult: cb.preMatchMult ?? 0,
+              preMatchXMult: cb.preMatchXMult ?? 0,
+              matchMultiplied: cb.matchMultiplied ?? false,
+              matchMultiplier: cb.matchMultiplier ?? 1.5,
+              conditionalBonus: cb.conditionalBonus ?? 0,
+              conditionalLabel: cb.conditionalLabel ?? null,
+              secondaryFP: cb.secondaryFP ?? 0,
+              secondaryFloobits: cb.secondaryFloobits ?? 0,
+              secondaryMult: cb.secondaryMult ?? 0,
+              secondaryXMult: cb.secondaryXMult ?? 0,
+              totalFP: cb.totalFP ?? 0,
+              floobitsEarned: cb.floobitsEarned ?? 0,
+              playerStatLine: cb.playerStatLine ?? '',
+              equation: cb.equation ?? '',
+            })),
+            equationSummary: e.equationSummary ?? existing?.equationSummary ?? undefined,
+            favoriteTeamData: e.favoriteTeamData ?? existing?.favoriteTeamData ?? null,
+            playerGameStats: e.playerGameStats ?? existing?.playerGameStats ?? {},
+          }
+        })
+      })
       setGamesActive(true)
       setLoading(false)
     }

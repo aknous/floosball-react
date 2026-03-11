@@ -8,17 +8,19 @@ import Player from './Views/Players/PlayerPage'
 import Stats from './Views/Stats/Stats'
 import Players from './Views/Players/PlayersPage'
 import Results from './Views/Results/Results.js'
-import Records from './Views/Records/Records'
 import AdminPage from './Views/Admin/AdminPage'
 import FantasyPage from './Views/Fantasy/FantasyPage'
 import AboutPage from './Views/About/AboutPage'
 import CardsPage from './Views/Cards/CardsPage'
 import Dashboard from './Views/Dashboard/Dashboard'
 import DashboardNew from './Views/Dashboard/DashboardNew'
+import BetaBlockedPage from './Components/Auth/BetaBlockedPage'
+import LandingPage from './Views/Landing/LandingPage'
+import { OnboardingModal } from './Components/Onboarding/OnboardingModal'
 import { Footer } from './Components/Footer'
-import { Route, Routes, Navigate } from 'react-router-dom';
-import { ClerkProvider } from '@clerk/react'
-import { AuthProvider } from './contexts/AuthContext'
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { ClerkProvider, useUser } from '@clerk/react'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { FloosballProvider } from './contexts/FloosballContext'
 import { SeasonWebSocketProvider } from './contexts/SeasonWebSocketContext'
 import { GamesProvider } from './contexts/GamesContext'
@@ -41,6 +43,7 @@ function AppLayout() {
     <div className='min-h-screen relative font-pixel' style={{ backgroundColor: '#0f172a' }}>
       <div ref={headerRef} className='fixed w-full top-0 z-50'>
         <Navbar />
+        <BetaBanner />
         <GameBar />
       </div>
       <div style={{ paddingTop: headerHeight, paddingBottom: 33 }}>
@@ -50,7 +53,6 @@ function AppLayout() {
           <Route exact path='/dashboard/old' element={<Dashboard />} />
           <Route exact path='/players' element={<Players />} />
           <Route exact path='/teams' element={<TeamGrid />} />
-          <Route exact path='/records' element={<Records />} />
           <Route path='/team/:id' element={<Team />} />
           <Route path='/players/:id' element={<Player />} />
           <Route exact path='/fantasy' element={<FantasyPage />} />
@@ -61,6 +63,95 @@ function AppLayout() {
         <Footer />
       </div>
     </div>
+  )
+}
+
+function BetaBanner() {
+  const [visible, setVisible] = useState(() => {
+    return !sessionStorage.getItem('betaBannerDismissed')
+  })
+
+  if (!visible) return null
+
+  const dismiss = () => {
+    sessionStorage.setItem('betaBannerDismissed', '1')
+    setVisible(false)
+  }
+
+  return (
+    <div className="font-pixel" style={{
+      backgroundColor: 'rgba(245,158,11,0.12)',
+      borderBottom: '1px solid rgba(245,158,11,0.25)',
+    }}>
+      <div style={{
+        maxWidth: '800px',
+        margin: '0 auto',
+        padding: '10px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '12px',
+      }}>
+        <span style={{
+          fontSize: '10px',
+          fontWeight: '700',
+          color: '#f59e0b',
+          backgroundColor: 'rgba(245,158,11,0.15)',
+          padding: '2px 6px',
+          borderRadius: '4px',
+          letterSpacing: '0.5px',
+          flexShrink: 0,
+        }}>BETA</span>
+        <span style={{ fontSize: '12px', color: '#e2e8f0', lineHeight: '1.4' }}>
+          Floosball is in early beta. Expect bugs, visual quirks, and things breaking from time to time.
+        </span>
+        <button
+          onClick={dismiss}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#94a3b8',
+            fontSize: '16px',
+            cursor: 'pointer',
+            padding: '0 4px',
+            lineHeight: 1,
+            flexShrink: 0,
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#e2e8f0')}
+          onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
+        >
+          x
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function AuthGate() {
+  const { isSignedIn, isLoaded } = useUser()
+  const { betaBlocked, loading } = useAuth()
+  const location = useLocation()
+
+  // Always allow /about and /admin without auth
+  if (location.pathname === '/about') {
+    return <AppLayout />
+  }
+  if (location.pathname === '/admin') {
+    return (
+      <Routes>
+        <Route path='/admin' element={<AdminPage />} />
+      </Routes>
+    )
+  }
+
+  if (!isLoaded || loading) return null
+  if (!isSignedIn) return <LandingPage />
+  if (betaBlocked) return <BetaBlockedPage />
+  return (
+    <>
+      <OnboardingModal />
+      <AppLayout />
+    </>
   )
 }
 
@@ -139,7 +230,7 @@ function App() {
           <FloosballProvider>
             <SeasonWebSocketProvider>
               <GamesProvider>
-                <AppLayout />
+                <AuthGate />
               </GamesProvider>
             </SeasonWebSocketProvider>
           </FloosballProvider>

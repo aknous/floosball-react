@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -8,25 +8,9 @@ const linkStyle: React.CSSProperties = {
   fontWeight: '600',
 }
 
-const cardStyle: React.CSSProperties = {
-  backgroundColor: '#1e293b',
-  borderRadius: '8px',
-  border: '1px solid #334155',
-  padding: '20px 24px',
-  marginBottom: '16px',
-}
-
-const headingStyle: React.CSSProperties = {
-  fontSize: '16px',
-  fontWeight: '700',
-  color: '#e2e8f0',
-  marginBottom: '12px',
-  margin: 0,
-}
-
 const textStyle: React.CSSProperties = {
   fontSize: '13px',
-  color: '#94a3b8',
+  color: '#cbd5e1',
   lineHeight: '1.7',
   margin: 0,
 }
@@ -37,6 +21,50 @@ const indicatorRow: React.CSSProperties = {
   gap: '10px',
   marginBottom: '8px',
 }
+
+// ── Collapsible section ────────────────────────────────────────────────────
+
+const Section: React.FC<{ title: string; defaultOpen?: boolean; children: React.ReactNode }> = ({ title, defaultOpen = false, children }) => {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <div style={{
+      backgroundColor: '#1e293b',
+      borderRadius: '8px',
+      border: '1px solid #334155',
+      marginBottom: '16px',
+      overflow: 'hidden',
+    }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          width: '100%', padding: '16px 20px',
+          background: 'none', border: 'none', cursor: 'pointer',
+          fontFamily: 'inherit', textAlign: 'left',
+        }}
+      >
+        <span style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0' }}>
+          {title}
+        </span>
+        <svg
+          width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          style={{ transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <div style={{ padding: '0 20px 20px' }}>
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────
 
 const AboutPage: React.FC = () => {
   const isMobile = useIsMobile()
@@ -53,37 +81,34 @@ const AboutPage: React.FC = () => {
         </p>
 
         {/* What is Floosball? */}
-        <div style={cardStyle}>
-          <h2 style={headingStyle}>What is Floosball?</h2>
-          <p style={{ ...textStyle, marginTop: '12px' }}>
+        <Section title="What is Floosball?" defaultOpen>
+          <p style={textStyle}>
             Floosball is a procedurally generated football simulation. Every team, player, coach, and game is
             generated from scratch — no real-world data, just pure simulation. The engine runs full
             seasons with regular season weeks, playoffs, and a championship game (the Floosbowl).
             Players have unique attributes that affect gameplay, coaches have distinct tendencies,
             and every play unfolds based on probabilities influenced by matchups, pressure, and situational context.
           </p>
-        </div>
+        </Section>
 
         {/* How to Watch */}
-        <div style={cardStyle}>
-          <h2 style={headingStyle}>How to Watch</h2>
-          <p style={{ ...textStyle, marginTop: '12px' }}>
+        <Section title="How to Watch">
+          <p style={textStyle}>
             The <Link to="/dashboard" style={linkStyle}>Dashboard</Link> is your home base. When games are
             live, you'll see game cards with real-time scores. Click any game card to open the play-by-play
             modal with a full drive log, live stats, and win probability. The Highlights feed on the
             dashboard surfaces key moments — touchdowns, turnovers, big plays, and clutch/choke moments — so
             you can follow the action across all games at once.
           </p>
-        </div>
+        </Section>
 
         {/* Play Indicators */}
-        <div style={cardStyle}>
-          <h2 style={headingStyle}>Play Indicators</h2>
-          <p style={{ ...textStyle, marginTop: '12px', marginBottom: '16px' }}>
+        <Section title="Play Indicators">
+          <p style={{ ...textStyle, marginBottom: '16px' }}>
             Certain plays are highlighted with visual indicators in the play-by-play and highlights feed:
           </p>
           <div style={indicatorRow}>
-            <span style={{ color: '#f59e0b', fontWeight: '600', fontSize: '12px', minWidth: '90px' }}>
+            <span style={{ color: '#f59e0b', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
               ⚡ BIG PLAY
             </span>
             <span style={textStyle}>
@@ -91,7 +116,7 @@ const AboutPage: React.FC = () => {
             </span>
           </div>
           <div style={indicatorRow}>
-            <span style={{ color: '#06b6d4', fontWeight: '600', fontSize: '12px', minWidth: '90px' }}>
+            <span style={{ color: '#06b6d4', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
               ◆ CLUTCH
             </span>
             <span style={textStyle}>
@@ -99,19 +124,30 @@ const AboutPage: React.FC = () => {
             </span>
           </div>
           <div style={indicatorRow}>
-            <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '12px', minWidth: '90px' }}>
+            <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
               ▼ CHOKE
             </span>
             <span style={textStyle}>
               A player crumbled under pressure — a costly interception, dropped pass, or stalled drive in a critical moment.
             </span>
           </div>
-        </div>
+          <div style={indicatorRow}>
+            <span style={{ color: '#f97316', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
+              <svg viewBox="0 0 24 24" fill="#f97316" style={{ width: '14px', height: '14px', display: 'inline-block', verticalAlign: 'middle', marginRight: '2px' }}>
+                <path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.42-7.1A13.5 13.5 0 0 1 10.5 5.8s.5 2.7 2.5 4.2c2-1.5 2.5-4.2 2.5-4.2s2.08 1.5 3.08 2.6C20.26 10.06 20 12.93 20 15.5 20 19.42 16.97 23 12 23Zm0-2c2.76 0 5-1.79 5-4.5 0-1.5-.5-3-1.5-4l-1 1c-1 1-2.5 1-3.5 0l-1-1c-1 1-1.5 2.5-1.5 4 0 2.71 2.24 4.5 5 4.5Z" />
+              </svg>{' '}MOMENTUM
+            </span>
+            <span style={textStyle}>
+              A team is on a hot streak — consecutive successful plays building momentum. Appears as a flame icon
+              next to the team name on game cards and as a highlight tag in the feed. The flame intensifies
+              with stronger momentum streaks.
+            </span>
+          </div>
+        </Section>
 
         {/* Game Badges */}
-        <div style={cardStyle}>
-          <h2 style={headingStyle}>Game Badges</h2>
-          <p style={{ ...textStyle, marginTop: '12px', marginBottom: '16px' }}>
+        <Section title="Game Badges">
+          <p style={{ ...textStyle, marginBottom: '16px' }}>
             Some games on the dashboard are highlighted with special badges:
           </p>
           <div style={indicatorRow}>
@@ -132,45 +168,143 @@ const AboutPage: React.FC = () => {
               winning takes the lead against a playoff-contending opponent.
             </span>
           </div>
-        </div>
+        </Section>
 
         {/* Teams & Players */}
-        <div style={cardStyle}>
-          <h2 style={headingStyle}>Teams & Players</h2>
-          <p style={{ ...textStyle, marginTop: '12px' }}>
+        <Section title="Teams & Players">
+          <p style={textStyle}>
             The league consists of procedurally generated teams, each with unique rosters, coaches, and
             geometric avatars. Visit the <Link to="/players" style={linkStyle}>Players</Link> page
             to browse the full player database — filter by position and status to find who you're looking
             for. Each player has detailed attributes (speed, strength, awareness, pressure handling, and
             more) that directly affect how they perform on the field.
           </p>
-        </div>
-
-        {/* Records */}
-        <div style={cardStyle}>
-          <h2 style={headingStyle}>Records</h2>
-          <p style={{ ...textStyle, marginTop: '12px' }}>
-            The <Link to="/records" style={linkStyle}>Records</Link> page tracks season records and
-            all-time bests across the league's history. See which teams have dominated, which players
-            hold records, and browse past season results including playoff brackets and Floosbowl champions.
-          </p>
-        </div>
+        </Section>
 
         {/* Fantasy */}
-        <div style={cardStyle}>
-          <h2 style={headingStyle}>Fantasy</h2>
-          <p style={{ ...textStyle, marginTop: '12px' }}>
+        <Section title="Fantasy">
+          <p style={textStyle}>
             Sign in to play <Link to="/fantasy" style={linkStyle}>Fantasy Floosball</Link>. Draft a
-            roster of players and earn points based on their live in-game performance. Your fantasy
-            points update in real-time as games are played — watch your score tick up in the navbar
-            during live games.
+            roster of 5 players (QB, RB, WR, TE, K) each season and earn Fantasy Points (FP) based on their
+            live in-game performance. Your FP update in real-time as games are played — watch your score
+            tick up in the navbar during live games.
           </p>
-        </div>
+          <p style={{ ...textStyle, marginTop: '10px' }}>
+            <span style={{ color: '#e2e8f0', fontWeight: '600' }}>Fantasy Scoring:</span> Your total FP each week
+            is calculated as: (roster FP + card bonus FP) multiplied by any multiplier bonuses from equipped cards.
+          </p>
+          <p style={{ ...textStyle, marginTop: '10px' }}>
+            <span style={{ color: '#e2e8f0', fontWeight: '600' }}>Roster Swaps:</span> You earn a swap every 7 weeks.
+            Between games, you can swap one player for a new one — costs 1 Floobit per swap. When you swap,
+            your previous player's FP are banked and you start earning with the new player.
+          </p>
+        </Section>
+
+        {/* Trading Cards */}
+        <Section title="Trading Cards">
+          <p style={textStyle}>
+            Collect player <Link to="/cards" style={linkStyle}>Trading Cards</Link> from packs or the shop.
+            Each card has a named effect that provides bonus FP, Floobit earnings, or multipliers.
+            Higher edition cards have stronger effects.
+          </p>
+          <p style={{ ...textStyle, marginTop: '10px', fontWeight: '600', color: '#e2e8f0' }}>
+            Editions (weakest to strongest):
+          </p>
+          <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {[
+              { name: 'Base', color: '#94a3b8', mult: '1.0x' },
+              { name: 'Chrome', color: '#60a5fa', mult: '1.5x' },
+              { name: 'Holographic', color: '#a78bfa', mult: '2.0x' },
+              { name: 'Gold', color: '#f59e0b', mult: '2.5x' },
+              { name: 'Prismatic', color: '#f472b6', mult: '3.0x' },
+              { name: 'Diamond', color: '#22d3ee', mult: '4.0x' },
+            ].map(e => (
+              <div key={e.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                <span style={{ color: e.color, fontWeight: '700', minWidth: '90px' }}>{e.name}</span>
+                <span style={{ color: '#94a3b8' }}>{e.mult} power</span>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* Card Effects */}
+        <Section title="Card Effects">
+          <p style={{ ...textStyle, marginBottom: '12px' }}>
+            Each card has a named effect tied to its player's position. Effects fall into 5 categories:
+          </p>
+          {[
+            { pos: 'WR', label: 'Flat FP', desc: 'Unconditional bonus Fantasy Points added each week.', color: '#4ade80' },
+            { pos: 'QB', label: 'Multiplier', desc: 'Multiplies your total roster FP (e.g. 1.05x).', color: '#60a5fa' },
+            { pos: 'RB', label: 'Floobits', desc: 'Earns bonus Floobits currency each week.', color: '#eab308' },
+            { pos: 'TE', label: 'Conditional', desc: 'Triggers under specific conditions (e.g. if your QB scores 10+ FP).', color: '#a78bfa' },
+            { pos: 'K', label: 'Streak', desc: 'Grows stronger over consecutive weeks, resets when condition breaks.', color: '#f97316' },
+          ].map(c => (
+            <div key={c.pos} style={{ ...indicatorRow, marginBottom: '6px' }}>
+              <span style={{ color: c.color, fontWeight: '600', fontSize: '12px', minWidth: '100px' }}>
+                {c.pos} — {c.label}
+              </span>
+              <span style={{ ...textStyle, fontSize: '12px' }}>{c.desc}</span>
+            </div>
+          ))}
+          <p style={{ ...textStyle, marginTop: '10px' }}>
+            <span style={{ color: '#e2e8f0', fontWeight: '600' }}>Match Bonus:</span> When a card's player is on
+            your fantasy roster, the card's primary effect gets a 1.5x boost.
+          </p>
+        </Section>
+
+        {/* Card Equipment */}
+        <Section title="Card Equipment">
+          <p style={textStyle}>
+            Equip up to 5 cards (one per slot: QB, RB, WR, TE, K) on the <Link to="/fantasy" style={linkStyle}>Fantasy</Link> page.
+            Card effects are calculated each week alongside your roster's FP.
+            Cards lock in when your roster locks at the start of each week and can be changed between weeks.
+          </p>
+        </Section>
+
+        {/* Floobits Economy */}
+        <Section title="Floobits">
+          <p style={{ ...textStyle, marginBottom: '12px' }}>
+            Floobits are the in-app currency. Here's how you earn and spend them:
+          </p>
+          <p style={{ ...textStyle, fontWeight: '600', color: '#e2e8f0', marginBottom: '6px' }}>
+            Earning:
+          </p>
+          <div style={{ marginBottom: '12px', paddingLeft: '8px' }}>
+            {[
+              'Weekly leaderboard: 1st = 30, 2nd = 20, 3rd = 15 (top 25% get 5)',
+              'Season leaderboard: 1st = 200, 2nd = 125, 3rd = 75 (top 25% get 25)',
+              'Season FP payout: 1 Floobit per 25 FP earned',
+              'Favorite team clinches playoffs: 25',
+              'Favorite team clinches top seed: 50',
+              'Favorite team wins Floosbowl: 150',
+              'RB card effects: earn Floobits weekly from equipped cards',
+            ].map((line, i) => (
+              <div key={i} style={{ ...textStyle, fontSize: '12px', marginBottom: '3px', display: 'flex', gap: '6px' }}>
+                <span style={{ color: '#94a3b8' }}>-</span> {line}
+              </div>
+            ))}
+          </div>
+          <p style={{ ...textStyle, fontWeight: '600', color: '#e2e8f0', marginBottom: '6px' }}>
+            Spending:
+          </p>
+          <div style={{ paddingLeft: '8px' }}>
+            {[
+              'Standard Pack: 50 Floobits (3 cards)',
+              'Premium Pack: 125 Floobits (5 cards, guaranteed Chrome+)',
+              'Elite Pack: 300 Floobits (5 cards, guaranteed Prismatic + Holo+)',
+              'Featured cards in the shop (rotating selection)',
+              'Roster swaps: 1 Floobit per swap',
+            ].map((line, i) => (
+              <div key={i} style={{ ...textStyle, fontSize: '12px', marginBottom: '3px', display: 'flex', gap: '6px' }}>
+                <span style={{ color: '#94a3b8' }}>-</span> {line}
+              </div>
+            ))}
+          </div>
+        </Section>
 
         {/* Season Schedule */}
-        <div style={cardStyle}>
-          <h2 style={headingStyle}>Season Schedule</h2>
-          <p style={{ ...textStyle, marginTop: '12px', marginBottom: '16px' }}>
+        <Section title="Season Schedule">
+          <p style={{ ...textStyle, marginBottom: '16px' }}>
             Each season plays out over the course of a week on a fixed real-world schedule. All game times are Eastern (adjust for your time zone).
           </p>
 
@@ -194,7 +328,7 @@ const AboutPage: React.FC = () => {
               <div style={{ ...textStyle, fontSize: '12px' }}>{item.desc}</div>
             </div>
           ))}
-        </div>
+        </Section>
 
       </div>
     </div>
