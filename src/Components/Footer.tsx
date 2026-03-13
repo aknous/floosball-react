@@ -2,9 +2,31 @@ import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-const APP_VERSION = process.env.REACT_APP_VERSION || '0.3.1'
+const APP_VERSION = process.env.REACT_APP_VERSION || '0.3.3'
 
 const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+  {
+    version: 'v0.3.3',
+    date: '2026-03-12',
+    changes: [
+      'Decoupled card effect pools from position — shared pool available to all positions plus position-exclusive effects for position-specific stats',
+      'Rebalanced output types — reduced FPx dominance (44% → 21%), converted 23 effects to FP or Floobits output',
+      'Diversified position-exclusive output types — QB and RB exclusives now cover FP, FPx, and Floobits',
+      'New RB-exclusive effects: Expedition (FP per rushing yards) and Stampede (conditional FPx with base value)',
+      'Buffed flat FP effect values to be competitive with conditional multipliers',
+      'Reworked edition secondaries — Prismatic picks random 2-of-3 bonus types, Diamond gets all three',
+    ],
+  },
+  {
+    version: 'v0.3.2',
+    date: '2026-03-10',
+    changes: [
+      'Expandable player game stats on roster — tap any player to see live passing, rushing, receiving, or kicking stats',
+      'Favorite team slot on roster showing ELO, record, streak, and playoff status',
+      'Swap and card lock window now correctly opens between game scheduling and kickoff',
+      'Score breakdown equation defaults to expanded',
+    ],
+  },
   {
     version: 'v0.3.1',
     date: '2026-03-10',
