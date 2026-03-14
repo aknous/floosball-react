@@ -154,7 +154,7 @@ const PlayerRow: React.FC<{
         </PlayerHoverCard>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-        <span style={{ fontSize: '13px', color: '#94a3b8' }}>{player.teamAbbr}</span>
+        <span style={{ fontSize: '13px', color: '#94a3b8' }}>{player.position} · {player.teamAbbr}</span>
         <Stars stars={player.ratingStars} size={20} />
       </div>
       {cards && cards.length > 0 && (
@@ -183,7 +183,9 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
     if (!visible) return
     setLoading(true)
     const pos = POSITION_MAP[position] || position
-    axios.get(`${API_BASE}/stats/leaders`, { params: { category: 'fantasy_points', position: pos, limit: 50 } })
+    const params: Record<string, any> = { category: 'fantasy_points', limit: 50 }
+    if (position !== 'FLEX') params.position = pos
+    axios.get(`${API_BASE}/stats/leaders`, { params })
       .then(res => {
         const data = res.data?.data?.leaders || res.data?.leaders || []
         const mapped: PlayerOption[] = data.map((p: any) => ({
@@ -246,7 +248,7 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '18px', fontWeight: '700', color: '#f1f5f9', marginBottom: '4px' }}>
-                Select {position}
+                Select {position}{position === 'FLEX' ? ' (Any)' : ''}
               </div>
               <div style={{ fontSize: '13px', color: '#94a3b8' }}>
                 Sorted by fantasy points

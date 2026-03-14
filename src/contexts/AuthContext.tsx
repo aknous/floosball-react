@@ -38,6 +38,8 @@ export interface FantasyRosterData {
   lockedAt: string | null
   totalPoints: number
   cardBonusPoints: number
+  swapsAvailable: number
+  purchasedSwaps: number
   players: FantasyRosterPlayer[]
 }
 
@@ -73,7 +75,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Derive fantasyPlayerIds from roster data
   const fantasyPlayerIds = React.useMemo(() => {
-    if (!fantasyRoster?.isLocked || !fantasyRoster.players) return new Set<number>()
+    if (!fantasyRoster?.players) return new Set<number>()
     return new Set(fantasyRoster.players.map(p => p.playerId))
   }, [fantasyRoster])
 

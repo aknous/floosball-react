@@ -73,14 +73,15 @@ export const useSeasonUpdates = () => {
           currentWeekText: (event as any).weekText ?? `Week ${event.weekNumber}`,
           activeGames: [],
           completedGames: [],
-          nextGameStartTime: null,
+          nextGameStartTime: (event as any).nextGameStartTime || null,
         }))
         break
 
       case 'game_start':
         setSeasonState(prev => ({
           ...prev,
-          activeGames: [...prev.activeGames, event.gameId]
+          activeGames: [...prev.activeGames, event.gameId],
+          nextGameStartTime: null,
         }))
         break
 

@@ -7,6 +7,7 @@ import { useFantasyLivePoints } from '@/hooks/useFantasyLivePoints'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import type { CardBreakdownEntry, EquationSummary, ModifierInfo, FavoriteTeamData, PlayerGameStats } from '@/hooks/useFantasySnapshot'
 import { Stars } from '@/Components/Stars'
+import HoverTooltip from '@/Components/HoverTooltip'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { PlayerPicker } from './PlayerPicker'
@@ -31,11 +32,22 @@ interface Roster {
   totalPoints: number
   cardBonusPoints: number
   swapsAvailable: number
+  purchasedSwaps: number
+  hasFlexSlot?: boolean
   players: FantasyRosterPlayer[]
   swapHistory: SwapHistoryEntry[]
 }
 
-const SLOTS = [
+interface ActivePowerup {
+  slug: string
+  displayName: string
+  weeksRemaining?: number
+  expiring?: boolean
+  overrideModifier?: string
+  count?: number
+}
+
+const BASE_SLOTS = [
   { key: 'QB', label: 'QB', position: 'QB' },
   { key: 'RB', label: 'RB', position: 'RB' },
   { key: 'WR1', label: 'WR', position: 'WR' },
@@ -43,12 +55,12 @@ const SLOTS = [
   { key: 'TE', label: 'TE', position: 'TE' },
   { key: 'K', label: 'K', position: 'K' },
 ]
+const FLEX_SLOT = { key: 'FLEX', label: 'FLEX', position: 'FLEX' }
 
 // Canonical FP-type colors used everywhere in the breakdown
 const TYPE_COLORS = {
-  fp: '#4ade80',       // +FP — green
-  mult: '#a78bfa',     // +FPx — purple
-  xmult: '#f472b6',    // xFPx — pink/red
+  fp: '#4ade80',       // FP — green
+  mult: '#f472b6',     // FPx — pink
   floobits: '#eab308', // Floobits — yellow/gold
 } as const
 
@@ -58,6 +70,20 @@ const CATEGORY_COLORS: Record<string, string> = {
   floobits: TYPE_COLORS.floobits,
   conditional: '#60a5fa',
   streak: '#fb923c',
+}
+
+// Behavior tags for breakdown — tells users which modifiers affect each card
+const BEHAVIOR_TAGS: Record<string, { label: string; color: string; tooltip: string; activeModifier: string; activeText: string }> = {
+  chance:      { label: 'CHC', color: '#c084fc', tooltip: 'Chance — Random trigger roll', activeModifier: 'fortunate', activeText: 'Fortunate active — trigger rates boosted' },
+  conditional: { label: 'CND', color: '#60a5fa', tooltip: 'Conditional — Triggers on game condition', activeModifier: 'longshot', activeText: 'Longshot active — thresholds halved' },
+  streak:      { label: 'STK', color: '#fb923c', tooltip: 'Streak — Grows each week, resets when broken', activeModifier: 'ironclad', activeText: 'Ironclad active — streak protected' },
+}
+
+function getBreakdownBehavior(b: CardBreakdownEntry): keyof typeof BEHAVIOR_TAGS | null {
+  if (b.isChanceEffect) return 'chance'
+  if (b.category === 'conditional') return 'conditional'
+  if (b.category === 'streak') return 'streak'
+  return null
 }
 
 const EDITION_SHORT: Record<string, string> = {
@@ -85,8 +111,9 @@ const MODIFIER_COLORS: Record<string, { color: string; bg: string; border: strin
   frenzy:    { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
   overdrive: { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
   payday:    { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
-  spotlight: { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
   longshot:  { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
+  synergy:   { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
+  fortunate: { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
   ironclad:  { color: '#fbbf24', bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.30)' },
   wildcard:  { color: '#fbbf24', bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.30)' },
   steady:    { color: '#94a3b8', bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.20)' },
@@ -99,39 +126,6 @@ interface PlayerSummary {
   weekFP: number
 }
 
-const HoverTooltip: React.FC<{ text: string; color?: string; children: React.ReactNode }> = ({ text, color = '#94a3b8', children }) => {
-  const [show, setShow] = useState(false)
-  const [pos, setPos] = useState({ x: 0, y: 0 })
-  const ref = useRef<HTMLSpanElement>(null)
-
-  const handleEnter = () => {
-    if (!ref.current || !text) return
-    const rect = ref.current.getBoundingClientRect()
-    setPos({ x: rect.left + rect.width / 2, y: rect.top })
-    setShow(true)
-  }
-
-  return (
-    <span ref={ref} onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)} style={{ cursor: text ? 'help' : undefined }}>
-      {children}
-      {show && text && ReactDOM.createPortal(
-        <div style={{
-          position: 'fixed', left: pos.x, top: pos.y - 8,
-          transform: 'translate(-50%, -100%)',
-          backgroundColor: '#0f172a', border: `1px solid ${color}40`,
-          borderRadius: '8px', padding: '8px 12px',
-          fontSize: '10px', color: '#e2e8f0', lineHeight: '1.5',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 10010,
-          pointerEvents: 'none', fontFamily: 'pressStart',
-          maxWidth: '280px', textAlign: 'center',
-        }}>
-          {text}
-        </div>,
-        document.body
-      )}
-    </span>
-  )
-}
 
 const PointsBreakdownPanel: React.FC<{
   playerSummaries: PlayerSummary[]
@@ -185,27 +179,25 @@ const PointsBreakdownPanel: React.FC<{
   )
 
   const eq = equationSummary
-  const hasEquation = eq && (eq.totalBonusFP > 0 || eq.totalMultBonus > 0 || (eq.xMultFactors?.length ?? 0) > 0)
+  const hasEquation = eq && (eq.totalBonusFP > 0 || (eq.multFactors?.length ?? 0) > 0)
 
   // Build per-card value chips: each card shows all its outputs inline
-  const formatValue = (val: number, type: 'fp' | 'mult' | 'xmult' | 'floobits'): { str: string; color: string } => {
+  const formatValue = (val: number, type: 'fp' | 'mult' | 'floobits'): { str: string; color: string } => {
     if (type === 'fp') return { str: `+${val.toFixed(1)} FP`, color: TYPE_COLORS.fp }
-    if (type === 'mult') return { str: `+${val.toFixed(1)}x +FPx`, color: TYPE_COLORS.mult }
-    if (type === 'xmult') return { str: `${val.toFixed(2)}x xFPx`, color: TYPE_COLORS.xmult }
+    if (type === 'mult') return { str: `${val.toFixed(2)}x FPx`, color: TYPE_COLORS.mult }
     return { str: `+${val}F`, color: TYPE_COLORS.floobits }
   }
 
   // Colorize FP-type values in card effect text (e.g. "+1.1 FPx" → purple)
   const colorizeEffectText = (text: string, baseColor: string): React.ReactNode => {
-    const pattern = /([+-]?\d+\.?\d*x?\s*)?(xFPx|\+?FPx|FP\b|Floobits\b|F\b)/g
+    const pattern = /([+-]?\d+\.?\d*x?\s*)?(\+?FPx|FP\b|Floobits\b|F\b)/g
     const parts: React.ReactNode[] = []
     let lastIdx = 0
     let m: RegExpExecArray | null
     while ((m = pattern.exec(text)) !== null) {
       if (m.index > lastIdx) parts.push(text.slice(lastIdx, m.index))
       const kw = m[2]
-      const color = kw === 'xFPx' ? TYPE_COLORS.xmult
-        : (kw === 'FPx' || kw === '+FPx') ? TYPE_COLORS.mult
+      const color = (kw === 'FPx' || kw === '+FPx') ? TYPE_COLORS.mult
         : (kw === 'Floobits' || kw === 'F') ? TYPE_COLORS.floobits
         : TYPE_COLORS.fp
       parts.push(<span key={m.index} style={{ color }}>{m[0]}</span>)
@@ -263,6 +255,8 @@ const PointsBreakdownPanel: React.FC<{
             const edTag = EDITION_SHORT[b.edition] ?? b.edition
             const edColor = EDITION_COLORS[b.edition] ?? '#94a3b8'
             const effectLabel = b.displayName || b.effectName
+            const behaviorKey = getBreakdownBehavior(b)
+            const bTag = behaviorKey ? BEHAVIOR_TAGS[behaviorKey] : null
 
             const floobitsTotal = b.floobitsEarned ?? 0
 
@@ -277,12 +271,8 @@ const PointsBreakdownPanel: React.FC<{
             const matchColor = '#60a5fa'
 
             // Determine which modifier tag to append per output type
-            const fpModTag = mod === 'frenzy' ? ' × 2x frenzy'
-              : mod === 'spotlight' && b.playerStatLine ? ' × 1.5x spotlight'
-              : ''
-            const multModTag = mod === 'amplify' ? ' × 2x amplify'
-              : isGrounded ? ' (grounded)' : ''
-            const xMultModTag = mod === 'cascade' ? ' × 2x cascade'
+            const fpModTag = mod === 'frenzy' ? ' × 2x frenzy' : ''
+            const multModTag = (mod === 'amplify' || mod === 'cascade') ? ` × 2x ${mod}`
               : isGrounded ? ' (grounded)' : ''
             const fModTag = mod === 'payday' ? ' × 3x payday' : ''
 
@@ -293,25 +283,17 @@ const PointsBreakdownPanel: React.FC<{
               if (fpMatched) eqSegments.push({text: ` × ${mm}x match`, color: matchColor})
               if (fpModTag) eqSegments.push({text: ` ${fpModTag.trim()}`, color: c})
               eqResult = formatValue(b.primaryFP, 'fp')
-            } else if (b.primaryMult > 0) {
+            } else if (b.primaryMult > 1) {
               const c = TYPE_COLORS.mult
               eqNegated = isGrounded
               if (b.equation) eqSegments.push({text: b.equation, color: c})
-              else if (b.matchMultiplied) eqSegments.push({text: `+${(b.primaryMult / mm).toFixed(2)}x`, color: c})
+              else if (b.matchMultiplied) {
+                const preMult = 1 + (b.primaryMult - 1) / mm
+                eqSegments.push({text: `${preMult.toFixed(2)}x`, color: c})
+              }
               if (b.matchMultiplied) eqSegments.push({text: ` × ${mm}x match`, color: matchColor})
               if (multModTag) eqSegments.push({text: ` ${multModTag.trim()}`, color: c})
               eqResult = formatValue(b.primaryMult, 'mult')
-            } else if (b.primaryXMult > 1) {
-              const c = TYPE_COLORS.xmult
-              eqNegated = isGrounded
-              if (b.equation) eqSegments.push({text: b.equation, color: c})
-              else if (b.matchMultiplied) {
-                const preXMult = 1 + (b.primaryXMult - 1) / mm
-                eqSegments.push({text: `${preXMult.toFixed(2)}x`, color: c})
-              }
-              if (b.matchMultiplied) eqSegments.push({text: ` × ${mm}x match`, color: matchColor})
-              if (xMultModTag) eqSegments.push({text: ` ${xMultModTag.trim()}`, color: c})
-              eqResult = formatValue(b.primaryXMult, 'xmult')
             } else if (primaryF > 0) {
               const c = TYPE_COLORS.floobits
               if (b.equation) eqSegments.push({text: b.equation, color: c})
@@ -331,8 +313,7 @@ const PointsBreakdownPanel: React.FC<{
             }
             // Edition secondary bonuses
             if ((b.secondaryFP ?? 0) > 0) subLines.push({ label: `${edTag} bonus`, chip: formatValue(b.secondaryFP, 'fp') })
-            if ((b.secondaryMult ?? 0) > 0) subLines.push({ label: `${edTag} bonus`, chip: formatValue(b.secondaryMult, 'mult'), negated: isGrounded })
-            if ((b.secondaryXMult ?? 0) > 1) subLines.push({ label: `${edTag} bonus`, chip: formatValue(b.secondaryXMult, 'xmult'), negated: isGrounded })
+            if ((b.secondaryMult ?? 0) > 1) subLines.push({ label: `${edTag} bonus`, chip: formatValue(b.secondaryMult, 'mult'), negated: isGrounded })
             if ((b.secondaryFloobits ?? 0) > 0) subLines.push({ label: `${edTag} bonus`, chip: formatValue(b.secondaryFloobits, 'floobits') })
 
             // Zero state: show dimmed output type on header when no equation/results
@@ -340,14 +321,11 @@ const PointsBreakdownPanel: React.FC<{
             let zeroChip: { str: string; color: string; negated?: boolean } | null = null
             if (!hasOutput) {
               const t = b.outputType
-              const negateChip = isGrounded && (t === 'mult' || t === 'xmult')
+              const negateChip = isGrounded && t === 'mult'
               // When grounded, use pre-modifier values to show what the card WOULD produce
-              const realXMult = negateChip ? (b.preMatchXMult || b.primaryXMult || 1) : (b.primaryXMult || 1)
-              const realMult = negateChip ? (b.preMatchMult || b.primaryMult || 0) : (b.primaryMult || 0)
-              zeroChip = t === 'xmult'
-                ? { str: `${realXMult.toFixed(2)}x xFPx`, color: '#64748b', negated: negateChip }
-                : t === 'mult'
-                ? { str: `+${realMult.toFixed(1)}x +FPx`, color: '#64748b', negated: negateChip }
+              const realMult = negateChip ? (b.preMatchMult || b.primaryMult || 1) : (b.primaryMult || 1)
+              zeroChip = t === 'mult'
+                ? { str: `${realMult.toFixed(2)}x FPx`, color: '#64748b', negated: negateChip }
                 : t === 'floobits'
                 ? { str: '+0F', color: '#64748b' }
                 : { str: '+0.0 FP', color: '#64748b' }
@@ -376,6 +354,15 @@ const PointsBreakdownPanel: React.FC<{
                       backgroundColor: 'rgba(96,165,250,0.15)', padding: '2px 5px', borderRadius: '3px',
                     }}>MATCH</span>
                   )}
+                  {bTag && (
+                    <HoverTooltip text={mod === bTag.activeModifier ? bTag.activeText : bTag.tooltip} color={bTag.color}>
+                      <span style={{
+                        color: bTag.color, fontSize: '10px', flexShrink: 0,
+                        backgroundColor: `${bTag.color}18`, padding: '2px 5px', borderRadius: '3px',
+                        border: `1px solid ${bTag.color}40`,
+                      }}>{bTag.label}</span>
+                    </HoverTooltip>
+                  )}
                   {zeroChip && (
                     <span style={{ color: zeroChip.color, fontWeight: '600', fontSize: '12px', marginLeft: 'auto', textDecoration: zeroChip.negated ? 'line-through' : 'none', opacity: zeroChip.negated ? 0.45 : 1 }}>{zeroChip.str}</span>
                   )}
@@ -403,7 +390,7 @@ const PointsBreakdownPanel: React.FC<{
                 {/* Roster player stats */}
                 {b.playerStatLine && (
                   <div style={{ paddingLeft: '16px', fontSize: '11px', color: '#cbd5e1', padding: '2px 0 2px 16px' }}>
-                    <span style={{ color: '#64748b' }}>Roster stats: </span>{b.playerStatLine}
+                    <span style={{ color: '#64748b' }}>Slot stats: </span>{b.playerStatLine}
                   </div>
                 )}
               </div>
@@ -424,11 +411,9 @@ const PointsBreakdownPanel: React.FC<{
       {/* Formula box */}
       {hasEquation && (() => {
         const baseFP = eq!.weekRawFP + eq!.totalBonusFP
-        const addMultPool = 1 + eq!.totalMultBonus
-        const xFactors = eq!.xMultFactors ?? []
-        const xMultProduct = xFactors.length > 0 ? xFactors.reduce((a, b) => a * b, 1) : 1
-        const totalMult = addMultPool * xMultProduct
-        const hasMult = eq!.totalMultBonus > 0 || xFactors.length > 0
+        const factors = eq!.multFactors ?? []
+        const multProduct = factors.length > 0 ? factors.reduce((a, b) => a * b, 1) : 1
+        const hasMult = factors.length > 0
         return (
           <>
           {collapsibleHeader('formula', 'Week Score Total', `${(weekPlayerFP + weekCardBonus).toFixed(1)} pts`, '#818cf8')}
@@ -446,33 +431,20 @@ const PointsBreakdownPanel: React.FC<{
                 <>
                   <span style={{ color: '#cbd5e1' }}> + </span>
                   <span style={{ color: TYPE_COLORS.fp }}>{eq!.totalBonusFP.toFixed(1)}</span>
-                  <span style={{ color: '#cbd5e1' }}> +FP</span>
+                  <span style={{ color: '#cbd5e1' }}> FP</span>
                 </>
               )}
               <span style={{ color: '#cbd5e1' }}>)</span>
-              {hasMult && (
-                <>
+              {hasMult && factors.map((f, i) => (
+                <React.Fragment key={i}>
                   <span style={{ color: '#cbd5e1' }}> {'\u00d7'} </span>
-                  {eq!.totalMultBonus > 0 && xFactors.length > 0 && <span style={{ color: '#cbd5e1' }}>(</span>}
-                  {eq!.totalMultBonus > 0 && (
-                    <>
-                      <span style={{ color: TYPE_COLORS.mult, textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}>{addMultPool.toFixed(2)}</span>
-                      <span style={{ color: '#cbd5e1', textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}> +FPx</span>
-                    </>
-                  )}
-                  {xFactors.map((x, i) => (
-                    <React.Fragment key={i}>
-                      {(i > 0 || eq!.totalMultBonus > 0) && <span style={{ color: '#cbd5e1' }}> {'\u00d7'} </span>}
-                      <span style={{ color: TYPE_COLORS.xmult, textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}>{x.toFixed(2)}</span>
-                      <span style={{ color: '#cbd5e1', textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}> xFPx</span>
-                    </React.Fragment>
-                  ))}
-                  {eq!.totalMultBonus > 0 && xFactors.length > 0 && <span style={{ color: '#cbd5e1' }}>)</span>}
-                </>
-              )}
+                  <span style={{ color: TYPE_COLORS.mult, textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}>{f.toFixed(2)}</span>
+                  <span style={{ color: '#cbd5e1', textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}> FPx</span>
+                </React.Fragment>
+              ))}
             </div>
 
-            {/* Balatro-style FP × Mult display */}
+            {/* FP × Mult summary display */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
               marginTop: '10px', padding: '8px 0',
@@ -486,11 +458,11 @@ const PointsBreakdownPanel: React.FC<{
                 <>
                   <span style={{ fontSize: '16px', color: '#cbd5e1', fontWeight: '700' }}>{'\u00d7'}</span>
                   <span style={{
-                    fontSize: '22px', fontWeight: '800', color: TYPE_COLORS.xmult,
+                    fontSize: '22px', fontWeight: '800', color: TYPE_COLORS.mult,
                     fontFamily: 'monospace',
                     textDecoration: isGrounded ? 'line-through' : 'none',
                     opacity: isGrounded ? 0.45 : 1,
-                  }}>{totalMult.toFixed(2)}</span>
+                  }}>{multProduct.toFixed(2)}</span>
                 </>
               )}
               <span style={{ fontSize: '16px', color: '#cbd5e1', fontWeight: '700' }}>=</span>
@@ -543,7 +515,6 @@ export const FantasyRoster: React.FC = () => {
   const [season, setSeason] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [locking, setLocking] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [pickerSlot, setPickerSlot] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'roster' | 'breakdown'>('roster')
@@ -551,6 +522,7 @@ export const FantasyRoster: React.FC = () => {
   const [swapping, setSwapping] = useState(false)
   const [swapSlot, setSwapSlot] = useState<string | null>(null)
   const [gamesActive, setGamesActive] = useState(false)
+  const [hasFlexSlot, setHasFlexSlot] = useState(false)
   const [showSwapHistory, setShowSwapHistory] = useState(false)
   const [expandedSlot, setExpandedSlot] = useState<string | null>(null)
   // Local draft state for unsaved changes
@@ -558,6 +530,7 @@ export const FantasyRoster: React.FC = () => {
   const [dirty, setDirty] = useState(false)
 
   const [playerCards, setPlayerCards] = useState<Map<number, PlayerCardInfo[]>>(new Map())
+  const [activePowerups, setActivePowerups] = useState<ActivePowerup[]>([])
 
   const dirtyRef = useRef(false)
   dirtyRef.current = dirty
@@ -604,6 +577,7 @@ export const FantasyRoster: React.FC = () => {
       const data = res.data?.data || res.data
       setSeason(data.season)
       setGamesActive(data.gamesActive ?? false)
+      setHasFlexSlot(data.roster?.hasFlexSlot ?? data.hasFlexSlot ?? false)
       if (data.roster) {
         setRoster(data.roster)
         if (force || !dirtyRef.current) {
@@ -627,6 +601,30 @@ export const FantasyRoster: React.FC = () => {
   }, [getToken])
 
   useEffect(() => { fetchRoster(true) }, [fetchRoster])
+
+  // Fetch active power-ups
+  const fetchActivePowerups = useCallback(async () => {
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      const res = await fetch(`${API_BASE}/shop/powerups/active`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      })
+      if (res.ok) {
+        const j = await res.json()
+        setActivePowerups(j.data?.active ?? [])
+      }
+    } catch { /* silent */ }
+  }, [getToken])
+
+  useEffect(() => { fetchActivePowerups() }, [fetchActivePowerups])
+
+  // Re-fetch roster + powerups when a shop purchase happens (e.g. FLEX slot)
+  useEffect(() => {
+    const handler = () => { fetchRoster(true); fetchActivePowerups() }
+    window.addEventListener('floosball:shop-purchase', handler)
+    return () => window.removeEventListener('floosball:shop-purchase', handler)
+  }, [fetchRoster, fetchActivePowerups])
 
   // Fetch card collection so PlayerPicker can show card details
   useEffect(() => {
@@ -711,23 +709,6 @@ export const FantasyRoster: React.FC = () => {
     }
   }
 
-  const handleLock = async () => {
-    const tok = await getToken()
-    if (!tok) return
-    setLocking(true)
-    setMessage(null)
-    try {
-      const headers = { Authorization: `Bearer ${tok}` }
-      await axios.post(`${API_BASE}/fantasy/roster/lock`, {}, { headers })
-      setMessage('Roster locked! Points are now accumulating.')
-      await fetchRoster(true)
-      refetchRoster()
-    } catch (err: any) {
-      setMessage(err.response?.data?.detail || 'Failed to lock roster')
-    } finally {
-      setLocking(false)
-    }
-  }
 
   const handleSwapSelect = (player: any) => {
     if (!swapSlot) return
@@ -772,9 +753,12 @@ export const FantasyRoster: React.FC = () => {
   }
 
   const isLocked = roster?.isLocked ?? false
-  const swapsAvailable = roster?.swapsAvailable ?? 0
+  const organicSwaps = roster?.swapsAvailable ?? 0
+  const purchasedSwaps = roster?.purchasedSwaps ?? 0
+  const swapsAvailable = organicSwaps + purchasedSwaps
   const swapHistory = roster?.swapHistory ?? []
   const canSwap = isLocked && swapsAvailable > 0 && !gamesActive && !swapping
+  const SLOTS = hasFlexSlot ? [...BASE_SLOTS, FLEX_SLOT] : BASE_SLOTS
   const allSlotsFilled = SLOTS.every(s => draftPlayers.has(s.key))
   const excludeIds = Array.from(draftPlayers.values()).map(p => p.playerId)
   const activePickerSlot = swapSlot ?? pickerSlot
@@ -802,12 +786,29 @@ export const FantasyRoster: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ fontSize: '16px', fontWeight: '700', color: '#f1f5f9' }}>My Roster</div>
             {isLocked && (
-              <div style={{
-                fontSize: '10px', color: '#22c55e', backgroundColor: 'rgba(34,197,94,0.15)',
-                padding: '4px 10px', borderRadius: '6px', fontWeight: '700',
-              }}>
-                LOCKED
-              </div>
+              canSwap ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '4px',
+                  fontSize: '10px', color: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.12)',
+                  padding: '4px 10px', borderRadius: '6px', fontWeight: '700',
+                }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M16 3l4 4-4 4" /><path d="M20 7H4" /><path d="M8 21l-4-4 4-4" /><path d="M4 17h16" />
+                  </svg>
+                  SWAP WINDOW
+                </div>
+              ) : (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '4px',
+                  fontSize: '10px', color: '#22c55e', backgroundColor: 'rgba(34,197,94,0.15)',
+                  padding: '4px 10px', borderRadius: '6px', fontWeight: '700',
+                }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+                  </svg>
+                  LOCKED
+                </div>
+              )
             )}
           </div>
           {season && <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Season {season}{scoreView === 'weekly' && week ? ` — Week ${week}` : ''}</div>}
@@ -868,35 +869,6 @@ export const FantasyRoster: React.FC = () => {
         </div>
       )}
 
-      {/* Weekly Modifier Banner */}
-      {modifier && (() => {
-        const modStyle = MODIFIER_COLORS[modifier.name] ?? MODIFIER_COLORS.steady
-        const isSteady = modifier.name === 'steady'
-        return (
-          <div style={{
-            fontSize: isMobile ? '12px' : '13px', color: modStyle.color, lineHeight: '1.5',
-            marginBottom: '6px', padding: isMobile ? '6px 10px' : '6px 14px',
-            backgroundColor: modStyle.bg, borderRadius: '8px',
-            border: `1px solid ${modStyle.border}`,
-            display: 'flex', flexDirection: isMobile ? 'column' : 'row',
-            alignItems: isMobile ? 'flex-start' : 'center',
-            justifyContent: 'space-between', gap: isMobile ? '4px' : undefined,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.7 }}>
-                This Week
-              </span>
-              <span style={{ fontWeight: '700' }}>
-                {modifier.displayName}
-              </span>
-            </div>
-            <span style={{ fontSize: '11px', opacity: isSteady ? 0.6 : 0.85 }}>
-              {modifier.description}
-            </span>
-          </div>
-        )
-      })()}
-
       {/* Breakdown view (locked only) */}
       {isLocked && viewMode === 'breakdown' && (
         <PointsBreakdownPanel
@@ -920,32 +892,42 @@ export const FantasyRoster: React.FC = () => {
           backgroundColor: '#1e293b', borderRadius: '8px', border: '1px solid #475569',
         }}>
           {draftPlayers.size === 0 ? (
-            <>Fill each slot by selecting a player. Only points earned after locking count, so lock your roster before the next week begins!</>
+            <>Fill each slot by selecting a player. Your roster will auto-lock and start earning points when the next week's games begin.</>
           ) : !allSlotsFilled ? (
-            <>Fill your remaining slots, then <span style={{ color: '#3b82f6', fontWeight: '600' }}>save</span> and <span style={{ color: '#22c55e', fontWeight: '600' }}>lock</span> your roster.</>
+            <>Fill your remaining slots, then <span style={{ color: '#3b82f6', fontWeight: '600' }}>save</span> your roster.</>
           ) : dirty ? (
-            <><span style={{ color: '#3b82f6', fontWeight: '600' }}>Save</span> your roster changes, then lock to start earning points.</>
+            <><span style={{ color: '#3b82f6', fontWeight: '600' }}>Save</span> your roster to finalize your picks.</>
+          ) : gamesActive ? (
+            <>Your roster is saved! Points will start accumulating next week.</>
           ) : (
-            <>Your roster is saved! <span style={{ color: '#22c55e', fontWeight: '600' }}>Lock</span> it to start earning points.</>
+            <>Your roster is saved! It will auto-lock and start earning points when games begin.</>
           )}
         </div>
       )}
 
-      {/* Swap Available Banner (roster view only) */}
-      {isLocked && viewMode === 'roster' && swapsAvailable > 0 && (
-        <div style={{
-          fontSize: isMobile ? '12px' : '13px', color: '#fbbf24', lineHeight: '1.5',
-          marginBottom: '6px', padding: isMobile ? '6px 10px' : '6px 14px',
-          backgroundColor: 'rgba(251,191,36,0.1)', borderRadius: '8px',
-          border: '1px solid rgba(251,191,36,0.3)',
-          display: 'flex', flexDirection: isMobile ? 'column' : 'row',
-          alignItems: isMobile ? 'flex-start' : 'center',
-          justifyContent: 'space-between', gap: isMobile ? '4px' : undefined,
-        }}>
-          <span>{swapsAvailable} swap{swapsAvailable !== 1 ? 's' : ''} available{gamesActive ? ' (wait for games to end)' : ' — tap Swap on any slot'}</span>
-          <span style={{ fontSize: '10px', color: '#94a3b8' }}>Cost: 1 Floobit each</span>
-        </div>
-      )}
+      {/* Active Temp Flex indicator */}
+      {(() => {
+        const flexPU = activePowerups.find(p => p.slug === 'temp_flex')
+        if (!flexPU) return null
+        return (
+          <div style={{
+            fontSize: isMobile ? '12px' : '13px', color: '#a78bfa', lineHeight: '1.5',
+            marginBottom: '6px', padding: isMobile ? '6px 10px' : '6px 14px',
+            backgroundColor: 'rgba(167,139,250,0.08)', borderRadius: '8px',
+            border: '1px solid rgba(167,139,250,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <span style={{ fontWeight: '700' }}>FLEX Slot Active</span>
+            <span style={{
+              fontSize: '10px',
+              color: flexPU.expiring ? '#f59e0b' : '#94a3b8',
+              fontWeight: flexPU.expiring ? '700' : '400',
+            }}>
+              {flexPU.expiring ? 'Expires after this week' : `${flexPU.weeksRemaining ?? 0} week${(flexPU.weeksRemaining ?? 0) !== 1 ? 's' : ''} remaining`}
+            </span>
+          </div>
+        )
+      })()}
 
       {/* Slots (roster view or unlocked) */}
       {(!isLocked || viewMode === 'roster') && <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -974,7 +956,7 @@ export const FantasyRoster: React.FC = () => {
                   fontSize: isMobile ? '11px' : '13px', fontWeight: '700',
                   color: player ? (player.teamColor || '#cbd5e1') : '#64748b',
                 }}>
-                  {slot.key}
+                  {slot.key === 'FLEX' && player ? player.position : slot.key}
                 </div>
                 {player ? (
                   <>
@@ -1196,38 +1178,17 @@ export const FantasyRoster: React.FC = () => {
       {/* Actions */}
       {!isLocked && (
         <div style={{ marginTop: '10px' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={handleSave}
-              disabled={saving || !dirty || draftPlayers.size === 0}
-              style={{
-                ...buttonStyle,
-                backgroundColor: dirty ? '#3b82f6' : '#1e3a5f',
-                opacity: saving || !dirty ? 0.5 : 1,
-              }}
-            >
-              {saving ? 'Saving...' : 'Save Roster'}
-            </button>
-            <button
-              onClick={handleLock}
-              disabled={locking || dirty || !allSlotsFilled}
-              style={{
-                ...buttonStyle,
-                backgroundColor: allSlotsFilled && !dirty ? '#22c55e' : '#1a3d2a',
-                opacity: locking || dirty || !allSlotsFilled ? 0.5 : 1,
-              }}
-            >
-              {locking ? 'Locking...' : 'Lock Now'}
-            </button>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-            <div style={{ flex: 1, fontSize: '11px', color: '#94a3b8', textAlign: 'center' }}>
-              Save your picks
-            </div>
-            <div style={{ flex: 1, fontSize: '11px', color: '#94a3b8', textAlign: 'center' }}>
-              Lock to earn points
-            </div>
-          </div>
+          <button
+            onClick={handleSave}
+            disabled={saving || !dirty || draftPlayers.size === 0}
+            style={{
+              ...buttonStyle,
+              backgroundColor: dirty ? '#3b82f6' : '#1e3a5f',
+              opacity: saving || !dirty ? 0.5 : 1,
+            }}
+          >
+            {saving ? 'Saving...' : 'Save Roster'}
+          </button>
         </div>
       )}
 

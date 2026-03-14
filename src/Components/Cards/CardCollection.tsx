@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import TradingCard, { CardData } from './TradingCard'
+import CombineModal from './CombineModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -41,6 +42,7 @@ const CardCollection: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [selling, setSelling] = useState(false)
   const [currentSeason, setCurrentSeason] = useState(0)
+  const [showCombine, setShowCombine] = useState(false)
 
   const fetchCards = useCallback(async () => {
     try {
@@ -137,21 +139,34 @@ const CardCollection: React.FC = () => {
             {cards.length} cards
           </span>
         </h2>
-        {selectedIds.size > 0 && (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button
-            onClick={handleSell}
-            disabled={selling}
+            onClick={() => setShowCombine(true)}
             style={{
               padding: '6px 14px', borderRadius: '6px',
-              backgroundColor: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.4)',
-              color: '#eab308', fontSize: '12px', fontWeight: '600',
-              cursor: selling ? 'not-allowed' : 'pointer', fontFamily: 'pressStart',
-              opacity: selling ? 0.6 : 1,
+              backgroundColor: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
+              color: '#60a5fa', fontSize: '12px', fontWeight: '600',
+              cursor: 'pointer', fontFamily: 'pressStart',
             }}
           >
-            Sell {selectedIds.size} for {totalSellValue} Floobits
+            The Combine
           </button>
-        )}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleSell}
+              disabled={selling}
+              style={{
+                padding: '6px 14px', borderRadius: '6px',
+                backgroundColor: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.4)',
+                color: '#eab308', fontSize: '12px', fontWeight: '600',
+                cursor: selling ? 'not-allowed' : 'pointer', fontFamily: 'pressStart',
+                opacity: selling ? 0.6 : 1,
+              }}
+            >
+              Sell {selectedIds.size} for {totalSellValue} Floobits
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -200,6 +215,12 @@ const CardCollection: React.FC = () => {
           ))}
         </div>
       )}
+
+      <CombineModal
+        visible={showCombine}
+        onClose={() => setShowCombine(false)}
+        onComplete={() => fetchCards()}
+      />
     </div>
   )
 }

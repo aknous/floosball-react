@@ -21,9 +21,10 @@ interface FeaturedCard extends CardData {
 }
 
 const PACK_COLORS: Record<string, { border: string; bg: string; accent: string }> = {
-  standard: { border: '#475569', bg: '#1e293b', accent: '#94a3b8' },
-  premium: { border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', accent: '#c4b5fd' },
-  elite: { border: '#f59e0b', bg: 'linear-gradient(135deg, #422006 0%, #78350f 100%)', accent: '#fbbf24' },
+  humble: { border: '#475569', bg: '#1e293b', accent: '#94a3b8' },
+  proper: { border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', accent: '#c4b5fd' },
+  grand: { border: '#f59e0b', bg: 'linear-gradient(135deg, #422006 0%, #78350f 100%)', accent: '#fbbf24' },
+  exquisite: { border: '#a5f3fc', bg: 'linear-gradient(135deg, #0c4a6e 0%, #155e75 50%, #164e63 100%)', accent: '#67e8f9' },
 }
 
 const CardShop: React.FC = () => {
@@ -163,7 +164,7 @@ const CardShop: React.FC = () => {
         justifyContent: isMobile ? 'center' : 'flex-start',
       }}>
         {packs.map(pack => {
-          const colors = PACK_COLORS[pack.name] || PACK_COLORS.standard
+          const colors = PACK_COLORS[pack.name] || PACK_COLORS.humble
           const canAfford = balance >= pack.cost
           const isBuying = buying === pack.id
 

@@ -2,9 +2,21 @@ import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-const APP_VERSION = process.env.REACT_APP_VERSION || '0.3.3'
+const APP_VERSION = process.env.REACT_APP_VERSION || '0.4.0'
 
 const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+  {
+    version: 'v0.4.0',
+    date: '2026-03-13',
+    changes: [
+      'The Combine — three card upgrade paths: Promotion, The Blender, and Transplant',
+      'Promotion — sacrifice a higher-edition card to promote another card to that edition',
+      'The Blender — sacrifice multiple cards to create a new random card, edition based on total card value',
+      'Transplant — sacrifice a card plus Floobits to transfer its effect onto another card',
+      'Classification-aware card values for upgrades (Rookie, MVP, Champion, All-Pro multipliers)',
+      'Cards page restored to main navigation',
+    ],
+  },
   {
     version: 'v0.3.3',
     date: '2026-03-12',

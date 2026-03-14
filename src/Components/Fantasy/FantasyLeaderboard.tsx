@@ -29,6 +29,7 @@ interface WeeklyEntry {
   rank: number
   userId: number
   username: string
+  favoriteTeamId?: number | null
   weekPoints: number
   cardBonusPoints: number
   players: WeeklyPlayer[]
@@ -83,6 +84,7 @@ export const FantasyLeaderboard: React.FC = () => {
       rank: 0,
       userId: e.userId,
       username: e.username,
+      favoriteTeamId: e.favoriteTeamData?.teamId ?? null,
       weekPoints: Math.round((e.weekPlayerFP + e.weekCardBonus) * 10) / 10,
       cardBonusPoints: e.weekCardBonus,
       players: e.players.map(p => ({
@@ -224,7 +226,14 @@ export const FantasyLeaderboard: React.FC = () => {
                           }}>{RANK_STYLE[entry.rank].label}</span>
                         : entry.rank}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {entry.favoriteTeamData?.teamId && (
+                        <img
+                          src={`${API_BASE}/teams/${entry.favoriteTeamData.teamId}/avatar?size=${isMobile ? 16 : 20}&v=2`}
+                          alt=""
+                          style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
+                        />
+                      )}
                       <div style={nameStyleFn(isMobile)}>{entry.username}</div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -295,7 +304,14 @@ export const FantasyLeaderboard: React.FC = () => {
                           }}>{RANK_STYLE[entry.rank].label}</span>
                         : entry.rank}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {entry.favoriteTeamId && (
+                        <img
+                          src={`${API_BASE}/teams/${entry.favoriteTeamId}/avatar?size=${isMobile ? 16 : 20}&v=2`}
+                          alt=""
+                          style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
+                        />
+                      )}
                       <div style={nameStyleFn(isMobile)}>{entry.username}</div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>

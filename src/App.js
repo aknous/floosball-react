@@ -138,9 +138,16 @@ function AuthGate() {
   }
   if (location.pathname === '/admin') {
     return (
-      <Routes>
-        <Route path='/admin' element={<AdminPage />} />
-      </Routes>
+      <div className='min-h-screen relative font-pixel' style={{ backgroundColor: '#0f172a' }}>
+        <div className='fixed w-full top-0 z-50'>
+          <Navbar />
+        </div>
+        <div style={{ paddingTop: 64 }}>
+          <Routes>
+            <Route path='/admin' element={<AdminPage />} />
+          </Routes>
+        </div>
+      </div>
     )
   }
 

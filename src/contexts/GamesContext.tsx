@@ -123,6 +123,19 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             awayWpa: event.awayWpa
           } : null
 
+          // finalPlay carries the actual last gameplay play alongside the "Final" event.
+          // Deduplicate: skip if this play description is already in the feed.
+          const finalPlayData = event.finalPlay ?? null
+          let existingPlays = game.plays || []
+          if (finalPlayData?.description) {
+            const alreadyHave = existingPlays.some(
+              (p: any) => p.description === finalPlayData.description && p.playResult === finalPlayData.playResult
+            )
+            if (!alreadyHave) {
+              existingPlays = [finalPlayData, ...existingPlays]
+            }
+          }
+
           const updatedGameState = {
             ...game,
             status: event.status,
@@ -146,7 +159,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             momentum: event.momentum,
             momentumTeam: event.momentumTeam,
             gameStats: event.gameStats ?? game.gameStats,
-            plays: lastPlayData ? [lastPlayData, ...(game.plays || [])] : (game.plays || [])
+            plays: lastPlayData ? [lastPlayData, ...existingPlays] : existingPlays
           }
           updated.set(gameId, updatedGameState)
           break

@@ -6,6 +6,46 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+const PickerCard: React.FC<{
+  card: CardData
+  isMatch: boolean
+  onSelect: (card: CardData) => void
+}> = ({ card, isMatch, onSelect }) => {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      style={{
+        position: 'relative',
+        cursor: 'pointer',
+        borderRadius: '14px',
+        transition: 'transform 0.15s',
+        transform: hovered ? 'translateY(-4px)' : 'none',
+        boxShadow: isMatch ? '0 0 0 2px #22c55e, 0 0 12px rgba(34,197,94,0.3)' : 'none',
+      }}
+      onClick={() => onSelect(card)}
+    >
+      <TradingCard
+        card={card}
+        size="sm"
+        noHoverLift
+        onHoverChange={setHovered}
+      />
+      {isMatch && (
+        <div style={{
+          position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
+          fontSize: '9px', color: '#22c55e', fontWeight: '700',
+          backgroundColor: 'rgba(34,197,94,0.15)',
+          padding: '2px 5px', borderRadius: '4px',
+          border: '1px solid rgba(34,197,94,0.3)',
+          zIndex: 1,
+        }}>
+          MATCH
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface CardPickerModalProps {
   visible: boolean
   onClose: () => void
@@ -123,29 +163,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
               {sorted.map(card => {
                 const isMatch = rosterPlayerIds.has(card.playerId)
                 return (
-                  <div
-                    key={card.id}
-                    style={{
-                      position: 'relative',
-                      cursor: 'pointer',
-                      borderRadius: '14px',
-                      boxShadow: isMatch ? '0 0 0 2px #22c55e, 0 0 12px rgba(34,197,94,0.3)' : 'none',
-                    }}
-                    onClick={() => onSelect(card)}
-                  >
-                    <TradingCard card={card} size="sm" />
-                    {isMatch && (
-                      <div style={{
-                        position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
-                        fontSize: '9px', color: '#22c55e', fontWeight: '700',
-                        backgroundColor: 'rgba(34,197,94,0.15)',
-                        padding: '2px 5px', borderRadius: '4px',
-                        border: '1px solid rgba(34,197,94,0.3)',
-                      }}>
-                        MATCH
-                      </div>
-                    )}
-                  </div>
+                  <PickerCard key={card.id} card={card} isMatch={isMatch} onSelect={onSelect} />
                 )
               })}
             </div>

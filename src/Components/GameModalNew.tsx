@@ -169,10 +169,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     
     // Regular play rendering
     const isTwoPtPlay = String(play.playResult ?? '').includes('2-Pt')
-    const yardNum = play.yardLine ? parseInt(String(play.yardLine).split(' ').pop() || '0') : 0
     const downText = isTwoPtPlay ? '2-Pt Try' :
-      play.down && play.distance ?
-        (yardNum <= 10 ?
+      play.down && play.distance != null ?
+        (play.distance === 'Goal' ?
           `${['1st', '2nd', '3rd', '4th'][play.down - 1]} & Goal` :
           `${['1st', '2nd', '3rd', '4th'][play.down - 1]} & ${play.distance}`)
         : null

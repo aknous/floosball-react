@@ -6,7 +6,7 @@ import { avataaars } from '@dicebear/collection'
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 // ─── Edition visual config ─────────────────────────────────────────────────
-const EDITION_STYLES: Record<string, {
+export const EDITION_STYLES: Record<string, {
   borderColor: string
   bgGradient: string
   labelColor: string
@@ -16,7 +16,7 @@ const EDITION_STYLES: Record<string, {
 }> = {
   base: {
     borderColor: '#475569',
-    bgGradient: 'linear-gradient(135deg, #1e293b 0%, #1e293b 100%)',
+    bgGradient: 'linear-gradient(135deg, #334155 0%, #283548 50%, #334155 100%)',
     labelColor: '#94a3b8',
     label: 'Base',
     rarity: 'Common',
@@ -55,7 +55,7 @@ const EDITION_STYLES: Record<string, {
   },
   diamond: {
     borderColor: '#67e8f9',
-    bgGradient: 'linear-gradient(135deg, #164e63 0%, #1e1b4b 35%, #831843 65%, #164e63 100%)',
+    bgGradient: 'linear-gradient(135deg, #0c4a6e 0%, #155e75 35%, #1e3a5f 65%, #0e7490 100%)',
     labelColor: '#a5f3fc',
     label: 'Diamond',
     rarity: 'Ultra-Rare',
@@ -74,6 +74,29 @@ const CATEGORY_COLORS: Record<string, string> = {
   floobits: '#eab308',     // gold
   conditional: '#60a5fa',  // blue
   streak: '#fb923c',       // orange
+}
+
+// Behavior tags — shown on cards so users know which modifiers affect them
+const BEHAVIOR_TAGS: Record<string, {
+  label: string
+  color: string
+  tooltip: string
+}> = {
+  chance: {
+    label: 'Chance',
+    color: '#c084fc',      // light purple
+    tooltip: 'Chance — Has a random trigger roll. Boosted by Fortunate modifier.',
+  },
+  conditional: {
+    label: 'Conditional',
+    color: '#60a5fa',      // blue
+    tooltip: 'Conditional — Triggers when a game condition is met. Boosted by Longshot modifier.',
+  },
+  streak: {
+    label: 'Streak',
+    color: '#fb923c',      // orange
+    tooltip: 'Streak — Grows each week a condition holds, resets when broken. Protected by Ironclad modifier.',
+  },
 }
 
 // Classification badge config (perks from card classifications)
@@ -119,20 +142,19 @@ function parseClassifications(classification?: string | null, isRookie?: boolean
 }
 
 // Edition secondary bonuses — mirrors backend EDITION_SECONDARY in cardEffects.py
-const EDITION_SECONDARY: Record<string, { flatFP: number; floobits: number; mult: number; xMult: number } | null> = {
+const EDITION_SECONDARY: Record<string, { flatFP: number; floobits: number; mult: number } | null> = {
   base: null,
-  chrome: { flatFP: 3, floobits: 0, mult: 0, xMult: 0 },
-  holographic: { flatFP: 0, floobits: 0, mult: 0.2, xMult: 0 },
-  gold: { flatFP: 0, floobits: 5, mult: 0, xMult: 0 },
-  prismatic: { flatFP: 0, floobits: 0, mult: 0, xMult: 1.3 },
+  chrome: { flatFP: 3, floobits: 0, mult: 0 },
+  holographic: { flatFP: 0, floobits: 0, mult: 1.2 },
+  gold: { flatFP: 0, floobits: 5, mult: 0 },
+  prismatic: { flatFP: 0, floobits: 0, mult: 1.3 },
   diamond: null, // Diamond secondary is randomized at equip — read from effectConfig
 }
 
 // FP-type colors for colorizing effect text
 const TYPE_COLORS: Record<string, string> = {
   fp: '#4ade80',       // green
-  mult: '#a78bfa',     // purple
-  xmult: '#f472b6',    // pink
+  mult: '#f472b6',     // pink — FPx
   floobits: '#eab308', // gold
 }
 
@@ -140,15 +162,14 @@ const TYPE_COLORS: Record<string, string> = {
  * Parse text for FP-type keywords and wrap them + their numeric prefix in colored spans.
  */
 function colorizeEffectText(text: string, baseColor: string): React.ReactNode {
-  const pattern = /([+-]?\d+\.?\d*x?\s*)?(xFPx|\+?FPx|FP\b|Floobits\b|F\b)/g
+  const pattern = /([+-]?\d+\.?\d*x?\s*)?(\+?FPx|FP\b|Floobits\b|F\b)/g
   const parts: React.ReactNode[] = []
   let lastIdx = 0
   let m: RegExpExecArray | null
   while ((m = pattern.exec(text)) !== null) {
     if (m.index > lastIdx) parts.push(text.slice(lastIdx, m.index))
     const kw = m[2]
-    const color = kw === 'xFPx' ? TYPE_COLORS.xmult
-      : (kw === 'FPx' || kw === '+FPx') ? TYPE_COLORS.mult
+    const color = (kw === 'FPx' || kw === '+FPx') ? TYPE_COLORS.mult
       : (kw === 'Floobits' || kw === 'F') ? TYPE_COLORS.floobits
       : TYPE_COLORS.fp
     parts.push(<span key={m.index} style={{ color }}>{m[0]}</span>)
@@ -168,8 +189,7 @@ function getSecondaryBonusLines(edition: string, effectConfig?: any): string[] {
 
   const lines: string[] = []
   if (secondary.flatFP > 0) lines.push(`+${secondary.flatFP} FP`)
-  if (secondary.mult > 0) lines.push(`+${secondary.mult.toFixed(1)}x FPx`)
-  if (secondary.xMult > 0) lines.push(`${secondary.xMult.toFixed(1)}x xFPx`)
+  if (secondary.mult > 1) lines.push(`${secondary.mult.toFixed(1)}x FPx`)
   if (secondary.floobits > 0) lines.push(`+${secondary.floobits} Floobits`)
   return lines
 }
@@ -346,6 +366,77 @@ const EditionBadge: React.FC<{
   )
 }
 
+function getBehaviorTag(card: CardData): keyof typeof BEHAVIOR_TAGS | null {
+  if (card.effectConfig?.isChanceEffect || card.effectConfig?.primary?.isChanceEffect) return 'chance'
+  const cat = card.category || card.effectConfig?.category || ''
+  if (cat === 'conditional') return 'conditional'
+  if (cat === 'streak') return 'streak'
+  return null
+}
+
+const BehaviorTag: React.FC<{
+  label: string
+  color: string
+  tooltip: string
+  fontSize: number
+}> = ({ label, color, tooltip, fontSize }) => {
+  const [show, setShow] = useState(false)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const ref = useRef<HTMLSpanElement>(null)
+
+  const handleEnter = () => {
+    if (!ref.current) return
+    const rect = ref.current.getBoundingClientRect()
+    setPos({ x: rect.left + rect.width / 2, y: rect.top })
+    setShow(true)
+  }
+
+  return (
+    <>
+      <span
+        ref={ref}
+        onMouseEnter={handleEnter}
+        onMouseLeave={() => setShow(false)}
+        style={{
+          fontSize: fontSize - 1, color,
+          backgroundColor: `${color}18`,
+          padding: '1px 5px',
+          borderRadius: '3px',
+          border: `1px solid ${color}40`,
+          cursor: 'default',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {label}
+      </span>
+      {show && ReactDOM.createPortal(
+        <div style={{
+          position: 'fixed',
+          left: pos.x,
+          top: pos.y - 8,
+          transform: 'translate(-50%, -100%)',
+          backgroundColor: '#0f172a',
+          border: `1px solid ${color}40`,
+          borderRadius: '8px',
+          padding: '8px 12px',
+          fontSize: '10px',
+          color: '#e2e8f0',
+          lineHeight: '1.5',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          zIndex: 10010,
+          pointerEvents: 'none',
+          fontFamily: 'pressStart',
+          maxWidth: '260px',
+          textAlign: 'center',
+        }}>
+          {tooltip}
+        </div>,
+        document.body
+      )}
+    </>
+  )
+}
+
 const EffectNameBadge: React.FC<{
   name: string
   tooltip: string
@@ -389,6 +480,7 @@ const EffectNameBadge: React.FC<{
           fontSize: '10px',
           color: '#e2e8f0',
           lineHeight: '1.5',
+          whiteSpace: 'pre-line',
           boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
           zIndex: 10010,
           pointerEvents: 'none',
@@ -421,6 +513,8 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const outputType = card.outputType || card.effectConfig?.outputType || ''
   const outputTypeColor = TYPE_COLORS[outputType] || categoryColor
   const secondaryLines = getSecondaryBonusLines(card.edition, card.effectConfig)
+  const behaviorKey = getBehaviorTag(card)
+  const behaviorTag = behaviorKey ? BEHAVIOR_TAGS[behaviorKey] : null
 
   const stars = Math.min(5, Math.max(1, Math.round((card.playerRating - 50) / 10)))
   const tierColor = getTierColor(card.playerRating)
@@ -566,7 +660,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
               <div style={{ marginBottom: '2px' }}>
                 <EffectNameBadge
                   name={effectDisplayName}
-                  tooltip={effectTooltip}
+                  tooltip={behaviorTag ? `${effectTooltip}\n\n${behaviorTag.tooltip}` : effectTooltip}
                   color={outputTypeColor}
                   fontSize={d.font - 1}
                 />
@@ -673,20 +767,28 @@ const TradingCard: React.FC<TradingCardProps> = ({
         >
           {/* Header — effect name */}
           {effectDisplayName && (
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
               <EffectNameBadge
                 name={effectDisplayName}
                 tooltip={effectTooltip}
                 color={outputTypeColor}
                 fontSize={d.font - 1}
               />
+              {behaviorTag && (
+                <BehaviorTag
+                  label={behaviorTag.label}
+                  color={behaviorTag.color}
+                  tooltip={behaviorTag.tooltip}
+                  fontSize={d.font - 2}
+                />
+              )}
             </div>
           )}
 
           {/* Detail */}
           {effectDetail && (
             <div style={{
-              fontSize: d.font - 3, color: '#cbd5e1',
+              fontSize: d.font - 1, color: '#cbd5e1',
               lineHeight: 1.6, textAlign: 'center',
             }}>
               {colorizeEffectText(effectDetail, '#cbd5e1')}
@@ -696,7 +798,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           {/* Secondary effect (Chrome+) */}
           {secondaryLines.length > 0 && (
             <div style={{
-              fontSize: d.font - 4, color: edStyle.labelColor,
+              fontSize: d.font - 2, color: edStyle.labelColor,
               textAlign: 'center',
               borderTop: `1px solid ${edStyle.borderColor}40`,
               paddingTop: '6px',
@@ -710,7 +812,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
 
           {/* Roster match section */}
           <div style={{
-            fontSize: d.font - 4, color: '#cbd5e1',
+            fontSize: d.font - 2, color: '#cbd5e1',
             lineHeight: 1.8, textAlign: 'center',
             borderTop: `1px solid ${edStyle.borderColor}40`,
             paddingTop: '6px',

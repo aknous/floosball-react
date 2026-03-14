@@ -9,6 +9,7 @@ import { useUser } from '@clerk/react'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { FavoriteTeamModal } from './Auth/FavoriteTeamModal'
 import { AuthModal } from './Auth/AuthModal'
+import ShopModal from './Shop/ShopModal'
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 const TrophySVG = () => (
@@ -143,6 +144,31 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
         </button>
       </div>
 
+      <NavLink
+        to="/cards"
+        onClick={onClose}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+          padding: '10px 14px', background: 'none', borderBottom: '1px solid #334155',
+          textDecoration: 'none',
+          transition: 'background-color 0.15s',
+        }}
+        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'}
+        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+          <line x1="8" y1="21" x2="16" y2="21" />
+          <line x1="12" y1="17" x2="12" y2="21" />
+        </svg>
+        <span style={{ fontSize: '11px', color: '#cbd5e1', flex: 1 }}>
+          Card Collection
+        </span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </NavLink>
+
       {/* Notifications */}
       <div style={{ padding: '10px 14px', borderBottom: '1px solid #334155' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -216,6 +242,7 @@ export default function Navbar() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showTeamPicker, setShowTeamPicker] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showShop, setShowShop] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const isMobile = useIsMobile()
@@ -346,7 +373,7 @@ export default function Navbar() {
         {unreadCount > 0 && (
           <div style={{
             width: '8px', height: '8px', borderRadius: '4px',
-            backgroundColor: '#ef4444', flexShrink: 0,
+            backgroundColor: '#38bdf8', flexShrink: 0,
           }} />
         )}
       </button>
@@ -416,12 +443,12 @@ export default function Navbar() {
             {isMobile ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {user?.floobits != null && (
-                  <NavLink to="/cards" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '5px', backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)' }}>
+                  <button onClick={() => { setMenuOpen(false); setShowShop(true) }} style={{ background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '5px', backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)' }}>
                     <span style={{ fontSize: '13px', fontWeight: '700', color: '#eab308' }}>
                       {user.floobits.toLocaleString()}
                     </span>
                     <span style={{ fontSize: '11px', color: '#ca8a04' }}>F</span>
-                  </NavLink>
+                  </button>
                 )}
                 <button
                   onClick={() => setMenuOpen(o => !o)}
@@ -459,12 +486,12 @@ export default function Navbar() {
                   </NavLink>
                 )}
                 {user?.floobits != null && (
-                  <NavLink to="/cards" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)' }}>
+                  <button onClick={() => setShowShop(true)} style={{ background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', fontFamily: 'inherit' }}>
                     <span style={{ fontSize: '15px', fontWeight: '700', color: '#eab308' }}>
                       {user.floobits.toLocaleString()}
                     </span>
                     <span style={{ fontSize: '12px', color: '#ca8a04' }}>F</span>
-                  </NavLink>
+                  </button>
                 )}
                 {isAdmin && (
                   <NavLink to="/admin" style={({ isActive }) => ({
@@ -543,6 +570,7 @@ export default function Navbar() {
 
       <FavoriteTeamModal visible={showTeamPicker} onClose={() => setShowTeamPicker(false)} />
       <AuthModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      {showShop && <ShopModal isOpen={showShop} onClose={() => setShowShop(false)} />}
     </>
   )
 }

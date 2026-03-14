@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import ReactDOM from 'react-dom'
 import TradingCard, { CardData } from './TradingCard'
 import CardPickerModal from './CardPickerModal'
+import HoverTooltip from '@/Components/HoverTooltip'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -10,8 +10,7 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 const OUTPUT_TYPE_COLORS: Record<string, string> = {
   fp: '#4ade80',       // green — FP output
-  mult: '#a78bfa',     // purple — +FPx output
-  xmult: '#f472b6',    // magenta — xFPx output
+  mult: '#f472b6',     // pink — FPx output
   floobits: '#eab308', // gold — floobits output
 }
 
@@ -32,7 +31,7 @@ const EDITION_MINI: Record<string, {
   holographic: { border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b, #312e81, #1e3a5f)', label: 'Holo', glow: 'rgba(167,139,250,0.25)' },
   gold: { border: '#eab308', bg: 'linear-gradient(135deg, #422006, #713f12, #422006)', label: 'Gold', glow: 'rgba(234,179,8,0.2)' },
   prismatic: { border: '#f472b6', bg: 'linear-gradient(135deg, #4c1d95, #831843, #1e3a5f)', label: 'Prismatic', glow: 'rgba(244,114,182,0.25)' },
-  diamond: { border: '#67e8f9', bg: 'linear-gradient(135deg, #164e63, #1e1b4b, #831843, #164e63)', label: 'Diamond', glow: 'rgba(103,232,249,0.3)' },
+  diamond: { border: '#67e8f9', bg: 'linear-gradient(135deg, #0c4a6e, #155e75, #1e3a5f, #0e7490)', label: 'Diamond', glow: 'rgba(103,232,249,0.3)' },
 }
 
 interface EquippedSlot {
@@ -40,40 +39,6 @@ interface EquippedSlot {
   card: CardData
   isMatch: boolean
   locked: boolean
-}
-
-const HoverTooltip: React.FC<{ text: string; color?: string; children: React.ReactNode }> = ({ text, color = '#94a3b8', children }) => {
-  const [show, setShow] = useState(false)
-  const [pos, setPos] = useState({ x: 0, y: 0 })
-  const ref = useRef<HTMLDivElement>(null)
-
-  const handleEnter = () => {
-    if (!ref.current || !text) return
-    const rect = ref.current.getBoundingClientRect()
-    setPos({ x: rect.left + rect.width / 2, y: rect.top })
-    setShow(true)
-  }
-
-  return (
-    <div ref={ref} onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)} style={{ cursor: text ? 'help' : undefined }}>
-      {children}
-      {show && text && ReactDOM.createPortal(
-        <div style={{
-          position: 'fixed', left: pos.x, top: pos.y - 8,
-          transform: 'translate(-50%, -100%)',
-          backgroundColor: '#0f172a', border: `1px solid ${color}40`,
-          borderRadius: '8px', padding: '8px 12px',
-          fontSize: '10px', color: '#e2e8f0', lineHeight: '1.5',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 10010,
-          pointerEvents: 'none', fontFamily: 'pressStart',
-          maxWidth: '280px', textAlign: 'center',
-        }}>
-          {text}
-        </div>,
-        document.body
-      )}
-    </div>
-  )
 }
 
 const EquippedCardSlot: React.FC<{
@@ -91,7 +56,7 @@ const EquippedCardSlot: React.FC<{
     }}>
       <TradingCard
         card={slot.card}
-        size="sm"
+        size="md"
         glowColor={slot.isMatch ? '#22c55e' : undefined}
         noHoverLift
         onHoverChange={setHovered}
@@ -137,23 +102,20 @@ const CardEquipment: React.FC = () => {
   const { event: wsEvent } = useSeasonWebSocket()
   const isMobile = useIsMobile()
 
-  const rosterLocked = fantasyPlayerIds.size > 0
-
-  const NUM_SLOTS = 5
-  const [slots, setSlots] = useState<(EquippedSlot | null)[]>(Array(NUM_SLOTS).fill(null))
+  const [numSlots, setNumSlots] = useState(5)
+  const [slots, setSlots] = useState<(EquippedSlot | null)[]>(Array(5).fill(null))
   const [loading, setLoading] = useState(true)
   const [pickerSlot, setPickerSlot] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [gamesActive, setGamesActive] = useState(false)
   const [expanded, setExpanded] = useState(false)
 
-  // Draft mode: when games are active and cards aren't locked yet,
-  // changes are local-only until the user confirms
-  const [draftSlots, setDraftSlots] = useState<(EquippedSlot | null)[] | null>(null)
+  const [deckCards, setDeckCards] = useState<CardData[]>([])
+  const [deckLoading, setDeckLoading] = useState(false)
+  const deckFetchedRef = useRef(false)
+
   const isLocked = slots.some(s => s?.locked)
-  const isDraftMode = gamesActive && !isLocked
-  const displaySlots = isDraftMode && draftSlots ? draftSlots : slots
-  const hasDraftChanges = isDraftMode && draftSlots !== null
+  const displaySlots = slots
 
   const fetchEquipped = useCallback(async () => {
     try {
@@ -166,15 +128,16 @@ const CardEquipment: React.FC = () => {
       const json = await res.json()
       const equipped: EquippedSlot[] = json.data?.equippedCards ?? []
       setGamesActive(json.data?.gamesActive ?? false)
+      const slotCount = json.data?.hasExtraSlot ? 6 : 5
+      setNumSlots(slotCount)
 
-      const newSlots: (EquippedSlot | null)[] = Array(NUM_SLOTS).fill(null)
+      const newSlots: (EquippedSlot | null)[] = Array(slotCount).fill(null)
       for (const eq of equipped) {
-        if (eq.slotNumber >= 1 && eq.slotNumber <= NUM_SLOTS) {
+        if (eq.slotNumber >= 1 && eq.slotNumber <= slotCount) {
           newSlots[eq.slotNumber - 1] = eq
         }
       }
       setSlots(newSlots)
-      setDraftSlots(null)
     } catch {
       // silent
     } finally {
@@ -183,9 +146,8 @@ const CardEquipment: React.FC = () => {
   }, [getToken])
 
   useEffect(() => {
-    if (rosterLocked) fetchEquipped()
-    else setLoading(false)
-  }, [rosterLocked, fetchEquipped])
+    fetchEquipped()
+  }, [fetchEquipped])
 
   useEffect(() => {
     if (!wsEvent) return
@@ -194,28 +156,27 @@ const CardEquipment: React.FC = () => {
     }
   }, [wsEvent, fetchEquipped])
 
-  const handleEquip = async (card: CardData, slotNumber: number) => {
-    if (isDraftMode) {
-      // Draft mode: update local state only
-      const base = draftSlots ?? [...slots]
-      const newDraft = [...base]
-      newDraft[slotNumber - 1] = {
-        slotNumber,
-        card,
-        isMatch: fantasyPlayerIds.has(card.playerId),
-        locked: false,
-      }
-      setDraftSlots(newDraft)
-      setPickerSlot(null)
-      return
-    }
+  // Re-fetch deck after equip/unequip
+  const refetchDeck = useCallback(async () => {
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      const res = await fetch(`${API_BASE}/cards/collection?activeOnly=true`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      })
+      if (!res.ok) return
+      const json = await res.json()
+      setDeckCards(json.data?.cards ?? [])
+    } catch { /* silent */ }
+  }, [getToken])
 
+  const handleEquip = async (card: CardData, slotNumber: number) => {
     const tok = await getToken()
     if (!tok) return
     setSaving(true)
     try {
       const equipCards: { slotNumber: number; userCardId: number }[] = []
-      for (let i = 0; i < NUM_SLOTS; i++) {
+      for (let i = 0; i < numSlots; i++) {
         const sn = i + 1
         if (sn === slotNumber) {
           equipCards.push({ slotNumber: sn, userCardId: card.id })
@@ -235,6 +196,7 @@ const CardEquipment: React.FC = () => {
         return
       }
       await fetchEquipped()
+      await refetchDeck()
       window.dispatchEvent(new Event('cards-equipped'))
     } catch {
       alert('Failed to equip card')
@@ -245,22 +207,13 @@ const CardEquipment: React.FC = () => {
   }
 
   const handleUnequip = (slotNumber: number) => {
-    if (isDraftMode) {
-      const base = draftSlots ?? [...slots]
-      const newDraft = [...base]
-      newDraft[slotNumber - 1] = null
-      setDraftSlots(newDraft)
-      return
-    }
-
-    // Normal mode: send to server
     ;(async () => {
       const tok = await getToken()
       if (!tok) return
       setSaving(true)
       try {
         const equipCards: { slotNumber: number; userCardId: number }[] = []
-        for (let i = 0; i < NUM_SLOTS; i++) {
+        for (let i = 0; i < numSlots; i++) {
           const sn = i + 1
           if (sn !== slotNumber && slots[i]) {
             equipCards.push({ slotNumber: sn, userCardId: slots[i]!.card.id })
@@ -274,6 +227,7 @@ const CardEquipment: React.FC = () => {
         })
         if (res.ok) {
           await fetchEquipped()
+          await refetchDeck()
           window.dispatchEvent(new Event('cards-equipped'))
         }
       } catch {
@@ -284,43 +238,49 @@ const CardEquipment: React.FC = () => {
     })()
   }
 
-  const handleConfirmLock = async () => {
-    const tok = await getToken()
-    if (!tok) return
-    setSaving(true)
-    try {
-      const slotsToSend = draftSlots ?? slots
-      const equipCards: { slotNumber: number; userCardId: number }[] = []
-      for (let i = 0; i < NUM_SLOTS; i++) {
-        const slot = slotsToSend[i]
-        if (slot) {
-          equipCards.push({ slotNumber: i + 1, userCardId: slot.card.id })
-        }
-      }
 
-      const res = await fetch(`${API_BASE}/cards/equipped?confirm=true`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-        body: JSON.stringify({ cards: equipCards }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: 'Failed to lock cards' }))
-        alert(err.detail || 'Failed to lock cards')
-        return
+  // Fetch eligible deck when expanded
+  useEffect(() => {
+    if (!expanded || deckFetchedRef.current) return
+    const fetchDeck = async () => {
+      setDeckLoading(true)
+      try {
+        const tok = await getToken()
+        if (!tok) return
+        const res = await fetch(`${API_BASE}/cards/collection?activeOnly=true`, {
+          headers: { Authorization: `Bearer ${tok}` },
+        })
+        if (!res.ok) return
+        const json = await res.json()
+        setDeckCards(json.data?.cards ?? [])
+        deckFetchedRef.current = true
+      } catch {
+        // silent
+      } finally {
+        setDeckLoading(false)
       }
-      await fetchEquipped()
-      window.dispatchEvent(new Event('cards-locked'))
-    } catch {
-      alert('Failed to lock cards')
-    } finally {
-      setSaving(false)
     }
-  }
-
-  if (!rosterLocked) return null
+    fetchDeck()
+  }, [expanded, getToken])
 
   const equippedCardIds = displaySlots.filter(Boolean).map(s => s!.card.id)
   const canEdit = !isLocked && !saving
+
+  // Deck cards: exclude equipped, sort by match > edition > rating
+  const editionOrder: Record<string, number> = {
+    diamond: 0, prismatic: 1, gold: 2, holographic: 3, chrome: 4, base: 5,
+  }
+  const availableDeck = deckCards
+    .filter(c => !equippedCardIds.includes(c.id))
+    .sort((a, b) => {
+      const aMatch = fantasyPlayerIds.has(a.playerId) ? 0 : 1
+      const bMatch = fantasyPlayerIds.has(b.playerId) ? 0 : 1
+      if (aMatch !== bMatch) return aMatch - bMatch
+      const ea = editionOrder[a.edition] ?? 99
+      const eb = editionOrder[b.edition] ?? 99
+      if (ea !== eb) return ea - eb
+      return b.playerRating - a.playerRating
+    })
 
   return (
     <div style={{
@@ -348,7 +308,11 @@ const CardEquipment: React.FC = () => {
             backgroundColor: 'rgba(245,158,11,0.15)',
             padding: '3px 8px', borderRadius: '6px',
             border: '1px solid rgba(245,158,11,0.3)',
+            display: 'inline-flex', alignItems: 'center', gap: '4px',
           }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0110 0v4" />
+            </svg>
             LOCKED
           </span>
         )}
@@ -360,7 +324,7 @@ const CardEquipment: React.FC = () => {
           display: 'flex', gap: '8px', justifyContent: 'center',
           flexWrap: 'wrap', marginTop: '8px',
         }}>
-          {Array.from({ length: NUM_SLOTS }, (_, i) => i + 1).map(slotNum => {
+          {Array.from({ length: numSlots }, (_, i) => i + 1).map(slotNum => {
             const slot = displaySlots[slotNum - 1]
             if (!slot) {
               return (
@@ -463,7 +427,7 @@ const CardEquipment: React.FC = () => {
           justifyContent: 'center',
           flexWrap: isMobile ? 'wrap' : 'nowrap',
         }}>
-          {Array.from({ length: NUM_SLOTS }, (_, i) => i + 1).map(slotNum => {
+          {Array.from({ length: numSlots }, (_, i) => i + 1).map(slotNum => {
             const slot = displaySlots[slotNum - 1]
 
             if (slot) {
@@ -484,7 +448,7 @@ const CardEquipment: React.FC = () => {
                 onClick={() => canEdit && setPickerSlot(slotNum)}
                 disabled={!canEdit}
                 style={{
-                  width: isMobile ? '100%' : 160, height: 80,
+                  width: isMobile ? '100%' : 200, height: 100,
                   borderRadius: '10px',
                   border: '2px dashed #334155',
                   backgroundColor: 'rgba(30,41,59,0.5)',
@@ -505,42 +469,72 @@ const CardEquipment: React.FC = () => {
         </div>
       )}
 
-      {/* Draft mode confirmation banner */}
-      {isDraftMode && !loading && (
+      {/* Guidance text */}
+      {!isLocked && !loading && (
         <div style={{
           marginTop: '10px',
           padding: '8px 14px',
           borderRadius: '10px',
-          backgroundColor: 'rgba(245,158,11,0.1)',
-          border: '1px solid rgba(245,158,11,0.25)',
-          display: 'flex',
-          alignItems: isMobile ? 'flex-start' : 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          flexDirection: isMobile ? 'column' : 'row',
+          backgroundColor: 'rgba(99,102,241,0.08)',
+          border: '1px solid rgba(99,102,241,0.2)',
         }}>
-          <div style={{ fontSize: '11px', color: '#f59e0b', lineHeight: 1.5 }}>
-            Games are active. Cards will be locked until next week once confirmed.
+          <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5 }}>
+            {gamesActive
+              ? 'Games are in progress. Cards equipped now will activate next week.'
+              : 'Equip your cards for this week. They will auto-lock and activate when games start.'}
           </div>
-          <button
-            onClick={handleConfirmLock}
-            disabled={saving || !displaySlots.some(Boolean)}
-            style={{
-              padding: '8px 20px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: saving ? '#64748b' : '#f59e0b',
-              color: '#0f172a',
-              fontSize: '12px',
-              fontWeight: '700',
-              fontFamily: 'pressStart',
-              cursor: saving || !displaySlots.some(Boolean) ? 'not-allowed' : 'pointer',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            {saving ? 'Locking...' : 'Lock Cards'}
-          </button>
+        </div>
+      )}
+
+      {/* Eligible deck — shown in expanded view */}
+      {expanded && !loading && (
+        <div style={{ marginTop: '14px', borderTop: '1px solid #334155', paddingTop: '14px' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: '10px',
+          }}>
+            <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
+              Eligible Cards
+              <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '400', marginLeft: '8px' }}>
+                {availableDeck.length}
+              </span>
+            </h4>
+          </div>
+          {deckLoading ? (
+            <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', padding: '16px 0' }}>
+              Loading deck...
+            </div>
+          ) : availableDeck.length === 0 ? (
+            <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', padding: '16px 0' }}>
+              No eligible cards available. Open packs in the Shop!
+            </div>
+          ) : (
+            <div style={{
+              display: 'flex', flexWrap: 'wrap', gap: '20px',
+              justifyContent: 'center',
+            }}>
+              {availableDeck.map(card => {
+                const isMatch = fantasyPlayerIds.has(card.playerId)
+                return (
+                  <div key={card.id} style={{ position: 'relative' }}>
+                    <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch ? '#22c55e' : undefined} />
+                    {isMatch && (
+                      <div style={{
+                        position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
+                        fontSize: '8px', color: '#22c55e', fontWeight: '700',
+                        backgroundColor: 'rgba(34,197,94,0.15)',
+                        padding: '2px 5px', borderRadius: '4px',
+                        border: '1px solid rgba(34,197,94,0.3)',
+                        pointerEvents: 'none',
+                      }}>
+                        MATCH
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 

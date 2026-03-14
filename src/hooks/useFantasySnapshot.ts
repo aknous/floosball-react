@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
+import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -24,12 +25,10 @@ export interface CardBreakdownEntry {
   outputType: string
   primaryFP: number
   primaryMult: number
-  primaryXMult: number
   primaryFloobits: number
   preMatchFP: number
   preMatchFloobits: number
   preMatchMult: number
-  preMatchXMult: number
   matchMultiplied: boolean
   matchMultiplier: number
   conditionalBonus: number
@@ -37,18 +36,17 @@ export interface CardBreakdownEntry {
   secondaryFP: number
   secondaryFloobits: number
   secondaryMult: number
-  secondaryXMult: number
   totalFP: number
   floobitsEarned: number
   playerStatLine: string
   equation: string
+  isChanceEffect?: boolean
 }
 
 export interface EquationSummary {
   weekRawFP: number
   totalBonusFP: number
-  totalMultBonus: number
-  xMultFactors: number[]
+  multFactors: number[]
 }
 
 export interface ModifierInfo {
@@ -112,6 +110,7 @@ interface UseFantasySnapshotResult {
   gamesActive: boolean
   modifier: ModifierInfo | null
   loading: boolean
+  refetch: () => void
 }
 
 /**
@@ -129,6 +128,7 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
   const [modifier, setModifier] = useState<ModifierInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const { event } = useSeasonWebSocket()
+  const { getToken } = useAuth()
   const hasLoadedOnce = useRef(false)
   const fetchIdRef = useRef(0)
 
@@ -137,7 +137,10 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
     const fetchId = ++fetchIdRef.current
     try {
       if (isInitial) setLoading(true)
-      const resp = await fetch(`${API_BASE}/fantasy/snapshot`)
+      const tok = await getToken()
+      const headers: Record<string, string> = {}
+      if (tok) headers['Authorization'] = `Bearer ${tok}`
+      const resp = await fetch(`${API_BASE}/fantasy/snapshot`, { headers })
       const json = await resp.json()
       // Discard stale responses — only apply the most recent fetch
       if (fetchId !== fetchIdRef.current) return
@@ -153,11 +156,18 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
     } finally {
       if (isInitial) setLoading(false)
     }
-  }, [])
+  }, [getToken])
 
   // Initial fetch
   useEffect(() => {
     fetchSnapshot()
+  }, [fetchSnapshot])
+
+  // Re-fetch when shop purchases happen (e.g., modifier nullifier changes effective modifier)
+  useEffect(() => {
+    const handler = () => fetchSnapshot()
+    window.addEventListener('floosball:shop-purchase', handler)
+    return () => window.removeEventListener('floosball:shop-purchase', handler)
   }, [fetchSnapshot])
 
   // WS-driven updates
@@ -168,6 +178,9 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
     if (event.event === 'week_start') {
       const wsWeek = (event as any).weekNumber
       if (wsWeek != null) setWeek(wsWeek)
+      // Extract modifier directly from WS event to avoid race with fetchSnapshot
+      const wsModInfo = (event as any).modifierInfo
+      if (wsModInfo) setModifier(wsModInfo)
       setEntries(prev => prev.map(e => ({
         ...e,
         weekPlayerFP: 0,
@@ -237,12 +250,10 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
               outputType: cb.outputType ?? 'fp',
               primaryFP: cb.primaryFP ?? 0,
               primaryMult: cb.primaryMult ?? 0,
-              primaryXMult: cb.primaryXMult ?? 0,
               primaryFloobits: cb.primaryFloobits ?? 0,
               preMatchFP: cb.preMatchFP ?? 0,
               preMatchFloobits: cb.preMatchFloobits ?? 0,
               preMatchMult: cb.preMatchMult ?? 0,
-              preMatchXMult: cb.preMatchXMult ?? 0,
               matchMultiplied: cb.matchMultiplied ?? false,
               matchMultiplier: cb.matchMultiplier ?? 1.5,
               conditionalBonus: cb.conditionalBonus ?? 0,
@@ -250,7 +261,6 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
               secondaryFP: cb.secondaryFP ?? 0,
               secondaryFloobits: cb.secondaryFloobits ?? 0,
               secondaryMult: cb.secondaryMult ?? 0,
-              secondaryXMult: cb.secondaryXMult ?? 0,
               totalFP: cb.totalFP ?? 0,
               floobitsEarned: cb.floobitsEarned ?? 0,
               playerStatLine: cb.playerStatLine ?? '',
@@ -269,5 +279,5 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
 
   const myEntry = userId != null ? entries.find(e => e.userId === userId) : undefined
 
-  return { entries, myEntry, season, week, gamesActive, modifier, loading }
+  return { entries, myEntry, season, week, gamesActive, modifier, loading, refetch: fetchSnapshot }
 }

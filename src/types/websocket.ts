@@ -249,6 +249,32 @@ export interface GameStateEvent extends BaseWebSocketEvent {
     isChokePlay: boolean
     isMomentumShift: boolean
   } | null
+  finalPlay?: {
+    playNumber: number
+    quarter: number
+    timeRemaining: string
+    down: number
+    distance: number
+    yardLine: string
+    playType: string
+    yardsGained: number
+    description: string
+    playResult: string | null
+    isTouchdown: boolean
+    isTurnover: boolean
+    isSack: boolean
+    scoreChange: boolean
+    homeTeamScore: number | null
+    awayTeamScore: number | null
+    offensiveTeam: string
+    defensiveTeam: string
+    homeWpa: number
+    awayWpa: number
+    isBigPlay: boolean
+    isClutchPlay: boolean
+    isChokePlay: boolean
+    isMomentumShift: boolean
+  } | null
   homeWinProbability: number
   awayWinProbability: number
   homeWpa: number
