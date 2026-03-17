@@ -2,9 +2,23 @@ import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-const APP_VERSION = process.env.REACT_APP_VERSION || '0.4.0'
+const APP_VERSION = process.env.REACT_APP_VERSION || '0.5.0'
 
 const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+  {
+    version: 'v0.5.0',
+    date: '2026-03-16',
+    changes: [
+      'GM Board of Directors — ranked-choice ballot system for free agency player targeting',
+      'Free agency draft with directive queues, one pick per team per round',
+      'Tabbed offseason panel consolidating Players, Directives, and Transactions views',
+      'Clutch/choke system redesign — blowout dampening, Q4 pressure progression fix, stricter choke criteria',
+      'High-pressure moments now compress the no-effect zone for more dramatic player responses',
+      'Game stats snapshot cached at game completion — Floosbowl stats persist through offseason',
+      'Centered game bar for playoff weeks',
+      'Pick\'em system and game card score predictions',
+    ],
+  },
   {
     version: 'v0.4.0',
     date: '2026-03-13',
@@ -131,20 +145,38 @@ export const Footer: React.FC = () => {
         alignItems: 'center',
         justifyContent: 'space-between',
       }}>
-        <NavLink
-          to="/about"
-          style={{
-            color: '#64748b',
-            textDecoration: 'none',
-            fontSize: '12px',
-            fontWeight: '500',
-            transition: 'color 0.15s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#94a3b8')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}
-        >
-          About
-        </NavLink>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <NavLink
+            to="/about"
+            style={{
+              color: '#64748b',
+              textDecoration: 'none',
+              fontSize: '12px',
+              fontWeight: '500',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#94a3b8')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}
+          >
+            About
+          </NavLink>
+          <a
+            href="https://discord.gg/b4DZn3mVfP"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: '#64748b',
+              textDecoration: 'none',
+              fontSize: '12px',
+              fontWeight: '500',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#94a3b8')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}
+          >
+            Discord
+          </a>
+        </div>
 
         <div ref={badgeRef} style={{ position: 'relative' }}>
           <button

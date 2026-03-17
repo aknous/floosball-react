@@ -88,7 +88,7 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
       <div style={{ padding: '14px' }}>
         {/* Avatar + name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-          <PlayerAvatar name={data.name} size={72} style={{ border: `2px solid ${color}` }} />
+          <PlayerAvatar name={data.name} size={72} bgColor={data.teamColor} style={{ border: `2px solid ${color}` }} />
           <div>
             <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{data.name}</div>
             <div style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>

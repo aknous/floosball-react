@@ -18,10 +18,54 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [games, setGames] = useState<Map<number, CurrentGame>>(new Map())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { event } = useSeasonWebSocket()
+  const { event, drainEvents } = useSeasonWebSocket()
   const hasLoadedOnce = useRef(false)
 
-  const fetchGames = async (keepFinal = false) => {
+  const fetchGamePlays = useCallback(async (gameId: number) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/games/${gameId}`)
+      const gameData = await response.json()
+
+      setGames(prev => {
+        const updated = new Map(prev)
+        const game = updated.get(gameId)
+        if (game && gameData.plays) {
+          // Build a map of enrichment data from plays already in memory (accumulated via WebSocket)
+          const enrichByPlayNumber = new Map<number, {
+            homeWinProbability: number; awayWinProbability: number
+            homeWpa?: number; awayWpa?: number; isBigPlay?: boolean
+            isClutchPlay?: boolean; isChokePlay?: boolean
+          }>()
+          ;(game.plays || []).forEach((p: any) => {
+            if (p.playNumber != null && p.homeWinProbability != null) {
+              enrichByPlayNumber.set(p.playNumber, {
+                homeWinProbability: p.homeWinProbability,
+                awayWinProbability: p.awayWinProbability,
+                homeWpa: p.homeWpa,
+                awayWpa: p.awayWpa,
+                isBigPlay: p.isBigPlay,
+                isClutchPlay: p.isClutchPlay,
+                isChokePlay: p.isChokePlay,
+              })
+            }
+          })
+
+          // Merge: use API plays as base, overlay any enrichment from WebSocket
+          const mergedPlays = gameData.plays.map((p: any) => {
+            const enrich = enrichByPlayNumber.get(p.playNumber)
+            return enrich ? { ...p, ...enrich } : p
+          })
+
+          updated.set(gameId, { ...game, plays: mergedPlays, gameStats: gameData.gameStats ?? game.gameStats })
+        }
+        return updated
+      })
+    } catch (err) {
+      console.error(`Error fetching plays for game ${gameId}:`, err)
+    }
+  }, [])
+
+  const fetchGames = useCallback(async (keepFinal = false) => {
     const isInitial = !hasLoadedOnce.current
     try {
       if (isInitial) setLoading(true)
@@ -75,143 +119,161 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } finally {
       if (isInitial) setLoading(false)
     }
-  }
+  }, [fetchGamePlays])
 
   // Initial fetch
   useEffect(() => {
     fetchGames()
-  }, [])
+  }, [fetchGames])
 
-  // Update games from WebSocket events
+  // Update games from WebSocket events.
+  // Uses drainEvents() to process ALL queued messages, preventing drops
+  // when React batches rapid state updates (e.g. timeout → next play).
   useEffect(() => {
     if (!event) return
 
-    // Handle week_start event - refetch all games for new week
-    // (replaces previous week's completed games with new scheduled games)
-    if (event.event === 'week_start') {
+    const events = drainEvents()
+    if (events.length === 0) return
+
+    // Handle week_start — refetch all games for new week
+    if (events.some((e: any) => e.event === 'week_start')) {
       fetchGames()
-      return
     }
 
-    // Only process game events (not season events)
-    if (!('gameId' in event)) return
-    
-    const gameId = Number(event.gameId)
-    if (!gameId) return
+    let hasGameEnd = false
 
     setGames(prev => {
       const updated = new Map(prev)
-      const game = updated.get(gameId)
-      if (!game) return prev
 
-      switch (event.event) {
-        case 'game_start':
-          updated.set(gameId, {
-            ...game,
-            status: 'Active' as const,
-            quarter: 1,
-            timeRemaining: '15:00'
-          })
-          break
+      for (const evt of events) {
+        // Skip non-game events
+        if (!('gameId' in evt)) continue
+        const gameId = Number((evt as any).gameId)
+        if (!gameId) continue
+        const game = updated.get(gameId)
+        if (!game) continue
 
-        case 'game_state': {
-          const lastPlayData = event.lastPlay ? {
-            ...event.lastPlay,
-            homeWinProbability: event.homeWinProbability,
-            awayWinProbability: event.awayWinProbability,
-            homeWpa: event.homeWpa,
-            awayWpa: event.awayWpa
-          } : null
+        switch ((evt as any).event) {
+          case 'game_start':
+            updated.set(gameId, {
+              ...game,
+              status: 'Active' as const,
+              quarter: 1,
+              timeRemaining: '15:00'
+            })
+            break
 
-          // finalPlay carries the actual last gameplay play alongside the "Final" event.
-          // Deduplicate: skip if this play description is already in the feed.
-          const finalPlayData = event.finalPlay ?? null
-          let existingPlays = game.plays || []
-          if (finalPlayData?.description) {
-            const alreadyHave = existingPlays.some(
-              (p: any) => p.description === finalPlayData.description && p.playResult === finalPlayData.playResult
-            )
-            if (!alreadyHave) {
-              existingPlays = [finalPlayData, ...existingPlays]
+          case 'game_state': {
+            const gsEvt = evt as any
+            const lastPlayData = gsEvt.lastPlay ? {
+              ...gsEvt.lastPlay,
+              homeWinProbability: gsEvt.homeWinProbability,
+              awayWinProbability: gsEvt.awayWinProbability,
+              homeWpa: gsEvt.homeWpa,
+              awayWpa: gsEvt.awayWpa
+            } : null
+
+            // finalPlay carries the actual last gameplay play alongside the "Final" event.
+            const finalPlayData = gsEvt.finalPlay ?? null
+            const curGame = updated.get(gameId)!
+            let existingPlays = curGame.plays || []
+            if (finalPlayData?.description) {
+              const alreadyHave = existingPlays.some(
+                (p: any) => p.description === finalPlayData.description && p.playResult === finalPlayData.playResult
+              )
+              if (!alreadyHave) {
+                existingPlays = [finalPlayData, ...existingPlays]
+              }
             }
+
+            updated.set(gameId, {
+              ...curGame,
+              status: gsEvt.status,
+              homeScore: gsEvt.homeScore,
+              awayScore: gsEvt.awayScore,
+              quarterScores: gsEvt.quarterScores,
+              possession: gsEvt.possession ?? undefined,
+              homeTeamPoss: gsEvt.homeTeamPoss,
+              awayTeamPoss: gsEvt.awayTeamPoss,
+              quarter: gsEvt.quarter,
+              timeRemaining: gsEvt.timeRemaining,
+              down: gsEvt.down ?? undefined,
+              yardsToFirstDown: gsEvt.distance ?? undefined,
+              yardLine: gsEvt.yardLine ?? undefined,
+              yardsToEndzone: gsEvt.yardsToEndzone ?? undefined,
+              homeWinProbability: gsEvt.homeWinProbability,
+              awayWinProbability: gsEvt.awayWinProbability,
+              homeTimeouts: gsEvt.homeTimeouts,
+              awayTimeouts: gsEvt.awayTimeouts,
+              isHalftime: gsEvt.isHalftime,
+              isOvertime: gsEvt.isOvertime,
+              isUpsetAlert: gsEvt.isUpsetAlert ?? curGame.isUpsetAlert,
+              momentum: gsEvt.momentum,
+              momentumTeam: gsEvt.momentumTeam,
+              gameStats: gsEvt.gameStats ?? curGame.gameStats,
+              plays: lastPlayData ? [lastPlayData, ...existingPlays] : existingPlays
+            })
+            break
           }
 
-          const updatedGameState = {
-            ...game,
-            status: event.status,
-            homeScore: event.homeScore,
-            awayScore: event.awayScore,
-            quarterScores: event.quarterScores,
-            possession: event.possession ?? undefined,
-            homeTeamPoss: event.homeTeamPoss,
-            awayTeamPoss: event.awayTeamPoss,
-            quarter: event.quarter,
-            timeRemaining: event.timeRemaining,
-            down: event.down ?? undefined,
-            yardsToFirstDown: event.distance ?? undefined,
-            yardLine: event.yardLine ?? undefined,
-            yardsToEndzone: event.yardsToEndzone ?? undefined,
-            homeWinProbability: event.homeWinProbability,
-            awayWinProbability: event.awayWinProbability,
-            isHalftime: event.isHalftime,
-            isOvertime: event.isOvertime,
-            isUpsetAlert: event.isUpsetAlert ?? game.isUpsetAlert,
-            momentum: event.momentum,
-            momentumTeam: event.momentumTeam,
-            gameStats: event.gameStats ?? game.gameStats,
-            plays: lastPlayData ? [lastPlayData, ...existingPlays] : existingPlays
+          // Legacy event handlers (deprecated - kept for backward compatibility)
+          case 'score_update': {
+            const suEvt = evt as any
+            updated.set(gameId, {
+              ...game,
+              homeScore: suEvt.homeScore,
+              awayScore: suEvt.awayScore
+            })
+            break
           }
-          updated.set(gameId, updatedGameState)
-          break
-        }
 
-        // Legacy event handlers (deprecated - kept for backward compatibility)
-        case 'score_update':
-          updated.set(gameId, {
-            ...game,
-            homeScore: event.homeScore,
-            awayScore: event.awayScore
-          })
-          break
+          case 'play_complete': {
+            const pcEvt = evt as any
+            const curGame = updated.get(gameId)!
+            updated.set(gameId, {
+              ...curGame,
+              quarter: pcEvt.play.quarter ?? curGame.quarter,
+              timeRemaining: pcEvt.play.timeRemaining ?? curGame.timeRemaining,
+              homeWinProbability: pcEvt.play.homeWinProbability ?? curGame.homeWinProbability,
+              awayWinProbability: pcEvt.play.awayWinProbability ?? curGame.awayWinProbability,
+              plays: [pcEvt.play, ...(curGame.plays || [])]
+            })
+            break
+          }
 
-        case 'play_complete':
-          updated.set(gameId, {
-            ...game,
-            quarter: event.play.quarter ?? game.quarter,
-            timeRemaining: event.play.timeRemaining ?? game.timeRemaining,
-            homeWinProbability: event.play.homeWinProbability ?? game.homeWinProbability,
-            awayWinProbability: event.play.awayWinProbability ?? game.awayWinProbability,
-            plays: [event.play, ...(game.plays || [])]
-          })
-          break
+          case 'game_state_update': {
+            const gsuEvt = evt as any
+            const curGame = updated.get(gameId)!
+            updated.set(gameId, {
+              ...curGame,
+              down: gsuEvt.state.down ?? curGame.down,
+              yardsToFirstDown: gsuEvt.state.distance ?? curGame.yardsToFirstDown,
+              yardLine: gsuEvt.state.yardLine ?? curGame.yardLine,
+              possession: gsuEvt.state.possession ?? curGame.possession
+            })
+            break
+          }
 
-        case 'game_state_update':
-          // Update current down/distance/possession
-          updated.set(gameId, {
-            ...game,
-            down: event.state.down ?? game.down,
-            yardsToFirstDown: event.state.distance ?? game.yardsToFirstDown,
-            yardLine: event.state.yardLine ?? game.yardLine,
-            possession: event.state.possession ?? game.possession
-          })
-          break
-
-        case 'game_end': {
-          const h = event.finalScore.home
-          const a = event.finalScore.away
-          const finalHomeWp = event.homeWinProbability ?? (h > a ? 100 : h < a ? 0 : 50)
-          const finalAwayWp = event.awayWinProbability ?? (a > h ? 100 : a < h ? 0 : 50)
-          updated.set(gameId, {
-            ...game,
-            status: 'Final',
-            homeScore: h,
-            awayScore: a,
-            homeWinProbability: finalHomeWp,
-            awayWinProbability: finalAwayWp,
-            quarter: 4,
-            timeRemaining: '0:00'
-          })
-          break
+          case 'game_end': {
+            const geEvt = evt as any
+            const curGame = updated.get(gameId)!
+            const h = geEvt.finalScore.home
+            const a = geEvt.finalScore.away
+            const finalHomeWp = geEvt.homeWinProbability ?? (h > a ? 100 : h < a ? 0 : 50)
+            const finalAwayWp = geEvt.awayWinProbability ?? (a > h ? 100 : a < h ? 0 : 50)
+            updated.set(gameId, {
+              ...curGame,
+              status: 'Final',
+              homeScore: h,
+              awayScore: a,
+              homeWinProbability: finalHomeWp,
+              awayWinProbability: finalAwayWp,
+              quarter: 4,
+              timeRemaining: '0:00'
+            })
+            hasGameEnd = true
+            break
+          }
         }
       }
 
@@ -219,59 +281,13 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     })
 
     // Refetch after game ends to pick up updated team records (wins/losses).
-    // Use merge mode so Final games already in state aren't wiped out
-    // (the backend removes finished games from activeGames, so the API may
-    // return an empty list once the last game ends).
-    if (event.event === 'game_end') {
+    // Use merge mode so Final games already in state aren't wiped out.
+    if (hasGameEnd) {
       fetchGames(true)
     }
-  }, [event])
+  }, [event, drainEvents, fetchGames])
 
   const getGame = (gameId: number) => games.get(gameId)
-
-  const fetchGamePlays = useCallback(async (gameId: number) => {
-    try {
-      const response = await fetch(`http://localhost:8000/api/games/${gameId}`)
-      const gameData = await response.json()
-
-      setGames(prev => {
-        const updated = new Map(prev)
-        const game = updated.get(gameId)
-        if (game && gameData.plays) {
-          // Build a map of enrichment data from plays already in memory (accumulated via WebSocket)
-          const enrichByPlayNumber = new Map<number, {
-            homeWinProbability: number; awayWinProbability: number
-            homeWpa?: number; awayWpa?: number; isBigPlay?: boolean
-            isClutchPlay?: boolean; isChokePlay?: boolean
-          }>()
-          ;(game.plays || []).forEach((p: any) => {
-            if (p.playNumber != null && p.homeWinProbability != null) {
-              enrichByPlayNumber.set(p.playNumber, {
-                homeWinProbability: p.homeWinProbability,
-                awayWinProbability: p.awayWinProbability,
-                homeWpa: p.homeWpa,
-                awayWpa: p.awayWpa,
-                isBigPlay: p.isBigPlay,
-                isClutchPlay: p.isClutchPlay,
-                isChokePlay: p.isChokePlay,
-              })
-            }
-          })
-
-          // Merge: use API plays as base, overlay any enrichment from WebSocket
-          const mergedPlays = gameData.plays.map((p: any) => {
-            const enrich = enrichByPlayNumber.get(p.playNumber)
-            return enrich ? { ...p, ...enrich } : p
-          })
-
-          updated.set(gameId, { ...game, plays: mergedPlays, gameStats: gameData.gameStats ?? game.gameStats })
-        }
-        return updated
-      })
-    } catch (err) {
-      console.error(`Error fetching plays for game ${gameId}:`, err)
-    }
-  }, [])
 
   const value: GamesContextValue = {
     games,

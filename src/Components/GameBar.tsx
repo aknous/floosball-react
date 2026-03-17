@@ -37,6 +37,7 @@ const GameBar: React.FC = () => {
         whiteSpace: 'nowrap',
         padding: '6px 12px',
         display: 'flex',
+        justifyContent: 'center',
         gap: '8px',
         scrollbarWidth: 'none',
       }}>

@@ -418,7 +418,7 @@ export default function PlayerPage() {
           {/* Left: Avatar + Jersey + Name */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? '12px' : '16px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
-              <PlayerAvatar name={player.name} size={isMobile ? 100 : 144} style={{ border: `3px solid ${teamColor}` }} />
+              <PlayerAvatar name={player.name} size={isMobile ? 100 : 144} bgColor={player.teamColor} style={{ border: `3px solid ${teamColor}` }} />
               <div style={{ width: isMobile ? '100px' : '144px' }}>
                 <PlayerJersey color={teamColor} secondary={teamSecondary} number={player.number} name={player.name} />
               </div>

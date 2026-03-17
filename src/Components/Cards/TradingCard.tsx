@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react'
 import ReactDOM from 'react-dom'
 import { createAvatar } from '@dicebear/core'
-import { avataaars } from '@dicebear/collection'
+import { micah } from '@dicebear/collection'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -200,6 +200,7 @@ export interface CardData {
   playerId: number
   playerName: string
   teamId: number | null
+  teamColor: string | null
   playerRating: number
   position: number
   edition: string
@@ -228,7 +229,7 @@ interface TradingCardProps {
   onSelect?: () => void
   onClick?: () => void
   showSellValue?: boolean
-  glowColor?: string  // persistent outline/glow (e.g. green for roster match)
+  glowColor?: string  // persistent outline/glow (e.g. cyan for roster match)
   noHoverLift?: boolean  // disable translateY on hover (parent handles it)
   onHoverChange?: (hovered: boolean) => void
 }
@@ -520,13 +521,13 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const tierColor = getTierColor(card.playerRating)
 
   const playerAvatarUri = useMemo(() => {
-    return createAvatar(avataaars, {
+    return createAvatar(micah, {
       seed: card.playerName,
       size: d.avatar,
-      backgroundColor: ['transparent'],
+      backgroundColor: [(card.teamColor || tierColor).replace('#', '')],
       backgroundType: ['solid'],
     }).toDataUri()
-  }, [card.playerName, d.avatar])
+  }, [card.playerName, d.avatar, card.teamColor, tierColor])
 
   const containerStyle: React.CSSProperties = {
     width: d.width,
@@ -604,16 +605,20 @@ const TradingCard: React.FC<TradingCardProps> = ({
             minHeight: 0, overflow: 'hidden',
           }}>
             {/* Player avatar */}
-            <img
-              src={playerAvatarUri}
-              alt={card.playerName}
-              style={{
-                width: d.avatar, height: d.avatar,
-                borderRadius: '50%',
-                border: `2px solid ${edStyle.borderColor}80`,
-                marginBottom: '2px',
-              }}
-            />
+            <div style={{
+              width: d.avatar, height: d.avatar,
+              borderRadius: '50%',
+              border: `2px solid ${edStyle.borderColor}80`,
+              marginBottom: '2px',
+              background: 'transparent',
+              overflow: 'hidden',
+            }}>
+              <img
+                src={playerAvatarUri}
+                alt={card.playerName}
+                style={{ width: '100%', height: '100%' }}
+              />
+            </div>
 
             {/* Position badge */}
             <span style={{
@@ -625,11 +630,11 @@ const TradingCard: React.FC<TradingCardProps> = ({
             </span>
 
             {/* Stars (colored by tier) */}
-            <div style={{ display: 'flex', gap: '2px', marginBottom: '2px' }}>
-              {Array.from({ length: 5 }, (_, i) => (
+            <div style={{ display: 'flex', gap: '2px', marginBottom: '2px', justifyContent: 'center' }}>
+              {Array.from({ length: stars }, (_, i) => (
                 <span key={i} style={{
                   fontSize: d.starSize,
-                  color: i < stars ? tierColor : '#334155',
+                  color: tierColor,
                 }}>
                   ★
                 </span>

@@ -1,23 +1,25 @@
 import React, { useMemo } from 'react'
 import { createAvatar } from '@dicebear/core'
-import { avataaars } from '@dicebear/collection'
+import { micah } from '@dicebear/collection'
 
 interface PlayerAvatarProps {
   name: string
   size?: number
+  bgColor?: string | null
   style?: React.CSSProperties
   className?: string
 }
 
-const PlayerAvatar: React.FC<PlayerAvatarProps> = ({ name, size = 32, style, className }) => {
+const PlayerAvatar: React.FC<PlayerAvatarProps> = ({ name, size = 32, bgColor, style, className }) => {
+  const bg = bgColor ? bgColor.replace('#', '') : '1e293b'
   const dataUri = useMemo(() => {
-    return createAvatar(avataaars, {
+    return createAvatar(micah, {
       seed: name,
       size,
-      backgroundColor: ['1e293b'],
+      backgroundColor: [bg],
       backgroundType: ['solid'],
     }).toDataUri()
-  }, [name, size])
+  }, [name, size, bg])
 
   return (
     <img

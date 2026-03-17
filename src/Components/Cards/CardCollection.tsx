@@ -143,12 +143,28 @@ const CardCollection: React.FC = () => {
           <button
             onClick={() => setShowCombine(true)}
             style={{
-              padding: '6px 14px', borderRadius: '6px',
-              backgroundColor: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)',
-              color: '#60a5fa', fontSize: '12px', fontWeight: '600',
+              padding: '8px 16px', borderRadius: '8px',
+              background: 'linear-gradient(135deg, rgba(96,165,250,0.15), rgba(167,139,250,0.15))',
+              border: '1px solid rgba(96,165,250,0.4)',
+              color: '#93bbfc', fontSize: '12px', fontWeight: '700',
               cursor: 'pointer', fontFamily: 'pressStart',
+              display: 'flex', alignItems: 'center', gap: '8px',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(96,165,250,0.25), rgba(167,139,250,0.25))'
+              e.currentTarget.style.borderColor = 'rgba(96,165,250,0.6)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, rgba(96,165,250,0.15), rgba(167,139,250,0.15))'
+              e.currentTarget.style.borderColor = 'rgba(96,165,250,0.4)'
             }}
           >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="#93bbfc" strokeWidth="2" strokeLinejoin="round" />
+              <path d="M2 17l10 5 10-5" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M2 12l10 5 10-5" stroke="#93bbfc" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+            </svg>
             The Combine
           </button>
           {selectedIds.size > 0 && (

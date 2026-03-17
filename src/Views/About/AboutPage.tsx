@@ -76,9 +76,37 @@ const AboutPage: React.FC = () => {
         <h1 style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', color: '#e2e8f0', marginBottom: '8px' }}>
           About Floosball
         </h1>
-        <p style={{ ...textStyle, marginBottom: '32px' }}>
-          Everything you need to know about the simulation.
-        </p>
+
+        {/* Beta notice */}
+        <div style={{
+          padding: '14px 18px',
+          marginBottom: '32px',
+          borderRadius: '8px',
+          backgroundColor: 'rgba(245,158,11,0.08)',
+          border: '1px solid rgba(245,158,11,0.25)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <span style={{
+              fontSize: '10px', fontWeight: '700', color: '#f59e0b',
+              backgroundColor: 'rgba(245,158,11,0.15)', padding: '2px 6px',
+              borderRadius: '4px', letterSpacing: '0.5px',
+            }}>
+              CLOSED BETA
+            </span>
+          </div>
+          <p style={{ ...textStyle, fontSize: '12px' }}>
+            Welcome to the Floosball closed beta. The simulation is under active development
+            — features may change, balancing will be adjusted, and new systems will be added
+            throughout the beta period. If you encounter any issues or have feedback, join
+            the{' '}
+            <a
+              href="https://discord.gg/b4DZn3mVfP"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#3b82f6', textDecoration: 'none', fontWeight: '600' }}
+            >Discord server</a>.
+          </p>
+        </div>
 
         {/* What is Floosball? */}
         <Section title="What is Floosball?" defaultOpen>
@@ -109,7 +137,7 @@ const AboutPage: React.FC = () => {
           </p>
           <div style={indicatorRow}>
             <span style={{ color: '#f59e0b', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
-              ⚡ BIG PLAY
+              BIG PLAY
             </span>
             <span style={textStyle}>
               An explosive play — long runs, deep passes, or huge gains.
@@ -117,7 +145,7 @@ const AboutPage: React.FC = () => {
           </div>
           <div style={indicatorRow}>
             <span style={{ color: '#06b6d4', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
-              ◆ CLUTCH
+              CLUTCH
             </span>
             <span style={textStyle}>
               A player delivered under high game pressure — a big throw, clutch catch, or key run when the game is on the line.
@@ -125,10 +153,10 @@ const AboutPage: React.FC = () => {
           </div>
           <div style={indicatorRow}>
             <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
-              ▼ CHOKE
+              CHOKE
             </span>
             <span style={textStyle}>
-              A player crumbled under pressure — a costly interception, dropped pass, or stalled drive in a critical moment.
+              A player crumbled under pressure — a costly interception, dropped pass, or missed field goal in a critical moment.
             </span>
           </div>
           <div style={indicatorRow}>
@@ -192,9 +220,10 @@ const AboutPage: React.FC = () => {
           <p style={{ ...textStyle, marginTop: '10px' }}>
             <span style={{ color: '#e2e8f0', fontWeight: '600' }}>Fantasy Scoring:</span> Your total FP each week
             is calculated as: (roster FP + card bonus FP) multiplied by any multiplier bonuses from equipped cards.
+            A weekly modifier is randomly applied to all players that can affect scoring in different ways.
           </p>
           <p style={{ ...textStyle, marginTop: '10px' }}>
-            <span style={{ color: '#e2e8f0', fontWeight: '600' }}>Roster Swaps:</span> You earn a swap every 7 weeks.
+            <span style={{ color: '#e2e8f0', fontWeight: '600' }}>Roster Swaps:</span> Your roster swap replenishes each week.
             Between games, you can swap one player for a new one — costs 1 Floobit per swap. When you swap,
             your previous player's FP are banked and you start earning with the new player.
           </p>
@@ -230,22 +259,29 @@ const AboutPage: React.FC = () => {
         {/* Card Effects */}
         <Section title="Card Effects">
           <p style={{ ...textStyle, marginBottom: '12px' }}>
-            Each card has a named effect tied to its player's position. Effects fall into 5 categories:
+            Each card has a named effect drawn from a shared pool — effects are not tied to specific
+            positions. Effects fall into several categories:
           </p>
           {[
-            { pos: 'WR', label: 'Flat FP', desc: 'Unconditional bonus Fantasy Points added each week.', color: '#4ade80' },
-            { pos: 'QB', label: 'Multiplier', desc: 'Multiplies your total roster FP (e.g. 1.05x).', color: '#60a5fa' },
-            { pos: 'RB', label: 'Floobits', desc: 'Earns bonus Floobits currency each week.', color: '#eab308' },
-            { pos: 'TE', label: 'Conditional', desc: 'Triggers under specific conditions (e.g. if your QB scores 10+ FP).', color: '#a78bfa' },
-            { pos: 'K', label: 'Streak', desc: 'Grows stronger over consecutive weeks, resets when condition breaks.', color: '#f97316' },
+            { label: 'Flat FP', desc: 'Unconditional bonus Fantasy Points added each week.', color: '#4ade80' },
+            { label: 'Multiplier', desc: 'Multiplies your total roster FP (e.g. 1.05x).', color: '#60a5fa' },
+            { label: 'Floobits', desc: 'Earns bonus Floobits currency each week.', color: '#eab308' },
+            { label: 'Conditional', desc: 'Triggers when the card player hits a stat threshold in a game.', color: '#a78bfa' },
+            { label: 'Streak', desc: 'Grows stronger over consecutive weeks when its condition is met. Resets on failure.', color: '#f97316' },
+            { label: 'Chance', desc: 'Probability-based bonus that rolls at the end of each week.', color: '#38bdf8' },
           ].map(c => (
-            <div key={c.pos} style={{ ...indicatorRow, marginBottom: '6px' }}>
+            <div key={c.label} style={{ ...indicatorRow, marginBottom: '6px' }}>
               <span style={{ color: c.color, fontWeight: '600', fontSize: '12px', minWidth: '100px' }}>
-                {c.pos} — {c.label}
+                {c.label}
               </span>
               <span style={{ ...textStyle, fontSize: '12px' }}>{c.desc}</span>
             </div>
           ))}
+          <p style={{ ...textStyle, marginTop: '10px' }}>
+            <span style={{ color: '#e2e8f0', fontWeight: '600' }}>Synergies:</span> Equipping multiple streak cards
+            provides a growth bonus — each active streak boosts the others. Similarly, multiple chance cards
+            slightly increase each other's odds of triggering.
+          </p>
           <p style={{ ...textStyle, marginTop: '10px' }}>
             <span style={{ color: '#e2e8f0', fontWeight: '600' }}>Match Bonus:</span> When a card's player is on
             your fantasy roster, the card's primary effect gets a 1.5x boost.
@@ -255,9 +291,57 @@ const AboutPage: React.FC = () => {
         {/* Card Equipment */}
         <Section title="Card Equipment">
           <p style={textStyle}>
-            Equip up to 5 cards (one per slot: QB, RB, WR, TE, K) on the <Link to="/fantasy" style={linkStyle}>Fantasy</Link> page.
+            Equip up to 5 cards in any combination on the <Link to="/fantasy" style={linkStyle}>Fantasy</Link> page.
+            Slots are not position-locked — you can equip any card in any slot.
             Card effects are calculated each week alongside your roster's FP.
             Cards lock in when your roster locks at the start of each week and can be changed between weeks.
+          </p>
+        </Section>
+
+        {/* The Combine */}
+        <Section title="The Combine">
+          <p style={textStyle}>
+            The Combine is the card upgrade system, accessible from the <Link to="/cards" style={linkStyle}>Cards</Link> page.
+            It offers three ways to transform your collection:
+          </p>
+          <p style={{ ...textStyle, marginTop: '10px' }}>
+            <span style={{ color: '#60a5fa', fontWeight: '600' }}>Promotion:</span> Sacrifice a higher-edition card to
+            promote another card to that edition. The subject keeps its player and effect but gains the
+            higher edition tier. The sacrificed card is destroyed.
+          </p>
+          <p style={{ ...textStyle, marginTop: '10px' }}>
+            <span style={{ color: '#f59e0b', fontWeight: '600' }}>The Blender:</span> Throw in 2 or more cards —
+            they are all destroyed and a single new card is created. The result edition depends on
+            the total combined value. Player and effect are randomly assigned.
+          </p>
+          <p style={{ ...textStyle, marginTop: '10px' }}>
+            <span style={{ color: '#a78bfa', fontWeight: '600' }}>Transplant:</span> Sacrifice one card to transfer its
+            effect onto another card. The target keeps its player and edition but receives the new effect.
+            Costs Floobits.
+          </p>
+        </Section>
+
+        {/* Prognosticate */}
+        <Section title="Prognosticate">
+          <p style={textStyle}>
+            Prognosticate is the weekly pick'em game. Before each round of games, predict which team will
+            win each matchup. Correct predictions earn Floobits, and picking every game correctly in a week
+            awards a Clairvoyant bonus. Access Prognosticate from the <Link to="/dashboard" style={linkStyle}>Dashboard</Link>.
+          </p>
+        </Section>
+
+        {/* The Front Office */}
+        <Section title="The Front Office">
+          <p style={textStyle}>
+            The Front Office is a fan-driven GM voting system available on your favorite team's page
+            starting in Week 10 of each season. As a board member, you can issue directives to influence
+            team decisions — fire coaches, re-sign or cut players, nominate coaching replacements,
+            and request specific free agents.
+          </p>
+          <p style={{ ...textStyle, marginTop: '10px' }}>
+            Each directive costs Floobits and counts toward your seasonal allowance. Motions require
+            a quorum of directives from active board members before they can be considered for
+            ratification. All motions are resolved during the offseason.
           </p>
         </Section>
 
@@ -274,10 +358,11 @@ const AboutPage: React.FC = () => {
               'Weekly leaderboard: 1st = 30, 2nd = 20, 3rd = 15 (top 25% get 5)',
               'Season leaderboard: 1st = 200, 2nd = 125, 3rd = 75 (top 25% get 25)',
               'Season FP payout: 1 Floobit per 25 FP earned',
+              'Prognosticate: Floobits for correct picks, bonus for perfect weeks',
               'Favorite team clinches playoffs: 25',
               'Favorite team clinches top seed: 50',
               'Favorite team wins Floosbowl: 150',
-              'RB card effects: earn Floobits weekly from equipped cards',
+              'Floobit card effects: earn Floobits weekly from equipped cards',
             ].map((line, i) => (
               <div key={i} style={{ ...textStyle, fontSize: '12px', marginBottom: '3px', display: 'flex', gap: '6px' }}>
                 <span style={{ color: '#94a3b8' }}>-</span> {line}
@@ -294,6 +379,8 @@ const AboutPage: React.FC = () => {
               'Elite Pack: 300 Floobits (5 cards, guaranteed Prismatic + Holo+)',
               'Featured cards in the shop (rotating selection)',
               'Roster swaps: 1 Floobit per swap',
+              'Transplant operations in The Combine',
+              'Front Office directives (team management votes)',
             ].map((line, i) => (
               <div key={i} style={{ ...textStyle, fontSize: '12px', marginBottom: '3px', display: 'flex', gap: '6px' }}>
                 <span style={{ color: '#94a3b8' }}>-</span> {line}
@@ -309,11 +396,11 @@ const AboutPage: React.FC = () => {
           </p>
 
           {[
-            { day: 'Monday – Thursday', label: 'Regular Season', desc: '28 rounds of games played across 4 days (7 rounds per day). Each round kicks off on the hour from 11 AM to 5 PM. Every team plays a mix of intra-league and inter-league matchups.' },
+            { day: 'Monday \u2013 Thursday', label: 'Regular Season', desc: '28 rounds of games played across 4 days (7 rounds per day). Each round kicks off on the hour from 11 AM to 5 PM. Every team plays a mix of intra-league and inter-league matchups.' },
             { day: 'Thursday Evening', label: 'MVP Announcement', desc: 'After the final regular season round, the season MVP is announced based on cumulative performance ratings.' },
-            { day: 'Friday', label: 'Playoffs', desc: 'All playoff rounds are played on Friday — two rounds of playoff games, the league championships, and the Floosbowl. 6 teams per league qualify, with the top 2 seeds earning a first-round bye.' },
-            { day: 'Saturday', label: 'Retirements & Free Agency', desc: 'Players with expiring contracts and aging veterans retire. Hall of Fame inductions are made for eligible retirees. Then teams sign available free agents to fill roster gaps — draft order goes from worst record to best, with the champion picking last.' },
-            { day: 'Sunday', label: 'Offseason & New Season', desc: 'Coaches train and develop their players — players may improve, regress, or stay the same based on coaching ability. Performance ratings reset, team ratings are recalculated, and a new schedule is generated for the next season.' },
+            { day: 'Friday', label: 'Playoffs', desc: 'All playoff rounds are played on Friday \u2014 two rounds of playoff games, the league championships, and the Floosbowl. 6 teams per league qualify, with the top 2 seeds earning a first-round bye.' },
+            { day: 'Saturday', label: 'Retirements & Free Agency', desc: 'Players with expiring contracts and aging veterans retire. Hall of Fame inductions are made for eligible retirees. Then teams sign available free agents to fill roster gaps \u2014 draft order goes from worst record to best, with the champion picking last.' },
+            { day: 'Sunday', label: 'Offseason & New Season', desc: 'Coaches train and develop their players \u2014 players may improve, regress, or stay the same based on coaching ability. Performance ratings reset, team ratings are recalculated, and a new schedule is generated for the next season.' },
           ].map((item, i) => (
             <div key={i} style={{
               display: 'flex',

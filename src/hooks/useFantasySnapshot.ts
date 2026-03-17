@@ -41,6 +41,8 @@ export interface CardBreakdownEntry {
   playerStatLine: string
   equation: string
   isChanceEffect?: boolean
+  streakActive?: boolean | null
+  streakCount?: number
 }
 
 export interface EquationSummary {
@@ -265,6 +267,9 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
               floobitsEarned: cb.floobitsEarned ?? 0,
               playerStatLine: cb.playerStatLine ?? '',
               equation: cb.equation ?? '',
+              isChanceEffect: cb.isChanceEffect ?? false,
+              streakActive: cb.streakActive ?? null,
+              streakCount: cb.streakCount ?? 0,
             })),
             equationSummary: e.equationSummary ?? existing?.equationSummary ?? undefined,
             favoriteTeamData: e.favoriteTeamData ?? existing?.favoriteTeamData ?? null,

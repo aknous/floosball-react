@@ -62,6 +62,8 @@ function TypeIcon({ type }: { type: string }) {
 
 export const NotificationBell: React.FC = () => {
   const { user, getToken } = useAuth()
+  const getTokenRef = useRef(getToken)
+  getTokenRef.current = getToken
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -73,7 +75,7 @@ export const NotificationBell: React.FC = () => {
     if (!user) return
     const fetchCount = async () => {
       try {
-        const tok = await getToken()
+        const tok = await getTokenRef.current()
         if (!tok) return
         const res = await fetch(`${API_BASE}/notifications/count`, {
           headers: { Authorization: `Bearer ${tok}` },
@@ -87,13 +89,13 @@ export const NotificationBell: React.FC = () => {
     fetchCount()
     const interval = setInterval(fetchCount, 30000)
     return () => clearInterval(interval)
-  }, [user, getToken])
+  }, [user])
 
   // Fetch full notifications when dropdown opens
   const fetchNotifications = useCallback(async () => {
     setLoading(true)
     try {
-      const tok = await getToken()
+      const tok = await getTokenRef.current()
       if (!tok) return
       const res = await fetch(`${API_BASE}/notifications`, {
         headers: { Authorization: `Bearer ${tok}` },
@@ -104,7 +106,7 @@ export const NotificationBell: React.FC = () => {
       }
     } catch { /* silent */ }
     finally { setLoading(false) }
-  }, [getToken])
+  }, [])
 
   useEffect(() => {
     if (open) fetchNotifications()
@@ -124,7 +126,7 @@ export const NotificationBell: React.FC = () => {
 
   const markAllRead = async () => {
     try {
-      const tok = await getToken()
+      const tok = await getTokenRef.current()
       if (!tok) return
       await fetch(`${API_BASE}/notifications/read`, {
         method: 'POST',

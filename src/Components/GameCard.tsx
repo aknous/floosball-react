@@ -29,13 +29,18 @@ interface GameCardProps {
   isFeatured?: boolean
   momentum?: number
   momentumTeam?: string | null
+  startTime?: number
   isFav?: boolean
   favTeamColor?: string
   favTeamId?: number | null
   onClick: (gameId: number) => void
+  userPick?: number | null
+  pickLocked?: boolean
+  pickCorrect?: boolean | null
+  onPick?: (teamId: number) => void
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, isFav, favTeamColor, favTeamId, onClick }) => {
+export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, userPick, pickLocked, pickCorrect, onPick }) => {
   const isComplete = status === 'Final'
   const isLive = status === 'Active' && (quarter ?? 0) > 0
   const isFinal = isComplete
@@ -116,7 +121,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
   }
 
   return (
-    <button onClick={() => onClick(gameId)} style={cardStyle}>
+    <div role="button" tabIndex={0} onClick={() => onClick(gameId)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(gameId) }} style={cardStyle}>
       
       {/* Home Team */}
       <TeamHoverCard teamId={homeTeam.id}>
@@ -246,10 +251,109 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             )}
           </div>
         ) : (
-          <span>Upcoming</span>
+          <span>
+            {startTime ? (
+              <>
+                <span style={{ color: '#94a3b8', fontSize: '12px' }}>
+                  {new Date(startTime * 1000).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
+                </span>
+              </>
+            ) : (
+              'Upcoming'
+            )}
+          </span>
         )}
       </div>
-      
-    </button>
+
+      {/* Pick-Em Footer */}
+      {onPick && (
+        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #475569' }}>
+          {/* Pre-game: show pick buttons */}
+          {!isLive && !isFinal && !pickLocked && (
+            <>
+              <div style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.05em' }}>
+                PICK A WINNER
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onPick(Number(homeTeam.id)) }}
+                  style={{
+                    flex: 1,
+                    padding: '6px 8px',
+                    borderRadius: '6px',
+                    border: userPick === Number(homeTeam.id) ? `2px solid ${homeTeam.color}` : '1px solid #475569',
+                    backgroundColor: userPick === Number(homeTeam.id) ? `${homeTeam.color}22` : 'transparent',
+                    color: userPick === Number(homeTeam.id) ? '#e2e8f0' : '#94a3b8',
+                    fontSize: '13px',
+                    fontWeight: userPick === Number(homeTeam.id) ? '700' : '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {homeTeam.name}
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onPick(Number(awayTeam.id)) }}
+                  style={{
+                    flex: 1,
+                    padding: '6px 8px',
+                    borderRadius: '6px',
+                    border: userPick === Number(awayTeam.id) ? `2px solid ${awayTeam.color}` : '1px solid #475569',
+                    backgroundColor: userPick === Number(awayTeam.id) ? `${awayTeam.color}22` : 'transparent',
+                    color: userPick === Number(awayTeam.id) ? '#e2e8f0' : '#94a3b8',
+                    fontSize: '13px',
+                    fontWeight: userPick === Number(awayTeam.id) ? '700' : '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {awayTeam.name}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Locked (games started) but not resolved yet */}
+          {userPick != null && (pickLocked || isLive) && pickCorrect == null && !isFinal && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px', color: '#94a3b8' }}>
+              <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '12px', height: '12px' }}>
+                <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
+              </svg>
+              <span>
+                Picked: <span style={{ color: '#cbd5e1', fontWeight: '600' }}>
+                  {userPick === Number(homeTeam.id) ? homeTeam.name : awayTeam.name}
+                </span>
+              </span>
+            </div>
+          )}
+
+          {/* Resolved: show correct/incorrect */}
+          {userPick != null && pickCorrect != null && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px' }}>
+              {pickCorrect ? (
+                <>
+                  <svg viewBox="0 0 24 24" fill="#22c55e" style={{ width: '14px', height: '14px' }}>
+                    <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+                  </svg>
+                  <span style={{ color: '#22c55e', fontWeight: '600' }}>
+                    Correct — {userPick === Number(homeTeam.id) ? homeTeam.name : awayTeam.name}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" fill="#ef4444" style={{ width: '14px', height: '14px' }}>
+                    <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z" clipRule="evenodd" />
+                  </svg>
+                  <span style={{ color: '#ef4444', fontWeight: '600' }}>
+                    Incorrect — picked {userPick === Number(homeTeam.id) ? homeTeam.name : awayTeam.name}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+    </div>
   )
 }

@@ -6,12 +6,14 @@ import { OffseasonPanel } from '@/Components/OffseasonPanel'
 import { Standings } from '@/Components/Standings'
 import { PlayerLeaders } from '@/Components/PlayerLeaders'
 import { MvpRankings } from '@/Components/MvpRankings'
+import { PickEmPanel } from '@/Components/PickEm/PickEmPanel'
+import { PickEmProvider } from '@/contexts/PickEmContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useGames } from '@/contexts/GamesContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 type StandingsView = 'standings' | 'powerRankings'
-type RightPanelView = 'highlights' | 'leaders' | 'mvp'
+type RightPanelView = 'highlights' | 'leaders' | 'mvp' | 'pickem'
 
 const TabToggle: React.FC<{ tabs: readonly (readonly [string, string])[]; active: string; onChange: (v: any) => void }> = ({ tabs, active, onChange }) => (
   <div style={{ display: 'flex', gap: '0px', marginBottom: '12px' }}>
@@ -39,7 +41,31 @@ const TabToggle: React.FC<{ tabs: readonly (readonly [string, string])[]; active
 )
 
 const STANDINGS_TABS = [['standings', 'Standings'], ['powerRankings', 'Power Rankings']] as const
-const RIGHT_PANEL_TABS = [['highlights', 'Highlights'], ['leaders', 'Leaders'], ['mvp', 'MVP Race']] as const
+const RIGHT_PANEL_TABS = [['highlights', 'Highlights'], ['leaders', 'Leaders'], ['mvp', 'MVP Race'], ['pickem', 'Prognosticate']] as const
+
+const useNextGameCountdown = (nextGameStartTime: string | null) => {
+  const [countdown, setCountdown] = useState('')
+  useEffect(() => {
+    if (!nextGameStartTime) { setCountdown(''); return }
+    const target = new Date(nextGameStartTime).getTime()
+    const tick = () => {
+      const remaining = Math.max(0, target - Date.now())
+      if (remaining <= 0) { setCountdown(''); return }
+      const hrs = Math.floor(remaining / 3600000)
+      const mins = Math.floor((remaining % 3600000) / 60000)
+      const secs = Math.floor((remaining % 60000) / 1000)
+      if (hrs > 0) {
+        setCountdown(`${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`)
+      } else {
+        setCountdown(`${mins}:${secs.toString().padStart(2, '0')}`)
+      }
+    }
+    tick()
+    const interval = setInterval(tick, 1000)
+    return () => clearInterval(interval)
+  }, [nextGameStartTime])
+  return countdown
+}
 
 const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => {
   const { seasonState } = useFloosball()
@@ -50,6 +76,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   const isMobile = useIsMobile()
   const isTablet = useIsMobile(1200)
   const isOffseason = seasonState?.currentWeekText === 'Offseason'
+  const nextGameCountdown = useNextGameCountdown(seasonState?.nextGameStartTime)
 
   useEffect(() => { refetch() }, [])
 
@@ -63,9 +90,16 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
 
           {/* Games / Offseason — primary content on mobile */}
           <section style={{ marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>
-              {isOffseason ? 'Offseason' : 'Games'}
-            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#cbd5e1' }}>
+                {isOffseason ? 'Offseason' : 'Games'}
+              </h2>
+              {nextGameCountdown && !isOffseason && (
+                <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                  Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
+                </span>
+              )}
+            </div>
             {isOffseason ? <OffseasonPanel /> : <GameGridNew handleClick={handleGameClick} />}
           </section>
 
@@ -91,6 +125,14 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             <MvpRankings />
           </section>
 
+          {/* Pick-Em */}
+          <section style={{ marginBottom: '32px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Prognostications</h2>
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
+              <PickEmPanel />
+            </div>
+          </section>
+
           {/* Leaders */}
           <section style={{ marginBottom: '16px' }}>
             <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Leaders</h2>
@@ -112,9 +154,16 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
 
           {/* Games / Offseason — full width */}
           <section style={{ marginBottom: '24px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>
-              {isOffseason ? 'Offseason' : 'Games'}
-            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#cbd5e1' }}>
+                {isOffseason ? 'Offseason' : 'Games'}
+              </h2>
+              {nextGameCountdown && !isOffseason && (
+                <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                  Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
+                </span>
+              )}
+            </div>
             {isOffseason ? <OffseasonPanel /> : <GameGridNew handleClick={handleGameClick} />}
           </section>
 
@@ -138,6 +187,12 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
               </div>
               <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Leaders</h3>
               <PlayerLeaders />
+              <div style={{ marginTop: '24px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Prognostications</h3>
+                <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
+                  <PickEmPanel />
+                </div>
+              </div>
             </section>
           </div>
         </div>
@@ -167,7 +222,14 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             <OffseasonPanel />
           ) : (
             <>
-              <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Games</h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: '600' }}>Games</h2>
+                {nextGameCountdown && (
+                  <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                    Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
+                  </span>
+                )}
+              </div>
               <GameGridNew handleClick={handleGameClick} />
             </>
           )}
@@ -187,6 +249,11 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
           {rightPanelView === 'mvp' && (
             <MvpRankings />
           )}
+          {rightPanelView === 'pickem' && (
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', overflowY: 'auto', flex: 1 }}>
+              <PickEmPanel />
+            </div>
+          )}
         </div>
 
       </div>
@@ -196,4 +263,10 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   )
 }
 
-export default DashboardNew
+const DashboardWithPickEm: React.FC<{ headerHeight?: number }> = (props) => (
+  <PickEmProvider>
+    <DashboardNew {...props} />
+  </PickEmProvider>
+)
+
+export default DashboardWithPickEm

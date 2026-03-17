@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
+import PlayerAvatar from '@/Components/PlayerAvatar'
 import { Stars } from '@/Components/Stars'
 import CoachAvatar from '@/Components/CoachAvatar'
+import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
+import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -13,6 +16,7 @@ interface RosterPlayer {
   position: string
   rating: number
   ratingStars: number
+  termRemaining?: number
 }
 
 interface ScheduleEntry {
@@ -72,6 +76,7 @@ const ROSTER_SLOTS: [string, string][] = [
 
 export default function TeamPage() {
   const { id } = useParams<{ id: string }>()
+  const { user } = useAuth()
   const [team, setTeam] = useState<TeamData | null>(null)
   const [loading, setLoading] = useState(true)
   const isMobile = useIsMobile()
@@ -93,19 +98,6 @@ export default function TeamPage() {
     return <div style={{ padding: '48px', color: '#94a3b8', textAlign: 'center', backgroundColor: '#0f172a', minHeight: '100vh' }}>Team not found</div>
   }
 
-  const ratingBar = (value: number) => {
-    const color = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
-    const pct = value
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ flex: 1, height: '5px', backgroundColor: '#334155', borderRadius: '3px', overflow: 'hidden' }}>
-          <div style={{ width: `${pct}%`, height: '100%', backgroundColor: color, borderRadius: '3px' }} />
-        </div>
-        <span style={{ fontSize: '12px', color: '#cbd5e1', minWidth: '26px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
-      </div>
-    )
-  }
-
   const sectionHeader = (label: string) => (
     <div style={{ padding: '10px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155' }}>
       <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{label}</span>
@@ -114,13 +106,24 @@ export default function TeamPage() {
 
   const calcStars = (rating: number) => Math.min(5, Math.max(1, Math.floor((rating - 60) / 8) + 1))
 
+  const ratingBar = (value: number) => {
+    const color = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ flex: 1, height: '5px', backgroundColor: '#334155', borderRadius: '3px', overflow: 'hidden' }}>
+          <div style={{ width: `${value}%`, height: '100%', backgroundColor: color, borderRadius: '3px' }} />
+        </div>
+        <span style={{ fontSize: '12px', color: '#cbd5e1', minWidth: '26px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      </div>
+    )
+  }
+
   const coachAttrBar = (value: number) => {
     const color = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
-    const pct = value
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <div style={{ flex: 1, height: '4px', backgroundColor: '#334155', borderRadius: '3px', overflow: 'hidden' }}>
-          <div style={{ width: `${pct}%`, height: '100%', backgroundColor: color, borderRadius: '3px' }} />
+          <div style={{ width: `${value}%`, height: '100%', backgroundColor: color, borderRadius: '3px' }} />
         </div>
         <span style={{ fontSize: '12px', color: '#cbd5e1', minWidth: '26px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
       </div>
@@ -149,6 +152,25 @@ export default function TeamPage() {
               <span style={{ fontSize: '15px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{team.wins}–{team.losses}</span>
               <span style={{ fontSize: '13px', color: '#64748b' }}>·</span>
               <span style={{ fontSize: '13px', color: '#94a3b8' }}>ELO {Math.round(team.elo)}</span>
+              {(team.floosbowlChampionships?.length ?? 0) > 0 && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', color: '#f59e0b' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                    <path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                  </svg>
+                  {team.floosbowlChampionships.length}
+                </span>
+              )}
+              {(team.leagueChampionships?.length ?? 0) > 0 && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', color: '#ca8a04' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="8" r="6" /><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+                  </svg>
+                  {team.leagueChampionships.length}
+                </span>
+              )}
               {team.floosbowlChampion && (
                 <span style={{ backgroundColor: '#f59e0b', color: '#000', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>CHAMPION</span>
               )}
@@ -168,40 +190,8 @@ export default function TeamPage() {
 
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
 
-        {/* Top row: Trophy Chest · Ratings · Roster */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-
-          {/* Trophy Chest */}
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-            {sectionHeader('Trophy Chest')}
-            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {(team.floosbowlChampionships?.length ?? 0) > 0 && (
-                <div>
-                  <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' as const, marginBottom: '4px' }}>
-                    {team.floosbowlChampionships.map((_: any, i: number) => (
-                      <span key={i} style={{ fontSize: '18px' }}>🏆</span>
-                    ))}
-                  </div>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#f59e0b' }}>Floos Bowl</div>
-                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>{team.floosbowlChampionships.length}× champion</div>
-                </div>
-              )}
-              {(team.leagueChampionships?.length ?? 0) > 0 && (
-                <div>
-                  <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' as const, marginBottom: '4px' }}>
-                    {team.leagueChampionships.map((_: any, i: number) => (
-                      <span key={i} style={{ fontSize: '18px' }}>🥇</span>
-                    ))}
-                  </div>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1' }}>League Champ</div>
-                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>{team.leagueChampionships.length}× champion</div>
-                </div>
-              )}
-              {!(team.floosbowlChampionships?.length) && !(team.leagueChampionships?.length) && (
-                <div style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>No championships yet</div>
-              )}
-            </div>
-          </div>
+        {/* Ratings · Roster side by side */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
 
           {/* Ratings */}
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
@@ -224,44 +214,45 @@ export default function TeamPage() {
           {/* Roster */}
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
             {sectionHeader('Roster')}
-            <div>
-              {ROSTER_SLOTS.map(([slot, posLabel], idx) => {
+            <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {ROSTER_SLOTS.map(([slot, posLabel]) => {
                 const player = team.roster?.[slot]
                 return (
                   <div key={slot} style={{
-                    display: 'grid',
-                    gridTemplateColumns: '32px 1fr 32px',
+                    display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 14px',
-                    borderBottom: idx < ROSTER_SLOTS.length - 1 ? '1px solid #1a2640' : 'none',
+                    gap: '8px',
+                    padding: '6px 8px',
+                    borderRadius: '4px',
+                    backgroundColor: '#0f172a',
                   }}>
-                    <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>{posLabel}</span>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', minWidth: '28px' }}>{posLabel}</span>
                     {player ? (
                       <>
-                        <div style={{ minWidth: 0 }}>
-                          <PlayerHoverCard playerId={player.id} playerName={player.name}>
-                            <Link
-                              to={`/players/${player.id}`}
-                              style={{ fontSize: '13px', color: '#e2e8f0', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
-                            >
-                              {player.name}
-                            </Link>
-                          </PlayerHoverCard>
-                          <div style={{ marginTop: '1px' }}>
-                            <Stars stars={player.ratingStars} size={11} />
-                          </div>
-                        </div>
-                        <span style={{
-                          fontSize: '12px', fontWeight: '700', color: '#e2e8f0',
-                          backgroundColor: '#0f172a', border: '1px solid #334155',
-                          borderRadius: '4px', padding: '1px 5px',
-                          textAlign: 'center', fontVariantNumeric: 'tabular-nums',
-                          justifySelf: 'end'
-                        }}>{player.rating}</span>
+                        <PlayerAvatar name={player.name} size={32} bgColor={team.color} />
+                        <PlayerHoverCard playerId={player.id} playerName={player.name}>
+                          <Link
+                            to={`/players/${player.id}`}
+                            style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '500', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                          >
+                            {player.name}
+                          </Link>
+                        </PlayerHoverCard>
+                        <Stars stars={player.ratingStars} size={12} />
+                        <span style={{ flex: 1 }} />
+                        {player.termRemaining != null && (
+                          <span style={{
+                            fontSize: '11px',
+                            color: player.termRemaining === 1 ? '#f59e0b' : '#94a3b8',
+                            fontVariantNumeric: 'tabular-nums',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {player.termRemaining} season{player.termRemaining !== 1 ? 's' : ''} remaining
+                          </span>
+                        )}
                       </>
                     ) : (
-                      <span style={{ fontSize: '13px', color: '#475569', gridColumn: '2 / 4' }}>—</span>
+                      <span style={{ fontSize: '13px', color: '#475569' }}>—</span>
                     )}
                   </div>
                 )
@@ -277,7 +268,7 @@ export default function TeamPage() {
             {sectionHeader('Head Coach')}
             <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '260px 1fr', gap: isMobile ? '16px' : '24px', alignItems: 'start' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <CoachAvatar name={team.coach.name} size={isMobile ? 80 : 120} style={{ border: `3px solid ${team.color}` }} />
+                <CoachAvatar name={team.coach.name} size={isMobile ? 80 : 120} bgColor={team.color} style={{ border: `3px solid ${team.color}` }} />
                 <div>
                   <div style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>{team.coach.name}</div>
                   <Stars stars={calcStars(team.coach.overallRating)} size={13} />
@@ -303,6 +294,11 @@ export default function TeamPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* The Front Office — GM voting panel (favorite team only) */}
+        {user?.favoriteTeamId === team.id && (
+          <FrontOfficePanel teamId={team.id} teamColor={team.color} />
         )}
 
         {/* Schedule + Season History side by side */}

@@ -284,6 +284,8 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   isHalftime: boolean
   isOvertime: boolean
   isUpsetAlert?: boolean
+  homeTimeouts: number
+  awayTimeouts: number
   gameStats?: GameStats
 }
 
@@ -437,6 +439,11 @@ export type SeasonWebSocketEvent =
   | OffseasonCutEvent
   | OffseasonTeamCompleteEvent
   | OffseasonCompleteEvent
+  | GmVoteResolvedEvent
+  | GmFaWindowOpenEvent
+  | GmFaWindowCloseEvent
+  | GmFaDirectivesEvent
+  | PickEmResultsEvent
 
 // Leaderboard Events
 
@@ -457,6 +464,55 @@ export interface StandingsUpdateEvent extends BaseWebSocketEvent {
     losses: number
     ties: number
   }>
+}
+
+// GM Events
+
+export interface GmVoteResolvedEvent extends BaseWebSocketEvent {
+  event: 'gm_vote_resolved'
+  teamId: number
+  teamName: string
+  voteType: string
+  outcome: string
+  targetPlayerName: string | null
+  totalVotes: number
+  threshold: number
+  probability: number
+  details: string | null
+}
+
+export interface GmFaWindowOpenEvent extends BaseWebSocketEvent {
+  event: 'gm_fa_window_open'
+  season: number
+  faPool: Array<{ id: number; name: string; position: string; rating: number; tier: string }>
+  durationSeconds: number
+}
+
+export interface GmFaWindowCloseEvent extends BaseWebSocketEvent {
+  event: 'gm_fa_window_close'
+  season: number
+}
+
+export interface GmFaDirectivePlayer {
+  id: number
+  name: string
+  position: string
+  rating: number
+}
+
+export interface GmFaDirectivesEvent extends BaseWebSocketEvent {
+  event: 'gm_fa_directives'
+  directives: Record<number, GmFaDirectivePlayer[]>
+}
+
+// Pick-Em Events
+
+export interface PickEmResultsEvent extends BaseWebSocketEvent {
+  event: 'pickem_results'
+  season: number
+  week: number
+  games: Array<{ gameIndex: number; winnerId: number }>
+  leaderboard: Array<{ userId: number; username: string; correct: number; total: number }>
 }
 
 // Union type for all WebSocket events

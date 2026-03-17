@@ -14,6 +14,7 @@ export interface UseWebSocketReturn<T> {
   error: Event | null
   send: (data: any) => void
   reconnect: () => void
+  drainEvents: () => T[]
 }
 
 export const useWebSocket = <T = any>(
@@ -29,15 +30,17 @@ export const useWebSocket = <T = any>(
   const [data, setData] = useState<T | null>(null)
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState<Event | null>(null)
-  
+
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectCountRef = useRef(0)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  // Queue to guarantee no events are lost between renders
+  const queueRef = useRef<T[]>([])
 
   const connect = useCallback(() => {
     try {
       const ws = new WebSocket(`${WS_URL}${channel}`)
-      
+
       ws.onopen = () => {
         console.log(`WebSocket connected: ${channel}`)
         setConnected(true)
@@ -52,6 +55,7 @@ export const useWebSocket = <T = any>(
           if (message.type === 'ping') {
             return
           }
+          queueRef.current.push(message as T)
           setData(message as T)
         } catch (err) {
           console.error('Failed to parse WebSocket message:', err)
@@ -111,5 +115,11 @@ export const useWebSocket = <T = any>(
     }
   }, [connect])
 
-  return { data, connected, error, send, reconnect: manualReconnect }
+  // Drain all queued events since the last drain, guaranteeing no drops
+  const drainEvents = useCallback((): T[] => {
+    const events = queueRef.current.splice(0)
+    return events
+  }, [])
+
+  return { data, connected, error, send, reconnect: manualReconnect, drainEvents }
 }

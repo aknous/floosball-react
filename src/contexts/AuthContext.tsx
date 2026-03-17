@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react'
 import { useUser, useAuth as useClerkAuth } from '@clerk/react'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -62,6 +62,8 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { isSignedIn, isLoaded } = useUser()
   const { getToken, signOut } = useClerkAuth()
+  const getTokenRef = useRef(getToken)
+  getTokenRef.current = getToken
   const [appUser, setAppUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [betaBlocked, setBetaBlocked] = useState(false)
@@ -70,8 +72,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Wrap Clerk's getToken so consumers get null when not signed in
   const getFreshToken = useCallback(async (): Promise<string | null> => {
     if (!isSignedIn) return null
-    return await getToken()
-  }, [isSignedIn, getToken])
+    return await getTokenRef.current()
+  }, [isSignedIn])
 
   // Derive fantasyPlayerIds from roster data
   const fantasyPlayerIds = React.useMemo(() => {
@@ -82,7 +84,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Fetch fantasy roster from REST (no polling — called once + on events)
   const refetchRoster = useCallback(async () => {
     try {
-      const tok = await getToken()
+      const tok = await getTokenRef.current()
       if (!tok) return
       const res = await fetch(`${API_BASE}/fantasy/roster`, {
         headers: { Authorization: `Bearer ${tok}` },
@@ -94,11 +96,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch {
       // silent
     }
-  }, [getToken])
+  }, [])
 
   const refetchUser = useCallback(async () => {
     try {
-      const tok = await getToken()
+      const tok = await getTokenRef.current()
       if (!tok) return
       const res = await fetch(`${API_BASE}/users/me`, {
         headers: { Authorization: `Bearer ${tok}` },
@@ -112,17 +114,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch {
       // silent
     }
-  }, [getToken])
+  }, [])
 
   // When Clerk auth state changes, fetch/create local user profile + roster
+  const didFetchRef = useRef(false)
   useEffect(() => {
     if (!isLoaded) return
     if (!isSignedIn) {
+      didFetchRef.current = false
       setAppUser(null)
       setFantasyRoster(null)
       setLoading(false)
       return
     }
+    if (didFetchRef.current) return
+    didFetchRef.current = true
     refetchUser().finally(() => setLoading(false))
     refetchRoster()
   }, [isSignedIn, isLoaded, refetchUser, refetchRoster])

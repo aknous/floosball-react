@@ -70,13 +70,14 @@ const CATEGORY_COLORS: Record<string, string> = {
   floobits: TYPE_COLORS.floobits,
   conditional: '#60a5fa',
   streak: '#fb923c',
+  accumulator: '#fb923c',
 }
 
 // Behavior tags for breakdown — tells users which modifiers affect each card
 const BEHAVIOR_TAGS: Record<string, { label: string; color: string; tooltip: string; activeModifier: string; activeText: string }> = {
   chance:      { label: 'CHC', color: '#c084fc', tooltip: 'Chance — Random trigger roll', activeModifier: 'fortunate', activeText: 'Fortunate active — trigger rates boosted' },
   conditional: { label: 'CND', color: '#60a5fa', tooltip: 'Conditional — Triggers on game condition', activeModifier: 'longshot', activeText: 'Longshot active — thresholds halved' },
-  streak:      { label: 'STK', color: '#fb923c', tooltip: 'Streak — Grows each week, resets when broken', activeModifier: 'ironclad', activeText: 'Ironclad active — streak protected' },
+  streak:      { label: 'STRK', color: '#fb923c', tooltip: 'Streak — Grows each week, resets when broken', activeModifier: 'ironclad', activeText: 'Ironclad active — streak protected' },
 }
 
 function getBreakdownBehavior(b: CardBreakdownEntry): keyof typeof BEHAVIOR_TAGS | null {
@@ -306,15 +307,16 @@ const PointsBreakdownPanel: React.FC<{
             }
 
             // Sub-lines: conditional, edition bonuses (with negation tracking)
-            const subLines: { label: string; chip: { str: string; color: string }; negated?: boolean }[] = []
+            const subLines: { label: React.ReactNode; chip: { str: string; color: string }; negated?: boolean }[] = []
             // Conditional bonus
             if ((b.conditionalBonus ?? 0) > 0) {
               subLines.push({ label: b.conditionalLabel || 'Conditional bonus', chip: formatValue(b.conditionalBonus, 'fp') })
             }
             // Edition secondary bonuses
-            if ((b.secondaryFP ?? 0) > 0) subLines.push({ label: `${edTag} bonus`, chip: formatValue(b.secondaryFP, 'fp') })
-            if ((b.secondaryMult ?? 0) > 1) subLines.push({ label: `${edTag} bonus`, chip: formatValue(b.secondaryMult, 'mult'), negated: isGrounded })
-            if ((b.secondaryFloobits ?? 0) > 0) subLines.push({ label: `${edTag} bonus`, chip: formatValue(b.secondaryFloobits, 'floobits') })
+            const edLabel = <><span style={{ color: edColor, fontWeight: '700' }}>{edTag}</span> bonus</>
+            if ((b.secondaryFP ?? 0) > 0) subLines.push({ label: edLabel, chip: formatValue(b.secondaryFP, 'fp') })
+            if ((b.secondaryMult ?? 0) > 1) subLines.push({ label: edLabel, chip: formatValue(b.secondaryMult, 'mult'), negated: isGrounded })
+            if ((b.secondaryFloobits ?? 0) > 0) subLines.push({ label: edLabel, chip: formatValue(b.secondaryFloobits, 'floobits') })
 
             // Zero state: show dimmed output type on header when no equation/results
             const hasOutput = eqSegments.length > 0 || eqResult
@@ -367,6 +369,20 @@ const PointsBreakdownPanel: React.FC<{
                     <span style={{ color: zeroChip.color, fontWeight: '600', fontSize: '12px', marginLeft: 'auto', textDecoration: zeroChip.negated ? 'line-through' : 'none', opacity: zeroChip.negated ? 0.45 : 1 }}>{zeroChip.str}</span>
                   )}
                 </div>
+                {/* Streak status line */}
+                {b.streakActive != null && (
+                  <div style={{ paddingLeft: '16px', fontSize: '11px', padding: '2px 0 0 16px' }}>
+                    {b.streakActive ? (
+                      <span style={{ color: '#fb923c', fontWeight: '600' }}>
+                        Streak Active (streak = {Math.max(0, (b.streakCount ?? 0) - 1)})
+                      </span>
+                    ) : (
+                      <span style={{ color: '#64748b' }}>
+                        Streak Inactive — awaiting condition (streak = {Math.max(0, (b.streakCount ?? 0) - 1)})
+                      </span>
+                    )}
+                  </div>
+                )}
                 {/* Equation line with result right-aligned */}
                 {(eqSegments.length > 0 || eqResult) && (
                   <div style={{ ...rowStyle, paddingLeft: '16px', opacity: eqNegated ? 0.45 : 1 }}>
@@ -444,32 +460,15 @@ const PointsBreakdownPanel: React.FC<{
               ))}
             </div>
 
-            {/* FP × Mult summary display */}
+            {/* Total */}
             <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px',
-              marginTop: '10px', padding: '8px 0',
-              borderTop: '1px solid rgba(99,102,241,0.15)',
+              textAlign: 'right', marginTop: '6px',
+              paddingTop: '6px', borderTop: '1px solid rgba(99,102,241,0.15)',
             }}>
               <span style={{
-                fontSize: '22px', fontWeight: '800', color: TYPE_COLORS.fp,
+                fontSize: '20px', fontWeight: '800', color: '#22c55e',
                 fontFamily: 'monospace',
-              }}>{baseFP.toFixed(1)}</span>
-              {hasMult && (
-                <>
-                  <span style={{ fontSize: '16px', color: '#cbd5e1', fontWeight: '700' }}>{'\u00d7'}</span>
-                  <span style={{
-                    fontSize: '22px', fontWeight: '800', color: TYPE_COLORS.mult,
-                    fontFamily: 'monospace',
-                    textDecoration: isGrounded ? 'line-through' : 'none',
-                    opacity: isGrounded ? 0.45 : 1,
-                  }}>{multProduct.toFixed(2)}</span>
-                </>
-              )}
-              <span style={{ fontSize: '16px', color: '#cbd5e1', fontWeight: '700' }}>=</span>
-              <span style={{
-                fontSize: '22px', fontWeight: '800', color: '#22c55e',
-                fontFamily: 'monospace',
-              }}>{(weekPlayerFP + weekCardBonus).toFixed(1)}</span>
+              }}>= {(weekPlayerFP + weekCardBonus).toFixed(1)}</span>
             </div>
           </div>
           )}

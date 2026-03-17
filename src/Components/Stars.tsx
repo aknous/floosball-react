@@ -8,9 +8,10 @@ export const STAR_COLORS: Record<number, string> = {
   1: '#ef4444',  // red   — poor
 }
 
-/** Convert a raw numeric rating (0–100) to a 1–5 star count. */
+/** Convert a raw numeric rating (60–100) to a 1–5 star count.
+ *  Matches backend bands: 1★60-67, 2★68-75, 3★76-83, 4★84-91, 5★92-100 */
 export const calcStars = (rating: number): number =>
-  Math.max(1, Math.min(5, Math.round(((rating - 50) / 50) * 4) + 1))
+  Math.min(5, Math.max(1, Math.floor((rating - 60) / 8) + 1))
 
 interface StarsProps {
   /** Pre-computed 1–5 star count (use calcStars() to convert from a raw rating). */

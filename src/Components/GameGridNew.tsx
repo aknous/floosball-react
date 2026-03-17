@@ -2,6 +2,7 @@ import React from 'react'
 import { useGames } from '@/contexts/GamesContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { GameCard } from './GameCard'
+import { usePickEm } from '@/contexts/PickEmContext'
 
 interface GameGridNewProps {
   handleClick?: (gameId: number) => void
@@ -11,6 +12,7 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {}
   const { games, loading, error } = useGames()
   const { user } = useAuth()
   const favTeamId = user?.favoriteTeamId ?? null
+  const { games: pickEmGames, locked: pickEmLocked, submitPick } = usePickEm()
 
   // Convert Map to array, favorite team's game first
   const gamesArray = Array.from(games.values()).sort((a, b) => {
@@ -74,6 +76,11 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {}
           const favTeamColor = isFavGame
             ? (Number(game.homeTeam.id) === favTeamId ? game.homeTeam.color : game.awayTeam.color)
             : undefined
+
+          // Match this game to pick-em data by home+away team IDs
+          const pickEmGame = pickEmGames.find(
+            pg => pg.homeTeam.id === Number(game.homeTeam.id) && pg.awayTeam.id === Number(game.awayTeam.id)
+          )
           return (
           <li key={game.id}>
             <GameCard
@@ -93,10 +100,15 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {}
                 isFeatured={game.isFeatured}
                 momentum={game.momentum}
                 momentumTeam={game.momentumTeam}
+                startTime={game.startTime}
                 isFav={isFavGame}
                 favTeamColor={favTeamColor}
                 favTeamId={favTeamId}
                 onClick={handleClick}
+                userPick={pickEmGame?.userPick ?? null}
+                pickLocked={pickEmLocked}
+                pickCorrect={pickEmGame?.result?.correct ?? null}
+                onPick={pickEmGame ? (teamId: number) => submitPick(pickEmGame.gameIndex, teamId) : undefined}
               />
             </li>
           )

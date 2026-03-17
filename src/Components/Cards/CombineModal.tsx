@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import ReactDOM from 'react-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import TradingCard, { CardData, EDITION_STYLES } from './TradingCard'
+import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -53,11 +54,11 @@ interface CardSlotProps {
 function CardSlot({ label, subtitle, card, onSelect, onClear, accentColor, destructive }: CardSlotProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-      <span style={{ fontSize: '10px', fontWeight: '700', color: accentColor, textTransform: 'uppercase', letterSpacing: '1px' }}>
+      <span style={{ fontSize: '11px', fontWeight: '700', color: accentColor, textTransform: 'uppercase', letterSpacing: '1px' }}>
         {label}
       </span>
       {subtitle && (
-        <span style={{ fontSize: '9px', color: destructive ? '#f87171' : '#64748b', fontWeight: '600' }}>
+        <span style={{ fontSize: '10px', color: destructive ? '#f87171' : '#94a3b8', fontWeight: '600' }}>
           {subtitle}
         </span>
       )}
@@ -100,7 +101,7 @@ function CardSlot({ label, subtitle, card, onSelect, onClear, accentColor, destr
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M12 5v14M5 12h14" stroke={accentColor} strokeWidth="2" strokeLinecap="round" />
           </svg>
-          <span style={{ fontSize: '11px', color: '#64748b' }}>Select Card</span>
+          <span style={{ fontSize: '12px', color: '#94a3b8' }}>Select Card</span>
         </button>
       )}
     </div>
@@ -143,7 +144,7 @@ function CardPicker({ cards, onSelect, onCancel, title, filter }: CardPickerProp
         justifyContent: 'center', alignContent: 'flex-start',
       }}>
         {sorted.length === 0 ? (
-          <span style={{ color: '#64748b', fontSize: '12px', marginTop: '40px' }}>
+          <span style={{ color: '#94a3b8', fontSize: '13px', marginTop: '40px' }}>
             No eligible cards available
           </span>
         ) : sorted.map(card => (
@@ -181,9 +182,9 @@ function BlenderBar({ totalValue }: { totalValue: number }) {
   return (
     <div style={{ width: '100%', marginTop: '12px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-        <span style={{ fontSize: '11px', color: '#94a3b8' }}>Total Value: {totalValue}</span>
+        <span style={{ fontSize: '12px', color: '#94a3b8' }}>Total Value: {totalValue}</span>
         <span style={{
-          fontSize: '11px', fontWeight: '700',
+          fontSize: '12px', fontWeight: '700',
           color: editionStyle?.labelColor || '#94a3b8',
         }}>
           {editionStyle?.label || 'Base'} Edition
@@ -203,7 +204,7 @@ function BlenderBar({ totalValue }: { totalValue: number }) {
         {markers.map(m => (
           <span key={m.value} style={{
             position: 'absolute', left: `${(m.value / maxDisplay) * 100}%`,
-            transform: 'translateX(-50%)', fontSize: '8px',
+            transform: 'translateX(-50%)', fontSize: '10px',
             color: totalValue >= m.value ? m.color : '#475569',
             fontWeight: totalValue >= m.value ? '700' : '400',
             transition: 'color 0.3s',
@@ -256,6 +257,7 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
 
   const [actionLoading, setActionLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
+  const [showHelp, setShowHelp] = useState(false)
 
   // Fetch user's unequipped cards
   const fetchCards = useCallback(async () => {
@@ -392,19 +394,26 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
     setProError('')
     const tok = await getToken()
     if (!tok) { setActionLoading(false); return }
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 10000)
     try {
       const res = await fetch(`${API_BASE}/cards/promote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
         body: JSON.stringify({ subjectCardId: proSubject.id, offeringCardId: proOffering.id }),
+        signal: ctrl.signal,
       })
+      clearTimeout(timer)
       const json = await res.json()
       if (!res.ok) { setProError(json.detail || 'Promotion failed'); setActionLoading(false); return }
       setSuccessMessage(`${proSubject.playerName} promoted to ${proOffering.edition}!`)
       setProSubject(null); setProOffering(null); setProPreview(null)
       onComplete()
       fetchCards()
-    } catch { setProError('Promotion failed') }
+    } catch {
+      clearTimeout(timer)
+      setProError('Request timed out — games may be in progress. Try again.')
+    }
     setActionLoading(false)
   }
 
@@ -414,12 +423,16 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
     setBlendError('')
     const tok = await getToken()
     if (!tok) { setActionLoading(false); return }
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 10000)
     try {
       const res = await fetch(`${API_BASE}/cards/blend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
         body: JSON.stringify({ offeringCardIds: blendOfferings.map(c => c.id) }),
+        signal: ctrl.signal,
       })
+      clearTimeout(timer)
       const json = await res.json()
       if (!res.ok) { setBlendError(json.detail || 'Blend failed'); setActionLoading(false); return }
       const resultCard = json.data
@@ -427,7 +440,10 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
       setBlendOfferings([]); setBlendPreview(null)
       onComplete()
       fetchCards()
-    } catch { setBlendError('Blend failed') }
+    } catch {
+      clearTimeout(timer)
+      setBlendError('Request timed out — games may be in progress. Try again.')
+    }
     setActionLoading(false)
   }
 
@@ -437,19 +453,26 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
     setTransError('')
     const tok = await getToken()
     if (!tok) { setActionLoading(false); return }
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 10000)
     try {
       const res = await fetch(`${API_BASE}/cards/transplant`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
         body: JSON.stringify({ targetCardId: transTarget.id, offeringCardId: transOffering.id }),
+        signal: ctrl.signal,
       })
+      clearTimeout(timer)
       const json = await res.json()
       if (!res.ok) { setTransError(json.detail || 'Transplant failed'); setActionLoading(false); return }
       setSuccessMessage(`Effect transplanted onto ${transTarget.playerName}!`)
       setTransTarget(null); setTransOffering(null); setTransPreview(null)
       onComplete()
       fetchCards()
-    } catch { setTransError('Transplant failed') }
+    } catch {
+      clearTimeout(timer)
+      setTransError('Request timed out — games may be in progress. Try again.')
+    }
     setActionLoading(false)
   }
 
@@ -520,14 +543,17 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
             <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#e2e8f0' }}>
               The Combine
             </h2>
-            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>
+            <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#94a3b8' }}>
               Upgrade your cards through sacrifice
             </p>
           </div>
-          <button onClick={onClose} style={{
-            background: 'none', border: 'none', color: '#64748b',
-            fontSize: '20px', cursor: 'pointer', padding: '4px 8px',
-          }}>x</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <HelpButton onClick={() => setShowHelp(true)} size={24} />
+            <button onClick={onClose} style={{
+              background: 'none', border: 'none', color: '#64748b',
+              fontSize: '20px', cursor: 'pointer', padding: '4px 8px',
+            }}>x</button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -578,7 +604,7 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
               {/* ─── PROMOTION TAB ─── */}
               {tab === 'promotion' && !proPicking && (
                 <div>
-                  <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 20px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '13px', color: '#cbd5e1', margin: '0 0 20px', textAlign: 'center' }}>
                     Sacrifice a higher-edition card to promote another card to that edition
                   </p>
 
@@ -607,7 +633,7 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
                   </div>
 
                   {proError && (
-                    <p style={{ textAlign: 'center', color: '#ef4444', fontSize: '12px', marginTop: '16px' }}>
+                    <p style={{ textAlign: 'center', color: '#ef4444', fontSize: '13px', marginTop: '16px' }}>
                       {proError}
                     </p>
                   )}
@@ -624,7 +650,7 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
                           {EDITION_STYLES[proPreview.resultEdition]?.label || proPreview.resultEdition}
                         </span>
                       </p>
-                      <p style={{ margin: '6px 0 0', fontSize: '11px', color: '#94a3b8' }}>
+                      <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#94a3b8' }}>
                         Effect: {proPreview.effectDisplayName} — {proPreview.tooltip}
                       </p>
                     </div>
@@ -679,7 +705,7 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
               {/* ─── BLENDER TAB ─── */}
               {tab === 'blender' && !blendPicking && (
                 <div>
-                  <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 16px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '13px', color: '#cbd5e1', margin: '0 0 16px', textAlign: 'center' }}>
                     Throw cards in, see what comes out. Edition is based on total card value.
                   </p>
 
@@ -698,10 +724,10 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
                         border: `1px solid ${EDITION_STYLES[card.edition]?.borderColor || '#334155'}`,
                         display: 'flex', alignItems: 'center', gap: '6px',
                       }}>
-                        <span style={{ fontSize: '10px', color: EDITION_STYLES[card.edition]?.labelColor || '#94a3b8' }}>
+                        <span style={{ fontSize: '11px', color: EDITION_STYLES[card.edition]?.labelColor || '#94a3b8' }}>
                           {EDITION_STYLES[card.edition]?.label}
                         </span>
-                        <span style={{ fontSize: '10px', color: '#cbd5e1' }}>{card.playerName}</span>
+                        <span style={{ fontSize: '11px', color: '#cbd5e1' }}>{card.playerName}</span>
                         <button
                           onClick={() => setBlendOfferings(prev => prev.filter(c => c.id !== card.id))}
                           style={{
@@ -712,13 +738,13 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
                       </div>
                     ))}
                     {blendOfferings.length === 0 && (
-                      <span style={{ color: '#475569', fontSize: '11px', alignSelf: 'center' }}>
+                      <span style={{ color: '#94a3b8', fontSize: '12px', alignSelf: 'center' }}>
                         No cards added yet
                       </span>
                     )}
                   </div>
 
-                  <div style={{ textAlign: 'center', marginTop: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '12px' }}>
                     <button
                       onClick={() => setBlendPicking(true)}
                       style={{
@@ -731,12 +757,26 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
                     >
                       + Add Card
                     </button>
+                    {blendOfferings.length > 0 && (
+                      <button
+                        onClick={() => { setBlendOfferings([]); setBlendPreview(null); setBlendError('') }}
+                        style={{
+                          padding: '6px 16px', borderRadius: '6px',
+                          backgroundColor: 'transparent',
+                          border: '1px solid #ef444460',
+                          color: '#ef4444', fontSize: '11px', fontWeight: '600',
+                          cursor: 'pointer', fontFamily: 'pressStart',
+                        }}
+                      >
+                        Clear All
+                      </button>
+                    )}
                   </div>
 
                   <BlenderBar totalValue={blendOfferings.reduce((sum, c) => sum + (c.sellValue || 5), 0)} />
 
                   {blendError && (
-                    <p style={{ textAlign: 'center', color: '#ef4444', fontSize: '12px', marginTop: '12px' }}>
+                    <p style={{ textAlign: 'center', color: '#ef4444', fontSize: '13px', marginTop: '12px' }}>
                       {blendError}
                     </p>
                   )}
@@ -757,7 +797,7 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
                         </span>
                         {' '}Edition (random player &amp; effect)
                       </p>
-                      <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>
+                      <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#94a3b8' }}>
                         Sacrificing {blendPreview.cardCount} cards (total value: {blendPreview.totalValue})
                       </p>
                     </div>
@@ -800,7 +840,7 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
               {/* ─── TRANSPLANT TAB ─── */}
               {tab === 'transplant' && !transPicking && (
                 <div>
-                  <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 20px', textAlign: 'center' }}>
+                  <p style={{ fontSize: '13px', color: '#cbd5e1', margin: '0 0 20px', textAlign: 'center' }}>
                     Sacrifice a card to transplant its effect onto another card (costs Floobits)
                   </p>
 
@@ -829,7 +869,7 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
                   </div>
 
                   {transError && (
-                    <p style={{ textAlign: 'center', color: '#ef4444', fontSize: '12px', marginTop: '16px' }}>
+                    <p style={{ textAlign: 'center', color: '#ef4444', fontSize: '13px', marginTop: '16px' }}>
                       {transError}
                     </p>
                   )}
@@ -849,7 +889,7 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
                           {transPreview.newEffectDisplayName}
                         </span>
                       </p>
-                      <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#94a3b8' }}>
+                      <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#94a3b8' }}>
                         {transPreview.tooltip}
                       </p>
                       <p style={{
@@ -907,6 +947,32 @@ export default function CombineModal({ visible, onClose, onComplete, initialCard
           )}
         </div>
       </div>
+
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} title="The Combine">
+        <GuideSection title="Promotion">
+          Sacrifice a higher-edition card to promote another card to that edition. The subject
+          card keeps its player and effect but gains the sacrificed card's edition tier. The
+          sacrificed card is destroyed. Not every card can reach every edition — a card's
+          maximum edition is determined by its player's star rating. Lower-rated players may
+          only reach Base or Chrome, while Prismatic and Diamond require elite-rated players.
+        </GuideSection>
+        <GuideSection title="The Blender">
+          Throw in 2 or more cards — they are all destroyed and a single new card is created.
+          The resulting edition depends on the total combined value of the sacrificed cards.
+          Higher total value yields a better edition. The new card's player and effect are
+          randomly assigned.
+        </GuideSection>
+        <GuideSection title="Transplant">
+          Sacrifice one card to transfer its effect onto another card. The target card keeps
+          its player and edition but receives the sacrificed card's effect. This operation
+          costs Floobits.
+        </GuideSection>
+        <GuideSection title="Tips">
+          Cards must be unequipped before they can be used in The Combine. Higher-edition cards
+          have greater sell value, which determines your result in The Blender. Use Promotion
+          when you want to keep a specific player and effect but upgrade the edition tier.
+        </GuideSection>
+      </HelpModal>
     </div>,
     document.body
   )

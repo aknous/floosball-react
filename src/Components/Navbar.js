@@ -126,6 +126,32 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
         </svg>
       </button>
 
+      {user?.favoriteTeamId && (
+        <NavLink
+          to={`/team/${user.favoriteTeamId}`}
+          onClick={onClose}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+            padding: '10px 14px', background: 'none', borderBottom: '1px solid #334155',
+            textDecoration: 'none',
+            transition: 'background-color 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'}
+          onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+          <span style={{ fontSize: '11px', color: '#cbd5e1', flex: 1 }}>
+            My Team
+          </span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </NavLink>
+      )}
+
       <div style={{ padding: '8px 14px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontSize: '11px', color: '#cbd5e1' }}>Email notifications</span>
         <button
@@ -236,6 +262,8 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
 export default function Navbar() {
   const { seasonState, lastEvent } = useFloosball()
   const { user, logout, getToken, fantasyRoster, refetchRoster, refetchUser } = useAuth()
+  const getTokenRef = useRef(getToken)
+  getTokenRef.current = getToken
   const { event: wsEvent } = useSeasonWebSocket()
   const [champion, setChampion] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -251,11 +279,12 @@ export default function Navbar() {
   const isAdmin = clerkUser?.publicMetadata?.role === 'admin'
 
   // Poll for notification count
+  const hasUser = !!user
   useEffect(() => {
-    if (!user) return
+    if (!hasUser) return
     const fetchCount = async () => {
       try {
-        const tok = await getToken()
+        const tok = await getTokenRef.current()
         if (!tok) return
         const res = await fetch(`${API_BASE}/notifications/count`, {
           headers: { Authorization: `Bearer ${tok}` },
@@ -269,14 +298,14 @@ export default function Navbar() {
     fetchCount()
     const interval = setInterval(fetchCount, 30000)
     return () => clearInterval(interval)
-  }, [user, getToken])
+  }, [hasUser])
 
   // Fetch full notifications when dropdown opens
   useEffect(() => {
     if (!showUserMenu || !user) return
     const fetchNotifs = async () => {
       try {
-        const tok = await getToken()
+        const tok = await getTokenRef.current()
         if (!tok) return
         const res = await fetch(`${API_BASE}/notifications`, {
           headers: { Authorization: `Bearer ${tok}` },
@@ -288,11 +317,11 @@ export default function Navbar() {
       } catch { /* silent */ }
     }
     fetchNotifs()
-  }, [showUserMenu, user, getToken])
+  }, [showUserMenu, user])
 
   const markAllRead = useCallback(async () => {
     try {
-      const tok = await getToken()
+      const tok = await getTokenRef.current()
       if (!tok) return
       await fetch(`${API_BASE}/notifications/read`, {
         method: 'POST',

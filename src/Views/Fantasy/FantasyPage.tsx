@@ -4,6 +4,7 @@ import { FantasyLeaderboard } from '@/Components/Fantasy/FantasyLeaderboard'
 import CardEquipment from '@/Components/Cards/CardEquipment'
 import ShopModal from '@/Components/Shop/ShopModal'
 import HoverTooltip from '@/Components/HoverTooltip'
+import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useFloosball } from '@/contexts/FloosballContext'
@@ -209,6 +210,7 @@ const FantasyPage: React.FC = () => {
   const isMobile = useIsMobile()
   const { user } = useAuth()
   const [showShop, setShowShop] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
 
   return (
     <div style={{
@@ -229,6 +231,7 @@ const FantasyPage: React.FC = () => {
           <LockCountdown />
           <GameInfoBar />
           <div style={{ flex: 1 }} />
+          <HelpButton onClick={() => setShowHelp(true)} />
           {user && (
             <button
               onClick={() => setShowShop(true)}
@@ -286,6 +289,84 @@ const FantasyPage: React.FC = () => {
 
       {/* Shop modal */}
       <ShopModal isOpen={showShop} onClose={() => setShowShop(false)} />
+
+      {/* Help modal */}
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} title="Fantasy Floosball">
+        <GuideSection title="Your Roster">
+          Draft 5 players — one QB, RB, WR, TE, and K — each season. You earn Fantasy Points (FP)
+          based on their live in-game performance. Your FP update in real time as games are played.
+        </GuideSection>
+        <GuideSection title="Scoring">
+          Your total weekly FP is calculated as: (roster FP + card bonus FP) multiplied by any
+          multiplier bonuses from equipped cards. The weekly modifier (shown in the status bar)
+          can also affect your score.
+        </GuideSection>
+        <GuideSection title="Trading Cards">
+          Equip up to 5 cards in any combination — slots are not position-locked. Card effects
+          are calculated each week alongside your roster. Cards lock when your roster locks at
+          the start of each game round.
+        </GuideSection>
+        <GuideSection title="Card Effect Types">
+          Cards can have any effect regardless of the player's position. Effects fall into
+          several output types:
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
+            {[
+              { label: 'Flat FP', desc: 'Unconditional bonus Fantasy Points each week', color: '#4ade80' },
+              { label: 'Multiplier', desc: 'Multiplies your total roster FP (e.g. 1.05x)', color: '#60a5fa' },
+              { label: 'Floobits', desc: 'Earns bonus Floobits currency each week', color: '#eab308' },
+              { label: 'Conditional', desc: 'Triggers when the card player hits a stat threshold', color: '#60a5fa' },
+              { label: 'Streak', desc: 'Grows stronger over consecutive weeks when its condition is met', color: '#fb923c' },
+              { label: 'Chance', desc: 'Probability-based bonus that rolls at the end of each week', color: '#c084fc' },
+            ].map(c => (
+              <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: c.color, fontWeight: '600', fontSize: '11px', minWidth: '80px' }}>
+                  {c.label}
+                </span>
+                <span style={{ color: '#94a3b8', fontSize: '11px' }}>{c.desc}</span>
+              </div>
+            ))}
+          </div>
+        </GuideSection>
+        <GuideSection title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Streak Cards <span style={{ fontSize: '10px', color: '#fb923c', backgroundColor: '#fb923c18', padding: '1px 5px', borderRadius: '3px', border: '1px solid #fb923c40', fontWeight: '600' }}>STRK</span></span>}>
+          Streak cards carry a counter that grows each week the streak condition is met (e.g.
+          the card's player's team wins, your roster scores a TD, a kicker makes a 35+ yard
+          FG). If the condition is not met, the streak resets. The card's bonus scales with
+          the streak count — longer streaks yield larger rewards. Equipping multiple streak
+          cards provides a synergy bonus: each additional active streak contributes extra
+          growth to the others.
+        </GuideSection>
+        <GuideSection title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Chance Cards <span style={{ fontSize: '10px', color: '#c084fc', backgroundColor: '#c084fc18', padding: '1px 5px', borderRadius: '3px', border: '1px solid #c084fc40', fontWeight: '600' }}>CHC</span></span>}>
+          Chance cards have a base probability of triggering each week. Some scale their odds
+          with game context (e.g. more underperforming roster players increases the chance).
+          The roll is resolved after games complete. Equipping multiple chance cards provides
+          an innate synergy — each additional chance card slightly boosts the odds of every
+          other chance card in your hand.
+        </GuideSection>
+        <GuideSection title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Conditional Cards <span style={{ fontSize: '10px', color: '#60a5fa', backgroundColor: '#60a5fa18', padding: '1px 5px', borderRadius: '3px', border: '1px solid #60a5fa40', fontWeight: '600' }}>CND</span></span>}>
+          Conditional cards trigger their bonus when a specific stat threshold is met during a
+          game (e.g. a QB throws for 250+ yards, a RB rushes for 100+ yards). The bonus is
+          all-or-nothing — if the condition is met, you receive the full effect; otherwise,
+          nothing. Unlike streak cards, there is no carryover between weeks.
+        </GuideSection>
+        <GuideSection title="Match Bonus">
+          When a card's player is also on your fantasy roster, the card's primary effect
+          receives a 1.5x boost.
+        </GuideSection>
+        <GuideSection title="Roster Swaps">
+          Your roster swap replenishes each week. Between game rounds, you can swap one player
+          for a new one at a cost of 1 Floobit per swap. Your previous player's FP are banked
+          and you begin earning with the replacement.
+        </GuideSection>
+        <GuideSection title="Modifiers">
+          Each week, a random modifier is applied to all fantasy players. Modifiers can amplify
+          scoring, add bonus Floobits, or introduce other twists. The active modifier is
+          displayed in the status bar above your roster.
+        </GuideSection>
+        <GuideSection title="Leaderboard">
+          Weekly and season leaderboard rankings determine Floobit payouts. Top finishers each
+          week and at season end earn bonus Floobits.
+        </GuideSection>
+      </HelpModal>
     </div>
   )
 }

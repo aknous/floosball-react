@@ -20,7 +20,7 @@ const EDITION_LABEL_COLORS: Record<string, string> = {
   holographic: '#ec4899',
   gold: '#eab308',
   prismatic: '#a78bfa',
-  diamond: '#22d3ee',
+  diamond: '#fb923c',
 }
 
 const EDITION_MINI: Record<string, {
@@ -57,7 +57,7 @@ const EquippedCardSlot: React.FC<{
       <TradingCard
         card={slot.card}
         size="md"
-        glowColor={slot.isMatch ? '#22c55e' : undefined}
+        glowColor={slot.isMatch ? '#fb923c' : undefined}
         noHoverLift
         onHoverChange={setHovered}
       />
@@ -65,10 +65,10 @@ const EquippedCardSlot: React.FC<{
       {slot.isMatch && (
         <div style={{
           position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
-          fontSize: '8px', color: '#22c55e', fontWeight: '700',
-          backgroundColor: 'rgba(34,197,94,0.15)',
+          fontSize: '8px', color: '#fb923c', fontWeight: '700',
+          backgroundColor: 'rgba(251,146,60,0.15)',
           padding: '2px 5px', borderRadius: '4px',
-          border: '1px solid rgba(34,197,94,0.3)',
+          border: '1px solid rgba(251,146,60,0.3)',
           pointerEvents: 'none',
         }}>
           MATCH
@@ -155,6 +155,13 @@ const CardEquipment: React.FC = () => {
       fetchEquipped()
     }
   }, [wsEvent, fetchEquipped])
+
+  // Re-fetch after shop purchase (e.g. buying extra card slot)
+  useEffect(() => {
+    const handler = () => fetchEquipped()
+    window.addEventListener('floosball:shop-purchase', handler)
+    return () => window.removeEventListener('floosball:shop-purchase', handler)
+  }, [fetchEquipped])
 
   // Re-fetch deck after equip/unequip
   const refetchDeck = useCallback(async () => {
@@ -363,10 +370,10 @@ const CardEquipment: React.FC = () => {
                   borderRadius: '8px',
                   background: ed.bg,
                   border: slot.isMatch
-                    ? `1.5px solid #22c55e`
+                    ? `1.5px solid #fb923c`
                     : `1.5px solid ${ed.border}`,
                   boxShadow: slot.isMatch
-                    ? '0 0 8px rgba(34,197,94,0.25)'
+                    ? '0 0 8px rgba(251,146,60,0.25)'
                     : ed.glow ? `0 0 8px ${ed.glow}` : 'none',
                   position: 'relative',
                 }}
@@ -381,8 +388,8 @@ const CardEquipment: React.FC = () => {
                   </span>
                   {slot.isMatch && (
                     <span style={{
-                      fontSize: '9px', color: '#22c55e', fontWeight: '700',
-                      backgroundColor: 'rgba(34,197,94,0.15)',
+                      fontSize: '9px', color: '#fb923c', fontWeight: '700',
+                      backgroundColor: 'rgba(251,146,60,0.15)',
                       padding: '1px 5px', borderRadius: '3px',
                     }}>MATCH</span>
                   )}
@@ -517,14 +524,14 @@ const CardEquipment: React.FC = () => {
                 const isMatch = fantasyPlayerIds.has(card.playerId)
                 return (
                   <div key={card.id} style={{ position: 'relative' }}>
-                    <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch ? '#22c55e' : undefined} />
+                    <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch ? '#fb923c' : undefined} />
                     {isMatch && (
                       <div style={{
                         position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
-                        fontSize: '8px', color: '#22c55e', fontWeight: '700',
-                        backgroundColor: 'rgba(34,197,94,0.15)',
+                        fontSize: '8px', color: '#fb923c', fontWeight: '700',
+                        backgroundColor: 'rgba(251,146,60,0.15)',
                         padding: '2px 5px', borderRadius: '4px',
-                        border: '1px solid rgba(34,197,94,0.3)',
+                        border: '1px solid rgba(251,146,60,0.3)',
                         pointerEvents: 'none',
                       }}>
                         MATCH
