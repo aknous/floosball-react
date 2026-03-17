@@ -374,9 +374,10 @@ const AboutPage: React.FC = () => {
           </p>
           <div style={{ paddingLeft: '8px' }}>
             {[
-              'Standard Pack: 50 Floobits (3 cards)',
-              'Premium Pack: 125 Floobits (5 cards, guaranteed Chrome+)',
-              'Elite Pack: 300 Floobits (5 cards, guaranteed Prismatic + Holo+)',
+              'Humble Pack: 100 Floobits (3 cards)',
+              'Proper Pack: 250 Floobits (5 cards, guaranteed Chrome+)',
+              'Grand Pack: 600 Floobits (5 cards, guaranteed Holo+)',
+              'Exquisite Pack: 1500 Floobits (5 cards, guaranteed Prismatic+)',
               'Featured cards in the shop (rotating selection)',
               'Roster swaps: 1 Floobit per swap',
               'Transplant operations in The Combine',
