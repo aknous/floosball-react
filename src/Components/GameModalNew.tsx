@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useGames } from '@/contexts/GamesContext'
 import { XIcon } from '@heroicons/react/solid'
 import PlayerHoverCard from './PlayerHoverCard'
+
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 import TeamHoverCard from './TeamHoverCard'
 import { Stars } from './Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -217,7 +219,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         {/* Team Avatar */}
         {offenseTeamId && (
           <img
-            src={`http://localhost:8000/api/teams/${offenseTeamId}/avatar?size=40&v=2`}
+            src={`${API_BASE}/teams/${offenseTeamId}/avatar?size=40&v=2`}
             alt={play.offensiveTeam}
             crossOrigin="anonymous"
             style={{
@@ -434,7 +436,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     outlineOffset: '2px'
                   }}>
                     <img
-                      src={`http://localhost:8000/api/teams/${gameData.homeTeam.id}/avatar?size=40&v=2`}
+                      src={`${API_BASE}/teams/${gameData.homeTeam.id}/avatar?size=40&v=2`}
                       alt={gameData.homeTeam.name}
                       crossOrigin="anonymous"
                       style={{ width: '40px', height: '40px', display: 'block' }}
@@ -481,7 +483,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     outlineOffset: '2px'
                   }}>
                     <img
-                      src={`http://localhost:8000/api/teams/${gameData.awayTeam.id}/avatar?size=40&v=2`}
+                      src={`${API_BASE}/teams/${gameData.awayTeam.id}/avatar?size=40&v=2`}
                       alt={gameData.awayTeam.name}
                       crossOrigin="anonymous"
                       style={{ width: '40px', height: '40px', display: 'block' }}

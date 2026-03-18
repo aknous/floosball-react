@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react'
 import TeamHoverCard from './TeamHoverCard'
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+
 interface Team {
   id: string
   name: string
@@ -135,7 +137,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
               flexShrink: 0
             }}>
             <img
-              src={`http://localhost:8000/api/teams/${homeTeam.id}/avatar?size=32&v=2`}
+              src={`${API_BASE}/teams/${homeTeam.id}/avatar?size=32&v=2`}
               alt={homeTeam.name}
               crossOrigin="anonymous"
               style={{ width: '32px', height: '32px', display: 'block' }}
@@ -175,7 +177,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
               flexShrink: 0
             }}>
             <img
-              src={`http://localhost:8000/api/teams/${awayTeam.id}/avatar?size=32&v=2`}
+              src={`${API_BASE}/teams/${awayTeam.id}/avatar?size=32&v=2`}
               alt={awayTeam.name}
               crossOrigin="anonymous"
               style={{ width: '32px', height: '32px', display: 'block' }}

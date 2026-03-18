@@ -3,6 +3,8 @@ import { usePickEm } from '@/contexts/PickEmContext'
 import { useAuth } from '@/contexts/AuthContext'
 import type { PickEmGame, PickEmLeaderboardEntry } from '@/types/pickem'
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+
 const RANK_STYLE: Record<number, { label: string; color: string; bg: string }> = {
   1: { label: '1st', color: '#eab308', bg: 'rgba(234,179,8,0.15)' },
   2: { label: '2nd', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
@@ -297,7 +299,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
           <img
-            src={`http://localhost:8000/api/teams/${game.homeTeam.id}/avatar?size=20&v=2`}
+            src={`${API_BASE}/teams/${game.homeTeam.id}/avatar?size=20&v=2`}
             alt={game.homeTeam.abbr}
             crossOrigin="anonymous"
             style={{ width: '20px', height: '20px', flexShrink: 0 }}
@@ -386,7 +388,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
           <img
-            src={`http://localhost:8000/api/teams/${game.awayTeam.id}/avatar?size=20&v=2`}
+            src={`${API_BASE}/teams/${game.awayTeam.id}/avatar?size=20&v=2`}
             alt={game.awayTeam.abbr}
             crossOrigin="anonymous"
             style={{ width: '20px', height: '20px', flexShrink: 0 }}
