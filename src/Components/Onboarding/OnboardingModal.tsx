@@ -1,11 +1,141 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-const STEPS = [
+// ── Username selection step ────────────────────────────────────────────────
+
+const UsernameStep: React.FC<{
+  onSelect: (name: string) => void
+  getToken: () => Promise<string | null>
+}> = ({ onSelect, getToken }) => {
+  const [options, setOptions] = useState<string[]>([])
+  const [selected, setSelected] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchOptions = useCallback(async () => {
+    setLoading(true)
+    setSelected(null)
+    setError(null)
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      const res = await fetch(`${API_BASE}/users/me/username-options`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setOptions(data.options || [])
+      }
+    } catch { /* silent */ }
+    finally { setLoading(false) }
+  }, [getToken])
+
+  useEffect(() => { fetchOptions() }, [fetchOptions])
+
+  const handleConfirm = async () => {
+    if (!selected) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      const res = await fetch(`${API_BASE}/users/me/username`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+        body: JSON.stringify({ username: selected }),
+      })
+      if (res.ok) {
+        onSelect(selected)
+      } else if (res.status === 409) {
+        setError('That name was just taken. Here are some new options.')
+        setSelected(null)
+        fetchOptions()
+      } else {
+        setError('Something went wrong. Try again.')
+      }
+    } catch {
+      setError('Something went wrong. Try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <>
+      <p style={{ color: '#94a3b8', lineHeight: '1.6', marginBottom: '16px' }}>
+        Pick a name. This is how other managers will know you.
+      </p>
+      {loading ? (
+        <div style={{ color: '#64748b', fontSize: '13px', padding: '20px 0' }}>Generating names...</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+          {options.map(name => (
+            <button
+              key={name}
+              onClick={() => setSelected(name)}
+              style={{
+                padding: '12px 16px',
+                borderRadius: '8px',
+                border: selected === name ? '2px solid #3b82f6' : '1px solid #334155',
+                backgroundColor: selected === name ? '#1e3a5f' : '#0f172a',
+                color: selected === name ? '#e2e8f0' : '#cbd5e1',
+                fontSize: '15px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s',
+              }}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+      )}
+      <button
+        onClick={fetchOptions}
+        disabled={loading}
+        style={{
+          background: 'none', border: 'none',
+          color: loading ? '#475569' : '#3b82f6',
+          fontSize: '13px', fontWeight: '600',
+          cursor: loading ? 'default' : 'pointer',
+          padding: '4px 0',
+        }}
+      >
+        Re-roll
+      </button>
+      {error && (
+        <div style={{ color: '#f59e0b', fontSize: '13px', marginTop: '8px' }}>{error}</div>
+      )}
+      <div style={{ marginTop: '16px' }}>
+        <button
+          onClick={handleConfirm}
+          disabled={!selected || submitting}
+          style={{
+            padding: '10px 24px', borderRadius: '6px',
+            backgroundColor: selected ? '#3b82f6' : '#334155',
+            border: 'none',
+            color: selected ? '#fff' : '#64748b',
+            fontSize: '14px', fontWeight: '600',
+            cursor: selected && !submitting ? 'pointer' : 'default',
+            width: '100%',
+          }}
+        >
+          {submitting ? 'Claiming...' : selected ? `I'll go by ${selected}` : 'Select a name'}
+        </button>
+      </div>
+    </>
+  )
+}
+
+// ── Info steps ─────────────────────────────────────────────────────────────
+
+const INFO_STEPS = [
   {
     title: 'Welcome to the Closed Beta',
     content: (
@@ -75,11 +205,27 @@ const STEPS = [
   },
 ]
 
+// Total steps = username (step 0) + INFO_STEPS
+const TOTAL_STEPS = 1 + INFO_STEPS.length
+
+// ── Main modal ─────────────────────────────────────────────────────────────
+
 export const OnboardingModal: React.FC = () => {
-  const { user, getToken } = useAuth()
+  const { user, getToken, refetchUser } = useAuth()
   const isMobile = useIsMobile()
   const [step, setStep] = useState(0)
   const [closing, setClosing] = useState(false)
+  const [usernameChosen, setUsernameChosen] = useState(false)
+
+  // If user already has a username (existing user), skip the username step
+  const needsUsername = user && !user.username
+  const effectiveStep = needsUsername && !usernameChosen ? 0 : step
+
+  const handleUsernameSelected = (name: string) => {
+    setUsernameChosen(true)
+    setStep(1)
+    refetchUser()
+  }
 
   const handleComplete = async () => {
     setClosing(true)
@@ -92,14 +238,16 @@ export const OnboardingModal: React.FC = () => {
         })
       }
     } catch { /* silent */ }
-    // Force refresh to update user state
     window.location.reload()
   }
 
   if (!user || user.hasCompletedOnboarding || closing) return null
 
-  const current = STEPS[step]
-  const isLast = step === STEPS.length - 1
+  // Username step
+  const isUsernameStep = needsUsername && !usernameChosen
+  // Info step index (0-based within INFO_STEPS)
+  const infoIndex = step - 1
+  const isLastInfoStep = infoIndex === INFO_STEPS.length - 1
 
   return ReactDOM.createPortal(
     <div style={{
@@ -125,10 +273,10 @@ export const OnboardingModal: React.FC = () => {
           display: 'flex', gap: '6px',
           padding: '20px 24px 0',
         }}>
-          {STEPS.map((_, i) => (
+          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <div key={i} style={{
               flex: 1, height: '3px', borderRadius: '2px',
-              backgroundColor: i <= step ? '#3b82f6' : '#334155',
+              backgroundColor: i <= (isUsernameStep ? 0 : step) ? '#3b82f6' : '#334155',
               transition: 'background-color 0.3s',
             }} />
           ))}
@@ -136,53 +284,69 @@ export const OnboardingModal: React.FC = () => {
 
         {/* Content */}
         <div style={{ padding: '20px 24px 24px' }}>
-          <h2 style={{
-            fontSize: '18px', fontWeight: '700', color: '#e2e8f0',
-            marginBottom: '16px',
-          }}>
-            {current.title}
-          </h2>
-          <div style={{ fontSize: '14px' }}>
-            {current.content}
-          </div>
+          {isUsernameStep ? (
+            <>
+              <h2 style={{
+                fontSize: '18px', fontWeight: '700', color: '#e2e8f0',
+                marginBottom: '16px',
+              }}>
+                Choose Your Name
+              </h2>
+              <UsernameStep onSelect={handleUsernameSelected} getToken={getToken} />
+            </>
+          ) : (
+            <>
+              <h2 style={{
+                fontSize: '18px', fontWeight: '700', color: '#e2e8f0',
+                marginBottom: '16px',
+              }}>
+                {INFO_STEPS[infoIndex].title}
+              </h2>
+              <div style={{ fontSize: '14px' }}>
+                {INFO_STEPS[infoIndex].content}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Footer */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '16px 24px',
-          borderTop: '1px solid #334155',
-        }}>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>
-            {step + 1} of {STEPS.length}
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {step > 0 && (
+        {/* Footer (only for info steps) */}
+        {!isUsernameStep && (
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '16px 24px',
+            borderTop: '1px solid #334155',
+          }}>
+            <div style={{ fontSize: '12px', color: '#64748b' }}>
+              {step} of {TOTAL_STEPS}
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {infoIndex > 0 && (
+                <button
+                  onClick={() => setStep(s => s - 1)}
+                  style={{
+                    padding: '8px 16px', borderRadius: '6px',
+                    backgroundColor: 'transparent', border: '1px solid #475569',
+                    color: '#94a3b8', fontSize: '13px', fontWeight: '600',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Back
+                </button>
+              )}
               <button
-                onClick={() => setStep(s => s - 1)}
+                onClick={isLastInfoStep ? handleComplete : () => setStep(s => s + 1)}
                 style={{
-                  padding: '8px 16px', borderRadius: '6px',
-                  backgroundColor: 'transparent', border: '1px solid #475569',
-                  color: '#94a3b8', fontSize: '13px', fontWeight: '600',
+                  padding: '8px 20px', borderRadius: '6px',
+                  backgroundColor: '#3b82f6', border: 'none',
+                  color: '#fff', fontSize: '13px', fontWeight: '600',
                   cursor: 'pointer',
                 }}
               >
-                Back
+                {isLastInfoStep ? "Let's Go" : 'Next'}
               </button>
-            )}
-            <button
-              onClick={isLast ? handleComplete : () => setStep(s => s + 1)}
-              style={{
-                padding: '8px 20px', borderRadius: '6px',
-                backgroundColor: '#3b82f6', border: 'none',
-                color: '#fff', fontSize: '13px', fontWeight: '600',
-                cursor: 'pointer',
-              }}
-            >
-              {isLast ? "Let's Go" : 'Next'}
-            </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>,
     document.body

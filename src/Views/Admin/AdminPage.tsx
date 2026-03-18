@@ -302,6 +302,27 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
   const [cardLoading, setCardLoading] = useState(false)
   const [playerSearching, setPlayerSearching] = useState(false)
 
+  // Username re-roll
+  const [rerollingUserId, setRerollingUserId] = useState<number | null>(null)
+
+  const handleRerollUsername = async (userId: number) => {
+    setRerollingUserId(userId)
+    try {
+      const res = await fetch(`${API_BASE}/admin/users/${userId}/reroll-username`, {
+        method: 'POST', headers,
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      const data = await res.json()
+      const newName = data.data?.newUsername
+      if (newName) {
+        setAdminUsers(prev => prev.map(u =>
+          u.id === userId ? { ...u, username: newName } : u
+        ))
+      }
+    } catch { /* silent */ }
+    finally { setRerollingUserId(null) }
+  }
+
   // Floobits grant
   const [floobitsUser, setFloobitsUser] = useState<AdminUser | null>(null)
   const [floobitsAmount, setFloobitsAmount] = useState(100)
@@ -806,8 +827,21 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
               <tbody>
                 {adminUsers.map(u => (
                   <tr key={u.id} style={{ borderBottom: '1px solid #1e293b' }}>
-                    <td style={{ padding: '8px 10px', color: '#e2e8f0', fontWeight: '600' }}>
+                    <td style={{ padding: '8px 10px', color: '#e2e8f0', fontWeight: '600', whiteSpace: 'nowrap' }}>
                       {u.username || <span style={{ color: '#64748b', fontStyle: 'italic' }}>—</span>}
+                      <button
+                        onClick={() => handleRerollUsername(u.id)}
+                        disabled={rerollingUserId === u.id}
+                        style={{
+                          background: 'none', border: 'none',
+                          color: rerollingUserId === u.id ? '#475569' : '#3b82f6',
+                          cursor: rerollingUserId === u.id ? 'default' : 'pointer',
+                          fontSize: '11px', fontWeight: '600',
+                          marginLeft: '8px', padding: '2px 4px',
+                        }}
+                      >
+                        {rerollingUserId === u.id ? '...' : 'Re-roll'}
+                      </button>
                     </td>
                     <td style={{ padding: '8px 10px', color: '#cbd5e1' }}>{u.email}</td>
                     <td style={{ padding: '8px 10px', color: '#cbd5e1' }}>
