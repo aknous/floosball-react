@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom'
 import { useGames } from '@/contexts/GamesContext'
 import { XIcon } from '@heroicons/react/solid'
 import PlayerHoverCard from './PlayerHoverCard'
-
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 import TeamHoverCard from './TeamHoverCard'
 import { Stars } from './Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
+
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 interface GameModalNewProps {
   onClose: () => void
