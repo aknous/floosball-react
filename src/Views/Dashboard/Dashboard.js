@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { Dialog, Menu, Transition } from '@headlessui/react'
 import axios from 'axios'
 import { InformationCircleIcon } from '@heroicons/react/outline'
-import GameModal from '/Users/andrew/Projects/floosball-react/src/Components/GameModal'
-import GameGrid from '/Users/andrew/Projects/floosball-react/src/Components/GameGrid.js'
+import GameModal from '@/Components/GameModal'
+import GameGrid from '@/Components/GameGrid'
 import { GiLaurelsTrophy, GiCutDiamond, GiRoundStar } from 'react-icons/gi';
 import { XCircleIcon, CheckCircleIcon, FireIcon } from '@heroicons/react/solid'
 import {
