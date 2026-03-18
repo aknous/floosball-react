@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import TeamHoverCard from '@/Components/TeamHoverCard'
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
