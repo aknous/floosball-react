@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import type { CurrentGame } from './useCurrentGames'
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+
 interface UseGameDataResult {
   game: CurrentGame | null
   loading: boolean
@@ -20,7 +22,7 @@ export const useGameData = (gameId: number | null, pollingInterval?: number): Us
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/api/games/${gameId}`)
+      const response = await fetch(`${API_BASE}/games/${gameId}`)
       if (!response.ok) {
         throw new Error(`Failed to fetch game: ${response.statusText}`)
       }

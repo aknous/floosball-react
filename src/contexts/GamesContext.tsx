@@ -3,6 +3,8 @@ import { useSeasonWebSocket } from './SeasonWebSocketContext'
 import { api } from '@/services/api'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+
 interface GamesContextValue {
   games: Map<number, CurrentGame>
   loading: boolean
@@ -23,7 +25,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const fetchGamePlays = useCallback(async (gameId: number) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/games/${gameId}`)
+      const response = await fetch(`${API_BASE}/games/${gameId}`)
       const gameData = await response.json()
 
       setGames(prev => {

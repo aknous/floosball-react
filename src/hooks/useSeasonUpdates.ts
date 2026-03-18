@@ -3,6 +3,8 @@ import { useWebSocket } from './useWebSocket'
 import { api } from '@/services/api'
 import type { SeasonWebSocketEvent } from '@/types/websocket'
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+
 export interface SeasonState {
   seasonNumber: number
   currentWeek: number
@@ -30,7 +32,7 @@ export const useSeasonUpdates = () => {
   useEffect(() => {
     const fetchSeasonData = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/season')
+        const response = await fetch(`${API_BASE}/season`)
         const result = await response.json()
         if (result.success && result.data) {
           setSeasonState(prev => ({
