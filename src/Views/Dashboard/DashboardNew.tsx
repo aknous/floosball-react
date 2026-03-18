@@ -5,7 +5,6 @@ import { HighlightFeed } from '@/Components/HighlightFeed'
 import { OffseasonPanel } from '@/Components/OffseasonPanel'
 import { Standings } from '@/Components/Standings'
 import { PlayerLeaders } from '@/Components/PlayerLeaders'
-import { MvpRankings } from '@/Components/MvpRankings'
 import { PickEmPanel } from '@/Components/PickEm/PickEmPanel'
 import { PickEmProvider } from '@/contexts/PickEmContext'
 import { useFloosball } from '@/contexts/FloosballContext'
@@ -13,7 +12,7 @@ import { useGames } from '@/contexts/GamesContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 type StandingsView = 'standings' | 'powerRankings'
-type RightPanelView = 'highlights' | 'leaders' | 'mvp' | 'pickem'
+type RightPanelView = 'highlights' | 'leaders' | 'pickem'
 
 const TabToggle: React.FC<{ tabs: readonly (readonly [string, string])[]; active: string; onChange: (v: any) => void }> = ({ tabs, active, onChange }) => (
   <div style={{ display: 'flex', gap: '0px', marginBottom: '12px' }}>
@@ -41,7 +40,7 @@ const TabToggle: React.FC<{ tabs: readonly (readonly [string, string])[]; active
 )
 
 const STANDINGS_TABS = [['standings', 'Standings'], ['powerRankings', 'Power Rankings']] as const
-const RIGHT_PANEL_TABS = [['highlights', 'Highlights'], ['leaders', 'Leaders'], ['mvp', 'MVP Race'], ['pickem', 'Prognosticate']] as const
+const RIGHT_PANEL_TABS = [['highlights', 'Highlights'], ['leaders', 'Leaders'], ['pickem', 'Prognosticate']] as const
 
 const useNextGameCountdown = (nextGameStartTime: string | null) => {
   const [countdown, setCountdown] = useState('')
@@ -120,11 +119,6 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             </div>
           </section>
 
-          {/* MVP Race */}
-          <section style={{ marginBottom: '32px' }}>
-            <MvpRankings />
-          </section>
-
           {/* Pick-Em */}
           <section style={{ marginBottom: '32px' }}>
             <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Prognostications</h2>
@@ -181,9 +175,6 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
               <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Highlights</h2>
               <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', maxHeight: '400px', overflowY: 'auto', marginBottom: '24px' }}>
                 <HighlightFeed onPlayClick={handleGameClick} />
-              </div>
-              <div style={{ marginBottom: '24px' }}>
-                <MvpRankings />
               </div>
               <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Leaders</h3>
               <PlayerLeaders />
@@ -245,9 +236,6 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
           )}
           {rightPanelView === 'leaders' && (
             <PlayerLeaders />
-          )}
-          {rightPanelView === 'mvp' && (
-            <MvpRankings />
           )}
           {rightPanelView === 'pickem' && (
             <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', overflowY: 'auto', flex: 1 }}>

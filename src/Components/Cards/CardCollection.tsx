@@ -144,8 +144,8 @@ const CardCollection: React.FC = () => {
             onClick={() => setShowCombine(true)}
             style={{
               padding: '8px 16px', borderRadius: '8px',
-              background: 'linear-gradient(135deg, rgba(96,165,250,0.15), rgba(167,139,250,0.15))',
-              border: '1px solid rgba(96,165,250,0.4)',
+              background: 'rgba(96,165,250,0.15)',
+              border: 'none',
               color: '#93bbfc', fontSize: '12px', fontWeight: '700',
               cursor: 'pointer', fontFamily: 'pressStart',
               display: 'flex', alignItems: 'center', gap: '8px',
@@ -173,7 +173,7 @@ const CardCollection: React.FC = () => {
               disabled={selling}
               style={{
                 padding: '6px 14px', borderRadius: '6px',
-                backgroundColor: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.4)',
+                backgroundColor: 'rgba(234,179,8,0.15)', border: 'none',
                 color: '#eab308', fontSize: '12px', fontWeight: '600',
                 cursor: selling ? 'not-allowed' : 'pointer', fontFamily: 'pressStart',
                 opacity: selling ? 0.6 : 1,

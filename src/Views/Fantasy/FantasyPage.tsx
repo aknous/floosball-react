@@ -110,7 +110,7 @@ function GameInfoBar() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: '7px',
             padding: '7px 14px', borderRadius: '8px',
-            backgroundColor: `${modColor}14`, border: `1px solid ${modColor}40`,
+            backgroundColor: `${modColor}30`,
             color: modColor,
           }}>
             {modStyle.icon}
@@ -125,7 +125,7 @@ function GameInfoBar() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: '7px',
             padding: '7px 14px', borderRadius: '8px',
-            backgroundColor: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)',
+            backgroundColor: 'rgba(56,189,248,0.25)',
           }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 3l4 4-4 4" />
@@ -182,8 +182,8 @@ function LockCountdown() {
       justifyContent: 'center',
       gap: '10px',
       padding: '10px 16px',
-      backgroundColor: 'rgba(59,130,246,0.08)',
-      border: '1px solid rgba(59,130,246,0.2)',
+      backgroundColor: 'rgba(59,130,246,0.10)',
+      borderBottom: '2px solid rgba(59,130,246,0.5)',
       borderRadius: '8px',
     }}>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -239,23 +239,21 @@ const FantasyPage: React.FC = () => {
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: '8px 14px',
                 borderRadius: '8px',
-                border: '1px solid #eab30840',
-                backgroundColor: 'rgba(234,179,8,0.08)',
+                border: 'none',
+                backgroundColor: 'rgba(234,179,8,0.12)',
                 color: '#eab308',
                 fontSize: '12px',
                 fontWeight: '700',
                 cursor: 'pointer',
                 fontFamily: 'pressStart',
-                transition: 'border-color 0.15s, background-color 0.15s',
+                transition: 'background-color 0.15s',
                 flexShrink: 0,
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.borderColor = '#eab30880'
-                e.currentTarget.style.backgroundColor = 'rgba(234,179,8,0.14)'
+                e.currentTarget.style.backgroundColor = 'rgba(234,179,8,0.20)'
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.borderColor = '#eab30840'
-                e.currentTarget.style.backgroundColor = 'rgba(234,179,8,0.08)'
+                e.currentTarget.style.backgroundColor = 'rgba(234,179,8,0.12)'
               }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -66,9 +66,8 @@ const EquippedCardSlot: React.FC<{
         <div style={{
           position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
           fontSize: '8px', color: '#fb923c', fontWeight: '700',
-          backgroundColor: 'rgba(251,146,60,0.15)',
+          backgroundColor: 'rgba(251,146,60,0.30)',
           padding: '2px 5px', borderRadius: '4px',
-          border: '1px solid rgba(251,146,60,0.3)',
           pointerEvents: 'none',
         }}>
           MATCH
@@ -312,9 +311,8 @@ const CardEquipment: React.FC = () => {
         {isLocked && (
           <span style={{
             fontSize: '10px', fontWeight: '700', color: '#f59e0b',
-            backgroundColor: 'rgba(245,158,11,0.15)',
+            backgroundColor: 'rgba(245,158,11,0.30)',
             padding: '3px 8px', borderRadius: '6px',
-            border: '1px solid rgba(245,158,11,0.3)',
             display: 'inline-flex', alignItems: 'center', gap: '4px',
           }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -482,8 +480,8 @@ const CardEquipment: React.FC = () => {
           marginTop: '10px',
           padding: '8px 14px',
           borderRadius: '10px',
-          backgroundColor: 'rgba(99,102,241,0.08)',
-          border: '1px solid rgba(99,102,241,0.2)',
+          backgroundColor: 'rgba(99,102,241,0.10)',
+          borderBottom: '2px solid rgba(99,102,241,0.5)',
         }}>
           <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5 }}>
             {gamesActive
@@ -529,9 +527,8 @@ const CardEquipment: React.FC = () => {
                       <div style={{
                         position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
                         fontSize: '8px', color: '#fb923c', fontWeight: '700',
-                        backgroundColor: 'rgba(251,146,60,0.15)',
+                        backgroundColor: 'rgba(251,146,60,0.30)',
                         padding: '2px 5px', borderRadius: '4px',
-                        border: '1px solid rgba(251,146,60,0.3)',
                         pointerEvents: 'none',
                       }}>
                         MATCH

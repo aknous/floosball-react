@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import type {
   PickEmGame,
   PickEmWeekSummary,
-  PickEmPreviousWeekSummary,
   PickEmLeaderboardEntry,
 } from '@/types/pickem'
 
@@ -14,9 +13,7 @@ interface UsePickEmResult {
   picks: Map<number, number>            // gameIndex -> pickedTeamId
   results: Map<number, boolean | null>  // gameIndex -> correct (null if unresolved)
   games: PickEmGame[]
-  locked: boolean
   weekSummary: PickEmWeekSummary | null
-  previousWeekSummary: PickEmPreviousWeekSummary | null
   season: number
   week: number
   seasonLeaderboard: PickEmLeaderboardEntry[]
@@ -28,9 +25,7 @@ interface UsePickEmResult {
 
 export function usePickEm(): UsePickEmResult {
   const [games, setGames] = useState<PickEmGame[]>([])
-  const [locked, setLocked] = useState(false)
   const [weekSummary, setWeekSummary] = useState<PickEmWeekSummary | null>(null)
-  const [previousWeekSummary, setPreviousWeekSummary] = useState<PickEmPreviousWeekSummary | null>(null)
   const [season, setSeason] = useState(0)
   const [week, setWeek] = useState(0)
   const [seasonLeaderboard, setSeasonLeaderboard] = useState<PickEmLeaderboardEntry[]>([])
@@ -40,6 +35,7 @@ export function usePickEm(): UsePickEmResult {
   const { getToken } = useAuth()
   const hasLoadedOnce = useRef(false)
   const fetchIdRef = useRef(0)
+  const lastQuartersRef = useRef<Map<number, number>>(new Map())
 
   const fetchWeek = useCallback(async () => {
     const isInitial = !hasLoadedOnce.current
@@ -54,9 +50,7 @@ export function usePickEm(): UsePickEmResult {
       if (fetchId !== fetchIdRef.current) return
       const data = json.data ?? json
       setGames(data.games ?? [])
-      setLocked(data.locked ?? false)
       setWeekSummary(data.weekSummary ?? null)
-      setPreviousWeekSummary(data.previousWeekSummary ?? null)
       setSeason(data.season ?? 0)
       setWeek(data.week ?? 0)
       hasLoadedOnce.current = true
@@ -85,7 +79,7 @@ export function usePickEm(): UsePickEmResult {
     fetchLeaderboard()
   }, [fetchWeek, fetchLeaderboard])
 
-  // WS-driven updates
+  // WS-driven updates — refetch on key game lifecycle events
   useEffect(() => {
     if (!event) return
 
@@ -93,17 +87,25 @@ export function usePickEm(): UsePickEmResult {
       event.event === 'week_start' ||
       event.event === 'week_end' ||
       event.event === 'game_start' ||
-      event.event === 'game_end'
+      event.event === 'game_end' ||
+      event.event === 'pickem_results'
     ) {
       fetchWeek()
       fetchLeaderboard()
       return
     }
 
-    if (event.event === 'pickem_results') {
-      fetchWeek()
-      fetchLeaderboard()
-      return
+    // Refetch on quarter changes so multiplier badges stay current
+    if (event.event === 'game_state') {
+      const gameId = (event as any).gameId
+      const quarter = (event as any).quarter
+      if (gameId != null && quarter != null) {
+        const prev = lastQuartersRef.current.get(gameId)
+        if (prev !== quarter) {
+          lastQuartersRef.current.set(gameId, quarter)
+          fetchWeek()
+        }
+      }
     }
   }, [event, fetchWeek, fetchLeaderboard])
 
@@ -111,10 +113,12 @@ export function usePickEm(): UsePickEmResult {
     const tok = await getToken()
     if (!tok) return
 
-    // Optimistic update
+    // Optimistic update — set the pick and lock in current multiplier
     setGames(prev =>
       prev.map(g =>
-        g.gameIndex === gameIndex ? { ...g, userPick: teamId } : g,
+        g.gameIndex === gameIndex
+          ? { ...g, userPick: teamId, pointsMultiplier: g.currentMultiplier }
+          : g,
       ),
     )
 
@@ -132,6 +136,18 @@ export function usePickEm(): UsePickEmResult {
         fetchWeek()
         const errJson = await resp.json().catch(() => null)
         throw new Error(errJson?.detail || 'Failed to submit pick')
+      }
+      // Update with actual multiplier from server
+      const json = await resp.json()
+      const pickData = (json.data ?? json).pick
+      if (pickData) {
+        setGames(prev =>
+          prev.map(g =>
+            g.gameIndex === gameIndex
+              ? { ...g, pointsMultiplier: pickData.pointsMultiplier }
+              : g,
+          ),
+        )
       }
     } catch (err) {
       console.error('Error submitting pick:', err)
@@ -156,9 +172,7 @@ export function usePickEm(): UsePickEmResult {
     picks,
     results,
     games,
-    locked,
     weekSummary,
-    previousWeekSummary,
     season,
     week,
     seasonLeaderboard,

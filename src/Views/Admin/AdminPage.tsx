@@ -157,7 +157,18 @@ interface AllowlistEntry {
 }
 
 interface AdminUser {
-  id: number; email: string; username: string | null; floobits: number
+  id: number
+  email: string
+  username: string | null
+  floobits: number
+  lifetimeEarned: number
+  lifetimeSpent: number
+  favoriteTeam: string | null
+  favoriteTeamId: number | null
+  onboarded: boolean
+  createdAt: string | null
+  isActive: boolean
+  lastLoginAt: string | null
 }
 
 interface EffectOption { name: string; displayName: string }
@@ -427,13 +438,40 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     }
   }
 
+  type Section = 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
+  const [activeSection, setActiveSection] = useState<Section>('users')
+
+  const tabs: { id: Section; label: string }[] = [
+    { id: 'allowlist', label: 'Allowlist' },
+    { id: 'names', label: 'Names' },
+    { id: 'players', label: 'Players' },
+    { id: 'cards', label: 'Cards' },
+    { id: 'floobits', label: 'Floobits' },
+    { id: 'users', label: 'Users' },
+  ]
+
   return (
     <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', color: '#e2e8f0' }}>
+    <div style={{
+      borderBottom: '1px solid #1e293b', padding: '12px 24px',
+      display: 'flex', justifyContent: 'center', gap: '6px', flexWrap: 'wrap',
+    }}>
+      {tabs.map(t => (
+        <button key={t.id} onClick={() => setActiveSection(t.id)} style={{
+          background: activeSection === t.id ? '#334155' : 'none',
+          border: '1px solid',
+          borderColor: activeSection === t.id ? '#475569' : '#334155',
+          borderRadius: '4px',
+          color: activeSection === t.id ? '#e2e8f0' : '#94a3b8',
+          fontSize: '12px', padding: '5px 12px', cursor: 'pointer',
+          fontWeight: '600', letterSpacing: '0.03em',
+        }}>{t.label}</button>
+      ))}
+    </div>
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
-      <h1 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '28px' }}>Admin Portal</h1>
 
       {/* Beta Allowlist */}
-      <div style={sectionStyle}>
+      {activeSection === 'allowlist' && <div style={sectionStyle}>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Beta Allowlist</h2>
         <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
           Manage which emails can access the app during beta.
@@ -497,10 +535,10 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
             No emails on the allowlist yet.
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Name Pool */}
-      <div style={sectionStyle}>
+      {activeSection === 'names' && <div style={sectionStyle}>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Name Pool</h2>
         <div style={{ marginBottom: '12px' }}>
           <div style={labelStyle}>Add Names (one per line)</div>
@@ -527,10 +565,10 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
         {namesError && (
           <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{namesError}</div>
         )}
-      </div>
+      </div>}
 
       {/* Create Players */}
-      <div style={sectionStyle}>
+      {activeSection === 'players' && <div style={sectionStyle}>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Create Players</h2>
         <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
           New players are added to the free agent pool and will be available next offseason.
@@ -586,10 +624,10 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
             </div>
           </div>
         )}
-      </div>
+      </div>}
 
       {/* Grant Card */}
-      <div style={sectionStyle}>
+      {activeSection === 'cards' && <div style={sectionStyle}>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Grant Card</h2>
         <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
           Grant a trading card with specific edition, effect, and classification to a user.
@@ -705,10 +743,10 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
         </button>
         {cardResult && <div style={{ marginTop: '10px', fontSize: '13px', color: '#22c55e' }}>{cardResult}</div>}
         {cardError && <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{cardError}</div>}
-      </div>
+      </div>}
 
       {/* Grant Floobits */}
-      <div style={sectionStyle}>
+      {activeSection === 'floobits' && <div style={sectionStyle}>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Grant Floobits</h2>
         <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
           Add Floobits to a user's balance.
@@ -742,7 +780,66 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
         </button>
         {floobitsResult && <div style={{ marginTop: '10px', fontSize: '13px', color: '#22c55e' }}>{floobitsResult}</div>}
         {floobitsError && <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{floobitsError}</div>}
-      </div>
+      </div>}
+
+      {/* Registered Users */}
+      {activeSection === 'users' && <div style={sectionStyle}>
+        <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Registered Users</h2>
+        <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
+          {adminUsers.length} registered user{adminUsers.length !== 1 ? 's' : ''}
+        </p>
+        {adminUsers.length === 0 ? (
+          <div style={{ fontSize: '13px', color: '#94a3b8' }}>No users found.</div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #334155' }}>
+                  {['Username', 'Email', 'Favorite Team', 'Floobits', 'Joined', 'Last Login', 'Status'].map(h => (
+                    <th key={h} style={{
+                      ...labelStyle, textAlign: 'left', padding: '8px 10px',
+                      marginBottom: 0, whiteSpace: 'nowrap',
+                    }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {adminUsers.map(u => (
+                  <tr key={u.id} style={{ borderBottom: '1px solid #1e293b' }}>
+                    <td style={{ padding: '8px 10px', color: '#e2e8f0', fontWeight: '600' }}>
+                      {u.username || <span style={{ color: '#64748b', fontStyle: 'italic' }}>—</span>}
+                    </td>
+                    <td style={{ padding: '8px 10px', color: '#cbd5e1' }}>{u.email}</td>
+                    <td style={{ padding: '8px 10px', color: '#cbd5e1' }}>
+                      {u.favoriteTeam || <span style={{ color: '#64748b' }}>—</span>}
+                    </td>
+                    <td style={{ padding: '8px 10px', color: '#cbd5e1', textAlign: 'right' }}>
+                      {u.floobits.toLocaleString()}
+                      <span style={{ color: '#64748b', fontSize: '11px', marginLeft: '4px' }}>
+                        ({u.lifetimeEarned.toLocaleString()} / {u.lifetimeSpent.toLocaleString()})
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 10px', color: '#94a3b8', whiteSpace: 'nowrap', fontSize: '12px' }}>
+                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px', color: '#94a3b8', whiteSpace: 'nowrap', fontSize: '12px' }}>
+                      {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : '—'}
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <span style={{
+                        fontSize: '11px', fontWeight: '600', letterSpacing: '0.04em',
+                        color: !u.isActive ? '#ef4444' : u.onboarded ? '#22c55e' : '#f59e0b',
+                      }}>
+                        {!u.isActive ? 'Inactive' : u.onboarded ? 'Active' : 'Pending'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>}
     </div>
     </div>
   )

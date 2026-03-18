@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { usePickEm } from '@/contexts/PickEmContext'
-import type { AuthUser } from '@/contexts/AuthContext'
 import { useAuth } from '@/contexts/AuthContext'
 import type { PickEmGame, PickEmLeaderboardEntry } from '@/types/pickem'
 
@@ -10,16 +9,29 @@ const RANK_STYLE: Record<number, { label: string; color: string; bg: string }> =
   3: { label: '3rd', color: '#cd7f32', bg: 'rgba(205,127,50,0.15)' },
 }
 
+/** Multiplier-to-display-points (base 10) */
+function multiplierToPoints(m: number): number {
+  return Math.round(m * 10)
+}
+
+/** Color for a multiplier value */
+function multiplierColor(m: number): string {
+  if (m >= 0.8) return '#22c55e'  // green
+  if (m >= 0.4) return '#eab308'  // yellow
+  return '#ef4444'                 // red
+}
+
 type ViewMode = 'results' | 'leaderboard'
 
 export const PickEmPanel: React.FC = () => {
   const { user } = useAuth()
   const userId = user?.id ?? null
   const {
-    games, locked, weekSummary, previousWeekSummary, season, week,
+    games, weekSummary, season, week,
     seasonLeaderboard, weekLeaderboard, loading, submitPick,
   } = usePickEm()
   const [mode, setMode] = useState<ViewMode>('results')
+  const [showHelp, setShowHelp] = useState(false)
 
   if (loading) {
     return (
@@ -42,8 +54,8 @@ export const PickEmPanel: React.FC = () => {
 
   return (
     <div style={{ fontSize: '13px' }}>
-      {/* Mode Toggle */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', padding: '0 4px' }}>
+      {/* Mode Toggle + Help Button */}
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', padding: '0 4px', alignItems: 'center' }}>
         {(['results', 'leaderboard'] as ViewMode[]).map(m => (
           <button
             key={m}
@@ -64,14 +76,74 @@ export const PickEmPanel: React.FC = () => {
             {m === 'results' ? 'My Picks' : 'Leaderboard'}
           </button>
         ))}
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          title="How Prognostications work"
+          style={{
+            width: '24px',
+            height: '24px',
+            borderRadius: '50%',
+            border: '1px solid #475569',
+            backgroundColor: showHelp ? '#334155' : 'transparent',
+            color: showHelp ? '#e2e8f0' : '#94a3b8',
+            fontSize: '12px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            transition: 'all 0.15s',
+          }}
+        >
+          ?
+        </button>
       </div>
+
+      {/* Help Tooltip */}
+      {showHelp && (
+        <div style={{
+          padding: '10px 12px',
+          borderRadius: '8px',
+          backgroundColor: '#1a2332',
+          border: '1px solid #334155',
+          marginBottom: '8px',
+          fontSize: '11px',
+          lineHeight: '1.5',
+          color: '#cbd5e1',
+        }}>
+          <div style={{ fontWeight: '700', color: '#e2e8f0', marginBottom: '6px', fontSize: '12px' }}>
+            How Prognostications Work
+          </div>
+          <div style={{ marginBottom: '6px' }}>
+            Pick the winner of each game. Earlier picks earn more points:
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '2px 12px',
+            marginBottom: '6px',
+            fontSize: '11px',
+          }}>
+            <span><span style={{ color: '#22c55e', fontWeight: '600' }}>Pre-game</span> — 10 pts</span>
+            <span><span style={{ color: '#22c55e', fontWeight: '600' }}>Q1</span> — 8 pts</span>
+            <span><span style={{ color: '#eab308', fontWeight: '600' }}>Q2</span> — 6 pts</span>
+            <span><span style={{ color: '#eab308', fontWeight: '600' }}>Q3</span> — 4 pts</span>
+            <span><span style={{ color: '#ef4444', fontWeight: '600' }}>Q4</span> — 2 pts</span>
+            <span><span style={{ color: '#eab308', fontWeight: '600' }}>OT</span> — 3 pts</span>
+          </div>
+          <div style={{ color: '#94a3b8' }}>
+            You can change your pick at any time before the game ends. Changing resets the multiplier to the current quarter.
+            The point value shown on each game reflects what you&apos;ll earn if correct — once picked, it locks in your multiplier.
+            Floobits earned = total points x 0.5. Reach 96+ points in a week for a Clairvoyant bonus!
+          </div>
+        </div>
+      )}
 
       {mode === 'results' ? (
         <ResultsView
           games={games}
-          locked={locked}
           weekSummary={weekSummary}
-          previousWeekSummary={previousWeekSummary}
           week={week}
           pickedCount={pickedCount}
           totalGames={totalGames}
@@ -91,9 +163,7 @@ export const PickEmPanel: React.FC = () => {
 
 interface ResultsViewProps {
   games: PickEmGame[]
-  locked: boolean
-  weekSummary: { correct: number; total: number; perfectWeek: boolean } | null
-  previousWeekSummary: { week: number; correct: number; total: number; perfectWeek: boolean } | null
+  weekSummary: { correct: number; total: number; totalPoints: number; clairvoyant: boolean } | null
   week: number
   pickedCount: number
   totalGames: number
@@ -101,69 +171,41 @@ interface ResultsViewProps {
 }
 
 const ResultsView: React.FC<ResultsViewProps> = ({
-  games, locked, weekSummary, previousWeekSummary, week, pickedCount, totalGames, submitPick,
+  games, weekSummary, week, pickedCount, totalGames, submitPick,
 }) => {
   return (
     <div>
-      {/* Previous Week Results (shown when early-pivoted to next week) */}
-      {previousWeekSummary && (
-        <div style={{
-          padding: '6px 12px',
-          borderRadius: '8px',
-          backgroundColor: previousWeekSummary.perfectWeek ? 'rgba(34,197,94,0.10)' : '#1a2332',
-          border: previousWeekSummary.perfectWeek ? '1px solid rgba(34,197,94,0.2)' : '1px solid #293548',
-          marginBottom: '6px',
-          textAlign: 'center',
-        }}>
-          {previousWeekSummary.perfectWeek ? (
-            <div>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: '#22c55e', letterSpacing: '0.05em' }}>
-                CLAIRVOYANT — Week {previousWeekSummary.week}
-              </div>
-              <div style={{ fontSize: '11px', color: '#86efac', marginTop: '1px' }}>
-                {previousWeekSummary.correct}/{previousWeekSummary.total} correct — +{previousWeekSummary.correct * 5} Floobits
-              </div>
-            </div>
-          ) : (
-            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-              <span style={{ color: '#cbd5e1', fontWeight: '600' }}>Week {previousWeekSummary.week}:</span>{' '}
-              {previousWeekSummary.correct}/{previousWeekSummary.total} correct — +{previousWeekSummary.correct * 5} Floobits
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Summary Banner */}
       {weekSummary ? (
         <div style={{
           padding: '6px 12px',
           borderRadius: '8px',
-          backgroundColor: weekSummary.perfectWeek ? 'rgba(34,197,94,0.15)' : '#1e293b',
-          border: weekSummary.perfectWeek ? '1px solid rgba(34,197,94,0.3)' : '1px solid #334155',
+          backgroundColor: weekSummary.clairvoyant ? 'rgba(34,197,94,0.10)' : '#1e293b',
+          borderBottom: weekSummary.clairvoyant ? '2px solid rgba(34,197,94,0.5)' : '2px solid #334155',
           marginBottom: '6px',
           textAlign: 'center',
         }}>
-          {weekSummary.perfectWeek ? (
+          {weekSummary.clairvoyant ? (
             <div>
               <div style={{ fontSize: '14px', fontWeight: '700', color: '#22c55e', letterSpacing: '0.05em' }}>
                 CLAIRVOYANT
               </div>
               <div style={{ fontSize: '12px', color: '#86efac', marginTop: '2px' }}>
-                {weekSummary.correct}/{weekSummary.total} correct — Perfect Week!
+                {weekSummary.totalPoints} pts — {weekSummary.correct}/{weekSummary.total} correct
               </div>
             </div>
           ) : (
             <div>
               <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0' }}>
-                {weekSummary.correct}/{weekSummary.total} correct
+                {weekSummary.totalPoints} pts — {weekSummary.correct}/{weekSummary.total} correct
               </div>
               <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-                +{weekSummary.correct * 5} Floobits earned
+                +{Math.round(weekSummary.totalPoints * 0.5)} Floobits earned
               </div>
             </div>
           )}
         </div>
-      ) : !locked ? (
+      ) : (
         <div style={{
           padding: '6px 12px',
           borderRadius: '8px',
@@ -174,12 +216,19 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           fontSize: '12px',
           color: '#94a3b8',
         }}>
-          {pickedCount === totalGames
-            ? 'All picks submitted'
-            : `${pickedCount} of ${totalGames} games picked`
-          }
+          {(() => {
+            const possiblePts = games.reduce((sum, g) => {
+              if (g.userPick != null && g.pointsMultiplier != null) {
+                return sum + multiplierToPoints(g.pointsMultiplier)
+              }
+              return sum
+            }, 0)
+            return possiblePts > 0
+              ? <span><span style={{ color: '#e2e8f0', fontWeight: '600' }}>{possiblePts} pts</span> possible if all correct</span>
+              : 'No picks yet'
+          })()}
         </div>
-      ) : null}
+      )}
 
       {/* Game Rows */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -187,7 +236,6 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           <PickRow
             key={game.gameIndex}
             game={game}
-            locked={locked}
             onPick={(teamId) => submitPick(game.gameIndex, teamId)}
           />
         ))}
@@ -198,17 +246,24 @@ const ResultsView: React.FC<ResultsViewProps> = ({
 
 interface PickRowProps {
   game: PickEmGame
-  locked: boolean
   onPick: (teamId: number) => void
 }
 
-const PickRow: React.FC<PickRowProps> = ({ game, locked, onPick }) => {
+const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
   const hasResult = game.result?.correct != null
   const isCorrect = game.result?.correct === true
   const homeSelected = game.userPick === game.homeTeam.id
   const awaySelected = game.userPick === game.awayTeam.id
   const homeColor = game.homeTeam.color || '#94a3b8'
   const awayColor = game.awayTeam.color || '#94a3b8'
+  const canPick = game.pickable && !hasResult
+
+  // Show locked-in multiplier if user has picked, otherwise current available
+  const displayMultiplier = game.userPick != null && game.pointsMultiplier != null
+    ? game.pointsMultiplier
+    : game.currentMultiplier
+  const displayPoints = multiplierToPoints(displayMultiplier)
+  const badgeColor = multiplierColor(displayMultiplier)
 
   return (
     <div style={{
@@ -220,36 +275,49 @@ const PickRow: React.FC<PickRowProps> = ({ game, locked, onPick }) => {
       backgroundColor: '#1e293b',
       borderTop: '1px solid #334155',
       borderBottom: '1px solid #334155',
-      borderLeft: `3px solid ${homeColor}`,
-      borderRight: `3px solid ${awayColor}`,
     }}>
       {/* Home Team Button */}
       <button
-        onClick={(e) => { e.stopPropagation(); if (!locked && !hasResult) onPick(game.homeTeam.id) }}
-        disabled={locked || hasResult}
+        onClick={(e) => { e.stopPropagation(); if (canPick) onPick(game.homeTeam.id) }}
+        disabled={!canPick}
         style={{
           flex: 1,
           padding: '4px 8px',
           borderRadius: '5px',
           border: homeSelected ? `1px solid ${homeColor}` : '1px solid transparent',
-          backgroundColor: homeSelected ? `${homeColor}22` : 'transparent',
+          backgroundColor: homeSelected ? `${homeColor}22` : `${homeColor}15`,
           color: homeSelected ? homeColor : '#cbd5e1',
           fontSize: '14px',
           fontWeight: homeSelected ? '700' : '500',
-          cursor: locked || hasResult ? 'default' : 'pointer',
+          cursor: canPick ? 'pointer' : 'default',
           textAlign: 'center',
           opacity: awaySelected && !hasResult ? 0.5 : 1,
           transition: 'all 0.15s',
         }}
       >
-        <div>{game.homeTeam.abbr}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <img
+            src={`http://localhost:8000/api/teams/${game.homeTeam.id}/avatar?size=20&v=2`}
+            alt={game.homeTeam.abbr}
+            crossOrigin="anonymous"
+            style={{ width: '20px', height: '20px', flexShrink: 0 }}
+          />
+          <span>{game.homeTeam.abbr}</span>
+        </div>
         <div style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '500', marginTop: '2px' }}>
           {game.homeTeam.record} · {Math.round(game.homeTeam.elo)}
         </div>
       </button>
 
-      {/* Status Icon */}
-      <div style={{ width: '20px', flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+      {/* Center: Status Icon + Multiplier Badge */}
+      <div style={{
+        width: '36px',
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '2px',
+      }}>
         {hasResult && game.userPick != null ? (
           isCorrect ? (
             <svg viewBox="0 0 24 24" fill="#22c55e" style={{ width: '16px', height: '16px' }}>
@@ -260,35 +328,71 @@ const PickRow: React.FC<PickRowProps> = ({ game, locked, onPick }) => {
               <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z" clipRule="evenodd" />
             </svg>
           )
-        ) : locked && game.userPick != null ? (
-          <svg viewBox="0 0 24 24" fill="#94a3b8" style={{ width: '14px', height: '14px' }}>
-            <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
-          </svg>
         ) : (
           <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '600' }}>vs</span>
+        )}
+        {/* Multiplier badge */}
+        {!hasResult && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0px' }}>
+            <div style={{
+              fontSize: '9px',
+              fontWeight: '700',
+              color: badgeColor,
+              backgroundColor: `${badgeColor}18`,
+              padding: '1px 4px',
+              borderRadius: '3px',
+              whiteSpace: 'nowrap',
+            }}>
+              {displayPoints} pt{displayPoints !== 1 ? 's' : ''}
+            </div>
+            {game.userPick != null && (
+              <div style={{ fontSize: '8px', color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                if correct
+              </div>
+            )}
+          </div>
+        )}
+        {/* Show earned points for resolved picks */}
+        {hasResult && game.userPick != null && game.result?.pointsEarned != null && (
+          <div style={{
+            fontSize: '9px',
+            fontWeight: '700',
+            color: isCorrect ? '#22c55e' : '#64748b',
+            whiteSpace: 'nowrap',
+          }}>
+            {isCorrect ? `+${game.result.pointsEarned}` : '0'} pts
+          </div>
         )}
       </div>
 
       {/* Away Team Button */}
       <button
-        onClick={(e) => { e.stopPropagation(); if (!locked && !hasResult) onPick(game.awayTeam.id) }}
-        disabled={locked || hasResult}
+        onClick={(e) => { e.stopPropagation(); if (canPick) onPick(game.awayTeam.id) }}
+        disabled={!canPick}
         style={{
           flex: 1,
           padding: '4px 8px',
           borderRadius: '5px',
           border: awaySelected ? `1px solid ${awayColor}` : '1px solid transparent',
-          backgroundColor: awaySelected ? `${awayColor}22` : 'transparent',
+          backgroundColor: awaySelected ? `${awayColor}22` : `${awayColor}15`,
           color: awaySelected ? awayColor : '#cbd5e1',
           fontSize: '14px',
           fontWeight: awaySelected ? '700' : '500',
-          cursor: locked || hasResult ? 'default' : 'pointer',
+          cursor: canPick ? 'pointer' : 'default',
           textAlign: 'center',
           opacity: homeSelected && !hasResult ? 0.5 : 1,
           transition: 'all 0.15s',
         }}
       >
-        <div>{game.awayTeam.abbr}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+          <img
+            src={`http://localhost:8000/api/teams/${game.awayTeam.id}/avatar?size=20&v=2`}
+            alt={game.awayTeam.abbr}
+            crossOrigin="anonymous"
+            style={{ width: '20px', height: '20px', flexShrink: 0 }}
+          />
+          <span>{game.awayTeam.abbr}</span>
+        </div>
         <div style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '500', marginTop: '2px' }}>
           {game.awayTeam.record} · {Math.round(game.awayTeam.elo)}
         </div>
@@ -370,32 +474,35 @@ const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                 </div>
 
                 {/* Username */}
-                <div style={{ flex: 1, fontSize: '12px', fontWeight: '500', color: '#e2e8f0' }}>
-                  {entry.username}
-                  {isMe && <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>}
+                <div style={{ flex: 1, fontSize: '12px', fontWeight: '500', color: '#e2e8f0', minWidth: 0 }}>
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {entry.username}
+                    {isMe && <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>}
+                  </div>
                 </div>
 
-                {/* Stats */}
-                <div style={{ textAlign: 'right', fontSize: '12px' }}>
-                  <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{entry.correctCount}</span>
-                  <span style={{ color: '#94a3b8' }}>/{entry.totalPicks}</span>
-                  <span style={{ color: '#94a3b8', marginLeft: '6px', fontSize: '11px' }}>
-                    {entry.accuracy}%
-                  </span>
+                {/* Points + Accuracy stacked */}
+                <div style={{ textAlign: 'right', lineHeight: '1.3' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#e2e8f0', whiteSpace: 'nowrap' }}>
+                    {entry.totalPoints} pts
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                    {entry.correctCount}/{entry.totalPicks} · {entry.accuracy}%
+                  </div>
                 </div>
 
-                {/* Perfect Weeks (season only) */}
-                {subMode === 'season' && entry.perfectWeeks != null && entry.perfectWeeks > 0 && (
+                {/* Clairvoyant Weeks (season only) */}
+                {subMode === 'season' && entry.clairvoyantWeeks != null && entry.clairvoyantWeeks > 0 && (
                   <div style={{
                     fontSize: '10px',
                     fontWeight: '700',
                     color: '#22c55e',
-                    backgroundColor: 'rgba(34,197,94,0.15)',
+                    backgroundColor: 'rgba(34,197,94,0.25)',
                     padding: '2px 4px',
                     borderRadius: '3px',
                     whiteSpace: 'nowrap',
                   }}>
-                    {entry.perfectWeeks}x
+                    {entry.clairvoyantWeeks}x
                   </div>
                 )}
               </div>

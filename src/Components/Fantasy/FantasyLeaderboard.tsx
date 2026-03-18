@@ -114,7 +114,7 @@ export const FantasyLeaderboard: React.FC = () => {
   const toggleStyle = (active: boolean): React.CSSProperties => ({
     padding: '6px 14px',
     borderRadius: '6px',
-    border: active ? '1px solid #3b82f6' : '1px solid transparent',
+    border: 'none',
     backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'transparent',
     color: active ? '#60a5fa' : '#64748b',
     cursor: 'pointer',
@@ -159,8 +159,7 @@ export const FantasyLeaderboard: React.FC = () => {
         style={{
           cursor: 'pointer', userSelect: 'none', marginBottom: '12px',
           padding: '6px 10px', borderRadius: '6px',
-          backgroundColor: 'rgba(234,179,8,0.08)',
-          border: '1px solid rgba(234,179,8,0.2)',
+          backgroundColor: 'rgba(234,179,8,0.10)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}
       >
@@ -179,8 +178,8 @@ export const FantasyLeaderboard: React.FC = () => {
         return (
           <div style={{
             marginBottom: '12px', padding: '10px 12px', borderRadius: '8px',
-            backgroundColor: 'rgba(234,179,8,0.06)',
-            border: '1px solid rgba(234,179,8,0.15)',
+            backgroundColor: 'rgba(234,179,8,0.10)',
+            borderBottom: '2px solid rgba(234,179,8,0.5)',
             display: 'flex', flexDirection: 'column', gap: '6px',
           }}>
             {[1, 2, 3].map(rank => {
@@ -395,7 +394,7 @@ const rowStyle = (isExpanded: boolean, mobile: boolean, isMe: boolean = false): 
   display: 'flex', alignItems: 'center', gap: mobile ? '8px' : '14px',
   width: '100%', padding: mobile ? '8px 10px' : '12px 16px',
   backgroundColor: isMe ? '#253348' : isExpanded ? 'rgba(255,255,255,0.06)' : 'transparent',
-  border: isMe ? '1px solid rgba(59,130,246,0.3)' : 'none',
+  borderLeft: isMe ? '2px solid #3b82f6' : '2px solid transparent',
   borderRadius: '8px', cursor: 'pointer',
   fontFamily: 'inherit', textAlign: 'left',
   transition: 'background 0.1s',

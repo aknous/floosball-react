@@ -3,7 +3,6 @@ import { usePickEm as usePickEmHook } from '@/hooks/usePickEm'
 import type {
   PickEmGame,
   PickEmWeekSummary,
-  PickEmPreviousWeekSummary,
   PickEmLeaderboardEntry,
 } from '@/types/pickem'
 
@@ -11,9 +10,7 @@ interface PickEmContextValue {
   picks: Map<number, number>
   results: Map<number, boolean | null>
   games: PickEmGame[]
-  locked: boolean
   weekSummary: PickEmWeekSummary | null
-  previousWeekSummary: PickEmPreviousWeekSummary | null
   season: number
   week: number
   seasonLeaderboard: PickEmLeaderboardEntry[]

@@ -233,7 +233,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
             {/* Left: clock / situation */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <span>Q{play.quarter} - {play.timeRemaining}</span>
+              <span>{play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}</span>
               {downText && (
                 <>
                   <span>•</span>
@@ -279,8 +279,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 <span style={{
                   fontSize: '10px',
                   color: badgeColor,
-                  border: `1px solid ${badgeColor}55`,
-                  backgroundColor: `${badgeColor}18`,
+                  backgroundColor: `${badgeColor}30`,
                   padding: '1px 7px',
                   borderRadius: '3px',
                   fontWeight: '700',
@@ -798,8 +797,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                               <span style={{
                                 fontSize: '10px',
                                 color: badgeColor,
-                                border: `1px solid ${badgeColor}55`,
-                                backgroundColor: `${badgeColor}18`,
+                                backgroundColor: `${badgeColor}30`,
                                 padding: '1px 7px',
                                 borderRadius: '3px',
                                 fontWeight: '700',

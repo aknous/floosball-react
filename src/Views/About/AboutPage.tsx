@@ -82,13 +82,13 @@ const AboutPage: React.FC = () => {
           padding: '14px 18px',
           marginBottom: '32px',
           borderRadius: '8px',
-          backgroundColor: 'rgba(245,158,11,0.08)',
-          border: '1px solid rgba(245,158,11,0.25)',
+          backgroundColor: 'rgba(245,158,11,0.10)',
+          borderBottom: '2px solid rgba(245,158,11,0.5)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
             <span style={{
               fontSize: '10px', fontWeight: '700', color: '#f59e0b',
-              backgroundColor: 'rgba(245,158,11,0.15)', padding: '2px 6px',
+              backgroundColor: 'rgba(245,158,11,0.30)', padding: '2px 6px',
               borderRadius: '4px', letterSpacing: '0.5px',
             }}>
               CLOSED BETA
@@ -324,9 +324,13 @@ const AboutPage: React.FC = () => {
         {/* Prognosticate */}
         <Section title="Prognosticate">
           <p style={textStyle}>
-            Prognosticate is the weekly pick'em game. Before each round of games, predict which team will
-            win each matchup. Correct predictions earn Floobits, and picking every game correctly in a week
-            awards a Clairvoyant bonus. Access Prognosticate from the <Link to="/dashboard" style={linkStyle}>Dashboard</Link>.
+            Prognosticate is the weekly predictions game. Pick who you think will win each matchup — before
+            or during games. Earlier picks are worth more points: a pre-game pick earns 10 points if correct,
+            while a Q3 pick earns only 4 and a Q4 pick earns 2. Overtime picks earn 3 points — more than Q4,
+            since the outcome is essentially a coin flip again. You can change your pick at any time before
+            the game ends, but the multiplier resets to the current quarter. Points convert to Floobits at
+            2:1, and reaching 96+ points in a week earns a Clairvoyant bonus. Weekly and season leaderboards
+            rank by total points earned. Access Prognosticate from the <Link to="/dashboard" style={linkStyle}>Dashboard</Link>.
           </p>
         </Section>
 
@@ -358,7 +362,7 @@ const AboutPage: React.FC = () => {
               'Weekly leaderboard: 1st = 30, 2nd = 20, 3rd = 15 (top 25% get 5)',
               'Season leaderboard: 1st = 200, 2nd = 125, 3rd = 75 (top 25% get 25)',
               'Season FP payout: 1 Floobit per 25 FP earned',
-              'Prognosticate: Floobits for correct picks, bonus for perfect weeks',
+              'Prognosticate: points x 0.5 Floobits, bonus for perfect weeks',
               'Favorite team clinches playoffs: 25',
               'Favorite team clinches top seed: 50',
               'Favorite team wins Floosbowl: 150',

@@ -140,8 +140,11 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      {highlights.map((item) => {
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+      {highlights.map((item, idx) => {
+        const separator = idx > 0 ? (
+          <div key={`sep-${idx}`} style={{ height: '1px', backgroundColor: '#1e293b', margin: '0 12px' }} />
+        ) : null
         if (item.type === 'league_news') {
           const isChamp = item.text.includes('champions!')
           const isTopSeed = item.text.includes('top seed') || item.text.includes('#1 seed')
@@ -150,24 +153,26 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
           const label = isChamp ? 'CHAMPION' : isTopSeed ? 'TOP SEED' : isClinch ? 'CLINCHED' : 'ELIMINATED'
           const labelColor = isChamp ? '#f59e0b' : isTopSeed ? '#a78bfa' : isClinch ? '#22c55e' : '#ef4444'
           return (
-            <div
-              key={item.id}
-              style={{
-                backgroundColor: '#0f172a',
-                borderRadius: '6px',
-                padding: '10px 12px',
-                borderLeft: `3px solid ${borderColor}`,
-              }}
-            >
-              <div style={{ marginBottom: '4px' }}>
-                <span style={{ fontSize: '10px', fontWeight: '700', color: labelColor, letterSpacing: '0.08em' }}>
-                  {label}
-                </span>
+            <React.Fragment key={item.id}>
+              {separator}
+              <div
+                style={{
+                  backgroundColor: `${borderColor}18`,
+                  borderRadius: '6px',
+                  padding: '10px 12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: labelColor, flexShrink: 0 }} />
+                  <span style={{ fontSize: '10px', fontWeight: '700', color: labelColor, letterSpacing: '0.08em' }}>
+                    {label}
+                  </span>
+                </div>
+                <p style={{ fontSize: '13px', color: '#e2e8f0', margin: 0, lineHeight: '1.4' }}>
+                  {item.text}
+                </p>
               </div>
-              <p style={{ fontSize: '13px', color: '#e2e8f0', margin: 0, lineHeight: '1.4' }}>
-                {item.text}
-              </p>
-            </div>
+            </React.Fragment>
           )
         }
 
@@ -175,42 +180,42 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
           const { homeTeam, awayTeam, homeScore, awayScore, gameId } = item
           const homeWon = homeScore > awayScore
           const awayWon = awayScore > homeScore
+          const winnerColor = homeWon ? homeTeam.color : awayTeam.color
           return (
-            <div
-              key={`end-${gameId}`}
-              onClick={() => onPlayClick(gameId)}
-              style={{
-                backgroundColor: '#0f172a',
-                borderRadius: '6px',
-                padding: '10px 12px',
-                cursor: 'pointer',
-                borderLeft: '3px solid #475569',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', letterSpacing: '0.08em' }}>FINAL</span>
-                <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 6px', backgroundColor: '#1e293b', borderRadius: '4px', color: '#94a3b8' }}>
-                  GAME OVER
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <img src={`${API_BASE}/teams/${homeTeam.id}/avatar?size=20&v=2`} alt={homeTeam.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
-                  <span style={{ fontSize: '13px', fontWeight: homeWon ? '700' : '400', color: homeWon ? '#e2e8f0' : '#64748b' }}>
-                    {homeTeam.abbr}
-                  </span>
+            <React.Fragment key={`end-${gameId}`}>
+              {separator}
+              <div
+                onClick={() => onPlayClick(gameId)}
+                style={{
+                  backgroundColor: `${winnerColor}18`,
+                  borderRadius: '6px',
+                  padding: '10px 12px',
+                  cursor: 'pointer',
+                  borderBottom: `2px solid ${winnerColor}40`,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.08em' }}>FINAL</span>
                 </div>
-                <span style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', letterSpacing: '0.05em' }}>
-                  {homeScore} – {awayScore}
-                </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: awayWon ? '700' : '400', color: awayWon ? '#e2e8f0' : '#64748b' }}>
-                    {awayTeam.abbr}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <img src={`${API_BASE}/teams/${homeTeam.id}/avatar?size=20&v=2`} alt={homeTeam.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+                    <span style={{ fontSize: '13px', fontWeight: homeWon ? '700' : '400', color: homeWon ? '#e2e8f0' : '#94a3b8' }}>
+                      {homeTeam.abbr}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', letterSpacing: '0.05em' }}>
+                    {homeScore} – {awayScore}
                   </span>
-                  <img src={`${API_BASE}/teams/${awayTeam.id}/avatar?size=20&v=2`} alt={awayTeam.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: awayWon ? '700' : '400', color: awayWon ? '#e2e8f0' : '#94a3b8' }}>
+                      {awayTeam.abbr}
+                    </span>
+                    <img src={`${API_BASE}/teams/${awayTeam.id}/avatar?size=20&v=2`} alt={awayTeam.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+                  </div>
                 </div>
               </div>
-            </div>
+            </React.Fragment>
           )
         }
 
@@ -218,32 +223,24 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
         if (item.type === 'game_start') {
           const { homeTeam, awayTeam, gameId } = item
           return (
-            <div
-              key={`start-${gameId}`}
-              onClick={() => onPlayClick(gameId)}
-              style={{
-                backgroundColor: '#0f172a',
-                borderRadius: '6px',
-                padding: '10px 12px',
-                cursor: 'pointer',
-                borderLeft: '3px solid #334155',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <span style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.08em' }}>KICKOFF</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <img src={`${API_BASE}/teams/${homeTeam.id}/avatar?size=20&v=2`} alt={homeTeam.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
-                  <span style={{ fontSize: '13px', color: '#94a3b8' }}>{homeTeam.abbr}</span>
-                </div>
-                <span style={{ fontSize: '12px', color: '#475569', fontWeight: '600' }}>vs</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '13px', color: '#94a3b8' }}>{awayTeam.abbr}</span>
-                  <img src={`${API_BASE}/teams/${awayTeam.id}/avatar?size=20&v=2`} alt={awayTeam.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+            <React.Fragment key={`start-${gameId}`}>
+              {separator}
+              <div
+                onClick={() => onPlayClick(gameId)}
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                  <img src={`${API_BASE}/teams/${homeTeam.id}/avatar?size=16&v=2`} alt={homeTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>{homeTeam.abbr}</span>
+                  <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600', letterSpacing: '0.08em' }}>KICKOFF</span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>{awayTeam.abbr}</span>
+                  <img src={`${API_BASE}/teams/${awayTeam.id}/avatar?size=16&v=2`} alt={awayTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
                 </div>
               </div>
-            </div>
+            </React.Fragment>
           )
         }
 
@@ -253,17 +250,17 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
         const hasScore = play.homeTeamScore != null && play.awayTeamScore != null
 
         return (
-          <div
-            key={`play-${gameId}-${play.playNumber}`}
-            onClick={() => onPlayClick(gameId)}
-            style={{
-              backgroundColor: play.isBigPlay ? '#1a1300' : '#0f172a',
-              borderRadius: '6px',
-              padding: '10px 12px',
-              cursor: 'pointer',
-              borderLeft: `3px solid ${featuredTeam.color}`,
-            }}
-          >
+          <React.Fragment key={`play-${gameId}-${play.playNumber}`}>
+            {separator}
+            <div
+              onClick={() => onPlayClick(gameId)}
+              style={{
+                backgroundColor: play.isBigPlay ? '#1a1300' : `${featuredTeam.color}15`,
+                borderRadius: '6px',
+                padding: '10px 12px',
+                cursor: 'pointer',
+              }}
+            >
             {/* Header: team dot + abbr + time | badge */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -271,11 +268,13 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
                 <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.04em' }}>
                   {featuredTeam.abbr}
                 </span>
-                <span style={{ fontSize: '11px', color: '#64748b' }}>
-                  Q{play.quarter} {play.timeRemaining}
+                <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                  {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} {play.timeRemaining}
                 </span>
                 {play.isBigPlay && (
-                  <span style={{ fontSize: '11px', color: '#d97706' }} title="Big WP swing">⚡</span>
+                  <svg viewBox="0 0 24 24" fill="#d97706" style={{ width: '12px', height: '12px', flexShrink: 0 }} title="Big WP swing">
+                    <path d="M3.75 13.5 14.25 2.25 12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+                  </svg>
                 )}
               </div>
               {badge && (
@@ -284,8 +283,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
                   fontWeight: '700',
                   padding: '1px 7px',
                   borderRadius: '3px',
-                  border: `1px solid ${badge.color}55`,
-                  backgroundColor: `${badge.color}18`,
+                  backgroundColor: `${badge.color}30`,
                   color: badge.color,
                   letterSpacing: '0.04em',
                   textTransform: 'uppercase',
@@ -307,7 +305,8 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
                 {homeTeam.abbr} {play.homeTeamScore} · {awayTeam.abbr} {play.awayTeamScore}
               </div>
             )}
-          </div>
+            </div>
+          </React.Fragment>
         )
       })}
     </div>

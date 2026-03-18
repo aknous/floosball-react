@@ -12,7 +12,7 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {}
   const { games, loading, error } = useGames()
   const { user } = useAuth()
   const favTeamId = user?.favoriteTeamId ?? null
-  const { games: pickEmGames, locked: pickEmLocked, submitPick } = usePickEm()
+  const { games: pickEmGames, submitPick } = usePickEm()
 
   // Convert Map to array, favorite team's game first
   const gamesArray = Array.from(games.values()).sort((a, b) => {
@@ -106,7 +106,7 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {}
                 favTeamId={favTeamId}
                 onClick={handleClick}
                 userPick={pickEmGame?.userPick ?? null}
-                pickLocked={pickEmLocked}
+                pickable={pickEmGame?.pickable ?? false}
                 pickCorrect={pickEmGame?.result?.correct ?? null}
                 onPick={pickEmGame ? (teamId: number) => submitPick(pickEmGame.gameIndex, teamId) : undefined}
               />

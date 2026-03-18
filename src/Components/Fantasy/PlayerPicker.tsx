@@ -36,13 +36,13 @@ const POSITION_MAP: Record<string, string> = {
   QB: 'QB', RB: 'RB', WR: 'WR', TE: 'TE', K: 'K',
 }
 
-const EDITION_COLORS: Record<string, { color: string; bg: string; border: string }> = {
-  base:        { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.25)' },
-  chrome:      { color: '#d4d4d8', bg: 'rgba(212,212,216,0.12)', border: 'rgba(212,212,216,0.25)' },
-  holographic: { color: '#c4b5fd', bg: 'rgba(196,181,253,0.12)', border: 'rgba(196,181,253,0.25)' },
-  gold:        { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.25)' },
-  prismatic:   { color: '#f9a8d4', bg: 'rgba(249,168,212,0.12)', border: 'rgba(249,168,212,0.25)' },
-  diamond:     { color: '#a5f3fc', bg: 'rgba(165,243,252,0.12)', border: 'rgba(165,243,252,0.25)' },
+const EDITION_COLORS: Record<string, { color: string; bg: string }> = {
+  base:        { color: '#94a3b8', bg: 'rgba(148,163,184,0.18)' },
+  chrome:      { color: '#d4d4d8', bg: 'rgba(212,212,216,0.18)' },
+  holographic: { color: '#c4b5fd', bg: 'rgba(196,181,253,0.18)' },
+  gold:        { color: '#fbbf24', bg: 'rgba(251,191,36,0.18)' },
+  prismatic:   { color: '#f9a8d4', bg: 'rgba(249,168,212,0.18)' },
+  diamond:     { color: '#a5f3fc', bg: 'rgba(165,243,252,0.18)' },
 }
 
 const EDITION_LABELS: Record<string, string> = {
@@ -79,7 +79,7 @@ const CardBadge: React.FC<{ card: PlayerCardInfo }> = ({ card }) => {
       fontSize: '11px', fontWeight: '700', color: style.color,
       backgroundColor: style.bg,
       padding: '3px 8px', borderRadius: '4px',
-      border: `1px solid ${style.border}`,
+      border: 'none',
       whiteSpace: 'nowrap',
     }}>
       {label}

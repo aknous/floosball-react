@@ -161,7 +161,7 @@ export const FavoriteTeamModal: React.FC<FavoriteTeamModalProps> = ({ visible, o
 
         {/* Lock notice */}
         {isLocked && !pendingMessage && (
-          <div style={{ padding: isMobile ? '8px 14px' : '10px 20px', backgroundColor: 'rgba(59,130,246,0.1)', borderBottom: '1px solid #334155' }}>
+          <div style={{ padding: isMobile ? '8px 14px' : '10px 20px', backgroundColor: 'rgba(59,130,246,0.10)', borderBottom: '2px solid rgba(59,130,246,0.5)' }}>
             <div style={{ fontSize: isMobile ? '9px' : '10px', color: '#60a5fa', lineHeight: '1.6' }}>
               Your favorite team is locked for this season. Any change will take effect next season.
             </div>
@@ -170,7 +170,7 @@ export const FavoriteTeamModal: React.FC<FavoriteTeamModalProps> = ({ visible, o
 
         {/* Pending message */}
         {(pendingMessage || user?.pendingFavoriteTeamId) && (
-          <div style={{ padding: isMobile ? '8px 14px' : '10px 20px', backgroundColor: 'rgba(234,179,8,0.1)', borderBottom: '1px solid #334155' }}>
+          <div style={{ padding: isMobile ? '8px 14px' : '10px 20px', backgroundColor: 'rgba(234,179,8,0.10)', borderBottom: '2px solid rgba(234,179,8,0.5)' }}>
             <div style={{ fontSize: isMobile ? '9px' : '10px', color: '#eab308', lineHeight: '1.5' }}>
               {pendingMessage || (() => {
                 const pt = teams.find(t => t.id === user?.pendingFavoriteTeamId)
@@ -184,8 +184,8 @@ export const FavoriteTeamModal: React.FC<FavoriteTeamModalProps> = ({ visible, o
         {confirmTeam && (
           <div style={{
             padding: isMobile ? '14px' : '20px',
-            backgroundColor: 'rgba(234,179,8,0.08)',
-            borderBottom: '1px solid #334155',
+            backgroundColor: 'rgba(234,179,8,0.10)',
+            borderBottom: '2px solid rgba(234,179,8,0.5)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px', marginBottom: isMobile ? '10px' : '14px' }}>
               <img

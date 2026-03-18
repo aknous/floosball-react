@@ -2,9 +2,23 @@ import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-const APP_VERSION = process.env.REACT_APP_VERSION || '0.5.0'
+const APP_VERSION = process.env.REACT_APP_VERSION || '0.6.0'
 
 const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+  {
+    version: 'v0.6.0',
+    date: '2026-03-17',
+    changes: [
+      'Prognostication redesign — pick winners before or during games with quarter-based point multipliers',
+      'Earlier picks earn more: pre-game 10 pts, Q1 8 pts, Q2 6 pts, Q3 4 pts, Q4 2 pts, OT 3 pts',
+      'Combined win probability bar with clickable pick buttons on game cards',
+      'Prognostication leaderboard ranked by total points with season and weekly views',
+      'Overtime play-calling fix — first possession team no longer kicks early field goals',
+      'Overtime plays now display as "OT" instead of "Q5"',
+      'Removed MVP Race from dashboard — streamlined leaderboard tabs',
+      'Floobits rewards proportional to points earned',
+    ],
+  },
   {
     version: 'v0.5.0',
     date: '2026-03-16',

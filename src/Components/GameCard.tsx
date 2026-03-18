@@ -35,12 +35,12 @@ interface GameCardProps {
   favTeamId?: number | null
   onClick: (gameId: number) => void
   userPick?: number | null
-  pickLocked?: boolean
+  pickable?: boolean
   pickCorrect?: boolean | null
   onPick?: (teamId: number) => void
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, userPick, pickLocked, pickCorrect, onPick }) => {
+export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, userPick, pickable, pickCorrect, onPick }) => {
   const isComplete = status === 'Final'
   const isLive = status === 'Active' && (quarter ?? 0) > 0
   const isFinal = isComplete
@@ -203,20 +203,199 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
         </div>
       </TeamHoverCard>
 
-      {/* Win Probability Bar */}
-      {(homeWinProbability !== undefined && awayWinProbability !== undefined) && (
-        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #475569' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
-            <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8' }}>{homeWinProbability.toFixed(1)}%</span>
-            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: '500' }}>WIN PROB</span>
-            <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8' }}>{awayWinProbability.toFixed(1)}%</span>
+      {/* Win Probability / Pick Bar */}
+      {(() => {
+        const hasWP = homeWinProbability !== undefined && awayWinProbability !== undefined
+        const showPicks = !!onPick
+        if (!hasWP && !showPicks) return null
+
+        const homeWP = hasWP ? homeWinProbability! : 50
+        const awayWP = hasWP ? awayWinProbability! : 50
+        const homeId = Number(homeTeam.id)
+        const awayId = Number(awayTeam.id)
+        const pickedHome = userPick === homeId
+        const pickedAway = userPick === awayId
+        const hasPick = userPick != null
+        const canPick = showPicks && pickable && !isFinal && pickCorrect == null
+        const isResolved = hasPick && pickCorrect != null
+        const isLocked = hasPick && !canPick && !isResolved
+
+        // Thin WP bar for users without pick interface
+        if (!showPicks) {
+          const homeFavored = homeWP > awayWP
+          const awayFavored = awayWP > homeWP
+          const lightenColor = (hex: string): string => {
+            const r = parseInt(hex.slice(1, 3), 16)
+            const g = parseInt(hex.slice(3, 5), 16)
+            const b = parseInt(hex.slice(5, 7), 16)
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+            if (luminance > 0.45) return hex
+            const boost = 0.45 / Math.max(luminance, 0.05)
+            const clamp = (v: number) => Math.min(255, Math.round(v * boost))
+            return `#${clamp(r).toString(16).padStart(2, '0')}${clamp(g).toString(16).padStart(2, '0')}${clamp(b).toString(16).padStart(2, '0')}`
+          }
+          const homeTextColor = homeFavored ? lightenColor(homeTeam.color) : '#cbd5e1'
+          const awayTextColor = awayFavored ? lightenColor(awayTeam.color) : '#cbd5e1'
+          return (
+            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #475569' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{
+                  fontSize: homeFavored ? '14px' : '11px',
+                  fontWeight: homeFavored ? '700' : '400',
+                  color: homeTextColor,
+                  fontVariantNumeric: 'tabular-nums',
+                  minWidth: '32px',
+                  transition: 'all 0.5s ease',
+                }}>
+                  {homeWP.toFixed(0)}%
+                </span>
+                <div style={{ flex: 1, height: '6px', display: 'flex' }}>
+                  <div style={{
+                    width: `${homeWP}%`,
+                    backgroundColor: homeTeam.color,
+                    transition: 'width 0.5s ease',
+                  }} />
+                  <div style={{
+                    width: `${awayWP}%`,
+                    backgroundColor: awayTeam.color,
+                    transition: 'width 0.5s ease',
+                  }} />
+                </div>
+                <span style={{
+                  fontSize: awayFavored ? '14px' : '11px',
+                  fontWeight: awayFavored ? '700' : '400',
+                  color: awayTextColor,
+                  fontVariantNumeric: 'tabular-nums',
+                  minWidth: '32px',
+                  textAlign: 'right' as const,
+                  transition: 'all 0.5s ease',
+                }}>
+                  {awayWP.toFixed(0)}%
+                </span>
+              </div>
+            </div>
+          )
+        }
+
+        // Combined WP bar with clickable percentage buttons
+        const homeFavored = homeWP > awayWP
+        const awayFavored = awayWP > homeWP
+        const lightenColor = (hex: string): string => {
+          const r = parseInt(hex.slice(1, 3), 16)
+          const g = parseInt(hex.slice(3, 5), 16)
+          const b = parseInt(hex.slice(5, 7), 16)
+          const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+          if (luminance > 0.45) return hex
+          const boost = 0.45 / Math.max(luminance, 0.05)
+          const clamp = (v: number) => Math.min(255, Math.round(v * boost))
+          return `#${clamp(r).toString(16).padStart(2, '0')}${clamp(g).toString(16).padStart(2, '0')}${clamp(b).toString(16).padStart(2, '0')}`
+        }
+
+        const homePickStyle: React.CSSProperties = canPick ? { cursor: 'pointer' } : {}
+        const homeBtnBg = pickedHome ? `${homeTeam.color}70` : 'transparent'
+        const awayBtnBg = pickedAway ? `${awayTeam.color}70` : 'transparent'
+        const unpickedBorder = canPick && !hasPick ? '1px dashed #64748b' : '1px solid transparent'
+        const homeTextColor = pickedHome ? '#fff' : homeFavored ? lightenColor(homeTeam.color) : '#cbd5e1'
+        const awayTextColor = pickedAway ? '#fff' : awayFavored ? lightenColor(awayTeam.color) : '#cbd5e1'
+
+        return (
+          <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #475569' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {/* Home pick button / percentage */}
+              <div
+                onClick={canPick ? (e: React.MouseEvent) => { e.stopPropagation(); onPick!(homeId) } : undefined}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: homeBtnBg,
+                  border: pickedHome ? `1px solid ${homeTeam.color}80` : unpickedBorder,
+                  borderBottom: pickedHome ? `2px solid ${homeTeam.color}` : '2px solid transparent',
+                  fontSize: homeFavored && !hasPick ? '14px' : '13px',
+                  fontWeight: pickedHome || (homeFavored && !hasPick) ? '700' : '500',
+                  color: homeTextColor,
+                  fontVariantNumeric: 'tabular-nums',
+                  minWidth: '36px',
+                  transition: 'all 0.3s',
+                  ...homePickStyle,
+                }}
+              >
+                {pickedHome && isResolved && (
+                  <svg viewBox="0 0 24 24" fill={pickCorrect ? '#22c55e' : '#ef4444'} style={{ width: '12px', height: '12px', flexShrink: 0 }}>
+                    {pickCorrect ? (
+                      <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+                    ) : (
+                      <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z" clipRule="evenodd" />
+                    )}
+                  </svg>
+                )}
+                {pickedHome && isLocked && (
+                  <svg viewBox="0 0 24 24" fill="#94a3b8" style={{ width: '10px', height: '10px', flexShrink: 0 }}>
+                    <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {homeTeam.abbr}{hasWP ? ` ${homeWP.toFixed(0)}%` : ''}
+              </div>
+
+              {/* WP Bar */}
+              <div style={{ flex: 1, height: '6px', display: 'flex' }}>
+                <div style={{
+                  width: `${homeWP}%`,
+                  backgroundColor: homeTeam.color,
+                  transition: 'width 0.5s ease',
+                }} />
+                <div style={{
+                  width: `${awayWP}%`,
+                  backgroundColor: awayTeam.color,
+                  transition: 'width 0.5s ease',
+                }} />
+              </div>
+
+              {/* Away pick button / percentage */}
+              <div
+                onClick={canPick ? (e: React.MouseEvent) => { e.stopPropagation(); onPick!(awayId) } : undefined}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  backgroundColor: awayBtnBg,
+                  border: pickedAway ? `1px solid ${awayTeam.color}80` : unpickedBorder,
+                  borderBottom: pickedAway ? `2px solid ${awayTeam.color}` : '2px solid transparent',
+                  fontSize: awayFavored && !hasPick ? '14px' : '13px',
+                  fontWeight: pickedAway || (awayFavored && !hasPick) ? '700' : '500',
+                  color: awayTextColor,
+                  fontVariantNumeric: 'tabular-nums',
+                  minWidth: '36px',
+                  textAlign: 'right' as const,
+                  justifyContent: 'flex-end',
+                  transition: 'all 0.3s',
+                  ...homePickStyle,
+                }}
+              >
+                {hasWP ? `${awayWP.toFixed(0)}% ` : ''}{awayTeam.abbr}
+                {pickedAway && isResolved && (
+                  <svg viewBox="0 0 24 24" fill={pickCorrect ? '#22c55e' : '#ef4444'} style={{ width: '12px', height: '12px', flexShrink: 0 }}>
+                    {pickCorrect ? (
+                      <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
+                    ) : (
+                      <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z" clipRule="evenodd" />
+                    )}
+                  </svg>
+                )}
+                {pickedAway && isLocked && (
+                  <svg viewBox="0 0 24 24" fill="#94a3b8" style={{ width: '10px', height: '10px', flexShrink: 0 }}>
+                    <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+            </div>
           </div>
-          <div style={{ display: 'flex', height: '6px', borderRadius: '3px', overflow: 'hidden', backgroundColor: '#475569' }}>
-            <div style={{ width: `${homeWinProbability}%`, backgroundColor: homeTeam.color, transition: 'width 0.5s ease' }} />
-            <div style={{ width: `${awayWinProbability}%`, backgroundColor: awayTeam.color, transition: 'width 0.5s ease' }} />
-          </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Status Bar */}
       <div style={statusStyle}>
@@ -265,94 +444,6 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
         )}
       </div>
 
-      {/* Pick-Em Footer */}
-      {onPick && (
-        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #475569' }}>
-          {/* Pre-game: show pick buttons */}
-          {!isLive && !isFinal && !pickLocked && (
-            <>
-              <div style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginBottom: '6px', fontWeight: '600', letterSpacing: '0.05em' }}>
-                PICK A WINNER
-              </div>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onPick(Number(homeTeam.id)) }}
-                  style={{
-                    flex: 1,
-                    padding: '6px 8px',
-                    borderRadius: '6px',
-                    border: userPick === Number(homeTeam.id) ? `2px solid ${homeTeam.color}` : '1px solid #475569',
-                    backgroundColor: userPick === Number(homeTeam.id) ? `${homeTeam.color}22` : 'transparent',
-                    color: userPick === Number(homeTeam.id) ? '#e2e8f0' : '#94a3b8',
-                    fontSize: '13px',
-                    fontWeight: userPick === Number(homeTeam.id) ? '700' : '500',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {homeTeam.name}
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onPick(Number(awayTeam.id)) }}
-                  style={{
-                    flex: 1,
-                    padding: '6px 8px',
-                    borderRadius: '6px',
-                    border: userPick === Number(awayTeam.id) ? `2px solid ${awayTeam.color}` : '1px solid #475569',
-                    backgroundColor: userPick === Number(awayTeam.id) ? `${awayTeam.color}22` : 'transparent',
-                    color: userPick === Number(awayTeam.id) ? '#e2e8f0' : '#94a3b8',
-                    fontSize: '13px',
-                    fontWeight: userPick === Number(awayTeam.id) ? '700' : '500',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {awayTeam.name}
-                </button>
-              </div>
-            </>
-          )}
-
-          {/* Locked (games started) but not resolved yet */}
-          {userPick != null && (pickLocked || isLive) && pickCorrect == null && !isFinal && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px', color: '#94a3b8' }}>
-              <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '12px', height: '12px' }}>
-                <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
-              </svg>
-              <span>
-                Picked: <span style={{ color: '#cbd5e1', fontWeight: '600' }}>
-                  {userPick === Number(homeTeam.id) ? homeTeam.name : awayTeam.name}
-                </span>
-              </span>
-            </div>
-          )}
-
-          {/* Resolved: show correct/incorrect */}
-          {userPick != null && pickCorrect != null && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px' }}>
-              {pickCorrect ? (
-                <>
-                  <svg viewBox="0 0 24 24" fill="#22c55e" style={{ width: '14px', height: '14px' }}>
-                    <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clipRule="evenodd" />
-                  </svg>
-                  <span style={{ color: '#22c55e', fontWeight: '600' }}>
-                    Correct — {userPick === Number(homeTeam.id) ? homeTeam.name : awayTeam.name}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <svg viewBox="0 0 24 24" fill="#ef4444" style={{ width: '14px', height: '14px' }}>
-                    <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25Zm-1.72 6.97a.75.75 0 1 0-1.06 1.06L10.94 12l-1.72 1.72a.75.75 0 1 0 1.06 1.06L12 13.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L13.06 12l1.72-1.72a.75.75 0 1 0-1.06-1.06L12 10.94l-1.72-1.72Z" clipRule="evenodd" />
-                  </svg>
-                  <span style={{ color: '#ef4444', fontWeight: '600' }}>
-                    Incorrect — picked {userPick === Number(homeTeam.id) ? homeTeam.name : awayTeam.name}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      )}
 
     </div>
   )

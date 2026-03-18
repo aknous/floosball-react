@@ -396,7 +396,7 @@ export default function Navbar() {
             style={{ width: '18px', height: '18px', flexShrink: 0 }}
           />
         )}
-        <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: '600', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: '600', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {displayName}
         </span>
         {unreadCount > 0 && (
@@ -435,18 +435,15 @@ export default function Navbar() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '32px', minWidth: 0 }}>
               <NavLink to="/dashboard" style={{ textDecoration: 'none', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setMenuOpen(false)}>
-                <svg width={isMobile ? 24 : 30} height={isMobile ? 24 : 30} viewBox="0 0 32 32" style={{ flexShrink: 0 }}>
-                  <circle cx="16" cy="16" r="16" fill="#3b82f6" />
-                  <g transform="rotate(-45 16 16)">
-                    <ellipse cx="16" cy="16" rx="10" ry="6.5" fill="#e2e8f0" />
-                    <line x1="6" y1="16" x2="26" y2="16" stroke="#3b82f6" strokeWidth="1.2" />
-                    <line x1="13" y1="13.2" x2="13" y2="18.8" stroke="#3b82f6" strokeWidth="1" />
-                    <line x1="16" y1="12.5" x2="16" y2="19.5" stroke="#3b82f6" strokeWidth="1" />
-                    <line x1="19" y1="13.2" x2="19" y2="18.8" stroke="#3b82f6" strokeWidth="1" />
-                  </g>
-                </svg>
+                <img
+                  src={`${API_BASE}/logo?size=${isMobile ? 24 : 30}`}
+                  alt="Floosball"
+                  width={isMobile ? 24 : 30}
+                  height={isMobile ? 24 : 30}
+                  style={{ flexShrink: 0, borderRadius: '50%' }}
+                />
                 <h1 style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: '600', color: '#e2e8f0', margin: 0 }}>Floosball</h1>
-                <span style={{ fontSize: '9px', fontWeight: '700', color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)', padding: '2px 5px', borderRadius: '4px', letterSpacing: '0.5px', alignSelf: 'center', marginTop: isMobile ? '1px' : '2px' }}>BETA</span>
+                <span style={{ fontSize: '9px', fontWeight: '700', color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.30)', padding: '2px 5px', borderRadius: '4px', letterSpacing: '0.5px', alignSelf: 'center', marginTop: isMobile ? '1px' : '2px' }}>BETA</span>
               </NavLink>
 
               {!isMobile && !isTablet && (
@@ -472,7 +469,7 @@ export default function Navbar() {
             {isMobile ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 {user?.floobits != null && (
-                  <button onClick={() => { setMenuOpen(false); setShowShop(true) }} style={{ background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '5px', backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)' }}>
+                  <button onClick={() => { setMenuOpen(false); setShowShop(true) }} style={{ background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '5px', backgroundColor: 'rgba(234,179,8,0.12)' }}>
                     <span style={{ fontSize: '13px', fontWeight: '700', color: '#eab308' }}>
                       {user.floobits.toLocaleString()}
                     </span>
@@ -507,7 +504,7 @@ export default function Navbar() {
                   </NavLink>
                 ))}
                 {fantasyPoints && (
-                  <NavLink to="/fantasy" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', backgroundColor: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)' }}>
+                  <NavLink to="/fantasy" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', backgroundColor: 'rgba(34,197,94,0.12)' }}>
                     <span style={{ fontSize: '15px', fontWeight: '700', color: '#4ade80' }}>
                       {fantasyPoints.totalPoints.toFixed(0)}
                     </span>
@@ -515,7 +512,7 @@ export default function Navbar() {
                   </NavLink>
                 )}
                 {user?.floobits != null && (
-                  <button onClick={() => setShowShop(true)} style={{ background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', fontFamily: 'inherit' }}>
+                  <button onClick={() => setShowShop(true)} style={{ background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', backgroundColor: 'rgba(234,179,8,0.12)', fontFamily: 'inherit' }}>
                     <span style={{ fontSize: '15px', fontWeight: '700', color: '#eab308' }}>
                       {user.floobits.toLocaleString()}
                     </span>

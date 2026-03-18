@@ -522,8 +522,8 @@ export const OffseasonPanel: React.FC = () => {
         <div style={{
           padding: '10px 14px',
           marginBottom: '12px',
-          backgroundColor: 'rgba(245,158,11,0.08)',
-          border: '1px solid rgba(245,158,11,0.25)',
+          backgroundColor: 'rgba(245,158,11,0.10)',
+          borderBottom: '2px solid rgba(245,158,11,0.5)',
           borderRadius: '6px',
           display: 'flex',
           alignItems: 'center',
@@ -682,8 +682,7 @@ export const OffseasonPanel: React.FC = () => {
                                     <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', minWidth: '26px' }}>{label}</span>
                                     <span style={{
                                       fontSize: '9px', fontWeight: '700', color: '#ef4444',
-                                      backgroundColor: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)',
-                                      padding: '1px 5px', borderRadius: '3px',
+                                      backgroundColor: 'rgba(239,68,68,0.25)', padding: '1px 5px', borderRadius: '3px',
                                     }}>OPEN</span>
                                   </div>
                                 )
@@ -699,8 +698,7 @@ export const OffseasonPanel: React.FC = () => {
                                   {isNewSigning && (
                                     <span style={{
                                       fontSize: '8px', fontWeight: '700', color: '#22c55e',
-                                      backgroundColor: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)',
-                                      padding: '1px 5px', borderRadius: '3px', letterSpacing: '0.04em',
+                                      backgroundColor: 'rgba(34,197,94,0.25)', padding: '1px 5px', borderRadius: '3px', letterSpacing: '0.04em',
                                     }}>NEW</span>
                                   )}
                                 </div>
@@ -826,8 +824,7 @@ export const OffseasonPanel: React.FC = () => {
                               fontSize: '10px',
                               fontWeight: '800',
                               color: posRank === 1 ? '#f59e0b' : posRank === 2 ? '#94a3b8' : '#64748b',
-                              backgroundColor: posRank === 1 ? 'rgba(245,158,11,0.15)' : 'rgba(148,163,184,0.1)',
-                              border: `1px solid ${posRank === 1 ? 'rgba(245,158,11,0.35)' : 'rgba(148,163,184,0.2)'}`,
+                              backgroundColor: posRank === 1 ? 'rgba(245,158,11,0.30)' : 'rgba(148,163,184,0.15)',
                               padding: '1px 6px',
                               borderRadius: '3px',
                               minWidth: '20px',

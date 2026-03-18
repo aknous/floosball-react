@@ -48,13 +48,13 @@ interface ShopModalProps {
 
 // ─── Styling ──────────────────────────────────────────────────────────────────
 
-const POWERUP_STYLES: Record<string, { border: string; accent: string; bg: string }> = {
-  extra_swap: { border: '#22c55e', accent: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
-  modifier_nullifier: { border: '#eab308', accent: '#eab308', bg: 'rgba(234,179,8,0.08)' },
-  temp_flex: { border: '#a78bfa', accent: '#a78bfa', bg: 'rgba(167,139,250,0.08)' },
-  temp_card_slot: { border: '#67e8f9', accent: '#67e8f9', bg: 'rgba(103,232,249,0.08)' },
-  shop_reroll: { border: '#3b82f6', accent: '#3b82f6', bg: 'rgba(59,130,246,0.08)' },
-  fortunes_favor: { border: '#f472b6', accent: '#f472b6', bg: 'rgba(244,114,182,0.08)' },
+const POWERUP_STYLES: Record<string, { accent: string }> = {
+  extra_swap: { accent: '#22c55e' },
+  modifier_nullifier: { accent: '#eab308' },
+  temp_flex: { accent: '#a78bfa' },
+  temp_card_slot: { accent: '#67e8f9' },
+  shop_reroll: { accent: '#3b82f6' },
+  fortunes_favor: { accent: '#f472b6' },
 }
 
 const PACK_COLORS: Record<string, { border: string; bg: string; accent: string }> = {
@@ -398,8 +398,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                         <div key={pack.id} style={{
                           width: isMobile ? '100%' : '195px',
                           borderRadius: '8px',
-                          border: `1px solid ${colors.border}`,
                           background: colors.bg,
+                          borderBottom: `2px solid ${colors.border}`,
                           padding: '14px',
                           display: 'flex', flexDirection: 'column', gap: '8px',
                         }}>
@@ -422,8 +422,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             style={{
                               width: '100%', padding: '8px',
                               borderRadius: '5px',
-                              border: `1px solid ${canAfford ? colors.border : '#334155'}`,
-                              backgroundColor: canAfford ? `${colors.border}30` : 'rgba(51,65,85,0.3)',
+                              border: 'none',
+                              backgroundColor: canAfford ? `${colors.accent}20` : 'rgba(51,65,85,0.3)',
                               color: canAfford ? colors.accent : '#94a3b8',
                               fontSize: '12px', fontWeight: '700',
                               cursor: canAfford && !isBuying2 && user ? 'pointer' : 'not-allowed',
@@ -466,9 +466,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                       return (
                         <div key={pu.slug} style={{
                           borderRadius: '8px',
-                          border: `1px solid ${isPurchased ? '#334155' : style.border}40`,
-                          borderLeft: `3px solid ${isPurchased ? '#475569' : style.border}`,
-                          backgroundColor: isPurchased ? '#1e293b' : style.bg,
+                          backgroundColor: '#1e293b',
+                          borderBottom: `2px solid ${isPurchased ? '#334155' : style.accent}50`,
                           padding: '12px 14px',
                           display: 'flex',
                           flexDirection: 'column',
@@ -483,7 +482,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             {isPurchased && (
                               <span style={{
                                 fontSize: '10px', fontWeight: '700', color: '#22c55e',
-                                backgroundColor: 'rgba(34,197,94,0.12)',
+                                backgroundColor: 'rgba(34,197,94,0.25)',
                                 padding: '2px 6px', borderRadius: '4px',
                               }}>
                                 PURCHASED
@@ -492,7 +491,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             {pu.activeUntilWeek && !isPurchased && (
                               <span style={{
                                 fontSize: '10px', fontWeight: '700', color: style.accent,
-                                backgroundColor: `${style.accent}15`,
+                                backgroundColor: `${style.accent}30`,
                                 padding: '2px 6px', borderRadius: '4px',
                               }}>
                                 ACTIVE
@@ -513,8 +512,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               style={{
                                 padding: '5px 12px',
                                 borderRadius: '4px',
-                                border: `1px solid ${canBuy ? style.border : '#334155'}`,
-                                backgroundColor: canBuy ? `${style.border}20` : 'rgba(51,65,85,0.3)',
+                                border: 'none',
+                                backgroundColor: canBuy ? `${style.accent}20` : 'rgba(51,65,85,0.3)',
                                 color: canBuy ? style.accent : '#94a3b8',
                                 fontSize: '12px', fontWeight: '700',
                                 cursor: canBuy && !isBuying && user ? 'pointer' : 'not-allowed',

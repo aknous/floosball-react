@@ -106,19 +106,19 @@ const EDITION_COLORS: Record<string, string> = {
 }
 
 // Color coding for weekly modifiers: green = beneficial, yellow = neutral, red = restrictive
-const MODIFIER_COLORS: Record<string, { color: string; bg: string; border: string }> = {
-  amplify:   { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
-  cascade:   { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
-  frenzy:    { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
-  overdrive: { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
-  payday:    { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
-  longshot:  { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
-  synergy:   { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
-  fortunate: { color: '#4ade80', bg: 'rgba(74,222,128,0.10)', border: 'rgba(74,222,128,0.30)' },
-  ironclad:  { color: '#fbbf24', bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.30)' },
-  wildcard:  { color: '#fbbf24', bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.30)' },
-  steady:    { color: '#94a3b8', bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.20)' },
-  grounded:  { color: '#f87171', bg: 'rgba(248,113,113,0.10)', border: 'rgba(248,113,113,0.30)' },
+const MODIFIER_COLORS: Record<string, { color: string; bg: string }> = {
+  amplify:   { color: '#4ade80', bg: 'rgba(74,222,128,0.18)' },
+  cascade:   { color: '#4ade80', bg: 'rgba(74,222,128,0.18)' },
+  frenzy:    { color: '#4ade80', bg: 'rgba(74,222,128,0.18)' },
+  overdrive: { color: '#4ade80', bg: 'rgba(74,222,128,0.18)' },
+  payday:    { color: '#4ade80', bg: 'rgba(74,222,128,0.18)' },
+  longshot:  { color: '#4ade80', bg: 'rgba(74,222,128,0.18)' },
+  synergy:   { color: '#4ade80', bg: 'rgba(74,222,128,0.18)' },
+  fortunate: { color: '#4ade80', bg: 'rgba(74,222,128,0.18)' },
+  ironclad:  { color: '#fbbf24', bg: 'rgba(251,191,36,0.18)' },
+  wildcard:  { color: '#fbbf24', bg: 'rgba(251,191,36,0.18)' },
+  steady:    { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
+  grounded:  { color: '#f87171', bg: 'rgba(248,113,113,0.18)' },
 }
 
 interface PlayerSummary {
@@ -161,8 +161,7 @@ const PointsBreakdownPanel: React.FC<{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '5px 8px',
         borderRadius: '6px',
-        backgroundColor: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        backgroundColor: 'rgba(255,255,255,0.04)',
       }}
     >
       <span style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -360,8 +359,7 @@ const PointsBreakdownPanel: React.FC<{
                     <HoverTooltip text={mod === bTag.activeModifier ? bTag.activeText : bTag.tooltip} color={bTag.color}>
                       <span style={{
                         color: bTag.color, fontSize: '10px', flexShrink: 0,
-                        backgroundColor: `${bTag.color}18`, padding: '2px 5px', borderRadius: '3px',
-                        border: `1px solid ${bTag.color}40`,
+                        backgroundColor: `${bTag.color}30`, padding: '2px 5px', borderRadius: '3px',
                       }}>{bTag.label}</span>
                     </HoverTooltip>
                   )}
@@ -436,8 +434,8 @@ const PointsBreakdownPanel: React.FC<{
           {expanded['formula'] && (
           <div style={{
             marginTop: '4px', padding: '10px 12px',
-            backgroundColor: 'rgba(99,102,241,0.08)', borderRadius: '8px',
-            border: '1px solid rgba(99,102,241,0.15)',
+            backgroundColor: 'rgba(99,102,241,0.10)', borderRadius: '8px',
+            borderBottom: '2px solid rgba(99,102,241,0.5)',
           }}>
             <div style={{ fontSize: '13px', color: '#e2e8f0', fontFamily: 'monospace', lineHeight: '1.8' }}>
               <span style={{ color: '#cbd5e1' }}>(</span>
@@ -857,7 +855,7 @@ export const FantasyRoster: React.FC = () => {
               style={{
                 padding: '5px 18px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
                 fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s',
-                border: viewMode === v ? '1px solid #a78bfa' : '1px solid rgba(148,163,184,0.2)',
+                border: 'none',
                 backgroundColor: viewMode === v ? 'rgba(167,139,250,0.15)' : 'transparent',
                 color: viewMode === v ? '#a78bfa' : '#64748b',
               }}
