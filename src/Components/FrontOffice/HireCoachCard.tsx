@@ -13,8 +13,9 @@ interface HireCoachCardProps {
   onVote: (coachId: number) => void
   disabledIds: Set<number>
   globalDisabled: boolean
+  balance: number
   votesRemaining: number
-  nextCost: number
+  getCost: (coachId: number) => number
 }
 
 const HireCoachCard: React.FC<HireCoachCardProps> = ({
@@ -25,10 +26,10 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
   onVote,
   disabledIds,
   globalDisabled,
+  balance,
   votesRemaining,
-  nextCost,
+  getCost,
 }) => {
-  const cost = nextCost
 
   if (availableCoaches.length === 0) {
     return (
@@ -85,7 +86,8 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
             t => t.voteType === 'hire_coach' && t.targetPlayerId === coachId
           )
           const isVoting = voting === `hire_coach:${coachId}`
-          const isDisabled = globalDisabled || disabledIds.has(coachId)
+          const cost = getCost(coachId)
+          const isDisabled = globalDisabled || disabledIds.has(coachId) || balance < cost
 
           return (
             <div key={coachId} style={{

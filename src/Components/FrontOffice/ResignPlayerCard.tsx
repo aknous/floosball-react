@@ -13,8 +13,9 @@ interface ResignPlayerCardProps {
   onVote: (playerId: number) => void
   disabledIds: Set<number>
   globalDisabled: boolean
+  balance: number
   votesRemaining: number
-  nextCost: number
+  getCost: (playerId: number) => number
 }
 
 const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
@@ -25,10 +26,10 @@ const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
   onVote,
   disabledIds,
   globalDisabled,
+  balance,
   votesRemaining,
-  nextCost,
+  getCost,
 }) => {
-  const cost = nextCost
 
   const getTally = (playerId: number): GmVoteTally | undefined =>
     tallies.find(t => t.voteType === 'resign_player' && t.targetPlayerId === playerId)
@@ -61,7 +62,8 @@ const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
           {players.map(p => {
             const tally = getTally(p.id)
             const isVoting = voting === `resign_player:${p.id}`
-            const isDisabled = globalDisabled || disabledIds.has(p.id)
+            const cost = getCost(p.id)
+            const isDisabled = globalDisabled || disabledIds.has(p.id) || balance < cost
 
             return (
               <div key={p.id} style={{

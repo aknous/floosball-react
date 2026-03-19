@@ -13,8 +13,9 @@ interface CutPlayerCardProps {
   onVote: (playerId: number) => void
   disabledIds: Set<number>
   globalDisabled: boolean
+  balance: number
   votesRemaining: number
-  nextCost: number
+  getCost: (playerId: number) => number
 }
 
 const CutPlayerCard: React.FC<CutPlayerCardProps> = ({
@@ -25,10 +26,10 @@ const CutPlayerCard: React.FC<CutPlayerCardProps> = ({
   onVote,
   disabledIds,
   globalDisabled,
+  balance,
   votesRemaining,
-  nextCost,
+  getCost,
 }) => {
-  const cost = nextCost
 
   const getTally = (playerId: number): GmVoteTally | undefined =>
     tallies.find(t => t.voteType === 'cut_player' && t.targetPlayerId === playerId)
@@ -67,7 +68,8 @@ const CutPlayerCard: React.FC<CutPlayerCardProps> = ({
           {players.map(p => {
             const tally = getTally(p.id)
             const isVoting = voting === `cut_player:${p.id}`
-            const isDisabled = globalDisabled || disabledIds.has(p.id)
+            const cost = getCost(p.id)
+            const isDisabled = globalDisabled || disabledIds.has(p.id) || balance < cost
 
             return (
               <div key={p.id} style={{

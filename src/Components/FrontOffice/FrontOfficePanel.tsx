@@ -106,18 +106,21 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }
     resign_player: GM_VOTES_PER_TYPE - (votesUsed['resign_player'] ?? 0),
   }
 
-  // Escalating cost: base * 2^(votes already cast for this type)
+  // Escalating cost: base * 2^(votes already cast for this specific target)
   const balance = user?.floobits ?? 0
-  const nextCost = (type: string) => {
+  const targetVotesUsed = gm.myVotes?.counts.perTarget ?? {}
+  const nextTargetCost = (type: string, targetId?: number) => {
     const base = GM_VOTE_COST[type] ?? 10
-    const used = votesUsed[type] ?? 0
+    const targetKey = `${type}:${targetId ?? 'none'}`
+    const used = targetVotesUsed[targetKey] ?? 0
     return base * Math.pow(2, used)
   }
+  // For single-target directives (fire_coach), use the target cost directly
   const nextCostByType = {
-    fire_coach: nextCost('fire_coach'),
-    hire_coach: nextCost('hire_coach'),
-    cut_player: nextCost('cut_player'),
-    resign_player: nextCost('resign_player'),
+    fire_coach: nextTargetCost('fire_coach'),
+    hire_coach: nextTargetCost('hire_coach'),
+    cut_player: nextTargetCost('cut_player'),
+    resign_player: nextTargetCost('resign_player'),
   }
 
   // Section header matching TeamPage pattern
@@ -226,9 +229,10 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }
                 voting={gm.voting}
                 onVote={(coachId) => gm.castVote('hire_coach', coachId)}
                 disabledIds={disabledHireCoachIds}
-                globalDisabled={globalDisabled || balance < nextCostByType.hire_coach}
+                globalDisabled={globalDisabled}
+                balance={balance}
                 votesRemaining={remainingByType.hire_coach}
-                nextCost={nextCostByType.hire_coach}
+                getCost={(coachId) => nextTargetCost('hire_coach', coachId)}
               />
             )}
           </div>
@@ -242,9 +246,10 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }
               voting={gm.voting}
               onVote={(playerId) => gm.castVote('resign_player', playerId)}
               disabledIds={disabledResignIds}
-              globalDisabled={globalDisabled || balance < nextCostByType.resign_player}
+              globalDisabled={globalDisabled}
+              balance={balance}
               votesRemaining={remainingByType.resign_player}
-              nextCost={nextCostByType.resign_player}
+              getCost={(playerId) => nextTargetCost('resign_player', playerId)}
             />
 
             <CutPlayerCard
@@ -254,9 +259,10 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }
               voting={gm.voting}
               onVote={(playerId) => gm.castVote('cut_player', playerId)}
               disabledIds={disabledCutIds}
-              globalDisabled={globalDisabled || balance < nextCostByType.cut_player}
+              globalDisabled={globalDisabled}
+              balance={balance}
               votesRemaining={remainingByType.cut_player}
-              nextCost={nextCostByType.cut_player}
+              getCost={(playerId) => nextTargetCost('cut_player', playerId)}
             />
           </div>
         </div>
