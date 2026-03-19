@@ -46,7 +46,8 @@ const EquippedCardSlot: React.FC<{
   slotNum: number
   canEdit: boolean
   onUnequip: (slotNum: number) => void
-}> = ({ slot, slotNum, canEdit, onUnequip }) => {
+  compact?: boolean
+}> = ({ slot, slotNum, canEdit, onUnequip, compact }) => {
   const [hovered, setHovered] = useState(false)
   return (
     <div style={{
@@ -56,7 +57,7 @@ const EquippedCardSlot: React.FC<{
     }}>
       <TradingCard
         card={slot.card}
-        size="md"
+        size={compact ? 'sm' : 'md'}
         glowColor={slot.isMatch ? '#fb923c' : undefined}
         noHoverLift
         onHoverChange={setHovered}
@@ -428,9 +429,9 @@ const CardEquipment: React.FC = () => {
       ) : (
         <div style={{
           display: 'flex',
-          gap: '12px',
+          gap: isMobile ? '12px' : numSlots > 5 ? '8px' : '12px',
           justifyContent: 'center',
-          flexWrap: isMobile ? 'wrap' : 'nowrap',
+          flexWrap: 'wrap',
         }}>
           {Array.from({ length: numSlots }, (_, i) => i + 1).map(slotNum => {
             const slot = displaySlots[slotNum - 1]
@@ -443,6 +444,7 @@ const CardEquipment: React.FC = () => {
                   slotNum={slotNum}
                   canEdit={canEdit}
                   onUnequip={handleUnequip}
+                  compact={!isMobile && numSlots > 5}
                 />
               )
             }
@@ -453,7 +455,8 @@ const CardEquipment: React.FC = () => {
                 onClick={() => canEdit && setPickerSlot(slotNum)}
                 disabled={!canEdit}
                 style={{
-                  width: isMobile ? '100%' : 200, height: 100,
+                  width: isMobile ? '100%' : numSlots > 5 ? 160 : 200,
+                  height: numSlots > 5 && !isMobile ? 80 : 100,
                   borderRadius: '10px',
                   border: '2px dashed #334155',
                   backgroundColor: 'rgba(30,41,59,0.5)',
