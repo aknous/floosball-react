@@ -151,6 +151,13 @@ const PasswordGate: React.FC<{ onAuth: (pw: string) => void }> = ({ onAuth }) =>
 
 // ── Admin content ──────────────────────────────────────────────────────────
 
+interface BetaRequest {
+  id: number
+  email: string
+  status: string
+  requestedAt: string
+}
+
 interface AllowlistEntry {
   email: string
   addedAt: string
@@ -194,6 +201,51 @@ const CATEGORY_FOR_POSITION: Record<string, string> = {
 
 const AdminContent: React.FC<{ password: string }> = ({ password }) => {
   const headers = { 'Content-Type': 'application/json', 'X-Admin-Password': password }
+
+  // Beta access requests
+  const [betaRequests, setBetaRequests] = useState<BetaRequest[]>([])
+  const [requestsLoading, setRequestsLoading] = useState(false)
+  const [actioningId, setActioningId] = useState<number | null>(null)
+
+  const fetchRequests = useCallback(async () => {
+    setRequestsLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/admin/beta/requests`, { headers })
+      if (res.ok) {
+        const data = await res.json()
+        setBetaRequests(data.requests || [])
+      }
+    } catch { /* silent */ }
+    finally { setRequestsLoading(false) }
+  }, [])
+
+  React.useEffect(() => { fetchRequests() }, [fetchRequests])
+
+  const handleApproveRequest = async (id: number) => {
+    setActioningId(id)
+    try {
+      const res = await fetch(`${API_BASE}/admin/beta/requests/${id}/approve`, {
+        method: 'POST', headers,
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      setBetaRequests(prev => prev.filter(r => r.id !== id))
+      // Refresh allowlist if on that tab
+      fetchAllowlist()
+    } catch { /* silent */ }
+    finally { setActioningId(null) }
+  }
+
+  const handleDenyRequest = async (id: number) => {
+    setActioningId(id)
+    try {
+      const res = await fetch(`${API_BASE}/admin/beta/requests/${id}/deny`, {
+        method: 'POST', headers,
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      setBetaRequests(prev => prev.filter(r => r.id !== id))
+    } catch { /* silent */ }
+    finally { setActioningId(null) }
+  }
 
   // Beta allowlist
   const [allowlist, setAllowlist] = useState<AllowlistEntry[]>([])
@@ -459,10 +511,11 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     }
   }
 
-  type Section = 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
+  type Section = 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
   const [activeSection, setActiveSection] = useState<Section>('users')
 
   const tabs: { id: Section; label: string }[] = [
+    { id: 'requests', label: 'Requests' },
     { id: 'allowlist', label: 'Allowlist' },
     { id: 'names', label: 'Names' },
     { id: 'players', label: 'Players' },
@@ -486,10 +539,68 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
           color: activeSection === t.id ? '#e2e8f0' : '#94a3b8',
           fontSize: '12px', padding: '5px 12px', cursor: 'pointer',
           fontWeight: '600', letterSpacing: '0.03em',
-        }}>{t.label}</button>
+        }}>
+          {t.label}
+          {t.id === 'requests' && betaRequests.length > 0 && (
+            <span style={{
+              backgroundColor: '#ef4444', color: '#fff', fontSize: '10px',
+              fontWeight: '700', borderRadius: '8px', padding: '1px 6px',
+              marginLeft: '6px', minWidth: '16px', textAlign: 'center',
+              display: 'inline-block',
+            }}>{betaRequests.length}</span>
+          )}
+        </button>
       ))}
     </div>
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+
+      {/* Beta Access Requests */}
+      {activeSection === 'requests' && <div style={sectionStyle}>
+        <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Beta Access Requests</h2>
+        <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
+          Pending requests from users who want to join the closed beta.
+        </p>
+        {requestsLoading ? (
+          <div style={{ fontSize: '13px', color: '#94a3b8' }}>Loading...</div>
+        ) : betaRequests.length === 0 ? (
+          <div style={{ fontSize: '13px', color: '#94a3b8' }}>No pending requests.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {betaRequests.map(r => (
+              <div key={r.id} style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                backgroundColor: '#0f172a', borderRadius: '5px',
+                padding: '8px 10px', fontSize: '13px',
+              }}>
+                <span style={{ color: '#e2e8f0', flex: 1 }}>{r.email}</span>
+                <span style={{ color: '#94a3b8', fontSize: '11px', whiteSpace: 'nowrap' }}>
+                  {new Date(r.requestedAt).toLocaleDateString()}
+                </span>
+                <button
+                  onClick={() => handleApproveRequest(r.id)}
+                  disabled={actioningId === r.id}
+                  style={{
+                    backgroundColor: '#22c55e', color: '#fff', border: 'none',
+                    borderRadius: '4px', padding: '4px 12px', fontSize: '12px',
+                    fontWeight: '600', cursor: actioningId === r.id ? 'not-allowed' : 'pointer',
+                    opacity: actioningId === r.id ? 0.5 : 1,
+                  }}
+                >Approve</button>
+                <button
+                  onClick={() => handleDenyRequest(r.id)}
+                  disabled={actioningId === r.id}
+                  style={{
+                    backgroundColor: '#334155', color: '#e2e8f0', border: 'none',
+                    borderRadius: '4px', padding: '4px 12px', fontSize: '12px',
+                    fontWeight: '600', cursor: actioningId === r.id ? 'not-allowed' : 'pointer',
+                    opacity: actioningId === r.id ? 0.5 : 1,
+                  }}
+                >Deny</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>}
 
       {/* Beta Allowlist */}
       {activeSection === 'allowlist' && <div style={sectionStyle}>
