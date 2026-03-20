@@ -5,6 +5,7 @@ import { HighlightFeed } from '@/Components/HighlightFeed'
 import { OffseasonPanel } from '@/Components/OffseasonPanel'
 import { Standings } from '@/Components/Standings'
 import { PlayerLeaders } from '@/Components/PlayerLeaders'
+import { MvpRankings } from '@/Components/MvpRankings'
 import { PickEmPanel } from '@/Components/PickEm/PickEmPanel'
 import { PickEmProvider } from '@/contexts/PickEmContext'
 import { useFloosball } from '@/contexts/FloosballContext'
@@ -130,7 +131,10 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
           {/* Leaders */}
           <section style={{ marginBottom: '16px' }}>
             <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Leaders</h2>
-            <PlayerLeaders />
+            <MvpRankings />
+            <div style={{ marginTop: '12px' }}>
+              <PlayerLeaders />
+            </div>
           </section>
 
         </div>
@@ -177,7 +181,10 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                 <HighlightFeed onPlayClick={handleGameClick} />
               </div>
               <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Leaders</h3>
-              <PlayerLeaders />
+              <MvpRankings />
+              <div style={{ marginTop: '12px' }}>
+                <PlayerLeaders />
+              </div>
               <div style={{ marginTop: '24px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Prognostications</h3>
                 <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
@@ -235,7 +242,12 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             </div>
           )}
           {rightPanelView === 'leaders' && (
-            <PlayerLeaders />
+            <>
+              <MvpRankings />
+              <div style={{ marginTop: '12px' }}>
+                <PlayerLeaders />
+              </div>
+            </>
           )}
           {rightPanelView === 'pickem' && (
             <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', overflowY: 'auto', flex: 1 }}>

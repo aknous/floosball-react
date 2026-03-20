@@ -149,9 +149,11 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
           const isChamp = item.text.includes('champions!')
           const isTopSeed = item.text.includes('top seed') || item.text.includes('#1 seed')
           const isClinch = item.text.includes('clinched')
-          const borderColor = isChamp ? '#f59e0b' : isTopSeed ? '#a78bfa' : isClinch ? '#22c55e' : '#ef4444'
-          const label = isChamp ? 'CHAMPION' : isTopSeed ? 'TOP SEED' : isClinch ? 'CLINCHED' : 'ELIMINATED'
-          const labelColor = isChamp ? '#f59e0b' : isTopSeed ? '#a78bfa' : isClinch ? '#22c55e' : '#ef4444'
+          const isMvp = item.text.includes('MVP:')
+          const isAllPro = item.text.includes('All-Pro')
+          const borderColor = isChamp ? '#f59e0b' : isMvp ? '#f59e0b' : isAllPro ? '#a78bfa' : isTopSeed ? '#a78bfa' : isClinch ? '#22c55e' : '#ef4444'
+          const label = isChamp ? 'CHAMPION' : isMvp ? 'MVP' : isAllPro ? 'ALL-PRO' : isTopSeed ? 'TOP SEED' : isClinch ? 'CLINCHED' : 'ELIMINATED'
+          const labelColor = borderColor
           return (
             <React.Fragment key={item.id}>
               {separator}

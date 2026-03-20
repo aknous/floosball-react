@@ -2,9 +2,22 @@ import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-const APP_VERSION = process.env.REACT_APP_VERSION || '0.6.0'
+const APP_VERSION = process.env.REACT_APP_VERSION || '0.6.1'
 
 const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+  {
+    version: 'v0.6.1',
+    date: '2026-03-19',
+    changes: [
+      'All-Pro Team display in Leaders tab with purple accent styling',
+      'All-Pro and MVP announcements in league highlight feed with colored badges',
+      'Clock management tuning — smarter spike and timeout decisions in crunch time',
+      'Garbage time detection reduces late-game pressure effects in blowouts',
+      'Season resume fix — MVP and All-Pro selections now work correctly after restart',
+      'Fantasy season-end prize summary with Floobits breakdown',
+      'Prognostication leaderboard fix for between-week display',
+    ],
+  },
   {
     version: 'v0.6.0',
     date: '2026-03-17',

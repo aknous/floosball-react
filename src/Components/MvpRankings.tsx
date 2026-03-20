@@ -79,10 +79,24 @@ interface CrownedMvp {
   seasonNumber: number
 }
 
+interface AllProPlayer {
+  id: number
+  name: string
+  position: string
+  team: string
+  teamAbbr: string
+  teamColor: string
+  teamId: number
+  seasonPerformanceRating: number
+  zScore: number
+  ratingStars: number
+}
+
 export const MvpRankings: React.FC = () => {
   const [rankings, setRankings] = useState<MvpCandidate[]>([])
   const [loading, setLoading] = useState(true)
   const [crownedMvp, setCrownedMvp] = useState<CrownedMvp | null>(null)
+  const [allPro, setAllPro] = useState<AllProPlayer[]>([])
   const { event } = useSeasonWebSocket()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -98,8 +112,8 @@ export const MvpRankings: React.FC = () => {
     }
   }, [])
 
-  // Check if MVP has already been crowned this season
-  const checkExistingMvp = useCallback(async () => {
+  // Check if MVP/All-Pro have already been announced this season
+  const checkExistingAwards = useCallback(async () => {
     try {
       const r = await fetch(`${API_BASE}/season`)
       const json = await r.json()
@@ -113,18 +127,21 @@ export const MvpRankings: React.FC = () => {
           teamColor: mvp.teamColor,
           teamId: mvp.teamId,
           id: mvp.id,
-          seasonNumber: json.data.seasonNumber,
+          seasonNumber: json.data.seasonNumber || json.data.season_number,
         })
       }
+      if (json.success && json.data?.allPro) {
+        setAllPro(json.data.allPro)
+      }
     } catch (e) {
-      // Silently fail — MVP check is non-critical
+      // Silently fail — awards check is non-critical
     }
   }, [])
 
   useEffect(() => {
     fetchRankings()
-    checkExistingMvp()
-  }, [fetchRankings, checkExistingMvp])
+    checkExistingAwards()
+  }, [fetchRankings, checkExistingAwards])
 
   // Refresh from WebSocket events
   useEffect(() => {
@@ -143,8 +160,11 @@ export const MvpRankings: React.FC = () => {
         seasonNumber: evt.seasonNumber,
       })
       fetchRankings()
+    } else if (evt.event === 'all_pro_announcement') {
+      setAllPro(evt.allPro || [])
     } else if (evt.event === 'season_start') {
       setCrownedMvp(null)
+      setAllPro([])
       fetchRankings()
     } else if (evt.event === 'game_end') {
       if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -160,12 +180,12 @@ export const MvpRankings: React.FC = () => {
   if (loading) {
     return (
       <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
-        <div style={{ fontSize: '13px', color: '#475569', textAlign: 'center' }}>Loading…</div>
+        <div style={{ fontSize: '13px', color: '#475569', textAlign: 'center' }}>Loading...</div>
       </div>
     )
   }
 
-  if (rankings.length === 0) {
+  if (rankings.length === 0 && !crownedMvp && allPro.length === 0) {
     return (
       <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px' }}>
         <div style={{ fontSize: '13px', color: '#475569', textAlign: 'center' }}>
@@ -176,87 +196,145 @@ export const MvpRankings: React.FC = () => {
   }
 
   return (
-    <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-      <div style={{ padding: '10px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          {crownedMvp ? 'Season MVP' : 'MVP Race'}
-        </span>
-        <InfoTooltip text="Players ranked by z-score — how far above average each player's performance rating is compared to their peers. Higher = more dominant." />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* MVP Section */}
+      <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+        <div style={{ padding: '10px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {crownedMvp ? 'Season MVP' : 'MVP Race'}
+          </span>
+          <InfoTooltip text="Players ranked by z-score — how far above average each player's performance rating is compared to their peers. Higher = more dominant." />
+        </div>
+
+        {crownedMvp && (
+          <div style={{
+            padding: '10px 14px',
+            background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.08))',
+            borderBottom: rankings.length > 0 ? '1px solid rgba(245,158,11,0.2)' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <GiStarMedal style={{ fontSize: '22px', color: '#fbbf24', flexShrink: 0 }} />
+            <div>
+              <Link
+                to={`/players/${crownedMvp.id}`}
+                style={{ fontSize: '14px', fontWeight: '700', color: '#fbbf24', textDecoration: 'none' }}
+              >
+                {crownedMvp.name}
+              </Link>
+              <div style={{ fontSize: '11px', color: '#f59e0b' }}>
+                {crownedMvp.teamAbbr} · {crownedMvp.position} · Season {crownedMvp.seasonNumber} MVP
+              </div>
+            </div>
+          </div>
+        )}
+
+        {rankings.map((player, idx) => {
+          const isLeader = idx === 0
+          const isCrowned = crownedMvp && player.id === crownedMvp.id
+          return (
+            <div
+              key={player.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '16px 20px 1fr auto',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 10px',
+                borderBottom: idx < rankings.length - 1 ? '1px solid #1a2640' : 'none',
+                backgroundColor: isLeader ? 'rgba(245,158,11,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+                borderLeft: isLeader ? '2px solid #f59e0b' : '2px solid transparent',
+              }}
+            >
+              <span style={{ fontSize: '11px', color: isLeader ? '#f59e0b' : '#94a3b8', textAlign: 'right', fontWeight: isLeader ? '700' : '400', fontVariantNumeric: 'tabular-nums' }}>
+                {player.rank}
+              </span>
+              <img
+                src={`${API_BASE}/teams/${player.teamId}/avatar?size=20&v=2`}
+                alt=""
+                style={{ width: '20px', height: '20px', flexShrink: 0 }}
+              />
+              <div style={{ minWidth: 0 }}>
+                <PlayerHoverCard playerId={player.id} playerName={player.name}>
+                  <Link
+                    to={`/players/${player.id}`}
+                    style={{ fontSize: '13px', color: isLeader ? '#fbbf24' : '#e2e8f0', textDecoration: 'none', display: 'inline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  >
+                    {player.name}
+                  </Link>
+                </PlayerHoverCard>
+                {isCrowned && <GiStarMedal style={{ marginLeft: '4px', fontSize: '13px', color: '#fbbf24', display: 'inline', verticalAlign: 'middle' }} title="Season MVP" />}
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                  {player.teamAbbr}
+                  <span style={{ marginLeft: '4px', color: '#64748b' }}>· {player.position}</span>
+                </div>
+                <div style={{ marginTop: '1px' }}>
+                  <Stars stars={player.ratingStars} size={10} />
+                </div>
+              </div>
+              <span style={{ fontSize: '15px', fontWeight: '700', color: isLeader ? '#fbbf24' : '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
+                {player.zScore > 0 ? '+' : ''}{player.zScore.toFixed(2)}
+              </span>
+            </div>
+          )
+        })}
       </div>
 
-      {crownedMvp && (
-        <div style={{
-          padding: '10px 14px',
-          background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.08))',
-          borderBottom: '1px solid rgba(245,158,11,0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-        }}>
-          <GiStarMedal style={{ fontSize: '22px', color: '#fbbf24', flexShrink: 0 }} />
-          <div>
-            <Link
-              to={`/players/${crownedMvp.id}`}
-              style={{ fontSize: '14px', fontWeight: '700', color: '#fbbf24', textDecoration: 'none' }}
-            >
-              {crownedMvp.name}
-            </Link>
-            <div style={{ fontSize: '11px', color: '#f59e0b' }}>
-              {crownedMvp.teamAbbr} · {crownedMvp.position} · Season {crownedMvp.seasonNumber} MVP
-            </div>
+      {/* All-Pro Section */}
+      {allPro.length > 0 && (
+        <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{ padding: '10px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155' }}>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              All-Pro Team
+            </span>
           </div>
+
+          {allPro.map((player, idx) => (
+            <div
+              key={player.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '28px 20px 1fr auto',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 10px',
+                borderBottom: idx < allPro.length - 1 ? '1px solid #1a2640' : 'none',
+                borderLeft: '2px solid #a78bfa',
+                backgroundColor: idx % 2 === 0 ? 'rgba(167,139,250,0.04)' : 'transparent',
+              }}
+            >
+              <span style={{ fontSize: '11px', fontWeight: '600', color: '#a78bfa', textAlign: 'center' }}>
+                {player.position}
+              </span>
+              <img
+                src={`${API_BASE}/teams/${player.teamId}/avatar?size=20&v=2`}
+                alt=""
+                style={{ width: '20px', height: '20px', flexShrink: 0 }}
+              />
+              <div style={{ minWidth: 0 }}>
+                <PlayerHoverCard playerId={player.id} playerName={player.name}>
+                  <Link
+                    to={`/players/${player.id}`}
+                    style={{ fontSize: '13px', color: '#e2e8f0', textDecoration: 'none', display: 'inline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  >
+                    {player.name}
+                  </Link>
+                </PlayerHoverCard>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                  {player.teamAbbr}
+                </div>
+                <div style={{ marginTop: '1px' }}>
+                  <Stars stars={player.ratingStars} size={10} />
+                </div>
+              </div>
+              <span style={{ fontSize: '13px', fontWeight: '600', color: '#a78bfa', fontVariantNumeric: 'tabular-nums' }}>
+                {player.zScore > 0 ? '+' : ''}{player.zScore.toFixed(2)}
+              </span>
+            </div>
+          ))}
         </div>
       )}
-
-      {rankings.map((player, idx) => {
-        const isLeader = idx === 0
-        const isCrowned = crownedMvp && player.id === crownedMvp.id
-        return (
-          <div
-            key={player.id}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '16px 20px 1fr auto',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '7px 10px',
-              borderBottom: idx < rankings.length - 1 ? '1px solid #1a2640' : 'none',
-              backgroundColor: isLeader ? 'rgba(245,158,11,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
-              borderLeft: isLeader ? '2px solid #f59e0b' : '2px solid transparent',
-            }}
-          >
-            <span style={{ fontSize: '11px', color: isLeader ? '#f59e0b' : '#94a3b8', textAlign: 'right', fontWeight: isLeader ? '700' : '400', fontVariantNumeric: 'tabular-nums' }}>
-              {player.rank}
-            </span>
-            <img
-              src={`${API_BASE}/teams/${player.teamId}/avatar?size=20&v=2`}
-              alt=""
-              style={{ width: '20px', height: '20px', flexShrink: 0 }}
-            />
-            <div style={{ minWidth: 0 }}>
-              <PlayerHoverCard playerId={player.id} playerName={player.name}>
-                <Link
-                  to={`/players/${player.id}`}
-                  style={{ fontSize: '13px', color: isLeader ? '#fbbf24' : '#e2e8f0', textDecoration: 'none', display: 'inline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                >
-                  {player.name}
-                </Link>
-              </PlayerHoverCard>
-              {isCrowned && <GiStarMedal style={{ marginLeft: '4px', fontSize: '13px', color: '#fbbf24', display: 'inline', verticalAlign: 'middle' }} title="Season MVP" />}
-              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                {player.teamAbbr}
-                <span style={{ marginLeft: '4px', color: '#64748b' }}>· {player.position}</span>
-              </div>
-              <div style={{ marginTop: '1px' }}>
-                <Stars stars={player.ratingStars} size={10} />
-              </div>
-            </div>
-            <span style={{ fontSize: '15px', fontWeight: '700', color: isLeader ? '#fbbf24' : '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
-              {player.zScore > 0 ? '+' : ''}{player.zScore.toFixed(2)}
-            </span>
-          </div>
-        )
-      })}
     </div>
   )
 }

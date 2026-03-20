@@ -209,8 +209,15 @@ function LockCountdown() {
 const FantasyPage: React.FC = () => {
   const isMobile = useIsMobile()
   const { user } = useAuth()
+  const { seasonState } = useFloosball()
   const [showShop, setShowShop] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+
+  // Regular season is over once playoffs start, season ends, or offseason begins
+  const weekText = seasonState.currentWeekText || ''
+  const seasonOver = seasonState.seasonComplete
+    || weekText.startsWith('Playoffs')
+    || weekText === 'Offseason'
 
   return (
     <div style={{
@@ -226,67 +233,102 @@ const FantasyPage: React.FC = () => {
         flexDirection: 'column',
         gap: '12px',
       }}>
-        {/* Status bar: countdown + modifier + swaps + shop */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <LockCountdown />
-          <GameInfoBar />
-          <div style={{ flex: 1 }} />
-          <HelpButton onClick={() => setShowHelp(true)} />
-          {user && (
-            <button
-              onClick={() => setShowShop(true)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '8px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                backgroundColor: 'rgba(234,179,8,0.12)',
-                color: '#eab308',
-                fontSize: '12px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                fontFamily: 'pressStart',
-                transition: 'background-color 0.15s',
-                flexShrink: 0,
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor = 'rgba(234,179,8,0.20)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor = 'rgba(234,179,8,0.12)'
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <path d="M16 10a4 4 0 01-8 0" />
+        {seasonOver ? (
+          <>
+            {/* Season-over banner */}
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              gap: '8px', padding: '20px 16px',
+              backgroundColor: 'rgba(99,102,241,0.08)',
+              border: '1px solid rgba(99,102,241,0.25)',
+              borderRadius: '10px',
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7" />
+                <path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7" />
+                <path d="M4 22h16" />
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22" />
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22" />
+                <path d="M18 2H6v7a6 6 0 0012 0V2Z" />
               </svg>
-              Shop
-            </button>
-          )}
-        </div>
+              <span style={{ color: '#c7d2fe', fontSize: '13px', fontWeight: '700' }}>
+                The regular season has concluded
+              </span>
+              <span style={{ color: '#94a3b8', fontSize: '11px', textAlign: 'center', lineHeight: '1.5' }}>
+                Fantasy rosters and cards are locked. Season leaderboard prizes have been awarded.
+              </span>
+            </div>
 
-        {/* Card slots — full width at top */}
-        <CardEquipment />
+            {/* Season leaderboard only */}
+            <div style={{ maxWidth: '550px', margin: '0 auto', width: '100%' }}>
+              <FantasyLeaderboard />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Status bar: countdown + modifier + swaps + shop */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <LockCountdown />
+              <GameInfoBar />
+              <div style={{ flex: 1 }} />
+              <HelpButton onClick={() => setShowHelp(true)} />
+              {user && (
+                <button
+                  onClick={() => setShowShop(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: 'rgba(234,179,8,0.12)',
+                    color: '#eab308',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    fontFamily: 'pressStart',
+                    transition: 'background-color 0.15s',
+                    flexShrink: 0,
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.backgroundColor = 'rgba(234,179,8,0.20)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.backgroundColor = 'rgba(234,179,8,0.12)'
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <path d="M16 10a4 4 0 01-8 0" />
+                  </svg>
+                  Shop
+                </button>
+              )}
+            </div>
 
-        {/* Roster + Leaderboard side by side */}
-        <div style={{
-          display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: '12px',
-          alignItems: 'start',
-        }}>
-          <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
-            <FantasyRoster />
-          </div>
-          <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
-            <FantasyLeaderboard />
-          </div>
-        </div>
+            {/* Card slots — full width at top */}
+            <CardEquipment />
+
+            {/* Roster + Leaderboard side by side */}
+            <div style={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              gap: '12px',
+              alignItems: 'start',
+            }}>
+              <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
+                <FantasyRoster />
+              </div>
+              <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
+                <FantasyLeaderboard />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Shop modal */}
-      <ShopModal isOpen={showShop} onClose={() => setShowShop(false)} />
+      {!seasonOver && <ShopModal isOpen={showShop} onClose={() => setShowShop(false)} />}
 
       {/* Help modal */}
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} title="Fantasy Floosball">
