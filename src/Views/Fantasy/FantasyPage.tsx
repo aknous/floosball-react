@@ -263,7 +263,7 @@ const FantasyPage: React.FC = () => {
 
             {/* Season leaderboard only */}
             <div style={{ maxWidth: '550px', margin: '0 auto', width: '100%' }}>
-              <FantasyLeaderboard />
+              <FantasyLeaderboard seasonOnly />
             </div>
           </>
         ) : (

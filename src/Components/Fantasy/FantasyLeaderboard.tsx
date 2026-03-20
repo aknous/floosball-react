@@ -44,7 +44,7 @@ interface WeekData {
 
 type ViewMode = 'season' | 'weekly' | 'players'
 
-export const FantasyLeaderboard: React.FC = () => {
+export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonOnly = false }) => {
   const isMobile = useIsMobile()
   const { user } = useAuth()
   const currentUserId = user?.id ?? null
@@ -132,17 +132,19 @@ export const FantasyLeaderboard: React.FC = () => {
           <div style={{ fontSize: '16px', fontWeight: '700', color: '#f1f5f9' }}>Leaderboards</div>
           {season && <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Season {season}{mode === 'weekly' && currentWeekData ? ` — Week ${currentWeekData.week}` : ''}</div>}
         </div>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button onClick={() => { setMode('season'); setExpandedUserId(null) }} style={toggleStyle(mode === 'season')}>
-            Season
-          </button>
-          <button onClick={() => { setMode('weekly'); setExpandedUserId(null) }} style={toggleStyle(mode === 'weekly')}>
-            Weekly
-          </button>
-          <button onClick={() => { setMode('players'); setExpandedUserId(null) }} style={toggleStyle(mode === 'players')}>
-            Players
-          </button>
-        </div>
+        {!seasonOnly && (
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <button onClick={() => { setMode('season'); setExpandedUserId(null) }} style={toggleStyle(mode === 'season')}>
+              Season
+            </button>
+            <button onClick={() => { setMode('weekly'); setExpandedUserId(null) }} style={toggleStyle(mode === 'weekly')}>
+              Weekly
+            </button>
+            <button onClick={() => { setMode('players'); setExpandedUserId(null) }} style={toggleStyle(mode === 'players')}>
+              Players
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Players view */}
