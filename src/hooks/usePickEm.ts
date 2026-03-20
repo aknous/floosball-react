@@ -16,6 +16,7 @@ interface UsePickEmResult {
   weekSummary: PickEmWeekSummary | null
   season: number
   week: number
+  weekText: string
   seasonLeaderboard: PickEmLeaderboardEntry[]
   weekLeaderboard: PickEmLeaderboardEntry[]
   loading: boolean
@@ -28,6 +29,7 @@ export function usePickEm(): UsePickEmResult {
   const [weekSummary, setWeekSummary] = useState<PickEmWeekSummary | null>(null)
   const [season, setSeason] = useState(0)
   const [week, setWeek] = useState(0)
+  const [weekText, setWeekText] = useState('')
   const [seasonLeaderboard, setSeasonLeaderboard] = useState<PickEmLeaderboardEntry[]>([])
   const [weekLeaderboard, setWeekLeaderboard] = useState<PickEmLeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,6 +55,7 @@ export function usePickEm(): UsePickEmResult {
       setWeekSummary(data.weekSummary ?? null)
       setSeason(data.season ?? 0)
       setWeek(data.week ?? 0)
+      setWeekText(data.weekText ?? '')
       hasLoadedOnce.current = true
     } catch (err) {
       console.error('Error fetching pick-em week:', err)
@@ -175,6 +178,7 @@ export function usePickEm(): UsePickEmResult {
     weekSummary,
     season,
     week,
+    weekText,
     seasonLeaderboard,
     weekLeaderboard,
     loading,

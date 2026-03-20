@@ -29,7 +29,7 @@ export const PickEmPanel: React.FC = () => {
   const { user } = useAuth()
   const userId = user?.id ?? null
   const {
-    games, weekSummary, season, week,
+    games, weekSummary, season, week, weekText,
     seasonLeaderboard, weekLeaderboard, loading, submitPick,
   } = usePickEm()
   const [mode, setMode] = useState<ViewMode>('results')
@@ -156,6 +156,7 @@ export const PickEmPanel: React.FC = () => {
           seasonEntries={seasonLeaderboard}
           weekEntries={weekLeaderboard}
           week={week}
+          weekText={weekText}
           userId={userId}
         />
       )}
@@ -407,11 +408,12 @@ interface LeaderboardViewProps {
   seasonEntries: PickEmLeaderboardEntry[]
   weekEntries: PickEmLeaderboardEntry[]
   week: number
+  weekText: string
   userId?: number | null
 }
 
 const LeaderboardView: React.FC<LeaderboardViewProps> = ({
-  seasonEntries, weekEntries, week, userId,
+  seasonEntries, weekEntries, week, weekText, userId,
 }) => {
   const [subMode, setSubMode] = useState<'season' | 'weekly'>('season')
   const entries = subMode === 'season' ? seasonEntries : weekEntries
@@ -437,7 +439,7 @@ const LeaderboardView: React.FC<LeaderboardViewProps> = ({
               transition: 'all 0.15s',
             }}
           >
-            {m === 'season' ? 'Season' : `Week ${week}`}
+            {m === 'season' ? 'Season' : (weekText || `Week ${week}`)}
           </button>
         ))}
       </div>

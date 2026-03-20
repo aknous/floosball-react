@@ -13,6 +13,7 @@ interface PickEmContextValue {
   weekSummary: PickEmWeekSummary | null
   season: number
   week: number
+  weekText: string
   seasonLeaderboard: PickEmLeaderboardEntry[]
   weekLeaderboard: PickEmLeaderboardEntry[]
   loading: boolean
