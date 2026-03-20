@@ -43,6 +43,7 @@ export const useSeasonUpdates = () => {
             activeGames: result.data.active_games || [],
             completedGames: result.data.completed_games || [],
             nextGameStartTime: result.data.next_game_start_time || null,
+            seasonComplete: result.data.is_complete || false,
           }))
         }
       } catch (err) {

@@ -213,9 +213,11 @@ const FantasyPage: React.FC = () => {
   const [showShop, setShowShop] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
 
-  // Regular season is over once playoffs start, season ends, or offseason begins
+  // Regular season is over once week 28 games finish, playoffs start, season ends, or offseason begins
   const weekText = seasonState.currentWeekText || ''
+  const week28Done = seasonState.currentWeek >= 28 && (seasonState.activeGames?.length ?? 0) === 0
   const seasonOver = seasonState.seasonComplete
+    || week28Done
     || weekText.startsWith('Playoffs')
     || weekText === 'Offseason'
 
