@@ -29,6 +29,21 @@ interface CreatedPlayer {
   tier: string
 }
 
+interface MonitorData {
+  deploySafety: { safe: boolean; reason: string }
+  simulation: { isActive: boolean; phase: string; lastSaved: string | null }
+  season: {
+    seasonNumber: number; currentWeek: number; currentWeekText: string | null
+    inPlayoffs: boolean; playoffRound: string | null; isComplete: boolean
+    champion: string | null; mvp: string | null
+    totalGames: number; completedGames: number
+  }
+  liveGames: { active: number; scheduled: number; final: number }
+  timing: { mode: string | null; catchingUp: boolean }
+  counts: { teams: number; activePlayers: number; freeAgents: number; retiredPlayers: number; hallOfFame: number }
+  websockets: { total_connections: number; active_channels: number; channels: Record<string, number> }
+}
+
 const sectionStyle: React.CSSProperties = {
   backgroundColor: '#1e293b',
   borderRadius: '8px',
@@ -511,10 +526,35 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     }
   }
 
-  type Section = 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
-  const [activeSection, setActiveSection] = useState<Section>('users')
+  // Monitor
+  const [monitorData, setMonitorData] = useState<MonitorData | null>(null)
+  const [monitorLoading, setMonitorLoading] = useState(false)
+  const [monitorError, setMonitorError] = useState<string | null>(null)
+
+  const fetchMonitor = useCallback(async () => {
+    setMonitorLoading(true)
+    setMonitorError(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/monitor`, {
+        headers: { 'X-Admin-Password': password },
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      const json = await res.json()
+      setMonitorData(json.data)
+    } catch (e: any) {
+      setMonitorError(e.message)
+    } finally {
+      setMonitorLoading(false)
+    }
+  }, [password])
+
+  useEffect(() => { fetchMonitor() }, [fetchMonitor])
+
+  type Section = 'monitor' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
+  const [activeSection, setActiveSection] = useState<Section>('monitor')
 
   const tabs: { id: Section; label: string }[] = [
+    { id: 'monitor', label: 'Monitor' },
     { id: 'requests', label: 'Requests' },
     { id: 'allowlist', label: 'Allowlist' },
     { id: 'names', label: 'Names' },
@@ -553,6 +593,183 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
       ))}
     </div>
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+
+      {/* Monitor */}
+      {activeSection === 'monitor' && <div style={sectionStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>System Monitor</h2>
+          <button onClick={fetchMonitor} disabled={monitorLoading} style={{
+            ...btnStyle, fontSize: '12px', padding: '6px 14px',
+            opacity: monitorLoading ? 0.5 : 1,
+          }}>
+            {monitorLoading ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+
+        {monitorError && (
+          <div style={{ fontSize: '13px', color: '#ef4444', marginBottom: '16px' }}>{monitorError}</div>
+        )}
+
+        {monitorData && (<>
+          {/* Deploy Safety Banner */}
+          <div style={{
+            padding: '14px 18px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            backgroundColor: monitorData.deploySafety.safe ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+            border: `1px solid ${monitorData.deploySafety.safe ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+          }}>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: monitorData.deploySafety.safe ? '#22c55e' : '#ef4444', marginBottom: '4px' }}>
+              {monitorData.deploySafety.safe ? 'SAFE TO DEPLOY' : 'DO NOT DEPLOY'}
+            </div>
+            <div style={{ fontSize: '13px', color: monitorData.deploySafety.safe ? '#86efac' : '#fca5a5' }}>
+              {monitorData.deploySafety.reason}
+            </div>
+          </div>
+
+          {/* Status Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+            {/* Simulation */}
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '14px' }}>
+              <div style={{ ...labelStyle, marginBottom: '10px' }}>Simulation</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Status</span>
+                  <span style={{ color: monitorData.simulation.isActive ? '#22c55e' : '#ef4444', fontWeight: '600' }}>
+                    {monitorData.simulation.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Phase</span>
+                  <span style={{ color: '#e2e8f0' }}>{monitorData.simulation.phase.replace(/_/g, ' ')}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Last Saved</span>
+                  <span style={{ color: '#cbd5e1', fontSize: '12px' }}>
+                    {monitorData.simulation.lastSaved
+                      ? new Date(monitorData.simulation.lastSaved).toLocaleString()
+                      : '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Season */}
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '14px' }}>
+              <div style={{ ...labelStyle, marginBottom: '10px' }}>Season</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Season</span>
+                  <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{monitorData.season.seasonNumber}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Week</span>
+                  <span style={{ color: '#e2e8f0' }}>{monitorData.season.currentWeekText || `Week ${monitorData.season.currentWeek}`}</span>
+                </div>
+                {monitorData.season.inPlayoffs && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#94a3b8' }}>Playoff Round</span>
+                    <span style={{ color: '#f59e0b' }}>{monitorData.season.playoffRound || 'In Progress'}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Games</span>
+                  <span style={{ color: '#cbd5e1' }}>{monitorData.season.completedGames} / {monitorData.season.totalGames}</span>
+                </div>
+                {monitorData.season.champion && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#94a3b8' }}>Champion</span>
+                    <span style={{ color: '#fbbf24', fontWeight: '600' }}>{monitorData.season.champion}</span>
+                  </div>
+                )}
+                {monitorData.season.mvp && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#94a3b8' }}>MVP</span>
+                    <span style={{ color: '#fbbf24' }}>{monitorData.season.mvp}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Live Games */}
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '14px' }}>
+              <div style={{ ...labelStyle, marginBottom: '10px' }}>Live Games</div>
+              <div style={{ display: 'flex', gap: '16px', fontSize: '13px' }}>
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: monitorData.liveGames.active > 0 ? '#22c55e' : '#475569' }}>
+                    {monitorData.liveGames.active}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>Active</div>
+                </div>
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: monitorData.liveGames.scheduled > 0 ? '#3b82f6' : '#475569' }}>
+                    {monitorData.liveGames.scheduled}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>Scheduled</div>
+                </div>
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#475569' }}>
+                    {monitorData.liveGames.final}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>Final</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Timing */}
+            <div style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '14px' }}>
+              <div style={{ ...labelStyle, marginBottom: '10px' }}>Timing</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#94a3b8' }}>Mode</span>
+                  <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{monitorData.timing.mode || '—'}</span>
+                </div>
+                {monitorData.timing.catchingUp && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#94a3b8' }}>Catching Up</span>
+                    <span style={{ color: '#f59e0b', fontWeight: '600' }}>Yes</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Counts Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginBottom: '16px' }}>
+            {[
+              { label: 'Teams', value: monitorData.counts.teams },
+              { label: 'Active Players', value: monitorData.counts.activePlayers },
+              { label: 'Free Agents', value: monitorData.counts.freeAgents },
+              { label: 'Retired', value: monitorData.counts.retiredPlayers },
+              { label: 'Hall of Fame', value: monitorData.counts.hallOfFame },
+            ].map(item => (
+              <div key={item.label} style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '10px', textAlign: 'center' }}>
+                <div style={{ fontSize: '18px', fontWeight: '700', color: '#e2e8f0' }}>{item.value}</div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* WebSocket Connections */}
+          <div style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '14px' }}>
+            <div style={{ ...labelStyle, marginBottom: '10px' }}>
+              WebSocket Connections ({monitorData.websockets.total_connections})
+            </div>
+            {monitorData.websockets.total_connections === 0 ? (
+              <div style={{ fontSize: '13px', color: '#94a3b8' }}>No active connections</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {Object.entries(monitorData.websockets.channels).map(([channel, count]) => (
+                  <div key={channel} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                    <span style={{ color: '#cbd5e1', fontFamily: 'monospace', fontSize: '12px' }}>{channel}</span>
+                    <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>)}
+      </div>}
 
       {/* Beta Access Requests */}
       {activeSection === 'requests' && <div style={sectionStyle}>
