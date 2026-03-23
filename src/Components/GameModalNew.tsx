@@ -6,6 +6,7 @@ import PlayerHoverCard from './PlayerHoverCard'
 import TeamHoverCard from './TeamHoverCard'
 import { Stars } from './Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { PlayInsightsPanel } from './PlayInsightsPanel'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -40,6 +41,7 @@ function getResultColor(playResult: string): string | null {
 export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) => {
   const [activeTab, setActiveTab] = useState<'box' | 'plays' | 'stats'>('plays')
   const [showHighlightsOnly, setShowHighlightsOnly] = useState(false)
+  const [expandedPlayKey, setExpandedPlayKey] = useState<string | null>(null)
   const isMobile = useIsMobile()
   
   // Get game from central state and fetch plays
@@ -194,115 +196,140 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const bigPlayTeamColor = homeGained ? gameData.homeTeam.color : gameData.awayTeam.color
     const wpaValue = homeGained ? (play.homeWpa ?? 0) : (play.awayWpa ?? 0)
     const hasAccent = isBigPlay || isClutchPlay || isChokePlay || isMomentumShift
+    const playKey = play.playNumber != null ? `pn-${play.playNumber}` : `${keyPrefix}-${index}`
+    const hasInsights = play.insights && Object.keys(play.insights).length > 0
+    const isExpanded = expandedPlayKey === playKey
 
     return (
-      <div key={`${keyPrefix}-${index}`} style={{
-        paddingBottom: '12px',
-        paddingTop: '6px',
-        paddingLeft: '10px',
-        paddingRight: '6px',
-        borderBottom: '1px solid #334155',
-        boxShadow: isBigPlay ? 'inset 3px 0 0 #f59e0b'
-          : isClutchPlay ? 'inset 3px 0 0 #06b6d4'
-          : isChokePlay ? 'inset 3px 0 0 #ef4444'
-          : isMomentumShift ? 'inset 3px 0 0 #f97316'
-          : 'none',
-        backgroundColor: isBigPlay ? '#1a1300'
-          : isClutchPlay ? '#001a1f'
-          : isChokePlay ? '#1a0500'
-          : isMomentumShift ? '#1a0f00'
-          : 'transparent',
-        borderRadius: hasAccent ? '4px' : '0',
-        display: 'flex',
-        gap: '12px'
-      }}>
-        {/* Team Avatar */}
-        {offenseTeamId && (
-          <img
-            src={`${API_BASE}/teams/${offenseTeamId}/avatar?size=40&v=2`}
-            alt={play.offensiveTeam}
-            crossOrigin="anonymous"
-            style={{
-              width: '40px',
-              height: '40px',
-              flexShrink: 0
-            }}
-          />
-        )}
-
-        {/* Play Content */}
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
-            {/* Left: clock / situation */}
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <span>{play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}</span>
-              {downText && (
-                <>
-                  <span>•</span>
-                  <span style={{ color: '#cbd5e1', fontWeight: '500' }}>{downText}</span>
-                </>
-              )}
-              {play.yardLine && !isTwoPtPlay && (
-                <>
-                  <span>•</span>
-                  <span>{play.yardLine}</span>
-                </>
-              )}
-              {isBigPlay && (
-                <span style={{ color: '#d97706', fontWeight: '600' }}>
-                  ⚡ <span style={{ color: bigPlayTeamColor }}>{bigPlayTeamAbbr}</span> +{wpaValue.toFixed(1)}%
-                </span>
-              )}
-              {isClutchPlay && (
-                <span style={{ color: '#06b6d4', fontWeight: '600', fontSize: '11px' }}>
-                  ◆ CLUTCH
-                </span>
-              )}
-              {isChokePlay && (
-                <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '11px' }}>
-                  ▼ CHOKE
-                </span>
-              )}
-              {isMomentumShift && !isBigPlay && !isClutchPlay && !isChokePlay && (
-                <span style={{ color: '#f97316', fontWeight: '600', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                  <svg width="11" height="13" viewBox="0 0 12 16" fill="#f97316"><path d="M6 0C6 0 2 4 2 8c0 2.2 1.8 4 4 4s4-1.8 4-4C10 4 6 0 6 0zm0 10.5c-1.4 0-2.5-1.1-2.5-2.5 0-1.9 2.5-5.5 2.5-5.5s2.5 3.6 2.5 5.5c0 1.4-1.1 2.5-2.5 2.5z"/></svg>
-                  MOMENTUM SHIFT
-                </span>
-              )}
-            </div>
-            {/* Right: result label */}
-            {(() => {
-              const sackColor = '#f97316'
-              const resultColor = play.playResult ? getResultColor(String(play.playResult)) : null
-              const badgeColor = play.isSack ? sackColor : resultColor
-              const badgeLabel = play.isSack ? 'SACK' : play.playResult
-              if (!badgeColor) return null
-              return (
-                <span style={{
-                  fontSize: '10px',
-                  color: badgeColor,
-                  backgroundColor: `${badgeColor}30`,
-                  padding: '1px 7px',
-                  borderRadius: '3px',
-                  fontWeight: '700',
-                  whiteSpace: 'nowrap',
-                  marginLeft: '8px',
-                  flexShrink: 0,
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                }}>
-                  {badgeLabel}
-                </span>
-              )
-            })()}
-          </div>
-          <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) ? '4px' : '0' }}>{play.description}</p>
-          {play.scoreChange && play.homeTeamScore != null && (
-            <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-              {gameData.homeTeam.abbr} {play.homeTeamScore} – {play.awayTeamScore} {gameData.awayTeam.abbr}
-            </div>
+      <div key={playKey} style={{ borderBottom: '1px solid #334155' }}>
+        <div
+          onClick={hasInsights ? () => setExpandedPlayKey(isExpanded ? null : playKey) : undefined}
+          style={{
+            paddingBottom: '12px',
+            paddingTop: '6px',
+            paddingLeft: '10px',
+            paddingRight: '6px',
+            boxShadow: isBigPlay ? 'inset 3px 0 0 #f59e0b'
+              : isClutchPlay ? 'inset 3px 0 0 #06b6d4'
+              : isChokePlay ? 'inset 3px 0 0 #ef4444'
+              : isMomentumShift ? 'inset 3px 0 0 #f97316'
+              : 'none',
+            backgroundColor: isBigPlay ? '#1a1300'
+              : isClutchPlay ? '#001a1f'
+              : isChokePlay ? '#1a0500'
+              : isMomentumShift ? '#1a0f00'
+              : 'transparent',
+            borderRadius: hasAccent ? '4px' : '0',
+            display: 'flex',
+            gap: '12px',
+            cursor: hasInsights ? 'pointer' : 'default',
+          }}
+        >
+          {/* Team Avatar */}
+          {offenseTeamId && (
+            <img
+              src={`${API_BASE}/teams/${offenseTeamId}/avatar?size=40&v=2`}
+              alt={play.offensiveTeam}
+              crossOrigin="anonymous"
+              style={{
+                width: '40px',
+                height: '40px',
+                flexShrink: 0
+              }}
+            />
           )}
+
+          {/* Play Content */}
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
+              {/* Left: clock / situation */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <span>{play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}</span>
+                {downText && (
+                  <>
+                    <span>•</span>
+                    <span style={{ color: '#cbd5e1', fontWeight: '500' }}>{downText}</span>
+                  </>
+                )}
+                {play.yardLine && !isTwoPtPlay && (
+                  <>
+                    <span>•</span>
+                    <span>{play.yardLine}</span>
+                  </>
+                )}
+                {isBigPlay && (
+                  <span style={{ color: '#d97706', fontWeight: '600' }}>
+                    ⚡ <span style={{ color: bigPlayTeamColor }}>{bigPlayTeamAbbr}</span> +{wpaValue.toFixed(1)}%
+                  </span>
+                )}
+                {isClutchPlay && (
+                  <span style={{ color: '#06b6d4', fontWeight: '600', fontSize: '11px' }}>
+                    ◆ CLUTCH
+                  </span>
+                )}
+                {isChokePlay && (
+                  <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '11px' }}>
+                    ▼ CHOKE
+                  </span>
+                )}
+                {isMomentumShift && !isBigPlay && !isClutchPlay && !isChokePlay && (
+                  <span style={{ color: '#f97316', fontWeight: '600', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                    <svg width="11" height="13" viewBox="0 0 12 16" fill="#f97316"><path d="M6 0C6 0 2 4 2 8c0 2.2 1.8 4 4 4s4-1.8 4-4C10 4 6 0 6 0zm0 10.5c-1.4 0-2.5-1.1-2.5-2.5 0-1.9 2.5-5.5 2.5-5.5s2.5 3.6 2.5 5.5c0 1.4-1.1 2.5-2.5 2.5z"/></svg>
+                    MOMENTUM SHIFT
+                  </span>
+                )}
+              </div>
+              {/* Right: result label + expand indicator */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {(() => {
+                  const sackColor = '#f97316'
+                  const resultColor = play.playResult ? getResultColor(String(play.playResult)) : null
+                  const badgeColor = play.isSack ? sackColor : resultColor
+                  const badgeLabel = play.isSack ? 'SACK' : play.playResult
+                  if (!badgeColor) return null
+                  return (
+                    <span style={{
+                      fontSize: '10px',
+                      color: badgeColor,
+                      backgroundColor: `${badgeColor}30`,
+                      padding: '1px 7px',
+                      borderRadius: '3px',
+                      fontWeight: '700',
+                      whiteSpace: 'nowrap',
+                      marginLeft: '8px',
+                      flexShrink: 0,
+                      letterSpacing: '0.04em',
+                      textTransform: 'uppercase',
+                    }}>
+                      {badgeLabel}
+                    </span>
+                  )
+                })()}
+                {hasInsights && (
+                  <svg
+                    width="12" height="12" viewBox="0 0 12 12"
+                    style={{
+                      flexShrink: 0,
+                      marginLeft: '4px',
+                      transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.15s',
+                      opacity: 0.5,
+                    }}
+                  >
+                    <path d="M2 4l4 4 4-4" stroke="#94a3b8" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+            </div>
+            <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) ? '4px' : '0' }}>{play.description}</p>
+            {play.scoreChange && play.homeTeamScore != null && (
+              <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                {gameData.homeTeam.abbr} {play.homeTeamScore} – {play.awayTeamScore} {gameData.awayTeam.abbr}
+              </div>
+            )}
+          </div>
         </div>
+        {isExpanded && hasInsights && <PlayInsightsPanel insights={play.insights} />}
       </div>
     )
   }

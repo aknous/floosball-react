@@ -54,6 +54,174 @@ export interface TeamGameStats {
   penaltyYards: number
 }
 
+// Play insights — hidden simulation data surfaced in expandable panels
+export interface PlayInsightsSituation {
+  gamePressure: number
+  momentum: number
+  momentumTeam: string | null
+  offenseAbbr: string
+}
+
+export interface PlayInsightsCoach {
+  playWeights: { run: number; short: number; medium: number; long: number }
+  baseWeights: { run: number; short: number; medium: number; long: number }
+  coachAggr: number
+  coachOffMind: number
+  coachAdapt: number
+  clockIQ: number
+  targetSideline: boolean
+  gameplan?: {
+    runPassRatio: number
+    gapDistribution: Record<string, number>
+    aggressiveness: number
+  }
+  oppDefense?: {
+    runStopFocus: number
+    blitzFrequency: number
+    aggressiveness: number
+    coachDefMind: number | null
+    coachAdapt: number | null
+    coachAggr: number | null
+  }
+  isSecondHalf?: boolean
+  offenseAbbr?: string
+  defenseAbbr?: string
+}
+
+export interface PlayInsightsFourthDown {
+  decision: 'punt' | 'fieldGoal' | 'goForIt'
+  fgProbability: number
+  fgThreshold: number
+  inFgRange: boolean
+  goForItThreshold: number
+  yardsToEndzone: number
+  coachAggr: number | null
+}
+
+export interface PlayInsightsDefense {
+  runDefMult: number
+  passDefMult: number
+  passRushMult: number
+}
+
+export interface PlayInsightsTarget {
+  position: string
+  name: string
+  openness: number
+  routeQuality?: number
+  reach: number
+  route: string
+  isSelected: boolean
+}
+
+export interface PlayInsightsRun {
+  designedGap: string
+  selectedGap: string
+  gapQualities: Record<string, number>
+  gapQualityUsed: number
+  rbVision: number
+  rbDiscipline: number
+  runnerRating: number
+  runnerPressureMod: number
+  blockerRating: number
+  blockerName: string | null
+  blockingVsDefense: number
+  effectiveRunDef: number
+  offenseVsDefense: number
+  stage1Yards: number
+  fumbleRisk: number
+  isFumble: boolean
+}
+
+export interface PlayInsightsPass {
+  sackProbability: number
+  sackRoll: number
+  effectivePassRush: number
+  effectivePassDef: number
+  blockingModifier: number
+  protectionDiff: number
+  wasSacked?: boolean
+  throwAway?: boolean
+  qbVision?: number
+  targets?: PlayInsightsTarget[]
+  throwQuality?: number
+  qbPressureMod?: number
+  rcvPressureMod?: number
+  rcvHands?: number
+  rcvReach?: number
+  rcvRouteRunning?: number
+  contactProbability?: number
+  secureProbability?: number
+  catchProbability?: number
+  intProbability?: number
+  dropProbability?: number
+  outcomeRoll?: number
+  airYards?: number
+  yac?: number
+}
+
+export interface PlayInsightsFg {
+  distance: number
+  baseProbability: number
+  finalProbability: number
+  kickerRating: number
+  kickerName: string
+  pressureAdj: number
+  gamePressure: number
+  roll: number
+  isGood: boolean
+  mentalScore?: number
+  boostChance?: number
+  neutralChance?: number
+}
+
+export interface PressureProfile {
+  pressureHandling: number
+  clutchFactor: number
+  riseChance: number
+  steadyChance: number
+  crumbleChance: number
+  outcome: 'rose' | 'steady' | 'crumbled'
+}
+
+export interface PlayInsightsPlayer {
+  name: string
+  position: string | null
+  confidence: number
+  determination: number
+  confidenceChange: number
+  determinationChange: number
+  confidenceDrift?: number
+  determinationDrift?: number
+  pressureMod?: number
+  pressureProfile?: PressureProfile
+}
+
+export interface PlayInsightsClockMgmt {
+  decision: 'kneel' | 'spike' | 'timeout' | 'desperationFG'
+  reason: string
+  clockRemaining: number
+  drainableSeconds?: number
+  oppTimeouts?: number
+  spikeChance?: number
+  coachClockIQ?: number
+  timeoutsLeft?: number
+  fgProbability?: number
+}
+
+export interface PlayInsights {
+  situation?: PlayInsightsSituation
+  coach?: PlayInsightsCoach
+  fourthDown?: PlayInsightsFourthDown
+  defense?: PlayInsightsDefense
+  run?: PlayInsightsRun
+  pass?: PlayInsightsPass
+  fg?: PlayInsightsFg
+  players?: PlayInsightsPlayer[]
+  clockMgmt?: PlayInsightsClockMgmt
+  playCall?: 'run' | 'short' | 'medium' | 'long'
+}
+
 // Play event details
 export interface PlayEvent {
   playNumber: number
@@ -83,6 +251,7 @@ export interface PlayEvent {
   isClutchPlay?: boolean
   isChokePlay?: boolean
   isMomentumShift?: boolean
+  insights?: PlayInsights | null
 }
 
 // Game Events
@@ -248,6 +417,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
     isClutchPlay: boolean
     isChokePlay: boolean
     isMomentumShift: boolean
+    insights?: PlayInsights | null
   } | null
   finalPlay?: {
     playNumber: number
@@ -274,6 +444,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
     isClutchPlay: boolean
     isChokePlay: boolean
     isMomentumShift: boolean
+    insights?: PlayInsights | null
   } | null
   homeWinProbability: number
   awayWinProbability: number

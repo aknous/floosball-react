@@ -185,14 +185,9 @@ export const MvpRankings: React.FC = () => {
     )
   }
 
-  if (rankings.length === 0 && !crownedMvp && allPro.length === 0) {
-    return (
-      <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px' }}>
-        <div style={{ fontSize: '13px', color: '#475569', textAlign: 'center' }}>
-          No MVP data yet — rankings populate as games are played.
-        </div>
-      </div>
-    )
+  // Don't show anything until MVP/All-Pro have been awarded
+  if (!crownedMvp && allPro.length === 0) {
+    return null
   }
 
   return (
@@ -230,9 +225,9 @@ export const MvpRankings: React.FC = () => {
           </div>
         )}
 
-        {rankings.map((player, idx) => {
+        {crownedMvp && rankings.map((player, idx) => {
           const isLeader = idx === 0
-          const isCrowned = crownedMvp && player.id === crownedMvp.id
+          const isCrowned = player.id === crownedMvp.id
           return (
             <div
               key={player.id}

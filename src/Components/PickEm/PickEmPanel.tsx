@@ -412,6 +412,105 @@ interface LeaderboardViewProps {
   userId?: number | null
 }
 
+const LeaderboardRow: React.FC<{
+  entry: PickEmLeaderboardEntry
+  isMe: boolean
+  isSeason: boolean
+}> = ({ entry, isMe, isSeason }) => {
+  const [hovered, setHovered] = useState(false)
+  const rankInfo = RANK_STYLE[entry.rank]
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '6px 8px',
+        borderRadius: '6px',
+        backgroundColor: isMe ? '#253348' : rankInfo?.bg || '#1e293b',
+        border: isMe ? '1px solid #3b82f6' : '1px solid #334155',
+        cursor: 'default',
+      }}
+    >
+      {/* Rank */}
+      <div style={{
+        width: '28px',
+        textAlign: 'center',
+        fontSize: '12px',
+        fontWeight: '700',
+        color: rankInfo?.color || '#94a3b8',
+      }}>
+        {rankInfo?.label || `#${entry.rank}`}
+      </div>
+
+      {/* Username */}
+      <div style={{ flex: 1, fontSize: '12px', fontWeight: '500', color: '#e2e8f0', minWidth: 0 }}>
+        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {entry.username}
+          {isMe && <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>}
+        </div>
+      </div>
+
+      {/* Points */}
+      <div style={{ fontSize: '12px', fontWeight: '700', color: '#e2e8f0', whiteSpace: 'nowrap' }}>
+        {entry.totalPoints} pts
+      </div>
+
+      {/* Hover tooltip */}
+      {hovered && (
+        <div style={{
+          position: 'absolute',
+          bottom: 'calc(100% + 6px)',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#1e293b',
+          border: '1px solid #475569',
+          borderRadius: '8px',
+          padding: '8px 12px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          zIndex: 20000,
+          pointerEvents: 'none',
+          whiteSpace: 'nowrap',
+          fontSize: '11px',
+          lineHeight: '1.6',
+        }}>
+          <div style={{ fontWeight: '600', color: '#e2e8f0', marginBottom: '4px' }}>
+            {entry.username}
+          </div>
+          <div style={{ color: '#cbd5e1' }}>
+            Correct: <span style={{ fontWeight: '600', color: '#e2e8f0' }}>{entry.correctCount}/{entry.totalPicks}</span>
+            <span style={{ color: '#94a3b8' }}> ({entry.accuracy}%)</span>
+          </div>
+          <div style={{ color: '#cbd5e1' }}>
+            Points: <span style={{ fontWeight: '600', color: '#e2e8f0' }}>{entry.totalPoints}</span>
+          </div>
+          {isSeason && entry.clairvoyantWeeks != null && entry.clairvoyantWeeks > 0 && (
+            <div style={{ color: '#22c55e', fontWeight: '600' }}>
+              Clairvoyant: {entry.clairvoyantWeeks}x
+            </div>
+          )}
+          {/* Arrow */}
+          <div style={{
+            position: 'absolute',
+            bottom: '-5px',
+            left: '50%',
+            transform: 'translateX(-50%) rotate(45deg)',
+            width: '8px',
+            height: '8px',
+            backgroundColor: '#1e293b',
+            borderRight: '1px solid #475569',
+            borderBottom: '1px solid #475569',
+          }} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   seasonEntries, weekEntries, week, weekText, userId,
 }) => {
@@ -450,68 +549,14 @@ const LeaderboardView: React.FC<LeaderboardViewProps> = ({
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          {entries.map(entry => {
-            const rankInfo = RANK_STYLE[entry.rank]
-            const isMe = userId != null && entry.userId === userId
-            return (
-              <div
-                key={entry.userId}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '6px 8px',
-                  borderRadius: '6px',
-                  backgroundColor: isMe ? '#253348' : rankInfo?.bg || '#1e293b',
-                  border: isMe ? '1px solid #3b82f6' : '1px solid #334155',
-                }}
-              >
-                {/* Rank */}
-                <div style={{
-                  width: '28px',
-                  textAlign: 'center',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  color: rankInfo?.color || '#94a3b8',
-                }}>
-                  {rankInfo?.label || `#${entry.rank}`}
-                </div>
-
-                {/* Username */}
-                <div style={{ flex: 1, fontSize: '12px', fontWeight: '500', color: '#e2e8f0', minWidth: 0 }}>
-                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {entry.username}
-                    {isMe && <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>}
-                  </div>
-                </div>
-
-                {/* Points + Accuracy stacked */}
-                <div style={{ textAlign: 'right', lineHeight: '1.3' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#e2e8f0', whiteSpace: 'nowrap' }}>
-                    {entry.totalPoints} pts
-                  </div>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', whiteSpace: 'nowrap' }}>
-                    {entry.correctCount}/{entry.totalPicks} · {entry.accuracy}%
-                  </div>
-                </div>
-
-                {/* Clairvoyant Weeks (season only) */}
-                {subMode === 'season' && entry.clairvoyantWeeks != null && entry.clairvoyantWeeks > 0 && (
-                  <div style={{
-                    fontSize: '10px',
-                    fontWeight: '700',
-                    color: '#22c55e',
-                    backgroundColor: 'rgba(34,197,94,0.25)',
-                    padding: '2px 4px',
-                    borderRadius: '3px',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {entry.clairvoyantWeeks}x
-                  </div>
-                )}
-              </div>
-            )
-          })}
+          {entries.map(entry => (
+            <LeaderboardRow
+              key={entry.userId}
+              entry={entry}
+              isMe={userId != null && entry.userId === userId}
+              isSeason={subMode === 'season'}
+            />
+          ))}
         </div>
       )}
     </div>

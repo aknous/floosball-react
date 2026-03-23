@@ -2,9 +2,24 @@ import React, { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-const APP_VERSION = process.env.REACT_APP_VERSION || '0.6.1'
+const APP_VERSION = process.env.REACT_APP_VERSION || '0.6.2'
 
 const CHANGELOG: { version: string; date: string; changes: string[] }[] = [
+  {
+    version: 'v0.6.2',
+    date: '2026-03-22',
+    changes: [
+      'Play insights panel — expandable detail view on each play showing situation, coach strategy, execution, and composure',
+      'Run play tuning — realistic yardage distributions with multi-stage gap system (A/B/C-gap and bounce)',
+      'Run play descriptions now match actual gap selection — inside runs vs outside runs',
+      'Clutch/choke redesign — situation-driven Q4/OT moments: go-ahead scores, 4th down heroics, critical turnovers',
+      'Game clock fix — play duration is now snap-to-whistle only, no phantom dead time on clock-stopping plays',
+      'OT play-calling fix — QB no longer throws ball away on desperation plays when trailing',
+      'Leading team kneels on 4th down in final seconds instead of attempting unnecessary field goals',
+      'MVP board hidden until award is announced — no more premature spoilers',
+      'Playoff pick-em support with proper timing and featured badge fixes',
+    ],
+  },
   {
     version: 'v0.6.1',
     date: '2026-03-19',
