@@ -511,10 +511,54 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     }
   }
 
-  type Section = 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
-  const [activeSection, setActiveSection] = useState<Section>('users')
+  // Monitor
+  interface MonitorData {
+    deploySafety: { safe: boolean; reason: string }
+    simulation: { isActive: boolean; phase: string; lastSaved: string | null }
+    season: {
+      seasonNumber: number; currentWeek: number; currentWeekText: string | null
+      inPlayoffs: boolean; playoffRound: string | null; isComplete: boolean
+      champion: string | null; mvp: string | null
+      totalGames: number; completedGames: number
+    }
+    liveGames: { active: number; scheduled: number; final: number }
+    timing: { mode: string | null; catchingUp: boolean }
+    counts: { teams: number; activePlayers: number; freeAgents: number; retiredPlayers: number; hallOfFame: number }
+    memory: { rssMb: number; scheduleGames: number; gamesWithPlays: number; totalPlaysInMemory: number; pid: number }
+    websockets: Record<string, any>
+  }
+  const [monitorData, setMonitorData] = useState<MonitorData | null>(null)
+  const [monitorError, setMonitorError] = useState<string | null>(null)
+  const [monitorLoading, setMonitorLoading] = useState(false)
+
+  const fetchMonitor = useCallback(async () => {
+    setMonitorLoading(true)
+    setMonitorError(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/monitor`, { headers })
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+      const json = await res.json()
+      setMonitorData(json.data)
+    } catch (e: any) {
+      setMonitorError(e.message)
+    } finally {
+      setMonitorLoading(false)
+    }
+  }, [password])
+
+  type Section = 'monitor' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
+  const [activeSection, setActiveSection] = useState<Section>('monitor')
+
+  // Auto-refresh monitor every 30s when active
+  useEffect(() => {
+    if (activeSection !== 'monitor') return
+    fetchMonitor()
+    const interval = setInterval(fetchMonitor, 30000)
+    return () => clearInterval(interval)
+  }, [activeSection, fetchMonitor])
 
   const tabs: { id: Section; label: string }[] = [
+    { id: 'monitor', label: 'Monitor' },
     { id: 'requests', label: 'Requests' },
     { id: 'allowlist', label: 'Allowlist' },
     { id: 'names', label: 'Names' },
@@ -553,6 +597,155 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
       ))}
     </div>
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+
+      {/* Server Monitor */}
+      {activeSection === 'monitor' && <div style={sectionStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>Server Monitor</h2>
+          <button onClick={fetchMonitor} disabled={monitorLoading}
+            style={{ ...btnStyle, fontSize: '12px', padding: '5px 14px', opacity: monitorLoading ? 0.5 : 1 }}>
+            {monitorLoading ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        {monitorError && (
+          <div style={{ fontSize: '13px', color: '#ef4444', marginBottom: '12px' }}>{monitorError}</div>
+        )}
+        {monitorData && (() => {
+          const { deploySafety, simulation, season, liveGames, timing, counts, memory, websockets } = monitorData
+          const statBox: React.CSSProperties = {
+            backgroundColor: '#0f172a', borderRadius: '6px', padding: '12px 14px',
+          }
+          const statLabel: React.CSSProperties = {
+            fontSize: '10px', fontWeight: '700', color: '#64748b',
+            letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px',
+          }
+          const statValue: React.CSSProperties = {
+            fontSize: '20px', fontWeight: '700', color: '#e2e8f0',
+          }
+          const smallStat: React.CSSProperties = {
+            fontSize: '13px', color: '#cbd5e1', lineHeight: '1.8',
+          }
+          const memoryPct = memory.rssMb > 0 ? Math.round((memory.rssMb / 512) * 100) : 0
+          const memoryColor = memoryPct > 80 ? '#ef4444' : memoryPct > 60 ? '#f59e0b' : '#22c55e'
+
+          return <>
+            {/* Deploy Safety Banner */}
+            <div style={{
+              backgroundColor: deploySafety.safe ? '#052e16' : '#450a0a',
+              border: `1px solid ${deploySafety.safe ? '#166534' : '#991b1b'}`,
+              borderRadius: '6px', padding: '10px 14px', marginBottom: '16px',
+              display: 'flex', alignItems: 'center', gap: '10px',
+            }}>
+              <span style={{
+                width: '8px', height: '8px', borderRadius: '50%',
+                backgroundColor: deploySafety.safe ? '#22c55e' : '#ef4444',
+                flexShrink: 0,
+              }} />
+              <span style={{ fontSize: '13px', color: deploySafety.safe ? '#86efac' : '#fca5a5', fontWeight: '600' }}>
+                {deploySafety.reason}
+              </span>
+            </div>
+
+            {/* Memory + Season Overview */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+              <div style={statBox}>
+                <div style={statLabel}>Memory (RSS)</div>
+                <div style={{ ...statValue, color: memoryColor }}>{memory.rssMb} MB</div>
+                <div style={{ marginTop: '6px', height: '4px', backgroundColor: '#1e293b', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', borderRadius: '2px',
+                    backgroundColor: memoryColor,
+                    width: `${Math.min(100, memoryPct)}%`,
+                    transition: 'width 0.3s ease',
+                  }} />
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{memoryPct}% of 512 MB</div>
+              </div>
+              <div style={statBox}>
+                <div style={statLabel}>Season</div>
+                <div style={statValue}>S{season.seasonNumber}</div>
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                  {season.currentWeekText || `Week ${season.currentWeek}`}
+                </div>
+              </div>
+              <div style={statBox}>
+                <div style={statLabel}>Phase</div>
+                <div style={{ ...statValue, fontSize: '16px', marginTop: '4px' }}>
+                  {simulation.phase.replace(/_/g, ' ').toUpperCase()}
+                </div>
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                  {timing.mode || '—'}{timing.catchingUp ? ' (catching up)' : ''}
+                </div>
+              </div>
+            </div>
+
+            {/* Games + Play Data */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+              <div style={statBox}>
+                <div style={statLabel}>Games</div>
+                <div style={statValue}>{season.completedGames}/{season.totalGames}</div>
+              </div>
+              <div style={statBox}>
+                <div style={statLabel}>Live</div>
+                <div style={{
+                  ...statValue,
+                  color: liveGames.active > 0 ? '#22c55e' : '#94a3b8',
+                }}>{liveGames.active}</div>
+                <div style={{ fontSize: '11px', color: '#64748b' }}>
+                  {liveGames.scheduled} queued / {liveGames.final} done
+                </div>
+              </div>
+              <div style={statBox}>
+                <div style={statLabel}>Games w/ Plays</div>
+                <div style={{
+                  ...statValue,
+                  color: memory.gamesWithPlays > 24 ? '#f59e0b' : '#e2e8f0',
+                }}>{memory.gamesWithPlays}</div>
+                <div style={{ fontSize: '11px', color: '#64748b' }}>of {memory.scheduleGames} total</div>
+              </div>
+              <div style={statBox}>
+                <div style={statLabel}>Plays in Memory</div>
+                <div style={statValue}>{memory.totalPlaysInMemory.toLocaleString()}</div>
+              </div>
+            </div>
+
+            {/* Counts + WebSockets */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={statBox}>
+                <div style={{ ...statLabel, marginBottom: '8px' }}>Entity Counts</div>
+                <div style={smallStat}>
+                  Teams: {counts.teams}<br />
+                  Active Players: {counts.activePlayers}<br />
+                  Free Agents: {counts.freeAgents}<br />
+                  Retired: {counts.retiredPlayers}<br />
+                  Hall of Fame: {counts.hallOfFame}
+                </div>
+              </div>
+              <div style={statBox}>
+                <div style={{ ...statLabel, marginBottom: '8px' }}>WebSockets</div>
+                <div style={smallStat}>
+                  {Object.entries(websockets).map(([k, v]) => (
+                    <div key={k}>{k}: {typeof v === 'object' ? JSON.stringify(v) : String(v)}</div>
+                  ))}
+                </div>
+                <div style={{ fontSize: '11px', color: '#475569', marginTop: '8px' }}>
+                  PID: {memory.pid} | Last saved: {simulation.lastSaved
+                    ? new Date(simulation.lastSaved).toLocaleString()
+                    : '—'}
+                </div>
+              </div>
+            </div>
+
+            {/* Champion / MVP */}
+            {(season.champion || season.mvp) && (
+              <div style={{ ...statBox, marginTop: '10px', display: 'flex', gap: '24px' }}>
+                {season.champion && <div style={smallStat}>Champion: <span style={{ color: '#fbbf24', fontWeight: '600' }}>{season.champion}</span></div>}
+                {season.mvp && <div style={smallStat}>MVP: <span style={{ color: '#fbbf24', fontWeight: '600' }}>{season.mvp}</span></div>}
+              </div>
+            )}
+          </>
+        })()}
+      </div>}
 
       {/* Beta Access Requests */}
       {activeSection === 'requests' && <div style={sectionStyle}>
@@ -834,7 +1027,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
           <div>
             <div style={labelStyle}>Edition</div>
             <select value={cardEdition} onChange={e => setCardEdition(e.target.value)} style={selectStyle}>
-              {(cardOptions?.editions ?? ['base', 'chrome', 'holographic', 'gold', 'prismatic', 'diamond']).map(ed => (
+              {(cardOptions?.editions ?? ['base', 'holographic', 'gold', 'diamond']).map(ed => (
                 <option key={ed} value={ed} style={{ color: EDITION_COLORS_MAP[ed] }}>{ed.toUpperCase()}</option>
               ))}
             </select>
