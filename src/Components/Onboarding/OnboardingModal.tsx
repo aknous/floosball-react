@@ -150,6 +150,7 @@ const INFO_STEPS = [
         </p>
         <p style={{ color: '#f59e0b', lineHeight: '1.6', fontSize: '13px' }}>
           This is a closed beta — features are actively being developed and things may change.
+          Season data (fantasy points, cards, floobits) may occasionally be reset as we fix bugs and improve the game.
           Your feedback is welcome and appreciated. Join the{' '}
           <a
             href="https://discord.gg/b4DZn3mVfP"

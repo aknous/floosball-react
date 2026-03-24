@@ -355,10 +355,10 @@ export default function Navbar() {
   // Re-fetch roster on game events; refetch user balance on week/season end (prizes awarded)
   useEffect(() => {
     if (!wsEvent) return
-    if (wsEvent.event === 'game_end' || wsEvent.event === 'season_end' || wsEvent.event === 'week_start' || wsEvent.event === 'week_end') {
+    if (wsEvent.event === 'game_start' || wsEvent.event === 'game_end' || wsEvent.event === 'season_end' || wsEvent.event === 'week_start' || wsEvent.event === 'week_end') {
       refetchRoster()
     }
-    if (wsEvent.event === 'week_end' || wsEvent.event === 'season_end') {
+    if (wsEvent.event === 'game_end' || wsEvent.event === 'week_end' || wsEvent.event === 'season_end') {
       refetchUser()
     }
   }, [wsEvent, refetchRoster, refetchUser])

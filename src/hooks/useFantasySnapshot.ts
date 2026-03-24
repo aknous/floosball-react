@@ -45,10 +45,34 @@ export interface CardBreakdownEntry {
   streakCount?: number
 }
 
+export interface ChanceAmplifier {
+  name: string
+  bonus: number
+}
+
+export interface HandSynergies {
+  chance: {
+    count: number
+    innateBonus: number
+    amplifiers: ChanceAmplifier[]
+    totalBonus: number
+    hasAdvantage: boolean
+  }
+  streak: {
+    count: number
+    activeCount: number
+  }
+  match: {
+    count: number
+    total: number
+  }
+}
+
 export interface EquationSummary {
   weekRawFP: number
   totalBonusFP: number
   multFactors: number[]
+  handSynergies?: HandSynergies
 }
 
 export interface ModifierInfo {

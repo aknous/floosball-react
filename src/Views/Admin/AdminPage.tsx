@@ -527,18 +527,31 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
   }
 
   // Monitor
+  interface MonitorData {
+    deploySafety: { safe: boolean; reason: string }
+    simulation: { isActive: boolean; phase: string; lastSaved: string | null }
+    season: {
+      seasonNumber: number; currentWeek: number; currentWeekText: string | null
+      inPlayoffs: boolean; playoffRound: string | null; isComplete: boolean
+      champion: string | null; mvp: string | null
+      totalGames: number; completedGames: number
+    }
+    liveGames: { active: number; scheduled: number; final: number }
+    timing: { mode: string | null; catchingUp: boolean }
+    counts: { teams: number; activePlayers: number; freeAgents: number; retiredPlayers: number; hallOfFame: number }
+    memory: { rssMb: number; scheduleGames: number; gamesWithPlays: number; totalPlaysInMemory: number; pid: number }
+    websockets: Record<string, any>
+  }
   const [monitorData, setMonitorData] = useState<MonitorData | null>(null)
-  const [monitorLoading, setMonitorLoading] = useState(false)
   const [monitorError, setMonitorError] = useState<string | null>(null)
+  const [monitorLoading, setMonitorLoading] = useState(false)
 
   const fetchMonitor = useCallback(async () => {
     setMonitorLoading(true)
     setMonitorError(null)
     try {
-      const res = await fetch(`${API_BASE}/admin/monitor`, {
-        headers: { 'X-Admin-Password': password },
-      })
-      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      const res = await fetch(`${API_BASE}/admin/monitor`, { headers })
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
       const json = await res.json()
       setMonitorData(json.data)
     } catch (e: any) {
@@ -548,10 +561,16 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     }
   }, [password])
 
-  useEffect(() => { fetchMonitor() }, [fetchMonitor])
-
   type Section = 'monitor' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
   const [activeSection, setActiveSection] = useState<Section>('monitor')
+
+  // Auto-refresh monitor every 30s when active
+  useEffect(() => {
+    if (activeSection !== 'monitor') return
+    fetchMonitor()
+    const interval = setInterval(fetchMonitor, 30000)
+    return () => clearInterval(interval)
+  }, [activeSection, fetchMonitor])
 
   const tabs: { id: Section; label: string }[] = [
     { id: 'monitor', label: 'Monitor' },
@@ -594,181 +613,153 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     </div>
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
 
-      {/* Monitor */}
+      {/* Server Monitor */}
       {activeSection === 'monitor' && <div style={sectionStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>System Monitor</h2>
-          <button onClick={fetchMonitor} disabled={monitorLoading} style={{
-            ...btnStyle, fontSize: '12px', padding: '6px 14px',
-            opacity: monitorLoading ? 0.5 : 1,
-          }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>Server Monitor</h2>
+          <button onClick={fetchMonitor} disabled={monitorLoading}
+            style={{ ...btnStyle, fontSize: '12px', padding: '5px 14px', opacity: monitorLoading ? 0.5 : 1 }}>
             {monitorLoading ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
-
         {monitorError && (
-          <div style={{ fontSize: '13px', color: '#ef4444', marginBottom: '16px' }}>{monitorError}</div>
+          <div style={{ fontSize: '13px', color: '#ef4444', marginBottom: '12px' }}>{monitorError}</div>
         )}
+        {monitorData && (() => {
+          const { deploySafety, simulation, season, liveGames, timing, counts, memory, websockets } = monitorData
+          const statBox: React.CSSProperties = {
+            backgroundColor: '#0f172a', borderRadius: '6px', padding: '12px 14px',
+          }
+          const statLabel: React.CSSProperties = {
+            fontSize: '10px', fontWeight: '700', color: '#64748b',
+            letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px',
+          }
+          const statValue: React.CSSProperties = {
+            fontSize: '20px', fontWeight: '700', color: '#e2e8f0',
+          }
+          const smallStat: React.CSSProperties = {
+            fontSize: '13px', color: '#cbd5e1', lineHeight: '1.8',
+          }
+          const memoryPct = memory.rssMb > 0 ? Math.round((memory.rssMb / 512) * 100) : 0
+          const memoryColor = memoryPct > 80 ? '#ef4444' : memoryPct > 60 ? '#f59e0b' : '#22c55e'
 
-        {monitorData && (<>
-          {/* Deploy Safety Banner */}
-          <div style={{
-            padding: '14px 18px',
-            borderRadius: '8px',
-            marginBottom: '20px',
-            backgroundColor: monitorData.deploySafety.safe ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-            border: `1px solid ${monitorData.deploySafety.safe ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
-          }}>
-            <div style={{ fontSize: '15px', fontWeight: '700', color: monitorData.deploySafety.safe ? '#22c55e' : '#ef4444', marginBottom: '4px' }}>
-              {monitorData.deploySafety.safe ? 'SAFE TO DEPLOY' : 'DO NOT DEPLOY'}
+          return <>
+            {/* Deploy Safety Banner */}
+            <div style={{
+              backgroundColor: deploySafety.safe ? '#052e16' : '#450a0a',
+              border: `1px solid ${deploySafety.safe ? '#166534' : '#991b1b'}`,
+              borderRadius: '6px', padding: '10px 14px', marginBottom: '16px',
+              display: 'flex', alignItems: 'center', gap: '10px',
+            }}>
+              <span style={{
+                width: '8px', height: '8px', borderRadius: '50%',
+                backgroundColor: deploySafety.safe ? '#22c55e' : '#ef4444',
+                flexShrink: 0,
+              }} />
+              <span style={{ fontSize: '13px', color: deploySafety.safe ? '#86efac' : '#fca5a5', fontWeight: '600' }}>
+                {deploySafety.reason}
+              </span>
             </div>
-            <div style={{ fontSize: '13px', color: monitorData.deploySafety.safe ? '#86efac' : '#fca5a5' }}>
-              {monitorData.deploySafety.reason}
-            </div>
-          </div>
 
-          {/* Status Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-            {/* Simulation */}
-            <div style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '14px' }}>
-              <div style={{ ...labelStyle, marginBottom: '10px' }}>Simulation</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>Status</span>
-                  <span style={{ color: monitorData.simulation.isActive ? '#22c55e' : '#ef4444', fontWeight: '600' }}>
-                    {monitorData.simulation.isActive ? 'Active' : 'Inactive'}
-                  </span>
+            {/* Memory + Season Overview */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+              <div style={statBox}>
+                <div style={statLabel}>Memory (RSS)</div>
+                <div style={{ ...statValue, color: memoryColor }}>{memory.rssMb} MB</div>
+                <div style={{ marginTop: '6px', height: '4px', backgroundColor: '#1e293b', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', borderRadius: '2px',
+                    backgroundColor: memoryColor,
+                    width: `${Math.min(100, memoryPct)}%`,
+                    transition: 'width 0.3s ease',
+                  }} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>Phase</span>
-                  <span style={{ color: '#e2e8f0' }}>{monitorData.simulation.phase.replace(/_/g, ' ')}</span>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{memoryPct}% of 512 MB</div>
+              </div>
+              <div style={statBox}>
+                <div style={statLabel}>Season</div>
+                <div style={statValue}>S{season.seasonNumber}</div>
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                  {season.currentWeekText || `Week ${season.currentWeek}`}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>Last Saved</span>
-                  <span style={{ color: '#cbd5e1', fontSize: '12px' }}>
-                    {monitorData.simulation.lastSaved
-                      ? new Date(monitorData.simulation.lastSaved).toLocaleString()
-                      : '—'}
-                  </span>
+              </div>
+              <div style={statBox}>
+                <div style={statLabel}>Phase</div>
+                <div style={{ ...statValue, fontSize: '16px', marginTop: '4px' }}>
+                  {simulation.phase.replace(/_/g, ' ').toUpperCase()}
+                </div>
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                  {timing.mode || '—'}{timing.catchingUp ? ' (catching up)' : ''}
                 </div>
               </div>
             </div>
 
-            {/* Season */}
-            <div style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '14px' }}>
-              <div style={{ ...labelStyle, marginBottom: '10px' }}>Season</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>Season</span>
-                  <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{monitorData.season.seasonNumber}</span>
+            {/* Games + Play Data */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+              <div style={statBox}>
+                <div style={statLabel}>Games</div>
+                <div style={statValue}>{season.completedGames}/{season.totalGames}</div>
+              </div>
+              <div style={statBox}>
+                <div style={statLabel}>Live</div>
+                <div style={{
+                  ...statValue,
+                  color: liveGames.active > 0 ? '#22c55e' : '#94a3b8',
+                }}>{liveGames.active}</div>
+                <div style={{ fontSize: '11px', color: '#64748b' }}>
+                  {liveGames.scheduled} queued / {liveGames.final} done
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>Week</span>
-                  <span style={{ color: '#e2e8f0' }}>{monitorData.season.currentWeekText || `Week ${monitorData.season.currentWeek}`}</span>
-                </div>
-                {monitorData.season.inPlayoffs && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>Playoff Round</span>
-                    <span style={{ color: '#f59e0b' }}>{monitorData.season.playoffRound || 'In Progress'}</span>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>Games</span>
-                  <span style={{ color: '#cbd5e1' }}>{monitorData.season.completedGames} / {monitorData.season.totalGames}</span>
-                </div>
-                {monitorData.season.champion && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>Champion</span>
-                    <span style={{ color: '#fbbf24', fontWeight: '600' }}>{monitorData.season.champion}</span>
-                  </div>
-                )}
-                {monitorData.season.mvp && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>MVP</span>
-                    <span style={{ color: '#fbbf24' }}>{monitorData.season.mvp}</span>
-                  </div>
-                )}
+              </div>
+              <div style={statBox}>
+                <div style={statLabel}>Games w/ Plays</div>
+                <div style={{
+                  ...statValue,
+                  color: memory.gamesWithPlays > 24 ? '#f59e0b' : '#e2e8f0',
+                }}>{memory.gamesWithPlays}</div>
+                <div style={{ fontSize: '11px', color: '#64748b' }}>of {memory.scheduleGames} total</div>
+              </div>
+              <div style={statBox}>
+                <div style={statLabel}>Plays in Memory</div>
+                <div style={statValue}>{memory.totalPlaysInMemory.toLocaleString()}</div>
               </div>
             </div>
 
-            {/* Live Games */}
-            <div style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '14px' }}>
-              <div style={{ ...labelStyle, marginBottom: '10px' }}>Live Games</div>
-              <div style={{ display: 'flex', gap: '16px', fontSize: '13px' }}>
-                <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: monitorData.liveGames.active > 0 ? '#22c55e' : '#475569' }}>
-                    {monitorData.liveGames.active}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>Active</div>
+            {/* Counts + WebSockets */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={statBox}>
+                <div style={{ ...statLabel, marginBottom: '8px' }}>Entity Counts</div>
+                <div style={smallStat}>
+                  Teams: {counts.teams}<br />
+                  Active Players: {counts.activePlayers}<br />
+                  Free Agents: {counts.freeAgents}<br />
+                  Retired: {counts.retiredPlayers}<br />
+                  Hall of Fame: {counts.hallOfFame}
                 </div>
-                <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: monitorData.liveGames.scheduled > 0 ? '#3b82f6' : '#475569' }}>
-                    {monitorData.liveGames.scheduled}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>Scheduled</div>
+              </div>
+              <div style={statBox}>
+                <div style={{ ...statLabel, marginBottom: '8px' }}>WebSockets</div>
+                <div style={smallStat}>
+                  {Object.entries(websockets).map(([k, v]) => (
+                    <div key={k}>{k}: {typeof v === 'object' ? JSON.stringify(v) : String(v)}</div>
+                  ))}
                 </div>
-                <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#475569' }}>
-                    {monitorData.liveGames.final}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>Final</div>
+                <div style={{ fontSize: '11px', color: '#475569', marginTop: '8px' }}>
+                  PID: {memory.pid} | Last saved: {simulation.lastSaved
+                    ? new Date(simulation.lastSaved).toLocaleString()
+                    : '—'}
                 </div>
               </div>
             </div>
 
-            {/* Timing */}
-            <div style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '14px' }}>
-              <div style={{ ...labelStyle, marginBottom: '10px' }}>Timing</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8' }}>Mode</span>
-                  <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{monitorData.timing.mode || '—'}</span>
-                </div>
-                {monitorData.timing.catchingUp && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#94a3b8' }}>Catching Up</span>
-                    <span style={{ color: '#f59e0b', fontWeight: '600' }}>Yes</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Counts Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', marginBottom: '16px' }}>
-            {[
-              { label: 'Teams', value: monitorData.counts.teams },
-              { label: 'Active Players', value: monitorData.counts.activePlayers },
-              { label: 'Free Agents', value: monitorData.counts.freeAgents },
-              { label: 'Retired', value: monitorData.counts.retiredPlayers },
-              { label: 'Hall of Fame', value: monitorData.counts.hallOfFame },
-            ].map(item => (
-              <div key={item.label} style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '10px', textAlign: 'center' }}>
-                <div style={{ fontSize: '18px', fontWeight: '700', color: '#e2e8f0' }}>{item.value}</div>
-                <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>{item.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* WebSocket Connections */}
-          <div style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '14px' }}>
-            <div style={{ ...labelStyle, marginBottom: '10px' }}>
-              WebSocket Connections ({monitorData.websockets.total_connections})
-            </div>
-            {monitorData.websockets.total_connections === 0 ? (
-              <div style={{ fontSize: '13px', color: '#94a3b8' }}>No active connections</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                {Object.entries(monitorData.websockets.channels).map(([channel, count]) => (
-                  <div key={channel} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-                    <span style={{ color: '#cbd5e1', fontFamily: 'monospace', fontSize: '12px' }}>{channel}</span>
-                    <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{count}</span>
-                  </div>
-                ))}
+            {/* Champion / MVP */}
+            {(season.champion || season.mvp) && (
+              <div style={{ ...statBox, marginTop: '10px', display: 'flex', gap: '24px' }}>
+                {season.champion && <div style={smallStat}>Champion: <span style={{ color: '#fbbf24', fontWeight: '600' }}>{season.champion}</span></div>}
+                {season.mvp && <div style={smallStat}>MVP: <span style={{ color: '#fbbf24', fontWeight: '600' }}>{season.mvp}</span></div>}
               </div>
             )}
-          </div>
-        </>)}
+          </>
+        })()}
       </div>}
 
       {/* Beta Access Requests */}
@@ -1051,7 +1042,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
           <div>
             <div style={labelStyle}>Edition</div>
             <select value={cardEdition} onChange={e => setCardEdition(e.target.value)} style={selectStyle}>
-              {(cardOptions?.editions ?? ['base', 'chrome', 'holographic', 'gold', 'prismatic', 'diamond']).map(ed => (
+              {(cardOptions?.editions ?? ['base', 'holographic', 'gold', 'diamond']).map(ed => (
                 <option key={ed} value={ed} style={{ color: EDITION_COLORS_MAP[ed] }}>{ed.toUpperCase()}</option>
               ))}
             </select>

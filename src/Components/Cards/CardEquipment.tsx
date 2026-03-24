@@ -1,12 +1,35 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import TradingCard, { CardData } from './TradingCard'
 import CardPickerModal from './CardPickerModal'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { createAvatar } from '@dicebear/core'
+import { micah } from '@dicebear/collection'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+
+// Inject match glow pulse animation once
+if (typeof document !== 'undefined' && !document.getElementById('match-glow-keyframes')) {
+  const style = document.createElement('style')
+  style.id = 'match-glow-keyframes'
+  style.textContent = `
+    @keyframes matchGlowPulse {
+      0%, 100% { box-shadow: 0 0 8px var(--glow-color), 0 0 18px var(--glow-color-soft); }
+      50% { box-shadow: 0 0 14px var(--glow-color-bright), 0 0 28px var(--glow-color); }
+    }
+  `
+  document.head.appendChild(style)
+}
+
+/** Convert hex color to rgba string */
+const hexToRgba = (hex: string, alpha: number): string => {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
 
 const OUTPUT_TYPE_COLORS: Record<string, string> = {
   fp: '#4ade80',       // green — FP output
@@ -58,7 +81,7 @@ const EquippedCardSlot: React.FC<{
       <TradingCard
         card={slot.card}
         size={compact ? 'sm' : 'md'}
-        glowColor={slot.isMatch ? '#fb923c' : undefined}
+        glowColor={slot.isMatch ? (slot.card.teamColor || '#ffffff') : undefined}
         noHoverLift
         onHoverChange={setHovered}
       />
@@ -359,62 +382,85 @@ const CardEquipment: React.FC = () => {
             const tooltip = slot.card.tooltip || slot.card.effectConfig?.tooltip || ''
             const outputType = slot.card.outputType || slot.card.effectConfig?.outputType || ''
             const outputColor = OUTPUT_TYPE_COLORS[outputType] || '#94a3b8'
+            const avatarUri = createAvatar(micah, {
+              seed: slot.card.playerName,
+              size: 36,
+              backgroundColor: [(slot.card.teamColor || '#475569').replace('#', '')],
+              backgroundType: ['solid' as const],
+            }).toDataUri()
             return (
               <div
                 key={slotNum}
                 style={{
                   flex: isMobile ? '1 1 100%' : '1 1 0',
                   minWidth: isMobile ? undefined : 150,
-                  padding: '8px 12px',
+                  padding: '8px 10px',
                   borderRadius: '8px',
                   background: ed.bg,
-                  border: slot.isMatch
-                    ? `1.5px solid #fb923c`
-                    : `1.5px solid ${ed.border}`,
-                  boxShadow: slot.isMatch
-                    ? '0 0 8px rgba(251,146,60,0.25)'
-                    : ed.glow ? `0 0 8px ${ed.glow}` : 'none',
+                  border: `1.5px solid ${ed.border}`,
+                  boxShadow: ed.glow ? `0 0 8px ${ed.glow}` : 'none',
                   position: 'relative',
+                  display: 'flex', alignItems: 'center', gap: '10px',
                 }}
               >
-                {/* Top row: edition label + match badge + unequip */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
-                  <span style={{
-                    fontSize: '10px', fontWeight: '700', color: edLabelColor,
-                    textTransform: 'uppercase', letterSpacing: '0.05em',
-                  }}>
-                    {ed.label}
-                  </span>
-                  {slot.isMatch && (
+                {/* Player avatar */}
+                <div style={{
+                  width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                  border: slot.isMatch
+                    ? `2px solid ${hexToRgba(slot.card.teamColor || '#ffffff', 0.85)}`
+                    : `1.5px solid ${ed.border}80`,
+                  boxShadow: slot.isMatch
+                    ? `0 0 8px ${hexToRgba(slot.card.teamColor || '#ffffff', 0.6)}, 0 0 18px ${hexToRgba(slot.card.teamColor || '#ffffff', 0.3)}`
+                    : 'none',
+                  animation: slot.isMatch ? 'matchGlowPulse 2.5s ease-in-out infinite' : 'none',
+                  ['--glow-color' as any]: hexToRgba(slot.card.teamColor || '#ffffff', 0.6),
+                  ['--glow-color-soft' as any]: hexToRgba(slot.card.teamColor || '#ffffff', 0.3),
+                  ['--glow-color-bright' as any]: hexToRgba(slot.card.teamColor || '#ffffff', 0.9),
+                  overflow: 'hidden',
+                }}>
+                  <img src={avatarUri} alt="" style={{ width: '100%', height: '100%' }} />
+                </div>
+                {/* Text content */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Top row: edition label + match badge + unequip */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
                     <span style={{
-                      fontSize: '9px', color: '#fb923c', fontWeight: '700',
-                      backgroundColor: 'rgba(251,146,60,0.15)',
-                      padding: '1px 5px', borderRadius: '3px',
-                    }}>MATCH</span>
-                  )}
-                  {canEdit && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleUnequip(slotNum) }}
-                      style={{
-                        marginLeft: 'auto', border: 'none', background: 'none',
-                        color: '#ef4444', fontSize: '11px', fontWeight: '700',
-                        cursor: 'pointer', padding: 0, fontFamily: 'pressStart', lineHeight: 1,
-                      }}
-                    >x</button>
+                      fontSize: '10px', fontWeight: '700', color: edLabelColor,
+                      textTransform: 'uppercase', letterSpacing: '0.05em',
+                    }}>
+                      {ed.label}
+                    </span>
+                    {slot.isMatch && (
+                      <span style={{
+                        fontSize: '9px', color: '#fb923c', fontWeight: '700',
+                        backgroundColor: 'rgba(251,146,60,0.15)',
+                        padding: '1px 5px', borderRadius: '3px',
+                      }}>MATCH</span>
+                    )}
+                    {canEdit && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleUnequip(slotNum) }}
+                        style={{
+                          marginLeft: 'auto', border: 'none', background: 'none',
+                          color: '#ef4444', fontSize: '11px', fontWeight: '700',
+                          cursor: 'pointer', padding: 0, fontFamily: 'pressStart', lineHeight: 1,
+                        }}
+                      >x</button>
+                    )}
+                  </div>
+                  {/* Player name */}
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {slot.card.playerName}
+                  </div>
+                  {/* Effect name — hover for tooltip */}
+                  {effectName && (
+                    <HoverTooltip text={tooltip} color={outputColor}>
+                      <div style={{ fontSize: '11px', fontWeight: '600', color: outputColor, marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {effectName}
+                      </div>
+                    </HoverTooltip>
                   )}
                 </div>
-                {/* Player name — tinted by card category */}
-                <div style={{ fontSize: '13px', fontWeight: '600', color: outputColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {slot.card.playerName}
-                </div>
-                {/* Effect name — hover for tooltip */}
-                {effectName && (
-                  <HoverTooltip text={tooltip} color={outputColor}>
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: outputColor, marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {effectName}
-                    </div>
-                  </HoverTooltip>
-                )}
               </div>
             )
           })}
@@ -429,9 +475,9 @@ const CardEquipment: React.FC = () => {
       ) : (
         <div style={{
           display: 'flex',
-          gap: isMobile ? '12px' : numSlots > 5 ? '8px' : '12px',
+          gap: isMobile ? '12px' : '8px',
           justifyContent: 'center',
-          flexWrap: 'wrap',
+          flexWrap: isMobile ? 'wrap' : 'nowrap',
         }}>
           {Array.from({ length: numSlots }, (_, i) => i + 1).map(slotNum => {
             const slot = displaySlots[slotNum - 1]
@@ -444,7 +490,7 @@ const CardEquipment: React.FC = () => {
                   slotNum={slotNum}
                   canEdit={canEdit}
                   onUnequip={handleUnequip}
-                  compact={!isMobile && numSlots > 5}
+                  compact
                 />
               )
             }
@@ -455,8 +501,8 @@ const CardEquipment: React.FC = () => {
                 onClick={() => canEdit && setPickerSlot(slotNum)}
                 disabled={!canEdit}
                 style={{
-                  width: isMobile ? '100%' : numSlots > 5 ? 160 : 200,
-                  height: numSlots > 5 && !isMobile ? 80 : 100,
+                  width: isMobile ? '100%' : 160,
+                  height: 80,
                   borderRadius: '10px',
                   border: '2px dashed #334155',
                   backgroundColor: 'rgba(30,41,59,0.5)',
@@ -525,7 +571,7 @@ const CardEquipment: React.FC = () => {
                 const isMatch = fantasyPlayerIds.has(card.playerId)
                 return (
                   <div key={card.id} style={{ position: 'relative' }}>
-                    <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch ? '#fb923c' : undefined} />
+                    <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch ? (card.teamColor || '#ffffff') : undefined} staticGlow />
                     {isMatch && (
                       <div style={{
                         position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',

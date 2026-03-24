@@ -5,6 +5,26 @@ import { micah } from '@dicebear/collection'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+// Inject match glow pulse animation once
+if (typeof document !== 'undefined' && !document.getElementById('match-glow-keyframes')) {
+  const style = document.createElement('style')
+  style.id = 'match-glow-keyframes'
+  style.textContent = `
+    @keyframes matchGlowPulse {
+      0%, 100% { box-shadow: 0 0 8px var(--glow-color), 0 0 18px var(--glow-color-soft); }
+      50% { box-shadow: 0 0 14px var(--glow-color-bright), 0 0 28px var(--glow-color); }
+    }
+  `
+  document.head.appendChild(style)
+}
+
+const hexToRgba = (hex: string, alpha: number): string => {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r},${g},${b},${alpha})`
+}
+
 // ─── Edition visual config ─────────────────────────────────────────────────
 export const EDITION_STYLES: Record<string, {
   borderColor: string
@@ -229,7 +249,8 @@ interface TradingCardProps {
   onSelect?: () => void
   onClick?: () => void
   showSellValue?: boolean
-  glowColor?: string  // persistent outline/glow (e.g. cyan for roster match)
+  glowColor?: string  // persistent outline/glow (e.g. team color for roster match)
+  staticGlow?: boolean  // if true, glow without pulse animation (for deck cards)
   noHoverLift?: boolean  // disable translateY on hover (parent handles it)
   onHoverChange?: (hovered: boolean) => void
 }
@@ -498,7 +519,7 @@ const EffectNameBadge: React.FC<{
 }
 
 const TradingCard: React.FC<TradingCardProps> = ({
-  card, size = 'md', selected = false, onSelect, onClick, showSellValue = false, glowColor, noHoverLift, onHoverChange,
+  card, size = 'md', selected = false, onSelect, onClick, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange,
 }) => {
   const [hovered, setHovered] = useState(false)
   const [flipped, setFlipped] = useState(false)
@@ -533,7 +554,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
     width: d.width,
     height: d.height,
     borderRadius: '12px',
-    border: `2px solid ${selected ? '#3b82f6' : glowColor || edStyle.borderColor}`,
+    border: `2px solid ${selected ? '#3b82f6' : edStyle.borderColor}`,
     background: edStyle.bgGradient,
     fontFamily: 'pressStart',
     cursor: 'pointer',
@@ -545,11 +566,9 @@ const TradingCard: React.FC<TradingCardProps> = ({
     transform: !noHoverLift && hovered ? 'translateY(-4px)' : 'none',
     boxShadow: selected
       ? '0 0 0 2px #3b82f6, 0 4px 20px rgba(59,130,246,0.3)'
-      : glowColor
-        ? `0 0 0 2px ${glowColor}, 0 0 12px ${glowColor}40`
-        : edStyle.glowColor && hovered
-          ? `0 4px 20px ${edStyle.glowColor}`
-          : '0 2px 8px rgba(0,0,0,0.3)',
+      : edStyle.glowColor && hovered
+        ? `0 4px 20px ${edStyle.glowColor}`
+        : '0 2px 8px rgba(0,0,0,0.3)',
     opacity: card.isActive ? 1 : 0.7,
     flexShrink: 0,
   }
@@ -608,7 +627,16 @@ const TradingCard: React.FC<TradingCardProps> = ({
             <div style={{
               width: d.avatar, height: d.avatar,
               borderRadius: '50%',
-              border: `2px solid ${edStyle.borderColor}80`,
+              border: glowColor
+                ? `2.5px solid ${hexToRgba(glowColor, 0.85)}`
+                : `2px solid ${edStyle.borderColor}80`,
+              boxShadow: glowColor
+                ? `0 0 8px ${hexToRgba(glowColor, 0.6)}, 0 0 18px ${hexToRgba(glowColor, 0.3)}`
+                : 'none',
+              animation: glowColor && !staticGlow ? 'matchGlowPulse 2.5s ease-in-out infinite' : 'none',
+              ['--glow-color' as any]: glowColor ? hexToRgba(glowColor, 0.6) : undefined,
+              ['--glow-color-soft' as any]: glowColor ? hexToRgba(glowColor, 0.3) : undefined,
+              ['--glow-color-bright' as any]: glowColor ? hexToRgba(glowColor, 0.9) : undefined,
               marginBottom: '2px',
               background: 'transparent',
               overflow: 'hidden',

@@ -97,8 +97,9 @@ const AboutPage: React.FC = () => {
           <p style={{ ...textStyle, fontSize: '12px' }}>
             Welcome to the Floosball closed beta. The simulation is under active development
             — features may change, balancing will be adjusted, and new systems will be added
-            throughout the beta period. If you encounter any issues or have feedback, join
-            the{' '}
+            throughout the beta period. Season data (fantasy points, cards, floobits) may
+            occasionally be reset as we fix bugs and improve the game. If you encounter any
+            issues or have feedback, join the{' '}
             <a
               href="https://discord.gg/b4DZn3mVfP"
               target="_blank"
@@ -421,6 +422,23 @@ const AboutPage: React.FC = () => {
             </div>
           ))}
         </Section>
+
+        {/* Created by */}
+        <div style={{
+          marginTop: '24px',
+          padding: '14px 18px',
+          borderRadius: '10px',
+          backgroundColor: 'rgba(30,41,59,0.6)',
+          border: '1px solid #334155',
+          textAlign: 'center',
+        }}>
+          <p style={{ ...textStyle, fontSize: '14px', color: '#cbd5e1' }}>
+            Created by <span style={{ color: '#e2e8f0', fontWeight: '700' }}>_aplo</span>
+          </p>
+          <p style={{ ...textStyle, fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>
+            Built as a passion project in my spare time, not a full-time endeavor. Updates come when they come.
+          </p>
+        </div>
 
       </div>
     </div>
