@@ -102,6 +102,7 @@ const BetaBlockedPage: React.FC = () => {
           }}>
             Floosball is currently in closed beta. If you believe you should have access,
             check that you're using the email address that was invited, or request access below.
+            Note: season data may be reset periodically as we fix bugs and improve the game.
           </p>
         )}
 

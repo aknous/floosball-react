@@ -103,7 +103,7 @@ function BetaBanner() {
           flexShrink: 0,
         }}>BETA</span>
         <span style={{ fontSize: '12px', color: '#e2e8f0', lineHeight: '1.4' }}>
-          Floosball is in early beta. Expect bugs, visual quirks, and things breaking from time to time.
+          Floosball is in early beta. Expect bugs, visual quirks, and things breaking. Season data may be reset as we fix issues.
         </span>
         <button
           onClick={dismiss}

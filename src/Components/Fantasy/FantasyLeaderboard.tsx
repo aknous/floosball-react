@@ -91,7 +91,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
       favoriteTeamId: e.favoriteTeamData?.teamId ?? null,
       weekPoints: Math.round((e.weekPlayerFP + e.weekCardBonus) * 10) / 10,
       cardBonusPoints: e.weekCardBonus,
-      players: e.players.map(p => ({
+      players: e.players.filter(p => p.slot !== 'PREV').map(p => ({
         slot: p.slot,
         playerName: p.playerName,
         teamAbbr: p.teamAbbr,

@@ -411,6 +411,58 @@ const PointsBreakdownPanel: React.FC<{
             )
           })}
 
+          {/* Hand synergy summary */}
+          {eq?.handSynergies && (() => {
+            const syn = eq.handSynergies!
+            const hasChance = syn.chance.count > 0
+            const hasStreak = syn.streak.count > 1
+            const hasMatch = syn.match.count > 0
+            if (!hasChance && !hasStreak && !hasMatch) return null
+            const synStyle = { ...divider, padding: '6px 0 4px 0' }
+            const labelStyle = { color: '#94a3b8', fontSize: '11px' as const }
+            const valStyle = { fontSize: '11px' as const, fontWeight: '600' as const }
+            return (
+              <div style={synStyle}>
+                <div style={{ color: '#cbd5e1', fontSize: '11px', fontWeight: '600', marginBottom: '4px' }}>Hand Synergies</div>
+                {hasChance && (
+                  <div style={{ marginBottom: '3px' }}>
+                    <div style={{ ...rowStyle }}>
+                      <span style={labelStyle}>Chance · {syn.chance.count} card{syn.chance.count !== 1 ? 's' : ''}</span>
+                      <span style={{ ...valStyle, color: '#a78bfa' }}>+{(syn.chance.totalBonus * 100).toFixed(0)}% boost</span>
+                    </div>
+                    {syn.chance.innateBonus > 0 && (
+                      <div style={{ paddingLeft: '12px', fontSize: '10px', color: '#94a3b8' }}>
+                        Innate: +{(syn.chance.innateBonus * 100).toFixed(0)}%
+                      </div>
+                    )}
+                    {syn.chance.amplifiers.map((amp, j) => (
+                      <div key={j} style={{ paddingLeft: '12px', fontSize: '10px', color: '#94a3b8' }}>
+                        {amp.name}: +{(amp.bonus * 100).toFixed(0)}%
+                      </div>
+                    ))}
+                    {syn.chance.hasAdvantage && (
+                      <div style={{ paddingLeft: '12px', fontSize: '10px', color: '#94a3b8' }}>
+                        Advantage: rolling twice
+                      </div>
+                    )}
+                  </div>
+                )}
+                {hasStreak && (
+                  <div style={{ ...rowStyle, marginBottom: '3px' }}>
+                    <span style={labelStyle}>Streak · {syn.streak.count} cards</span>
+                    <span style={{ ...valStyle, color: '#fb923c' }}>{syn.streak.activeCount} active</span>
+                  </div>
+                )}
+                {hasMatch && (
+                  <div style={{ ...rowStyle }}>
+                    <span style={labelStyle}>Match bonus</span>
+                    <span style={{ ...valStyle, color: '#60a5fa' }}>{syn.match.count}/{syn.match.total} matched · 1.5x each</span>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
           {/* Totals summary */}
           {totalFloobits > 0 && (
             <div style={{ ...rowStyle, ...divider }}>

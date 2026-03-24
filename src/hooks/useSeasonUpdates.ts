@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useWebSocket } from './useWebSocket'
 import { api } from '@/services/api'
 import type { SeasonWebSocketEvent } from '@/types/websocket'
@@ -17,7 +17,8 @@ export interface SeasonState {
 
 export const useSeasonUpdates = () => {
   const { data: event, connected, error } = useWebSocket<SeasonWebSocketEvent>('/season')
-  
+  const hasConnected = useRef(false)
+
   const [seasonState, setSeasonState] = useState<SeasonState>({
     seasonNumber: 1,
     currentWeek: 1,
@@ -28,30 +29,40 @@ export const useSeasonUpdates = () => {
     nextGameStartTime: null,
   })
 
-  // Fetch initial season data from API
-  useEffect(() => {
-    const fetchSeasonData = async () => {
-      try {
-        const response = await fetch(`${API_BASE}/season`)
-        const result = await response.json()
-        if (result.success && result.data) {
-          setSeasonState(prev => ({
-            ...prev,
-            seasonNumber: result.data.season_number || 1,
-            currentWeek: result.data.current_week || 1,
-            currentWeekText: result.data.current_week_text || 'Week 1',
-            activeGames: result.data.active_games || [],
-            completedGames: result.data.completed_games || [],
-            nextGameStartTime: result.data.next_game_start_time || null,
-            seasonComplete: result.data.is_complete || false,
-          }))
-        }
-      } catch (err) {
-        console.error('Failed to fetch season data:', err)
+  const fetchSeasonData = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE}/season`)
+      const result = await response.json()
+      if (result.success && result.data) {
+        setSeasonState(prev => ({
+          ...prev,
+          seasonNumber: result.data.season_number || 1,
+          currentWeek: result.data.current_week || 1,
+          currentWeekText: result.data.current_week_text || 'Week 1',
+          activeGames: result.data.active_games || [],
+          completedGames: result.data.completed_games || [],
+          nextGameStartTime: result.data.next_game_start_time || null,
+          seasonComplete: result.data.is_complete || false,
+        }))
       }
+    } catch (err) {
+      console.error('Failed to fetch season data:', err)
     }
-    fetchSeasonData()
   }, [])
+
+  // Fetch on mount
+  useEffect(() => { fetchSeasonData() }, [fetchSeasonData])
+
+  // Re-fetch when WebSocket reconnects (covers missed events during tab background)
+  useEffect(() => {
+    if (connected) {
+      if (hasConnected.current) {
+        // This is a reconnect — re-sync state from API
+        fetchSeasonData()
+      }
+      hasConnected.current = true
+    }
+  }, [connected, fetchSeasonData])
 
   useEffect(() => {
     if (!event) return
