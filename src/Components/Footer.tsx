@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import ReactDOM from 'react-dom'
 import { NavLink } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { CHANGELOG, ChangelogEntry } from '@/data/changelog'
@@ -166,12 +167,15 @@ export const Footer: React.FC = () => {
                 bottom: 'calc(100% + 8px)',
                 right: 0,
                 width: isMobile ? '280px' : '340px',
+                maxHeight: '60vh',
                 backgroundColor: '#1e293b',
                 border: '1px solid #334155',
                 borderRadius: '10px',
                 boxShadow: '0 -8px 30px rgba(0,0,0,0.4)',
                 zIndex: 100,
                 overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column' as const,
               }}
             >
               <div style={{
@@ -183,15 +187,16 @@ export const Footer: React.FC = () => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                flexShrink: 0,
               }}>
                 What's New
                 <span style={{ fontSize: '11px', fontWeight: '500', color: '#94a3b8' }}>{latest.date}</span>
               </div>
-              <div style={{ padding: '12px 16px' }}>
+              <div style={{ padding: '12px 16px', overflowY: 'auto' as const, flex: 1, minHeight: 0 }}>
                 <FooterChangelogItems entry={latest} />
               </div>
               {CHANGELOG.length > 1 && (
-                <div style={{ padding: '8px 16px 12px', borderTop: '1px solid #334155' }}>
+                <div style={{ padding: '8px 16px 12px', borderTop: '1px solid #334155', flexShrink: 0 }}>
                   <button
                     onClick={() => { setShowChangelog(false); setShowAllNotes(true) }}
                     style={{
@@ -215,8 +220,8 @@ export const Footer: React.FC = () => {
         </div>
       </div>
 
-      {/* Full release notes modal */}
-      {showAllNotes && (
+      {/* Full release notes modal — portalled to body so footer CSS can't interfere */}
+      {showAllNotes && ReactDOM.createPortal(
         <div
           onClick={() => setShowAllNotes(false)}
           style={{
@@ -239,7 +244,7 @@ export const Footer: React.FC = () => {
               borderRadius: '12px',
               boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
               display: 'flex',
-              flexDirection: 'column',
+              flexDirection: 'column' as const,
               overflow: 'hidden',
             }}
           >
@@ -249,6 +254,7 @@ export const Footer: React.FC = () => {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              flexShrink: 0,
             }}>
               <span style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0' }}>Release Notes</span>
               <button
@@ -268,7 +274,7 @@ export const Footer: React.FC = () => {
                 ×
               </button>
             </div>
-            <div style={{ overflowY: 'auto', padding: '4px 0', flex: 1, minHeight: 0 }}>
+            <div style={{ overflowY: 'auto' as const, padding: '4px 0', flex: 1, minHeight: 0 }}>
               {CHANGELOG.map((entry, idx) => (
                 <div key={entry.version} style={{
                   padding: '16px 20px',
@@ -299,7 +305,8 @@ export const Footer: React.FC = () => {
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </footer>
   )
