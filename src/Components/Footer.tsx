@@ -268,7 +268,7 @@ export const Footer: React.FC = () => {
                 ×
               </button>
             </div>
-            <div style={{ overflowY: 'auto', padding: '4px 0' }}>
+            <div style={{ overflowY: 'auto', padding: '4px 0', flex: 1, minHeight: 0 }}>
               {CHANGELOG.map((entry, idx) => (
                 <div key={entry.version} style={{
                   padding: '16px 20px',
