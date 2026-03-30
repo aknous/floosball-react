@@ -38,16 +38,14 @@ const POSITION_MAP: Record<string, string> = {
 
 const EDITION_COLORS: Record<string, { color: string; bg: string }> = {
   base:        { color: '#94a3b8', bg: 'rgba(148,163,184,0.18)' },
-  chrome:      { color: '#d4d4d8', bg: 'rgba(212,212,216,0.18)' },
-  holographic: { color: '#c4b5fd', bg: 'rgba(196,181,253,0.18)' },
-  gold:        { color: '#fbbf24', bg: 'rgba(251,191,36,0.18)' },
-  prismatic:   { color: '#f9a8d4', bg: 'rgba(249,168,212,0.18)' },
+  holographic: { color: '#c4b5fd', bg: 'rgba(167,139,250,0.18)' },
+  prismatic:   { color: '#f472b6', bg: 'rgba(219,39,119,0.18)' },
   diamond:     { color: '#a5f3fc', bg: 'rgba(165,243,252,0.18)' },
 }
 
 const EDITION_LABELS: Record<string, string> = {
-  base: 'BASE', chrome: 'CHROME', holographic: 'HOLO', gold: 'GOLD',
-  prismatic: 'PRISMATIC', diamond: 'DIAMOND',
+  base: 'BASE', holographic: 'HOLO', prismatic: 'PRSM',
+  diamond: 'DIAMOND',
 }
 
 const CATEGORY_COLORS: Record<string, string> = {

@@ -213,13 +213,8 @@ const FantasyPage: React.FC = () => {
   const [showShop, setShowShop] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
 
-  // Regular season is over once week 28 games finish, playoffs start, season ends, or offseason begins
-  const weekText = seasonState.currentWeekText || ''
-  const week28Done = seasonState.currentWeek >= 28 && (seasonState.activeGames?.length ?? 0) === 0
-  const seasonOver = seasonState.seasonComplete
-    || week28Done
-    || weekText.startsWith('Playoffs')
-    || weekText === 'Offseason'
+  // Regular season is over once we're past week 28
+  const seasonOver = seasonState.seasonComplete || seasonState.currentWeek > 28
 
   return (
     <div style={{
@@ -396,7 +391,7 @@ const FantasyPage: React.FC = () => {
         </GuideSection>
         <GuideSection title="Roster Swaps">
           Your roster swap replenishes each week. Between game rounds, you can swap one player
-          for a new one at a cost of 1 Floobit per swap. Your previous player's FP are banked
+          for a new one at a cost of 15 Floobits per swap. Your previous player's FP are banked
           and you begin earning with the replacement.
         </GuideSection>
         <GuideSection title="Modifiers">

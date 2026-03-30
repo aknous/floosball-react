@@ -68,6 +68,10 @@ export interface CurrentGame {
   momentumTeam?: string | null
   gameStats?: GameStats
   plays?: any[]
+  matchupPreview?: {
+    home: Record<string, number>
+    away: Record<string, number>
+  }
 }
 
 export const useCurrentGames = () => {

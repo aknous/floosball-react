@@ -349,7 +349,7 @@ export default function Navbar() {
   // Fantasy points from snapshot (single source of truth)
   const { myEntry } = useFantasySnapshot(user?.id)
   const fantasyPoints = fantasyRoster?.isLocked && myEntry
-    ? { totalPoints: myEntry.seasonTotal }
+    ? { weekPoints: (myEntry.weekPlayerFP ?? 0) + (myEntry.weekCardBonus ?? 0), seasonTotal: myEntry.seasonTotal }
     : null
 
   // Re-fetch roster on game events; refetch user balance on week/season end (prizes awarded)
@@ -468,13 +468,13 @@ export default function Navbar() {
 
             {isMobile ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {user?.floobits != null && (
-                  <button onClick={() => { setMenuOpen(false); setShowShop(true) }} style={{ background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '5px', backgroundColor: 'rgba(234,179,8,0.12)' }}>
-                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#eab308' }}>
-                      {user.floobits.toLocaleString()}
+                {fantasyPoints && (
+                  <NavLink to="/fantasy" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '5px', backgroundColor: 'rgba(34,197,94,0.12)' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#4ade80' }}>
+                      {fantasyPoints.weekPoints.toFixed(0)}
                     </span>
-                    <span style={{ fontSize: '11px', color: '#ca8a04' }}>F</span>
-                  </button>
+                    <span style={{ fontSize: '10px', color: '#22c55e' }}>FP</span>
+                  </NavLink>
                 )}
                 <button
                   onClick={() => setMenuOpen(o => !o)}
@@ -504,11 +504,21 @@ export default function Navbar() {
                   </NavLink>
                 ))}
                 {fantasyPoints && (
-                  <NavLink to="/fantasy" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', backgroundColor: 'rgba(34,197,94,0.12)' }}>
-                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#4ade80' }}>
-                      {fantasyPoints.totalPoints.toFixed(0)}
-                    </span>
-                    <span style={{ fontSize: '12px', color: '#22c55e' }}>FP</span>
+                  <NavLink to="/fantasy" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '0 12px', height: '31px', borderRadius: '6px', backgroundColor: 'rgba(34,197,94,0.12)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#4ade80' }}>
+                        {fantasyPoints.weekPoints.toFixed(0)}
+                      </span>
+                      <span style={{ fontSize: '7px', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Week</span>
+                    </div>
+                    <div style={{ width: '1px', height: '18px', backgroundColor: 'rgba(34,197,94,0.25)' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#4ade80' }}>
+                        {fantasyPoints.seasonTotal.toFixed(0)}
+                      </span>
+                      <span style={{ fontSize: '7px', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Season</span>
+                    </div>
+                    <span style={{ fontSize: '9px', color: '#22c55e' }}>FP</span>
                   </NavLink>
                 )}
                 {user?.floobits != null && (
@@ -554,11 +564,13 @@ export default function Navbar() {
                 </NavLink>
               ))}
               {fantasyPoints && (
-                <NavLink to="/fantasy" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 0' }}>
+                <NavLink to="/fantasy" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'baseline', gap: '6px', padding: '8px 0' }}>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#4ade80' }}>
-                    {fantasyPoints.totalPoints.toFixed(0)} FP
+                    {fantasyPoints.weekPoints.toFixed(0)} FP
                   </span>
-                  <span style={{ fontSize: '11px', color: '#22c55e' }}>Fantasy Points</span>
+                  <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                    / {fantasyPoints.seasonTotal.toFixed(0)} season
+                  </span>
                 </NavLink>
               )}
               <div style={{ borderTop: '1px solid #1e293b', paddingTop: '12px', marginTop: '4px' }}>

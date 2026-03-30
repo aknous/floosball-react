@@ -6,7 +6,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-const EDITIONS = ['all', 'base', 'chrome', 'holographic', 'gold', 'prismatic', 'diamond'] as const
+const EDITIONS = ['all', 'base', 'holographic', 'prismatic', 'diamond'] as const
 const POSITIONS = [
   { value: 0, label: 'All' },
   { value: 1, label: 'QB' },
@@ -116,7 +116,7 @@ const CardCollection: React.FC = () => {
 
   // Sort: active first, then by edition rarity (diamond first), then rating
   const editionOrder: Record<string, number> = {
-    diamond: 0, prismatic: 1, gold: 2, holographic: 3, chrome: 4, base: 5,
+    diamond: 0, prismatic: 1, holographic: 2, base: 3,
   }
   const sorted = [...cards].sort((a, b) => {
     if (a.isActive !== b.isActive) return a.isActive ? -1 : 1

@@ -48,7 +48,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
   const isMobile = useIsMobile()
   const { user } = useAuth()
   const currentUserId = user?.id ?? null
-  const [mode, setMode] = useState<ViewMode>('season')
+  const [mode, setMode] = useState<ViewMode>('weekly')
   const { event: wsEvent } = useSeasonWebSocket()
   const { entries: snapshotEntries, season, week, gamesActive, loading: snapshotLoading } = useFantasySnapshot()
 

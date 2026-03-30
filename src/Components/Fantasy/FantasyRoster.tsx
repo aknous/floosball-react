@@ -76,7 +76,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 // Behavior tags for breakdown — tells users which modifiers affect each card
 const BEHAVIOR_TAGS: Record<string, { label: string; color: string; tooltip: string; activeModifier: string; activeText: string }> = {
   chance:      { label: 'CHC', color: '#c084fc', tooltip: 'Chance — Random trigger roll', activeModifier: 'fortunate', activeText: 'Fortunate active — trigger rates boosted' },
-  conditional: { label: 'CND', color: '#60a5fa', tooltip: 'Conditional — Triggers on game condition', activeModifier: 'longshot', activeText: 'Longshot active — thresholds halved' },
+  conditional: { label: 'CND', color: '#60a5fa', tooltip: 'Conditional — Triggers on game condition', activeModifier: 'longshot', activeText: 'Longshot active — rewards doubled' },
   streak:      { label: 'STRK', color: '#fb923c', tooltip: 'Streak — Grows each week, resets when broken', activeModifier: 'ironclad', activeText: 'Ironclad active — streak protected' },
 }
 
@@ -89,20 +89,16 @@ function getBreakdownBehavior(b: CardBreakdownEntry): keyof typeof BEHAVIOR_TAGS
 
 const EDITION_SHORT: Record<string, string> = {
   base: 'BASE',
-  chrome: 'CHRM',
   holographic: 'HOLO',
-  gold: 'GOLD',
   prismatic: 'PRSM',
   diamond: 'DMND',
 }
 
 const EDITION_COLORS: Record<string, string> = {
   base: '#94a3b8',
-  chrome: '#f59e0b',
-  holographic: '#ec4899',
-  gold: '#eab308',
-  prismatic: '#a78bfa',
-  diamond: '#22d3ee',
+  holographic: '#c4b5fd',
+  prismatic: '#f472b6',
+  diamond: '#67e8f9',
 }
 
 // Color coding for weekly modifiers: green = beneficial, yellow = neutral, red = restrictive
@@ -307,9 +303,10 @@ const PointsBreakdownPanel: React.FC<{
 
             // Sub-lines: conditional, edition bonuses (with negation tracking)
             const subLines: { label: React.ReactNode; chip: { str: string; color: string }; negated?: boolean }[] = []
-            // Conditional bonus
+            // Conditional bonus (match bonus — only triggers when card player is on roster)
             if ((b.conditionalBonus ?? 0) > 0) {
-              subLines.push({ label: b.conditionalLabel || 'Conditional bonus', chip: formatValue(b.conditionalBonus, 'fp') })
+              const condLabel = <><span style={{ color: matchColor, fontWeight: '700' }}>Match</span> {b.conditionalLabel || 'Conditional bonus'}</>
+              subLines.push({ label: condLabel, chip: formatValue(b.conditionalBonus, 'fp') })
             }
             // Edition secondary bonuses
             const edLabel = <><span style={{ color: edColor, fontWeight: '700' }}>{edTag}</span> bonus</>
@@ -567,10 +564,12 @@ export const FantasyRoster: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null)
   const [pickerSlot, setPickerSlot] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'roster' | 'breakdown'>('roster')
-  const [scoreView, setScoreView] = useState<'season' | 'weekly'>('season')
+  const [scoreView, setScoreView] = useState<'season' | 'weekly'>('weekly')
   const [swapping, setSwapping] = useState(false)
   const [swapSlot, setSwapSlot] = useState<string | null>(null)
+  const [pendingSwap, setPendingSwap] = useState<{ slot: string; player: any } | null>(null)
   const [gamesActive, setGamesActive] = useState(false)
+  const [gamesInProgress, setGamesInProgress] = useState(false)
   const [hasFlexSlot, setHasFlexSlot] = useState(false)
   const [showSwapHistory, setShowSwapHistory] = useState(false)
   const [expandedSlot, setExpandedSlot] = useState<string | null>(null)
@@ -626,6 +625,7 @@ export const FantasyRoster: React.FC = () => {
       const data = res.data?.data || res.data
       setSeason(data.season)
       setGamesActive(data.gamesActive ?? false)
+      setGamesInProgress(data.gamesInProgress ?? false)
       setHasFlexSlot(data.roster?.hasFlexSlot ?? data.hasFlexSlot ?? false)
       if (data.roster) {
         setRoster(data.roster)
@@ -761,8 +761,14 @@ export const FantasyRoster: React.FC = () => {
 
   const handleSwapSelect = (player: any) => {
     if (!swapSlot) return
-    performSwap(swapSlot, player.id)
+    setPendingSwap({ slot: swapSlot, player })
     setSwapSlot(null)
+  }
+
+  const confirmSwap = () => {
+    if (!pendingSwap) return
+    performSwap(pendingSwap.slot, pendingSwap.player.id)
+    setPendingSwap(null)
   }
 
   const performSwap = async (slot: string, newPlayerId: number) => {
@@ -772,8 +778,9 @@ export const FantasyRoster: React.FC = () => {
     setMessage(null)
     try {
       const headers = { Authorization: `Bearer ${tok}` }
-      await axios.post(`${API_BASE}/fantasy/roster/swap`, { slot, newPlayerId }, { headers })
-      setMessage('Player swapped successfully!')
+      const swapRes = await axios.post(`${API_BASE}/fantasy/roster/swap`, { slot, newPlayerId }, { headers })
+      const swapMsg = swapRes.data?.data?.message || 'Player swapped successfully!'
+      setMessage(swapMsg)
       await fetchRoster(true)
       refetchRoster()
     } catch (err: any) {
@@ -806,7 +813,7 @@ export const FantasyRoster: React.FC = () => {
   const purchasedSwaps = roster?.purchasedSwaps ?? 0
   const swapsAvailable = organicSwaps + purchasedSwaps
   const swapHistory = roster?.swapHistory ?? []
-  const canSwap = isLocked && swapsAvailable > 0 && !gamesActive && !swapping
+  const canSwap = isLocked && swapsAvailable > 0 && !gamesInProgress && !swapping
   const SLOTS = hasFlexSlot ? [...BASE_SLOTS, FLEX_SLOT] : BASE_SLOTS
   const allSlotsFilled = SLOTS.every(s => draftPlayers.has(s.key))
   const excludeIds = Array.from(draftPlayers.values()).map(p => p.playerId)
@@ -884,7 +891,7 @@ export const FantasyRoster: React.FC = () => {
             ) : (
               <>
                 <div style={{ fontSize: '18px', fontWeight: '700', color: '#22c55e' }}>
-                  {(weekPlayerFP + weekCardBonus).toFixed(1)} pts
+                  {(weekPlayerFP + weekCardBonus).toFixed(0)} pts
                 </div>
                 {weekCardBonus > 0 && (
                   <div style={{ fontSize: '13px', fontWeight: '700', color: '#a78bfa', marginTop: '3px' }}>
@@ -1087,14 +1094,14 @@ export const FantasyRoster: React.FC = () => {
                   </>
                 ) : (
                   <button
-                    onClick={() => setPickerSlot(slot.key)}
+                    onClick={() => isLocked ? setSwapSlot(slot.key) : setPickerSlot(slot.key)}
                     style={{
                       flex: 1, background: 'none', border: '1px dashed #475569', borderRadius: '8px',
                       color: '#94a3b8', cursor: 'pointer', fontSize: '12px', padding: '10px',
                       fontFamily: 'inherit', textAlign: 'center',
                     }}
                   >
-                    Select {slot.label}
+                    {isLocked ? `Add ${slot.label}` : `Select ${slot.label}`}
                   </button>
                 )}
               </div>
@@ -1297,6 +1304,67 @@ export const FantasyRoster: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Swap confirmation dialog */}
+      {pendingSwap && (() => {
+        const currentPlayer = draftPlayers.get(pendingSwap.slot)
+        const isEmptySlot = !currentPlayer
+        return (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.6)',
+          }} onClick={() => setPendingSwap(null)}>
+            <div style={{
+              backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '12px',
+              padding: '24px', maxWidth: '340px', width: '90%',
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginBottom: '12px' }}>
+                {isEmptySlot ? `Add ${pendingSwap.slot} Player` : 'Confirm Swap'}
+              </div>
+              <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6, marginBottom: '16px' }}>
+                {currentPlayer && (
+                  <span style={{ color: '#e2e8f0' }}>{currentPlayer.playerName}</span>
+                )}
+                {currentPlayer ? ' → ' : ''}
+                <span style={{ color: '#e2e8f0' }}>{pendingSwap.player.name}</span>
+                <span style={{ color: '#64748b' }}> ({pendingSwap.slot})</span>
+              </div>
+              {!isEmptySlot && (
+                <div style={{
+                  fontSize: '13px', fontWeight: '700', color: '#eab308', marginBottom: '16px',
+                  textAlign: 'center', padding: '8px', borderRadius: '6px',
+                  backgroundColor: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)',
+                }}>
+                  15 Floobits
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setPendingSwap(null)}
+                  style={{
+                    flex: 1, padding: '10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                    border: '1px solid #334155', backgroundColor: 'transparent', color: '#94a3b8',
+                    cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSwap}
+                  style={{
+                    flex: 1, padding: '10px', borderRadius: '6px', fontSize: '12px', fontWeight: '700',
+                    border: '1px solid rgba(234,179,8,0.4)', backgroundColor: 'rgba(234,179,8,0.12)',
+                    color: '#eab308', cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                >
+                  {isEmptySlot ? 'Add' : 'Swap'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Player Picker Modal — for both draft picks and swaps */}
       <PlayerPicker
