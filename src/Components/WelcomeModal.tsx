@@ -305,7 +305,7 @@ const WelcomeModal: React.FC = () => {
                 x
               </button>
             </div>
-            <div style={{ overflowY: 'auto', padding: '22px 28px' }}>
+            <div style={{ overflowY: 'auto', padding: '22px 28px', flex: 1, minHeight: 0 }}>
               {CHANGELOG.map((entry, idx) => (
                 <div key={entry.version} style={{ marginBottom: idx < CHANGELOG.length - 1 ? '28px' : 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
