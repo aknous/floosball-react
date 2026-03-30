@@ -1,18 +1,42 @@
 import React, { useState, useRef, useMemo } from 'react'
 import ReactDOM from 'react-dom'
 import { createAvatar } from '@dicebear/core'
-import { micah } from '@dicebear/collection'
+import { openPeeps } from '@dicebear/collection'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-// Inject match glow pulse animation once
-if (typeof document !== 'undefined' && !document.getElementById('match-glow-keyframes')) {
+// Inject card animation keyframes once
+if (typeof document !== 'undefined' && !document.getElementById('card-fx-keyframes')) {
   const style = document.createElement('style')
-  style.id = 'match-glow-keyframes'
+  style.id = 'card-fx-keyframes'
   style.textContent = `
     @keyframes matchGlowPulse {
       0%, 100% { box-shadow: 0 0 8px var(--glow-color), 0 0 18px var(--glow-color-soft); }
       50% { box-shadow: 0 0 14px var(--glow-color-bright), 0 0 28px var(--glow-color); }
+    }
+    @keyframes cardShimmer {
+      0% { transform: translateX(-100%) rotate(25deg); }
+      100% { transform: translateX(200%) rotate(25deg); }
+    }
+    @keyframes holoSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes editionGlow {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.8; }
+    }
+    @keyframes holoEdge {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes sparkle {
+      0%, 100% { opacity: 0; transform: scale(0); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes diamondBorder {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
     }
   `
   document.head.appendChild(style)
@@ -41,37 +65,21 @@ export const EDITION_STYLES: Record<string, {
     label: 'Base',
     rarity: 'Common',
   },
-  chrome: {
-    borderColor: '#a1a1aa',
-    bgGradient: 'linear-gradient(135deg, #27272a 0%, #3f3f46 50%, #27272a 100%)',
-    labelColor: '#d4d4d8',
-    label: 'Chrome',
-    rarity: 'Uncommon',
-    glowColor: 'rgba(161,161,170,0.25)',
-  },
   holographic: {
     borderColor: '#a78bfa',
-    bgGradient: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #1e3a5f 70%, #1e1b4b 100%)',
+    bgGradient: 'linear-gradient(135deg, #1e1b4b 0%, #2e1065 50%, #1e1b4b 100%)',
     labelColor: '#c4b5fd',
     label: 'Holographic',
     rarity: 'Uncommon',
-    glowColor: 'rgba(167,139,250,0.3)',
-  },
-  gold: {
-    borderColor: '#eab308',
-    bgGradient: 'linear-gradient(135deg, #422006 0%, #713f12 50%, #422006 100%)',
-    labelColor: '#fbbf24',
-    label: 'Gold',
-    rarity: 'Rare',
-    glowColor: 'rgba(234,179,8,0.25)',
+    glowColor: 'rgba(167,139,250,0.15)',
   },
   prismatic: {
-    borderColor: '#f472b6',
-    bgGradient: 'linear-gradient(135deg, #4c1d95 0%, #831843 40%, #1e3a5f 70%, #065f46 100%)',
-    labelColor: '#f9a8d4',
+    borderColor: '#db2777',
+    bgGradient: 'linear-gradient(135deg, #2e1065 0%, #701a3e 40%, #1e3a5f 70%, #064e3b 100%)',
+    labelColor: '#f472b6',
     label: 'Prismatic',
     rarity: 'Rare',
-    glowColor: 'rgba(244,114,182,0.3)',
+    glowColor: 'rgba(219,39,119,0.3)',
   },
   diamond: {
     borderColor: '#67e8f9',
@@ -110,7 +118,7 @@ const BEHAVIOR_TAGS: Record<string, {
   conditional: {
     label: 'Conditional',
     color: '#60a5fa',      // blue
-    tooltip: 'Conditional — Triggers when a game condition is met. Boosted by Longshot modifier.',
+    tooltip: 'Conditional — Triggers when a game condition is met. Doubled by Longshot modifier.',
   },
   streak: {
     label: 'Streak',
@@ -161,16 +169,6 @@ function parseClassifications(classification?: string | null, isRookie?: boolean
   return []
 }
 
-// Edition secondary bonuses — mirrors backend EDITION_SECONDARY in cardEffects.py
-const EDITION_SECONDARY: Record<string, { flatFP: number; floobits: number; mult: number } | null> = {
-  base: null,
-  chrome: { flatFP: 3, floobits: 0, mult: 0 },
-  holographic: { flatFP: 0, floobits: 0, mult: 1.2 },
-  gold: { flatFP: 0, floobits: 5, mult: 0 },
-  prismatic: { flatFP: 0, floobits: 0, mult: 1.3 },
-  diamond: null, // Diamond secondary is randomized at equip — read from effectConfig
-}
-
 // FP-type colors for colorizing effect text
 const TYPE_COLORS: Record<string, string> = {
   fp: '#4ade80',       // green
@@ -198,20 +196,6 @@ function colorizeEffectText(text: string, baseColor: string): React.ReactNode {
   if (parts.length === 0) return text
   if (lastIdx < text.length) parts.push(text.slice(lastIdx))
   return <>{parts}</>
-}
-
-function getSecondaryBonusLines(edition: string, effectConfig?: any): string[] {
-  let secondary = EDITION_SECONDARY[edition]
-  if (edition === 'diamond' && effectConfig?.secondary) {
-    secondary = effectConfig.secondary
-  }
-  if (!secondary) return []
-
-  const lines: string[] = []
-  if (secondary.flatFP > 0) lines.push(`+${secondary.flatFP} FP`)
-  if (secondary.mult > 1) lines.push(`${secondary.mult.toFixed(1)}x FPx`)
-  if (secondary.floobits > 0) lines.push(`+${secondary.floobits} Floobits`)
-  return lines
 }
 
 export interface CardData {
@@ -244,7 +228,7 @@ export interface CardData {
 
 interface TradingCardProps {
   card: CardData
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
   selected?: boolean
   onSelect?: () => void
   onClick?: () => void
@@ -256,6 +240,7 @@ interface TradingCardProps {
 }
 
 const SIZES = {
+  xs: { width: 105, height: 178, font: 9, nameFont: 11, avatar: 50, pad: 6, starSize: 16 },
   sm: { width: 160, height: 270, font: 12, nameFont: 14, avatar: 76, pad: 8, starSize: 22 },
   md: { width: 200, height: 340, font: 14, nameFont: 17, avatar: 100, pad: 12, starSize: 28 },
   lg: { width: 260, height: 430, font: 16, nameFont: 20, avatar: 128, pad: 16, starSize: 34 },
@@ -518,6 +503,169 @@ const EffectNameBadge: React.FC<{
   )
 }
 
+// ─── Edition FX Overlays ──────────────────────────────────────────────────
+/// Layered visual effects: Holo=subtle shimmer, Prismatic=iridescent+edge, Diamond=edge+sparkles
+
+const SHIMMER_CONFIGS: Record<string, {
+  gradient: string
+  duration: string
+  opacity: number
+}> = {
+  holographic: {
+    gradient: 'linear-gradient(105deg, transparent 35%, rgba(167,139,250,0.06) 45%, rgba(255,255,255,0.08) 50%, rgba(167,139,250,0.06) 55%, transparent 65%)',
+    duration: '4.5s',
+    opacity: 1,
+  },
+  prismatic: {
+    gradient: 'linear-gradient(105deg, transparent 30%, rgba(244,114,182,0.08) 40%, rgba(167,139,250,0.12) 45%, rgba(96,165,250,0.08) 50%, rgba(52,211,153,0.08) 55%, transparent 65%)',
+    duration: '4s',
+    opacity: 1,
+  },
+  diamond: {
+    gradient: 'linear-gradient(105deg, transparent 25%, rgba(103,232,249,0.1) 35%, rgba(255,255,255,0.2) 45%, rgba(103,232,249,0.12) 55%, rgba(255,255,255,0.08) 65%, transparent 75%)',
+    duration: '3s',
+    opacity: 1,
+  },
+}
+
+const ShimmerOverlay: React.FC<{ edition: string }> = ({ edition }) => {
+  const config = SHIMMER_CONFIGS[edition]
+  if (!config) return null
+  return (
+    <div style={{
+      position: 'absolute', inset: 0,
+      overflow: 'hidden', borderRadius: '11px',
+      pointerEvents: 'none', zIndex: 1,
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: '-50%', left: '-50%',
+        width: '200%', height: '200%',
+        background: config.gradient,
+        animation: `cardShimmer ${config.duration} ease-in-out infinite`,
+        opacity: config.opacity,
+      }} />
+    </div>
+  )
+}
+
+const GLOW_CONFIGS: Record<string, {
+  color: string
+  softColor: string
+  duration: string
+}> = {
+  holographic: {
+    color: 'rgba(167,139,250,0.2)',
+    softColor: 'rgba(167,139,250,0.08)',
+    duration: '4s',
+  },
+  prismatic: {
+    color: 'rgba(244,114,182,0.3)',
+    softColor: 'rgba(244,114,182,0.12)',
+    duration: '3.5s',
+  },
+  diamond: {
+    color: 'rgba(103,232,249,0.35)',
+    softColor: 'rgba(103,232,249,0.15)',
+    duration: '2.5s',
+  },
+}
+
+const SPARKLE_POSITIONS = [
+  { top: '12%', left: '18%', delay: '0s', size: 3 },
+  { top: '25%', left: '78%', delay: '0.8s', size: 2 },
+  { top: '45%', left: '12%', delay: '1.6s', size: 2.5 },
+  { top: '60%', left: '85%', delay: '0.4s', size: 3 },
+  { top: '75%', left: '35%', delay: '2.0s', size: 2 },
+  { top: '88%', left: '65%', delay: '1.2s', size: 2.5 },
+  { top: '35%', left: '50%', delay: '2.4s', size: 3 },
+  { top: '15%', left: '55%', delay: '1.8s', size: 2 },
+]
+
+const SparkleOverlay: React.FC = () => (
+  <div style={{
+    position: 'absolute', inset: 0,
+    pointerEvents: 'none', zIndex: 2,
+    borderRadius: '11px', overflow: 'hidden',
+  }}>
+    {SPARKLE_POSITIONS.map((sp, i) => (
+      <div key={i} style={{
+        position: 'absolute',
+        top: sp.top, left: sp.left,
+        width: sp.size, height: sp.size,
+        borderRadius: '50%',
+        backgroundColor: '#fff',
+        boxShadow: '0 0 4px 1px rgba(103,232,249,0.5), 0 0 8px rgba(255,255,255,0.6)',
+        animation: `sparkle 2.8s ease-in-out ${sp.delay} infinite`,
+        opacity: 0,
+      }} />
+    ))}
+  </div>
+)
+
+// Holographic iridescent background overlay — subtle color shift
+const HoloBackgroundOverlay: React.FC = () => (
+  <div style={{
+    position: 'absolute', inset: 0,
+    borderRadius: '11px', overflow: 'hidden',
+    pointerEvents: 'none', zIndex: 1,
+    filter: 'blur(20px)',
+  }}>
+    <div style={{
+      position: 'absolute',
+      top: '-25%', left: '-25%',
+      width: '150%', height: '150%',
+      background: 'conic-gradient(from 0deg, rgba(244,114,182,0.12), rgba(167,139,250,0.25), rgba(96,165,250,0.05), rgba(52,211,153,0.25), rgba(250,204,21,0.12), rgba(244,114,182,0.05))',
+      animation: 'holoSpin 10s linear infinite',
+      transformOrigin: 'center center',
+    }} />
+  </div>
+)
+
+const HoloEdgeShimmer: React.FC = () => (
+  <div style={{
+    position: 'absolute', inset: 0,
+    borderRadius: '11px', overflow: 'hidden',
+    pointerEvents: 'none', zIndex: 2,
+    mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+    maskComposite: 'exclude',
+    WebkitMaskComposite: 'xor',
+    padding: '3px',
+  }}>
+    <div style={{
+      position: 'absolute',
+      top: '-50%', left: '-50%',
+      width: '200%', height: '200%',
+      background: 'conic-gradient(from 0deg, transparent 0%, rgba(244,114,182,0.7) 10%, transparent 20%, transparent 50%, rgba(167,139,250,0.7) 60%, transparent 70%)',
+      animation: 'holoEdge 4s linear infinite',
+      transformOrigin: 'center center',
+    }} />
+  </div>
+)
+
+const DiamondEdgeShimmer: React.FC = () => (
+  <div style={{
+    position: 'absolute', inset: 0,
+    borderRadius: '11px', overflow: 'hidden',
+    pointerEvents: 'none', zIndex: 2,
+    mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+    WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+    maskComposite: 'exclude',
+    WebkitMaskComposite: 'xor',
+    padding: '3px',
+  }}>
+    <div style={{
+      position: 'absolute',
+      top: '-50%', left: '-50%',
+      width: '200%', height: '200%',
+      background: 'conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.9) 8%, rgba(103,232,249,0.7) 12%, transparent 20%, transparent 45%, rgba(103,232,249,0.8) 53%, rgba(255,255,255,0.9) 58%, transparent 65%)',
+      animation: 'holoEdge 3s linear infinite',
+      transformOrigin: 'center center',
+    }} />
+  </div>
+)
+
 const TradingCard: React.FC<TradingCardProps> = ({
   card, size = 'md', selected = false, onSelect, onClick, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange,
 }) => {
@@ -534,7 +682,6 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const categoryColor = CATEGORY_COLORS[category] || '#94a3b8'
   const outputType = card.outputType || card.effectConfig?.outputType || ''
   const outputTypeColor = TYPE_COLORS[outputType] || categoryColor
-  const secondaryLines = getSecondaryBonusLines(card.edition, card.effectConfig)
   const behaviorKey = getBehaviorTag(card)
   const behaviorTag = behaviorKey ? BEHAVIOR_TAGS[behaviorKey] : null
 
@@ -542,13 +689,22 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const tierColor = getTierColor(card.playerRating)
 
   const playerAvatarUri = useMemo(() => {
-    return createAvatar(micah, {
+    return createAvatar(openPeeps, {
       seed: card.playerName,
       size: d.avatar,
       backgroundColor: [(card.teamColor || tierColor).replace('#', '')],
       backgroundType: ['solid'],
+      maskProbability: 0,
+      facialHairProbability: 40,
+      accessoriesProbability: 40,
+      accessories: ['glasses', 'glasses2', 'glasses3', 'glasses4', 'glasses5', 'sunglasses', 'sunglasses2'],
+      headContrastColor: ['2c1b18', '4a312c', 'a55728', 'b58143', 'c93305', 'd6b370', 'cb8442', 'deb777', 'e8e1e1', '8d4a43'],
     }).toDataUri()
   }, [card.playerName, d.avatar, card.teamColor, tierColor])
+
+  const edition = card.edition
+  const glowConfig = GLOW_CONFIGS[edition]
+  const hasGlow = !!glowConfig
 
   const containerStyle: React.CSSProperties = {
     width: d.width,
@@ -562,13 +718,17 @@ const TradingCard: React.FC<TradingCardProps> = ({
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    transition: 'transform 0.15s, box-shadow 0.15s',
+    transition: 'transform 0.15s, box-shadow 0.25s',
     transform: !noHoverLift && hovered ? 'translateY(-4px)' : 'none',
     boxShadow: selected
       ? '0 0 0 2px #3b82f6, 0 4px 20px rgba(59,130,246,0.3)'
-      : edStyle.glowColor && hovered
-        ? `0 4px 20px ${edStyle.glowColor}`
-        : '0 2px 8px rgba(0,0,0,0.3)',
+      : hasGlow && hovered
+        ? `0 0 12px ${glowConfig.color}, 0 0 28px ${glowConfig.softColor}, 0 4px 20px ${glowConfig.color}`
+        : hasGlow
+          ? `0 0 6px ${glowConfig.softColor}, 0 2px 8px rgba(0,0,0,0.3)`
+          : edStyle.glowColor && hovered
+            ? `0 4px 20px ${edStyle.glowColor}`
+            : '0 2px 8px rgba(0,0,0,0.3)',
     opacity: card.isActive ? 1 : 0.7,
     flexShrink: 0,
   }
@@ -580,11 +740,17 @@ const TradingCard: React.FC<TradingCardProps> = ({
       onMouseEnter={() => { setHovered(true); onHoverChange?.(true) }}
       onMouseLeave={() => { setHovered(false); onHoverChange?.(false) }}
     >
+      {/* Edition FX overlays */}
+      {edition === 'holographic' && <ShimmerOverlay edition={edition} />}
+      {edition === 'prismatic' && <><HoloBackgroundOverlay /><HoloEdgeShimmer /></>}
+      {edition === 'diamond' && <><DiamondEdgeShimmer /><SparkleOverlay /></>}
+
       {/* Header: edition + season + rookie */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: `${d.pad - 2}px ${d.pad}px`,
         borderBottom: `1px solid ${edStyle.borderColor}40`,
+        position: 'relative', zIndex: 3,
       }}>
         <EditionBadge
           label={edStyle.label}
@@ -621,11 +787,13 @@ const TradingCard: React.FC<TradingCardProps> = ({
             padding: `${d.pad}px`,
             textAlign: 'center',
             gap: '4px',
+            position: 'relative', zIndex: 3,
             minHeight: 0, overflow: 'hidden',
           }}>
             {/* Player avatar */}
             <div style={{
               width: d.avatar, height: d.avatar,
+              flexShrink: 0,
               borderRadius: '50%',
               border: glowColor
                 ? `2.5px solid ${hexToRgba(glowColor, 0.85)}`
@@ -687,6 +855,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
             padding: `${d.pad - 2}px ${d.pad + 18}px`,
             borderTop: `1px solid ${edStyle.borderColor}40`,
             textAlign: 'center',
+            position: 'relative', zIndex: 3,
             flexShrink: 0,
           }}>
             {effectDisplayName && (
@@ -796,6 +965,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
             padding: `${d.pad}px`,
             gap: '8px',
             overflowY: 'auto',
+            position: 'relative', zIndex: 3,
           }}
         >
           {/* Header — effect name */}
@@ -828,21 +998,6 @@ const TradingCard: React.FC<TradingCardProps> = ({
             </div>
           )}
 
-          {/* Secondary effect (Chrome+) */}
-          {secondaryLines.length > 0 && (
-            <div style={{
-              fontSize: d.font - 2, color: edStyle.labelColor,
-              textAlign: 'center',
-              borderTop: `1px solid ${edStyle.borderColor}40`,
-              paddingTop: '6px',
-            }}>
-              <div style={{ fontWeight: '700', marginBottom: '3px' }}>{edStyle.label} Bonus</div>
-              {secondaryLines.map((line, i) => (
-                <div key={i} style={{ color: edStyle.labelColor }}>{colorizeEffectText(line, edStyle.labelColor)}</div>
-              ))}
-            </div>
-          )}
-
           {/* Roster match section */}
           <div style={{
             fontSize: d.font - 2, color: '#cbd5e1',
@@ -857,7 +1012,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
               If {card.playerName} is on your fantasy roster:
             </div>
             <div style={{ color: edStyle.labelColor }}>
-              - Primary effect boosted to <span style={{ color: '#60a5fa' }}>1.5x</span>
+              - Effect boosted to <span style={{ color: '#60a5fa' }}>1.5x</span>
             </div>
             {card.effectConfig?.conditional && (
               <div style={{ color: edStyle.labelColor }}>

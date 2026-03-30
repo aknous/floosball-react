@@ -239,6 +239,11 @@ export const OffseasonPanel: React.FC = () => {
         if (data.faPool?.length > 0) setFaPool(data.faPool)
         if (data.existingBallot) setExistingBallot(data.existingBallot)
         if (data.faDirectives?.length > 0) setFaDirectives(data.faDirectives)
+        // If draft already finished, mark complete and clear on-the-clock
+        if (data.draftComplete) {
+          setIsComplete(true)
+          setCurrentTeamAbbr(null)
+        }
       } catch {
         // silent
       }

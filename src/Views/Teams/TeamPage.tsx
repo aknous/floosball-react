@@ -42,6 +42,17 @@ interface Coach {
   seasonsCoached: number
 }
 
+interface FundingData {
+  season: number
+  currentFunding: number
+  carriedFunding: number
+  effectiveFunding: number
+  tier: string
+  tierRank: number
+  fairShare: number
+  thresholds: Record<string, number>
+}
+
 interface TeamData {
   id: number
   name: string
@@ -58,6 +69,9 @@ interface TeamData {
   offenseRating: number
   defenseRunCoverageRating: number
   defensePassCoverageRating: number
+  fundingTier?: string
+  fundingTierRank?: number
+  funding?: FundingData
   clinchedPlayoffs: boolean
   clinchedTopSeed: boolean
   floosbowlChampion: boolean
@@ -152,6 +166,16 @@ export default function TeamPage() {
               <span style={{ fontSize: '15px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{team.wins}–{team.losses}</span>
               <span style={{ fontSize: '13px', color: '#64748b' }}>·</span>
               <span style={{ fontSize: '13px', color: '#94a3b8' }}>ELO {Math.round(team.elo)}</span>
+              {team.fundingTier && (() => {
+                const tc: Record<string, string> = { 'MEGA_MARKET': '#a78bfa', 'LARGE_MARKET': '#3b82f6', 'MID_MARKET': '#64748b', 'SMALL_MARKET': '#f97316' }
+                const tl: Record<string, string> = { 'MEGA_MARKET': 'Mega Market', 'LARGE_MARKET': 'Large Market', 'MID_MARKET': 'Mid Market', 'SMALL_MARKET': 'Small Market' }
+                const c = tc[team.fundingTier] || '#64748b'
+                return (
+                  <span style={{ backgroundColor: `${c}20`, color: c, fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', border: `1px solid ${c}40` }}>
+                    {tl[team.fundingTier] || team.fundingTier}
+                  </span>
+                )
+              })()}
               {(team.floosbowlChampionships?.length ?? 0) > 0 && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', color: '#f59e0b' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -295,6 +319,168 @@ export default function TeamPage() {
             </div>
           </div>
         )}
+
+        {/* Market Tier */}
+        {team.funding && (() => {
+          const f = team.funding
+          const tierColors: Record<string, string> = {
+            'MEGA_MARKET': '#a78bfa',
+            'LARGE_MARKET': '#3b82f6',
+            'MID_MARKET': '#64748b',
+            'SMALL_MARKET': '#f97316',
+          }
+          const tierLabels: Record<string, string> = {
+            'MEGA_MARKET': 'Mega Market',
+            'LARGE_MARKET': 'Large Market',
+            'MID_MARKET': 'Mid Market',
+            'SMALL_MARKET': 'Small Market',
+          }
+          const tierEffects: Record<string, string> = {
+            'MEGA_MARKET': '+2 player development, +1.5% morale',
+            'LARGE_MARKET': '+1 player development, +0.5% morale',
+            'MID_MARKET': 'No development or morale bonus',
+            'SMALL_MARKET': '-1 player development, -1.5% morale',
+          }
+          const orderedTiers = ['SMALL_MARKET', 'MID_MARKET', 'LARGE_MARKET', 'MEGA_MARKET']
+          const currentIdx = orderedTiers.indexOf(f.tier)
+          const tierColor = tierColors[f.tier] || '#64748b'
+
+          // Compute progress info
+          let progressNote = ''
+          let progressColor = '#94a3b8'
+          // Check danger of falling (close to current tier's lower boundary)
+          if (currentIdx > 0) {
+            const currentThreshold = f.thresholds[f.tier] ?? 0
+            const buffer = f.effectiveFunding - currentThreshold
+            if (buffer >= 0 && buffer < f.fairShare * 0.25) {
+              progressNote = `Only ${buffer}F above ${tierLabels[f.tier]} threshold — at risk of dropping to ${tierLabels[orderedTiers[currentIdx - 1]]}`
+              progressColor = '#f59e0b'
+            }
+          }
+          // Show gap to next tier (if not already showing a warning)
+          if (!progressNote && currentIdx < 3) {
+            const nextTier = orderedTiers[currentIdx + 1]
+            const nextThreshold = f.thresholds[nextTier] ?? 0
+            const gap = nextThreshold - f.effectiveFunding
+            if (gap > 0) {
+              progressNote = `${gap}F more to reach ${tierLabels[nextTier]}`
+            }
+          }
+          // At top tier — show buffer
+          if (!progressNote && currentIdx === 3) {
+            const currentThreshold = f.thresholds[f.tier] ?? 0
+            const buffer = f.effectiveFunding - currentThreshold
+            if (buffer > 0) {
+              progressNote = `${buffer}F above ${tierLabels[f.tier]} threshold`
+              progressColor = '#22c55e'
+            }
+          }
+
+          // Bar visualization: show effective funding relative to mega threshold
+          const megaThreshold = f.thresholds['MEGA_MARKET'] || f.fairShare * 1.75
+          const barMax = Math.max(megaThreshold * 1.1, f.effectiveFunding * 1.1, 1)
+
+          return (
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
+              {sectionHeader('Market Status')}
+              <div style={{ padding: '16px' }}>
+                {/* Tier badge + effect */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                  <span style={{
+                    backgroundColor: `${tierColor}20`,
+                    color: tierColor,
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    padding: '3px 10px',
+                    borderRadius: '4px',
+                    border: `1px solid ${tierColor}40`,
+                  }}>
+                    {tierLabels[f.tier] || f.tier}
+                  </span>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    {tierEffects[f.tier] || ''}
+                  </span>
+                </div>
+
+                {/* Funding bar */}
+                <div style={{ marginBottom: '8px' }}>
+                  <div style={{ position: 'relative', height: '8px', backgroundColor: '#0f172a', borderRadius: '4px', overflow: 'visible' }}>
+                    {/* Tier threshold markers */}
+                    {orderedTiers.slice(1).map(t => {
+                      const threshold = f.thresholds[t]
+                      if (threshold == null || threshold <= 0) return null
+                      const pct = Math.min((threshold / barMax) * 100, 100)
+                      return (
+                        <div key={t} style={{
+                          position: 'absolute',
+                          left: `${pct}%`,
+                          top: 0,
+                          bottom: 0,
+                          width: '1px',
+                          backgroundColor: `${tierColors[t]}60`,
+                        }} />
+                      )
+                    })}
+                    {/* Funding fill */}
+                    <div style={{
+                      width: `${Math.min((f.effectiveFunding / barMax) * 100, 100)}%`,
+                      height: '100%',
+                      backgroundColor: tierColor,
+                      borderRadius: '4px',
+                      transition: 'width 0.3s',
+                    }} />
+                  </div>
+                </div>
+
+                {/* Tier threshold labels */}
+                <div style={{ position: 'relative', height: '16px', marginBottom: '12px' }}>
+                  {orderedTiers.slice(1).map(t => {
+                    const threshold = f.thresholds[t]
+                    if (threshold == null || threshold <= 0) return null
+                    const pct = Math.min((threshold / barMax) * 100, 100)
+                    return (
+                      <span key={t} style={{
+                        position: 'absolute',
+                        left: `${pct}%`,
+                        transform: 'translateX(-50%)',
+                        fontSize: '10px',
+                        color: '#64748b',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {threshold}F
+                      </span>
+                    )
+                  })}
+                </div>
+
+                {/* Stats row */}
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' as const }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>Effective Funding</div>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{f.effectiveFunding}F</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>Current Season</div>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{f.currentFunding}F</div>
+                  </div>
+                  {f.carriedFunding > 0 && (
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>Carried Forward</div>
+                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{f.carriedFunding}F</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Progress note */}
+                {progressNote && (
+                  <div style={{ fontSize: '12px', color: progressColor, marginTop: '10px' }}>
+                    {progressNote}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* The Front Office — GM voting panel (favorite team only) */}
         {user?.favoriteTeamId === team.id && (

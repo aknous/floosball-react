@@ -14,6 +14,8 @@ interface PackType {
   cardsPerPack: number
   guaranteedRarity: string | null
   description: string
+  dailyLimit: number | null
+  remainingToday: number | null
 }
 
 interface FeaturedCard extends CardData {
@@ -22,8 +24,8 @@ interface FeaturedCard extends CardData {
 
 const PACK_COLORS: Record<string, { border: string; bg: string; accent: string }> = {
   humble: { border: '#475569', bg: '#1e293b', accent: '#94a3b8' },
-  proper: { border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', accent: '#c4b5fd' },
-  grand: { border: '#f59e0b', bg: 'linear-gradient(135deg, #422006 0%, #78350f 100%)', accent: '#fbbf24' },
+  proper: { border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%)', accent: '#c4b5fd' },
+  grand: { border: '#db2777', bg: 'linear-gradient(135deg, #2e1065 0%, #701a3e 100%)', accent: '#f472b6' },
   exquisite: { border: '#a5f3fc', bg: 'linear-gradient(135deg, #0c4a6e 0%, #155e75 50%, #164e63 100%)', accent: '#67e8f9' },
 }
 
@@ -37,6 +39,7 @@ const CardShop: React.FC = () => {
   const [buying, setBuying] = useState<number | null>(null) // packTypeId or templateId being purchased
   const [openedCards, setOpenedCards] = useState<{ packName: string; cards: CardData[] } | null>(null)
   const [balance, setBalance] = useState(user?.floobits ?? 0)
+  const [shopOpen, setShopOpen] = useState(true)
 
   const fetchShopData = useCallback(async () => {
     try {
@@ -45,7 +48,7 @@ const CardShop: React.FC = () => {
       if (tok) headers.Authorization = `Bearer ${tok}`
 
       const [packsRes, featuredRes, balanceRes] = await Promise.all([
-        fetch(`${API_BASE}/packs/types`),
+        fetch(`${API_BASE}/packs/types`, { headers }),
         tok ? fetch(`${API_BASE}/shop/featured`, { headers }) : Promise.resolve(null),
         tok ? fetch(`${API_BASE}/currency/balance`, { headers }) : Promise.resolve(null),
       ])
@@ -53,6 +56,7 @@ const CardShop: React.FC = () => {
       if (packsRes.ok) {
         const json = await packsRes.json()
         setPacks(json.data?.packs ?? [])
+        if (json.data?.shopOpen !== undefined) setShopOpen(json.data.shopOpen)
       }
       if (featuredRes?.ok) {
         const json = await featuredRes.json()
@@ -91,15 +95,21 @@ const CardShop: React.FC = () => {
       const json = await res.json()
       const data = json.data ?? json
       setOpenedCards({ packName: data.packName, cards: data.cards })
-      // Refresh balance
-      const balRes = await fetch(`${API_BASE}/currency/balance`, {
-        headers: { Authorization: `Bearer ${tok}` },
-      })
+      // Refresh balance and pack remaining counts
+      const authHeaders = { Authorization: `Bearer ${tok}` }
+      const [balRes, packsRefresh] = await Promise.all([
+        fetch(`${API_BASE}/currency/balance`, { headers: authHeaders }),
+        fetch(`${API_BASE}/packs/types`, { headers: authHeaders }),
+      ])
       if (balRes.ok) {
         const bj = await balRes.json()
         const bal = bj.data?.balance ?? 0
         setBalance(bal)
         updateFloobits(bal)
+      }
+      if (packsRefresh.ok) {
+        const pj = await packsRefresh.json()
+        setPacks(pj.data?.packs ?? [])
       }
     } catch {
       alert('Failed to open pack')
@@ -142,6 +152,22 @@ const CardShop: React.FC = () => {
 
   return (
     <div>
+      {!shopOpen && (
+        <div style={{
+          padding: '12px 16px',
+          marginBottom: '16px',
+          borderRadius: '8px',
+          backgroundColor: 'rgba(239,68,68,0.1)',
+          border: '1px solid rgba(239,68,68,0.25)',
+          color: '#fca5a5',
+          fontSize: '12px',
+          lineHeight: '1.5',
+          textAlign: 'center',
+        }}>
+          The shop is closed for the season. Cards expire at season end, so purchases are disabled during playoffs and offseason.
+        </div>
+      )}
+
       {/* Balance bar */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -167,6 +193,8 @@ const CardShop: React.FC = () => {
           const colors = PACK_COLORS[pack.name] || PACK_COLORS.humble
           const canAfford = balance >= pack.cost
           const isBuying = buying === pack.id
+          const soldOut = pack.remainingToday !== null && pack.remainingToday <= 0
+          const canBuy = canAfford && !isBuying && !soldOut && !!user && shopOpen
 
           return (
             <div key={pack.id} style={{
@@ -177,8 +205,15 @@ const CardShop: React.FC = () => {
               padding: '20px',
               display: 'flex', flexDirection: 'column', gap: '10px',
             }}>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: colors.accent }}>
-                {pack.displayName}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '14px', fontWeight: '700', color: colors.accent }}>
+                  {pack.displayName}
+                </div>
+                {pack.dailyLimit != null && (
+                  <div style={{ fontSize: '9px', color: soldOut ? '#ef4444' : '#64748b', fontFamily: 'pressStart' }}>
+                    {pack.remainingToday != null ? `${pack.remainingToday}/${pack.dailyLimit}` : `${pack.dailyLimit}/day`}
+                  </div>
+                )}
               </div>
               <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.5 }}>
                 {pack.description}
@@ -189,24 +224,29 @@ const CardShop: React.FC = () => {
                   <span style={{ color: colors.accent }}> &middot; 1+ {pack.guaranteedRarity}</span>
                 )}
               </div>
+              {pack.dailyLimit != null && (
+                <div style={{ fontSize: '11px', color: '#64748b' }}>
+                  Limit {pack.dailyLimit} per day
+                </div>
+              )}
               <div style={{ marginTop: 'auto', paddingTop: '8px' }}>
                 <button
                   onClick={() => handleOpenPack(pack.id)}
-                  disabled={!canAfford || isBuying || !user}
+                  disabled={!canBuy}
                   style={{
                     width: '100%', padding: '10px',
                     borderRadius: '6px',
-                    border: `1px solid ${canAfford ? colors.border : '#334155'}`,
-                    backgroundColor: canAfford ? `${colors.border}30` : 'rgba(51,65,85,0.3)',
-                    color: canAfford ? colors.accent : '#475569',
+                    border: `1px solid ${canBuy ? colors.border : '#334155'}`,
+                    backgroundColor: canBuy ? `${colors.border}30` : 'rgba(51,65,85,0.3)',
+                    color: canBuy ? colors.accent : '#475569',
                     fontSize: '13px', fontWeight: '700',
-                    cursor: canAfford && !isBuying && user ? 'pointer' : 'not-allowed',
+                    cursor: canBuy ? 'pointer' : 'not-allowed',
                     fontFamily: 'pressStart',
                     opacity: isBuying ? 0.6 : 1,
                     transition: 'opacity 0.15s',
                   }}
                 >
-                  {isBuying ? 'Opening...' : `${pack.cost} Floobits`}
+                  {isBuying ? 'Opening...' : soldOut ? 'Sold Out' : `${pack.cost} Floobits`}
                 </button>
               </div>
             </div>
@@ -241,15 +281,15 @@ const CardShop: React.FC = () => {
                   />
                   <button
                     onClick={() => handleBuyCard(card.templateId)}
-                    disabled={!canAfford || isBuying || !user}
+                    disabled={!canAfford || isBuying || !user || !shopOpen}
                     style={{
                       padding: '6px 14px',
                       borderRadius: '6px',
-                      border: `1px solid ${canAfford ? '#eab308' : '#334155'}`,
-                      backgroundColor: canAfford ? 'rgba(234,179,8,0.12)' : 'rgba(51,65,85,0.3)',
-                      color: canAfford ? '#eab308' : '#475569',
+                      border: `1px solid ${canAfford && shopOpen ? '#eab308' : '#334155'}`,
+                      backgroundColor: canAfford && shopOpen ? 'rgba(234,179,8,0.12)' : 'rgba(51,65,85,0.3)',
+                      color: canAfford && shopOpen ? '#eab308' : '#475569',
                       fontSize: '11px', fontWeight: '700',
-                      cursor: canAfford && !isBuying && user ? 'pointer' : 'not-allowed',
+                      cursor: canAfford && !isBuying && user && shopOpen ? 'pointer' : 'not-allowed',
                       fontFamily: 'pressStart',
                       opacity: isBuying ? 0.6 : 1,
                       transition: 'opacity 0.15s',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { GameGridNew } from '@/Components/GameGridNew'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { HighlightFeed } from '@/Components/HighlightFeed'
@@ -83,13 +83,51 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   const handleGameClick = (gameId: number) => setSelectedGameId(gameId)
   const handleCloseModal = () => setSelectedGameId(null)
 
+  // Mobile section refs for jump nav
+  const gamesRef = useRef<HTMLElement>(null)
+  const standingsRef = useRef<HTMLElement>(null)
+  const highlightsRef = useRef<HTMLElement>(null)
+  const pickemRef = useRef<HTMLElement>(null)
+  const leadersRef = useRef<HTMLElement>(null)
+
+  const MOBILE_SECTIONS = [
+    { key: 'games', label: isOffseason ? 'Offseason' : 'Games', ref: gamesRef },
+    { key: 'standings', label: 'Standings', ref: standingsRef },
+    { key: 'highlights', label: 'Highlights', ref: highlightsRef },
+    { key: 'pickem', label: 'Pick-Em', ref: pickemRef },
+    { key: 'leaders', label: 'Leaders', ref: leadersRef },
+  ] as const
+
+  const scrollToSection = (ref: React.RefObject<HTMLElement | null>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   if (isMobile) {
     return (
       <div style={{ backgroundColor: '#0f172a', color: '#e2e8f0', minHeight: `calc(100vh - ${headerHeight}px)` }}>
+
+        {/* Sticky section nav */}
+        <div style={{
+          position: 'sticky', top: headerHeight, zIndex: 20,
+          backgroundColor: '#0f172a', borderBottom: '1px solid #1e293b',
+          display: 'flex', gap: '0px', overflowX: 'auto',
+          padding: '0 16px',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+        }}>
+          {MOBILE_SECTIONS.map(s => (
+            <button key={s.key} onClick={() => scrollToSection(s.ref)} style={{
+              flex: 'none', padding: '10px 12px', fontSize: '12px', fontWeight: '600',
+              color: '#94a3b8', backgroundColor: 'transparent', border: 'none',
+              borderBottom: '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap',
+            }}>{s.label}</button>
+          ))}
+        </div>
+
         <div style={{ padding: '16px' }}>
 
           {/* Games / Offseason — primary content on mobile */}
-          <section style={{ marginBottom: '32px' }}>
+          <section ref={gamesRef} style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px' }}>
               <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#cbd5e1' }}>
                 {isOffseason ? 'Offseason' : 'Games'}
@@ -104,7 +142,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
           </section>
 
           {/* Standings */}
-          <section style={{ marginBottom: '32px' }}>
+          <section ref={standingsRef} style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
             <TabToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <Standings leagueIndex={0} viewMode={standingsView} />
@@ -113,15 +151,15 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
           </section>
 
           {/* Highlights */}
-          <section style={{ marginBottom: '32px' }}>
+          <section ref={highlightsRef} style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
             <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Highlights</h2>
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
               <HighlightFeed onPlayClick={handleGameClick} />
             </div>
           </section>
 
           {/* Pick-Em */}
-          <section style={{ marginBottom: '32px' }}>
+          <section ref={pickemRef} style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
             <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Prognostications</h2>
             <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
               <PickEmPanel />
@@ -129,7 +167,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
           </section>
 
           {/* Leaders */}
-          <section style={{ marginBottom: '16px' }}>
+          <section ref={leadersRef} style={{ marginBottom: '16px', scrollMarginTop: `${headerHeight + 42}px` }}>
             <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Leaders</h2>
             <MvpRankings />
             <div style={{ marginTop: '12px' }}>

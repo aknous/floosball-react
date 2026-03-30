@@ -29,7 +29,8 @@ function getResultColor(playResult: string): string | null {
   if (playResult === '2nd Down' || playResult === '3rd Down') return null
   if (playResult === '1st Down') return '#3b82f6'
   if (playResult.includes('Touchdown')) return '#22c55e'
-  if (playResult === 'Field Goal is Good' || playResult === 'Safety') return '#22c55e'
+  if (playResult === 'Field Goal is Good') return '#22c55e'
+  if (playResult === 'Safety') return '#ef4444'
   if (playResult.includes('2-Pt') && !playResult.includes('No Good')) return '#22c55e'
   if (playResult === 'Fumble' || playResult === 'Interception' || playResult === 'Turnover On Downs') return '#ef4444'
   if (playResult === '4th Down' || playResult.includes('2-Pt No Good') || playResult === 'XP No Good') return '#f59e0b'
@@ -283,9 +284,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 {(() => {
                   const sackColor = '#f97316'
+                  const isSafety = play.playResult === 'Safety'
                   const resultColor = play.playResult ? getResultColor(String(play.playResult)) : null
-                  const badgeColor = play.isSack ? sackColor : resultColor
-                  const badgeLabel = play.isSack ? 'SACK' : play.playResult
+                  const badgeColor = isSafety ? resultColor : play.isSack ? sackColor : resultColor
+                  const badgeLabel = isSafety ? 'Safety' : play.isSack ? 'SACK' : play.playResult
                   if (!badgeColor) return null
                   return (
                     <span style={{
@@ -904,32 +906,122 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           {/* Right panel: Tabs + scrollable content */}
           <div style={{ flex: isMobile ? 'none' : 1, display: 'flex', flexDirection: 'column', overflow: isMobile ? 'visible' : 'hidden', minWidth: 0 }}>
 
-            {/* Tab bar */}
-            <div style={{ padding: '10px 16px', borderBottom: '1px solid #334155', flexShrink: 0, display: 'flex', gap: '4px' }}>
-              {(['plays', 'box', 'stats'] as const).map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    backgroundColor: activeTab === tab ? '#1e293b' : 'transparent',
-                    color: activeTab === tab ? '#e2e8f0' : '#64748b',
-                    transition: 'all 0.15s'
-                  }}
-                >
-                  {tab === 'plays' ? 'Plays' : tab === 'box' ? 'Box Score' : 'Stats'}
-                </button>
-              ))}
-            </div>
+            {/* Tab bar — hidden for Scheduled games */}
+            {gameData.status !== 'Scheduled' && (
+              <div style={{ padding: '10px 16px', borderBottom: '1px solid #334155', flexShrink: 0, display: 'flex', gap: '4px' }}>
+                {(['plays', 'box', 'stats'] as const).map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      backgroundColor: activeTab === tab ? '#1e293b' : 'transparent',
+                      color: activeTab === tab ? '#e2e8f0' : '#64748b',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    {tab === 'plays' ? 'Plays' : tab === 'box' ? 'Box Score' : 'Stats'}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Tab content — fills all remaining height */}
             <div style={{ flex: isMobile ? 'none' : 1, overflowY: isMobile ? 'visible' : 'auto', padding: '16px' }}>
-              {activeTab === 'plays' && (
+
+              {/* Matchup preview for Scheduled games */}
+              {gameData.status === 'Scheduled' && (() => {
+                const mp = (gameData as any).matchupPreview
+                if (!mp) return <div style={{ textAlign: 'center', color: '#64748b', padding: '48px 0' }}>Matchup data available after Week 1</div>
+                const h = mp.home
+                const a = mp.away
+                const homeAbbr = gameData.homeTeam.abbr
+                const awayAbbr = gameData.awayTeam.abbr
+                const homeColor = gameData.homeTeam.color
+                const awayColor = gameData.awayTeam.color
+
+                const compBar = (homeVal: number, awayVal: number) => {
+                  const total = homeVal + awayVal
+                  if (total === 0) return null
+                  const homePct = (homeVal / total) * 100
+                  return (
+                    <div style={{ display: 'flex', height: '4px', borderRadius: '2px', overflow: 'hidden', marginTop: '4px' }}>
+                      <div style={{ width: `${homePct}%`, backgroundColor: homeColor, transition: 'width 0.3s' }} />
+                      <div style={{ flex: 1, backgroundColor: awayColor, transition: 'width 0.3s' }} />
+                    </div>
+                  )
+                }
+
+                type MatchupRow = { label: string; home: number; away: number; flip?: boolean }
+                const sections: { title: string; rows: MatchupRow[] }[] = [
+                  { title: 'Scoring', rows: [
+                    { label: 'Points / Game', home: h.avgPts, away: a.avgPts },
+                    { label: 'Points Allowed / Game', home: h.avgPtsAlwd, away: a.avgPtsAlwd, flip: true },
+                  ]},
+                  { title: 'Passing', rows: [
+                    { label: 'Pass Yards / Game', home: h.avgPassYards, away: a.avgPassYards },
+                    { label: 'Pass Yards Allowed / Game', home: h.avgPassYardsAlwd, away: a.avgPassYardsAlwd, flip: true },
+                    { label: 'Pass TDs / Game', home: h.avgPassTds, away: a.avgPassTds },
+                  ]},
+                  { title: 'Rushing', rows: [
+                    { label: 'Rush Yards / Game', home: h.avgRunYards, away: a.avgRunYards },
+                    { label: 'Rush Yards Allowed / Game', home: h.avgRunYardsAlwd, away: a.avgRunYardsAlwd, flip: true },
+                    { label: 'Rush TDs / Game', home: h.avgRunTds, away: a.avgRunTds },
+                  ]},
+                  { title: 'Defense', rows: [
+                    { label: 'Sacks / Game', home: h.avgSacks, away: a.avgSacks },
+                    { label: 'INTs / Game', home: h.avgInts, away: a.avgInts },
+                  ]},
+                ]
+
+                return (
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '16px' }}>
+                      Matchup Preview
+                    </div>
+                    {/* Header */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '0 24px', marginBottom: '8px', padding: '0 4px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: homeColor, minWidth: '48px', textAlign: 'center' }}>{homeAbbr}</div>
+                      <div />
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: awayColor, minWidth: '48px', textAlign: 'center' }}>{awayAbbr}</div>
+                    </div>
+                    {sections.map(section => (
+                      <div key={section.title}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '14px 4px 6px' }}>
+                          {section.title}
+                        </div>
+                        {section.rows.map((row, i) => {
+                          // For "allowed" stats, lower is better — flip highlights
+                          const homeBetter = row.flip ? row.home < row.away : row.home > row.away
+                          const awayBetter = row.flip ? row.away < row.home : row.away > row.home
+                          const tied = row.home === row.away
+                          return (
+                            <div key={row.label} style={{ padding: '6px 4px', borderTop: '1px solid #1e293b', backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '0 24px', alignItems: 'center' }}>
+                                <div style={{ fontSize: '14px', fontWeight: homeBetter && !tied ? '700' : '400', color: homeBetter && !tied ? '#e2e8f0' : '#94a3b8', minWidth: '48px', textAlign: 'center' }}>
+                                  {typeof row.home === 'number' ? row.home.toFixed(1) : row.home}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center' }}>{row.label}</div>
+                                <div style={{ fontSize: '14px', fontWeight: awayBetter && !tied ? '700' : '400', color: awayBetter && !tied ? '#e2e8f0' : '#94a3b8', minWidth: '48px', textAlign: 'center' }}>
+                                  {typeof row.away === 'number' ? row.away.toFixed(1) : row.away}
+                                </div>
+                              </div>
+                              {!row.flip && compBar(row.home, row.away)}
+                              {row.flip && compBar(row.away, row.home)}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+              {gameData.status !== 'Scheduled' && activeTab === 'plays' && (
                 <>
                   {/* All / Highlights toggle */}
                   <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>

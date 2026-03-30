@@ -125,9 +125,14 @@ export const LiveGameViewer: React.FC<LiveGameViewerProps> = ({ gameId }) => {
                         TO
                       </span>
                     )}
-                    {play.isSack && (
+                    {play.isSack && play.playResult !== 'Safety' && (
                       <span className="inline-block px-1.5 py-0.5 bg-orange-100 text-orange-800 text-sm font-semibold rounded">
                         SACK
+                      </span>
+                    )}
+                    {play.playResult === 'Safety' && (
+                      <span className="inline-block px-1.5 py-0.5 bg-rose-100 text-rose-800 text-sm font-semibold rounded">
+                        SAFETY
                       </span>
                     )}
                   </div>

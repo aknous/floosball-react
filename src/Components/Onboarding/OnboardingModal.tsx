@@ -194,7 +194,7 @@ const INFO_STEPS = [
           or win the Floosbowl. You can change your team during the offseason.
         </p>
         <p style={{ color: '#94a3b8', lineHeight: '1.6', marginBottom: '12px' }}>
-          Starting in Week 10, you can issue directives through The Front Office to influence
+          Starting in Week 22, you can issue directives through The Front Office to influence
           your team's coaching and roster decisions.
         </p>
         <p style={{ color: '#cbd5e1', lineHeight: '1.6', fontSize: '13px' }}>

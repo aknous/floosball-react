@@ -20,7 +20,7 @@ const PickerCard: React.FC<{
         borderRadius: '14px',
         transition: 'transform 0.15s',
         transform: hovered ? 'translateY(-4px)' : 'none',
-        boxShadow: isMatch ? '0 0 0 2px #22c55e, 0 0 12px rgba(34,197,94,0.3)' : 'none',
+        boxShadow: isMatch ? '0 0 0 2px #60a5fa, 0 0 12px rgba(96,165,250,0.3)' : 'none',
       }}
       onClick={() => onSelect(card)}
     >
@@ -33,10 +33,10 @@ const PickerCard: React.FC<{
       {isMatch && (
         <div style={{
           position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
-          fontSize: '9px', color: '#22c55e', fontWeight: '700',
-          backgroundColor: 'rgba(34,197,94,0.15)',
+          fontSize: '9px', color: '#60a5fa', fontWeight: '700',
+          backgroundColor: 'rgba(96,165,250,0.15)',
           padding: '2px 5px', borderRadius: '4px',
-          border: '1px solid rgba(34,197,94,0.3)',
+          border: '1px solid rgba(96,165,250,0.3)',
           zIndex: 1,
         }}>
           MATCH
@@ -97,7 +97,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
 
   // Sort: matching cards first, then by edition rarity, then rating
   const editionOrder: Record<string, number> = {
-    diamond: 0, prismatic: 1, gold: 2, holographic: 3, chrome: 4, base: 5,
+    diamond: 0, prismatic: 1, holographic: 2, base: 3,
   }
   const sorted = [...cards].sort((a, b) => {
     const aMatch = rosterPlayerIds.has(a.playerId) ? 0 : 1

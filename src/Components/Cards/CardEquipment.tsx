@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { createAvatar } from '@dicebear/core'
-import { micah } from '@dicebear/collection'
+import { openPeeps } from '@dicebear/collection'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -39,21 +39,17 @@ const OUTPUT_TYPE_COLORS: Record<string, string> = {
 
 const EDITION_LABEL_COLORS: Record<string, string> = {
   base: '#94a3b8',
-  chrome: '#f59e0b',
-  holographic: '#ec4899',
-  gold: '#eab308',
-  prismatic: '#a78bfa',
-  diamond: '#fb923c',
+  holographic: '#c4b5fd',
+  prismatic: '#f472b6',
+  diamond: '#a5f3fc',
 }
 
 const EDITION_MINI: Record<string, {
   border: string; bg: string; label: string; glow?: string
 }> = {
-  base: { border: '#475569', bg: 'linear-gradient(135deg, #1e293b, #1e293b)', label: 'Base' },
-  chrome: { border: '#a1a1aa', bg: 'linear-gradient(135deg, #27272a, #3f3f46, #27272a)', label: 'Chrome', glow: 'rgba(161,161,170,0.2)' },
-  holographic: { border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b, #312e81, #1e3a5f)', label: 'Holo', glow: 'rgba(167,139,250,0.25)' },
-  gold: { border: '#eab308', bg: 'linear-gradient(135deg, #422006, #713f12, #422006)', label: 'Gold', glow: 'rgba(234,179,8,0.2)' },
-  prismatic: { border: '#f472b6', bg: 'linear-gradient(135deg, #4c1d95, #831843, #1e3a5f)', label: 'Prismatic', glow: 'rgba(244,114,182,0.25)' },
+  base: { border: '#475569', bg: 'linear-gradient(135deg, #334155, #283548, #334155)', label: 'Base' },
+  holographic: { border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b, #2e1065, #1e1b4b)', label: 'Holo', glow: 'rgba(167,139,250,0.2)' },
+  prismatic: { border: '#db2777', bg: 'linear-gradient(135deg, #2e1065, #701a3e, #1e3a5f, #064e3b)', label: 'Prismatic', glow: 'rgba(219,39,119,0.25)' },
   diamond: { border: '#67e8f9', bg: 'linear-gradient(135deg, #0c4a6e, #155e75, #1e3a5f, #0e7490)', label: 'Diamond', glow: 'rgba(103,232,249,0.3)' },
 }
 
@@ -89,8 +85,8 @@ const EquippedCardSlot: React.FC<{
       {slot.isMatch && (
         <div style={{
           position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
-          fontSize: '8px', color: '#fb923c', fontWeight: '700',
-          backgroundColor: 'rgba(251,146,60,0.30)',
+          fontSize: '8px', color: '#60a5fa', fontWeight: '700',
+          backgroundColor: 'rgba(96,165,250,0.20)',
           padding: '2px 5px', borderRadius: '4px',
           pointerEvents: 'none',
         }}>
@@ -298,7 +294,7 @@ const CardEquipment: React.FC = () => {
 
   // Deck cards: exclude equipped, sort by match > edition > rating
   const editionOrder: Record<string, number> = {
-    diamond: 0, prismatic: 1, gold: 2, holographic: 3, chrome: 4, base: 5,
+    diamond: 0, prismatic: 1, holographic: 2, base: 3,
   }
   const availableDeck = deckCards
     .filter(c => !equippedCardIds.includes(c.id))
@@ -382,11 +378,16 @@ const CardEquipment: React.FC = () => {
             const tooltip = slot.card.tooltip || slot.card.effectConfig?.tooltip || ''
             const outputType = slot.card.outputType || slot.card.effectConfig?.outputType || ''
             const outputColor = OUTPUT_TYPE_COLORS[outputType] || '#94a3b8'
-            const avatarUri = createAvatar(micah, {
+            const avatarUri = createAvatar(openPeeps, {
               seed: slot.card.playerName,
               size: 36,
               backgroundColor: [(slot.card.teamColor || '#475569').replace('#', '')],
               backgroundType: ['solid' as const],
+              maskProbability: 0,
+              facialHairProbability: 40,
+              accessoriesProbability: 40,
+              accessories: ['glasses', 'glasses2', 'glasses3', 'glasses4', 'glasses5', 'sunglasses', 'sunglasses2'],
+              headContrastColor: ['2c1b18', '4a312c', 'a55728', 'b58143', 'c93305', 'd6b370', 'cb8442', 'deb777', 'e8e1e1', '8d4a43'],
             }).toDataUri()
             return (
               <div
@@ -432,8 +433,8 @@ const CardEquipment: React.FC = () => {
                     </span>
                     {slot.isMatch && (
                       <span style={{
-                        fontSize: '9px', color: '#fb923c', fontWeight: '700',
-                        backgroundColor: 'rgba(251,146,60,0.15)',
+                        fontSize: '9px', color: '#60a5fa', fontWeight: '700',
+                        backgroundColor: 'rgba(96,165,250,0.15)',
                         padding: '1px 5px', borderRadius: '3px',
                       }}>MATCH</span>
                     )}
@@ -570,13 +571,15 @@ const CardEquipment: React.FC = () => {
               {availableDeck.map(card => {
                 const isMatch = fantasyPlayerIds.has(card.playerId)
                 return (
-                  <div key={card.id} style={{ position: 'relative' }}>
-                    <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch ? (card.teamColor || '#ffffff') : undefined} staticGlow />
+                  <div key={card.id} style={{ position: 'relative', transition: 'transform 0.15s ease' }}
+                    onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-4px)')}
+                    onMouseLeave={e => (e.currentTarget.style.transform = 'none')}>
+                    <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch ? (card.teamColor || '#ffffff') : undefined} staticGlow noHoverLift />
                     {isMatch && (
                       <div style={{
                         position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
-                        fontSize: '8px', color: '#fb923c', fontWeight: '700',
-                        backgroundColor: 'rgba(251,146,60,0.30)',
+                        fontSize: '8px', color: '#60a5fa', fontWeight: '700',
+                        backgroundColor: 'rgba(96,165,250,0.20)',
                         padding: '2px 5px', borderRadius: '4px',
                         pointerEvents: 'none',
                       }}>

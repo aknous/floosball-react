@@ -12,7 +12,7 @@ import VoteResultsBanner from './VoteResultsBanner'
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 import { GM_VOTE_COST, GM_VOTES_PER_SEASON, GM_VOTES_PER_TARGET, GM_VOTES_PER_TYPE } from '@/types/gm'
 
-const GM_ACTIVE_WEEK = 10
+const GM_ACTIVE_WEEK = 22
 
 interface FrontOfficePanelProps {
   teamId: number

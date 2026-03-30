@@ -21,6 +21,8 @@ interface PackType {
   cardsPerPack: number
   guaranteedRarity: string | null
   description: string
+  dailyLimit: number | null
+  remainingToday: number | null
 }
 
 interface FeaturedCard extends CardData {
@@ -53,14 +55,14 @@ const POWERUP_STYLES: Record<string, { accent: string }> = {
   modifier_nullifier: { accent: '#eab308' },
   temp_flex: { accent: '#a78bfa' },
   temp_card_slot: { accent: '#67e8f9' },
-  shop_reroll: { accent: '#3b82f6' },
   fortunes_favor: { accent: '#f472b6' },
+  income_boost: { accent: '#fbbf24' },
 }
 
 const PACK_COLORS: Record<string, { border: string; bg: string; accent: string }> = {
   humble: { border: '#475569', bg: '#1e293b', accent: '#94a3b8' },
-  proper: { border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', accent: '#c4b5fd' },
-  grand: { border: '#f59e0b', bg: 'linear-gradient(135deg, #422006 0%, #78350f 100%)', accent: '#fbbf24' },
+  proper: { border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%)', accent: '#c4b5fd' },
+  grand: { border: '#db2777', bg: 'linear-gradient(135deg, #2e1065 0%, #701a3e 100%)', accent: '#f472b6' },
   exquisite: { border: '#a5f3fc', bg: 'linear-gradient(135deg, #0c4a6e 0%, #155e75 50%, #164e63 100%)', accent: '#67e8f9' },
 }
 
@@ -76,8 +78,8 @@ const POWERUP_ICONS: Record<string, React.ComponentType<{ size?: number; color?:
   modifier_nullifier: GiMagicSwirl,
   temp_flex: GiFlexibleStar,
   temp_card_slot: GiCardPlay,
-  shop_reroll: GiPerspectiveDiceSixFacesRandom,
   fortunes_favor: GiQueenCrown,
+  income_boost: GiCrownCoin,
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -95,6 +97,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
   const [buying, setBuying] = useState<string | null>(null)
   const [openedCards, setOpenedCards] = useState<{ packName: string; cards: CardData[] } | null>(null)
 
+  const [rerollCost, setRerollCost] = useState<number>(10)
+  const [rerolling, setRerolling] = useState(false)
+  const [shopOpen, setShopOpen] = useState(true)
+
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const toggleSection = (key: string) =>
     setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
@@ -106,16 +112,18 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       const headers: Record<string, string> = {}
       if (tok) headers.Authorization = `Bearer ${tok}`
 
-      const [packsRes, featuredRes, balRes, powerupRes] = await Promise.all([
+      const [packsRes, featuredRes, balRes, powerupRes, rerollRes] = await Promise.all([
         fetch(`${API_BASE}/packs/types`),
         tok ? fetch(`${API_BASE}/shop/featured`, { headers }) : Promise.resolve(null),
         tok ? fetch(`${API_BASE}/currency/balance`, { headers }) : Promise.resolve(null),
         tok ? fetch(`${API_BASE}/shop/powerups`, { headers }) : Promise.resolve(null),
+        tok ? fetch(`${API_BASE}/shop/reroll-cost`, { headers }) : Promise.resolve(null),
       ])
 
       if (packsRes.ok) {
         const j = await packsRes.json()
         setPacks(j.data?.packs ?? [])
+        if (j.data?.shopOpen !== undefined) setShopOpen(j.data.shopOpen)
       }
       if (featuredRes?.ok) {
         const j = await featuredRes.json()
@@ -130,6 +138,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       if (powerupRes?.ok) {
         const pj = await powerupRes.json()
         setPowerups(pj.data?.items ?? [])
+      }
+      if (rerollRes?.ok) {
+        const rj = await rerollRes.json()
+        setRerollCost(rj.data?.cost ?? 10)
       }
     } catch { /* silent */ } finally {
       setLoading(false)
@@ -172,10 +184,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         setBalance(newBal)
         updateFloobits(newBal)
       }
-      // If reroll, update featured cards
-      if (slug === 'shop_reroll' && j.data?.featuredCards) {
-        setFeatured(j.data.featuredCards)
-      }
       // Re-fetch powerup state
       const puRes = await fetch(`${API_BASE}/shop/powerups`, {
         headers: { Authorization: `Bearer ${tok}` },
@@ -213,15 +221,21 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       const json = await res.json()
       const data = json.data ?? json
       setOpenedCards({ packName: data.packName, cards: data.cards })
-      // Refresh balance
-      const balRes = await fetch(`${API_BASE}/currency/balance`, {
-        headers: { Authorization: `Bearer ${tok}` },
-      })
+      // Refresh balance and pack remaining counts
+      const authHeaders = { Authorization: `Bearer ${tok}` }
+      const [balRes, packsRefresh] = await Promise.all([
+        fetch(`${API_BASE}/currency/balance`, { headers: authHeaders }),
+        fetch(`${API_BASE}/packs/types`, { headers: authHeaders }),
+      ])
       if (balRes.ok) {
         const bj = await balRes.json()
         const bal = bj.data?.balance ?? 0
         setBalance(bal)
         updateFloobits(bal)
+      }
+      if (packsRefresh.ok) {
+        const pj = await packsRefresh.json()
+        setPacks(pj.data?.packs ?? [])
       }
     } catch {
       alert('Failed to open pack')
@@ -250,6 +264,36 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       alert('Failed to buy card')
     } finally {
       setBuying(null)
+    }
+  }
+
+  const handleReroll = async () => {
+    const tok = await getToken()
+    if (!tok) return
+    setRerolling(true)
+    try {
+      const res = await fetch(`${API_BASE}/shop/reroll`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tok}` },
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Reroll failed' }))
+        alert(err.detail || 'Reroll failed')
+        return
+      }
+      const j = await res.json()
+      if (j.data?.featuredCards) setFeatured(j.data.featuredCards)
+      if (typeof j.data?.newBalance === 'number') {
+        setBalance(j.data.newBalance)
+        updateFloobits(j.data.newBalance)
+      }
+      if (typeof j.data?.nextRerollCost === 'number') {
+        setRerollCost(j.data.nextRerollCost)
+      }
+    } catch {
+      alert('Reroll failed')
+    } finally {
+      setRerolling(false)
     }
   }
 
@@ -314,63 +358,101 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Scrollable content */}
-        <div ref={contentRef} style={{ overflowY: 'auto', padding: '16px 20px' }}>
+        <div ref={contentRef} style={{ overflowY: 'auto', padding: isMobile ? '12px 12px' : '16px 20px' }}>
           {loading ? (
             <div style={{ color: '#94a3b8', fontSize: '12px', textAlign: 'center', padding: '40px 0' }}>
               Loading shop...
             </div>
           ) : (
             <>
-              {/* ── Featured Cards ── */}
+              {!shopOpen && (
+                <div style={{
+                  padding: '12px 16px',
+                  marginBottom: '16px',
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(239,68,68,0.1)',
+                  border: '1px solid rgba(239,68,68,0.25)',
+                  color: '#fca5a5',
+                  fontSize: '11px',
+                  lineHeight: '1.5',
+                  textAlign: 'center',
+                }}>
+                  The shop is closed for the season. Cards expire at season end, so purchases are disabled during playoffs and offseason.
+                </div>
+              )}
+              {/* ── Daily Selection ── */}
               {featured.length > 0 && (
                 <div style={{ marginBottom: '28px' }}>
                   <SectionHeader
-                    title="Featured Cards"
-                    subtitle="Refreshes daily"
+                    title="Daily Selection"
                     collapsed={!!collapsed.featured}
                     onToggle={() => toggleSection('featured')}
                   />
                   {!collapsed.featured && (
-                    <div style={{
-                      display: 'flex',
-                      gap: '14px',
-                      flexWrap: 'wrap',
-                      justifyContent: 'center',
-                    }}>
-                      {featured.map(card => {
-                        const canAfford = balance >= card.buyPrice
-                        const isBuying3 = buying === `card_${card.templateId}`
+                    <>
+                      <div style={{
+                        display: 'flex',
+                        gap: isMobile ? '8px' : '14px',
+                        flexWrap: 'wrap',
+                        justifyContent: 'center',
+                      }}>
+                        {featured.map(card => {
+                          const canAfford = balance >= card.buyPrice
+                          const isBuying3 = buying === `card_${card.templateId}`
 
-                        return (
-                          <div key={card.templateId} style={{
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-                          }}>
-                            <TradingCard
-                              card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
-                              size="sm"
-                            />
-                            <button
-                              onClick={() => handleBuyCard(card.templateId)}
-                              disabled={!canAfford || isBuying3 || !user}
-                              style={{
-                                padding: '5px 12px',
-                                borderRadius: '5px',
-                                border: `1px solid ${canAfford ? '#eab308' : '#334155'}`,
-                                backgroundColor: canAfford ? 'rgba(234,179,8,0.12)' : 'rgba(51,65,85,0.3)',
-                                color: canAfford ? '#eab308' : '#94a3b8',
-                                fontSize: '12px', fontWeight: '700',
-                                cursor: canAfford && !isBuying3 && user ? 'pointer' : 'not-allowed',
-                                fontFamily: 'pressStart',
-                                opacity: isBuying3 ? 0.6 : 1,
-                                transition: 'opacity 0.15s',
-                              }}
-                            >
-                              {isBuying3 ? '...' : `${card.buyPrice}`}
-                            </button>
-                          </div>
-                        )
-                      })}
-                    </div>
+                          return (
+                            <div key={card.templateId} style={{
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? '4px' : '6px',
+                            }}>
+                              <TradingCard
+                                card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
+                                size="sm"
+                              />
+                              <button
+                                onClick={() => handleBuyCard(card.templateId)}
+                                disabled={!canAfford || isBuying3 || !user || !shopOpen}
+                                style={{
+                                  padding: isMobile ? '4px 8px' : '5px 12px',
+                                  borderRadius: '5px',
+                                  border: `1px solid ${canAfford && shopOpen ? '#eab308' : '#334155'}`,
+                                  backgroundColor: canAfford && shopOpen ? 'rgba(234,179,8,0.12)' : 'rgba(51,65,85,0.3)',
+                                  color: canAfford && shopOpen ? '#eab308' : '#94a3b8',
+                                  fontSize: isMobile ? '10px' : '12px', fontWeight: '700',
+                                  cursor: canAfford && !isBuying3 && user ? 'pointer' : 'not-allowed',
+                                  fontFamily: 'pressStart',
+                                  opacity: isBuying3 ? 0.6 : 1,
+                                  transition: 'opacity 0.15s',
+                                }}
+                              >
+                                {isBuying3 ? '...' : `${card.buyPrice}`}
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '12px' }}>
+                        <button
+                          onClick={handleReroll}
+                          disabled={rerolling || balance < rerollCost || !user || !shopOpen}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            padding: '6px 14px',
+                            borderRadius: '5px',
+                            border: `1px solid ${balance >= rerollCost && shopOpen ? '#a78bfa' : '#334155'}`,
+                            backgroundColor: balance >= rerollCost && shopOpen ? 'rgba(167,139,250,0.12)' : 'rgba(51,65,85,0.3)',
+                            color: balance >= rerollCost && shopOpen ? '#a78bfa' : '#94a3b8',
+                            fontSize: '11px', fontWeight: '700',
+                            cursor: !rerolling && balance >= rerollCost && user && shopOpen ? 'pointer' : 'not-allowed',
+                            fontFamily: 'pressStart',
+                            opacity: rerolling ? 0.6 : 1,
+                            transition: 'opacity 0.15s',
+                          }}
+                        >
+                          <GiPerspectiveDiceSixFacesRandom size={16} />
+                          {rerolling ? 'Rerolling...' : `Reroll \u00b7 ${rerollCost}`}
+                        </button>
+                      </div>
+                    </>
                   )}
                 </div>
               )}
@@ -393,6 +475,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                       const colors = PACK_COLORS[pack.name] || PACK_COLORS.humble
                       const canAfford = balance >= pack.cost
                       const isBuying2 = buying === `pack_${pack.id}`
+                      const soldOut = pack.remainingToday !== null && pack.remainingToday <= 0
+                      const canBuy = canAfford && !isBuying2 && !soldOut && !!user && shopOpen
 
                       return (
                         <div key={pack.id} style={{
@@ -416,23 +500,32 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               <span style={{ color: colors.accent }}> &middot; 1+ {pack.guaranteedRarity}</span>
                             )}
                           </div>
+                          {pack.dailyLimit != null && (
+                            <div style={{ fontSize: '11px', color: soldOut ? '#ef4444' : '#94a3b8' }}>
+                              {soldOut
+                                ? 'Sold out today'
+                                : pack.remainingToday != null
+                                  ? `${pack.remainingToday} of ${pack.dailyLimit} remaining today`
+                                  : `Limit ${pack.dailyLimit} per day`}
+                            </div>
+                          )}
                           <button
                             onClick={() => handleOpenPack(pack.id)}
-                            disabled={!canAfford || isBuying2 || !user}
+                            disabled={!canBuy}
                             style={{
                               width: '100%', padding: '8px',
                               borderRadius: '5px',
                               border: 'none',
-                              backgroundColor: canAfford ? `${colors.accent}20` : 'rgba(51,65,85,0.3)',
-                              color: canAfford ? colors.accent : '#94a3b8',
+                              backgroundColor: canBuy ? `${colors.accent}20` : 'rgba(51,65,85,0.3)',
+                              color: canBuy ? colors.accent : '#94a3b8',
                               fontSize: '12px', fontWeight: '700',
-                              cursor: canAfford && !isBuying2 && user ? 'pointer' : 'not-allowed',
+                              cursor: canBuy ? 'pointer' : 'not-allowed',
                               fontFamily: 'pressStart',
                               opacity: isBuying2 ? 0.6 : 1,
                               transition: 'opacity 0.15s',
                             }}
                           >
-                            {isBuying2 ? 'Opening...' : `${pack.cost} Floobits`}
+                            {isBuying2 ? 'Opening...' : soldOut ? 'Sold Out' : `${pack.cost} Floobits`}
                           </button>
                         </div>
                       )
@@ -459,7 +552,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                     {powerups.map(pu => {
                       const style = POWERUP_STYLES[pu.slug] || POWERUP_STYLES.extra_swap
                       const canAfford = balance >= pu.price
-                      const canBuy = pu.available && canAfford && pu.purchased < pu.limit
+                      const canBuy = pu.available && canAfford && pu.purchased < pu.limit && shopOpen
                       const isBuying = buying === pu.slug
                       const isPurchased = pu.purchased >= pu.limit
 

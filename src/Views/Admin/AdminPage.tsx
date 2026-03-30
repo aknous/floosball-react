@@ -191,8 +191,8 @@ interface PlayerSearchResult {
 }
 
 const EDITION_COLORS_MAP: Record<string, string> = {
-  base: '#94a3b8', chrome: '#d4d4d8', holographic: '#c4b5fd',
-  gold: '#fbbf24', prismatic: '#f9a8d4', diamond: '#a5f3fc',
+  base: '#94a3b8', holographic: '#bae6fd',
+  prismatic: '#f9a8d4', diamond: '#a5f3fc',
 }
 
 const CATEGORY_FOR_POSITION: Record<string, string> = {
@@ -1027,7 +1027,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
           <div>
             <div style={labelStyle}>Edition</div>
             <select value={cardEdition} onChange={e => setCardEdition(e.target.value)} style={selectStyle}>
-              {(cardOptions?.editions ?? ['base', 'holographic', 'gold', 'diamond']).map(ed => (
+              {(cardOptions?.editions ?? ['base', 'holographic', 'prismatic', 'diamond']).map(ed => (
                 <option key={ed} value={ed} style={{ color: EDITION_COLORS_MAP[ed] }}>{ed.toUpperCase()}</option>
               ))}
             </select>

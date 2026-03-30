@@ -58,7 +58,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             return enrich ? { ...p, ...enrich } : p
           })
 
-          updated.set(gameId, { ...game, plays: mergedPlays, gameStats: gameData.gameStats ?? game.gameStats })
+          updated.set(gameId, { ...game, plays: mergedPlays, gameStats: gameData.gameStats ?? game.gameStats, matchupPreview: gameData.matchupPreview ?? game.matchupPreview })
         }
         return updated
       })
