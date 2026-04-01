@@ -100,11 +100,18 @@ export const useSeasonUpdates = () => {
         break
 
       case 'game_end':
-        setSeasonState(prev => ({
-          ...prev,
-          activeGames: prev.activeGames.filter(id => id !== event.gameId),
-          completedGames: [...prev.completedGames, event.gameId]
-        }))
+        setSeasonState(prev => {
+          const remaining = prev.activeGames.filter(id => id !== event.gameId)
+          if (remaining.length === 0) {
+            // All games done — re-fetch to get nextGameStartTime and updated state
+            fetchSeasonData()
+          }
+          return {
+            ...prev,
+            activeGames: remaining,
+            completedGames: [...prev.completedGames, event.gameId]
+          }
+        })
         break
 
       case 'week_end':
@@ -134,7 +141,7 @@ export const useSeasonUpdates = () => {
         }))
         break
     }
-  }, [event])
+  }, [event, fetchSeasonData])
 
   return {
     seasonState,

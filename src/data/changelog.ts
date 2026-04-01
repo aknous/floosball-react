@@ -12,6 +12,39 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.7.1',
+    date: '2026-03-31',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          'Dashboard tutorial — guided tour for new users highlighting games, standings, highlights, prognostications, and leaders',
+          'Game Day Report emails — consolidated recap after each game day with FP earned, Floobits breakdown, leaderboard finishes, pick-em results, and favorite team status',
+          'Season Report emails — end-of-season summary with final rank, total Floobits earned, best weekly finish, and favorite team playoff result',
+          'Granular email preferences — opt in/out of Game Day Reports and Season Reports individually, with a master email toggle',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          'Weekly FP earnings cap raised from 20 to 40 Floobits',
+          'Endowment power-up now raises cap to 65 Floobits (was 40)',
+          'Pack prices reduced — Humble 50F, Proper 150F, Grand 350F, Exquisite 750F',
+          'Removed per-round leaderboard prize emails — prize info now included in Game Day Reports',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          'Card flip on mobile — Equip button added below cards in card picker',
+          'Lock state not refreshing after games end',
+          'Countdown timer now updates correctly when all games finish',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.7.0',
     date: '2026-03-28',
     changes: [],
@@ -23,8 +56,8 @@ export const CHANGELOG: ChangelogEntry[] = [
           'Edition-Tiered Effects — card effects are now tied to edition tiers (Base, Holographic, Prismatic, Diamond). Higher editions unlock exclusive, more powerful effects',
           'Daily Pack Limits — Humble: 3, Proper: 2, Grand: 1, Exquisite: 1 per day',
           'Shop closes when the regular season ends (week 29+) — purchases blocked during playoffs and offseason',
-          'Weekly FP participation reward — earn 15% of weekly FP as Floobits (capped at 20/week), replacing old season-end lump sum',
-          'Endowment power-up (100 Floobits) — raises weekly FP earnings cap to 40 Floobits for 4 weeks',
+          'Weekly FP participation reward — earn 15% of weekly FP as Floobits, replacing old season-end lump sum',
+          'Endowment power-up (100 Floobits) — raises weekly FP earnings cap for 4 weeks',
           'Expanded About page with more in-depth documentation',
         ],
       },
@@ -38,7 +71,7 @@ export const CHANGELOG: ChangelogEntry[] = [
           'Secondary edition bonuses removed — edition determines which effects you get',
           'Roster swap cost increased to 15 Floobits. Dispensation price increased to 50 Floobits',
           'Season-end tax: 25% of unspent Floobits removed between seasons',
-          'Rebalanced pack costs: Humble 75F, Proper 250F, Grand 500F, Exquisite 1200F',
+          'Rebalanced pack costs and economy (see v0.7.1 for latest prices)',
           'Shop cards repriced: Base 25F, Holographic 100F. Featured shop now shows all editions, no duplicates',
           'Sudden Death OT — 2nd+ overtime periods are now sudden death (any score wins)',
           'Reworked RB yardage model — single Gaussian draw with breakaway chance, rating weighted by gap type',

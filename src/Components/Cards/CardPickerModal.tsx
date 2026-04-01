@@ -15,33 +15,50 @@ const PickerCard: React.FC<{
   return (
     <div
       style={{
-        position: 'relative',
-        cursor: 'pointer',
-        borderRadius: '14px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
         transition: 'transform 0.15s',
         transform: hovered ? 'translateY(-4px)' : 'none',
-        boxShadow: isMatch ? '0 0 0 2px #60a5fa, 0 0 12px rgba(96,165,250,0.3)' : 'none',
       }}
-      onClick={() => onSelect(card)}
     >
-      <TradingCard
-        card={card}
-        size="sm"
-        noHoverLift
-        onHoverChange={setHovered}
-      />
-      {isMatch && (
-        <div style={{
-          position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
-          fontSize: '9px', color: '#60a5fa', fontWeight: '700',
-          backgroundColor: 'rgba(96,165,250,0.15)',
-          padding: '2px 5px', borderRadius: '4px',
-          border: '1px solid rgba(96,165,250,0.3)',
-          zIndex: 1,
-        }}>
-          MATCH
-        </div>
-      )}
+      <div style={{
+        position: 'relative',
+        borderRadius: '14px',
+        boxShadow: isMatch ? '0 0 0 2px #60a5fa, 0 0 12px rgba(96,165,250,0.3)' : 'none',
+      }}>
+        <TradingCard
+          card={card}
+          size="sm"
+          noHoverLift
+          onHoverChange={setHovered}
+        />
+        {isMatch && (
+          <div style={{
+            position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
+            fontSize: '9px', color: '#60a5fa', fontWeight: '700',
+            backgroundColor: 'rgba(96,165,250,0.15)',
+            padding: '2px 5px', borderRadius: '4px',
+            border: '1px solid rgba(96,165,250,0.3)',
+            zIndex: 1,
+          }}>
+            MATCH
+          </div>
+        )}
+      </div>
+      <button
+        onClick={() => onSelect(card)}
+        style={{
+          backgroundColor: 'rgba(59,130,246,0.85)',
+          border: '1px solid rgba(96,165,250,0.5)',
+          borderRadius: '6px',
+          color: '#fff', fontSize: '10px', fontWeight: '700',
+          fontFamily: 'pressStart',
+          padding: '5px 14px',
+          cursor: 'pointer',
+          transition: 'background-color 0.15s',
+        }}
+      >
+        Equip
+      </button>
     </div>
   )
 }

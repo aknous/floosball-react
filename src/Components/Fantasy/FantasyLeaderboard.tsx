@@ -103,9 +103,12 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
 
   // Use live weekly data if available, otherwise fall back to historical
   const weeklyIsLive = liveWeekEntries.length > 0
+  // If the snapshot says we're on a newer week than the historical data,
+  // don't fall back to stale previous-week results — show current week empty
+  const historicalIsStale = historicalWeekData != null && week > historicalWeekData.week
   const currentWeekData: WeekData | null = weeklyIsLive
     ? { week, entries: liveWeekEntries }
-    : historicalWeekData
+    : historicalIsStale ? { week, entries: [] } : historicalWeekData
   // Show rank badges in season view always, in weekly view only after week ends
   const showRankBadges = mode === 'season' || (mode === 'weekly' && !weeklyIsLive)
 

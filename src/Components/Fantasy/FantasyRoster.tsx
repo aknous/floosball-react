@@ -552,7 +552,8 @@ const PointsBreakdownPanel: React.FC<{
 export const FantasyRoster: React.FC = () => {
   const isMobile = useIsMobile()
   const { user, getToken, refetchRoster } = useAuth()
-  const { event: wsEvent } = useSeasonWebSocket()
+  const { event: wsEvent, connected: wsConnected } = useSeasonWebSocket()
+  const wsWasConnected = useRef(false)
   const [roster, setRoster] = useState<Roster | null>(null)
   const { getLiveEarnedPoints, livePlayerMap } = useFantasyLivePoints(
     roster?.isLocked ? roster.players : undefined,
@@ -582,6 +583,18 @@ export const FantasyRoster: React.FC = () => {
 
   const dirtyRef = useRef(false)
   dirtyRef.current = dirty
+
+  // Listen for tutorial tab-switch requests
+  useEffect(() => {
+    const showRoster = () => setViewMode('roster')
+    const showBreakdown = () => setViewMode('breakdown')
+    window.addEventListener('floosball:show-roster', showRoster)
+    window.addEventListener('floosball:show-breakdown', showBreakdown)
+    return () => {
+      window.removeEventListener('floosball:show-roster', showRoster)
+      window.removeEventListener('floosball:show-breakdown', showBreakdown)
+    }
+  }, [])
 
   // Lookup: playerId → weekFP from snapshot (for weekly view)
   const weekFPByPlayer = useMemo(() => {
@@ -713,6 +726,16 @@ export const FantasyRoster: React.FC = () => {
       refetchRoster()
     }
   }, [wsEvent, fetchRoster, refetchRoster])
+
+  // Re-fetch on WS reconnect (covers missed events while tab was backgrounded)
+  useEffect(() => {
+    if (wsConnected) {
+      if (wsWasConnected.current) {
+        fetchRoster()
+      }
+      wsWasConnected.current = true
+    }
+  }, [wsConnected, fetchRoster])
 
   const handlePlayerSelect = (slotKey: string, player: any) => {
     const rp: FantasyRosterPlayer = {
@@ -904,40 +927,42 @@ export const FantasyRoster: React.FC = () => {
         )}
       </div>
 
-      {/* Roster / Breakdown tab bar */}
+      {/* Roster / Breakdown tab bar + breakdown panel */}
       {isLocked && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '6px' }}>
-          {(['roster', 'breakdown'] as const).map(v => (
-            <button
-              key={v}
-              onClick={() => setViewMode(v)}
-              style={{
-                padding: '5px 18px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
-                fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s',
-                border: 'none',
-                backgroundColor: viewMode === v ? 'rgba(167,139,250,0.15)' : 'transparent',
-                color: viewMode === v ? '#a78bfa' : '#64748b',
-              }}
-            >
-              {v === 'roster' ? 'Roster' : 'Breakdown'}
-            </button>
-          ))}
-        </div>
-      )}
+        <div data-tour="fantasy-breakdown">
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '6px' }}>
+            {(['roster', 'breakdown'] as const).map(v => (
+              <button
+                key={v}
+                onClick={() => setViewMode(v)}
+                style={{
+                  padding: '5px 18px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                  fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s',
+                  border: 'none',
+                  backgroundColor: viewMode === v ? 'rgba(167,139,250,0.15)' : 'transparent',
+                  color: viewMode === v ? '#a78bfa' : '#64748b',
+                }}
+              >
+                {v === 'roster' ? 'Roster' : 'Breakdown'}
+              </button>
+            ))}
+          </div>
 
-      {/* Breakdown view (locked only) */}
-      {isLocked && viewMode === 'breakdown' && (
-        <PointsBreakdownPanel
-          playerSummaries={playerSummaries}
-          breakdowns={cardBreakdowns}
-          equationSummary={equationSummary}
-          weekPlayerFP={weekPlayerFP}
-          weekCardBonus={weekCardBonus}
-          seasonEarnedFP={seasonEarnedFP}
-          seasonCardBonus={seasonCardBonus}
-          seasonTotal={seasonTotal}
-          modifier={modifier}
-        />
+          {/* Breakdown view */}
+          {viewMode === 'breakdown' && (
+            <PointsBreakdownPanel
+              playerSummaries={playerSummaries}
+              breakdowns={cardBreakdowns}
+              equationSummary={equationSummary}
+              weekPlayerFP={weekPlayerFP}
+              weekCardBonus={weekCardBonus}
+              seasonEarnedFP={seasonEarnedFP}
+              seasonCardBonus={seasonCardBonus}
+              seasonTotal={seasonTotal}
+              modifier={modifier}
+            />
+          )}
+        </div>
       )}
 
       {/* Instructions (unlocked only) */}

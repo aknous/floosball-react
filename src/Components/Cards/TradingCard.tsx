@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import ReactDOM from 'react-dom'
 import { createAvatar } from '@dicebear/core'
 import { openPeeps } from '@dicebear/collection'
@@ -237,6 +237,7 @@ interface TradingCardProps {
   staticGlow?: boolean  // if true, glow without pulse animation (for deck cards)
   noHoverLift?: boolean  // disable translateY on hover (parent handles it)
   onHoverChange?: (hovered: boolean) => void
+  forceFlipped?: boolean  // externally control flip state (e.g. tutorial)
 }
 
 const SIZES = {
@@ -667,10 +668,15 @@ const DiamondEdgeShimmer: React.FC = () => (
 )
 
 const TradingCard: React.FC<TradingCardProps> = ({
-  card, size = 'md', selected = false, onSelect, onClick, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange,
+  card, size = 'md', selected = false, onSelect, onClick, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped,
 }) => {
   const [hovered, setHovered] = useState(false)
   const [flipped, setFlipped] = useState(false)
+
+  // Sync with external forceFlipped prop (tutorial)
+  useEffect(() => {
+    if (forceFlipped !== undefined) setFlipped(forceFlipped)
+  }, [forceFlipped])
   const edStyle = EDITION_STYLES[card.edition] || EDITION_STYLES.base
   const d = SIZES[size]
   const posLabel = POSITION_LABELS[card.position] || '??'
@@ -685,7 +691,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const behaviorKey = getBehaviorTag(card)
   const behaviorTag = behaviorKey ? BEHAVIOR_TAGS[behaviorKey] : null
 
-  const stars = Math.min(5, Math.max(1, Math.round((card.playerRating - 50) / 10)))
+  const stars = card.ratingStars || Math.min(5, Math.max(1, (card.playerRating - 60) / 8 + 1) | 0)
   const tierColor = getTierColor(card.playerRating)
 
   const playerAvatarUri = useMemo(() => {

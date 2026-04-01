@@ -4,6 +4,7 @@ import CardPickerModal from './CardPickerModal'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
+import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { createAvatar } from '@dicebear/core'
 import { openPeeps } from '@dicebear/collection'
@@ -60,16 +61,52 @@ interface EquippedSlot {
   locked: boolean
 }
 
+// Sample card shown during tutorial when user has no equipped cards
+const MOCK_CARD: CardData = {
+  id: -1,
+  templateId: -1,
+  playerId: -1,
+  playerName: 'Grunge McBlaze',
+  teamId: null,
+  teamColor: '#22c55e',
+  playerRating: 82,
+  position: 1,
+  edition: 'base',
+  seasonCreated: 1,
+  isRookie: false,
+  effectName: 'Surplus',
+  displayName: 'Surplus',
+  category: 'flat',
+  outputType: 'fp',
+  tagline: 'Consistent flat bonus',
+  detail: '+3 FP per player above 5 FP',
+  tooltip: 'Adds +3 FP for each roster player that scores above 5 fantasy points this week.',
+  sellValue: 10,
+  isActive: true,
+  acquiredAt: null,
+  acquiredVia: 'tutorial',
+  effectConfig: {
+    displayName: 'Surplus',
+    tagline: 'Consistent flat bonus',
+    detail: '+3 FP per player above 5 FP',
+    tooltip: 'Adds +3 FP for each roster player that scores above 5 fantasy points this week.',
+    category: 'flat',
+    outputType: 'fp',
+  },
+}
+
 const EquippedCardSlot: React.FC<{
   slot: EquippedSlot
   slotNum: number
   canEdit: boolean
   onUnequip: (slotNum: number) => void
   compact?: boolean
-}> = ({ slot, slotNum, canEdit, onUnequip, compact }) => {
+  dataTour?: string
+  forceFlipped?: boolean
+}> = ({ slot, slotNum, canEdit, onUnequip, compact, dataTour, forceFlipped }) => {
   const [hovered, setHovered] = useState(false)
   return (
-    <div style={{
+    <div data-tour={dataTour} style={{
       position: 'relative',
       transition: 'transform 0.15s',
       transform: hovered ? 'translateY(-4px)' : 'none',
@@ -80,6 +117,7 @@ const EquippedCardSlot: React.FC<{
         glowColor={slot.isMatch ? (slot.card.teamColor || '#ffffff') : undefined}
         noHoverLift
         onHoverChange={setHovered}
+        forceFlipped={forceFlipped}
       />
 
       {slot.isMatch && (
@@ -118,7 +156,9 @@ const EquippedCardSlot: React.FC<{
 
 const CardEquipment: React.FC = () => {
   const { getToken, fantasyPlayerIds } = useAuth()
-  const { event: wsEvent } = useSeasonWebSocket()
+  const { event: wsEvent, connected: wsConnected } = useSeasonWebSocket()
+  const { seasonState } = useFloosball()
+  const wsWasConnected = useRef(false)
   const isMobile = useIsMobile()
 
   const [numSlots, setNumSlots] = useState(5)
@@ -173,7 +213,21 @@ const CardEquipment: React.FC = () => {
     if (wsEvent.event === 'week_start' || wsEvent.event === 'week_end' || wsEvent.event === 'game_start') {
       fetchEquipped()
     }
-  }, [wsEvent, fetchEquipped])
+    // Only refetch on game_end when all games are done (avoid 12 refetches per round)
+    if (wsEvent.event === 'game_end' && seasonState.activeGames.length === 0) {
+      fetchEquipped()
+    }
+  }, [wsEvent, fetchEquipped, seasonState.activeGames.length])
+
+  // Re-fetch on WS reconnect (covers missed events while tab was backgrounded)
+  useEffect(() => {
+    if (wsConnected) {
+      if (wsWasConnected.current) {
+        fetchEquipped()
+      }
+      wsWasConnected.current = true
+    }
+  }, [wsConnected, fetchEquipped])
 
   // Re-fetch after shop purchase (e.g. buying extra card slot)
   useEffect(() => {
@@ -264,6 +318,40 @@ const CardEquipment: React.FC = () => {
     })()
   }
 
+
+  const [showMockCard, setShowMockCard] = useState(false)
+  const [tourFlipped, setTourFlipped] = useState<boolean | undefined>(undefined)
+
+  // Listen for tutorial expand request
+  useEffect(() => {
+    const handler = () => setExpanded(true)
+    window.addEventListener('floosball:expand-cards', handler)
+    return () => window.removeEventListener('floosball:expand-cards', handler)
+  }, [])
+
+  // Listen for tutorial mock-card request (shows a sample card when none equipped)
+  useEffect(() => {
+    const show = () => { setExpanded(true); setShowMockCard(true) }
+    const hide = () => setShowMockCard(false)
+    window.addEventListener('floosball:mock-card', show)
+    window.addEventListener('floosball:unmock-card', hide)
+    return () => {
+      window.removeEventListener('floosball:mock-card', show)
+      window.removeEventListener('floosball:unmock-card', hide)
+    }
+  }, [])
+
+  // Listen for tutorial flip-card request
+  useEffect(() => {
+    const flip = () => setTourFlipped(true)
+    const unflip = () => setTourFlipped(undefined)
+    window.addEventListener('floosball:flip-card', flip)
+    window.addEventListener('floosball:unflip-card', unflip)
+    return () => {
+      window.removeEventListener('floosball:flip-card', flip)
+      window.removeEventListener('floosball:unflip-card', unflip)
+    }
+  }, [])
 
   // Fetch eligible deck when expanded
   useEffect(() => {
@@ -480,47 +568,75 @@ const CardEquipment: React.FC = () => {
           justifyContent: 'center',
           flexWrap: isMobile ? 'wrap' : 'nowrap',
         }}>
-          {Array.from({ length: numSlots }, (_, i) => i + 1).map(slotNum => {
-            const slot = displaySlots[slotNum - 1]
+          {(() => {
+            let firstCardTagged = false
+            return Array.from({ length: numSlots }, (_, i) => i + 1).map(slotNum => {
+              const slot = displaySlots[slotNum - 1]
 
-            if (slot) {
+              if (slot) {
+                const tourTag = !firstCardTagged ? 'fantasy-card-read' : undefined
+                const flipProp = tourTag ? tourFlipped : undefined
+                firstCardTagged = true
+                return (
+                  <EquippedCardSlot
+                    key={slotNum}
+                    slot={slot}
+                    slotNum={slotNum}
+                    canEdit={canEdit}
+                    onUnequip={handleUnequip}
+                    compact
+                    dataTour={tourTag}
+                    forceFlipped={flipProp}
+                  />
+                )
+              }
+
+              // Mock card for tutorial when no cards are equipped
+              if (slotNum === 1 && showMockCard && !displaySlots.some(Boolean)) {
+                return (
+                  <div key={slotNum} data-tour="fantasy-card-read" style={{ position: 'relative' }}>
+                    <TradingCard
+                      card={MOCK_CARD}
+                      size="sm"
+                      noHoverLift
+                      forceFlipped={tourFlipped}
+                    />
+                    <div style={{
+                      position: 'absolute', bottom: -18, left: '50%', transform: 'translateX(-50%)',
+                      fontSize: '9px', color: '#64748b', whiteSpace: 'nowrap',
+                    }}>
+                      Sample Card
+                    </div>
+                  </div>
+                )
+              }
+
               return (
-                <EquippedCardSlot
+                <button
                   key={slotNum}
-                  slot={slot}
-                  slotNum={slotNum}
-                  canEdit={canEdit}
-                  onUnequip={handleUnequip}
-                  compact
-                />
+                  onClick={() => canEdit && setPickerSlot(slotNum)}
+                  disabled={!canEdit}
+                  style={{
+                    width: isMobile ? '100%' : 160,
+                    height: 80,
+                    borderRadius: '10px',
+                    border: '2px dashed #334155',
+                    backgroundColor: 'rgba(30,41,59,0.5)',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center',
+                    gap: '4px',
+                    cursor: !canEdit ? 'not-allowed' : 'pointer',
+                    transition: 'border-color 0.15s, background-color 0.15s',
+                    fontFamily: 'pressStart',
+                    opacity: isLocked ? 0.5 : 1,
+                  }}
+                >
+                  <span style={{ fontSize: '24px', color: '#64748b' }}>+</span>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Slot {slotNum}</span>
+                </button>
               )
-            }
-
-            return (
-              <button
-                key={slotNum}
-                onClick={() => canEdit && setPickerSlot(slotNum)}
-                disabled={!canEdit}
-                style={{
-                  width: isMobile ? '100%' : 160,
-                  height: 80,
-                  borderRadius: '10px',
-                  border: '2px dashed #334155',
-                  backgroundColor: 'rgba(30,41,59,0.5)',
-                  display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', justifyContent: 'center',
-                  gap: '4px',
-                  cursor: !canEdit ? 'not-allowed' : 'pointer',
-                  transition: 'border-color 0.15s, background-color 0.15s',
-                  fontFamily: 'pressStart',
-                  opacity: isLocked ? 0.5 : 1,
-                }}
-              >
-                <span style={{ fontSize: '24px', color: '#64748b' }}>+</span>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>Slot {slotNum}</span>
-              </button>
-            )
-          })}
+            })
+          })()}
         </div>
       )}
 

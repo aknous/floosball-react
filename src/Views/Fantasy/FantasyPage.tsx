@@ -1,14 +1,90 @@
 import React, { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { FantasyRoster } from '@/Components/Fantasy/FantasyRoster'
 import { FantasyLeaderboard } from '@/Components/Fantasy/FantasyLeaderboard'
 import CardEquipment from '@/Components/Cards/CardEquipment'
 import ShopModal from '@/Components/Shop/ShopModal'
 import HoverTooltip from '@/Components/HoverTooltip'
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
+import TutorialOverlay from '@/Components/Tutorial/TutorialOverlay'
+import TourPrompt from '@/Components/Tutorial/TourPrompt'
+import { useTutorial, TutorialStep } from '@/Components/Tutorial/useTutorial'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
+
+const FANTASY_TOUR_STEPS: TutorialStep[] = [
+  {
+    target: 'fantasy-roster',
+    title: 'Your Roster',
+    content: 'These are your players. You draft 5 positions — QB, RB, WR, TE, and K. They earn Fantasy Points from their real game stats each week. Tap a player to see their stats or swap them out between game rounds.',
+    placement: 'top',
+    onEnter: () => window.dispatchEvent(new Event('floosball:show-roster')),
+  },
+  {
+    target: 'fantasy-breakdown',
+    title: 'Score Breakdown',
+    content: 'Once games start, switch to the Breakdown tab to see exactly how your weekly score is calculated — player FP, each card effect with its equation, and your combined total.',
+    placement: 'top',
+    onEnter: () => window.dispatchEvent(new Event('floosball:show-breakdown')),
+    onLeave: () => window.dispatchEvent(new Event('floosball:show-roster')),
+  },
+  {
+    target: 'fantasy-cards',
+    title: 'Card Slots',
+    content: 'These are your card slots. Equip up to 5 trading cards from your collection. Each card adds bonus Fantasy Points through effects like flat bonuses, multipliers, or streaks. Tap an empty slot to equip, or tap an equipped card to remove it.',
+    placement: 'bottom',
+    onEnter: () => window.dispatchEvent(new Event('floosball:expand-cards')),
+  },
+  {
+    target: 'fantasy-card-read',
+    title: 'Card Front',
+    content: 'The front shows the player name, team, and their star rating. More stars means stronger effects. The effect name and type badge are at the bottom — color tells you what it produces.',
+    placement: 'right',
+    onEnter: () => {
+      window.dispatchEvent(new Event('floosball:mock-card'))
+      window.dispatchEvent(new Event('floosball:unflip-card'))
+    },
+  },
+  {
+    target: 'fantasy-card-read',
+    title: 'Card Back',
+    content: 'Tap a card to flip it. The back shows the full effect description. Green FP = flat bonus points. Pink FPx = a multiplier on your points. Gold F = Floobits currency earned directly.',
+    placement: 'right',
+    onEnter: () => window.dispatchEvent(new Event('floosball:flip-card')),
+    onLeave: () => {
+      window.dispatchEvent(new Event('floosball:unflip-card'))
+      window.dispatchEvent(new Event('floosball:unmock-card'))
+    },
+  },
+  {
+    target: 'fantasy-leaderboard',
+    title: 'Leaderboard',
+    content: 'This is the leaderboard. It shows weekly and season-long Fantasy Point rankings. Top weekly and season finishers earn Floobits. Your total combines roster FP, card bonuses, and modifier effects.',
+    placement: 'top',
+  },
+  {
+    target: 'fantasy-countdown',
+    title: 'Lock Countdown',
+    content: 'This is the lock timer. Your roster and cards lock when games begin. Make all your changes before this hits zero — once locked, no edits until the next unlock window.',
+    placement: 'bottom',
+    onEnter: () => window.dispatchEvent(new Event('floosball:mock-countdown')),
+    onLeave: () => window.dispatchEvent(new Event('floosball:unmock-countdown')),
+  },
+  {
+    target: 'fantasy-gameinfo',
+    title: 'Weekly Modifier & Swaps',
+    content: 'These badges show the active weekly modifier and available roster swaps. Each week has a random modifier that changes how scoring works. Hover a badge for details.',
+    placement: 'bottom',
+  },
+  {
+    target: 'fantasy-actions',
+    title: 'Collection & Shop',
+    content: 'These buttons open your card collection and the shop. Browse your cards, buy new packs with Floobits, or grab featured cards from the shop.',
+    placement: 'bottom',
+  },
+]
 
 const MODIFIER_STYLES: Record<string, { color: string; icon: React.ReactNode }> = {
   amplify: { color: '#4ade80', icon: (
@@ -109,12 +185,13 @@ function GameInfoBar() {
         <HoverTooltip text={modifier.description} color={modColor}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: '7px',
-            padding: '7px 14px', borderRadius: '8px',
-            backgroundColor: `${modColor}30`,
+            padding: '5px 10px', borderRadius: '6px',
+            backgroundColor: `${modColor}15`,
             color: modColor,
+            cursor: 'default',
           }}>
             {modStyle.icon}
-            <span style={{ fontSize: '12px', fontWeight: '700' }}>
+            <span style={{ fontSize: '11px', fontWeight: '600' }}>
               {modifier.displayName}
             </span>
           </div>
@@ -123,17 +200,18 @@ function GameInfoBar() {
       {isLocked && swapsAvailable > 0 && (
         <HoverTooltip text={`${swapsAvailable} roster swap${swapsAvailable !== 1 ? 's' : ''} available between games`} color="#38bdf8">
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '7px',
-            padding: '7px 14px', borderRadius: '8px',
-            backgroundColor: 'rgba(56,189,248,0.25)',
+            display: 'flex', alignItems: 'center', gap: '5px',
+            padding: '5px 10px', borderRadius: '6px',
+            backgroundColor: 'rgba(56,189,248,0.12)',
+            cursor: 'default',
           }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 3l4 4-4 4" />
               <path d="M20 7H4" />
               <path d="M8 21l-4-4 4-4" />
               <path d="M4 17h16" />
             </svg>
-            <span style={{ fontSize: '12px', fontWeight: '700', color: '#38bdf8' }}>
+            <span style={{ fontSize: '11px', fontWeight: '600', color: '#38bdf8' }}>
               {swapsAvailable} Swap{swapsAvailable !== 1 ? 's' : ''}
             </span>
           </div>
@@ -147,6 +225,7 @@ function LockCountdown() {
   const { seasonState } = useFloosball()
   const { nextGameStartTime } = seasonState
   const [remaining, setRemaining] = useState<number | null>(null)
+  const [mockMode, setMockMode] = useState(false)
 
   useEffect(() => {
     if (!nextGameStartTime) {
@@ -164,16 +243,31 @@ function LockCountdown() {
     return () => clearInterval(id)
   }, [nextGameStartTime])
 
-  if (remaining == null || remaining <= 0) return null
+  // Tutorial mock mode — show a fake countdown when real one isn't visible
+  useEffect(() => {
+    const showMock = () => setMockMode(true)
+    const hideMock = () => setMockMode(false)
+    window.addEventListener('floosball:mock-countdown', showMock)
+    window.addEventListener('floosball:unmock-countdown', hideMock)
+    return () => {
+      window.removeEventListener('floosball:mock-countdown', showMock)
+      window.removeEventListener('floosball:unmock-countdown', hideMock)
+    }
+  }, [])
 
-  const hrs = Math.floor(remaining / 3600)
-  const mins = Math.floor((remaining % 3600) / 60)
-  const secs = remaining % 60
+  const showReal = remaining != null && remaining > 0
+  if (!showReal && !mockMode) return null
+
   const pad = (n: number) => String(n).padStart(2, '0')
-
-  const timeStr = hrs > 0
-    ? `${hrs}:${pad(mins)}:${pad(secs)}`
-    : `${mins}:${pad(secs)}`
+  let timeStr: string
+  if (showReal) {
+    const hrs = Math.floor(remaining! / 3600)
+    const mins = Math.floor((remaining! % 3600) / 60)
+    const secs = remaining! % 60
+    timeStr = hrs > 0 ? `${hrs}:${pad(mins)}:${pad(secs)}` : `${mins}:${pad(secs)}`
+  } else {
+    timeStr = '2:15:30'
+  }
 
   return (
     <div style={{
@@ -212,6 +306,7 @@ const FantasyPage: React.FC = () => {
   const { seasonState } = useFloosball()
   const [showShop, setShowShop] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const tour = useTutorial({ tourId: 'fantasy', steps: FANTASY_TOUR_STEPS })
 
   // Regular season is over once we're past week 28
   const seasonOver = seasonState.seasonComplete || seasonState.currentWeek > 28
@@ -265,46 +360,87 @@ const FantasyPage: React.FC = () => {
           <>
             {/* Status bar: countdown + modifier + swaps + shop */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-              <LockCountdown />
-              <GameInfoBar />
+              <div data-tour="fantasy-countdown"><LockCountdown /></div>
+              <div data-tour="fantasy-gameinfo"><GameInfoBar /></div>
               <div style={{ flex: 1 }} />
-              <HelpButton onClick={() => setShowHelp(true)} />
-              {user && (
-                <button
-                  onClick={() => setShowShop(true)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    backgroundColor: 'rgba(234,179,8,0.12)',
-                    color: '#eab308',
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    fontFamily: 'pressStart',
-                    transition: 'background-color 0.15s',
-                    flexShrink: 0,
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.backgroundColor = 'rgba(234,179,8,0.20)'
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.backgroundColor = 'rgba(234,179,8,0.12)'
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-                    <line x1="3" y1="6" x2="21" y2="6" />
-                    <path d="M16 10a4 4 0 01-8 0" />
-                  </svg>
-                  Shop
-                </button>
-              )}
+              <div data-tour="fantasy-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {user && (
+                  <Link
+                    to="/cards"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: 'rgba(148,163,184,0.10)',
+                      color: '#94a3b8',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      textDecoration: 'none',
+                      fontFamily: 'pressStart',
+                      transition: 'background-color 0.15s',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.18)'
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.backgroundColor = 'rgba(148,163,184,0.10)'
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <path d="M12 4v16" />
+                    </svg>
+                    Collection
+                  </Link>
+                )}
+                {user && (
+                  <button
+                    onClick={() => setShowShop(true)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: 'rgba(234,179,8,0.12)',
+                      color: '#eab308',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      fontFamily: 'pressStart',
+                      transition: 'background-color 0.15s',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.backgroundColor = 'rgba(234,179,8,0.20)'
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.backgroundColor = 'rgba(234,179,8,0.12)'
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                      <line x1="3" y1="6" x2="21" y2="6" />
+                      <path d="M16 10a4 4 0 01-8 0" />
+                    </svg>
+                    Shop
+                  </button>
+                )}
+              </div>
+              <HelpButton onClick={() => {
+                if (tour.hasCompleted) {
+                  setShowHelp(true)
+                } else {
+                  tour.startTour()
+                }
+              }} />
             </div>
 
             {/* Card slots — full width at top */}
-            <CardEquipment />
+            <div data-tour="fantasy-cards">
+              <CardEquipment />
+            </div>
 
             {/* Roster + Leaderboard side by side */}
             <div style={{
@@ -313,10 +449,10 @@ const FantasyPage: React.FC = () => {
               gap: '12px',
               alignItems: 'start',
             }}>
-              <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
+              <div data-tour="fantasy-roster" style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
                 <FantasyRoster />
               </div>
-              <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
+              <div data-tour="fantasy-leaderboard" style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
                 <FantasyLeaderboard />
               </div>
             </div>
@@ -329,6 +465,26 @@ const FantasyPage: React.FC = () => {
 
       {/* Help modal */}
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} title="Fantasy Floosball">
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
+          <button
+            onClick={() => { setShowHelp(false); tour.startTour() }}
+            style={{
+              background: 'transparent',
+              border: '1px solid #475569',
+              borderRadius: '6px',
+              color: '#94a3b8',
+              fontSize: '11px',
+              padding: '6px 14px',
+              cursor: 'pointer',
+              fontFamily: 'pressStart',
+              transition: 'border-color 0.15s, color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#94a3b8'; e.currentTarget.style.color = '#e2e8f0' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#475569'; e.currentTarget.style.color = '#94a3b8' }}
+          >
+            Take the Tour
+          </button>
+        </div>
         <GuideSection title="Your Roster">
           Draft 5 players — one QB, RB, WR, TE, and K — each season. You earn Fantasy Points (FP)
           based on their live in-game performance. Your FP update in real time as games are played.
@@ -404,6 +560,21 @@ const FantasyPage: React.FC = () => {
           week and at season end earn bonus Floobits.
         </GuideSection>
       </HelpModal>
+
+      {/* Tutorial */}
+      {tour.shouldPrompt && !seasonOver && (
+        <TourPrompt onStart={tour.startTour} onDismiss={tour.dismissPrompt} />
+      )}
+      {tour.isActive && (
+        <TutorialOverlay
+          steps={FANTASY_TOUR_STEPS}
+          currentStep={tour.currentStep}
+          onNext={tour.next}
+          onBack={tour.back}
+          onSkip={tour.skip}
+          onHelp={() => { tour.skip(); setShowHelp(true) }}
+        />
+      )}
     </div>
   )
 }

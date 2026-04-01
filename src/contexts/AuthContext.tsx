@@ -13,6 +13,8 @@ export interface AuthUser {
   floobits: number
   hasCompletedOnboarding: boolean
   emailOptOut: boolean
+  emailDayReport: boolean
+  emailSeasonReport: boolean
 }
 
 export interface FantasyRosterPlayer {
