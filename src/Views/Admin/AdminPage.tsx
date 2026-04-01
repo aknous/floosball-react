@@ -193,7 +193,7 @@ interface AdminUser {
   lastLoginAt: string | null
 }
 
-interface EffectOption { name: string; displayName: string }
+interface EffectOption { name: string; displayName: string; edition: string }
 interface CardOptions {
   editions: string[]
   effects: Record<string, EffectOption[]>
@@ -499,14 +499,17 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     }
   }
 
-  // Get available effects based on selected category (or player's default)
+  // Get available effects based on selected category (or player's default), filtered by edition
   const activeCategory = cardCategory || (cardSelectedPlayer ? CATEGORY_FOR_POSITION[cardSelectedPlayer.position] : '')
   const allEffects: EffectOption[] = (() => {
     if (!cardOptions) return []
+    let effects: EffectOption[]
     // If a category is selected, show that category's effects
-    if (activeCategory) return cardOptions.effects[activeCategory] ?? []
+    if (activeCategory) effects = cardOptions.effects[activeCategory] ?? []
     // Otherwise show all effects across all categories
-    return Object.values(cardOptions.effects).flat()
+    else effects = Object.values(cardOptions.effects).flat()
+    // Filter by selected edition
+    return effects.filter(ef => ef.edition === cardEdition)
   })()
 
   const handleCreatePlayers = async () => {
@@ -1041,7 +1044,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
           <div>
             <div style={labelStyle}>Edition</div>
-            <select value={cardEdition} onChange={e => setCardEdition(e.target.value)} style={selectStyle}>
+            <select value={cardEdition} onChange={e => { setCardEdition(e.target.value); setCardEffect('') }} style={selectStyle}>
               {(cardOptions?.editions ?? ['base', 'holographic', 'prismatic', 'diamond']).map(ed => (
                 <option key={ed} value={ed} style={{ color: EDITION_COLORS_MAP[ed] }}>{ed.toUpperCase()}</option>
               ))}

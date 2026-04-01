@@ -49,22 +49,40 @@ const notifTypeColors = {
 function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker }) {
   const { user, logout, getToken } = useAuth()
   const [emailOptOut, setEmailOptOut] = useState(user?.emailOptOut ?? false)
+  const [emailDayReport, setEmailDayReport] = useState(user?.emailDayReport ?? true)
+  const [emailSeasonReport, setEmailSeasonReport] = useState(user?.emailSeasonReport ?? true)
   const panelRef = useRef(null)
   const unreadNotifs = notifications.filter(n => !n.isRead)
 
-  const toggleEmailOptOut = useCallback(async () => {
-    const newVal = !emailOptOut
-    setEmailOptOut(newVal)
+  const patchPreference = useCallback(async (body) => {
     try {
       const tok = await getToken()
       if (!tok) return
       await fetch(`${API_BASE}/users/me/preferences`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-        body: JSON.stringify({ emailOptOut: newVal }),
+        body: JSON.stringify(body),
       })
     } catch { /* silent */ }
-  }, [emailOptOut, getToken])
+  }, [getToken])
+
+  const toggleEmailOptOut = useCallback(async () => {
+    const newVal = !emailOptOut
+    setEmailOptOut(newVal)
+    patchPreference({ emailOptOut: newVal })
+  }, [emailOptOut, patchPreference])
+
+  const toggleDayReport = useCallback(async () => {
+    const newVal = !emailDayReport
+    setEmailDayReport(newVal)
+    patchPreference({ emailDayReport: newVal })
+  }, [emailDayReport, patchPreference])
+
+  const toggleSeasonReport = useCallback(async () => {
+    const newVal = !emailSeasonReport
+    setEmailSeasonReport(newVal)
+    patchPreference({ emailSeasonReport: newVal })
+  }, [emailSeasonReport, patchPreference])
 
   useEffect(() => {
     const handler = (e) => {
@@ -152,22 +170,60 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
         </NavLink>
       )}
 
-      <div style={{ padding: '8px 14px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '11px', color: '#cbd5e1' }}>Email notifications</span>
-        <button
-          onClick={toggleEmailOptOut}
-          style={{
-            width: '32px', height: '18px', borderRadius: '9px', border: 'none',
-            backgroundColor: emailOptOut ? '#334155' : '#3b82f6',
-            cursor: 'pointer', position: 'relative', transition: 'background-color 0.2s',
-          }}
-        >
-          <div style={{
-            width: '14px', height: '14px', borderRadius: '7px',
-            backgroundColor: '#fff', position: 'absolute', top: '2px',
-            left: emailOptOut ? '2px' : '16px', transition: 'left 0.2s',
-          }} />
-        </button>
+      <div style={{ padding: '8px 14px', borderBottom: '1px solid #334155' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '11px', color: '#cbd5e1' }}>Email notifications</span>
+          <button
+            onClick={toggleEmailOptOut}
+            style={{
+              width: '32px', height: '18px', borderRadius: '9px', border: 'none',
+              backgroundColor: emailOptOut ? '#334155' : '#3b82f6',
+              cursor: 'pointer', position: 'relative', transition: 'background-color 0.2s',
+            }}
+          >
+            <div style={{
+              width: '14px', height: '14px', borderRadius: '7px',
+              backgroundColor: '#fff', position: 'absolute', top: '2px',
+              left: emailOptOut ? '2px' : '16px', transition: 'left 0.2s',
+            }} />
+          </button>
+        </div>
+        <div style={{ marginTop: '8px', paddingLeft: '8px', display: 'flex', flexDirection: 'column', gap: '6px', opacity: emailOptOut ? 0.35 : 1, pointerEvents: emailOptOut ? 'none' : 'auto', transition: 'opacity 0.2s' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '10px', color: '#94a3b8' }}>Game Day Reports</span>
+            <button
+              onClick={toggleDayReport}
+              style={{
+                width: '28px', height: '16px', borderRadius: '8px', border: 'none',
+                backgroundColor: emailDayReport ? '#3b82f6' : '#334155',
+                cursor: 'pointer', position: 'relative', transition: 'background-color 0.2s',
+              }}
+            >
+              <div style={{
+                width: '12px', height: '12px', borderRadius: '6px',
+                backgroundColor: '#fff', position: 'absolute', top: '2px',
+                left: emailDayReport ? '14px' : '2px', transition: 'left 0.2s',
+              }} />
+            </button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: '10px', color: '#94a3b8' }}>Season Reports</span>
+            <button
+              onClick={toggleSeasonReport}
+              style={{
+                width: '28px', height: '16px', borderRadius: '8px', border: 'none',
+                backgroundColor: emailSeasonReport ? '#3b82f6' : '#334155',
+                cursor: 'pointer', position: 'relative', transition: 'background-color 0.2s',
+              }}
+            >
+              <div style={{
+                width: '12px', height: '12px', borderRadius: '6px',
+                backgroundColor: '#fff', position: 'absolute', top: '2px',
+                left: emailSeasonReport ? '14px' : '2px', transition: 'left 0.2s',
+              }} />
+            </button>
+          </div>
+        </div>
       </div>
 
       <NavLink
@@ -266,6 +322,7 @@ export default function Navbar() {
   getTokenRef.current = getToken
   const { event: wsEvent } = useSeasonWebSocket()
   const [champion, setChampion] = useState(null)
+  const [favoriteTeam, setFavoriteTeam] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showTeamPicker, setShowTeamPicker] = useState(false)
@@ -333,17 +390,28 @@ export default function Navbar() {
     } catch { /* silent */ }
   }, [getToken])
 
-  const fetchChampion = async () => {
+  const fetchStandings = async () => {
     try {
       const res = await axios.get(`${API_BASE}/standings`)
-      const champ = res.data.flatMap(l => l.standings).find(t => t.floosbowlChampion)
-      setChampion(champ || null)
+      const allTeams = res.data.flatMap(l => l.standings)
+      if (user?.favoriteTeamId) {
+        const fav = allTeams.find(t => t.id === user.favoriteTeamId)
+        setFavoriteTeam(fav || null)
+      }
     } catch (err) {}
   }
 
+  const fetchChampion = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/reigning-champion`)
+      setChampion(res.data?.data || null)
+    } catch { setChampion(null) }
+  }
+
+  useEffect(() => { fetchStandings() }, [user?.favoriteTeamId])
   useEffect(() => { fetchChampion() }, [])
   useEffect(() => {
-    if (lastEvent?.event === 'season_end') fetchChampion()
+    if (lastEvent?.event === 'season_end') { fetchStandings(); fetchChampion() }
   }, [lastEvent])
 
   // Fantasy points from snapshot (single source of truth)
@@ -494,7 +562,7 @@ export default function Navbar() {
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: isTablet ? '14px' : '24px' }}>
-                {['Dashboard', 'Players', 'Fantasy', 'Cards', 'About'].map(label => (
+                {['Dashboard', 'Players', 'Fantasy', 'About'].map(label => (
                   <NavLink key={label} to={`/${label.toLowerCase()}`}
                     style={({ isActive }) => ({
                       color: isActive ? '#e2e8f0' : '#94a3b8',
@@ -503,6 +571,24 @@ export default function Navbar() {
                     {label}
                   </NavLink>
                 ))}
+                {user?.favoriteTeamId && favoriteTeam && (
+                  <NavLink to={`/team/${user.favoriteTeamId}`}
+                    style={({ isActive }) => ({
+                      textDecoration: 'none', fontSize: isTablet ? '12px' : '13px', fontWeight: '600', transition: 'all 0.2s',
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                      padding: '4px 10px', borderRadius: '6px',
+                      border: `1px solid ${favoriteTeam.color}60`,
+                      backgroundColor: isActive ? `${favoriteTeam.color}20` : `${favoriteTeam.color}10`,
+                      color: isActive ? '#e2e8f0' : '#cbd5e1',
+                    })}>
+                    <img
+                      src={`${API_BASE}/teams/${user.favoriteTeamId}/avatar?size=16&v=2`}
+                      alt=""
+                      style={{ width: '16px', height: '16px' }}
+                    />
+                    {favoriteTeam.name}
+                  </NavLink>
+                )}
                 {fantasyPoints && (
                   <NavLink to="/fantasy" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '0 12px', height: '31px', borderRadius: '6px', backgroundColor: 'rgba(34,197,94,0.12)' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1' }}>
@@ -557,12 +643,24 @@ export default function Navbar() {
                   </>
                 )}
               </div>
-              {[['Dashboard', '/dashboard'], ['Players', '/players'], ['Fantasy', '/fantasy'], ['Cards', '/cards'], ['About', '/about'], ...(isAdmin ? [['Admin', '/admin']] : [])].map(([label, path]) => (
+              {[['Dashboard', '/dashboard'], ['Players', '/players'], ['Fantasy', '/fantasy'], ['About', '/about'], ...(isAdmin ? [['Admin', '/admin']] : [])].map(([label, path]) => (
                 <NavLink key={label} to={path} onClick={() => setMenuOpen(false)}
                   style={({ isActive }) => navLinkStyle(isActive)}>
                   {label}
                 </NavLink>
               ))}
+              {user?.favoriteTeamId && favoriteTeam && (
+                <NavLink to={`/team/${user.favoriteTeamId}`} onClick={() => setMenuOpen(false)}
+                  style={({ isActive }) => ({
+                    ...navLinkStyle(isActive), display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '8px 10px', borderRadius: '6px', marginTop: '4px',
+                    border: `1px solid ${favoriteTeam.color}60`,
+                    backgroundColor: `${favoriteTeam.color}10`,
+                  })}>
+                  <img src={`${API_BASE}/teams/${user.favoriteTeamId}/avatar?size=14&v=2`} alt="" style={{ width: '14px', height: '14px' }} />
+                  {favoriteTeam.name}
+                </NavLink>
+              )}
               {fantasyPoints && (
                 <NavLink to="/fantasy" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'baseline', gap: '6px', padding: '8px 0' }}>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#4ade80' }}>

@@ -11,6 +11,10 @@ import { PickEmProvider } from '@/contexts/PickEmContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useGames } from '@/contexts/GamesContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
+import TutorialOverlay from '@/Components/Tutorial/TutorialOverlay'
+import TourPrompt from '@/Components/Tutorial/TourPrompt'
+import { useTutorial, TutorialStep } from '@/Components/Tutorial/useTutorial'
 
 type StandingsView = 'standings' | 'powerRankings'
 type RightPanelView = 'highlights' | 'leaders' | 'pickem'
@@ -43,6 +47,42 @@ const TabToggle: React.FC<{ tabs: readonly (readonly [string, string])[]; active
 const STANDINGS_TABS = [['standings', 'Standings'], ['powerRankings', 'Power Rankings']] as const
 const RIGHT_PANEL_TABS = [['highlights', 'Highlights'], ['leaders', 'Leaders'], ['pickem', 'Prognosticate']] as const
 
+const DASHBOARD_TOUR_STEPS: TutorialStep[] = [
+  {
+    target: 'dashboard-games',
+    title: 'Games',
+    content: 'This is the game board. Each card shows a live or upcoming matchup with team names, scores, and a win probability bar that shifts as the game plays out. Tap any game to watch the play-by-play.',
+    placement: 'bottom',
+  },
+  {
+    target: 'dashboard-standings',
+    title: 'Standings',
+    content: 'Two leagues each have their own standings table — wins, losses, and playoff positioning. Toggle to Power Rankings to see teams ranked by overall strength instead of record.',
+    placement: 'right',
+  },
+  {
+    target: 'dashboard-highlights',
+    title: 'Highlights',
+    content: 'The highlight feed is your live ticker. Touchdowns, field goals, turnovers, and clutch plays appear here as games unfold. Tap a highlight to jump straight into that game.',
+    placement: 'left',
+    onEnter: () => window.dispatchEvent(new Event('floosball:show-highlights')),
+  },
+  {
+    target: 'dashboard-pickem',
+    title: 'Prognosticate',
+    content: 'This is the pick-em game. Before each round, predict the winners. Correct picks earn points and climb the leaderboard. Picks lock when games start.',
+    placement: 'left',
+    onEnter: () => window.dispatchEvent(new Event('floosball:show-pickem')),
+  },
+  {
+    target: 'dashboard-leaders',
+    title: 'Leaders',
+    content: 'The MVP rankings and stat leaders show who is dominating in passing, rushing, and receiving — both this week and across the season.',
+    placement: 'left',
+    onEnter: () => window.dispatchEvent(new Event('floosball:show-leaders')),
+  },
+]
+
 const useNextGameCountdown = (nextGameStartTime: string | null) => {
   const [countdown, setCountdown] = useState('')
   useEffect(() => {
@@ -73,15 +113,40 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
   const [standingsView, setStandingsView] = useState<StandingsView>('standings')
   const [rightPanelView, setRightPanelView] = useState<RightPanelView>('highlights')
+  const [showHelp, setShowHelp] = useState(false)
   const isMobile = useIsMobile()
   const isTablet = useIsMobile(1200)
   const isOffseason = seasonState?.currentWeekText === 'Offseason'
   const nextGameCountdown = useNextGameCountdown(seasonState?.nextGameStartTime)
+  const tour = useTutorial({ tourId: 'dashboard', steps: DASHBOARD_TOUR_STEPS })
 
   useEffect(() => { refetch() }, [])
 
+  // Tour tab-switching listeners (desktop right panel)
+  useEffect(() => {
+    const showHighlights = () => setRightPanelView('highlights')
+    const showLeaders = () => setRightPanelView('leaders')
+    const showPickem = () => setRightPanelView('pickem')
+    window.addEventListener('floosball:show-highlights', showHighlights)
+    window.addEventListener('floosball:show-leaders', showLeaders)
+    window.addEventListener('floosball:show-pickem', showPickem)
+    return () => {
+      window.removeEventListener('floosball:show-highlights', showHighlights)
+      window.removeEventListener('floosball:show-leaders', showLeaders)
+      window.removeEventListener('floosball:show-pickem', showPickem)
+    }
+  }, [])
+
   const handleGameClick = (gameId: number) => setSelectedGameId(gameId)
   const handleCloseModal = () => setSelectedGameId(null)
+
+  const helpButtonClick = () => {
+    if (tour.hasCompleted) {
+      setShowHelp(true)
+    } else {
+      tour.startTour()
+    }
+  }
 
   // Mobile section refs for jump nav
   const gamesRef = useRef<HTMLElement>(null)
@@ -102,110 +167,120 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  // Shared portal-based components (rendered once, used across all layouts)
+  const sharedPortals = (
+    <>
+      {selectedGameId && <GameModalNew gameId={selectedGameId} onClose={handleCloseModal} />}
+
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} title="Dashboard">
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
+          <button
+            onClick={() => { setShowHelp(false); tour.startTour() }}
+            style={{
+              background: 'transparent',
+              border: '1px solid #475569',
+              borderRadius: '6px',
+              color: '#94a3b8',
+              fontSize: '11px',
+              padding: '6px 14px',
+              cursor: 'pointer',
+              fontFamily: 'pressStart',
+              transition: 'border-color 0.15s, color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#94a3b8'; e.currentTarget.style.color = '#e2e8f0' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#475569'; e.currentTarget.style.color = '#94a3b8' }}
+          >
+            Take the Tour
+          </button>
+        </div>
+        <GuideSection title="Games">
+          The game grid shows all matchups for the current round. Each card displays team names,
+          scores, and a live win probability bar. Tap a game to open the full play-by-play view
+          with detailed stats and scoring drives.
+        </GuideSection>
+        <GuideSection title="Season Structure">
+          Each season runs 28 weeks across 4 game days per week, with 7 games per day. Games start
+          on the hour. Between rounds, check standings and plan your fantasy lineup.
+        </GuideSection>
+        <GuideSection title="Standings">
+          Two leagues each display wins, losses, and current playoff positioning. Toggle to Power
+          Rankings to see teams ordered by overall strength rating instead of win-loss record.
+        </GuideSection>
+        <GuideSection title="Highlights">
+          The highlight feed streams notable plays in real time — touchdowns, field goals, turnovers,
+          clutch moments, and momentum shifts. Each entry is tagged with a badge. Tap any highlight
+          to jump into that game.
+        </GuideSection>
+        <GuideSection title="Prognosticate">
+          Before each round, predict the winners. Correct picks earn points on the Pick-Em
+          leaderboard. Picks lock when games begin — make your selections before kickoff.
+        </GuideSection>
+        <GuideSection title="Leaders">
+          The MVP Rankings show top-performing players this week and across the season. Stat leaders
+          break down individual categories — passing yards, rushing yards, touchdowns, and more.
+        </GuideSection>
+      </HelpModal>
+
+      {tour.shouldPrompt && <TourPrompt onStart={tour.startTour} onDismiss={tour.dismissPrompt} />}
+      {tour.isActive && (
+        <TutorialOverlay
+          steps={DASHBOARD_TOUR_STEPS}
+          currentStep={tour.currentStep}
+          onNext={tour.next}
+          onBack={tour.back}
+          onSkip={tour.skip}
+          onHelp={() => { tour.skip(); setShowHelp(true) }}
+        />
+      )}
+    </>
+  )
+
+  // ── Mobile layout ──────────────────────────────────────────────────────────
   if (isMobile) {
     return (
-      <div style={{ backgroundColor: '#0f172a', color: '#e2e8f0', minHeight: `calc(100vh - ${headerHeight}px)` }}>
+      <>
+        <div style={{ backgroundColor: '#0f172a', color: '#e2e8f0', minHeight: `calc(100vh - ${headerHeight}px)` }}>
 
-        {/* Sticky section nav */}
-        <div style={{
-          position: 'sticky', top: headerHeight, zIndex: 20,
-          backgroundColor: '#0f172a', borderBottom: '1px solid #1e293b',
-          display: 'flex', gap: '0px', overflowX: 'auto',
-          padding: '0 16px',
-          WebkitOverflowScrolling: 'touch',
-          scrollbarWidth: 'none',
-        }}>
-          {MOBILE_SECTIONS.map(s => (
-            <button key={s.key} onClick={() => scrollToSection(s.ref)} style={{
-              flex: 'none', padding: '10px 12px', fontSize: '12px', fontWeight: '600',
-              color: '#94a3b8', backgroundColor: 'transparent', border: 'none',
-              borderBottom: '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap',
-            }}>{s.label}</button>
-          ))}
-        </div>
+          {/* Sticky section nav */}
+          <div style={{
+            position: 'sticky', top: headerHeight, zIndex: 20,
+            backgroundColor: '#0f172a', borderBottom: '1px solid #1e293b',
+            display: 'flex', gap: '0px', overflowX: 'auto',
+            padding: '0 16px',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+          }}>
+            {MOBILE_SECTIONS.map(s => (
+              <button key={s.key} onClick={() => scrollToSection(s.ref)} style={{
+                flex: 'none', padding: '10px 12px', fontSize: '12px', fontWeight: '600',
+                color: '#94a3b8', backgroundColor: 'transparent', border: 'none',
+                borderBottom: '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap',
+              }}>{s.label}</button>
+            ))}
+          </div>
 
-        <div style={{ padding: '16px' }}>
+          <div style={{ padding: '16px' }}>
 
-          {/* Games / Offseason — primary content on mobile */}
-          <section ref={gamesRef} style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#cbd5e1' }}>
-                {isOffseason ? 'Offseason' : 'Games'}
-              </h2>
-              {nextGameCountdown && !isOffseason && (
-                <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
-                  Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
-                </span>
-              )}
-            </div>
-            {isOffseason ? <OffseasonPanel /> : <GameGridNew handleClick={handleGameClick} />}
-          </section>
+            {/* Games / Offseason */}
+            <section ref={gamesRef} data-tour="dashboard-games" style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#cbd5e1' }}>
+                  {isOffseason ? 'Offseason' : 'Games'}
+                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {nextGameCountdown && !isOffseason && (
+                    <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                      Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
+                    </span>
+                  )}
+                  <HelpButton onClick={helpButtonClick} size={24} />
+                </div>
+              </div>
+              {isOffseason ? <OffseasonPanel /> : <GameGridNew handleClick={handleGameClick} />}
+            </section>
 
-          {/* Standings */}
-          <section ref={standingsRef} style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
-            <TabToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <Standings leagueIndex={0} viewMode={standingsView} />
-              <Standings leagueIndex={1} viewMode={standingsView} />
-            </div>
-          </section>
-
-          {/* Highlights */}
-          <section ref={highlightsRef} style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Highlights</h2>
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
-              <HighlightFeed onPlayClick={handleGameClick} />
-            </div>
-          </section>
-
-          {/* Pick-Em */}
-          <section ref={pickemRef} style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Prognostications</h2>
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
-              <PickEmPanel />
-            </div>
-          </section>
-
-          {/* Leaders */}
-          <section ref={leadersRef} style={{ marginBottom: '16px', scrollMarginTop: `${headerHeight + 42}px` }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Leaders</h2>
-            <MvpRankings />
-            <div style={{ marginTop: '12px' }}>
-              <PlayerLeaders />
-            </div>
-          </section>
-
-        </div>
-
-        {selectedGameId && <GameModalNew gameId={selectedGameId} onClose={handleCloseModal} />}
-      </div>
-    )
-  }
-
-  // Tablet layout — 2-column, scrollable
-  if (isTablet) {
-    return (
-      <div style={{ backgroundColor: '#0f172a', color: '#e2e8f0', minHeight: `calc(100vh - ${headerHeight}px)` }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px' }}>
-
-          {/* Games / Offseason — full width */}
-          <section style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#cbd5e1' }}>
-                {isOffseason ? 'Offseason' : 'Games'}
-              </h2>
-              {nextGameCountdown && !isOffseason && (
-                <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
-                  Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
-                </span>
-              )}
-            </div>
-            {isOffseason ? <OffseasonPanel /> : <GameGridNew handleClick={handleGameClick} />}
-          </section>
-
-          {/* Two columns: Standings | Highlights & Leaders */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'start' }}>
-            <section>
+            {/* Standings */}
+            <section ref={standingsRef} data-tour="dashboard-standings" style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
               <TabToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <Standings leagueIndex={0} viewMode={standingsView} />
@@ -213,91 +288,175 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
               </div>
             </section>
 
-            <section>
-              <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Highlights</h2>
-              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', maxHeight: '400px', overflowY: 'auto', marginBottom: '24px' }}>
+            {/* Highlights */}
+            <section ref={highlightsRef} data-tour="dashboard-highlights" style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
+              <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Highlights</h2>
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
                 <HighlightFeed onPlayClick={handleGameClick} />
               </div>
-              <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Leaders</h3>
+            </section>
+
+            {/* Pick-Em */}
+            <section ref={pickemRef} data-tour="dashboard-pickem" style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
+              <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Prognostications</h2>
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
+                <PickEmPanel />
+              </div>
+            </section>
+
+            {/* Leaders */}
+            <section ref={leadersRef} data-tour="dashboard-leaders" style={{ marginBottom: '16px', scrollMarginTop: `${headerHeight + 42}px` }}>
+              <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Leaders</h2>
               <MvpRankings />
               <div style={{ marginTop: '12px' }}>
                 <PlayerLeaders />
               </div>
-              <div style={{ marginTop: '24px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Prognostications</h3>
-                <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
-                  <PickEmPanel />
-                </div>
-              </div>
             </section>
+
           </div>
         </div>
-
-        {selectedGameId && <GameModalNew gameId={selectedGameId} onClose={handleCloseModal} />}
-      </div>
+        {sharedPortals}
+      </>
     )
   }
 
-  // Desktop layout — 3-column fixed
-  return (
-    <div style={{ height: `calc(100vh - ${headerHeight}px - 33px)`, overflow: 'hidden', backgroundColor: '#0f172a', color: '#e2e8f0', padding: '24px', boxSizing: 'border-box' }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto', height: '100%', display: 'grid', gridTemplateColumns: '300px 1fr 300px', gap: '24px' }}>
+  // ── Tablet layout ──────────────────────────────────────────────────────────
+  if (isTablet) {
+    return (
+      <>
+        <div style={{ backgroundColor: '#0f172a', color: '#e2e8f0', minHeight: `calc(100vh - ${headerHeight}px)` }}>
+          <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px' }}>
 
-        {/* Left Column - Standings / Power Rankings */}
-        <div style={{ overflowY: 'auto' }}>
-          <TabToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <Standings leagueIndex={0} viewMode={standingsView} />
-            <Standings leagueIndex={1} viewMode={standingsView} />
+            {/* Games / Offseason — full width */}
+            <section data-tour="dashboard-games" style={{ marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#cbd5e1' }}>
+                  {isOffseason ? 'Offseason' : 'Games'}
+                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {nextGameCountdown && !isOffseason && (
+                    <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                      Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
+                    </span>
+                  )}
+                  <HelpButton onClick={helpButtonClick} size={24} />
+                </div>
+              </div>
+              {isOffseason ? <OffseasonPanel /> : <GameGridNew handleClick={handleGameClick} />}
+            </section>
+
+            {/* Two columns: Standings | Highlights & Leaders */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'start' }}>
+              <section data-tour="dashboard-standings">
+                <TabToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <Standings leagueIndex={0} viewMode={standingsView} />
+                  <Standings leagueIndex={1} viewMode={standingsView} />
+                </div>
+              </section>
+
+              <section>
+                <div data-tour="dashboard-highlights">
+                  <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Highlights</h2>
+                  <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', maxHeight: '400px', overflowY: 'auto', marginBottom: '24px' }}>
+                    <HighlightFeed onPlayClick={handleGameClick} />
+                  </div>
+                </div>
+                <div data-tour="dashboard-leaders">
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Leaders</h3>
+                  <MvpRankings />
+                  <div style={{ marginTop: '12px' }}>
+                    <PlayerLeaders />
+                  </div>
+                </div>
+                <div data-tour="dashboard-pickem" style={{ marginTop: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Prognostications</h3>
+                  <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
+                    <PickEmPanel />
+                  </div>
+                </div>
+              </section>
+            </div>
           </div>
         </div>
+        {sharedPortals}
+      </>
+    )
+  }
 
-        {/* Center Column - Games / Offseason */}
-        <div style={{ overflowY: 'auto' }}>
-          {isOffseason ? (
-            <OffseasonPanel />
-          ) : (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '16px' }}>
-                <h2 style={{ fontSize: '20px', fontWeight: '600' }}>Games</h2>
-                {nextGameCountdown && (
-                  <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
-                    Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
-                  </span>
-                )}
-              </div>
-              <GameGridNew handleClick={handleGameClick} />
-            </>
-          )}
-        </div>
+  // ── Desktop layout ─────────────────────────────────────────────────────────
+  return (
+    <>
+      <div style={{ height: `calc(100vh - ${headerHeight}px - 33px)`, overflow: 'hidden', backgroundColor: '#0f172a', color: '#e2e8f0', padding: '24px', boxSizing: 'border-box' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', height: '100%', display: 'grid', gridTemplateColumns: '300px 1fr 300px', gap: '24px' }}>
 
-        {/* Right Column - Highlights / Leaders / MVP */}
-        <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          <TabToggle tabs={RIGHT_PANEL_TABS} active={rightPanelView} onChange={setRightPanelView} />
-          {rightPanelView === 'highlights' && (
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '20px', overflowY: 'auto', flex: 1 }}>
+          {/* Left Column - Standings / Power Rankings */}
+          <div data-tour="dashboard-standings" style={{ overflowY: 'auto' }}>
+            <TabToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <Standings leagueIndex={0} viewMode={standingsView} />
+              <Standings leagueIndex={1} viewMode={standingsView} />
+            </div>
+          </div>
+
+          {/* Center Column - Games / Offseason */}
+          <div data-tour="dashboard-games" style={{ overflowY: 'auto' }}>
+            {isOffseason ? (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                  <HelpButton onClick={helpButtonClick} />
+                </div>
+                <OffseasonPanel />
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h2 style={{ fontSize: '20px', fontWeight: '600' }}>Games</h2>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {nextGameCountdown && (
+                      <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                        Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
+                      </span>
+                    )}
+                    <HelpButton onClick={helpButtonClick} />
+                  </div>
+                </div>
+                <GameGridNew handleClick={handleGameClick} />
+              </>
+            )}
+          </div>
+
+          {/* Right Column - Highlights / Leaders / Pick-Em (all mounted, display-toggled for tour) */}
+          <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            <TabToggle tabs={RIGHT_PANEL_TABS} active={rightPanelView} onChange={setRightPanelView} />
+            <div data-tour="dashboard-highlights" style={{
+              ...(rightPanelView === 'highlights'
+                ? { backgroundColor: '#1e293b', borderRadius: '8px', padding: '20px', overflowY: 'auto', flex: 1 }
+                : { display: 'none' }),
+            }}>
               <HighlightFeed onPlayClick={handleGameClick} />
             </div>
-          )}
-          {rightPanelView === 'leaders' && (
-            <>
+            <div data-tour="dashboard-leaders" style={{
+              ...(rightPanelView === 'leaders' ? {} : { display: 'none' }),
+            }}>
               <MvpRankings />
               <div style={{ marginTop: '12px' }}>
                 <PlayerLeaders />
               </div>
-            </>
-          )}
-          {rightPanelView === 'pickem' && (
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', overflowY: 'auto', flex: 1 }}>
+            </div>
+            <div data-tour="dashboard-pickem" style={{
+              ...(rightPanelView === 'pickem'
+                ? { backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', overflowY: 'auto', flex: 1 }
+                : { display: 'none' }),
+            }}>
               <PickEmPanel />
             </div>
-          )}
+          </div>
+
         </div>
-
       </div>
-
-      {selectedGameId && <GameModalNew gameId={selectedGameId} onClose={handleCloseModal} />}
-    </div>
+      {sharedPortals}
+    </>
   )
 }
 

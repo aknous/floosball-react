@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useFloosball } from '@/contexts/FloosballContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -155,8 +156,10 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
   const [loading, setLoading] = useState(true)
   const { event } = useSeasonWebSocket()
   const { getToken } = useAuth()
+  const { seasonState } = useFloosball()
   const hasLoadedOnce = useRef(false)
   const fetchIdRef = useRef(0)
+  const lastSeenWeekRef = useRef(0)
 
   const fetchSnapshot = useCallback(async () => {
     const isInitial = !hasLoadedOnce.current
@@ -188,6 +191,25 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
   useEffect(() => {
     fetchSnapshot()
   }, [fetchSnapshot])
+
+  // Re-fetch when the week changes (catches transitions missed by WS events)
+  useEffect(() => {
+    const serverWeek = seasonState.currentWeek
+    if (serverWeek > 0 && lastSeenWeekRef.current > 0 && serverWeek !== lastSeenWeekRef.current) {
+      // Week changed — clear stale weekly data and re-fetch
+      setEntries(prev => prev.map(e => ({
+        ...e,
+        weekPlayerFP: 0,
+        weekCardBonus: 0,
+        weekTotal: 0,
+        cardBreakdowns: [],
+        equationSummary: undefined,
+        players: e.players.map(p => ({ ...p, weekFP: 0 })),
+      })))
+      fetchSnapshot()
+    }
+    if (serverWeek > 0) lastSeenWeekRef.current = serverWeek
+  }, [seasonState.currentWeek, fetchSnapshot])
 
   // Re-fetch when shop purchases happen (e.g., modifier nullifier changes effective modifier)
   useEffect(() => {
