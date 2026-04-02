@@ -547,8 +547,8 @@ const FantasyPage: React.FC = () => {
         </GuideSection>
         <GuideSection title="Roster Swaps">
           Your roster swap replenishes each week. Between game rounds, you can swap one player
-          for a new one at a cost of 15 Floobits per swap. Your previous player's FP are banked
-          and you begin earning with the replacement.
+          for a new one starting at 15 Floobits. Each additional swap in the same slot costs 15 more
+          (15, 30, 45, ...). Your previous player's FP are banked and you begin earning with the replacement.
         </GuideSection>
         <GuideSection title="Modifiers">
           Each week, a random modifier is applied to all fantasy players. Modifiers can amplify

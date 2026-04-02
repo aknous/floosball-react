@@ -36,6 +36,7 @@ interface Roster {
   hasFlexSlot?: boolean
   players: FantasyRosterPlayer[]
   swapHistory: SwapHistoryEntry[]
+  swapCosts?: Record<string, number>
 }
 
 interface ActivePowerup {
@@ -1104,18 +1105,21 @@ export const FantasyRoster: React.FC = () => {
                         Change
                       </button>
                     )}
-                    {canSwap && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSwapSlot(slot.key) }}
-                        style={{
-                          background: 'none', border: '1px solid rgba(251,191,36,0.4)', borderRadius: '6px',
-                          color: '#fbbf24', cursor: 'pointer', fontSize: '11px', padding: '6px 10px',
-                          fontFamily: 'inherit',
-                        }}
-                      >
-                        Swap
-                      </button>
-                    )}
+                    {canSwap && (() => {
+                      const slotCost = roster?.swapCosts?.[slot.key] ?? 15
+                      return (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setSwapSlot(slot.key) }}
+                          style={{
+                            background: 'none', border: '1px solid rgba(251,191,36,0.4)', borderRadius: '6px',
+                            color: '#fbbf24', cursor: 'pointer', fontSize: '11px', padding: '6px 10px',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          Swap ({slotCost}F)
+                        </button>
+                      )
+                    })()}
                   </>
                 ) : (
                   <button
@@ -1355,15 +1359,18 @@ export const FantasyRoster: React.FC = () => {
                 <span style={{ color: '#e2e8f0' }}>{pendingSwap.player.name}</span>
                 <span style={{ color: '#64748b' }}> ({pendingSwap.slot})</span>
               </div>
-              {!isEmptySlot && (
-                <div style={{
-                  fontSize: '13px', fontWeight: '700', color: '#eab308', marginBottom: '16px',
-                  textAlign: 'center', padding: '8px', borderRadius: '6px',
-                  backgroundColor: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)',
-                }}>
-                  15 Floobits
-                </div>
-              )}
+              {!isEmptySlot && (() => {
+                const slotCost = roster?.swapCosts?.[pendingSwap.slot] ?? 15
+                return (
+                  <div style={{
+                    fontSize: '13px', fontWeight: '700', color: '#eab308', marginBottom: '16px',
+                    textAlign: 'center', padding: '8px', borderRadius: '6px',
+                    backgroundColor: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)',
+                  }}>
+                    {slotCost} Floobits
+                  </div>
+                )
+              })()}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
                   onClick={() => setPendingSwap(null)}

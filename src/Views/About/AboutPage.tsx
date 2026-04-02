@@ -1188,8 +1188,9 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>Roster Swaps</p>
             <p style={textStyle}>
-              You get 1 free roster swap each week. Additional swaps cost 15 Floobits each (or use the
-              Dispensation power-up for an extra). When you swap a player out, their FP are banked so you keep
+              You get 1 free roster swap each week (or use the Dispensation power-up for an extra).
+              Swaps start at 15 Floobits, but each additional swap in the same slot costs 15 more
+              (15, 30, 45, ...) across the season. When you swap a player out, their FP are banked so you keep
               what they earned and start fresh with the replacement. Swaps are only available between games.
               Once games start for the week, your roster locks.
             </p>
@@ -1481,7 +1482,7 @@ const AboutPage: React.FC = () => {
             {bulletList([
               'Card Packs: Humble (100), Proper (300), Grand (900), Exquisite (2500)',
               'Daily Selection cards and rerolls (escalating cost)',
-              'Roster swaps: 15 Floobits per additional swap',
+              'Roster swaps: 15 Floobits base, +15 per repeat swap in same slot (season-long)',
               'Power-Ups: Dispensation, Annulment, Conscription, Accession, Patronage, Endowment',
               'Front Office directives (10-15 Floobits each)',
               'Season-end tax: 25% of unspent Floobits fund your favorite team between seasons — teams with more funding become larger markets with better player development and morale',
