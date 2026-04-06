@@ -514,7 +514,7 @@ export default function Navbar() {
                 <span style={{ fontSize: '9px', fontWeight: '700', color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.30)', padding: '2px 5px', borderRadius: '4px', letterSpacing: '0.5px', alignSelf: 'center', marginTop: isMobile ? '1px' : '2px' }}>BETA</span>
               </NavLink>
 
-              {!isMobile && !isTablet && (
+              {!isMobile && !isTablet && seasonState.seasonNumber > 0 && (
                 <div style={{ display: 'flex', gap: '12px', fontSize: '14px', color: '#94a3b8' }}>
                   <span>Season {seasonState.seasonNumber}</span>
                   <span>•</span>
@@ -536,7 +536,7 @@ export default function Navbar() {
 
             {isMobile ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {fantasyPoints && (
+                {fantasyPoints && seasonState.currentWeek <= 28 && !seasonState.seasonComplete && (
                   <NavLink to="/fantasy" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '5px', backgroundColor: 'rgba(34,197,94,0.12)' }}>
                     <span style={{ fontSize: '13px', fontWeight: '700', color: '#4ade80' }}>
                       {fantasyPoints.weekPoints.toFixed(0)}
@@ -562,7 +562,7 @@ export default function Navbar() {
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: isTablet ? '14px' : '24px' }}>
-                {['Dashboard', 'Players', 'Fantasy', 'About'].map(label => (
+                {['Dashboard', 'Players', 'Fantasy'].map(label => (
                   <NavLink key={label} to={`/${label.toLowerCase()}`}
                     style={({ isActive }) => ({
                       color: isActive ? '#e2e8f0' : '#94a3b8',
@@ -589,7 +589,7 @@ export default function Navbar() {
                     {favoriteTeam.name}
                   </NavLink>
                 )}
-                {fantasyPoints && (
+                {fantasyPoints && seasonState.currentWeek <= 28 && !seasonState.seasonComplete && (
                   <NavLink to="/fantasy" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '0 12px', height: '31px', borderRadius: '6px', backgroundColor: 'rgba(34,197,94,0.12)' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1' }}>
                       <span style={{ fontSize: '12px', fontWeight: '700', color: '#4ade80' }}>
@@ -631,9 +631,9 @@ export default function Navbar() {
           {isMobile && menuOpen && (
             <div style={{ borderTop: '1px solid #1e293b', marginTop: '12px', paddingTop: '4px' }}>
               <div style={{ fontSize: '13px', color: '#64748b', paddingBottom: '8px', display: 'flex', gap: '8px' }}>
-                <span>Season {seasonState.seasonNumber}</span>
+                {seasonState.seasonNumber > 0 && (<><span>Season {seasonState.seasonNumber}</span>
                 <span>•</span>
-                <span>{seasonState.currentWeekText}</span>
+                <span>{seasonState.currentWeekText}</span></>)}
                 {champion && (
                   <>
                     <span>•</span>
@@ -643,7 +643,7 @@ export default function Navbar() {
                   </>
                 )}
               </div>
-              {[['Dashboard', '/dashboard'], ['Players', '/players'], ['Fantasy', '/fantasy'], ['About', '/about'], ...(isAdmin ? [['Admin', '/admin']] : [])].map(([label, path]) => (
+              {[['Dashboard', '/dashboard'], ['Players', '/players'], ['Fantasy', '/fantasy'], ...(isAdmin ? [['Admin', '/admin']] : [])].map(([label, path]) => (
                 <NavLink key={label} to={path} onClick={() => setMenuOpen(false)}
                   style={({ isActive }) => navLinkStyle(isActive)}>
                   {label}
@@ -661,7 +661,7 @@ export default function Navbar() {
                   {favoriteTeam.name}
                 </NavLink>
               )}
-              {fantasyPoints && (
+              {fantasyPoints && seasonState.currentWeek <= 28 && !seasonState.seasonComplete && (
                 <NavLink to="/fantasy" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'baseline', gap: '6px', padding: '8px 0' }}>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#4ade80' }}>
                     {fantasyPoints.weekPoints.toFixed(0)} FP

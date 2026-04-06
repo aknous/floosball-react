@@ -12,6 +12,49 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.8.0',
+    date: '2026-04-05',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          'Team Funding System — fans contribute Floobits to their favorite team to unlock market tiers (Small, Mid, Large, Mega) with offseason development, morale, and fatigue bonuses',
+          'Projected next-season tier — funding page shows where your team will land next season after carry-forward decay, with hoverable tier badges showing effects',
+          'New card effect: Gone Streaking — holographic-tier effect that pays FP based on your favorite team\'s longest win or loss streak this season',
+          'Season Recap Modal — end-of-season summary showing champion, awards, your fantasy and pick-em results, and Floobits earned',
+          'Player hover cards — hover over player names to see quick stats preview',
+          'MVP awards displayed on player profile pages',
+          'Escalating roster swap costs — each slot\'s swap price increases with use to discourage excessive churning',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          'Funding tiers are locked at season start — mid-season contributions build toward next season\'s tier',
+          '50% carry-forward between seasons — teams must sustain contributions to maintain high tiers',
+          'Card effect description cleanup — Surplus, Connection, and RNG tooltips rewritten for clarity',
+          'Odometer yardage gates raised to 200/400/600/800',
+          'Overperformance thresholds fixed for Rising Tide, Diamond in the Rough, Buy Low, and Fixer Upper',
+          'Stale card effect tooltips now auto-refresh on startup when effects are reworked',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          'Reigning champion now appears in navbar immediately after the Floosbowl (no longer waits for next season)',
+          'Player season stats no longer reset to zeros after offseason — previous season data preserved correctly',
+          'Free agent list no longer shows rostered players when "All" is selected during offseason',
+          'Roster integrity validation after FA draft prevents player-team reference mismatches',
+          'Pick-em picks no longer disappear after games end',
+          'Game Day and Season Report emails fixed for roster model and team attribute access',
+          'Second-pass card effects no longer ignore FPx cards as triggered',
+          'Card effect text coloring now handles range patterns and standalone signed numbers correctly',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.7.1',
     date: '2026-03-31',
     changes: [],

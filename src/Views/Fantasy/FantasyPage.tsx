@@ -308,8 +308,7 @@ const FantasyPage: React.FC = () => {
   const [showHelp, setShowHelp] = useState(false)
   const tour = useTutorial({ tourId: 'fantasy', steps: FANTASY_TOUR_STEPS })
 
-  // Regular season is over once we're past week 28
-  const seasonOver = seasonState.seasonComplete || seasonState.currentWeek > 28
+  const seasonOver = seasonState.regularSeasonOver || seasonState.seasonComplete
 
   return (
     <div style={{

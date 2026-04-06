@@ -15,6 +15,7 @@ export interface AuthUser {
   emailOptOut: boolean
   emailDayReport: boolean
   emailSeasonReport: boolean
+  teamFundingPct: number
 }
 
 export interface FantasyRosterPlayer {
@@ -27,6 +28,7 @@ export interface FantasyRosterPlayer {
   teamAbbr: string
   teamColor: string
   ratingStars: number
+  fatigue: number
   pointsAtLock: number
   seasonFantasyPoints: number
   currentFantasyPoints: number

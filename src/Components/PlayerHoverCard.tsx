@@ -24,6 +24,7 @@ interface PlayerDetail {
     playmakingStars?: number; playmakingValue?: number
     xFactorStars?: number; xFactorValue?: number
     seasonPerformanceRating?: number
+    fatigue?: number
   }
 }
 
@@ -140,6 +141,23 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
           return (
             <div style={{ fontSize: '12px', color: indicatorColor, fontWeight: '600', marginBottom: '10px' }}>
               {symbols} {label}
+            </div>
+          )
+        })()}
+
+        {/* Fatigue indicator */}
+        {att?.fatigue != null && att.fatigue > 0 && (() => {
+          const f = att.fatigue
+          const fColor = f < 5 ? '#4ade80' : f < 10 ? '#eab308' : f < 15 ? '#f97316' : '#ef4444'
+          return (
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                <span style={{ fontSize: '12px', color: '#94a3b8' }}>Fatigue</span>
+                <span style={{ fontSize: '12px', color: fColor, fontWeight: '600' }}>{f.toFixed(1)}%</span>
+              </div>
+              <div style={{ height: '3px', backgroundColor: '#334155', borderRadius: '2px' }}>
+                <div style={{ width: `${Math.min(f / 20 * 100, 100)}%`, height: '100%', backgroundColor: fColor, borderRadius: '2px' }} />
+              </div>
             </div>
           )
         })()}

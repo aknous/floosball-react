@@ -12,7 +12,9 @@ export interface SeasonState {
   activeGames: number[]
   completedGames: number[]
   seasonComplete: boolean
+  regularSeasonOver: boolean
   nextGameStartTime: string | null
+  nextSeasonStartTime: string | null
 }
 
 export const useSeasonUpdates = () => {
@@ -20,13 +22,15 @@ export const useSeasonUpdates = () => {
   const hasConnected = useRef(false)
 
   const [seasonState, setSeasonState] = useState<SeasonState>({
-    seasonNumber: 1,
-    currentWeek: 1,
-    currentWeekText: 'Week 1',
+    seasonNumber: 0,
+    currentWeek: 0,
+    currentWeekText: '',
     activeGames: [],
     completedGames: [],
     seasonComplete: false,
+    regularSeasonOver: false,
     nextGameStartTime: null,
+    nextSeasonStartTime: null,
   })
 
   const fetchSeasonData = useCallback(async () => {
@@ -36,13 +40,15 @@ export const useSeasonUpdates = () => {
       if (result.success && result.data) {
         setSeasonState(prev => ({
           ...prev,
-          seasonNumber: result.data.season_number || 1,
-          currentWeek: result.data.current_week || 1,
-          currentWeekText: result.data.current_week_text || 'Week 1',
+          seasonNumber: result.data.season_number ?? 0,
+          currentWeek: result.data.current_week ?? 0,
+          currentWeekText: result.data.current_week_text ?? '',
           activeGames: result.data.active_games || [],
           completedGames: result.data.completed_games || [],
           nextGameStartTime: result.data.next_game_start_time || null,
+          nextSeasonStartTime: result.data.next_season_start_time || null,
           seasonComplete: result.data.is_complete || false,
+          regularSeasonOver: result.data.regular_season_over || false,
         }))
       }
     } catch (err) {
@@ -76,7 +82,8 @@ export const useSeasonUpdates = () => {
           currentWeekText: 'Week 1',
           activeGames: [],
           completedGames: [],
-          seasonComplete: false
+          seasonComplete: false,
+          regularSeasonOver: false,
         }))
         break
 
@@ -129,6 +136,15 @@ export const useSeasonUpdates = () => {
           seasonComplete: true,
           activeGames: [],
           completedGames: []
+        }))
+        // Re-fetch to get nextSeasonStartTime and final champion data
+        fetchSeasonData()
+        break
+
+      case 'regular_season_complete':
+        setSeasonState(prev => ({
+          ...prev,
+          regularSeasonOver: true,
         }))
         break
 

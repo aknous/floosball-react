@@ -259,7 +259,6 @@ const WelcomeModal: React.FC = () => {
             inset: 0,
             zIndex: 10003,
             backgroundColor: 'rgba(0,0,0,0.85)',
-            fontFamily: 'pressStart, monospace',
             display: 'flex',
             alignItems: isMobile ? 'flex-end' : 'center',
             justifyContent: 'center',

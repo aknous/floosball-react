@@ -14,6 +14,7 @@ interface PlayerAttributes {
   playmakingStars?: number; playmakingValue?: number
   xFactorStars?: number; xFactorValue?: number
   seasonPerformanceRatingStars?: number; seasonPerformanceRating?: number
+  fatigue?: number
 }
 
 interface PlayerData {
@@ -457,6 +458,21 @@ export default function PlayerPage() {
             {sectionHeader('Attributes')}
             <div style={{ padding: '14px 16px' }}>
               {attrs.map((a, i) => attrRow(a.label, a.stars, a.value, i === 0))}
+              {att?.fatigue != null && att.fatigue > 0 && (() => {
+                const f = att.fatigue
+                const fColor = f < 5 ? '#4ade80' : f < 10 ? '#eab308' : f < 15 ? '#f97316' : '#ef4444'
+                return (
+                  <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #334155' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '13px', color: '#94a3b8' }}>Fatigue</span>
+                      <span style={{ fontSize: '13px', color: fColor, fontWeight: '600' }}>{f.toFixed(1)}%</span>
+                    </div>
+                    <div style={{ height: '6px', backgroundColor: '#0f172a', borderRadius: '3px' }}>
+                      <div style={{ width: `${Math.min(f / 20 * 100, 100)}%`, height: '100%', backgroundColor: fColor, borderRadius: '3px' }} />
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           </div>
 

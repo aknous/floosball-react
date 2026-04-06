@@ -180,17 +180,30 @@ const TYPE_COLORS: Record<string, string> = {
  * Parse text for FP-type keywords and wrap them + their numeric prefix in colored spans.
  */
 function colorizeEffectText(text: string, baseColor: string): React.ReactNode {
-  const pattern = /([+-]?\d+\.?\d*x?\s*)?(\+?FPx|FP\b|Floobits\b|F\b)/g
+  // Determine dominant color from keywords in the text
+  const dominantColor = /FPx|\+FPx/.test(text) ? TYPE_COLORS.mult
+    : /Floobits/.test(text) ? TYPE_COLORS.floobits
+    : /FP\b/.test(text) ? TYPE_COLORS.fp
+    : null
+  // Match: keyword with optional leading number/range, OR standalone signed numbers
+  const pattern = /([+-]?\d+\.?\d*x?[–\-]\d+\.?\d*x?\s*|[+-]?\d+\.?\d*x?\s*)?(\+?FPx|FP\b|Floobits\b|F\b)|(?<=[,\s]|^)([+-]\d+\.?\d*x?)(?=\s|$|,)/g
   const parts: React.ReactNode[] = []
   let lastIdx = 0
   let m: RegExpExecArray | null
   while ((m = pattern.exec(text)) !== null) {
     if (m.index > lastIdx) parts.push(text.slice(lastIdx, m.index))
-    const kw = m[2]
-    const color = (kw === 'FPx' || kw === '+FPx') ? TYPE_COLORS.mult
-      : (kw === 'Floobits' || kw === 'F') ? TYPE_COLORS.floobits
-      : TYPE_COLORS.fp
-    parts.push(<span key={m.index} style={{ color }}>{m[0]}</span>)
+    if (m[2]) {
+      // Keyword match — color by keyword type
+      const kw = m[2]
+      const color = (kw === 'FPx' || kw === '+FPx') ? TYPE_COLORS.mult
+        : (kw === 'Floobits' || kw === 'F') ? TYPE_COLORS.floobits
+        : TYPE_COLORS.fp
+      parts.push(<span key={m.index} style={{ color }}>{m[0]}</span>)
+    } else if (m[3]) {
+      // Standalone signed number — use dominant color
+      const color = dominantColor || TYPE_COLORS.fp
+      parts.push(<span key={m.index} style={{ color }}>{m[3]}</span>)
+    }
     lastIdx = m.index + m[0].length
   }
   if (parts.length === 0) return text

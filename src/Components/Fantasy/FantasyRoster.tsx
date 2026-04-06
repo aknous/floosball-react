@@ -1058,6 +1058,15 @@ export const FantasyRoster: React.FC = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                         <span style={{ fontSize: '11px', color: '#94a3b8' }}>{player.teamAbbr}</span>
                         <Stars stars={player.ratingStars} size={16} />
+                        {player.fatigue > 2 && (
+                          <span style={{
+                            fontSize: '10px',
+                            fontWeight: '600',
+                            color: player.fatigue < 5 ? '#4ade80' : player.fatigue < 10 ? '#eab308' : player.fatigue < 15 ? '#f97316' : '#ef4444',
+                          }}>
+                            {player.fatigue.toFixed(0)}%
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import ReactDOM from 'react-dom'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -50,6 +50,13 @@ interface TeamRecord {
   playoffResult?: string
 }
 
+interface FundingUpdate {
+  currentTier: string
+  nextSeasonTier: string
+  currentFunding: number
+  nextSeasonFunding: number
+}
+
 function computePrize(rank: number, totalEntries: number, prizes: Record<number, number>, topPct: number, topPctPrize: number): number {
   if (prizes[rank]) return prizes[rank]
   const cutoff = Math.max(1, Math.ceil(totalEntries * topPct))
@@ -68,6 +75,7 @@ const SeasonRecapModal: React.FC = () => {
   const [fantasyData, setFantasyData] = useState<FantasyData | null>(null)
   const [pickEmData, setPickEmData] = useState<PickEmData | null>(null)
   const [teamRecord, setTeamRecord] = useState<TeamRecord | null>(null)
+  const [fundingUpdate, setFundingUpdate] = useState<FundingUpdate | null>(null)
 
   const seasonNumber = seasonState.seasonNumber
 
@@ -91,11 +99,18 @@ const SeasonRecapModal: React.FC = () => {
 
     try {
       // Fetch all in parallel
-      const [seasonResp, fantasyResp, pickemResp, standingsResp] = await Promise.allSettled([
+      const favTeamId = user.favoriteTeamId
+      const [seasonResp, fantasyResp, pickemResp, standingsResp, fundingResp] = await Promise.allSettled([
         fetch(`${API_BASE}/season`).then(r => r.json()),
         fetch(`${API_BASE}/fantasy/snapshot`, { headers: authHeaders }).then(r => r.json()),
         fetch(`${API_BASE}/pickem/leaderboard`).then(r => r.json()),
         fetch(`${API_BASE}/standings`).then(r => r.json()),
+        favTeamId
+          ? Promise.all([
+              fetch(`${API_BASE}/teams/${favTeamId}`).then(r => r.json()),
+              fetch(`${API_BASE}/teams/${favTeamId}/projected-funding`).then(r => r.json()),
+            ])
+          : Promise.resolve(null),
       ])
 
       // Season data (champion, MVP, All-Pro)
@@ -139,6 +154,18 @@ const SeasonRecapModal: React.FC = () => {
             accuracy: myEntry.accuracy,
           })
         }
+      }
+
+      // Funding data for favorite team
+      if (fundingResp.status === 'fulfilled' && fundingResp.value) {
+        const [teamData, projectedData] = fundingResp.value as [any, any]
+        const teamD = teamData?.data ?? teamData
+        const projD = projectedData?.data ?? projectedData
+        const currentTier = teamD?.funding?.tier || 'SMALL_MARKET'
+        const currentFunding = teamD?.funding?.effectiveFunding ?? 0
+        const nextSeasonTier = projD?.nextSeasonProjectedTier || currentTier
+        const nextSeasonFunding = projD?.nextSeasonProjectedFunding ?? 0
+        setFundingUpdate({ currentTier, nextSeasonTier, currentFunding, nextSeasonFunding })
       }
 
       // Standings → favorite team record
@@ -214,9 +241,39 @@ const SeasonRecapModal: React.FC = () => {
     }
   }
 
+  const isOffseason = seasonState.currentWeekText === 'Offseason'
+  const nextSeasonStart = seasonState.nextSeasonStartTime
+
+  // Countdown timer for offseason
+  const [countdown, setCountdown] = useState('')
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    if (!visible || !isOffseason || !nextSeasonStart) {
+      setCountdown('')
+      return
+    }
+    const update = () => {
+      const target = new Date(nextSeasonStart).getTime()
+      const now = Date.now()
+      const diff = target - now
+      if (diff <= 0) { setCountdown(''); return }
+      const days = Math.floor(diff / 86400000)
+      const hours = Math.floor((diff % 86400000) / 3600000)
+      const minutes = Math.floor((diff % 3600000) / 60000)
+      const parts: string[] = []
+      if (days > 0) parts.push(`${days}d`)
+      if (hours > 0) parts.push(`${hours}h`)
+      parts.push(`${minutes}m`)
+      setCountdown(parts.join(' '))
+    }
+    update()
+    countdownRef.current = setInterval(update, 60000)
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current) }
+  }, [visible, isOffseason, nextSeasonStart])
+
   if (!visible) return null
 
-  const isOffseason = seasonState.currentWeekText === 'Offseason'
   const hasFavoriteTeam = !!(user?.favoriteTeamId)
 
   const fantasyPrize = fantasyData ? computePrize(fantasyData.rank, fantasyData.totalEntries, FANTASY_PRIZES, FANTASY_TOP_PCT, FANTASY_TOP_PCT_PRIZE) : 0
@@ -397,37 +454,57 @@ const SeasonRecapModal: React.FC = () => {
                   padding: '16px 18px',
                   marginBottom: '20px',
                   border: '1px solid #1e3a5f',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
                 }}>
-                  <img
-                    src={`${API_BASE}/teams/${teamRecord.teamId}/avatar?size=40&v=2`}
-                    alt={teamRecord.teamName}
-                    style={{ width: '40px', height: '40px', flexShrink: 0 }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '12px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.5px', marginBottom: '4px' }}>
-                      Your Team
-                    </p>
-                    <p style={{ fontSize: '14px', fontWeight: '700', color: teamRecord.teamColor, margin: 0 }}>
-                      {teamRecord.teamName}
-                    </p>
-                  </div>
-                  <div style={{ textAlign: 'right' as const, flexShrink: 0 }}>
-                    <p style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
-                      {teamRecord.wins}-{teamRecord.losses}
-                    </p>
-                    {teamRecord.isChampion ? (
-                      <p style={{ fontSize: '12px', color: '#f59e0b', fontWeight: '700', margin: '2px 0 0' }}>
-                        Champions
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <img
+                      src={`${API_BASE}/teams/${teamRecord.teamId}/avatar?size=40&v=2`}
+                      alt={teamRecord.teamName}
+                      style={{ width: '40px', height: '40px', flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '12px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.5px', marginBottom: '4px' }}>
+                        Your Team
                       </p>
-                    ) : teamRecord.playoffResult ? (
-                      <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0' }}>
-                        {teamRecord.playoffResult}
+                      <p style={{ fontSize: '14px', fontWeight: '700', color: teamRecord.teamColor, margin: 0 }}>
+                        {teamRecord.teamName}
                       </p>
-                    ) : null}
+                    </div>
+                    <div style={{ textAlign: 'right' as const, flexShrink: 0 }}>
+                      <p style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
+                        {teamRecord.wins}-{teamRecord.losses}
+                      </p>
+                      {teamRecord.isChampion ? (
+                        <p style={{ fontSize: '12px', color: '#f59e0b', fontWeight: '700', margin: '2px 0 0' }}>
+                          Champions
+                        </p>
+                      ) : teamRecord.playoffResult ? (
+                        <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0' }}>
+                          {teamRecord.playoffResult}
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
+                  {fundingUpdate && (
+                    <div style={{
+                      marginTop: '12px',
+                      paddingTop: '12px',
+                      borderTop: '1px solid #1e3a5f',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>Market Tier</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <TierBadge tier={fundingUpdate.currentTier} />
+                        {fundingUpdate.nextSeasonTier !== fundingUpdate.currentTier && (
+                          <>
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>&rarr;</span>
+                            <TierBadge tier={fundingUpdate.nextSeasonTier} label="Next" />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -547,8 +624,18 @@ const SeasonRecapModal: React.FC = () => {
           )}
         </div>
 
-        {/* Dismiss button */}
+        {/* Countdown + Dismiss button */}
         <div style={{ padding: '0 28px 28px', flexShrink: 0 }}>
+          {isOffseason && countdown && (
+            <p style={{
+              fontSize: '12px',
+              color: '#94a3b8',
+              textAlign: 'center',
+              margin: '0 0 10px',
+            }}>
+              Season {seasonNumber + 1} begins in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{countdown}</span>
+            </p>
+          )}
           <button
             onClick={handleDismiss}
             style={{
@@ -567,12 +654,33 @@ const SeasonRecapModal: React.FC = () => {
             onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#2563eb')}
             onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#3b82f6')}
           >
-            On to Season {seasonNumber + 1}
+            {isOffseason ? 'Continue to Offseason' : `On to Season ${seasonNumber + 1}`}
           </button>
         </div>
       </div>
     </div>,
     document.body
+  )
+}
+
+const TIER_LABELS: Record<string, string> = { SMALL_MARKET: 'Small Market', MID_MARKET: 'Mid Market', LARGE_MARKET: 'Large Market', MEGA_MARKET: 'Mega Market' }
+const TIER_COLORS: Record<string, string> = { SMALL_MARKET: '#94a3b8', MID_MARKET: '#38bdf8', LARGE_MARKET: '#a78bfa', MEGA_MARKET: '#f59e0b' }
+
+const TierBadge: React.FC<{ tier: string; label?: string }> = ({ tier, label }) => {
+  const color = TIER_COLORS[tier] || '#94a3b8'
+  const text = label ? `${label}: ${TIER_LABELS[tier] || tier}` : (TIER_LABELS[tier] || tier)
+  return (
+    <span style={{
+      fontSize: '11px',
+      fontWeight: '700',
+      color,
+      backgroundColor: `${color}18`,
+      padding: '3px 8px',
+      borderRadius: '4px',
+      whiteSpace: 'nowrap' as const,
+    }}>
+      {text}
+    </span>
   )
 }
 

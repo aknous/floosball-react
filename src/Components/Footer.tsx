@@ -63,7 +63,7 @@ const FooterChangelogItems: React.FC<{ entry: ChangelogEntry }> = ({ entry }) =>
   )
 }
 
-const APP_VERSION = process.env.REACT_APP_VERSION || '0.7.1'
+const APP_VERSION = process.env.REACT_APP_VERSION || '0.8.0'
 
 export const Footer: React.FC = () => {
   const [showChangelog, setShowChangelog] = useState(false)
@@ -100,7 +100,7 @@ export const Footer: React.FC = () => {
       <div style={{
         maxWidth: '1400px',
         margin: '0 auto',
-        padding: isMobile ? '8px 16px' : '8px 24px',
+        padding: isMobile ? '10px 16px' : '10px 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -109,14 +109,14 @@ export const Footer: React.FC = () => {
           <NavLink
             to="/about"
             style={{
-              color: '#64748b',
+              color: '#94a3b8',
               textDecoration: 'none',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: '500',
               transition: 'color 0.15s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#94a3b8')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}
+            onMouseEnter={e => (e.currentTarget.style.color = '#cbd5e1')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
           >
             About
           </NavLink>
@@ -125,14 +125,14 @@ export const Footer: React.FC = () => {
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              color: '#64748b',
+              color: '#94a3b8',
               textDecoration: 'none',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: '500',
               transition: 'color 0.15s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#94a3b8')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}
+            onMouseEnter={e => (e.currentTarget.style.color = '#cbd5e1')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
           >
             Discord
           </a>
@@ -229,6 +229,7 @@ export const Footer: React.FC = () => {
             inset: 0,
             zIndex: 200,
             backgroundColor: 'rgba(0,0,0,0.6)',
+            fontFamily: 'pressStart, monospace',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
