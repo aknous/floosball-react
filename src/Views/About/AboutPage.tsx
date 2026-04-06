@@ -25,6 +25,7 @@ const SECTION_GROUPS: SectionCategory[] = [
       { id: 'season-schedule', title: 'Season Schedule' },
       { id: 'prognosticate', title: 'Prognosticate' },
       { id: 'front-office', title: 'The Front Office' },
+      { id: 'team-funding', title: 'Team Funding' },
     ],
   },
   {
@@ -1110,6 +1111,70 @@ const AboutPage: React.FC = () => {
               Each directive costs Floobits and counts toward your seasonal allowance. Motions need
               a quorum of directives from active board members before they go up for ratification.
               All motions are resolved during the offseason.
+            </p>
+          </Section>
+
+          {/* Team Funding */}
+          <Section id="team-funding" title="Team Funding">
+            <p style={textStyle}>
+              Every team has a market tier that determines offseason bonuses to player development, morale,
+              and fatigue recovery. Fans fund their favorite team by contributing Floobits — either directly
+              during the season or automatically at season end.
+            </p>
+
+            <p style={labelStyle}>Market Tiers</p>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr',
+              gap: '2px 16px',
+              padding: '8px 10px',
+              margin: '4px 0 10px',
+              borderRadius: '6px',
+              backgroundColor: 'rgba(51,65,85,0.2)',
+              border: '1px solid #334155',
+            }}>
+              {[
+                { tier: 'Small Market', color: '#f97316', desc: 'Reduced development, lower morale, increased fatigue' },
+                { tier: 'Mid Market', color: '#64748b', desc: 'Baseline — no bonuses or penalties' },
+                { tier: 'Large Market', color: '#3b82f6', desc: 'Modest development and morale boost, moderate fatigue reduction' },
+                { tier: 'Mega Market', color: '#a78bfa', desc: 'Large development and morale boost, major fatigue reduction' },
+              ].map(t => (
+                <React.Fragment key={t.tier}>
+                  <span style={{ color: t.color, fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>{t.tier}</span>
+                  <span style={{ ...textStyle, fontSize: '12px' }}>{t.desc}</span>
+                </React.Fragment>
+              ))}
+            </div>
+
+            <p style={labelStyle}>Tier Thresholds</p>
+            <p style={textStyle}>
+              Tier is determined by total effective funding (baseline + fan contributions). Thresholds:
+            </p>
+            {bulletList([
+              '0 – 499F: Small Market',
+              '500 – 999F: Mid Market',
+              '1,000 – 1,999F: Large Market',
+              '2,000F+: Mega Market',
+            ])}
+
+            <p style={labelStyle}>How Funding Works</p>
+            <p style={textStyle}>
+              Each team receives a small baseline funding amount each season. On top of that, fans can contribute
+              Floobits in two ways: direct contributions at any time during the season, or a season-end
+              auto-contribution that donates a configurable percentage of your unspent Floobits to your
+              favorite team. Both are configured on your team's Funding tab.
+            </p>
+            <p style={{ ...textStyle, marginTop: '10px' }}>
+              Tiers lock at the start of each season. Any contributions made mid-season build toward
+              next season's tier, not the current one. The funding progress bar on your team page shows
+              both your current tier and the projected next-season tier.
+            </p>
+
+            <p style={labelStyle}>Carry-Forward Decay</p>
+            <p style={textStyle}>
+              At the end of each season, 50% of a team's effective funding carries over to the next season.
+              This means sustained contributions are needed to maintain or climb tiers — a single large
+              donation won't keep a team at Mega Market forever.
             </p>
           </Section>
 

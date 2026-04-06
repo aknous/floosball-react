@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import PlayerAvatar from '@/Components/PlayerAvatar'
@@ -7,6 +7,10 @@ import CoachAvatar from '@/Components/CoachAvatar'
 import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import TutorialOverlay from '@/Components/Tutorial/TutorialOverlay'
+import TourPrompt from '@/Components/Tutorial/TourPrompt'
+import { useTutorial, TutorialStep } from '@/Components/Tutorial/useTutorial'
+import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -150,7 +154,71 @@ export default function TeamPage() {
   const [activeTab, setActiveTab] = useState('overview')
   const [projectedFunding, setProjectedFunding] = useState<{ projectedAutoContributions: number, contributingFans: number, totalFans: number, nextSeasonProjectedFunding?: number, nextSeasonProjectedTier?: string, decayRate?: number } | null>(null)
   const [fundingRefresh, setFundingRefresh] = useState(0)
+  const [showHelp, setShowHelp] = useState(false)
   const isMobile = useIsMobile()
+  const isFavTeam = !!team && user?.favoriteTeamId === team.id
+
+  const tourSteps = useMemo<TutorialStep[]>(() => [
+    {
+      target: 'team-hero',
+      title: 'Your Team',
+      content: "Your team's profile — record, ELO rating, championship history, and current market tier at a glance.",
+      placement: 'bottom',
+      onEnter: () => setActiveTab('overview'),
+    },
+    {
+      target: 'team-roster',
+      title: 'Roster',
+      content: 'Your active roster. Each player shows their position, overall rating, and contract length remaining.',
+      placement: 'bottom',
+    },
+    {
+      target: 'team-coach',
+      title: 'Head Coach',
+      content: "Your head coach's attributes — offensive/defensive mind, aggressiveness, adaptability, clock management, and player development.",
+      placement: 'bottom',
+    },
+    {
+      target: 'team-tab-funding',
+      title: 'Funding',
+      content: 'Fund your team to improve their market tier and unlock offseason bonuses.',
+      placement: 'bottom',
+      onEnter: () => setActiveTab('funding'),
+    },
+    {
+      target: 'team-funding-tier',
+      title: 'Market Tier',
+      content: 'Your current market tier. Higher tiers grant better player development, morale boosts, and fatigue reduction during the offseason.',
+      placement: 'bottom',
+    },
+    {
+      target: 'team-funding-bar',
+      title: 'Tier Progress',
+      content: 'Track funding progress toward the next tier. The bar shows current funding and next-season projections after 50% carry-forward decay.',
+      placement: 'bottom',
+    },
+    {
+      target: 'team-funding-contribute',
+      title: 'Contributions',
+      content: 'Contribute Floobits directly or set an auto-contribution percentage that donates from your unspent balance at season end.',
+      placement: 'top',
+    },
+    {
+      target: 'team-tab-schedule',
+      title: 'Schedule',
+      content: "Your team's full season schedule — past results and upcoming matchups.",
+      placement: 'bottom',
+      onEnter: () => setActiveTab('schedule'),
+    },
+    {
+      target: 'team-tab-frontoffice',
+      title: 'Front Office',
+      content: 'The Board of Directors convenes in Week 22. Once open, vote on coaching changes, player signings, and roster cuts.',
+      placement: 'bottom',
+    },
+  ], [])
+
+  const tour = useTutorial({ tourId: 'team-page', steps: tourSteps })
 
   useEffect(() => {
     if (!id) return
@@ -213,7 +281,7 @@ export default function TeamPage() {
     <div style={{ minHeight: '100vh', backgroundColor: '#0f172a' }}>
 
       {/* Hero */}
-      <div style={{
+      <div data-tour="team-hero" style={{
         background: `linear-gradient(135deg, ${team.color}50 0%, #0f172a 55%)`,
         borderBottom: '1px solid #1e293b',
         padding: isMobile ? '20px 16px' : '28px 24px'
@@ -287,22 +355,25 @@ export default function TeamPage() {
               { label: 'OFF', value: team.offenseRating },
               { label: 'RUN D', value: team.defenseRunCoverageRating },
               { label: 'PASS D', value: team.defensePassCoverageRating },
-            ].map(({ label, value }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', minWidth: '42px' }}>{label}</span>
-                <div style={{ width: isMobile ? '80px' : '100px', height: '8px', backgroundColor: '#1e293b', borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: `${Math.min(value, 100)}%`, height: '100%', backgroundColor: team.color, borderRadius: '4px' }} />
+            ].map(({ label, value }) => {
+              const barColor = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
+              return (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', minWidth: '42px' }}>{label}</span>
+                  <div style={{ width: isMobile ? '80px' : '100px', height: '8px', backgroundColor: '#1e293b', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: `${Math.min(value, 100)}%`, height: '100%', backgroundColor: barColor, borderRadius: '4px' }} />
+                  </div>
+                  <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '600', fontVariantNumeric: 'tabular-nums', minWidth: '24px' }}>{Math.round(value)}</span>
                 </div>
-                <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '600', fontVariantNumeric: 'tabular-nums', minWidth: '24px' }}>{Math.round(value)}</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>
 
       {/* Tab Bar */}
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: isMobile ? '12px 16px 0' : '16px 24px 0' }}>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' as const }}>
           {([
             { key: 'overview', label: 'Overview' },
             { key: 'funding', label: 'Funding' },
@@ -312,6 +383,7 @@ export default function TeamPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
+              data-tour={`team-tab-${tab.key.toLowerCase()}`}
               style={{
                 padding: '6px 14px',
                 fontSize: '13px',
@@ -327,6 +399,11 @@ export default function TeamPage() {
               {tab.label}
             </button>
           ))}
+          {isFavTeam && (
+            <div style={{ marginLeft: 'auto' }}>
+              <HelpButton onClick={() => { tour.hasCompleted ? setShowHelp(true) : tour.startTour() }} size={24} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -338,7 +415,7 @@ export default function TeamPage() {
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', alignItems: 'start', marginBottom: '20px' }}>
 
           {/* Roster */}
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+          <div data-tour="team-roster" style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
             {sectionHeader('Roster')}
             <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {ROSTER_SLOTS.map(([slot, posLabel]) => {
@@ -388,7 +465,7 @@ export default function TeamPage() {
 
         {/* Head Coach */}
         {team.coach ? (
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+          <div data-tour="team-coach" style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
             {sectionHeader('Head Coach')}
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -497,7 +574,7 @@ export default function TeamPage() {
               {sectionHeader('Market Status')}
               <div style={{ padding: '16px' }}>
                 {/* === CURRENT TIER === */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <div data-tour="team-funding-tier" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <TierBadge tier={f.tier} label={tierLabels[f.tier] || f.tier} color={tierColor} effects={currentEffects || []} />
                   <span style={{ fontSize: '12px', color: '#94a3b8' }}>Season {f.season}</span>
                 </div>
@@ -508,7 +585,7 @@ export default function TeamPage() {
                 </div>
 
                 {/* Funding progress bar */}
-                <div style={{ marginBottom: '8px' }}>
+                <div data-tour="team-funding-bar" style={{ marginBottom: '8px' }}>
                   <div style={{ position: 'relative', height: '10px', backgroundColor: '#0f172a', borderRadius: '5px', overflow: 'visible' }}>
                     {/* Tier threshold markers */}
                     {tierMarkers.map(m => (
@@ -654,7 +731,7 @@ export default function TeamPage() {
                         const pct = user.teamFundingPct ?? 25
                         const presets = [0, 10, 25, 50, 75, 100]
                         return (
-                          <div>
+                          <div data-tour="team-funding-contribute">
                             <div style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '8px' }}>Contribute to {team.name}</div>
                             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const, alignItems: 'center' }}>
                               {contributePresets.map(amt => (
@@ -868,6 +945,72 @@ export default function TeamPage() {
         </>)}
 
       </div>
+
+      {/* Help Modal */}
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} title="Your Team">
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
+          <button
+            onClick={() => { setShowHelp(false); tour.startTour() }}
+            style={{
+              background: 'transparent',
+              border: '1px solid #475569',
+              borderRadius: '6px',
+              color: '#94a3b8',
+              fontSize: '11px',
+              padding: '6px 14px',
+              cursor: 'pointer',
+              fontFamily: 'pressStart',
+              transition: 'border-color 0.15s, color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#94a3b8'; e.currentTarget.style.color = '#e2e8f0' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#475569'; e.currentTarget.style.color = '#94a3b8' }}
+          >
+            Take the Tour
+          </button>
+        </div>
+        <GuideSection title="Overview">
+          The overview tab shows your team's active roster and head coach. Each player lists their
+          position, star rating, and contract length. The coach card displays six key attributes
+          that influence play-calling and player growth.
+        </GuideSection>
+        <GuideSection title="Funding">
+          Fund your team to raise its market tier. Higher tiers grant offseason bonuses to player
+          development, morale, and fatigue recovery. Contribute Floobits directly or set an
+          auto-contribution percentage that donates from your unspent balance at season end.
+          Tiers lock at season start — mid-season contributions build toward next season.
+          50% of funding carries forward each season, so sustained contributions are needed to
+          maintain high tiers.
+        </GuideSection>
+        <GuideSection title="Market Tiers">
+          Small Market: reduced development and morale, increased fatigue. Mid Market: baseline,
+          no bonuses or penalties. Large Market: modest development/morale boost, moderate fatigue
+          reduction. Mega Market: large development/morale boost, major fatigue reduction.
+          Thresholds: 500F (Mid), 1,000F (Large), 2,000F (Mega).
+        </GuideSection>
+        <GuideSection title="Schedule">
+          Your full season schedule with past results and upcoming matchups. Each row shows the
+          week, opponent, result, and score. Active games display a LIVE indicator.
+        </GuideSection>
+        <GuideSection title="Front Office">
+          The Board of Directors convenes in Week 22. Once open, issue directives to influence
+          team decisions: fire or hire coaches, re-sign or cut players, and request free agents.
+          Each directive costs Floobits. Motions need a quorum before ratification, and all
+          resolutions take effect during the offseason.
+        </GuideSection>
+      </HelpModal>
+
+      {/* Tutorial */}
+      {isFavTeam && tour.shouldPrompt && <TourPrompt onStart={tour.startTour} onDismiss={tour.dismissPrompt} />}
+      {isFavTeam && tour.isActive && (
+        <TutorialOverlay
+          steps={tourSteps}
+          currentStep={tour.currentStep}
+          onNext={tour.next}
+          onBack={tour.back}
+          onSkip={tour.skip}
+          onHelp={() => { tour.skip(); setShowHelp(true) }}
+        />
+      )}
     </div>
   )
 }
