@@ -428,8 +428,8 @@ export default function TeamPage() {
         {activeTab === 'funding' && (<>
 
         {/* Market Tier */}
-        {team.funding && (() => {
-          const f = team.funding
+        {team.funding?.tier && (() => {
+          const f = team.funding!
           const tierColors: Record<string, string> = {
             'MEGA_MARKET': '#a78bfa',
             'LARGE_MARKET': '#3b82f6',
@@ -750,6 +750,11 @@ export default function TeamPage() {
             </div>
           )
         })()}
+        {!team.funding?.tier && (
+          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+            Funding data will be available once the season begins.
+          </div>
+        )}
 
         </>)}
 
