@@ -44,6 +44,40 @@ interface MonitorData {
   websockets: { total_connections: number; active_channels: number; channels: Record<string, number> }
 }
 
+interface AnalyticsData {
+  seasonNumber: number
+  economy: {
+    totalCirculation: number; totalEarned: number; totalSpent: number
+    earningsBreakdown: Record<string, number>; spendingBreakdown: Record<string, number>
+    seasonEarnings: number; seasonSpending: number
+  }
+  cards: {
+    totalCards: number; byEdition: Record<string, number>; bySource: Record<string, number>
+    topEffects: { effectName: string; count: number }[]
+    packOpenings: Record<string, number>
+  }
+  fantasy: {
+    totalRosters: number; avgTotalPoints: number; avgCardBonus: number
+    totalSwapsUsed: number; totalPurchasedSwaps: number
+    topRosteredPlayers: { name: string; count: number }[]
+  }
+  users: {
+    totalUsers: number; active7d: number; active30d: number
+    onboardingRate: number; onboardedCount: number
+    favoriteTeams: { team: string; count: number }[]
+    adoption: { fantasy: number; cards: number; pickEm: number; funding: number }
+    signupOnly: number
+  }
+  funding: {
+    totalFanContributions: number
+    tierDistribution: Record<string, number>
+    topTeams: { team: string; contributions: number; tier: string }[]
+  }
+  pickEm: {
+    totalPicks: number; accuracy: number; participants: number
+  }
+}
+
 const sectionStyle: React.CSSProperties = {
   backgroundColor: '#1e293b',
   borderRadius: '8px',
@@ -191,6 +225,7 @@ interface AdminUser {
   createdAt: string | null
   isActive: boolean
   lastLoginAt: string | null
+  betaStatus: string
 }
 
 interface EffectOption { name: string; displayName: string; edition: string }
@@ -371,6 +406,23 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
 
   // Username re-roll
   const [rerollingUserId, setRerollingUserId] = useState<number | null>(null)
+  const [deletingUserId, setDeletingUserId] = useState<number | null>(null)
+
+  const handleDeleteUser = async (user: AdminUser) => {
+    if (!window.confirm(`Permanently delete user "${user.username || user.email}"?\n\nThis removes ALL data: cards, rosters, picks, transactions, etc. This cannot be undone.`)) return
+    setDeletingUserId(user.id)
+    try {
+      const res = await fetch(`${API_BASE}/admin/users/${user.id}`, {
+        method: 'DELETE', headers,
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      setAdminUsers(prev => prev.filter(u => u.id !== user.id))
+    } catch (e: any) {
+      alert(`Failed to delete user: ${e.message}`)
+    } finally {
+      setDeletingUserId(null)
+    }
+  }
 
   const handleRerollUsername = async (userId: number) => {
     setRerollingUserId(userId)
@@ -564,7 +616,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     }
   }, [password])
 
-  type Section = 'monitor' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
+  type Section = 'monitor' | 'analytics' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
   const [activeSection, setActiveSection] = useState<Section>('monitor')
 
   // Auto-refresh monitor every 30s when active
@@ -575,8 +627,35 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     return () => clearInterval(interval)
   }, [activeSection, fetchMonitor])
 
+  // ── Analytics ──────────────────────────────────────────────────────
+  type AnalyticsTab = 'economy' | 'cards' | 'fantasy' | 'users' | 'funding' | 'pickem'
+  const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>('economy')
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+
+  const fetchAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true)
+    setAnalyticsError(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/analytics`, { headers })
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+      const json = await res.json()
+      setAnalyticsData(json.data)
+    } catch (e: any) {
+      setAnalyticsError(e.message)
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }, [password])
+
+  useEffect(() => {
+    if (activeSection === 'analytics') fetchAnalytics()
+  }, [activeSection, fetchAnalytics])
+
   const tabs: { id: Section; label: string }[] = [
     { id: 'monitor', label: 'Monitor' },
+    { id: 'analytics', label: 'Analytics' },
     { id: 'requests', label: 'Requests' },
     { id: 'allowlist', label: 'Allowlist' },
     { id: 'names', label: 'Names' },
@@ -614,7 +693,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
         </button>
       ))}
     </div>
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
 
       {/* Server Monitor */}
       {activeSection === 'monitor' && <div style={sectionStyle}>
@@ -761,6 +840,334 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                 {season.mvp && <div style={smallStat}>MVP: <span style={{ color: '#fbbf24', fontWeight: '600' }}>{season.mvp}</span></div>}
               </div>
             )}
+          </>
+        })()}
+      </div>}
+
+      {/* Analytics Dashboard */}
+      {activeSection === 'analytics' && <div style={sectionStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>Analytics Dashboard</h2>
+          <button onClick={fetchAnalytics} disabled={analyticsLoading}
+            style={{ ...btnStyle, fontSize: '12px', padding: '5px 14px', opacity: analyticsLoading ? 0.5 : 1 }}>
+            {analyticsLoading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
+        {analyticsError && (
+          <div style={{ fontSize: '13px', color: '#ef4444', marginBottom: '12px' }}>{analyticsError}</div>
+        )}
+        {analyticsData && (() => {
+          const statBox: React.CSSProperties = {
+            backgroundColor: '#0f172a', borderRadius: '6px', padding: '12px 14px',
+          }
+          const statLabel: React.CSSProperties = {
+            fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase',
+            letterSpacing: '0.05em', marginBottom: '4px',
+          }
+          const statValue: React.CSSProperties = {
+            fontSize: '20px', fontWeight: '700', color: '#e2e8f0',
+          }
+          const smallStat: React.CSSProperties = {
+            fontSize: '12px', color: '#94a3b8',
+          }
+          const listRow: React.CSSProperties = {
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '6px 10px', fontSize: '12px', color: '#cbd5e1',
+            borderBottom: '1px solid #1e293b',
+          }
+
+          const editionColors: Record<string, string> = {
+            base: '#94a3b8', holographic: '#bae6fd', prismatic: '#f9a8d4', diamond: '#a5f3fc',
+          }
+          const tierColors: Record<string, string> = {
+            MEGA_MARKET: '#a78bfa', LARGE_MARKET: '#3b82f6', MID_MARKET: '#94a3b8', SMALL_MARKET: '#f97316',
+          }
+          const { economy, cards, fantasy, users, funding, pickEm } = analyticsData
+
+          const analyticsTabs: { id: AnalyticsTab; label: string }[] = [
+            { id: 'economy', label: 'Economy' },
+            { id: 'cards', label: 'Cards' },
+            { id: 'fantasy', label: 'Fantasy' },
+            { id: 'users', label: 'Users' },
+            { id: 'funding', label: 'Funding' },
+            { id: 'pickem', label: 'Pick-Em' },
+          ]
+
+          return <>
+            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Season {analyticsData.seasonNumber}</div>
+
+            {/* Sub-tabs */}
+            <div style={{
+              display: 'flex', gap: '4px', marginBottom: '20px', flexWrap: 'wrap',
+              borderBottom: '1px solid #334155', paddingBottom: '12px',
+            }}>
+              {analyticsTabs.map(t => (
+                <button key={t.id} onClick={() => setAnalyticsTab(t.id)} style={{
+                  background: analyticsTab === t.id ? '#334155' : 'transparent',
+                  border: '1px solid',
+                  borderColor: analyticsTab === t.id ? '#475569' : '#1e293b',
+                  borderRadius: '4px',
+                  color: analyticsTab === t.id ? '#e2e8f0' : '#94a3b8',
+                  fontSize: '11px', padding: '5px 12px', cursor: 'pointer',
+                  fontWeight: '600',
+                }}>{t.label}</button>
+              ))}
+            </div>
+
+            {/* ── Economy Health ── */}
+            {analyticsTab === 'economy' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>In Circulation</div>
+                  <div style={statValue}>{economy.totalCirculation.toLocaleString()}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>All-Time Earned</div>
+                  <div style={{ ...statValue, color: '#22c55e' }}>{economy.totalEarned.toLocaleString()}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>All-Time Spent</div>
+                  <div style={{ ...statValue, color: '#ef4444' }}>{economy.totalSpent.toLocaleString()}</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>Season Earnings</div>
+                  <div style={{ ...statValue, color: '#22c55e', fontSize: '18px' }}>{economy.seasonEarnings.toLocaleString()}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Season Spending</div>
+                  <div style={{ ...statValue, color: '#ef4444', fontSize: '18px' }}>{economy.seasonSpending.toLocaleString()}</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Earnings by Source</div>
+                  {Object.entries(economy.earningsBreakdown).length === 0
+                    ? <div style={smallStat}>No data yet</div>
+                    : Object.entries(economy.earningsBreakdown)
+                      .sort(([,a],[,b]) => b - a)
+                      .map(([type, amount]) => (
+                        <div key={type} style={listRow}>
+                          <span>{type.replace(/_/g, ' ')}</span>
+                          <span style={{ color: '#22c55e', fontWeight: '600' }}>{amount.toLocaleString()}</span>
+                        </div>
+                      ))
+                  }
+                </div>
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Spending by Type</div>
+                  {Object.entries(economy.spendingBreakdown).length === 0
+                    ? <div style={smallStat}>No data yet</div>
+                    : Object.entries(economy.spendingBreakdown)
+                      .sort(([,a],[,b]) => b - a)
+                      .map(([type, amount]) => (
+                        <div key={type} style={listRow}>
+                          <span>{type.replace(/_/g, ' ')}</span>
+                          <span style={{ color: '#ef4444', fontWeight: '600' }}>{amount.toLocaleString()}</span>
+                        </div>
+                      ))
+                  }
+                </div>
+              </div>
+            </>}
+
+            {/* ── Card Analytics ── */}
+            {analyticsTab === 'cards' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>Total Cards</div>
+                  <div style={statValue}>{cards.totalCards.toLocaleString()}</div>
+                </div>
+                {['base', 'holographic', 'prismatic', 'diamond'].map(ed => (
+                  <div key={ed} style={statBox}>
+                    <div style={statLabel}>{ed}</div>
+                    <div style={{ ...statValue, color: editionColors[ed] || '#e2e8f0', fontSize: '18px' }}>
+                      {(cards.byEdition[ed] || 0).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Acquisition Source</div>
+                  {Object.entries(cards.bySource).length === 0
+                    ? <div style={smallStat}>No data yet</div>
+                    : Object.entries(cards.bySource)
+                      .sort(([,a],[,b]) => b - a)
+                      .map(([src, cnt]) => (
+                        <div key={src} style={listRow}>
+                          <span>{src.replace(/_/g, ' ')}</span>
+                          <span style={{ fontWeight: '600' }}>{cnt.toLocaleString()}</span>
+                        </div>
+                      ))
+                  }
+                </div>
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Top Equipped Effects</div>
+                  {cards.topEffects.length === 0
+                    ? <div style={smallStat}>No data yet</div>
+                    : cards.topEffects.map((ef, i) => (
+                      <div key={i} style={listRow}>
+                        <span>{ef.effectName}</span>
+                        <span style={{ fontWeight: '600' }}>{ef.count}</span>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+              {Object.keys(cards.packOpenings).length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Object.keys(cards.packOpenings).length}, 1fr)`, gap: '10px' }}>
+                  {Object.entries(cards.packOpenings).map(([name, cnt]) => (
+                    <div key={name} style={statBox}>
+                      <div style={statLabel}>{name} packs</div>
+                      <div style={{ ...statValue, fontSize: '18px' }}>{cnt.toLocaleString()}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>}
+
+            {/* ── Fantasy Engagement ── */}
+            {analyticsTab === 'fantasy' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>Rosters</div>
+                  <div style={statValue}>{fantasy.totalRosters}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Avg Points</div>
+                  <div style={statValue}>{fantasy.avgTotalPoints}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Avg Card Bonus</div>
+                  <div style={statValue}>{fantasy.avgCardBonus}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Swaps Used</div>
+                  <div style={statValue}>{fantasy.totalSwapsUsed}</div>
+                  <div style={smallStat}>{fantasy.totalPurchasedSwaps} purchased</div>
+                </div>
+              </div>
+              {fantasy.topRosteredPlayers.length > 0 && (
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Most Rostered Players</div>
+                  {fantasy.topRosteredPlayers.map((p, i) => (
+                    <div key={i} style={listRow}>
+                      <span>{i + 1}. {p.name}</span>
+                      <span style={{ fontWeight: '600' }}>{p.count} rosters</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>}
+
+            {/* ── User Engagement ── */}
+            {analyticsTab === 'users' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>Total Users</div>
+                  <div style={statValue}>{users.totalUsers}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Active 7d</div>
+                  <div style={{ ...statValue, color: users.active7d > 0 ? '#22c55e' : '#e2e8f0' }}>{users.active7d}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Active 30d</div>
+                  <div style={statValue}>{users.active30d}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Onboarding</div>
+                  <div style={statValue}>{users.onboardingRate}%</div>
+                  <div style={smallStat}>{users.onboardedCount} / {users.totalUsers}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Signup Only</div>
+                  <div style={{ ...statValue, color: users.signupOnly > 0 ? '#f59e0b' : '#e2e8f0' }}>{users.signupOnly}</div>
+                  <div style={smallStat}>no beta request</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                {[
+                  { label: 'Fantasy', count: users.adoption.fantasy },
+                  { label: 'Cards', count: users.adoption.cards },
+                  { label: 'Pick-Em', count: users.adoption.pickEm },
+                  { label: 'Funding', count: users.adoption.funding },
+                ].map(({ label, count }) => (
+                  <div key={label} style={statBox}>
+                    <div style={statLabel}>{label}</div>
+                    <div style={{ ...statValue, fontSize: '18px' }}>{count}</div>
+                    <div style={smallStat}>
+                      {users.totalUsers > 0 ? `${Math.round(count / users.totalUsers * 100)}%` : '0%'} of users
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {users.favoriteTeams.length > 0 && (
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Favorite Teams</div>
+                  {users.favoriteTeams.map((ft, i) => (
+                    <div key={i} style={listRow}>
+                      <span>{ft.team}</span>
+                      <span style={{ fontWeight: '600' }}>{ft.count} fans</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>}
+
+            {/* ── Team Funding ── */}
+            {analyticsTab === 'funding' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>Fan Contributions</div>
+                  <div style={statValue}>{funding.totalFanContributions.toLocaleString()}</div>
+                </div>
+                {['MEGA_MARKET', 'LARGE_MARKET', 'MID_MARKET', 'SMALL_MARKET'].map(tier => (
+                  <div key={tier} style={statBox}>
+                    <div style={statLabel}>{tier.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</div>
+                    <div style={{ ...statValue, color: tierColors[tier] || '#e2e8f0', fontSize: '18px' }}>
+                      {funding.tierDistribution[tier] || 0}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {funding.topTeams.length > 0 && (
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Top Funded Teams</div>
+                  {funding.topTeams.map((t, i) => (
+                    <div key={i} style={listRow}>
+                      <span>{t.team}</span>
+                      <span style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <span style={{ color: tierColors[t.tier] || '#94a3b8', fontSize: '11px' }}>
+                          {(t.tier || '').replace(/_/g, ' ')}
+                        </span>
+                        <span style={{ fontWeight: '600' }}>{t.contributions.toLocaleString()}F</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>}
+
+            {/* ── Pick-Em ── */}
+            {analyticsTab === 'pickem' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>Total Picks</div>
+                  <div style={statValue}>{pickEm.totalPicks.toLocaleString()}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Accuracy</div>
+                  <div style={statValue}>{pickEm.accuracy}%</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Participants</div>
+                  <div style={statValue}>{pickEm.participants}</div>
+                </div>
+              </div>
+            </>}
           </>
         })()}
       </div>}
@@ -1138,7 +1545,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #334155' }}>
-                  {['Username', 'Email', 'Favorite Team', 'Floobits', 'Joined', 'Last Login', 'Status'].map(h => (
+                  {['Username', 'Email', 'Favorite Team', 'Floobits', 'Joined', 'Last Login', 'Status', 'Beta', ''].map(h => (
                     <th key={h} style={{
                       ...labelStyle, textAlign: 'left', padding: '8px 10px',
                       marginBottom: 0, whiteSpace: 'nowrap',
@@ -1188,6 +1595,31 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                       }}>
                         {!u.isActive ? 'Inactive' : u.onboarded ? 'Active' : 'Pending'}
                       </span>
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <span style={{
+                        fontSize: '11px', fontWeight: '600', letterSpacing: '0.04em',
+                        color: u.betaStatus === 'approved' ? '#22c55e'
+                          : u.betaStatus === 'no_request' ? '#ef4444'
+                          : u.betaStatus === 'pending' ? '#f59e0b'
+                          : '#94a3b8',
+                      }}>
+                        {u.betaStatus === 'no_request' ? 'No Request' : u.betaStatus === 'approved' ? 'Approved' : u.betaStatus === 'pending' ? 'Pending' : u.betaStatus}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <button
+                        onClick={() => handleDeleteUser(u)}
+                        disabled={deletingUserId === u.id}
+                        style={{
+                          background: 'none', border: 'none',
+                          color: deletingUserId === u.id ? '#475569' : '#ef4444',
+                          cursor: deletingUserId === u.id ? 'default' : 'pointer',
+                          fontSize: '11px', fontWeight: '600', padding: '2px 4px',
+                        }}
+                      >
+                        {deletingUserId === u.id ? '...' : 'Delete'}
+                      </button>
                     </td>
                   </tr>
                 ))}

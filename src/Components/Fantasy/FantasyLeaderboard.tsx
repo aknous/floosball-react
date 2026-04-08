@@ -226,7 +226,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
             No locked rosters yet
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '480px', overflowY: 'auto' }}>
             {snapshotEntries.map(entry => {
               const isExpanded = expandedUserId === entry.userId
               const isMe = currentUserId != null && entry.userId === currentUserId
@@ -308,7 +308,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
       ) : (
         /* Weekly view — current week only */
         currentWeekData && currentWeekData.entries.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '480px', overflowY: 'auto' }}>
             {currentWeekData.entries.map(entry => {
               const isExpanded = expandedUserId === entry.userId
               const isMe = currentUserId != null && entry.userId === currentUserId
