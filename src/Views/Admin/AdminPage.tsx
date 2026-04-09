@@ -1236,7 +1236,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                 {[
                   { label: 'Fantasy', count: users.adoption.fantasy },
-                  { label: 'Cards', count: users.adoption.cards },
+                  { label: 'Cards Equipped', count: cards.usersWhoEquipped ?? 0 },
                   { label: 'Pick-Em', count: users.adoption.pickEm },
                   { label: 'Funding', count: users.adoption.funding },
                 ].map(({ label, count }) => (

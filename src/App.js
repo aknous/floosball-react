@@ -240,13 +240,13 @@ function App() {
     <ClerkProvider publishableKey={CLERK_KEY} appearance={clerkAppearance}>
       <ChakraProvider>
         <AuthProvider>
-          <FloosballProvider>
-            <SeasonWebSocketProvider>
+          <SeasonWebSocketProvider>
+            <FloosballProvider>
               <GamesProvider>
                 <AuthGate />
               </GamesProvider>
-            </SeasonWebSocketProvider>
-          </FloosballProvider>
+            </FloosballProvider>
+          </SeasonWebSocketProvider>
         </AuthProvider>
       </ChakraProvider>
     </ClerkProvider>

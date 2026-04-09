@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useWebSocket } from './useWebSocket'
-import { api } from '@/services/api'
+import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import type { SeasonWebSocketEvent } from '@/types/websocket'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -18,7 +17,7 @@ export interface SeasonState {
 }
 
 export const useSeasonUpdates = () => {
-  const { data: event, connected, error } = useWebSocket<SeasonWebSocketEvent>('/season')
+  const { event, connected, error } = useSeasonWebSocket()
   const hasConnected = useRef(false)
 
   const [seasonState, setSeasonState] = useState<SeasonState>({
