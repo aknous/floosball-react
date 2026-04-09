@@ -360,7 +360,7 @@ const SeasonRecapModal: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       {seasonData.champion.id && (
                         <img
-                          src={`${API_BASE}/teams/${seasonData.champion.id}/avatar?size=36&v=2`}
+                          src={`/avatars/${seasonData.champion.id}.png`}
                           alt={seasonData.champion.abbr || ''}
                           style={{ width: '36px', height: '36px', flexShrink: 0 }}
                         />
@@ -392,7 +392,7 @@ const SeasonRecapModal: React.FC = () => {
                           <span style={{ color: '#475569' }}>·</span>
                           {seasonData.mvp.teamId && (
                             <img
-                              src={`${API_BASE}/teams/${seasonData.mvp.teamId}/avatar?size=18&v=2`}
+                              src={`/avatars/${seasonData.mvp.teamId}.png`}
                               alt={seasonData.mvp.teamAbbr || ''}
                               style={{ width: '18px', height: '18px' }}
                             />
@@ -432,7 +432,7 @@ const SeasonRecapModal: React.FC = () => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
                             {p.teamId && (
                               <img
-                                src={`${API_BASE}/teams/${p.teamId}/avatar?size=18&v=2`}
+                                src={`/avatars/${p.teamId}.png`}
                                 alt={p.teamAbbr || ''}
                                 style={{ width: '18px', height: '18px' }}
                               />
@@ -457,7 +457,7 @@ const SeasonRecapModal: React.FC = () => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <img
-                      src={`${API_BASE}/teams/${teamRecord.teamId}/avatar?size=40&v=2`}
+                      src={`/avatars/${teamRecord.teamId}.png`}
                       alt={teamRecord.teamName}
                       style={{ width: '40px', height: '40px', flexShrink: 0 }}
                     />

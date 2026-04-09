@@ -131,7 +131,7 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
       >
         {user?.favoriteTeamId && (
           <img
-            src={`${API_BASE}/teams/${user.favoriteTeamId}/avatar?size=20&v=2`}
+            src={`/avatars/${user.favoriteTeamId}.png`}
             alt=""
             style={{ width: '20px', height: '20px', flexShrink: 0 }}
           />
@@ -459,7 +459,7 @@ export default function Navbar() {
       >
         {user.favoriteTeamId && (
           <img
-            src={`${API_BASE}/teams/${user.favoriteTeamId}/avatar?size=18&v=2`}
+            src={`/avatars/${user.favoriteTeamId}.png`}
             alt=""
             style={{ width: '18px', height: '18px', flexShrink: 0 }}
           />
@@ -504,7 +504,7 @@ export default function Navbar() {
             <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '32px', minWidth: 0 }}>
               <NavLink to="/dashboard" style={{ textDecoration: 'none', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setMenuOpen(false)}>
                 <img
-                  src={`${API_BASE}/logo?size=${isMobile ? 24 : 30}`}
+                  src="/avatars/league_logo.png"
                   alt="Floosball"
                   width={isMobile ? 24 : 30}
                   height={isMobile ? 24 : 30}
@@ -524,7 +524,7 @@ export default function Navbar() {
 
               {!isMobile && !isTablet && champion && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '7px', paddingLeft: '8px', borderLeft: '1px solid #334155' }}>
-                  <img src={`${API_BASE}/teams/${champion.id}/avatar?size=20&v=2`} alt={champion.name}
+                  <img src={`/avatars/${champion.id}.png`} alt={champion.name}
                     style={{ width: '20px', height: '20px', flexShrink: 0 }} />
                   <span style={{ fontSize: '13px', color: '#f59e0b', fontWeight: '500', whiteSpace: 'nowrap' }}>
                     {champion.city} {champion.name}
@@ -582,7 +582,7 @@ export default function Navbar() {
                       color: isActive ? '#e2e8f0' : '#cbd5e1',
                     })}>
                     <img
-                      src={`${API_BASE}/teams/${user.favoriteTeamId}/avatar?size=16&v=2`}
+                      src={`/avatars/${user.favoriteTeamId}.png`}
                       alt=""
                       style={{ width: '16px', height: '16px' }}
                     />
@@ -637,7 +637,7 @@ export default function Navbar() {
                 {champion && (
                   <>
                     <span>•</span>
-                    <img src={`${API_BASE}/teams/${champion.id}/avatar?size=14&v=2`} alt=""
+                    <img src={`/avatars/${champion.id}.png`} alt=""
                       style={{ width: '14px', height: '14px', alignSelf: 'center' }} />
                     <span style={{ color: '#f59e0b' }}>{champion.city} {champion.name}</span>
                   </>
@@ -657,7 +657,7 @@ export default function Navbar() {
                     border: `1px solid ${favoriteTeam.color}60`,
                     backgroundColor: `${favoriteTeam.color}10`,
                   })}>
-                  <img src={`${API_BASE}/teams/${user.favoriteTeamId}/avatar?size=14&v=2`} alt="" style={{ width: '14px', height: '14px' }} />
+                  <img src={`/avatars/${user.favoriteTeamId}.png`} alt="" style={{ width: '14px', height: '14px' }} />
                   {favoriteTeam.name}
                 </NavLink>
               )}

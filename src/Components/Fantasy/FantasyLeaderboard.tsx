@@ -72,11 +72,10 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
 
   useEffect(() => { fetchWeekly() }, [fetchWeekly])
 
-  // Refetch historical weekly data on milestone events
+  // Refetch historical weekly data on week transitions
   useEffect(() => {
     if (!wsEvent) return
-    if (wsEvent.event === 'game_end' || wsEvent.event === 'week_start'
-      || wsEvent.event === 'week_end' || wsEvent.event === 'season_end') {
+    if (wsEvent.event === 'week_start' || wsEvent.event === 'week_end') {
       fetchWeekly()
     }
   }, [wsEvent, fetchWeekly])
@@ -249,7 +248,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       {entry.favoriteTeamData?.teamId && (
                         <img
-                          src={`${API_BASE}/teams/${entry.favoriteTeamData.teamId}/avatar?size=${isMobile ? 16 : 20}&v=2`}
+                          src={`/avatars/${entry.favoriteTeamData.teamId}.png`}
                           alt=""
                           style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
                         />
@@ -331,7 +330,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
                       {entry.favoriteTeamId && (
                         <img
-                          src={`${API_BASE}/teams/${entry.favoriteTeamId}/avatar?size=${isMobile ? 16 : 20}&v=2`}
+                          src={`/avatars/${entry.favoriteTeamId}.png`}
                           alt=""
                           style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
                         />

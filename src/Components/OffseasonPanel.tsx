@@ -623,7 +623,7 @@ export const OffseasonPanel: React.FC = () => {
                     }}
                   >
                     <img
-                      src={`${API_BASE}/teams/${team.id ?? team.abbr}/avatar?size=24&v=2`}
+                      src={`/avatars/${team.id ?? team.abbr}.png`}
                       alt={team.abbr}
                       style={{ width: '24px', height: '24px', flexShrink: 0 }}
                       onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}

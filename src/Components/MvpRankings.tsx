@@ -246,7 +246,7 @@ export const MvpRankings: React.FC = () => {
                 {player.rank}
               </span>
               <img
-                src={`${API_BASE}/teams/${player.teamId}/avatar?size=20&v=2`}
+                src={`/avatars/${player.teamId}.png`}
                 alt=""
                 style={{ width: '20px', height: '20px', flexShrink: 0 }}
               />
@@ -303,7 +303,7 @@ export const MvpRankings: React.FC = () => {
                 {player.position}
               </span>
               <img
-                src={`${API_BASE}/teams/${player.teamId}/avatar?size=20&v=2`}
+                src={`/avatars/${player.teamId}.png`}
                 alt=""
                 style={{ width: '20px', height: '20px', flexShrink: 0 }}
               />

@@ -102,7 +102,7 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
         {/* Team */}
         {data.teamId ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-            <img src={`${API_BASE}/teams/${data.teamId}/avatar?size=16&v=2`} alt=""
+            <img src={`/avatars/${data.teamId}.png`} alt=""
               style={{ width: '16px', height: '16px', flexShrink: 0 }} />
             <span style={{ fontSize: '14px', color, fontWeight: '600' }}>
               {data.teamCity} {data.team}

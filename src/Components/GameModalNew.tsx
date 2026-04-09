@@ -229,7 +229,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           {/* Team Avatar */}
           {offenseTeamId && (
             <img
-              src={`${API_BASE}/teams/${offenseTeamId}/avatar?size=40&v=2`}
+              src={`/avatars/${offenseTeamId}.png`}
               alt={play.offensiveTeam}
               crossOrigin="anonymous"
               style={{
@@ -465,7 +465,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     outlineOffset: '2px'
                   }}>
                     <img
-                      src={`${API_BASE}/teams/${gameData.homeTeam.id}/avatar?size=40&v=2`}
+                      src={`/avatars/${gameData.homeTeam.id}.png`}
                       alt={gameData.homeTeam.name}
                       crossOrigin="anonymous"
                       style={{ width: '40px', height: '40px', display: 'block' }}
@@ -512,7 +512,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     outlineOffset: '2px'
                   }}>
                     <img
-                      src={`${API_BASE}/teams/${gameData.awayTeam.id}/avatar?size=40&v=2`}
+                      src={`/avatars/${gameData.awayTeam.id}.png`}
                       alt={gameData.awayTeam.name}
                       crossOrigin="anonymous"
                       style={{ width: '40px', height: '40px', display: 'block' }}

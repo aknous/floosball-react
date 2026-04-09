@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useClerk, useUser } from '@clerk/react'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -8,9 +8,17 @@ const BetaBlockedPage: React.FC = () => {
   const { user: clerkUser } = useUser()
   const email = clerkUser?.primaryEmailAddress?.emailAddress ?? ''
 
+  const [mode, setMode] = useState<'request' | 'waitlist'>('request')
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetch(`${API_BASE}/beta/access-mode`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.mode) setMode(d.mode) })
+      .catch(() => {})
+  }, [])
 
   const handleRequest = async () => {
     if (!email) return
@@ -34,6 +42,8 @@ const BetaBlockedPage: React.FC = () => {
     }
   }
 
+  const isWaitlist = mode === 'waitlist'
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -42,6 +52,7 @@ const BetaBlockedPage: React.FC = () => {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '24px',
+      fontFamily: 'pressStart',
     }}>
       <div style={{
         backgroundColor: '#1e293b',
@@ -64,7 +75,7 @@ const BetaBlockedPage: React.FC = () => {
           color: '#e2e8f0',
           marginBottom: '12px',
         }}>
-          Closed Beta
+          {isWaitlist ? 'Waitlist' : 'Closed Beta'}
         </h1>
 
         {submitted ? (
@@ -75,7 +86,9 @@ const BetaBlockedPage: React.FC = () => {
               lineHeight: '1.6',
               marginBottom: '8px',
             }}>
-              Your request has been submitted. You'll receive an email at
+              {isWaitlist
+                ? "You've been added to the waitlist. We'll notify you at"
+                : "Your request has been submitted. You'll receive an email at"}
             </p>
             <p style={{
               fontSize: '14px',
@@ -87,10 +100,12 @@ const BetaBlockedPage: React.FC = () => {
             </p>
             <p style={{
               fontSize: '13px',
-              color: '#64748b',
+              color: '#94a3b8',
               marginBottom: '28px',
             }}>
-              if your access is approved.
+              {isWaitlist
+                ? 'when access opens up.'
+                : 'if your access is approved.'}
             </p>
           </>
         ) : (
@@ -100,9 +115,9 @@ const BetaBlockedPage: React.FC = () => {
             lineHeight: '1.6',
             marginBottom: '28px',
           }}>
-            Floosball is currently in closed beta. If you believe you should have access,
-            check that you're using the email address that was invited, or request access below.
-            Note: season data may be reset periodically as we fix bugs and improve the game.
+            {isWaitlist
+              ? "Floosball isn't accepting new players right now, but you can join the waitlist to be notified when spots open up."
+              : 'Floosball is currently in closed beta. If you believe you should have access, check that you\'re using the email address that was invited, or request access below.'}
           </p>
         )}
 
@@ -116,8 +131,8 @@ const BetaBlockedPage: React.FC = () => {
               onClick={handleRequest}
               disabled={submitting || !email}
               style={{
-                backgroundColor: submitting ? '#1e40af' : '#3b82f6',
-                color: '#fff',
+                backgroundColor: submitting ? '#1e40af' : isWaitlist ? '#f59e0b' : '#3b82f6',
+                color: isWaitlist ? '#0f172a' : '#fff',
                 border: 'none',
                 borderRadius: '8px',
                 padding: '10px 24px',
@@ -127,7 +142,7 @@ const BetaBlockedPage: React.FC = () => {
                 opacity: submitting ? 0.7 : 1,
               }}
             >
-              {submitting ? 'Submitting...' : 'Request Access'}
+              {submitting ? 'Submitting...' : isWaitlist ? 'Join Waitlist' : 'Request Access'}
             </button>
           )}
           <button

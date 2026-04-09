@@ -220,7 +220,7 @@ export default function TeamPage() {
       }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '14px' : '20px' }}>
           <img
-            src={`${API_BASE}/teams/${team.id}/avatar?size=${isMobile ? 56 : 80}&v=2`}
+            src={`/avatars/${team.id}.png`}
             alt={team.name}
             style={{ width: isMobile ? '56px' : '80px', height: isMobile ? '56px' : '80px', flexShrink: 0 }}
           />
@@ -799,7 +799,7 @@ export default function TeamPage() {
                   <span style={{ fontSize: '12px', color: '#64748b' }}>{game.isHome ? 'vs' : '@'}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
                     <img
-                      src={`${API_BASE}/teams/${game.opponent.id}/avatar?size=20&v=2`}
+                      src={`/avatars/${game.opponent.id}.png`}
                       alt={game.opponent.abbr}
                       style={{ width: '20px', height: '20px', flexShrink: 0 }}
                     />

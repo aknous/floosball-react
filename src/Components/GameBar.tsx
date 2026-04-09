@@ -78,7 +78,7 @@ const GameBar: React.FC = () => {
               {/* Away team */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <img
-                  src={`${API_BASE}/teams/${game.awayTeam.id}/avatar?size=16&v=2`}
+                  src={`/avatars/${game.awayTeam.id}.png`}
                   alt=""
                   style={{ width: '16px', height: '16px', flexShrink: 0 }}
                 />
@@ -97,7 +97,7 @@ const GameBar: React.FC = () => {
               {/* Home team */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <img
-                  src={`${API_BASE}/teams/${game.homeTeam.id}/avatar?size=16&v=2`}
+                  src={`/avatars/${game.homeTeam.id}.png`}
                   alt=""
                   style={{ width: '16px', height: '16px', flexShrink: 0 }}
                 />

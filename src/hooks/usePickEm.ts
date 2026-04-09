@@ -37,7 +37,7 @@ export function usePickEm(): UsePickEmResult {
   const { getToken } = useAuth()
   const hasLoadedOnce = useRef(false)
   const fetchIdRef = useRef(0)
-  const lastQuartersRef = useRef<Map<number, number>>(new Map())
+
 
   const fetchWeek = useCallback(async () => {
     const isInitial = !hasLoadedOnce.current
@@ -82,33 +82,18 @@ export function usePickEm(): UsePickEmResult {
     fetchLeaderboard()
   }, [fetchWeek, fetchLeaderboard])
 
-  // WS-driven updates — refetch on key game lifecycle events
+  // WS-driven updates — refetch on week transitions and game results
   useEffect(() => {
     if (!event) return
 
     if (
       event.event === 'week_start' ||
       event.event === 'week_end' ||
-      event.event === 'game_start' ||
       event.event === 'game_end' ||
       event.event === 'pickem_results'
     ) {
       fetchWeek()
       fetchLeaderboard()
-      return
-    }
-
-    // Refetch on quarter changes so multiplier badges stay current
-    if (event.event === 'game_state') {
-      const gameId = (event as any).gameId
-      const quarter = (event as any).quarter
-      if (gameId != null && quarter != null) {
-        const prev = lastQuartersRef.current.get(gameId)
-        if (prev !== quarter) {
-          lastQuartersRef.current.set(gameId, quarter)
-          fetchWeek()
-        }
-      }
     }
   }, [event, fetchWeek, fetchLeaderboard])
 

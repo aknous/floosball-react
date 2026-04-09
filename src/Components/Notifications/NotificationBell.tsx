@@ -70,7 +70,8 @@ export const NotificationBell: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
 
-  // Poll for unread count
+  // Poll for unread count — pauses when tab is hidden
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
     if (!user) return
     const fetchCount = async () => {
@@ -86,9 +87,24 @@ export const NotificationBell: React.FC = () => {
         }
       } catch { /* silent */ }
     }
-    fetchCount()
-    const interval = setInterval(fetchCount, 30000)
-    return () => clearInterval(interval)
+    const startPolling = () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      fetchCount()
+      intervalRef.current = setInterval(fetchCount, 30000)
+    }
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+      } else {
+        startPolling()
+      }
+    }
+    startPolling()
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
   }, [user])
 
   // Fetch full notifications when dropdown opens

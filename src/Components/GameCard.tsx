@@ -137,7 +137,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
               flexShrink: 0
             }}>
             <img
-              src={`${API_BASE}/teams/${homeTeam.id}/avatar?size=32&v=2`}
+              src={`/avatars/${homeTeam.id}.png`}
               alt={homeTeam.name}
               crossOrigin="anonymous"
               style={{ width: '32px', height: '32px', display: 'block' }}
@@ -177,7 +177,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
               flexShrink: 0
             }}>
             <img
-              src={`${API_BASE}/teams/${awayTeam.id}/avatar?size=32&v=2`}
+              src={`/avatars/${awayTeam.id}.png`}
               alt={awayTeam.name}
               crossOrigin="anonymous"
               style={{ width: '32px', height: '32px', display: 'block' }}

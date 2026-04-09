@@ -199,7 +199,7 @@ export const PlayerLeaders: React.FC = () => {
             >
               <span style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{player.rank}</span>
               <img
-                src={`${API_BASE}/teams/${player.teamId}/avatar?size=24&v=2`}
+                src={`/avatars/${player.teamId}.png`}
                 alt=""
                 style={{ width: '24px', height: '24px', flexShrink: 0 }}
               />

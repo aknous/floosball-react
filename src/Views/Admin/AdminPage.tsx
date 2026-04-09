@@ -50,11 +50,17 @@ interface AnalyticsData {
     totalCirculation: number; totalEarned: number; totalSpent: number
     earningsBreakdown: Record<string, number>; spendingBreakdown: Record<string, number>
     seasonEarnings: number; seasonSpending: number
+    avgBalance?: number; medianBalance?: number
+    capHitRate?: number; capHitters?: number; capHitWeek?: number | null
+    richestUsers?: { username: string; balance: number }[]
   }
   cards: {
     totalCards: number; byEdition: Record<string, number>; bySource: Record<string, number>
     topEffects: { effectName: string; count: number }[]
+    bottomEffects?: { effectName: string; count: number }[]
     packOpenings: Record<string, number>
+    combineUsage?: Record<string, number>; totalCombineUses?: number
+    usersWhoEquipped?: number
   }
   fantasy: {
     totalRosters: number; avgTotalPoints: number; avgCardBonus: number
@@ -67,6 +73,12 @@ interface AnalyticsData {
     favoriteTeams: { team: string; count: number }[]
     adoption: { fantasy: number; cards: number; pickEm: number; funding: number }
     signupOnly: number
+    churnRiskCount?: number
+    dailyActiveUsers?: { date: string; count: number }[]
+    onboardingFunnel?: {
+      hasAccount: number; pickedUsername: number; choseFavTeam: number
+      draftedRoster: number; hasCards: number
+    }
   }
   funding: {
     totalFanContributions: number
@@ -75,6 +87,7 @@ interface AnalyticsData {
   }
   pickEm: {
     totalPicks: number; accuracy: number; participants: number
+    trend?: { week: number; participants: number; picks: number }[]
   }
 }
 
@@ -252,6 +265,34 @@ const CATEGORY_FOR_POSITION: Record<string, string> = {
 const AdminContent: React.FC<{ password: string }> = ({ password }) => {
   const headers = { 'Content-Type': 'application/json', 'X-Admin-Password': password }
 
+  // Access mode toggle (request vs waitlist)
+  const [accessMode, setAccessMode] = useState<'request' | 'waitlist'>('request')
+  const [accessModeLoading, setAccessModeLoading] = useState(false)
+
+  const fetchAccessMode = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/beta/access-mode`, { headers })
+      if (res.ok) {
+        const data = await res.json()
+        setAccessMode(data.mode || 'request')
+      }
+    } catch { /* silent */ }
+  }, [])
+
+  React.useEffect(() => { fetchAccessMode() }, [fetchAccessMode])
+
+  const toggleAccessMode = async () => {
+    const newMode = accessMode === 'request' ? 'waitlist' : 'request'
+    setAccessModeLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/admin/beta/access-mode`, {
+        method: 'POST', headers, body: JSON.stringify({ mode: newMode }),
+      })
+      if (res.ok) setAccessMode(newMode)
+    } catch { /* silent */ }
+    finally { setAccessModeLoading(false) }
+  }
+
   // Beta access requests
   const [betaRequests, setBetaRequests] = useState<BetaRequest[]>([])
   const [requestsLoading, setRequestsLoading] = useState(false)
@@ -404,6 +445,28 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
   const [cardLoading, setCardLoading] = useState(false)
   const [playerSearching, setPlayerSearching] = useState(false)
 
+  // User sorting/filtering
+  const [userSort, setUserSort] = useState<string>('newest')
+  const [userFilter, setUserFilter] = useState<string>('all')
+  const [reminderLoading, setReminderLoading] = useState(false)
+  const [reminderResult, setReminderResult] = useState<string | null>(null)
+
+  const fetchUsers = useCallback(async (sort?: string, filter?: string) => {
+    try {
+      const params = new URLSearchParams()
+      if (sort && sort !== 'newest') params.set('sort', sort === 'last_login' ? 'last_login' : sort === 'username' ? 'username' : sort === 'oldest' ? 'oldest' : '')
+      if (filter && filter !== 'all') params.set('filter', filter)
+      const qs = params.toString()
+      const res = await fetch(`${API_BASE}/admin/users${qs ? `?${qs}` : ''}`, {
+        headers: { 'X-Admin-Password': password },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setAdminUsers(data.data?.users ?? [])
+      }
+    } catch { /* silent */ }
+  }, [password])
+
   // Username re-roll
   const [rerollingUserId, setRerollingUserId] = useState<number | null>(null)
   const [deletingUserId, setDeletingUserId] = useState<number | null>(null)
@@ -442,6 +505,25 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     finally { setRerollingUserId(null) }
   }
 
+  const handleSendReminders = async () => {
+    if (!window.confirm('Send onboarding reminder emails to all users who haven\'t completed setup?')) return
+    setReminderLoading(true)
+    setReminderResult(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/users/send-onboarding-reminders`, {
+        method: 'POST', headers,
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      const data = await res.json()
+      const d = data.data
+      setReminderResult(`Sent ${d.sent} reminder${d.sent !== 1 ? 's' : ''}${d.failed ? ` (${d.failed} failed)` : ''} out of ${d.totalPending} pending users`)
+    } catch (e: any) {
+      setReminderResult(`Error: ${e.message}`)
+    } finally {
+      setReminderLoading(false)
+    }
+  }
+
   // Floobits grant
   const [floobitsUser, setFloobitsUser] = useState<AdminUser | null>(null)
   const [floobitsAmount, setFloobitsAmount] = useState(100)
@@ -462,20 +544,9 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
         }
       } catch { /* silent */ }
     }
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/admin/users`, {
-          headers: { 'X-Admin-Password': password },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setAdminUsers(data.data?.users ?? [])
-        }
-      } catch { /* silent */ }
-    }
     fetchOptions()
     fetchUsers()
-  }, [password])
+  }, [password, fetchUsers])
 
   // Player search with debounce
   useEffect(() => {
@@ -970,6 +1041,37 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                   }
                 </div>
               </div>
+              {economy.avgBalance != null && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginTop: '12px' }}>
+                  <div style={statBox}>
+                    <div style={statLabel}>Avg Balance</div>
+                    <div style={statValue}>{economy.avgBalance?.toLocaleString()}</div>
+                  </div>
+                  <div style={statBox}>
+                    <div style={statLabel}>Median Balance</div>
+                    <div style={statValue}>{economy.medianBalance?.toLocaleString()}</div>
+                  </div>
+                  <div style={statBox}>
+                    <div style={statLabel}>FP Cap Hit Rate</div>
+                    <div style={statValue}>{economy.capHitRate ?? 0}%</div>
+                    <div style={smallStat}>
+                      {economy.capHitters ?? 0}/{economy.capHitRate != null ? Math.round((economy.capHitters ?? 0) / ((economy.capHitRate ?? 0) / 100 || 1)) : 0} users
+                      {economy.capHitWeek ? ` (wk ${economy.capHitWeek})` : ''}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {(economy.richestUsers?.length ?? 0) > 0 && (
+                <div style={{ ...statBox, marginTop: '12px' }}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Top Balances</div>
+                  {economy.richestUsers!.map((u, i) => (
+                    <div key={i} style={listRow}>
+                      <span>{i + 1}. {u.username}</span>
+                      <span style={{ fontWeight: '600', color: '#f59e0b' }}>{u.balance.toLocaleString()}F</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>}
 
             {/* ── Card Analytics ── */}
@@ -1026,6 +1128,43 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                   ))}
                 </div>
               )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
+                {(cards.bottomEffects?.length ?? 0) > 0 && (
+                  <div style={statBox}>
+                    <div style={{ ...statLabel, marginBottom: '8px' }}>Least Equipped Effects</div>
+                    {cards.bottomEffects!.map((ef, i) => (
+                      <div key={i} style={listRow}>
+                        <span>{ef.effectName}</span>
+                        <span style={{ fontWeight: '600', color: '#94a3b8' }}>{ef.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Combine Usage</div>
+                  {!cards.combineUsage || Object.keys(cards.combineUsage).length === 0
+                    ? <div style={smallStat}>No upgrades yet</div>
+                    : Object.entries(cards.combineUsage).map(([type, cnt]) => (
+                      <div key={type} style={listRow}>
+                        <span>{type.replace(/_/g, ' ')}</span>
+                        <span style={{ fontWeight: '600' }}>{cnt}</span>
+                      </div>
+                    ))
+                  }
+                  {(cards.totalCombineUses ?? 0) > 0 && (
+                    <div style={{ ...smallStat, marginTop: '6px' }}>{cards.totalCombineUses} total operations</div>
+                  )}
+                </div>
+              </div>
+              {cards.usersWhoEquipped != null && (
+                <div style={{ ...statBox, marginTop: '12px' }}>
+                  <div style={statLabel}>Users Equipped This Season</div>
+                  <div style={{ ...statValue, fontSize: '18px' }}>{cards.usersWhoEquipped}</div>
+                  <div style={smallStat}>
+                    {users.totalUsers > 0 ? `${Math.round(cards.usersWhoEquipped / users.totalUsers * 100)}%` : '0%'} of users
+                  </div>
+                </div>
+              )}
             </>}
 
             {/* ── Fantasy Engagement ── */}
@@ -1064,7 +1203,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
 
             {/* ── User Engagement ── */}
             {analyticsTab === 'users' && <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px', marginBottom: '12px' }}>
                 <div style={statBox}>
                   <div style={statLabel}>Total Users</div>
                   <div style={statValue}>{users.totalUsers}</div>
@@ -1087,6 +1226,11 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                   <div style={{ ...statValue, color: users.signupOnly > 0 ? '#f59e0b' : '#e2e8f0' }}>{users.signupOnly}</div>
                   <div style={smallStat}>no beta request</div>
                 </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Churn Risk</div>
+                  <div style={{ ...statValue, color: (users.churnRiskCount ?? 0) > 0 ? '#ef4444' : '#22c55e' }}>{users.churnRiskCount ?? 0}</div>
+                  <div style={smallStat}>14d+ inactive</div>
+                </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                 {[
@@ -1104,6 +1248,56 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                   </div>
                 ))}
               </div>
+              {users.onboardingFunnel && (
+                <div style={{ ...statBox, marginBottom: '12px' }}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Onboarding Funnel</div>
+                  {[
+                    { label: 'Has Account', count: users.onboardingFunnel.hasAccount },
+                    { label: 'Picked Username', count: users.onboardingFunnel.pickedUsername },
+                    { label: 'Chose Favorite Team', count: users.onboardingFunnel.choseFavTeam },
+                    { label: 'Drafted Fantasy Roster', count: users.onboardingFunnel.draftedRoster },
+                    { label: 'Has Cards', count: users.onboardingFunnel.hasCards },
+                  ].map(({ label, count }) => (
+                    <div key={label} style={listRow}>
+                      <span>{label}</span>
+                      <span style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ fontWeight: '600' }}>{count}</span>
+                        <span style={{ color: '#64748b', fontSize: '11px' }}>
+                          {users.onboardingFunnel!.hasAccount > 0
+                            ? `${Math.round(count / users.onboardingFunnel!.hasAccount * 100)}%`
+                            : '0%'}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(users.dailyActiveUsers?.length ?? 0) > 0 && (
+                <div style={{ ...statBox, marginBottom: '12px' }}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Daily Active (Last 28d)</div>
+                  <div style={{ display: 'flex', gap: '2px', alignItems: 'flex-end', height: '40px' }}>
+                    {(() => {
+                      const dau = users.dailyActiveUsers!
+                      const maxCount = Math.max(...dau.map(d => d.count))
+                      return dau.map((d, i) => (
+                        <div key={i} title={`${d.date}: ${d.count} users`} style={{
+                          flex: 1, backgroundColor: '#3b82f6', borderRadius: '1px',
+                          height: maxCount > 0 ? `${(d.count / maxCount) * 100}%` : '0',
+                          minHeight: d.count > 0 ? '2px' : '0',
+                        }} />
+                      ))
+                    })()}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                    <span style={{ fontSize: '10px', color: '#64748b' }}>
+                      {users.dailyActiveUsers![0]?.date}
+                    </span>
+                    <span style={{ fontSize: '10px', color: '#64748b' }}>
+                      {users.dailyActiveUsers![users.dailyActiveUsers!.length - 1]?.date}
+                    </span>
+                  </div>
+                </div>
+              )}
               {users.favoriteTeams.length > 0 && (
                 <div style={statBox}>
                   <div style={{ ...statLabel, marginBottom: '8px' }}>Favorite Teams</div>
@@ -1167,6 +1361,20 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                   <div style={statValue}>{pickEm.participants}</div>
                 </div>
               </div>
+              {(pickEm.trend?.length ?? 0) > 0 && (
+                <div style={{ ...statBox, marginTop: '12px' }}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Weekly Participation</div>
+                  {pickEm.trend!.map(w => (
+                    <div key={w.week} style={listRow}>
+                      <span>Week {w.week}</span>
+                      <span style={{ display: 'flex', gap: '16px' }}>
+                        <span style={{ color: '#94a3b8', fontSize: '11px' }}>{w.participants} users</span>
+                        <span style={{ fontWeight: '600' }}>{w.picks} picks</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>}
           </>
         })()}
@@ -1175,6 +1383,35 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
       {/* Beta Access Requests */}
       {activeSection === 'requests' && <div style={sectionStyle}>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Beta Access Requests</h2>
+
+        {/* Access Mode Toggle */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '12px',
+          padding: '10px 14px', backgroundColor: '#0f172a',
+          borderRadius: '6px', marginBottom: '16px',
+        }}>
+          <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600' }}>Access Mode:</span>
+          <button
+            onClick={toggleAccessMode}
+            disabled={accessModeLoading}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              background: 'none', border: '1px solid #334155',
+              borderRadius: '4px', padding: '4px 12px', fontSize: '12px',
+              fontWeight: '600', cursor: accessModeLoading ? 'not-allowed' : 'pointer',
+              color: accessMode === 'waitlist' ? '#f59e0b' : '#3b82f6',
+              opacity: accessModeLoading ? 0.5 : 1,
+            }}
+          >
+            {accessMode === 'waitlist' ? 'Waitlist' : 'Request Access'}
+          </button>
+          <span style={{ fontSize: '11px', color: '#64748b' }}>
+            {accessMode === 'waitlist'
+              ? 'Users see "Join Waitlist" — no individual approvals needed'
+              : 'Users see "Request Access" — you approve individually'}
+          </span>
+        </div>
+
         <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
           Pending requests from users who want to join the closed beta.
         </p>
@@ -1535,8 +1772,71 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
       {/* Registered Users */}
       {activeSection === 'users' && <div style={sectionStyle}>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Registered Users</h2>
-        <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
-          {adminUsers.length} registered user{adminUsers.length !== 1 ? 's' : ''}
+
+        {/* Controls row */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+          marginBottom: '16px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>Filter:</span>
+            {(['all', 'active', 'pending', 'inactive'] as const).map(f => (
+              <button key={f} onClick={() => { setUserFilter(f); fetchUsers(userSort, f) }} style={{
+                background: userFilter === f ? '#334155' : 'none',
+                border: '1px solid', borderColor: userFilter === f ? '#475569' : '#334155',
+                borderRadius: '4px', padding: '3px 10px', fontSize: '11px',
+                fontWeight: '600', cursor: 'pointer',
+                color: userFilter === f ? '#e2e8f0' : '#94a3b8',
+              }}>
+                {f === 'all' ? 'All' : f === 'active' ? 'Active' : f === 'pending' ? 'Pending' : 'Inactive'}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>Sort:</span>
+            <select
+              value={userSort}
+              onChange={e => { setUserSort(e.target.value); fetchUsers(e.target.value, userFilter) }}
+              style={{
+                backgroundColor: '#0f172a', border: '1px solid #334155',
+                borderRadius: '4px', padding: '3px 8px', fontSize: '11px',
+                color: '#e2e8f0', cursor: 'pointer',
+              }}
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="last_login">Last Login</option>
+              <option value="username">Username</option>
+            </select>
+          </div>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={handleSendReminders}
+            disabled={reminderLoading}
+            style={{
+              backgroundColor: '#334155', color: '#e2e8f0', border: 'none',
+              borderRadius: '4px', padding: '4px 12px', fontSize: '11px',
+              fontWeight: '600', cursor: reminderLoading ? 'not-allowed' : 'pointer',
+              opacity: reminderLoading ? 0.5 : 1,
+            }}
+          >
+            {reminderLoading ? 'Sending...' : 'Send Onboarding Reminders'}
+          </button>
+        </div>
+
+        {reminderResult && (
+          <div style={{
+            fontSize: '12px', marginBottom: '12px', padding: '8px 12px',
+            backgroundColor: '#0f172a', borderRadius: '4px',
+            color: reminderResult.startsWith('Error') ? '#ef4444' : '#22c55e',
+          }}>
+            {reminderResult}
+          </div>
+        )}
+
+        <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '12px' }}>
+          {adminUsers.length} user{adminUsers.length !== 1 ? 's' : ''}
+          {userFilter !== 'all' ? ` (${userFilter})` : ''}
         </p>
         {adminUsers.length === 0 ? (
           <div style={{ fontSize: '13px', color: '#94a3b8' }}>No users found.</div>

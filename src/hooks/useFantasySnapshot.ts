@@ -160,6 +160,7 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
   const hasLoadedOnce = useRef(false)
   const fetchIdRef = useRef(0)
   const lastSeenWeekRef = useRef(0)
+  const lastFetchTimeRef = useRef(0)
 
   const fetchSnapshot = useCallback(async () => {
     const isInitial = !hasLoadedOnce.current
@@ -243,13 +244,17 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
       return
     }
 
-    // Re-fetch on other milestone events
+    // Re-fetch on other milestone events (debounce rapid succession)
     if (
       event.event === 'game_end' ||
       event.event === 'week_end' ||
       event.event === 'season_end'
     ) {
-      fetchSnapshot()
+      const now = Date.now()
+      if (now - lastFetchTimeRef.current > 2000) {
+        lastFetchTimeRef.current = now
+        fetchSnapshot()
+      }
       return
     }
 

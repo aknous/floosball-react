@@ -201,7 +201,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <img src={`${API_BASE}/teams/${homeTeam.id}/avatar?size=20&v=2`} alt={homeTeam.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+                    <img src={`/avatars/${homeTeam.id}.png`} alt={homeTeam.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
                     <span style={{ fontSize: '13px', fontWeight: homeWon ? '700' : '400', color: homeWon ? '#e2e8f0' : '#94a3b8' }}>
                       {homeTeam.abbr}
                     </span>
@@ -213,7 +213,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
                     <span style={{ fontSize: '13px', fontWeight: awayWon ? '700' : '400', color: awayWon ? '#e2e8f0' : '#94a3b8' }}>
                       {awayTeam.abbr}
                     </span>
-                    <img src={`${API_BASE}/teams/${awayTeam.id}/avatar?size=20&v=2`} alt={awayTeam.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+                    <img src={`/avatars/${awayTeam.id}.png`} alt={awayTeam.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
                   </div>
                 </div>
               </div>
@@ -235,11 +235,11 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                  <img src={`${API_BASE}/teams/${homeTeam.id}/avatar?size=16&v=2`} alt={homeTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+                  <img src={`/avatars/${homeTeam.id}.png`} alt={homeTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
                   <span style={{ fontSize: '12px', color: '#94a3b8' }}>{homeTeam.abbr}</span>
                   <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600', letterSpacing: '0.08em' }}>KICKOFF</span>
                   <span style={{ fontSize: '12px', color: '#94a3b8' }}>{awayTeam.abbr}</span>
-                  <img src={`${API_BASE}/teams/${awayTeam.id}/avatar?size=16&v=2`} alt={awayTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+                  <img src={`/avatars/${awayTeam.id}.png`} alt={awayTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
                 </div>
               </div>
             </React.Fragment>
@@ -266,7 +266,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
             {/* Header: team dot + abbr + time | badge */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <img src={`${API_BASE}/teams/${featuredTeam.id}/avatar?size=16&v=2`} alt={featuredTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+                <img src={`/avatars/${featuredTeam.id}.png`} alt={featuredTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
                 <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.04em' }}>
                   {featuredTeam.abbr}
                 </span>

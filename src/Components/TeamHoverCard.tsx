@@ -84,7 +84,7 @@ const Card: React.FC<{ data: TeamDetail; mouseX: number; mouseY: number }> = ({ 
         {/* Header: avatar + name + record */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
           <img
-            src={`${API_BASE}/teams/${data.id}/avatar?size=40&v=2`}
+            src={`/avatars/${data.id}.png`}
             alt={data.abbr}
             style={{ width: '40px', height: '40px', flexShrink: 0 }}
           />

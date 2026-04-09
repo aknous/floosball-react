@@ -189,7 +189,7 @@ export const FavoriteTeamModal: React.FC<FavoriteTeamModalProps> = ({ visible, o
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '14px', marginBottom: isMobile ? '10px' : '14px' }}>
               <img
-                src={`${API_BASE}/teams/${confirmTeam.id}/avatar?size=${isMobile ? 32 : 40}&v=2`}
+                src={`/avatars/${confirmTeam.id}.png`}
                 alt={confirmTeam.abbr}
                 style={{ width: isMobile ? '32px' : '40px', height: isMobile ? '32px' : '40px', borderRadius: '50%', flexShrink: 0 }}
               />
@@ -278,7 +278,7 @@ export const FavoriteTeamModal: React.FC<FavoriteTeamModalProps> = ({ visible, o
                   >
                     <div style={{ flexShrink: 0 }}>
                       <img
-                        src={`${API_BASE}/teams/${team.id}/avatar?size=${isMobile ? 32 : 36}&v=2`}
+                        src={`/avatars/${team.id}.png`}
                         alt={team.abbr}
                         style={{ width: isMobile ? '32px' : '36px', height: isMobile ? '32px' : '36px', display: 'block', borderRadius: '50%' }}
                       />
