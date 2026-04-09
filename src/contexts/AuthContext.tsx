@@ -16,6 +16,7 @@ export interface AuthUser {
   emailDayReport: boolean
   emailSeasonReport: boolean
   teamFundingPct: number
+  isAdmin: boolean
 }
 
 export interface FantasyRosterPlayer {
@@ -128,11 +129,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       didFetchRef.current = false
       setAppUser(null)
       setFantasyRoster(null)
+      setBetaBlocked(false)
       setLoading(false)
       return
     }
     if (didFetchRef.current) return
     didFetchRef.current = true
+    setLoading(true)
     refetchUser().finally(() => setLoading(false))
     refetchRoster()
   }, [isSignedIn, isLoaded, refetchUser, refetchRoster])

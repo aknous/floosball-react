@@ -5,7 +5,7 @@ import { useFloosball } from '@/contexts/FloosballContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { useUser } from '@clerk/react'
+
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { FavoriteTeamModal } from './Auth/FavoriteTeamModal'
 import { AuthModal } from './Auth/AuthModal'
@@ -297,6 +297,21 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
         )}
       </div>
 
+      {user?.isAdmin && (
+        <NavLink
+          to="/admin"
+          onClick={onClose}
+          style={{
+            display: 'block', padding: '11px 14px',
+            fontSize: '13px', color: '#f87171', textDecoration: 'none',
+            fontFamily: 'inherit', transition: 'color 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = '#fca5a5'}
+          onMouseLeave={e => e.currentTarget.style.color = '#f87171'}
+        >
+          Admin Panel
+        </NavLink>
+      )}
       <button
         onClick={() => { logout(); onClose() }}
         style={{
@@ -332,9 +347,6 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0)
   const isMobile = useIsMobile()
   const isTablet = useIsMobile(1200)
-  const { user: clerkUser } = useUser()
-  const isAdmin = clerkUser?.publicMetadata?.role === 'admin'
-
   // Poll for notification count
   const hasUser = !!user
   useEffect(() => {
@@ -615,14 +627,6 @@ export default function Navbar() {
                     <span style={{ fontSize: '12px', color: '#ca8a04' }}>F</span>
                   </button>
                 )}
-                {isAdmin && (
-                  <NavLink to="/admin" style={({ isActive }) => ({
-                    color: isActive ? '#f87171' : '#64748b',
-                    textDecoration: 'none', fontSize: isTablet ? '13px' : '14px', fontWeight: '500', transition: 'color 0.2s',
-                  })}>
-                    Admin
-                  </NavLink>
-                )}
                 {userControls}
               </div>
             )}
@@ -643,7 +647,7 @@ export default function Navbar() {
                   </>
                 )}
               </div>
-              {[['Dashboard', '/dashboard'], ['Players', '/players'], ['Fantasy', '/fantasy'], ...(isAdmin ? [['Admin', '/admin']] : [])].map(([label, path]) => (
+              {[['Dashboard', '/dashboard'], ['Players', '/players'], ['Fantasy', '/fantasy']].map(([label, path]) => (
                 <NavLink key={label} to={path} onClick={() => setMenuOpen(false)}
                   style={({ isActive }) => navLinkStyle(isActive)}>
                   {label}
