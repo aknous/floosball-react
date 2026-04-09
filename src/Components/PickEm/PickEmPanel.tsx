@@ -300,7 +300,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
           <img
-            src={`${API_BASE}/teams/${game.homeTeam.id}/avatar?size=20&v=2`}
+            src={`/avatars/${game.homeTeam.id}.png`}
             alt={game.homeTeam.abbr}
             crossOrigin="anonymous"
             style={{ width: '20px', height: '20px', flexShrink: 0 }}
@@ -389,7 +389,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
           <img
-            src={`${API_BASE}/teams/${game.awayTeam.id}/avatar?size=20&v=2`}
+            src={`/avatars/${game.awayTeam.id}.png`}
             alt={game.awayTeam.abbr}
             crossOrigin="anonymous"
             style={{ width: '20px', height: '20px', flexShrink: 0 }}

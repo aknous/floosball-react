@@ -441,7 +441,7 @@ export default function PlayerPage() {
               <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
                 {player.teamId ? (
                   <Link to={`/team/${player.teamId}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <img src={`${API_BASE}/teams/${player.teamId}/avatar?size=32&v=2`} alt="" style={{ width: '32px', height: '32px' }} />
+                    <img src={`/avatars/${player.teamId}.png`} alt="" style={{ width: '32px', height: '32px' }} />
                     <span style={{ fontSize: '20px', color: teamColor, fontWeight: '600' }}>
                       {player.teamCity} {player.team}
                     </span>

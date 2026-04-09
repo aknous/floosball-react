@@ -12,6 +12,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.8.1',
+    date: '2026-04-08',
+    changes: [],
+    sections: [
+      {
+        label: 'Changes',
+        items: [
+          'Significantly faster page loads — API responses are now compressed and cached',
+          'Team avatars and league logo load instantly from local assets instead of the server',
+          'Reduced unnecessary background requests — pages only refresh data when it actually changes',
+          'Notifications pause when the browser tab is hidden to save resources',
+          'Improved server stability and health monitoring under heavy traffic',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.8.0',
     date: '2026-04-05',
     changes: [],

@@ -126,7 +126,7 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
                 <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>{index + 1}</span>
                 <Link to={`/team/${team.id}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, textDecoration: 'none' }}>
                   <img
-                    src={`${API_BASE}/teams/${team.id}/avatar?size=24&v=2`}
+                    src={`/avatars/${team.id}.png`}
                     alt={team.abbr}
                     style={{ width: '24px', height: '24px', flexShrink: 0 }}
                   />
@@ -214,7 +214,7 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
           {/* Team info */}
           <Link to={`/team/${team.id}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, textDecoration: 'none' }}>
             <img
-              src={`${API_BASE}/teams/${team.id}/avatar?size=24&v=2`}
+              src={`/avatars/${team.id}.png`}
               alt={team.abbr}
               style={{ width: '24px', height: '24px', flexShrink: 0 }}
             />

@@ -284,7 +284,7 @@ export default function PlayersPage() {
                       <td style={{ padding: '7px 10px', borderRight: '1px solid #1a2640' }}>
                         {player.teamId ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <img src={`${API_BASE}/teams/${player.teamId}/avatar?size=18&v=2`} alt=""
+                            <img src={`/avatars/${player.teamId}.png`} alt=""
                               style={{ width: '18px', height: '18px', flexShrink: 0 }} />
                             <Link to={`/team/${player.teamId}`}
                               style={{ fontSize: '14px', color: player.teamColor || '#94a3b8', fontWeight: '600', textDecoration: 'none', whiteSpace: 'nowrap' }}>

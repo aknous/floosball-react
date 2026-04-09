@@ -44,6 +44,53 @@ interface MonitorData {
   websockets: { total_connections: number; active_channels: number; channels: Record<string, number> }
 }
 
+interface AnalyticsData {
+  seasonNumber: number
+  economy: {
+    totalCirculation: number; totalEarned: number; totalSpent: number
+    earningsBreakdown: Record<string, number>; spendingBreakdown: Record<string, number>
+    seasonEarnings: number; seasonSpending: number
+    avgBalance?: number; medianBalance?: number
+    capHitRate?: number; capHitters?: number; capHitWeek?: number | null
+    richestUsers?: { username: string; balance: number }[]
+  }
+  cards: {
+    totalCards: number; byEdition: Record<string, number>; bySource: Record<string, number>
+    topEffects: { effectName: string; count: number }[]
+    bottomEffects?: { effectName: string; count: number }[]
+    packOpenings: Record<string, number>
+    combineUsage?: Record<string, number>; totalCombineUses?: number
+    usersWhoEquipped?: number
+  }
+  fantasy: {
+    totalRosters: number; avgTotalPoints: number; avgCardBonus: number
+    totalSwapsUsed: number; totalPurchasedSwaps: number
+    topRosteredPlayers: { name: string; count: number }[]
+  }
+  users: {
+    totalUsers: number; active7d: number; active30d: number
+    onboardingRate: number; onboardedCount: number
+    favoriteTeams: { team: string; count: number }[]
+    adoption: { fantasy: number; cards: number; pickEm: number; funding: number }
+    signupOnly: number
+    churnRiskCount?: number
+    dailyActiveUsers?: { date: string; count: number }[]
+    onboardingFunnel?: {
+      hasAccount: number; pickedUsername: number; choseFavTeam: number
+      draftedRoster: number; hasCards: number
+    }
+  }
+  funding: {
+    totalFanContributions: number
+    tierDistribution: Record<string, number>
+    topTeams: { team: string; contributions: number; tier: string }[]
+  }
+  pickEm: {
+    totalPicks: number; accuracy: number; participants: number
+    trend?: { week: number; participants: number; picks: number }[]
+  }
+}
+
 const sectionStyle: React.CSSProperties = {
   backgroundColor: '#1e293b',
   borderRadius: '8px',
@@ -191,6 +238,7 @@ interface AdminUser {
   createdAt: string | null
   isActive: boolean
   lastLoginAt: string | null
+  betaStatus: string
 }
 
 interface EffectOption { name: string; displayName: string; edition: string }
@@ -216,6 +264,34 @@ const CATEGORY_FOR_POSITION: Record<string, string> = {
 
 const AdminContent: React.FC<{ password: string }> = ({ password }) => {
   const headers = { 'Content-Type': 'application/json', 'X-Admin-Password': password }
+
+  // Access mode toggle (request vs waitlist)
+  const [accessMode, setAccessMode] = useState<'request' | 'waitlist'>('request')
+  const [accessModeLoading, setAccessModeLoading] = useState(false)
+
+  const fetchAccessMode = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/beta/access-mode`, { headers })
+      if (res.ok) {
+        const data = await res.json()
+        setAccessMode(data.mode || 'request')
+      }
+    } catch { /* silent */ }
+  }, [])
+
+  React.useEffect(() => { fetchAccessMode() }, [fetchAccessMode])
+
+  const toggleAccessMode = async () => {
+    const newMode = accessMode === 'request' ? 'waitlist' : 'request'
+    setAccessModeLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/admin/beta/access-mode`, {
+        method: 'POST', headers, body: JSON.stringify({ mode: newMode }),
+      })
+      if (res.ok) setAccessMode(newMode)
+    } catch { /* silent */ }
+    finally { setAccessModeLoading(false) }
+  }
 
   // Beta access requests
   const [betaRequests, setBetaRequests] = useState<BetaRequest[]>([])
@@ -369,8 +445,47 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
   const [cardLoading, setCardLoading] = useState(false)
   const [playerSearching, setPlayerSearching] = useState(false)
 
+  // User sorting/filtering
+  const [userSort, setUserSort] = useState<string>('newest')
+  const [userFilter, setUserFilter] = useState<string>('all')
+  const [reminderLoading, setReminderLoading] = useState(false)
+  const [reminderResult, setReminderResult] = useState<string | null>(null)
+
+  const fetchUsers = useCallback(async (sort?: string, filter?: string) => {
+    try {
+      const params = new URLSearchParams()
+      if (sort && sort !== 'newest') params.set('sort', sort === 'last_login' ? 'last_login' : sort === 'username' ? 'username' : sort === 'oldest' ? 'oldest' : '')
+      if (filter && filter !== 'all') params.set('filter', filter)
+      const qs = params.toString()
+      const res = await fetch(`${API_BASE}/admin/users${qs ? `?${qs}` : ''}`, {
+        headers: { 'X-Admin-Password': password },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setAdminUsers(data.data?.users ?? [])
+      }
+    } catch { /* silent */ }
+  }, [password])
+
   // Username re-roll
   const [rerollingUserId, setRerollingUserId] = useState<number | null>(null)
+  const [deletingUserId, setDeletingUserId] = useState<number | null>(null)
+
+  const handleDeleteUser = async (user: AdminUser) => {
+    if (!window.confirm(`Permanently delete user "${user.username || user.email}"?\n\nThis removes ALL data: cards, rosters, picks, transactions, etc. This cannot be undone.`)) return
+    setDeletingUserId(user.id)
+    try {
+      const res = await fetch(`${API_BASE}/admin/users/${user.id}`, {
+        method: 'DELETE', headers,
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      setAdminUsers(prev => prev.filter(u => u.id !== user.id))
+    } catch (e: any) {
+      alert(`Failed to delete user: ${e.message}`)
+    } finally {
+      setDeletingUserId(null)
+    }
+  }
 
   const handleRerollUsername = async (userId: number) => {
     setRerollingUserId(userId)
@@ -388,6 +503,25 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
       }
     } catch { /* silent */ }
     finally { setRerollingUserId(null) }
+  }
+
+  const handleSendReminders = async () => {
+    if (!window.confirm('Send onboarding reminder emails to all users who haven\'t completed setup?')) return
+    setReminderLoading(true)
+    setReminderResult(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/users/send-onboarding-reminders`, {
+        method: 'POST', headers,
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      const data = await res.json()
+      const d = data.data
+      setReminderResult(`Sent ${d.sent} reminder${d.sent !== 1 ? 's' : ''}${d.failed ? ` (${d.failed} failed)` : ''} out of ${d.totalPending} pending users`)
+    } catch (e: any) {
+      setReminderResult(`Error: ${e.message}`)
+    } finally {
+      setReminderLoading(false)
+    }
   }
 
   // Floobits grant
@@ -410,20 +544,9 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
         }
       } catch { /* silent */ }
     }
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/admin/users`, {
-          headers: { 'X-Admin-Password': password },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setAdminUsers(data.data?.users ?? [])
-        }
-      } catch { /* silent */ }
-    }
     fetchOptions()
     fetchUsers()
-  }, [password])
+  }, [password, fetchUsers])
 
   // Player search with debounce
   useEffect(() => {
@@ -564,7 +687,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     }
   }, [password])
 
-  type Section = 'monitor' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
+  type Section = 'monitor' | 'analytics' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
   const [activeSection, setActiveSection] = useState<Section>('monitor')
 
   // Auto-refresh monitor every 30s when active
@@ -575,8 +698,35 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     return () => clearInterval(interval)
   }, [activeSection, fetchMonitor])
 
+  // ── Analytics ──────────────────────────────────────────────────────
+  type AnalyticsTab = 'economy' | 'cards' | 'fantasy' | 'users' | 'funding' | 'pickem'
+  const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>('economy')
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+
+  const fetchAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true)
+    setAnalyticsError(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/analytics`, { headers })
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+      const json = await res.json()
+      setAnalyticsData(json.data)
+    } catch (e: any) {
+      setAnalyticsError(e.message)
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }, [password])
+
+  useEffect(() => {
+    if (activeSection === 'analytics') fetchAnalytics()
+  }, [activeSection, fetchAnalytics])
+
   const tabs: { id: Section; label: string }[] = [
     { id: 'monitor', label: 'Monitor' },
+    { id: 'analytics', label: 'Analytics' },
     { id: 'requests', label: 'Requests' },
     { id: 'allowlist', label: 'Allowlist' },
     { id: 'names', label: 'Names' },
@@ -614,7 +764,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
         </button>
       ))}
     </div>
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px' }}>
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
 
       {/* Server Monitor */}
       {activeSection === 'monitor' && <div style={sectionStyle}>
@@ -765,9 +915,503 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
         })()}
       </div>}
 
+      {/* Analytics Dashboard */}
+      {activeSection === 'analytics' && <div style={sectionStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '700', margin: 0 }}>Analytics Dashboard</h2>
+          <button onClick={fetchAnalytics} disabled={analyticsLoading}
+            style={{ ...btnStyle, fontSize: '12px', padding: '5px 14px', opacity: analyticsLoading ? 0.5 : 1 }}>
+            {analyticsLoading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
+        {analyticsError && (
+          <div style={{ fontSize: '13px', color: '#ef4444', marginBottom: '12px' }}>{analyticsError}</div>
+        )}
+        {analyticsData && (() => {
+          const statBox: React.CSSProperties = {
+            backgroundColor: '#0f172a', borderRadius: '6px', padding: '12px 14px',
+          }
+          const statLabel: React.CSSProperties = {
+            fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase',
+            letterSpacing: '0.05em', marginBottom: '4px',
+          }
+          const statValue: React.CSSProperties = {
+            fontSize: '20px', fontWeight: '700', color: '#e2e8f0',
+          }
+          const smallStat: React.CSSProperties = {
+            fontSize: '12px', color: '#94a3b8',
+          }
+          const listRow: React.CSSProperties = {
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '6px 10px', fontSize: '12px', color: '#cbd5e1',
+            borderBottom: '1px solid #1e293b',
+          }
+
+          const editionColors: Record<string, string> = {
+            base: '#94a3b8', holographic: '#bae6fd', prismatic: '#f9a8d4', diamond: '#a5f3fc',
+          }
+          const tierColors: Record<string, string> = {
+            MEGA_MARKET: '#a78bfa', LARGE_MARKET: '#3b82f6', MID_MARKET: '#94a3b8', SMALL_MARKET: '#f97316',
+          }
+          const { economy, cards, fantasy, users, funding, pickEm } = analyticsData
+
+          const analyticsTabs: { id: AnalyticsTab; label: string }[] = [
+            { id: 'economy', label: 'Economy' },
+            { id: 'cards', label: 'Cards' },
+            { id: 'fantasy', label: 'Fantasy' },
+            { id: 'users', label: 'Users' },
+            { id: 'funding', label: 'Funding' },
+            { id: 'pickem', label: 'Pick-Em' },
+          ]
+
+          return <>
+            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>Season {analyticsData.seasonNumber}</div>
+
+            {/* Sub-tabs */}
+            <div style={{
+              display: 'flex', gap: '4px', marginBottom: '20px', flexWrap: 'wrap',
+              borderBottom: '1px solid #334155', paddingBottom: '12px',
+            }}>
+              {analyticsTabs.map(t => (
+                <button key={t.id} onClick={() => setAnalyticsTab(t.id)} style={{
+                  background: analyticsTab === t.id ? '#334155' : 'transparent',
+                  border: '1px solid',
+                  borderColor: analyticsTab === t.id ? '#475569' : '#1e293b',
+                  borderRadius: '4px',
+                  color: analyticsTab === t.id ? '#e2e8f0' : '#94a3b8',
+                  fontSize: '11px', padding: '5px 12px', cursor: 'pointer',
+                  fontWeight: '600',
+                }}>{t.label}</button>
+              ))}
+            </div>
+
+            {/* ── Economy Health ── */}
+            {analyticsTab === 'economy' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>In Circulation</div>
+                  <div style={statValue}>{economy.totalCirculation.toLocaleString()}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>All-Time Earned</div>
+                  <div style={{ ...statValue, color: '#22c55e' }}>{economy.totalEarned.toLocaleString()}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>All-Time Spent</div>
+                  <div style={{ ...statValue, color: '#ef4444' }}>{economy.totalSpent.toLocaleString()}</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>Season Earnings</div>
+                  <div style={{ ...statValue, color: '#22c55e', fontSize: '18px' }}>{economy.seasonEarnings.toLocaleString()}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Season Spending</div>
+                  <div style={{ ...statValue, color: '#ef4444', fontSize: '18px' }}>{economy.seasonSpending.toLocaleString()}</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Earnings by Source</div>
+                  {Object.entries(economy.earningsBreakdown).length === 0
+                    ? <div style={smallStat}>No data yet</div>
+                    : Object.entries(economy.earningsBreakdown)
+                      .sort(([,a],[,b]) => b - a)
+                      .map(([type, amount]) => (
+                        <div key={type} style={listRow}>
+                          <span>{type.replace(/_/g, ' ')}</span>
+                          <span style={{ color: '#22c55e', fontWeight: '600' }}>{amount.toLocaleString()}</span>
+                        </div>
+                      ))
+                  }
+                </div>
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Spending by Type</div>
+                  {Object.entries(economy.spendingBreakdown).length === 0
+                    ? <div style={smallStat}>No data yet</div>
+                    : Object.entries(economy.spendingBreakdown)
+                      .sort(([,a],[,b]) => b - a)
+                      .map(([type, amount]) => (
+                        <div key={type} style={listRow}>
+                          <span>{type.replace(/_/g, ' ')}</span>
+                          <span style={{ color: '#ef4444', fontWeight: '600' }}>{amount.toLocaleString()}</span>
+                        </div>
+                      ))
+                  }
+                </div>
+              </div>
+              {economy.avgBalance != null && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginTop: '12px' }}>
+                  <div style={statBox}>
+                    <div style={statLabel}>Avg Balance</div>
+                    <div style={statValue}>{economy.avgBalance?.toLocaleString()}</div>
+                  </div>
+                  <div style={statBox}>
+                    <div style={statLabel}>Median Balance</div>
+                    <div style={statValue}>{economy.medianBalance?.toLocaleString()}</div>
+                  </div>
+                  <div style={statBox}>
+                    <div style={statLabel}>FP Cap Hit Rate</div>
+                    <div style={statValue}>{economy.capHitRate ?? 0}%</div>
+                    <div style={smallStat}>
+                      {economy.capHitters ?? 0}/{economy.capHitRate != null ? Math.round((economy.capHitters ?? 0) / ((economy.capHitRate ?? 0) / 100 || 1)) : 0} users
+                      {economy.capHitWeek ? ` (wk ${economy.capHitWeek})` : ''}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {(economy.richestUsers?.length ?? 0) > 0 && (
+                <div style={{ ...statBox, marginTop: '12px' }}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Top Balances</div>
+                  {economy.richestUsers!.map((u, i) => (
+                    <div key={i} style={listRow}>
+                      <span>{i + 1}. {u.username}</span>
+                      <span style={{ fontWeight: '600', color: '#f59e0b' }}>{u.balance.toLocaleString()}F</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>}
+
+            {/* ── Card Analytics ── */}
+            {analyticsTab === 'cards' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>Total Cards</div>
+                  <div style={statValue}>{cards.totalCards.toLocaleString()}</div>
+                </div>
+                {['base', 'holographic', 'prismatic', 'diamond'].map(ed => (
+                  <div key={ed} style={statBox}>
+                    <div style={statLabel}>{ed}</div>
+                    <div style={{ ...statValue, color: editionColors[ed] || '#e2e8f0', fontSize: '18px' }}>
+                      {(cards.byEdition[ed] || 0).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Acquisition Source</div>
+                  {Object.entries(cards.bySource).length === 0
+                    ? <div style={smallStat}>No data yet</div>
+                    : Object.entries(cards.bySource)
+                      .sort(([,a],[,b]) => b - a)
+                      .map(([src, cnt]) => (
+                        <div key={src} style={listRow}>
+                          <span>{src.replace(/_/g, ' ')}</span>
+                          <span style={{ fontWeight: '600' }}>{cnt.toLocaleString()}</span>
+                        </div>
+                      ))
+                  }
+                </div>
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Top Equipped Effects</div>
+                  {cards.topEffects.length === 0
+                    ? <div style={smallStat}>No data yet</div>
+                    : cards.topEffects.map((ef, i) => (
+                      <div key={i} style={listRow}>
+                        <span>{ef.effectName}</span>
+                        <span style={{ fontWeight: '600' }}>{ef.count}</span>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+              {Object.keys(cards.packOpenings).length > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Object.keys(cards.packOpenings).length}, 1fr)`, gap: '10px' }}>
+                  {Object.entries(cards.packOpenings).map(([name, cnt]) => (
+                    <div key={name} style={statBox}>
+                      <div style={statLabel}>{name} packs</div>
+                      <div style={{ ...statValue, fontSize: '18px' }}>{cnt.toLocaleString()}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '12px' }}>
+                {(cards.bottomEffects?.length ?? 0) > 0 && (
+                  <div style={statBox}>
+                    <div style={{ ...statLabel, marginBottom: '8px' }}>Least Equipped Effects</div>
+                    {cards.bottomEffects!.map((ef, i) => (
+                      <div key={i} style={listRow}>
+                        <span>{ef.effectName}</span>
+                        <span style={{ fontWeight: '600', color: '#94a3b8' }}>{ef.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Combine Usage</div>
+                  {!cards.combineUsage || Object.keys(cards.combineUsage).length === 0
+                    ? <div style={smallStat}>No upgrades yet</div>
+                    : Object.entries(cards.combineUsage).map(([type, cnt]) => (
+                      <div key={type} style={listRow}>
+                        <span>{type.replace(/_/g, ' ')}</span>
+                        <span style={{ fontWeight: '600' }}>{cnt}</span>
+                      </div>
+                    ))
+                  }
+                  {(cards.totalCombineUses ?? 0) > 0 && (
+                    <div style={{ ...smallStat, marginTop: '6px' }}>{cards.totalCombineUses} total operations</div>
+                  )}
+                </div>
+              </div>
+              {cards.usersWhoEquipped != null && (
+                <div style={{ ...statBox, marginTop: '12px' }}>
+                  <div style={statLabel}>Users Equipped This Season</div>
+                  <div style={{ ...statValue, fontSize: '18px' }}>{cards.usersWhoEquipped}</div>
+                  <div style={smallStat}>
+                    {users.totalUsers > 0 ? `${Math.round(cards.usersWhoEquipped / users.totalUsers * 100)}%` : '0%'} of users
+                  </div>
+                </div>
+              )}
+            </>}
+
+            {/* ── Fantasy Engagement ── */}
+            {analyticsTab === 'fantasy' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>Rosters</div>
+                  <div style={statValue}>{fantasy.totalRosters}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Avg Points</div>
+                  <div style={statValue}>{fantasy.avgTotalPoints}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Avg Card Bonus</div>
+                  <div style={statValue}>{fantasy.avgCardBonus}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Swaps Used</div>
+                  <div style={statValue}>{fantasy.totalSwapsUsed}</div>
+                  <div style={smallStat}>{fantasy.totalPurchasedSwaps} purchased</div>
+                </div>
+              </div>
+              {fantasy.topRosteredPlayers.length > 0 && (
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Most Rostered Players</div>
+                  {fantasy.topRosteredPlayers.map((p, i) => (
+                    <div key={i} style={listRow}>
+                      <span>{i + 1}. {p.name}</span>
+                      <span style={{ fontWeight: '600' }}>{p.count} rosters</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>}
+
+            {/* ── User Engagement ── */}
+            {analyticsTab === 'users' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>Total Users</div>
+                  <div style={statValue}>{users.totalUsers}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Active 7d</div>
+                  <div style={{ ...statValue, color: users.active7d > 0 ? '#22c55e' : '#e2e8f0' }}>{users.active7d}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Active 30d</div>
+                  <div style={statValue}>{users.active30d}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Onboarding</div>
+                  <div style={statValue}>{users.onboardingRate}%</div>
+                  <div style={smallStat}>{users.onboardedCount} / {users.totalUsers}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Signup Only</div>
+                  <div style={{ ...statValue, color: users.signupOnly > 0 ? '#f59e0b' : '#e2e8f0' }}>{users.signupOnly}</div>
+                  <div style={smallStat}>no beta request</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Churn Risk</div>
+                  <div style={{ ...statValue, color: (users.churnRiskCount ?? 0) > 0 ? '#ef4444' : '#22c55e' }}>{users.churnRiskCount ?? 0}</div>
+                  <div style={smallStat}>14d+ inactive</div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                {[
+                  { label: 'Fantasy', count: users.adoption.fantasy },
+                  { label: 'Cards', count: users.adoption.cards },
+                  { label: 'Pick-Em', count: users.adoption.pickEm },
+                  { label: 'Funding', count: users.adoption.funding },
+                ].map(({ label, count }) => (
+                  <div key={label} style={statBox}>
+                    <div style={statLabel}>{label}</div>
+                    <div style={{ ...statValue, fontSize: '18px' }}>{count}</div>
+                    <div style={smallStat}>
+                      {users.totalUsers > 0 ? `${Math.round(count / users.totalUsers * 100)}%` : '0%'} of users
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {users.onboardingFunnel && (
+                <div style={{ ...statBox, marginBottom: '12px' }}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Onboarding Funnel</div>
+                  {[
+                    { label: 'Has Account', count: users.onboardingFunnel.hasAccount },
+                    { label: 'Picked Username', count: users.onboardingFunnel.pickedUsername },
+                    { label: 'Chose Favorite Team', count: users.onboardingFunnel.choseFavTeam },
+                    { label: 'Drafted Fantasy Roster', count: users.onboardingFunnel.draftedRoster },
+                    { label: 'Has Cards', count: users.onboardingFunnel.hasCards },
+                  ].map(({ label, count }) => (
+                    <div key={label} style={listRow}>
+                      <span>{label}</span>
+                      <span style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ fontWeight: '600' }}>{count}</span>
+                        <span style={{ color: '#64748b', fontSize: '11px' }}>
+                          {users.onboardingFunnel!.hasAccount > 0
+                            ? `${Math.round(count / users.onboardingFunnel!.hasAccount * 100)}%`
+                            : '0%'}
+                        </span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(users.dailyActiveUsers?.length ?? 0) > 0 && (
+                <div style={{ ...statBox, marginBottom: '12px' }}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Daily Active (Last 28d)</div>
+                  <div style={{ display: 'flex', gap: '2px', alignItems: 'flex-end', height: '40px' }}>
+                    {(() => {
+                      const dau = users.dailyActiveUsers!
+                      const maxCount = Math.max(...dau.map(d => d.count))
+                      return dau.map((d, i) => (
+                        <div key={i} title={`${d.date}: ${d.count} users`} style={{
+                          flex: 1, backgroundColor: '#3b82f6', borderRadius: '1px',
+                          height: maxCount > 0 ? `${(d.count / maxCount) * 100}%` : '0',
+                          minHeight: d.count > 0 ? '2px' : '0',
+                        }} />
+                      ))
+                    })()}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                    <span style={{ fontSize: '10px', color: '#64748b' }}>
+                      {users.dailyActiveUsers![0]?.date}
+                    </span>
+                    <span style={{ fontSize: '10px', color: '#64748b' }}>
+                      {users.dailyActiveUsers![users.dailyActiveUsers!.length - 1]?.date}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {users.favoriteTeams.length > 0 && (
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Favorite Teams</div>
+                  {users.favoriteTeams.map((ft, i) => (
+                    <div key={i} style={listRow}>
+                      <span>{ft.team}</span>
+                      <span style={{ fontWeight: '600' }}>{ft.count} fans</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>}
+
+            {/* ── Team Funding ── */}
+            {analyticsTab === 'funding' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>Fan Contributions</div>
+                  <div style={statValue}>{funding.totalFanContributions.toLocaleString()}</div>
+                </div>
+                {['MEGA_MARKET', 'LARGE_MARKET', 'MID_MARKET', 'SMALL_MARKET'].map(tier => (
+                  <div key={tier} style={statBox}>
+                    <div style={statLabel}>{tier.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}</div>
+                    <div style={{ ...statValue, color: tierColors[tier] || '#e2e8f0', fontSize: '18px' }}>
+                      {funding.tierDistribution[tier] || 0}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {funding.topTeams.length > 0 && (
+                <div style={statBox}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Top Funded Teams</div>
+                  {funding.topTeams.map((t, i) => (
+                    <div key={i} style={listRow}>
+                      <span>{t.team}</span>
+                      <span style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <span style={{ color: tierColors[t.tier] || '#94a3b8', fontSize: '11px' }}>
+                          {(t.tier || '').replace(/_/g, ' ')}
+                        </span>
+                        <span style={{ fontWeight: '600' }}>{t.contributions.toLocaleString()}F</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>}
+
+            {/* ── Pick-Em ── */}
+            {analyticsTab === 'pickem' && <>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                <div style={statBox}>
+                  <div style={statLabel}>Total Picks</div>
+                  <div style={statValue}>{pickEm.totalPicks.toLocaleString()}</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Accuracy</div>
+                  <div style={statValue}>{pickEm.accuracy}%</div>
+                </div>
+                <div style={statBox}>
+                  <div style={statLabel}>Participants</div>
+                  <div style={statValue}>{pickEm.participants}</div>
+                </div>
+              </div>
+              {(pickEm.trend?.length ?? 0) > 0 && (
+                <div style={{ ...statBox, marginTop: '12px' }}>
+                  <div style={{ ...statLabel, marginBottom: '8px' }}>Weekly Participation</div>
+                  {pickEm.trend!.map(w => (
+                    <div key={w.week} style={listRow}>
+                      <span>Week {w.week}</span>
+                      <span style={{ display: 'flex', gap: '16px' }}>
+                        <span style={{ color: '#94a3b8', fontSize: '11px' }}>{w.participants} users</span>
+                        <span style={{ fontWeight: '600' }}>{w.picks} picks</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>}
+          </>
+        })()}
+      </div>}
+
       {/* Beta Access Requests */}
       {activeSection === 'requests' && <div style={sectionStyle}>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Beta Access Requests</h2>
+
+        {/* Access Mode Toggle */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '12px',
+          padding: '10px 14px', backgroundColor: '#0f172a',
+          borderRadius: '6px', marginBottom: '16px',
+        }}>
+          <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600' }}>Access Mode:</span>
+          <button
+            onClick={toggleAccessMode}
+            disabled={accessModeLoading}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              background: 'none', border: '1px solid #334155',
+              borderRadius: '4px', padding: '4px 12px', fontSize: '12px',
+              fontWeight: '600', cursor: accessModeLoading ? 'not-allowed' : 'pointer',
+              color: accessMode === 'waitlist' ? '#f59e0b' : '#3b82f6',
+              opacity: accessModeLoading ? 0.5 : 1,
+            }}
+          >
+            {accessMode === 'waitlist' ? 'Waitlist' : 'Request Access'}
+          </button>
+          <span style={{ fontSize: '11px', color: '#64748b' }}>
+            {accessMode === 'waitlist'
+              ? 'Users see "Join Waitlist" — no individual approvals needed'
+              : 'Users see "Request Access" — you approve individually'}
+          </span>
+        </div>
+
         <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
           Pending requests from users who want to join the closed beta.
         </p>
@@ -1128,8 +1772,71 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
       {/* Registered Users */}
       {activeSection === 'users' && <div style={sectionStyle}>
         <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Registered Users</h2>
-        <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
-          {adminUsers.length} registered user{adminUsers.length !== 1 ? 's' : ''}
+
+        {/* Controls row */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+          marginBottom: '16px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>Filter:</span>
+            {(['all', 'active', 'pending', 'inactive'] as const).map(f => (
+              <button key={f} onClick={() => { setUserFilter(f); fetchUsers(userSort, f) }} style={{
+                background: userFilter === f ? '#334155' : 'none',
+                border: '1px solid', borderColor: userFilter === f ? '#475569' : '#334155',
+                borderRadius: '4px', padding: '3px 10px', fontSize: '11px',
+                fontWeight: '600', cursor: 'pointer',
+                color: userFilter === f ? '#e2e8f0' : '#94a3b8',
+              }}>
+                {f === 'all' ? 'All' : f === 'active' ? 'Active' : f === 'pending' ? 'Pending' : 'Inactive'}
+              </button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>Sort:</span>
+            <select
+              value={userSort}
+              onChange={e => { setUserSort(e.target.value); fetchUsers(e.target.value, userFilter) }}
+              style={{
+                backgroundColor: '#0f172a', border: '1px solid #334155',
+                borderRadius: '4px', padding: '3px 8px', fontSize: '11px',
+                color: '#e2e8f0', cursor: 'pointer',
+              }}
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="last_login">Last Login</option>
+              <option value="username">Username</option>
+            </select>
+          </div>
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={handleSendReminders}
+            disabled={reminderLoading}
+            style={{
+              backgroundColor: '#334155', color: '#e2e8f0', border: 'none',
+              borderRadius: '4px', padding: '4px 12px', fontSize: '11px',
+              fontWeight: '600', cursor: reminderLoading ? 'not-allowed' : 'pointer',
+              opacity: reminderLoading ? 0.5 : 1,
+            }}
+          >
+            {reminderLoading ? 'Sending...' : 'Send Onboarding Reminders'}
+          </button>
+        </div>
+
+        {reminderResult && (
+          <div style={{
+            fontSize: '12px', marginBottom: '12px', padding: '8px 12px',
+            backgroundColor: '#0f172a', borderRadius: '4px',
+            color: reminderResult.startsWith('Error') ? '#ef4444' : '#22c55e',
+          }}>
+            {reminderResult}
+          </div>
+        )}
+
+        <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '12px' }}>
+          {adminUsers.length} user{adminUsers.length !== 1 ? 's' : ''}
+          {userFilter !== 'all' ? ` (${userFilter})` : ''}
         </p>
         {adminUsers.length === 0 ? (
           <div style={{ fontSize: '13px', color: '#94a3b8' }}>No users found.</div>
@@ -1138,7 +1845,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #334155' }}>
-                  {['Username', 'Email', 'Favorite Team', 'Floobits', 'Joined', 'Last Login', 'Status'].map(h => (
+                  {['Username', 'Email', 'Favorite Team', 'Floobits', 'Joined', 'Last Login', 'Status', 'Beta', ''].map(h => (
                     <th key={h} style={{
                       ...labelStyle, textAlign: 'left', padding: '8px 10px',
                       marginBottom: 0, whiteSpace: 'nowrap',
@@ -1188,6 +1895,31 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                       }}>
                         {!u.isActive ? 'Inactive' : u.onboarded ? 'Active' : 'Pending'}
                       </span>
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <span style={{
+                        fontSize: '11px', fontWeight: '600', letterSpacing: '0.04em',
+                        color: u.betaStatus === 'approved' ? '#22c55e'
+                          : u.betaStatus === 'no_request' ? '#ef4444'
+                          : u.betaStatus === 'pending' ? '#f59e0b'
+                          : '#94a3b8',
+                      }}>
+                        {u.betaStatus === 'no_request' ? 'No Request' : u.betaStatus === 'approved' ? 'Approved' : u.betaStatus === 'pending' ? 'Pending' : u.betaStatus}
+                      </span>
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <button
+                        onClick={() => handleDeleteUser(u)}
+                        disabled={deletingUserId === u.id}
+                        style={{
+                          background: 'none', border: 'none',
+                          color: deletingUserId === u.id ? '#475569' : '#ef4444',
+                          cursor: deletingUserId === u.id ? 'default' : 'pointer',
+                          fontSize: '11px', fontWeight: '600', padding: '2px 4px',
+                        }}
+                      >
+                        {deletingUserId === u.id ? '...' : 'Delete'}
+                      </button>
                     </td>
                   </tr>
                 ))}

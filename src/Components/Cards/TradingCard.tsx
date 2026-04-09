@@ -900,7 +900,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           {/* Small team avatar accent */}
           {card.teamId && (
             <img
-              src={`${API_BASE}/teams/${card.teamId}/avatar?size=20&v=2`}
+              src={`/avatars/${card.teamId}.png`}
               alt=""
               style={{
                 position: 'absolute',

@@ -716,11 +716,10 @@ export const FantasyRoster: React.FC = () => {
     fetchCards()
   }, [getToken])
 
-  // Re-fetch roster from REST when games end (season stats updated)
-  // Skip if user has unsaved draft changes to avoid clearing their selections
+  // Re-fetch roster on week transitions (lock/unlock changes)
   useEffect(() => {
     if (!wsEvent) return
-    if (wsEvent.event === 'game_end' || wsEvent.event === 'season_end' || wsEvent.event === 'week_start' || wsEvent.event === 'week_end' || wsEvent.event === 'game_start') {
+    if (wsEvent.event === 'week_start' || wsEvent.event === 'week_end') {
       if (!dirtyRef.current) {
         fetchRoster()
       }
@@ -1044,7 +1043,7 @@ export const FantasyRoster: React.FC = () => {
                   <>
                     {player.teamId && (
                       <img
-                        src={`${API_BASE}/teams/${player.teamId}/avatar?size=${isMobile ? 28 : 34}&v=2`}
+                        src={`/avatars/${player.teamId}.png`}
                         alt={player.teamAbbr}
                         style={{ width: isMobile ? '28px' : '34px', height: isMobile ? '28px' : '34px', borderRadius: '50%', flexShrink: 0 }}
                       />
@@ -1227,7 +1226,7 @@ export const FantasyRoster: React.FC = () => {
             border: '1px solid #334155',
           }}>
             <img
-              src={`${API_BASE}/teams/${ft.teamId}/avatar?size=${isMobile ? 28 : 34}&v=2`}
+              src={`/avatars/${ft.teamId}.png`}
               alt={ft.teamAbbr}
               style={{ width: isMobile ? '28px' : '34px', height: isMobile ? '28px' : '34px', borderRadius: '50%', flexShrink: 0 }}
             />

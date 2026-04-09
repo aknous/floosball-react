@@ -139,7 +139,7 @@ const PlayerRow: React.FC<{
     }}
   >
     <img
-      src={`${API_BASE}/teams/${player.teamId}/avatar?size=36&v=2`}
+      src={`/avatars/${player.teamId}.png`}
       alt={player.teamAbbr}
       style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0 }}
     />
