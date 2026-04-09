@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
+import HoverTooltip from '@/Components/HoverTooltip'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -41,7 +42,7 @@ interface MonitorData {
   liveGames: { active: number; scheduled: number; final: number }
   timing: { mode: string | null; catchingUp: boolean }
   counts: { teams: number; activePlayers: number; freeAgents: number; retiredPlayers: number; hallOfFame: number }
-  websockets: { total_connections: number; active_channels: number; channels: Record<string, number> }
+  websockets: { total_connections: number; unique_users: number; channels: Record<string, number> }
 }
 
 interface AnalyticsData {
@@ -56,8 +57,8 @@ interface AnalyticsData {
   }
   cards: {
     totalCards: number; byEdition: Record<string, number>; bySource: Record<string, number>
-    topEffects: { effectName: string; count: number }[]
-    bottomEffects?: { effectName: string; count: number }[]
+    topEffects: { effectName: string; count: number; tooltip?: string }[]
+    bottomEffects?: { effectName: string; count: number; tooltip?: string }[]
     packOpenings: Record<string, number>
     combineUsage?: Record<string, number>; totalCombineUses?: number
     usersWhoEquipped?: number
@@ -665,7 +666,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     liveGames: { active: number; scheduled: number; final: number }
     timing: { mode: string | null; catchingUp: boolean }
     counts: { teams: number; activePlayers: number; freeAgents: number; retiredPlayers: number; hallOfFame: number }
-    memory: { rssMb: number; scheduleGames: number; gamesWithPlays: number; totalPlaysInMemory: number; pid: number }
+    memory: { rssMb: number; totalMb?: number; scheduleGames: number; gamesWithPlays: number; totalPlaysInMemory: number; pid: number }
     websockets: Record<string, any>
   }
   const [monitorData, setMonitorData] = useState<MonitorData | null>(null)
@@ -793,7 +794,8 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
           const smallStat: React.CSSProperties = {
             fontSize: '13px', color: '#cbd5e1', lineHeight: '1.8',
           }
-          const memoryPct = memory.rssMb > 0 ? Math.round((memory.rssMb / 512) * 100) : 0
+          const totalMemMb = memory.totalMb || 2048
+          const memoryPct = memory.rssMb > 0 ? Math.round((memory.rssMb / totalMemMb) * 100) : 0
           const memoryColor = memoryPct > 80 ? '#ef4444' : memoryPct > 60 ? '#f59e0b' : '#22c55e'
 
           return <>
@@ -827,7 +829,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                     transition: 'width 0.3s ease',
                   }} />
                 </div>
-                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{memoryPct}% of 512 MB</div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{memoryPct}% of {totalMemMb} MB</div>
               </div>
               <div style={statBox}>
                 <div style={statLabel}>Season</div>
@@ -892,9 +894,8 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
               <div style={statBox}>
                 <div style={{ ...statLabel, marginBottom: '8px' }}>WebSockets</div>
                 <div style={smallStat}>
-                  {Object.entries(websockets).map(([k, v]) => (
-                    <div key={k}>{k}: {typeof v === 'object' ? JSON.stringify(v) : String(v)}</div>
-                  ))}
+                  <div>Connections: {websockets.total_connections ?? 0}</div>
+                  <div>Unique Users: {websockets.unique_users ?? 0}</div>
                 </div>
                 <div style={{ fontSize: '11px', color: '#475569', marginTop: '8px' }}>
                   PID: {memory.pid} | Last saved: {simulation.lastSaved
@@ -1111,7 +1112,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                     ? <div style={smallStat}>No data yet</div>
                     : cards.topEffects.map((ef, i) => (
                       <div key={i} style={listRow}>
-                        <span>{ef.effectName}</span>
+                        <HoverTooltip text={ef.tooltip || ''}><span>{ef.effectName}</span></HoverTooltip>
                         <span style={{ fontWeight: '600' }}>{ef.count}</span>
                       </div>
                     ))
@@ -1134,7 +1135,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                     <div style={{ ...statLabel, marginBottom: '8px' }}>Least Equipped Effects</div>
                     {cards.bottomEffects!.map((ef, i) => (
                       <div key={i} style={listRow}>
-                        <span>{ef.effectName}</span>
+                        <HoverTooltip text={ef.tooltip || ''}><span>{ef.effectName}</span></HoverTooltip>
                         <span style={{ fontWeight: '600', color: '#94a3b8' }}>{ef.count}</span>
                       </div>
                     ))}
@@ -1161,7 +1162,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                   <div style={statLabel}>Users Equipped This Season</div>
                   <div style={{ ...statValue, fontSize: '18px' }}>{cards.usersWhoEquipped}</div>
                   <div style={smallStat}>
-                    {users.totalUsers > 0 ? `${Math.round(cards.usersWhoEquipped / users.totalUsers * 100)}%` : '0%'} of users
+                    {users.onboardedCount > 0 ? `${Math.round(cards.usersWhoEquipped / users.onboardedCount * 100)}%` : '0%'} of onboarded users
                   </div>
                 </div>
               )}
@@ -1243,7 +1244,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                     <div style={statLabel}>{label}</div>
                     <div style={{ ...statValue, fontSize: '18px' }}>{count}</div>
                     <div style={smallStat}>
-                      {users.totalUsers > 0 ? `${Math.round(count / users.totalUsers * 100)}%` : '0%'} of users
+                      {users.onboardedCount > 0 ? `${Math.round(count / users.onboardedCount * 100)}%` : '0%'} of onboarded users
                     </div>
                   </div>
                 ))}
@@ -1256,7 +1257,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                     { label: 'Picked Username', count: users.onboardingFunnel.pickedUsername },
                     { label: 'Chose Favorite Team', count: users.onboardingFunnel.choseFavTeam },
                     { label: 'Drafted Fantasy Roster', count: users.onboardingFunnel.draftedRoster },
-                    { label: 'Has Cards', count: users.onboardingFunnel.hasCards },
+                    { label: 'Equipped Cards', count: cards.usersWhoEquipped ?? 0 },
                   ].map(({ label, count }) => (
                     <div key={label} style={listRow}>
                       <span>{label}</span>
