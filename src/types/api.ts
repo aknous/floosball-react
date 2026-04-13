@@ -20,6 +20,17 @@ export interface Team {
   defenseRating: number
 }
 
+// Personality (archetype/quirk) — see backend personalityData.py
+export type QuirkTier = 'common' | 'uncommon' | 'rare' | 'unique'
+
+export interface PlayerPersonality {
+  archetype?: string        // e.g. "leader"
+  archetypeLabel?: string   // e.g. "Leader"
+  quirk?: string            // e.g. "wholesome"
+  quirkLabel?: string       // e.g. "Wholesome"
+  quirkTier?: QuirkTier
+}
+
 // Player types
 export interface Player {
   id: string
@@ -36,6 +47,8 @@ export interface Player {
   receivingYards?: number
   touchdowns?: number
   interceptions?: number
+  // Personality
+  personality?: PlayerPersonality
 }
 
 // Season types
