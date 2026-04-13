@@ -12,6 +12,38 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.9.0',
+    date: '2026-04-12',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          'Clerk production authentication — accounts now use the production identity provider for improved reliability and higher capacity',
+          'Existing accounts are automatically migrated on first login',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          'Closer card effect now persists Q4 fantasy points across game restarts and between weeks',
+          'Player performance ratings are snapshot at the start of each week — post-game recalculation no longer alters card output mid-week',
+          'Flourish card effect removed',
+          'Fantasy leaderboard now shows top 5 with your rank highlighted below if you\'re outside the top 5',
+          'Season scheduling anchored to Monday — new seasons always start on the correct day',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          'Fixed duplicate WebSocket connections and orphaned sockets on rapid page transitions',
+          'Fixed WebSocket disconnect cleanup so stale connections no longer accumulate',
+          'Coach names can no longer collide with player names after generation',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.8.1',
     date: '2026-04-08',
     changes: [],
