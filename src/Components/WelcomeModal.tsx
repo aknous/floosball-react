@@ -164,7 +164,7 @@ const WelcomeModal: React.FC = () => {
               Fresh Start
             </p>
             <p style={{ color: '#cbd5e1', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>
-              Unfortunately the simulation had to be restarted due to issues that corrupted some data. Everything is starting from scratch. All user accounts, Floobits balances, and login data have been preserved. Sorry for the inconvenience, and thank you for your patience!
+              Unfortunately the simulation had to be restarted due to issues that corrupted some data. Everything is starting from scratch. All user accounts and login data have been preserved. Sorry for the inconvenience, and thank you for your patience!
             </p>
           </div>
 
