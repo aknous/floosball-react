@@ -301,6 +301,27 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
               {play.description}
             </p>
 
+            {/* Personality event (Layer 1/2/3 reaction) */}
+            {play.personalityEvent && (() => {
+              const layer = play.personalityEvent.layer
+              const accent = layer === 'crowd' ? '#a78bfa' : layer === 'quirk' ? '#f472b6' : '#38bdf8'
+              return (
+                <p style={{
+                  fontSize: '11px',
+                  color: '#e2e8f0',
+                  fontStyle: 'italic',
+                  margin: '0 0 4px 22px',
+                  padding: '3px 6px',
+                  borderRadius: '3px',
+                  backgroundColor: `${accent}12`,
+                  borderLeft: `2px solid ${accent}`,
+                  lineHeight: '1.4',
+                }}>
+                  {play.personalityEvent.text}
+                </p>
+              )
+            })()}
+
             {/* Score after the play */}
             {hasScore && (
               <div style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '22px' }}>

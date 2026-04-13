@@ -222,6 +222,19 @@ export interface PlayInsights {
   playCall?: 'run' | 'short' | 'medium' | 'long'
 }
 
+// Personality reaction event fired on significant plays (Layer 1 archetype,
+// Layer 2 quirk sideline, Layer 3 crowd atmosphere).
+export interface PersonalityEvent {
+  layer: 'archetype' | 'quirk' | 'crowd'
+  text: string
+  playerId: number
+  playerName: string
+  archetype: string
+  demeanor: string | null
+  quirk: string | null
+  event: string  // trigger key like 'td_scored', 'int_thrown'
+}
+
 // Play event details
 export interface PlayEvent {
   playNumber: number
@@ -252,6 +265,7 @@ export interface PlayEvent {
   isChokePlay?: boolean
   isMomentumShift?: boolean
   insights?: PlayInsights | null
+  personalityEvent?: PersonalityEvent | null
 }
 
 // Game Events
@@ -418,6 +432,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
     isChokePlay: boolean
     isMomentumShift: boolean
     insights?: PlayInsights | null
+    personalityEvent?: PersonalityEvent | null
   } | null
   finalPlay?: {
     playNumber: number
@@ -445,6 +460,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
     isChokePlay: boolean
     isMomentumShift: boolean
     insights?: PlayInsights | null
+    personalityEvent?: PersonalityEvent | null
   } | null
   homeWinProbability: number
   awayWinProbability: number

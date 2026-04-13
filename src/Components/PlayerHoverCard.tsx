@@ -28,6 +28,20 @@ interface PlayerDetail {
     xFactorStars?: number; xFactorValue?: number
     seasonPerformanceRating?: number
     fatigue?: number
+    mood?: string
+    moodTier?: string
+    demeanor?: string
+    demeanorDrift?: {
+      direction: 'composed' | 'volatile'
+      from?: string
+    }
+    personality?: {
+      archetype?: string
+      archetypeLabel?: string
+      quirk?: string
+      quirkLabel?: string
+      quirkTier?: string
+    }
   }
 }
 
@@ -43,8 +57,24 @@ interface CardProps {
   mouseY: number
 }
 
+const MOOD_COLORS: Record<string, string> = {
+  electric: '#22c55e',
+  confident: '#4ade80',
+  steady: '#94a3b8',
+  frustrated: '#f97316',
+  miserable: '#ef4444',
+}
+
+// Rarity-tier color mapping for quirks (mirrors backend personalityData tiers)
+const QUIRK_TIER_COLORS: Record<string, string> = {
+  common:   '#94a3b8',
+  uncommon: '#c4b5fd',
+  rare:     '#f472b6',
+  unique:   '#a5f3fc',
+}
+
 const CARD_WIDTH = 260
-const CARD_HEIGHT_EST = 340
+const CARD_HEIGHT_EST = 260
 const OFFSET = 16
 
 const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
@@ -59,15 +89,6 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
   top = Math.max(8, top)
 
   const { attributes: att } = data
-  const skills: { label: string; value: number; stars: number }[] = []
-  if (att) {
-    if (att.att1 && att.att1Value != null) skills.push({ label: att.att1, value: att.att1Value, stars: att.att1stars ?? 1 })
-    if (att.att2 && att.att2Value != null) skills.push({ label: att.att2, value: att.att2Value, stars: att.att2stars ?? 1 })
-    if (att.att3 && att.att3Value != null) skills.push({ label: att.att3, value: att.att3Value, stars: att.att3stars ?? 1 })
-    if (att.playmakingValue != null)       skills.push({ label: 'Playmaking', value: att.playmakingValue, stars: att.playmakingStars ?? 1 })
-    if (att.xFactorValue != null)          skills.push({ label: 'X-Factor', value: att.xFactorValue, stars: att.xFactorStars ?? 1 })
-  }
-
   const color = data.teamColor || '#64748b'
 
   return ReactDOM.createPortal(
@@ -191,18 +212,59 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
           )
         })()}
 
-        {/* Skills */}
-        {skills.map(s => (
-          <div key={s.label} style={{ marginBottom: '7px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-              <span style={{ fontSize: '13px', color: '#94a3b8' }}>{s.label}</span>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>{s.value}</span>
-            </div>
-            <div style={{ height: '3px', backgroundColor: '#334155', borderRadius: '2px' }}>
-              <div style={{ width: `${Math.min(100, s.value)}%`, height: '100%', backgroundColor: s.value >= 85 ? '#22c55e' : s.value >= 72 ? '#f59e0b' : '#ef4444', borderRadius: '2px' }} />
-            </div>
+        {/* Archetype label (permanent identity) */}
+        {att?.personality?.archetypeLabel && (
+          <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>
+            {att.personality.archetypeLabel}
           </div>
-        ))}
+        )}
+
+        {/* Demeanor + Mood + Quirk badges */}
+        {(att?.demeanor || att?.mood || att?.personality?.quirkLabel) && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
+            {att.demeanor && (
+              <span style={{
+                fontSize: '11px', color: '#cbd5e1', backgroundColor: '#334155',
+                padding: '3px 8px', borderRadius: '4px',
+              }}>
+                Demeanor: <span style={{ fontWeight: '600' }}>{att.demeanor}</span>
+                {att.demeanorDrift && (
+                  <span style={{
+                    marginLeft: '4px',
+                    color: att.demeanorDrift.direction === 'volatile' ? '#f97316' : '#38bdf8',
+                  }}>
+                    {att.demeanorDrift.direction === 'volatile' ? '↗' : '↙'}
+                  </span>
+                )}
+              </span>
+            )}
+            {att.mood && (
+              <span style={{
+                fontSize: '11px', color: MOOD_COLORS[att.moodTier || 'steady'] || '#94a3b8',
+                backgroundColor: '#334155', padding: '3px 8px', borderRadius: '4px',
+              }}>
+                Mood: <span style={{ fontWeight: '600' }}>{att.mood}</span>
+              </span>
+            )}
+            {att?.personality?.quirkLabel && (() => {
+              const tier = (att.personality.quirkTier || 'common').toLowerCase()
+              const color = QUIRK_TIER_COLORS[tier] || '#94a3b8'
+              return (
+                <span style={{
+                  fontSize: '11px',
+                  color,
+                  backgroundColor: `${color}22`,
+                  border: `1px solid ${color}55`,
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  fontWeight: '600',
+                }}>
+                  {att.personality.quirkLabel}
+                </span>
+              )
+            })()}
+          </div>
+        )}
       </div>
     </div>,
     document.body
