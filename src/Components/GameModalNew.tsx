@@ -1135,23 +1135,26 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 )
 
                 // Renders a player name cell with position badge + star rating
-                const playerNameCell = (p: { id: number; name: string; position?: string | null; ratingStars?: number }) => (
-                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '2px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
-                      {p.position && (
-                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', backgroundColor: '#0f172a', padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>
-                          {p.position}
-                        </span>
+                const playerNameCell = (p: { id: number; name: string; position?: string | null; defensivePosition?: string | null; ratingStars?: number }, useDefPos?: boolean) => {
+                  const posLabel = useDefPos && p.defensivePosition ? p.defensivePosition : p.position
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '2px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                        {posLabel && (
+                          <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', backgroundColor: '#0f172a', padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>
+                            {posLabel}
+                          </span>
+                        )}
+                        <PlayerHoverCard playerId={p.id} playerName={p.name}>
+                          <span style={{ fontSize: '15px', color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                        </PlayerHoverCard>
+                      </div>
+                      {p.ratingStars != null && (
+                        <Stars stars={p.ratingStars} size={12} />
                       )}
-                      <PlayerHoverCard playerId={p.id} playerName={p.name}>
-                        <span style={{ fontSize: '15px', color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                      </PlayerHoverCard>
                     </div>
-                    {p.ratingStars != null && (
-                      <Stars stars={p.ratingStars} size={12} />
-                    )}
-                  </div>
-                )
+                  )
+                }
 
                 // cols: header labels (first col is always player name area)
                 // data: first element is the player object (for name/pos/stars), rest are stat values
@@ -1219,12 +1222,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                           {statRow(['Player', 'TKL', 'SCK', 'INT', 'TFL', 'FF', 'PBU'], true, T7)}
                           {homeDef.length > 0 && teamHeader(homeAbbr, homeColor)}
                           {homeDef.map((p: any) => statRow([
-                            playerNameCell(p), p.defense.tackles, p.defense.sacks, p.defense.ints,
+                            playerNameCell(p, true), p.defense.tackles, p.defense.sacks, p.defense.ints,
                             p.defense.tfl, p.defense.forcedFumbles, p.defense.passBreakups
                           ], false, T7))}
                           {awayDef.length > 0 && teamHeader(awayAbbr, awayColor)}
                           {awayDef.map((p: any) => statRow([
-                            playerNameCell(p), p.defense.tackles, p.defense.sacks, p.defense.ints,
+                            playerNameCell(p, true), p.defense.tackles, p.defense.sacks, p.defense.ints,
                             p.defense.tfl, p.defense.forcedFumbles, p.defense.passBreakups
                           ], false, T7))}
                         </>

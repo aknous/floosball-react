@@ -484,6 +484,7 @@ interface PlayerBase {
   id: number
   name: string
   position: string | null
+  defensivePosition?: string | null
   playerRating: number
   ratingStars: number
   fantasyPoints: number
