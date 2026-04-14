@@ -1167,6 +1167,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 )
 
                 const T7 = '1fr 48px 38px 36px 36px 28px 42px'  // 6 stat cols for offense sections
+                const T8 = '1fr 48px 38px 36px 36px 28px 30px 42px'  // 7 stat cols (extra turnover col)
 
                 const teamHeader = (abbr: string, color: string) => (
                   <div style={{ fontSize: '13px', fontWeight: '700', color, padding: '4px 4px 0' }}>{abbr}</div>
@@ -1179,19 +1180,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   <div>
                     {/* PASSING */}
                     {sectionLabel('Passing')}
-                    {statRow(['Player', 'C/A', 'YDS', 'YPC', 'LNG', 'TD', 'FP'], true, T7)}
+                    {statRow(['Player', 'C/A', 'YDS', 'YPC', 'LNG', 'TD', 'INT', 'FP'], true, T8)}
                     {teamHeader(homeAbbr, homeColor)}
-                    {hp.qb && statRow([playerNameCell(hp.qb), `${hp.qb.comp}/${hp.qb.att}`, hp.qb.yards, hp.qb.ypc, hp.qb.longest, hp.qb.tds, hp.qb.fantasyPoints], false, T7)}
+                    {hp.qb && statRow([playerNameCell(hp.qb), `${hp.qb.comp}/${hp.qb.att}`, hp.qb.yards, hp.qb.ypc, hp.qb.longest, hp.qb.tds, hp.qb.ints ?? 0, hp.qb.fantasyPoints], false, T8)}
                     {teamHeader(awayAbbr, awayColor)}
-                    {ap.qb && statRow([playerNameCell(ap.qb), `${ap.qb.comp}/${ap.qb.att}`, ap.qb.yards, ap.qb.ypc, ap.qb.longest, ap.qb.tds, ap.qb.fantasyPoints], false, T7)}
+                    {ap.qb && statRow([playerNameCell(ap.qb), `${ap.qb.comp}/${ap.qb.att}`, ap.qb.yards, ap.qb.ypc, ap.qb.longest, ap.qb.tds, ap.qb.ints ?? 0, ap.qb.fantasyPoints], false, T8)}
 
                     {/* RUSHING */}
                     {sectionLabel('Rushing')}
-                    {statRow(['Player', 'CAR', 'YDS', 'YPC', 'LNG', 'TD', 'FP'], true, T7)}
+                    {statRow(['Player', 'CAR', 'YDS', 'YPC', 'LNG', 'TD', 'FUM', 'FP'], true, T8)}
                     {teamHeader(homeAbbr, homeColor)}
-                    {hp.rb && statRow([playerNameCell(hp.rb), hp.rb.carries, hp.rb.yards, hp.rb.ypc, hp.rb.longest, hp.rb.tds, hp.rb.fantasyPoints], false, T7)}
+                    {hp.rb && statRow([playerNameCell(hp.rb), hp.rb.carries, hp.rb.yards, hp.rb.ypc, hp.rb.longest, hp.rb.tds, hp.rb.fumblesLost ?? 0, hp.rb.fantasyPoints], false, T8)}
                     {teamHeader(awayAbbr, awayColor)}
-                    {ap.rb && statRow([playerNameCell(ap.rb), ap.rb.carries, ap.rb.yards, ap.rb.ypc, ap.rb.longest, ap.rb.tds, ap.rb.fantasyPoints], false, T7)}
+                    {ap.rb && statRow([playerNameCell(ap.rb), ap.rb.carries, ap.rb.yards, ap.rb.ypc, ap.rb.longest, ap.rb.tds, ap.rb.fumblesLost ?? 0, ap.rb.fantasyPoints], false, T8)}
 
                     {/* RECEIVING */}
                     {sectionLabel('Receiving')}

@@ -131,7 +131,7 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
           <div style={{ marginBottom: data.defensivePosition ? '4px' : '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
               <SwordIcon size={11} color="#94a3b8" />
-              <span style={{ fontSize: '11px', color: '#64748b', flex: 1 }}>Offense</span>
+              <span style={{ fontSize: '11px', color: '#94a3b8', flex: 1 }}>Offense</span>
               <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '600' }}>{data.offensiveRating}</span>
             </div>
             <div style={{ height: '3px', backgroundColor: '#334155', borderRadius: '2px' }}>
@@ -143,7 +143,7 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
           <div style={{ marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
               <ShieldIcon size={11} color="#94a3b8" />
-              <span style={{ fontSize: '11px', color: '#64748b', flex: 1 }}>Defense ({data.defensivePosition})</span>
+              <span style={{ fontSize: '11px', color: '#94a3b8', flex: 1 }}>Defense ({data.defensivePosition})</span>
               <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '600' }}>{data.defensiveRating}</span>
             </div>
             <div style={{ height: '3px', backgroundColor: '#334155', borderRadius: '2px' }}>

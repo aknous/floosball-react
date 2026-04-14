@@ -448,27 +448,24 @@ export default function PlayerPage() {
 
   const { attributes: att } = player
 
-  const attrs: { label: string; stars: number; value: number; icon?: React.ReactNode }[] = []
+  // Build separate attribute groups for two-column layout
+  const offAttrs: { label: string; stars: number; value: number }[] = []
+  const defAttrs: { label: string; stars: number; value: number }[] = []
   if (att) {
-    attrs.push({ label: 'Overall', stars: player.ratingStars, value: player.playerRating })
-    if (player.offensiveRating != null)
-      attrs.push({ label: 'Offense', stars: player.offensiveRatingStars ?? calcStars(player.offensiveRating), value: player.offensiveRating, icon: <SwordIcon size={13} color="#94a3b8" /> })
-    if (player.defensiveRating != null && player.defensivePosition)
-      attrs.push({ label: `Defense (${player.defensivePosition})`, stars: player.defensiveRatingStars ?? calcStars(player.defensiveRating), value: player.defensiveRating, icon: <ShieldIcon size={13} color="#94a3b8" /> })
-    if (att.att1 && att.att1Value != null)  attrs.push({ label: att.att1,    stars: att.att1stars ?? 1,   value: att.att1Value })
-    if (att.att2 && att.att2Value != null)  attrs.push({ label: att.att2,    stars: att.att2stars ?? 1,   value: att.att2Value })
-    if (att.att3 && att.att3Value != null)  attrs.push({ label: att.att3,    stars: att.att3stars ?? 1,   value: att.att3Value })
-    if (att.playmakingValue != null)        attrs.push({ label: 'Playmaking', stars: att.playmakingStars ?? 1, value: att.playmakingValue })
-    if (att.xFactorValue != null)           attrs.push({ label: 'X-Factor',  stars: att.xFactorStars ?? 1,    value: att.xFactorValue })
-    if (att.seasonPerformanceRating && att.seasonPerformanceRating > 0)
-      attrs.push({ label: 'Performance', stars: att.seasonPerformanceRatingStars ?? 1, value: att.seasonPerformanceRating })
+    // Offensive attributes
+    if (att.att1 && att.att1Value != null)  offAttrs.push({ label: att.att1,    stars: att.att1stars ?? 1,   value: att.att1Value })
+    if (att.att2 && att.att2Value != null)  offAttrs.push({ label: att.att2,    stars: att.att2stars ?? 1,   value: att.att2Value })
+    if (att.att3 && att.att3Value != null)  offAttrs.push({ label: att.att3,    stars: att.att3stars ?? 1,   value: att.att3Value })
+    if (att.playmakingValue != null)        offAttrs.push({ label: 'Playmaking', stars: att.playmakingStars ?? 1, value: att.playmakingValue })
+    if (att.xFactorValue != null)           offAttrs.push({ label: 'X-Factor',  stars: att.xFactorStars ?? 1,    value: att.xFactorValue })
     // Defensive attributes (position-specific)
     if (att.defensiveAttributes && player.defensivePosition) {
       Object.entries(att.defensiveAttributes).forEach(([key, { value, stars }]) => {
-        attrs.push({ label: DEF_ATTR_NAMES[key] ?? key, stars, value, icon: <ShieldIcon size={11} color="#64748b" /> })
+        defAttrs.push({ label: DEF_ATTR_NAMES[key] ?? key, stars, value })
       })
     }
   }
+  const hasDefense = player.defensivePosition && player.defensiveRating != null
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f172a' }}>
@@ -522,7 +519,45 @@ export default function PlayerPage() {
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', width: isMobile ? '100%' : undefined }}>
             {sectionHeader('Attributes')}
             <div style={{ padding: '14px 16px' }}>
-              {attrs.map((a, i) => attrRow(a.label, a.stars, a.value, i === 0, a.icon))}
+              {/* Overall + Performance on top */}
+              {attrRow('Overall', player.ratingStars, player.playerRating, true)}
+              {att?.seasonPerformanceRating != null && att.seasonPerformanceRating > 0 &&
+                attrRow('Performance', att.seasonPerformanceRatingStars ?? 1, att.seasonPerformanceRating)}
+
+              {/* Offense / Defense columns side by side */}
+              {hasDefense ? (
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '0' : '16px', marginTop: '8px' }}>
+                  {/* Offense column */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #334155' }}>
+                      <SwordIcon size={13} color="#94a3b8" />
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Offense</span>
+                      {player.offensiveRating != null && (
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.offensiveRating}</span>
+                      )}
+                    </div>
+                    {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                  </div>
+                  {/* Defense column */}
+                  <div style={isMobile ? { marginTop: '12px' } : {}}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #334155' }}>
+                      <ShieldIcon size={13} color="#94a3b8" />
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Defense ({player.defensivePosition})</span>
+                      {player.defensiveRating != null && (
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.defensiveRating}</span>
+                      )}
+                    </div>
+                    {defAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                  </div>
+                </div>
+              ) : (
+                /* Kickers: no defense column, just show offense attrs */
+                <div style={{ marginTop: '4px' }}>
+                  {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                </div>
+              )}
+
+              {/* Fatigue */}
               {att?.fatigue != null && att.fatigue > 0 && (() => {
                 const f = att.fatigue
                 const fColor = f < 5 ? '#4ade80' : f < 10 ? '#eab308' : f < 15 ? '#f97316' : '#ef4444'
