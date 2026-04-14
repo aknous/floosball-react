@@ -488,6 +488,14 @@ interface PlayerBase {
   ratingStars: number
   fantasyPoints: number
   totalFantasyPoints: number
+  defense?: {
+    sacks: number
+    ints: number
+    tackles: number
+    tfl: number
+    forcedFumbles: number
+    passBreakups: number
+  }
 }
 
 export interface GameStats {

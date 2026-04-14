@@ -1205,6 +1205,31 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     {hp.k && statRow([playerNameCell(hp.k), hp.k.fgs, hp.k.fgAtt, hp.k.longest, hp.k.fantasyPoints])}
                     {teamHeader(awayAbbr, awayColor)}
                     {ap.k && statRow([playerNameCell(ap.k), ap.k.fgs, ap.k.fgAtt, ap.k.longest, ap.k.fantasyPoints])}
+
+                    {/* DEFENSE */}
+                    {(() => {
+                      const defPlayers = (players: any) =>
+                        Object.values(players).filter((p: any) => p?.defense && Object.values(p.defense).some((v: any) => (v as number) > 0))
+                      const homeDef = defPlayers(hp)
+                      const awayDef = defPlayers(ap)
+                      if (homeDef.length === 0 && awayDef.length === 0) return null
+                      return (
+                        <>
+                          {sectionLabel('Defense')}
+                          {statRow(['Player', 'TKL', 'SCK', 'INT', 'TFL', 'FF', 'PBU'], true, T7)}
+                          {homeDef.length > 0 && teamHeader(homeAbbr, homeColor)}
+                          {homeDef.map((p: any) => statRow([
+                            playerNameCell(p), p.defense.tackles, p.defense.sacks, p.defense.ints,
+                            p.defense.tfl, p.defense.forcedFumbles, p.defense.passBreakups
+                          ], false, T7))}
+                          {awayDef.length > 0 && teamHeader(awayAbbr, awayColor)}
+                          {awayDef.map((p: any) => statRow([
+                            playerNameCell(p), p.defense.tackles, p.defense.sacks, p.defense.ints,
+                            p.defense.tfl, p.defense.forcedFumbles, p.defense.passBreakups
+                          ], false, T7))}
+                        </>
+                      )
+                    })()}
                   </div>
                 )
               })()}
