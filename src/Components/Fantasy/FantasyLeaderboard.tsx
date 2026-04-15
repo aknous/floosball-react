@@ -225,156 +225,295 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
             No locked rosters yet
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '480px', overflowY: 'auto' }}>
-            {snapshotEntries.map(entry => {
-              const isExpanded = expandedUserId === entry.userId
-              const isMe = currentUserId != null && entry.userId === currentUserId
-              return (
-                <div key={entry.userId}>
-                  <button
-                    onClick={() => setExpandedUserId(isExpanded ? null : entry.userId)}
-                    style={rowStyle(isExpanded, isMobile, isMe)}
-                  >
-                    <div style={rankStyleFn(entry.rank, isMobile)}>
-                      {showRankBadges && RANK_STYLE[entry.rank]
-                        ? <span style={{
-                            fontSize: '10px', fontWeight: '700',
-                            color: RANK_STYLE[entry.rank].color,
-                            backgroundColor: RANK_STYLE[entry.rank].bg,
-                            padding: '2px 4px', borderRadius: '4px',
-                          }}>{RANK_STYLE[entry.rank].label}</span>
-                        : entry.rank}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      {entry.favoriteTeamData?.teamId && (
-                        <img
-                          src={`/avatars/${entry.favoriteTeamData.teamId}.png`}
-                          alt=""
-                          style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
-                        />
-                      )}
-                      <div style={nameStyleFn(isMobile)}>
-                        {entry.username}
-                        {isMe && <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={pointsStyleFn(isMobile)}>{entry.seasonTotal.toFixed(0)}</div>
-                      {entry.seasonCardBonus > 0 && (
-                        <div style={{ fontSize: '9px', color: '#a78bfa', marginTop: '1px' }}>
-                          +{entry.seasonCardBonus.toFixed(0)} cards
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {(() => {
+              const top5 = snapshotEntries.slice(0, 5)
+              const meInTop5 = top5.some(e => currentUserId != null && e.userId === currentUserId)
+              const meEntry = !meInTop5 ? snapshotEntries.find(e => currentUserId != null && e.userId === currentUserId) : null
+              return <>
+                {top5.map(entry => {
+                  const isExpanded = expandedUserId === entry.userId
+                  const isMe = currentUserId != null && entry.userId === currentUserId
+                  return (
+                    <div key={entry.userId}>
+                      <button
+                        onClick={() => setExpandedUserId(isExpanded ? null : entry.userId)}
+                        style={rowStyle(isExpanded, isMobile, isMe)}
+                      >
+                        <div style={rankStyleFn(entry.rank, isMobile)}>
+                          {showRankBadges && RANK_STYLE[entry.rank]
+                            ? <span style={{
+                                fontSize: '10px', fontWeight: '700',
+                                color: RANK_STYLE[entry.rank].color,
+                                backgroundColor: RANK_STYLE[entry.rank].bg,
+                                padding: '2px 4px', borderRadius: '4px',
+                              }}>{RANK_STYLE[entry.rank].label}</span>
+                            : entry.rank}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {entry.favoriteTeamData?.teamId && (
+                            <img
+                              src={`/avatars/${entry.favoriteTeamData.teamId}.png`}
+                              alt=""
+                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
+                            />
+                          )}
+                          <div style={nameStyleFn(isMobile)}>
+                            {entry.username}
+                            {isMe && <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={pointsStyleFn(isMobile)}>{entry.seasonTotal.toFixed(0)}</div>
+                          {entry.seasonCardBonus > 0 && (
+                            <div style={{ fontSize: '9px', color: '#a78bfa', marginTop: '1px' }}>
+                              +{entry.seasonCardBonus.toFixed(0)} cards
+                            </div>
+                          )}
+                        </div>
+                        <div style={chevronStyle(isExpanded)}>▼</div>
+                      </button>
+                      {isExpanded && (
+                        <div style={{ padding: isMobile ? '6px 8px 10px 32px' : '6px 16px 14px 58px' }}>
+                          {entry.players
+                            .filter(p => p.slot !== 'PREV')
+                            .sort((a, b) => b.earnedPoints - a.earnedPoints)
+                            .map(p => (
+                            <div key={p.slot} style={playerRowStyleFn(isMobile)}>
+                              <span style={slotStyleFn(isMobile)}>{p.slot}</span>
+                              <span style={playerNameStyle}>{p.playerName}</span>
+                              <span style={teamAbbrStyle}>{p.teamAbbr}</span>
+                              <span style={playerPointsStyleFn(isMobile)}>+{p.earnedPoints.toFixed(0)}</span>
+                            </div>
+                          ))}
+                          {entry.players.filter(p => p.slot === 'PREV').map(p => (
+                            <div key="prev" style={playerRowStyleFn(isMobile)}>
+                              <span style={{ ...slotStyleFn(isMobile), color: '#64748b' }}>PREV</span>
+                              <span style={{ ...playerNameStyle, color: '#64748b', fontStyle: 'italic' }}>{p.playerName}</span>
+                              <span style={teamAbbrStyle}></span>
+                              <span style={{ ...playerPointsStyleFn(isMobile), color: '#64748b' }}>+{p.earnedPoints.toFixed(0)}</span>
+                            </div>
+                          ))}
+                          {entry.seasonCardBonus > 0 && (
+                            <div key="card-bonus" style={playerRowStyleFn(isMobile)}>
+                              <span style={{ ...slotStyleFn(isMobile), color: '#a78bfa' }}>CARD</span>
+                              <span style={{ ...playerNameStyle, color: '#a78bfa' }}>Card Bonus</span>
+                              <span style={teamAbbrStyle}></span>
+                              <span style={{ ...playerPointsStyleFn(isMobile), color: '#a78bfa' }}>+{entry.seasonCardBonus.toFixed(0)}</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                    <div style={chevronStyle(isExpanded)}>▼</div>
-                  </button>
-                  {isExpanded && (
-                    <div style={{ padding: isMobile ? '6px 8px 10px 32px' : '6px 16px 14px 58px' }}>
-                      {entry.players
-                        .filter(p => p.slot !== 'PREV')
-                        .sort((a, b) => b.earnedPoints - a.earnedPoints)
-                        .map(p => (
-                        <div key={p.slot} style={playerRowStyleFn(isMobile)}>
-                          <span style={slotStyleFn(isMobile)}>{p.slot}</span>
-                          <span style={playerNameStyle}>{p.playerName}</span>
-                          <span style={teamAbbrStyle}>{p.teamAbbr}</span>
-                          <span style={playerPointsStyleFn(isMobile)}>+{p.earnedPoints.toFixed(0)}</span>
+                  )
+                })}
+                {meEntry && (() => {
+                  const isExpanded = expandedUserId === meEntry.userId
+                  return <>
+                    <div style={{ borderTop: '1px solid #334155', margin: '4px 0' }} />
+                    <div key={meEntry.userId}>
+                      <button
+                        onClick={() => setExpandedUserId(isExpanded ? null : meEntry.userId)}
+                        style={rowStyle(isExpanded, isMobile, true)}
+                      >
+                        <div style={rankStyleFn(meEntry.rank, isMobile)}>{meEntry.rank}</div>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {meEntry.favoriteTeamData?.teamId && (
+                            <img
+                              src={`/avatars/${meEntry.favoriteTeamData.teamId}.png`}
+                              alt=""
+                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
+                            />
+                          )}
+                          <div style={nameStyleFn(isMobile)}>
+                            {meEntry.username}
+                            <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>
+                          </div>
                         </div>
-                      ))}
-                      {entry.players.filter(p => p.slot === 'PREV').map(p => (
-                        <div key="prev" style={playerRowStyleFn(isMobile)}>
-                          <span style={{ ...slotStyleFn(isMobile), color: '#64748b' }}>PREV</span>
-                          <span style={{ ...playerNameStyle, color: '#64748b', fontStyle: 'italic' }}>{p.playerName}</span>
-                          <span style={teamAbbrStyle}></span>
-                          <span style={{ ...playerPointsStyleFn(isMobile), color: '#64748b' }}>+{p.earnedPoints.toFixed(0)}</span>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={pointsStyleFn(isMobile)}>{meEntry.seasonTotal.toFixed(0)}</div>
+                          {meEntry.seasonCardBonus > 0 && (
+                            <div style={{ fontSize: '9px', color: '#a78bfa', marginTop: '1px' }}>
+                              +{meEntry.seasonCardBonus.toFixed(0)} cards
+                            </div>
+                          )}
                         </div>
-                      ))}
-                      {entry.seasonCardBonus > 0 && (
-                        <div key="card-bonus" style={playerRowStyleFn(isMobile)}>
-                          <span style={{ ...slotStyleFn(isMobile), color: '#a78bfa' }}>CARD</span>
-                          <span style={{ ...playerNameStyle, color: '#a78bfa' }}>Card Bonus</span>
-                          <span style={teamAbbrStyle}></span>
-                          <span style={{ ...playerPointsStyleFn(isMobile), color: '#a78bfa' }}>+{entry.seasonCardBonus.toFixed(0)}</span>
+                        <div style={chevronStyle(isExpanded)}>▼</div>
+                      </button>
+                      {isExpanded && (
+                        <div style={{ padding: isMobile ? '6px 8px 10px 32px' : '6px 16px 14px 58px' }}>
+                          {meEntry.players
+                            .filter(p => p.slot !== 'PREV')
+                            .sort((a, b) => b.earnedPoints - a.earnedPoints)
+                            .map(p => (
+                            <div key={p.slot} style={playerRowStyleFn(isMobile)}>
+                              <span style={slotStyleFn(isMobile)}>{p.slot}</span>
+                              <span style={playerNameStyle}>{p.playerName}</span>
+                              <span style={teamAbbrStyle}>{p.teamAbbr}</span>
+                              <span style={playerPointsStyleFn(isMobile)}>+{p.earnedPoints.toFixed(0)}</span>
+                            </div>
+                          ))}
+                          {meEntry.players.filter(p => p.slot === 'PREV').map(p => (
+                            <div key="prev" style={playerRowStyleFn(isMobile)}>
+                              <span style={{ ...slotStyleFn(isMobile), color: '#64748b' }}>PREV</span>
+                              <span style={{ ...playerNameStyle, color: '#64748b', fontStyle: 'italic' }}>{p.playerName}</span>
+                              <span style={teamAbbrStyle}></span>
+                              <span style={{ ...playerPointsStyleFn(isMobile), color: '#64748b' }}>+{p.earnedPoints.toFixed(0)}</span>
+                            </div>
+                          ))}
+                          {meEntry.seasonCardBonus > 0 && (
+                            <div key="card-bonus" style={playerRowStyleFn(isMobile)}>
+                              <span style={{ ...slotStyleFn(isMobile), color: '#a78bfa' }}>CARD</span>
+                              <span style={{ ...playerNameStyle, color: '#a78bfa' }}>Card Bonus</span>
+                              <span style={teamAbbrStyle}></span>
+                              <span style={{ ...playerPointsStyleFn(isMobile), color: '#a78bfa' }}>+{meEntry.seasonCardBonus.toFixed(0)}</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-              )
-            })}
+                  </>
+                })()}
+              </>
+            })()}
           </div>
         )
       ) : (
         /* Weekly view — current week only */
         currentWeekData && currentWeekData.entries.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '480px', overflowY: 'auto' }}>
-            {currentWeekData.entries.map(entry => {
-              const isExpanded = expandedUserId === entry.userId
-              const isMe = currentUserId != null && entry.userId === currentUserId
-              return (
-                <div key={entry.userId}>
-                  <button
-                    onClick={() => setExpandedUserId(isExpanded ? null : entry.userId)}
-                    style={rowStyle(isExpanded, isMobile, isMe)}
-                  >
-                    <div style={rankStyleFn(entry.rank, isMobile)}>
-                      {showRankBadges && RANK_STYLE[entry.rank]
-                        ? <span style={{
-                            fontSize: '10px', fontWeight: '700',
-                            color: RANK_STYLE[entry.rank].color,
-                            backgroundColor: RANK_STYLE[entry.rank].bg,
-                            padding: '2px 4px', borderRadius: '4px',
-                          }}>{RANK_STYLE[entry.rank].label}</span>
-                        : entry.rank}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      {entry.favoriteTeamId && (
-                        <img
-                          src={`/avatars/${entry.favoriteTeamId}.png`}
-                          alt=""
-                          style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
-                        />
-                      )}
-                      <div style={nameStyleFn(isMobile)}>
-                        {entry.username}
-                        {isMe && <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={pointsStyleFn(isMobile)}>{entry.weekPoints.toFixed(0)}</div>
-                      {(entry.cardBonusPoints ?? 0) > 0 && (
-                        <div style={{ fontSize: '9px', color: '#a78bfa', marginTop: '1px' }}>
-                          +{entry.cardBonusPoints.toFixed(0)} cards
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {(() => {
+              const top5 = currentWeekData.entries.slice(0, 5)
+              const meInTop5 = top5.some(e => currentUserId != null && e.userId === currentUserId)
+              const meEntry = !meInTop5 ? currentWeekData.entries.find(e => currentUserId != null && e.userId === currentUserId) : null
+              return <>
+                {top5.map(entry => {
+                  const isExpanded = expandedUserId === entry.userId
+                  const isMe = currentUserId != null && entry.userId === currentUserId
+                  return (
+                    <div key={entry.userId}>
+                      <button
+                        onClick={() => setExpandedUserId(isExpanded ? null : entry.userId)}
+                        style={rowStyle(isExpanded, isMobile, isMe)}
+                      >
+                        <div style={rankStyleFn(entry.rank, isMobile)}>
+                          {showRankBadges && RANK_STYLE[entry.rank]
+                            ? <span style={{
+                                fontSize: '10px', fontWeight: '700',
+                                color: RANK_STYLE[entry.rank].color,
+                                backgroundColor: RANK_STYLE[entry.rank].bg,
+                                padding: '2px 4px', borderRadius: '4px',
+                              }}>{RANK_STYLE[entry.rank].label}</span>
+                            : entry.rank}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {entry.favoriteTeamId && (
+                            <img
+                              src={`/avatars/${entry.favoriteTeamId}.png`}
+                              alt=""
+                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
+                            />
+                          )}
+                          <div style={nameStyleFn(isMobile)}>
+                            {entry.username}
+                            {isMe && <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={pointsStyleFn(isMobile)}>{entry.weekPoints.toFixed(0)}</div>
+                          {(entry.cardBonusPoints ?? 0) > 0 && (
+                            <div style={{ fontSize: '9px', color: '#a78bfa', marginTop: '1px' }}>
+                              +{entry.cardBonusPoints.toFixed(0)} cards
+                            </div>
+                          )}
+                        </div>
+                        <div style={chevronStyle(isExpanded)}>▼</div>
+                      </button>
+                      {isExpanded && (
+                        <div style={{ padding: isMobile ? '6px 8px 10px 32px' : '6px 16px 14px 58px' }}>
+                          {entry.players
+                            .sort((a, b) => b.weekPoints - a.weekPoints)
+                            .map(p => (
+                            <div key={p.slot} style={playerRowStyleFn(isMobile)}>
+                              <span style={slotStyleFn(isMobile)}>{p.slot}</span>
+                              <span style={playerNameStyle}>{p.playerName}</span>
+                              <span style={teamAbbrStyle}>{p.teamAbbr}</span>
+                              <span style={playerPointsStyleFn(isMobile)}>+{p.weekPoints.toFixed(0)}</span>
+                            </div>
+                          ))}
+                          {(entry.cardBonusPoints ?? 0) > 0 && (
+                            <div key="card-bonus" style={playerRowStyleFn(isMobile)}>
+                              <span style={{ ...slotStyleFn(isMobile), color: '#a78bfa' }}>CARD</span>
+                              <span style={{ ...playerNameStyle, color: '#a78bfa' }}>Card Bonus</span>
+                              <span style={teamAbbrStyle}></span>
+                              <span style={{ ...playerPointsStyleFn(isMobile), color: '#a78bfa' }}>+{entry.cardBonusPoints.toFixed(0)}</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                    <div style={chevronStyle(isExpanded)}>▼</div>
-                  </button>
-                  {isExpanded && (
-                    <div style={{ padding: isMobile ? '6px 8px 10px 32px' : '6px 16px 14px 58px' }}>
-                      {entry.players
-                        .sort((a, b) => b.weekPoints - a.weekPoints)
-                        .map(p => (
-                        <div key={p.slot} style={playerRowStyleFn(isMobile)}>
-                          <span style={slotStyleFn(isMobile)}>{p.slot}</span>
-                          <span style={playerNameStyle}>{p.playerName}</span>
-                          <span style={teamAbbrStyle}>{p.teamAbbr}</span>
-                          <span style={playerPointsStyleFn(isMobile)}>+{p.weekPoints.toFixed(0)}</span>
+                  )
+                })}
+                {meEntry && (() => {
+                  const isExpanded = expandedUserId === meEntry.userId
+                  return <>
+                    <div style={{ borderTop: '1px solid #334155', margin: '4px 0' }} />
+                    <div key={meEntry.userId}>
+                      <button
+                        onClick={() => setExpandedUserId(isExpanded ? null : meEntry.userId)}
+                        style={rowStyle(isExpanded, isMobile, true)}
+                      >
+                        <div style={rankStyleFn(meEntry.rank, isMobile)}>{meEntry.rank}</div>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {meEntry.favoriteTeamId && (
+                            <img
+                              src={`/avatars/${meEntry.favoriteTeamId}.png`}
+                              alt=""
+                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
+                            />
+                          )}
+                          <div style={nameStyleFn(isMobile)}>
+                            {meEntry.username}
+                            <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>
+                          </div>
                         </div>
-                      ))}
-                      {(entry.cardBonusPoints ?? 0) > 0 && (
-                        <div key="card-bonus" style={playerRowStyleFn(isMobile)}>
-                          <span style={{ ...slotStyleFn(isMobile), color: '#a78bfa' }}>CARD</span>
-                          <span style={{ ...playerNameStyle, color: '#a78bfa' }}>Card Bonus</span>
-                          <span style={teamAbbrStyle}></span>
-                          <span style={{ ...playerPointsStyleFn(isMobile), color: '#a78bfa' }}>+{entry.cardBonusPoints.toFixed(0)}</span>
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={pointsStyleFn(isMobile)}>{meEntry.weekPoints.toFixed(0)}</div>
+                          {(meEntry.cardBonusPoints ?? 0) > 0 && (
+                            <div style={{ fontSize: '9px', color: '#a78bfa', marginTop: '1px' }}>
+                              +{meEntry.cardBonusPoints.toFixed(0)} cards
+                            </div>
+                          )}
+                        </div>
+                        <div style={chevronStyle(isExpanded)}>▼</div>
+                      </button>
+                      {isExpanded && (
+                        <div style={{ padding: isMobile ? '6px 8px 10px 32px' : '6px 16px 14px 58px' }}>
+                          {meEntry.players
+                            .sort((a, b) => b.weekPoints - a.weekPoints)
+                            .map(p => (
+                            <div key={p.slot} style={playerRowStyleFn(isMobile)}>
+                              <span style={slotStyleFn(isMobile)}>{p.slot}</span>
+                              <span style={playerNameStyle}>{p.playerName}</span>
+                              <span style={teamAbbrStyle}>{p.teamAbbr}</span>
+                              <span style={playerPointsStyleFn(isMobile)}>+{p.weekPoints.toFixed(0)}</span>
+                            </div>
+                          ))}
+                          {(meEntry.cardBonusPoints ?? 0) > 0 && (
+                            <div key="card-bonus" style={playerRowStyleFn(isMobile)}>
+                              <span style={{ ...slotStyleFn(isMobile), color: '#a78bfa' }}>CARD</span>
+                              <span style={{ ...playerNameStyle, color: '#a78bfa' }}>Card Bonus</span>
+                              <span style={teamAbbrStyle}></span>
+                              <span style={{ ...playerPointsStyleFn(isMobile), color: '#a78bfa' }}>+{meEntry.cardBonusPoints.toFixed(0)}</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-              )
-            })}
+                  </>
+                })()}
+              </>
+            })()}
           </div>
         ) : (
           <div style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', padding: '40px 0' }}>

@@ -953,6 +953,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
                 position: 'absolute',
                 top: d.pad - 2,
                 right: d.pad - 2,
+                zIndex: 4,
                 width: '20px',
                 height: '20px',
                 borderRadius: '4px',

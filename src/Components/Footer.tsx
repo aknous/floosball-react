@@ -63,7 +63,7 @@ const FooterChangelogItems: React.FC<{ entry: ChangelogEntry }> = ({ entry }) =>
   )
 }
 
-const APP_VERSION = process.env.REACT_APP_VERSION || '0.8.0'
+const APP_VERSION = process.env.REACT_APP_VERSION || '0.8.1'
 
 export const Footer: React.FC = () => {
   const [showChangelog, setShowChangelog] = useState(false)
@@ -164,13 +164,13 @@ export const Footer: React.FC = () => {
               padding: '3px 10px',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: '11px',
-              color: '#64748b',
+              fontSize: '13px',
+              color: '#94a3b8',
               fontWeight: '600',
               transition: 'border-color 0.15s, color 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#475569'; e.currentTarget.style.color = '#94a3b8' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#64748b' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#475569'; e.currentTarget.style.color = '#cbd5e1' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#94a3b8' }}
           >
             v{APP_VERSION}
           </button>

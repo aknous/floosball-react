@@ -51,7 +51,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         label: 'Changes',
         items: [
-          'Significantly faster page loads — API responses are now compressed and cached',
+          'API responses are now compressed and cached for snappier data loading',
           'Team avatars and league logo load instantly from local assets instead of the server',
           'Reduced unnecessary background requests — pages only refresh data when it actually changes',
           'Notifications pause when the browser tab is hidden to save resources',

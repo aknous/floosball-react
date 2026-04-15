@@ -1,4 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
+import HoverTooltip from '@/Components/HoverTooltip'
+import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -41,7 +43,7 @@ interface MonitorData {
   liveGames: { active: number; scheduled: number; final: number }
   timing: { mode: string | null; catchingUp: boolean }
   counts: { teams: number; activePlayers: number; freeAgents: number; retiredPlayers: number; hallOfFame: number }
-  websockets: { total_connections: number; active_channels: number; channels: Record<string, number> }
+  websockets: { total_connections: number; unique_users: number; channels: Record<string, number> }
 }
 
 interface AnalyticsData {
@@ -56,8 +58,8 @@ interface AnalyticsData {
   }
   cards: {
     totalCards: number; byEdition: Record<string, number>; bySource: Record<string, number>
-    topEffects: { effectName: string; count: number }[]
-    bottomEffects?: { effectName: string; count: number }[]
+    topEffects: { effectName: string; count: number; tooltip?: string }[]
+    bottomEffects?: { effectName: string; count: number; tooltip?: string }[]
     packOpenings: Record<string, number>
     combineUsage?: Record<string, number>; totalCombineUses?: number
     usersWhoEquipped?: number
@@ -239,6 +241,7 @@ interface AdminUser {
   isActive: boolean
   lastLoginAt: string | null
   betaStatus: string
+  isAdmin: boolean
 }
 
 interface EffectOption { name: string; displayName: string; edition: string }
@@ -262,8 +265,10 @@ const CATEGORY_FOR_POSITION: Record<string, string> = {
   QB: 'multiplier', RB: 'floobits', WR: 'flat_fp', TE: 'conditional', K: 'streak',
 }
 
-const AdminContent: React.FC<{ password: string }> = ({ password }) => {
-  const headers = { 'Content-Type': 'application/json', 'X-Admin-Password': password }
+const AdminContent: React.FC<{ password: string | null; token: string | null }> = ({ password, token }) => {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  if (password) headers['X-Admin-Password'] = password
 
   // Access mode toggle (request vs waitlist)
   const [accessMode, setAccessMode] = useState<'request' | 'waitlist'>('request')
@@ -458,7 +463,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
       if (filter && filter !== 'all') params.set('filter', filter)
       const qs = params.toString()
       const res = await fetch(`${API_BASE}/admin/users${qs ? `?${qs}` : ''}`, {
-        headers: { 'X-Admin-Password': password },
+        headers,
       })
       if (res.ok) {
         const data = await res.json()
@@ -470,6 +475,30 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
   // Username re-roll
   const [rerollingUserId, setRerollingUserId] = useState<number | null>(null)
   const [deletingUserId, setDeletingUserId] = useState<number | null>(null)
+  const [togglingAdminId, setTogglingAdminId] = useState<number | null>(null)
+
+  const handleToggleAdmin = async (userId: number) => {
+    const target = adminUsers.find(u => u.id === userId)
+    const name = target?.username || target?.email || `User #${userId}`
+    const action = target?.isAdmin ? 'revoke admin access from' : 'grant admin access to'
+    if (!window.confirm(`Are you sure you want to ${action} "${name}"?`)) return
+    setTogglingAdminId(userId)
+    try {
+      const res = await fetch(`${API_BASE}/admin/users/${userId}/toggle-admin`, {
+        method: 'POST', headers,
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      const data = await res.json()
+      const newIsAdmin = data.data?.isAdmin ?? false
+      setAdminUsers(prev => prev.map(u =>
+        u.id === userId ? { ...u, isAdmin: newIsAdmin } : u
+      ))
+    } catch (e: any) {
+      alert(`Failed to toggle admin: ${e.message}`)
+    } finally {
+      setTogglingAdminId(null)
+    }
+  }
 
   const handleDeleteUser = async (user: AdminUser) => {
     if (!window.confirm(`Permanently delete user "${user.username || user.email}"?\n\nThis removes ALL data: cards, rosters, picks, transactions, etc. This cannot be undone.`)) return
@@ -536,7 +565,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     const fetchOptions = async () => {
       try {
         const res = await fetch(`${API_BASE}/admin/card-options`, {
-          headers: { 'X-Admin-Password': password },
+          headers,
         })
         if (res.ok) {
           const data = await res.json()
@@ -556,7 +585,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
       try {
         const res = await fetch(
           `${API_BASE}/admin/players/search?q=${encodeURIComponent(cardPlayerSearch)}`,
-          { headers: { 'X-Admin-Password': password } },
+          { headers },
         )
         if (res.ok) {
           const data = await res.json()
@@ -665,7 +694,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
     liveGames: { active: number; scheduled: number; final: number }
     timing: { mode: string | null; catchingUp: boolean }
     counts: { teams: number; activePlayers: number; freeAgents: number; retiredPlayers: number; hallOfFame: number }
-    memory: { rssMb: number; scheduleGames: number; gamesWithPlays: number; totalPlaysInMemory: number; pid: number }
+    memory: { rssMb: number; totalMb?: number; scheduleGames: number; gamesWithPlays: number; totalPlaysInMemory: number; pid: number }
     websockets: Record<string, any>
   }
   const [monitorData, setMonitorData] = useState<MonitorData | null>(null)
@@ -793,7 +822,8 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
           const smallStat: React.CSSProperties = {
             fontSize: '13px', color: '#cbd5e1', lineHeight: '1.8',
           }
-          const memoryPct = memory.rssMb > 0 ? Math.round((memory.rssMb / 512) * 100) : 0
+          const totalMemMb = memory.totalMb || 2048
+          const memoryPct = memory.rssMb > 0 ? Math.round((memory.rssMb / totalMemMb) * 100) : 0
           const memoryColor = memoryPct > 80 ? '#ef4444' : memoryPct > 60 ? '#f59e0b' : '#22c55e'
 
           return <>
@@ -827,7 +857,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                     transition: 'width 0.3s ease',
                   }} />
                 </div>
-                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{memoryPct}% of 512 MB</div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{memoryPct}% of {totalMemMb} MB</div>
               </div>
               <div style={statBox}>
                 <div style={statLabel}>Season</div>
@@ -892,9 +922,8 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
               <div style={statBox}>
                 <div style={{ ...statLabel, marginBottom: '8px' }}>WebSockets</div>
                 <div style={smallStat}>
-                  {Object.entries(websockets).map(([k, v]) => (
-                    <div key={k}>{k}: {typeof v === 'object' ? JSON.stringify(v) : String(v)}</div>
-                  ))}
+                  <div>Connections: {websockets.total_connections ?? 0}</div>
+                  <div>Unique Users: {websockets.unique_users ?? 0}</div>
                 </div>
                 <div style={{ fontSize: '11px', color: '#475569', marginTop: '8px' }}>
                   PID: {memory.pid} | Last saved: {simulation.lastSaved
@@ -1107,11 +1136,12 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                 </div>
                 <div style={statBox}>
                   <div style={{ ...statLabel, marginBottom: '8px' }}>Top Equipped Effects</div>
+                  <div style={{ ...smallStat, marginBottom: '6px' }}>user-weeks equipped</div>
                   {cards.topEffects.length === 0
                     ? <div style={smallStat}>No data yet</div>
                     : cards.topEffects.map((ef, i) => (
                       <div key={i} style={listRow}>
-                        <span>{ef.effectName}</span>
+                        <HoverTooltip text={ef.tooltip || ''}><span>{ef.effectName}</span></HoverTooltip>
                         <span style={{ fontWeight: '600' }}>{ef.count}</span>
                       </div>
                     ))
@@ -1132,9 +1162,10 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                 {(cards.bottomEffects?.length ?? 0) > 0 && (
                   <div style={statBox}>
                     <div style={{ ...statLabel, marginBottom: '8px' }}>Least Equipped Effects</div>
+                    <div style={{ ...smallStat, marginBottom: '6px' }}>user-weeks equipped</div>
                     {cards.bottomEffects!.map((ef, i) => (
                       <div key={i} style={listRow}>
-                        <span>{ef.effectName}</span>
+                        <HoverTooltip text={ef.tooltip || ''}><span>{ef.effectName}</span></HoverTooltip>
                         <span style={{ fontWeight: '600', color: '#94a3b8' }}>{ef.count}</span>
                       </div>
                     ))}
@@ -1161,7 +1192,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                   <div style={statLabel}>Users Equipped This Season</div>
                   <div style={{ ...statValue, fontSize: '18px' }}>{cards.usersWhoEquipped}</div>
                   <div style={smallStat}>
-                    {users.totalUsers > 0 ? `${Math.round(cards.usersWhoEquipped / users.totalUsers * 100)}%` : '0%'} of users
+                    {users.onboardedCount > 0 ? `${Math.round(cards.usersWhoEquipped / users.onboardedCount * 100)}%` : '0%'} of onboarded users
                   </div>
                 </div>
               )}
@@ -1235,7 +1266,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '12px' }}>
                 {[
                   { label: 'Fantasy', count: users.adoption.fantasy },
-                  { label: 'Cards', count: users.adoption.cards },
+                  { label: 'Cards Equipped', count: cards.usersWhoEquipped ?? 0 },
                   { label: 'Pick-Em', count: users.adoption.pickEm },
                   { label: 'Funding', count: users.adoption.funding },
                 ].map(({ label, count }) => (
@@ -1243,7 +1274,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                     <div style={statLabel}>{label}</div>
                     <div style={{ ...statValue, fontSize: '18px' }}>{count}</div>
                     <div style={smallStat}>
-                      {users.totalUsers > 0 ? `${Math.round(count / users.totalUsers * 100)}%` : '0%'} of users
+                      {users.onboardedCount > 0 ? `${Math.round(count / users.onboardedCount * 100)}%` : '0%'} of onboarded users
                     </div>
                   </div>
                 ))}
@@ -1256,7 +1287,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                     { label: 'Picked Username', count: users.onboardingFunnel.pickedUsername },
                     { label: 'Chose Favorite Team', count: users.onboardingFunnel.choseFavTeam },
                     { label: 'Drafted Fantasy Roster', count: users.onboardingFunnel.draftedRoster },
-                    { label: 'Has Cards', count: users.onboardingFunnel.hasCards },
+                    { label: 'Equipped Cards', count: cards.usersWhoEquipped ?? 0 },
                   ].map(({ label, count }) => (
                     <div key={label} style={listRow}>
                       <span>{label}</span>
@@ -1845,7 +1876,7 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #334155' }}>
-                  {['Username', 'Email', 'Favorite Team', 'Floobits', 'Joined', 'Last Login', 'Status', 'Beta', ''].map(h => (
+                  {['Username', 'Email', 'Favorite Team', 'Floobits', 'Joined', 'Last Login', 'Status', 'Beta', 'Admin', ''].map(h => (
                     <th key={h} style={{
                       ...labelStyle, textAlign: 'left', padding: '8px 10px',
                       marginBottom: 0, whiteSpace: 'nowrap',
@@ -1909,6 +1940,22 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
                     </td>
                     <td style={{ padding: '8px 10px' }}>
                       <button
+                        onClick={() => handleToggleAdmin(u.id)}
+                        disabled={togglingAdminId === u.id}
+                        style={{
+                          background: 'none', border: '1px solid',
+                          borderColor: u.isAdmin ? '#22c55e' : '#334155',
+                          borderRadius: '4px', padding: '2px 8px',
+                          fontSize: '11px', fontWeight: '600',
+                          color: u.isAdmin ? '#22c55e' : '#64748b',
+                          cursor: togglingAdminId === u.id ? 'default' : 'pointer',
+                        }}
+                      >
+                        {togglingAdminId === u.id ? '...' : u.isAdmin ? 'Admin' : 'User'}
+                      </button>
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <button
                         onClick={() => handleDeleteUser(u)}
                         disabled={deletingUserId === u.id}
                         style={{
@@ -1936,13 +1983,30 @@ const AdminContent: React.FC<{ password: string }> = ({ password }) => {
 // ── Main export ────────────────────────────────────────────────────────────
 
 const AdminPage: React.FC = () => {
+  const { user, getToken } = useAuth()
   const stored = sessionStorage.getItem(SESSION_KEY)
   const [password, setPassword] = useState<string | null>(stored)
+  const [token, setToken] = useState<string | null>(null)
+  const fetchedRef = useRef(false)
 
+  // If user is admin, fetch a token for API calls
+  useEffect(() => {
+    if (user?.isAdmin && !fetchedRef.current) {
+      fetchedRef.current = true
+      getToken().then(t => setToken(t))
+    }
+  }, [user?.isAdmin, getToken])
+
+  // Admin user with token: skip password gate
+  if (user?.isAdmin && token) {
+    return <AdminContent password={null} token={token} />
+  }
+
+  // Fallback: password gate
   if (!password) {
     return <PasswordGate onAuth={setPassword} />
   }
-  return <AdminContent password={password} />
+  return <AdminContent password={password} token={null} />
 }
 
 export default AdminPage

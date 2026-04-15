@@ -1,5 +1,6 @@
-import React, { createContext, useContext, ReactNode } from 'react'
+import React, { createContext, useContext, useEffect, useRef, ReactNode } from 'react'
 import { useWebSocket } from '@/hooks/useWebSocket'
+import { useAuth } from '@/contexts/AuthContext'
 import type { GameWebSocketEvent, SeasonWebSocketEvent } from '@/types/websocket'
 
 type AnyEvent = GameWebSocketEvent | SeasonWebSocketEvent
@@ -14,7 +15,19 @@ interface SeasonWebSocketContextType {
 const SeasonWebSocketContext = createContext<SeasonWebSocketContextType | undefined>(undefined)
 
 export const SeasonWebSocketProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { data: event, connected, error, drainEvents } = useWebSocket<AnyEvent>('/season')
+  const { data: event, connected, error, drainEvents, send } = useWebSocket<AnyEvent>('/season')
+  const { user } = useAuth()
+  const identifiedRef = useRef(false)
+
+  useEffect(() => {
+    if (connected && user?.id && !identifiedRef.current) {
+      send({ type: 'identify', userId: user.id })
+      identifiedRef.current = true
+    }
+    if (!connected) {
+      identifiedRef.current = false
+    }
+  }, [connected, user?.id, send])
 
   return (
     <SeasonWebSocketContext.Provider value={{ event, connected, error, drainEvents }}>

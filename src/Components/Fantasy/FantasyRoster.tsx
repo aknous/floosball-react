@@ -268,10 +268,14 @@ const PointsBreakdownPanel: React.FC<{
             const matchColor = '#60a5fa'
 
             // Determine which modifier tag to append per output type
-            const fpModTag = mod === 'frenzy' ? ' × 2x frenzy' : ''
+            const isLongshot = mod === 'longshot' && b.category === 'conditional'
+            const fpModTag = mod === 'frenzy' ? ' × 2x frenzy'
+              : isLongshot ? ' × 2x longshot' : ''
             const multModTag = (mod === 'amplify' || mod === 'cascade') ? ` × 2x ${mod}`
+              : isLongshot ? ' × 2x longshot'
               : isGrounded ? ' (grounded)' : ''
-            const fModTag = mod === 'payday' ? ' × 3x payday' : ''
+            const fModTag = mod === 'payday' ? ' × 3x payday'
+              : isLongshot ? ' × 2x longshot' : ''
 
             if (b.primaryFP > 0 || fpMatched) {
               const c = TYPE_COLORS.fp
@@ -299,7 +303,16 @@ const PointsBreakdownPanel: React.FC<{
               if (fModTag) eqSegments.push({text: ` ${fModTag.trim()}`, color: c})
               eqResult = formatValue(primaryF, 'floobits')
             } else if (b.equation) {
-              eqSegments.push({text: b.equation, color: '#94a3b8'})
+              // Grounded mult: show equation with struck-through would-be value
+              if (isGrounded && b.outputType === 'mult' && (b.preMatchMult || 0) > 1) {
+                const c = TYPE_COLORS.mult
+                eqSegments.push({text: b.equation, color: c})
+                eqSegments.push({text: ' (grounded)', color: '#ef4444'})
+                eqResult = { str: `${b.preMatchMult.toFixed(2)}x FPx`, color: '#64748b' }
+                eqNegated = true
+              } else {
+                eqSegments.push({text: b.equation, color: '#94a3b8'})
+              }
             }
 
             // Sub-lines: conditional, edition bonuses (with negation tracking)
