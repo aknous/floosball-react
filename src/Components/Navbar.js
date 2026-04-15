@@ -84,6 +84,7 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
     patchPreference({ emailSeasonReport: newVal })
   }, [emailSeasonReport, patchPreference])
 
+
   useEffect(() => {
     const handler = (e) => {
       if (panelRef.current && !panelRef.current.contains(e.target)) onClose()
@@ -225,6 +226,7 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
           </div>
         </div>
       </div>
+
 
       <NavLink
         to="/cards"

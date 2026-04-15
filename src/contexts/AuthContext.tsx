@@ -17,6 +17,7 @@ export interface AuthUser {
   emailSeasonReport: boolean
   teamFundingPct: number
   isAdmin: boolean
+  autoPickFavorites: boolean
 }
 
 export interface FantasyRosterPlayer {
