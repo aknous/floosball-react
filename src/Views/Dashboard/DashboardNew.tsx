@@ -70,7 +70,7 @@ const DASHBOARD_TOUR_STEPS: TutorialStep[] = [
   {
     target: 'dashboard-pickem',
     title: 'Prognosticate',
-    content: 'This is the pick-em game. Before each round, predict the winners. Correct picks earn points and climb the leaderboard. Picks lock when games start.',
+    content: 'Predict game winners to earn points. Pre-game picks are worth the most, but you can also pick mid-game. Picking underdogs pays a bonus.',
     placement: 'left',
     onEnter: () => window.dispatchEvent(new Event('floosball:show-pickem')),
   },
@@ -212,8 +212,9 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
           to jump into that game.
         </GuideSection>
         <GuideSection title="Prognosticate">
-          Before each round, predict the winners. Correct picks earn points on the Pick-Em
-          leaderboard. Picks lock when games begin — make your selections before kickoff.
+          Predict game winners to earn points and climb the leaderboard. Pre-game picks are worth
+          the most, but you can also pick mid-game. Picking underdogs pays a bonus, while favorites
+          pay less.
         </GuideSection>
         <GuideSection title="Leaders">
           The MVP Rankings show top-performing players this week and across the season. Stat leaders

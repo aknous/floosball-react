@@ -89,6 +89,7 @@ export function usePickEm(): UsePickEmResult {
     if (
       event.event === 'week_start' ||
       event.event === 'week_end' ||
+      event.event === 'game_start' ||
       event.event === 'game_end' ||
       event.event === 'pickem_results'
     ) {
@@ -101,13 +102,16 @@ export function usePickEm(): UsePickEmResult {
     const tok = await getToken()
     if (!tok) return
 
-    // Optimistic update — set the pick and lock in current multiplier
+    // Optimistic update — set the pick, lock in timing + win-prob multiplier
     setGames(prev =>
-      prev.map(g =>
-        g.gameIndex === gameIndex
-          ? { ...g, userPick: teamId, pointsMultiplier: g.currentMultiplier }
-          : g,
-      ),
+      prev.map(g => {
+        if (g.gameIndex !== gameIndex) return g
+        const isHome = teamId === g.homeTeam.id
+        const estWinProbMult = g.underdogInfo
+          ? (isHome ? g.underdogInfo.homeMultiplier : g.underdogInfo.awayMultiplier)
+          : 1.0
+        return { ...g, userPick: teamId, pointsMultiplier: g.currentMultiplier, underdogMultiplier: estWinProbMult }
+      }),
     )
 
     try {
@@ -125,14 +129,21 @@ export function usePickEm(): UsePickEmResult {
         const errJson = await resp.json().catch(() => null)
         throw new Error(errJson?.detail || 'Failed to submit pick')
       }
-      // Update with actual multiplier from server
+      // Update with actual multipliers + refreshed underdogInfo from server
       const json = await resp.json()
-      const pickData = (json.data ?? json).pick
+      const respData = json.data ?? json
+      const pickData = respData.pick
+      const freshUnderdogInfo = respData.underdogInfo
       if (pickData) {
         setGames(prev =>
           prev.map(g =>
             g.gameIndex === gameIndex
-              ? { ...g, pointsMultiplier: pickData.pointsMultiplier }
+              ? {
+                  ...g,
+                  pointsMultiplier: pickData.pointsMultiplier,
+                  underdogMultiplier: pickData.underdogMultiplier ?? 1.0,
+                  ...(freshUnderdogInfo ? { underdogInfo: freshUnderdogInfo } : {}),
+                }
               : g,
           ),
         )
