@@ -484,10 +484,19 @@ interface PlayerBase {
   id: number
   name: string
   position: string | null
+  defensivePosition?: string | null
   playerRating: number
   ratingStars: number
   fantasyPoints: number
   totalFantasyPoints: number
+  defense?: {
+    sacks: number
+    ints: number
+    tackles: number
+    tfl: number
+    forcedFumbles: number
+    passBreakups: number
+  }
 }
 
 export interface GameStats {

@@ -20,6 +20,9 @@ interface RosterPlayer {
   position: string
   rating: number
   ratingStars: number
+  offensiveRatingStars?: number
+  defensiveRatingStars?: number
+  defensivePosition?: string | null
   termRemaining?: number
   fatigue?: number
   resilience?: number
@@ -442,6 +445,11 @@ export default function TeamPage() {
                           </Link>
                         </PlayerHoverCard>
                         <Stars stars={player.ratingStars} size={12} />
+                        {player.defensivePosition && (
+                          <span style={{ fontSize: '10px', fontWeight: '600', color: '#64748b', backgroundColor: '#1e293b', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
+                            {player.defensivePosition}
+                          </span>
+                        )}
                         {player.termRemaining != null && (
                           <span style={{
                             fontSize: '11px',

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import PlayerAvatar from '@/Components/PlayerAvatar'
-import { Stars } from '@/Components/Stars'
+import { Stars, SwordIcon, ShieldIcon, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { GiLaurelsTrophy, GiStarMedal } from 'react-icons/gi'
 
@@ -15,6 +15,7 @@ interface PlayerAttributes {
   xFactorStars?: number; xFactorValue?: number
   seasonPerformanceRatingStars?: number; seasonPerformanceRating?: number
   fatigue?: number
+  defensiveAttributes?: Record<string, { value: number; stars: number }>
 }
 
 interface PlayerData {
@@ -30,6 +31,11 @@ interface PlayerData {
   seasonsPlayed: number
   ratingStars: number
   playerRating: number
+  offensiveRating?: number
+  offensiveRatingStars?: number
+  defensiveRating?: number
+  defensiveRatingStars?: number
+  defensivePosition?: string | null
   rank: string
   number: number
   ratingValue: number
@@ -341,6 +347,48 @@ function KStatsTable({ stats, career }: { stats: any[]; career: any }) {
   )
 }
 
+function DefenseStatsTable({ stats, career }: { stats: any[]; career: any }) {
+  const d = career?.defense ?? {}
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <thead>
+        <tr>
+          {['Season', 'Team', 'TKL', 'SCK', 'INT', 'TFL', 'FF', 'PBU'].map(h => (
+            <th key={h} style={thStyle}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <tr style={{ borderBottom: '1px solid #334155' }}>
+          <td style={careerTdFirst}>CAREER</td>
+          <td style={careerTdStyle}></td>
+          <td style={careerTdStyle}>{d.tackles ?? '—'}</td>
+          <td style={careerTdStyle}>{d.sacks ?? '—'}</td>
+          <td style={careerTdStyle}>{d.ints ?? '—'}</td>
+          <td style={careerTdStyle}>{d.tfl ?? '—'}</td>
+          <td style={careerTdStyle}>{d.forcedFumbles ?? '—'}</td>
+          <td style={careerTdStyle}>{d.passBreakups ?? '—'}</td>
+        </tr>
+        {stats?.map((s, idx) => (
+          <tr key={idx} style={{
+            borderBottom: '1px solid #1a2640',
+            backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+          }}>
+            <td style={tdFirst}>S{s.season}</td>
+            {teamCell(s)}
+            <td style={tdStyle}>{s.defense?.tackles ?? '—'}</td>
+            <td style={tdStyle}>{s.defense?.sacks ?? '—'}</td>
+            <td style={tdStyle}>{s.defense?.ints ?? '—'}</td>
+            <td style={tdStyle}>{s.defense?.tfl ?? '—'}</td>
+            <td style={tdStyle}>{s.defense?.forcedFumbles ?? '—'}</td>
+            <td style={tdStyle}>{s.defense?.passBreakups ?? '—'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
 // ── Main Page ───────────────────────────────────────────────────────────────
 
 export default function PlayerPage() {
@@ -375,13 +423,20 @@ export default function PlayerPage() {
     </div>
   )
 
-  const attrRow = (label: string, _stars: number, value: number, isOverall = false) => {
+  const DEF_ATTR_NAMES: Record<string, string> = {
+    coverage: 'Coverage', tackling: 'Tackling', playReading: 'Play Reading',
+    passRush: 'Pass Rush', runDefense: 'Run Defense', blitzing: 'Blitzing',
+  }
+
+  const attrRow = (label: string, _stars: number, value: number, isOverall = false, icon?: React.ReactNode) => {
     const barColor = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
     const pct = ((value - 60) / 40) * 100
     return (
       <div key={label} style={{ marginBottom: isOverall ? '16px' : '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
-          <span style={{ fontSize: isOverall ? '15px' : '13px', fontWeight: isOverall ? '700' : '400', color: isOverall ? '#e2e8f0' : '#94a3b8' }}>{label}</span>
+          <span style={{ fontSize: isOverall ? '15px' : '13px', fontWeight: isOverall ? '700' : '400', color: isOverall ? '#e2e8f0' : '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {icon}{label}
+          </span>
           <span style={{ fontSize: isOverall ? '22px' : '16px', fontWeight: '700', color: isOverall ? teamColor : '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
         </div>
         <div style={{ height: isOverall ? '6px' : '4px', backgroundColor: '#334155', borderRadius: '2px', overflow: 'hidden' }}>
@@ -393,17 +448,24 @@ export default function PlayerPage() {
 
   const { attributes: att } = player
 
-  const attrs: { label: string; stars: number; value: number }[] = []
+  // Build separate attribute groups for two-column layout
+  const offAttrs: { label: string; stars: number; value: number }[] = []
+  const defAttrs: { label: string; stars: number; value: number }[] = []
   if (att) {
-    attrs.push({ label: 'Overall', stars: player.ratingStars, value: player.playerRating })
-    if (att.att1 && att.att1Value != null)  attrs.push({ label: att.att1,    stars: att.att1stars ?? 1,   value: att.att1Value })
-    if (att.att2 && att.att2Value != null)  attrs.push({ label: att.att2,    stars: att.att2stars ?? 1,   value: att.att2Value })
-    if (att.att3 && att.att3Value != null)  attrs.push({ label: att.att3,    stars: att.att3stars ?? 1,   value: att.att3Value })
-    if (att.playmakingValue != null)        attrs.push({ label: 'Playmaking', stars: att.playmakingStars ?? 1, value: att.playmakingValue })
-    if (att.xFactorValue != null)           attrs.push({ label: 'X-Factor',  stars: att.xFactorStars ?? 1,    value: att.xFactorValue })
-    if (att.seasonPerformanceRating && att.seasonPerformanceRating > 0)
-      attrs.push({ label: 'Performance', stars: att.seasonPerformanceRatingStars ?? 1, value: att.seasonPerformanceRating })
+    // Offensive attributes
+    if (att.att1 && att.att1Value != null)  offAttrs.push({ label: att.att1,    stars: att.att1stars ?? 1,   value: att.att1Value })
+    if (att.att2 && att.att2Value != null)  offAttrs.push({ label: att.att2,    stars: att.att2stars ?? 1,   value: att.att2Value })
+    if (att.att3 && att.att3Value != null)  offAttrs.push({ label: att.att3,    stars: att.att3stars ?? 1,   value: att.att3Value })
+    if (att.playmakingValue != null)        offAttrs.push({ label: 'Playmaking', stars: att.playmakingStars ?? 1, value: att.playmakingValue })
+    if (att.xFactorValue != null)           offAttrs.push({ label: 'X-Factor',  stars: att.xFactorStars ?? 1,    value: att.xFactorValue })
+    // Defensive attributes (position-specific)
+    if (att.defensiveAttributes && player.defensivePosition) {
+      Object.entries(att.defensiveAttributes).forEach(([key, { value, stars }]) => {
+        defAttrs.push({ label: DEF_ATTR_NAMES[key] ?? key, stars, value })
+      })
+    }
   }
+  const hasDefense = player.defensivePosition && player.defensiveRating != null
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f172a' }}>
@@ -457,7 +519,45 @@ export default function PlayerPage() {
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', width: isMobile ? '100%' : undefined }}>
             {sectionHeader('Attributes')}
             <div style={{ padding: '14px 16px' }}>
-              {attrs.map((a, i) => attrRow(a.label, a.stars, a.value, i === 0))}
+              {/* Overall + Performance on top */}
+              {attrRow('Overall', player.ratingStars, player.playerRating, true)}
+              {att?.seasonPerformanceRating != null && att.seasonPerformanceRating > 0 &&
+                attrRow('Performance', att.seasonPerformanceRatingStars ?? 1, att.seasonPerformanceRating)}
+
+              {/* Offense / Defense columns side by side */}
+              {hasDefense ? (
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '0' : '16px', marginTop: '8px' }}>
+                  {/* Offense column */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #334155' }}>
+                      <SwordIcon size={13} color="#94a3b8" />
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Offense</span>
+                      {player.offensiveRating != null && (
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.offensiveRating}</span>
+                      )}
+                    </div>
+                    {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                  </div>
+                  {/* Defense column */}
+                  <div style={isMobile ? { marginTop: '12px' } : {}}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #334155' }}>
+                      <ShieldIcon size={13} color="#94a3b8" />
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Defense ({player.defensivePosition})</span>
+                      {player.defensiveRating != null && (
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.defensiveRating}</span>
+                      )}
+                    </div>
+                    {defAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                  </div>
+                </div>
+              ) : (
+                /* Kickers: no defense column, just show offense attrs */
+                <div style={{ marginTop: '4px' }}>
+                  {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                </div>
+              )}
+
+              {/* Fatigue */}
               {att?.fatigue != null && att.fatigue > 0 && (() => {
                 const f = att.fatigue
                 const fColor = f < 5 ? '#4ade80' : f < 10 ? '#eab308' : f < 15 ? '#f97316' : '#ef4444'
@@ -522,6 +622,16 @@ export default function PlayerPage() {
               {player.position === 'K'                         && <KStatsTable   stats={player.stats} career={player.allTimeStats} />}
             </div>
           </div>
+
+          {/* Defense Stats (all positions except K) */}
+          {player.position !== 'K' && player.defensivePosition && (
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', gridColumn: isMobile ? undefined : '1 / -1' }}>
+              {sectionHeader(`Defense Stats · ${player.defensivePosition}`)}
+              <div style={{ overflowX: 'auto' }}>
+                <DefenseStatsTable stats={player.stats} career={player.allTimeStats} />
+              </div>
+            </div>
+          )}
 
         </div>
 

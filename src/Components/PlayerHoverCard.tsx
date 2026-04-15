@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { Link } from 'react-router-dom'
 import PlayerAvatar from './PlayerAvatar'
-import { Stars } from './Stars'
+import { Stars, SwordIcon, ShieldIcon } from './Stars'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -17,6 +17,9 @@ interface PlayerDetail {
   teamAbbr: string | null
   playerRating: number
   ratingStars: number
+  offensiveRating?: number
+  defensiveRating?: number
+  defensivePosition?: string | null
   attributes: {
     att1?: string; att1Value?: number; att1stars?: number
     att2?: string; att2Value?: number; att2stars?: number
@@ -122,6 +125,32 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
             <div style={{ width: `${Math.min(100, data.playerRating)}%`, height: '100%', backgroundColor: data.playerRating >= 85 ? '#22c55e' : data.playerRating >= 72 ? '#f59e0b' : '#ef4444', borderRadius: '2px' }} />
           </div>
         </div>
+
+        {/* Offensive / Defensive rating bars */}
+        {data.offensiveRating != null && (
+          <div style={{ marginBottom: data.defensivePosition ? '4px' : '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
+              <SwordIcon size={11} color="#94a3b8" />
+              <span style={{ fontSize: '11px', color: '#94a3b8', flex: 1 }}>Offense</span>
+              <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '600' }}>{data.offensiveRating}</span>
+            </div>
+            <div style={{ height: '3px', backgroundColor: '#334155', borderRadius: '2px' }}>
+              <div style={{ width: `${Math.min(100, data.offensiveRating)}%`, height: '100%', backgroundColor: data.offensiveRating >= 85 ? '#22c55e' : data.offensiveRating >= 72 ? '#f59e0b' : '#ef4444', borderRadius: '2px' }} />
+            </div>
+          </div>
+        )}
+        {data.defensiveRating != null && data.defensivePosition && (
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
+              <ShieldIcon size={11} color="#94a3b8" />
+              <span style={{ fontSize: '11px', color: '#94a3b8', flex: 1 }}>Defense ({data.defensivePosition})</span>
+              <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '600' }}>{data.defensiveRating}</span>
+            </div>
+            <div style={{ height: '3px', backgroundColor: '#334155', borderRadius: '2px' }}>
+              <div style={{ width: `${Math.min(100, data.defensiveRating)}%`, height: '100%', backgroundColor: data.defensiveRating >= 85 ? '#22c55e' : data.defensiveRating >= 72 ? '#f59e0b' : '#ef4444', borderRadius: '2px' }} />
+            </div>
+          </div>
+        )}
 
         {/* Performance indicator */}
         {(() => {

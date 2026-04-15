@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { Stars, calcStars } from './Stars'
+import { Stars, calcStars, DualStars } from './Stars'
 import PlayerHoverCard from './PlayerHoverCard'
 import FaBallotModal from './FrontOffice/FaBallotModal'
 import type { ScoutingPlayer, OpenSlot } from './FrontOffice/FaBallotModal'
@@ -43,6 +43,8 @@ interface FreeAgent {
   position: string
   rating: number
   tier: string
+  offensiveRating?: number
+  defensiveRating?: number
 }
 
 interface Transaction {
@@ -53,6 +55,8 @@ interface Transaction {
   position: string
   rating: number
   tier?: string
+  offensiveRating?: number
+  defensiveRating?: number
 }
 
 interface DraftTeam {
@@ -731,7 +735,11 @@ export const OffseasonPanel: React.FC = () => {
                                   {tx.type === 'pick' ? 'SGN' : 'CUT'}
                                 </span>
                                 {tx.type === 'pick' && (
-                                  <Stars stars={calcStars(tx.rating)} size={9} />
+                                  tx.offensiveRating != null && tx.defensiveRating != null ? (
+                                    <DualStars offensiveStars={calcStars(tx.offensiveRating)} defensiveStars={calcStars(tx.defensiveRating)} size={8} />
+                                  ) : (
+                                    <Stars stars={calcStars(tx.rating)} size={9} />
+                                  )
                                 )}
                                 <span style={{ flex: 1, color: '#e2e8f0' }}>{tx.playerName}</span>
                                 <span style={{ color: '#64748b', fontSize: '11px' }}>{tx.position}</span>
@@ -815,7 +823,11 @@ export const OffseasonPanel: React.FC = () => {
                         key={`${fa.name}-${i}`}
                         style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '4px', padding: '5px 8px', fontSize: '13px' }}
                       >
-                        <Stars stars={calcStars(fa.rating)} />
+                        {fa.offensiveRating != null && fa.defensiveRating != null ? (
+                          <DualStars offensiveStars={calcStars(fa.offensiveRating)} defensiveStars={calcStars(fa.defensiveRating)} size={10} />
+                        ) : (
+                          <Stars stars={calcStars(fa.rating)} />
+                        )}
                         <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {fa.id ? (
                             <PlayerHoverCard playerId={fa.id} playerName={fa.name}>
@@ -999,7 +1011,11 @@ export const OffseasonPanel: React.FC = () => {
                         </span>
                         <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0' }}>{tx.playerName}</span>
                         {tx.type === 'pick' && (
-                          <Stars stars={calcStars(tx.rating)} size={13} />
+                          tx.offensiveRating != null && tx.defensiveRating != null ? (
+                            <DualStars offensiveStars={calcStars(tx.offensiveRating)} defensiveStars={calcStars(tx.defensiveRating)} size={10} />
+                          ) : (
+                            <Stars stars={calcStars(tx.rating)} size={13} />
+                          )
                         )}
                         <span style={{ fontSize: '11px', color: '#64748b' }}>{tx.position}</span>
                       </div>
