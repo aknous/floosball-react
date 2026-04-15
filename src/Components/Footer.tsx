@@ -136,6 +136,22 @@ export const Footer: React.FC = () => {
           >
             Discord
           </a>
+          <a
+            href="https://forms.gle/6f79nmjqcknTjHSf6"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: '#94a3b8',
+              textDecoration: 'none',
+              fontSize: '13px',
+              fontWeight: '500',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#cbd5e1')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
+          >
+            Feedback
+          </a>
         </div>
 
         <div ref={badgeRef} style={{ position: 'relative' }}>
