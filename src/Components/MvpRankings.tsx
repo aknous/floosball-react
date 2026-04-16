@@ -92,7 +92,7 @@ interface AllProPlayer {
   ratingStars: number
 }
 
-export const MvpRankings: React.FC = () => {
+export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const [rankings, setRankings] = useState<MvpCandidate[]>([])
   const [loading, setLoading] = useState(true)
   const [crownedMvp, setCrownedMvp] = useState<CrownedMvp | null>(null)
@@ -179,7 +179,7 @@ export const MvpRankings: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
+      <div style={{ ...(!embedded && { backgroundColor: '#1e293b', borderRadius: '8px' }), padding: '16px' }}>
         <div style={{ fontSize: '13px', color: '#475569', textAlign: 'center' }}>Loading...</div>
       </div>
     )
@@ -193,8 +193,8 @@ export const MvpRankings: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       {/* MVP Section */}
-      <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-        <div style={{ padding: '10px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ ...(!embedded ? { backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
+        <div style={{ padding: embedded ? '4px 14px 8px' : '10px 14px', ...(!embedded && { backgroundColor: '#0f172a' }), borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {crownedMvp ? 'Season MVP' : 'MVP Race'}
           </span>
@@ -236,7 +236,7 @@ export const MvpRankings: React.FC = () => {
                 gridTemplateColumns: '16px 20px 1fr auto',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '7px 10px',
+                padding: embedded ? '7px 14px' : '7px 10px',
                 borderBottom: idx < rankings.length - 1 ? '1px solid #1a2640' : 'none',
                 backgroundColor: isLeader ? 'rgba(245,158,11,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
                 borderLeft: isLeader ? '2px solid #f59e0b' : '2px solid transparent',
@@ -278,8 +278,8 @@ export const MvpRankings: React.FC = () => {
 
       {/* All-Pro Section */}
       {allPro.length > 0 && (
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-          <div style={{ padding: '10px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155' }}>
+        <div style={{ ...(!embedded ? { backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
+          <div style={{ padding: embedded ? '4px 14px 8px' : '10px 14px', ...(!embedded && { backgroundColor: '#0f172a' }), borderBottom: '1px solid #334155' }}>
             <span style={{ fontSize: '13px', fontWeight: '600', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               All-Pro Team
             </span>
@@ -293,7 +293,7 @@ export const MvpRankings: React.FC = () => {
                 gridTemplateColumns: '28px 20px 1fr auto',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '7px 10px',
+                padding: embedded ? '7px 14px' : '7px 10px',
                 borderBottom: idx < allPro.length - 1 ? '1px solid #1a2640' : 'none',
                 borderLeft: '2px solid #a78bfa',
                 backgroundColor: idx % 2 === 0 ? 'rgba(167,139,250,0.04)' : 'transparent',

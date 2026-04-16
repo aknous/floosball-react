@@ -41,9 +41,10 @@ interface StandingsProps {
   leagueIndex: number
   maxHeight?: number
   viewMode?: 'standings' | 'powerRankings'
+  embedded?: boolean
 }
 
-export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 280, viewMode = 'standings' }) => {
+export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 280, viewMode = 'standings', embedded = false }) => {
   const [leagues, setLeagues] = useState<LeagueStandings[]>([])
   const [loading, setLoading] = useState(true)
   const { event } = useSeasonWebSocket()
@@ -81,7 +82,7 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
 
   if (loading) {
     return (
-      <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
+      <div style={{ ...(!embedded && { backgroundColor: '#1e293b', borderRadius: '8px' }), padding: '16px' }}>
         {[...Array(6)].map((_, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid #334155' }}>
             <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#334155' }} />
@@ -101,7 +102,7 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
     const allTeams = leagues.flatMap(l => l.standings).sort((a, b) => b.elo - a.elo)
     if (allTeams.length === 0) return null
     return (
-      <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+      <div style={{ ...(!embedded ? { backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
         <div style={{ display: 'grid', gridTemplateColumns: '20px 1fr 48px 44px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
           <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>#</span>
           <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Team</span>
@@ -166,8 +167,8 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
   const displayTeams = league.standings
 
   return (
-    <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-      <div style={{ padding: '10px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155' }}>
+    <div style={{ ...(!embedded ? { backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
+      <div style={{ padding: embedded ? '4px 14px 8px' : '10px 14px', ...(!embedded && { backgroundColor: '#0f172a' }), borderBottom: '1px solid #334155' }}>
         <span style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           {league.name}
         </span>
