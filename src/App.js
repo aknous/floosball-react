@@ -14,6 +14,7 @@ import AdminPage from './Views/Admin/AdminPage'
 import FantasyPage from './Views/Fantasy/FantasyPage'
 import AboutPage from './Views/About/AboutPage'
 import CardsPage from './Views/Cards/CardsPage'
+import AchievementsPage from './Views/Achievements/AchievementsPage'
 import Dashboard from './Views/Dashboard/Dashboard'
 import DashboardNew from './Views/Dashboard/DashboardNew'
 import BetaBlockedPage from './Components/Auth/BetaBlockedPage'
@@ -31,6 +32,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { FloosballProvider } from './contexts/FloosballContext'
 import { SeasonWebSocketProvider } from './contexts/SeasonWebSocketContext'
 import { GamesProvider } from './contexts/GamesContext'
+import { AchievementsProvider } from './contexts/AchievementsContext'
+import AchievementUnlockedToast from './Components/AchievementUnlockedToast'
 import { ChakraProvider } from '@chakra-ui/react'
 
 function AppLayout() {
@@ -67,6 +70,7 @@ function AppLayout() {
           <Route path='/players/:id' element={<Player />} />
           <Route exact path='/fantasy' element={<FantasyPage />} />
           <Route exact path='/cards' element={<CardsPage />} />
+          <Route exact path='/achievements' element={<AchievementsPage />} />
           <Route exact path='/about' element={<AboutPage />} />
           <Route exact path='/admin' element={<AdminPage />} />
         </Routes>
@@ -251,9 +255,12 @@ function App() {
           <SeasonWebSocketProvider>
             <FloosballProvider>
               <GamesProvider>
-                <SidebarProvider>
-                  <AuthGate />
-                </SidebarProvider>
+                <AchievementsProvider>
+                  <SidebarProvider>
+                    <AuthGate />
+                    <AchievementUnlockedToast />
+                  </SidebarProvider>
+                </AchievementsProvider>
               </GamesProvider>
             </FloosballProvider>
           </SeasonWebSocketProvider>

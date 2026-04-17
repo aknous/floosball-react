@@ -406,6 +406,18 @@ export default function Navbar() {
     }
   }, [user])
 
+  // Allow other parts of the app (e.g. the achievements page) to open these modals
+  useEffect(() => {
+    const openTeamPicker = () => setShowTeamPicker(true)
+    const openShop = () => setShowShop(true)
+    window.addEventListener('floosball:show-favorite-team-picker', openTeamPicker)
+    window.addEventListener('floosball:show-shop', openShop)
+    return () => {
+      window.removeEventListener('floosball:show-favorite-team-picker', openTeamPicker)
+      window.removeEventListener('floosball:show-shop', openShop)
+    }
+  }, [])
+
   const displayName = user?.username || 'User'
 
   const userControls = user ? (

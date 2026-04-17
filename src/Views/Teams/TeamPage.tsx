@@ -241,6 +241,22 @@ export default function TeamPage() {
       .catch(() => {})
   }, [id, activeTab, fundingRefresh])
 
+  // External callers (e.g. the achievements page) can request a tab switch via
+  // a window event so deep-links land on the correct section.
+  useEffect(() => {
+    const showFunding = () => setActiveTab('funding')
+    const showSchedule = () => setActiveTab('schedule')
+    const showOverview = () => setActiveTab('overview')
+    window.addEventListener('floosball:show-team-funding', showFunding)
+    window.addEventListener('floosball:show-team-schedule', showSchedule)
+    window.addEventListener('floosball:show-team-overview', showOverview)
+    return () => {
+      window.removeEventListener('floosball:show-team-funding', showFunding)
+      window.removeEventListener('floosball:show-team-schedule', showSchedule)
+      window.removeEventListener('floosball:show-team-overview', showOverview)
+    }
+  }, [])
+
   if (loading) {
     return <div style={{ padding: '48px', color: '#94a3b8', textAlign: 'center', backgroundColor: '#0f172a', minHeight: '100vh' }}>Loading…</div>
   }

@@ -139,6 +139,37 @@ const btnStyle: React.CSSProperties = {
 
 // ── Password gate ──────────────────────────────────────────────────────────
 
+// Derive a display unit from the achievement key so the admin panel shows
+// what the target/avg-progress number represents (e.g. "1,000 FP").
+const achievementUnit = (key: string): string => {
+  if (!key) return ''
+  const base = key.replace(/_[ivx]+$/i, '')   // strip trailing tier: "banner_week_iii" → "banner_week"
+  const map: Record<string, string> = {
+    // Rookie goals (target=1): no unit
+    rookie: '',
+    prognosticator: '',
+    pack_popper: '',
+    field_general: '',
+    deck_builder: '',
+    patron: '',
+    // Single-target season goals
+    sharp: '',
+    sparkler: '',
+    perfect_week: '',
+    // Metric-based season goals
+    dedicated: 'weeks',
+    veteran: 'weeks',
+    curator: 'cards',
+    tycoon: 'floobits',
+    banner_week: 'FP',
+    dynamo: 'FP',
+    oracle: 'pts',
+    magnate: 'floobits',
+    racket: 'floobits',
+  }
+  return map[base] ?? ''
+}
+
 const SESSION_KEY = 'floosball_admin_pw'
 
 const PasswordGate: React.FC<{ onAuth: (pw: string) => void }> = ({ onAuth }) => {
@@ -716,7 +747,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     }
   }, [password])
 
-  type Section = 'monitor' | 'analytics' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
+  type Section = 'monitor' | 'analytics' | 'achievements' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
   const [activeSection, setActiveSection] = useState<Section>('monitor')
 
   // Auto-refresh monitor every 30s when active
@@ -753,9 +784,34 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     if (activeSection === 'analytics') fetchAnalytics()
   }, [activeSection, fetchAnalytics])
 
+  // Achievements metrics
+  const [achMetrics, setAchMetrics] = useState<any>(null)
+  const [achError, setAchError] = useState<string | null>(null)
+  const [achLoading, setAchLoading] = useState(false)
+
+  const fetchAchievements = useCallback(async () => {
+    setAchLoading(true)
+    setAchError(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/achievements`, { headers })
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+      const json = await res.json()
+      setAchMetrics(json.data)
+    } catch (e: any) {
+      setAchError(e.message)
+    } finally {
+      setAchLoading(false)
+    }
+  }, [password])
+
+  useEffect(() => {
+    if (activeSection === 'achievements') fetchAchievements()
+  }, [activeSection, fetchAchievements])
+
   const tabs: { id: Section; label: string }[] = [
     { id: 'monitor', label: 'Monitor' },
     { id: 'analytics', label: 'Analytics' },
+    { id: 'achievements', label: 'Achievements' },
     { id: 'requests', label: 'Requests' },
     { id: 'allowlist', label: 'Allowlist' },
     { id: 'names', label: 'Names' },
@@ -1798,6 +1854,55 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
         </button>
         {floobitsResult && <div style={{ marginTop: '10px', fontSize: '13px', color: '#22c55e' }}>{floobitsResult}</div>}
         {floobitsError && <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{floobitsError}</div>}
+      </div>}
+
+      {/* Achievements */}
+      {activeSection === 'achievements' && <div style={sectionStyle}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '700' }}>Achievements</h2>
+          {achMetrics && (
+            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+              {achMetrics.totalUsers} users · Season {achMetrics.season || '—'} (per-season counts)
+            </div>
+          )}
+        </div>
+        {achLoading && <div style={{ fontSize: '13px', color: '#94a3b8' }}>Loading...</div>}
+        {achError && <div style={{ fontSize: '13px', color: '#ef4444' }}>{achError}</div>}
+        {achMetrics && (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <thead>
+              <tr style={{ color: '#94a3b8', textAlign: 'left' }}>
+                <th style={{ padding: '6px 10px', borderBottom: '1px solid #334155', fontWeight: 600 }}>Achievement</th>
+                <th style={{ padding: '6px 10px', borderBottom: '1px solid #334155', fontWeight: 600 }}>Category</th>
+                <th style={{ padding: '6px 10px', borderBottom: '1px solid #334155', fontWeight: 600 }}>Scope</th>
+                <th style={{ padding: '6px 10px', borderBottom: '1px solid #334155', fontWeight: 600, textAlign: 'right' }}>Target</th>
+                <th style={{ padding: '6px 10px', borderBottom: '1px solid #334155', fontWeight: 600, textAlign: 'right' }}>Unlocks</th>
+                <th style={{ padding: '6px 10px', borderBottom: '1px solid #334155', fontWeight: 600, textAlign: 'right' }}>%</th>
+                <th style={{ padding: '6px 10px', borderBottom: '1px solid #334155', fontWeight: 600, textAlign: 'right' }}>Avg Progress</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(achMetrics.achievements || []).map((a: any) => {
+                const unit = achievementUnit(a.key)
+                const fmt = (n: number) => `${n.toLocaleString()}${unit ? ' ' + unit : ''}`
+                return (
+                  <tr key={a.id} style={{ borderBottom: '1px solid #1e293b' }}>
+                    <td style={{ padding: '6px 10px', color: '#e2e8f0', fontWeight: 500 }}>{a.name}</td>
+                    <td style={{ padding: '6px 10px', color: '#cbd5e1' }}>{a.category}</td>
+                    <td style={{ padding: '6px 10px', color: '#cbd5e1' }}>{a.scope}</td>
+                    <td style={{ padding: '6px 10px', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(a.target)}</td>
+                    <td style={{ padding: '6px 10px', color: '#e2e8f0', textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{a.unlocks}</td>
+                    <td style={{
+                      padding: '6px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+                      color: a.unlockPct >= 50 ? '#22c55e' : a.unlockPct >= 20 ? '#f59e0b' : '#94a3b8',
+                    }}>{a.unlockPct}%</td>
+                    <td style={{ padding: '6px 10px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{fmt(a.avgProgress)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
       </div>}
 
       {/* Registered Users */}

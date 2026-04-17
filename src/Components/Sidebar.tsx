@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useSidebar, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from '@/contexts/SidebarContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useAchievements } from '@/contexts/AchievementsContext'
 
 
 const NAV_ITEMS = [
@@ -47,6 +48,16 @@ const NAV_ITEMS = [
     ),
   },
   {
+    key: 'achievements',
+    label: 'Achievements',
+    path: '/achievements',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10 2a1 1 0 011 1v1h3a1 1 0 011 1v2a4 4 0 01-3.528 3.971A4.002 4.002 0 0111 14.874V16h2a1 1 0 110 2H7a1 1 0 110-2h2v-1.126A4.002 4.002 0 015.528 10.97 4 4 0 012 7V5a1 1 0 011-1h3V3a1 1 0 011-1h3zM4 6v1a2 2 0 001.26 1.857A6 6 0 016 7V6H4zm12 0h-2v1c0 .3.022.593.06.878A2 2 0 0016 7V6z" />
+      </svg>
+    ),
+  },
+  {
     key: 'guide',
     label: 'Guide',
     path: '/about',
@@ -64,6 +75,7 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
   const { collapsed, toggle } = useSidebar()
   const [hovered, setHovered] = useState(false)
   const { user } = useAuth()
+  const { unclaimedCount } = useAchievements()
   const location = useLocation()
   const expanded = !collapsed || (collapsed && hovered)
   const width = expanded ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED
@@ -127,12 +139,33 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
                 if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'
               }}
             >
-              <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+              <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', position: 'relative' }}>
                 {item.icon}
+                {item.key === 'achievements' && unclaimedCount > 0 && !expanded && (
+                  <span style={{
+                    position: 'absolute', top: '-2px', right: '-4px',
+                    minWidth: '14px', height: '14px', padding: '0 3px',
+                    borderRadius: '7px', backgroundColor: '#f59e0b', color: '#0f172a',
+                    fontSize: '9px', fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {unclaimedCount > 9 ? '9+' : unclaimedCount}
+                  </span>
+                )}
               </span>
               {expanded && (
-                <span style={{ fontSize: '15px', fontWeight: '500' }}>
+                <span style={{ fontSize: '15px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {item.label}
+                  {item.key === 'achievements' && unclaimedCount > 0 && (
+                    <span style={{
+                      minWidth: '18px', height: '18px', padding: '0 6px',
+                      borderRadius: '9px', backgroundColor: '#f59e0b', color: '#0f172a',
+                      fontSize: '10px', fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {unclaimedCount}
+                    </span>
+                  )}
                 </span>
               )}
             </NavLink>
