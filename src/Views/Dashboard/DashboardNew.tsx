@@ -17,7 +17,7 @@ import TourPrompt from '@/Components/Tutorial/TourPrompt'
 import { useTutorial, TutorialStep } from '@/Components/Tutorial/useTutorial'
 
 type StandingsView = 'standings' | 'powerRankings'
-type RightPanelView = 'highlights' | 'leaders' | 'pickem'
+type TabView = 'highlights' | 'pickem' | 'standings' | 'leaders'
 
 const TabToggle: React.FC<{ tabs: readonly (readonly [string, string])[]; active: string; onChange: (v: any) => void }> = ({ tabs, active, onChange }) => (
   <div style={{ display: 'flex', gap: '0px', marginBottom: '12px' }}>
@@ -27,8 +27,8 @@ const TabToggle: React.FC<{ tabs: readonly (readonly [string, string])[]; active
         onClick={() => onChange(key)}
         style={{
           flex: 1,
-          padding: '7px 0',
-          fontSize: '12px',
+          padding: '8px 0',
+          fontSize: '13px',
           fontWeight: '600',
           color: active === key ? '#e2e8f0' : '#64748b',
           backgroundColor: active === key ? '#1e293b' : 'transparent',
@@ -44,8 +44,33 @@ const TabToggle: React.FC<{ tabs: readonly (readonly [string, string])[]; active
   </div>
 )
 
+const SubToggle: React.FC<{ tabs: readonly (readonly [string, string])[]; active: string; onChange: (v: any) => void }> = ({ tabs, active, onChange }) => (
+  <div style={{ display: 'flex', gap: '4px', marginBottom: '10px' }}>
+    {tabs.map(([key, label]) => (
+      <button
+        key={key}
+        onClick={() => onChange(key)}
+        style={{
+          flex: 1,
+          padding: '6px 0',
+          borderRadius: '6px',
+          border: 'none',
+          backgroundColor: active === key ? '#334155' : 'transparent',
+          color: active === key ? '#e2e8f0' : '#94a3b8',
+          fontSize: '13px',
+          fontWeight: '600',
+          cursor: 'pointer',
+          transition: 'all 0.15s',
+        }}
+      >
+        {label}
+      </button>
+    ))}
+  </div>
+)
+
 const STANDINGS_TABS = [['standings', 'Standings'], ['powerRankings', 'Power Rankings']] as const
-const RIGHT_PANEL_TABS = [['highlights', 'Highlights'], ['leaders', 'Leaders'], ['pickem', 'Prognosticate']] as const
+const PANEL_TABS = [['highlights', 'Highlights'], ['pickem', 'Prognosticate'], ['standings', 'Standings'], ['leaders', 'Leaders']] as const
 
 const DASHBOARD_TOUR_STEPS: TutorialStep[] = [
   {
@@ -53,12 +78,6 @@ const DASHBOARD_TOUR_STEPS: TutorialStep[] = [
     title: 'Games',
     content: 'This is the game board. Each card shows a live or upcoming matchup with team names, scores, and a win probability bar that shifts as the game plays out. Tap any game to watch the play-by-play.',
     placement: 'bottom',
-  },
-  {
-    target: 'dashboard-standings',
-    title: 'Standings',
-    content: 'Two leagues each have their own standings table — wins, losses, and playoff positioning. Toggle to Power Rankings to see teams ranked by overall strength instead of record.',
-    placement: 'right',
   },
   {
     target: 'dashboard-highlights',
@@ -73,6 +92,13 @@ const DASHBOARD_TOUR_STEPS: TutorialStep[] = [
     content: 'Predict game winners to earn points. Pre-game picks are worth the most, but you can also pick mid-game. Picking underdogs pays a bonus.',
     placement: 'left',
     onEnter: () => window.dispatchEvent(new Event('floosball:show-pickem')),
+  },
+  {
+    target: 'dashboard-standings',
+    title: 'Standings',
+    content: 'Two leagues each have their own standings table — wins, losses, and playoff positioning. Toggle to Power Rankings to see teams ranked by overall strength instead of record.',
+    placement: 'left',
+    onEnter: () => window.dispatchEvent(new Event('floosball:show-standings')),
   },
   {
     target: 'dashboard-leaders',
@@ -112,7 +138,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   const { refetch } = useGames()
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
   const [standingsView, setStandingsView] = useState<StandingsView>('standings')
-  const [rightPanelView, setRightPanelView] = useState<RightPanelView>('highlights')
+  const [activeTab, setActiveTab] = useState<TabView>('highlights')
   const [showHelp, setShowHelp] = useState(false)
   const isMobile = useIsMobile()
   const isTablet = useIsMobile(1200)
@@ -122,18 +148,21 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
 
   useEffect(() => { refetch() }, [])
 
-  // Tour tab-switching listeners (desktop right panel)
+  // Tour tab-switching listeners
   useEffect(() => {
-    const showHighlights = () => setRightPanelView('highlights')
-    const showLeaders = () => setRightPanelView('leaders')
-    const showPickem = () => setRightPanelView('pickem')
+    const showHighlights = () => setActiveTab('highlights')
+    const showLeaders = () => setActiveTab('leaders')
+    const showPickem = () => setActiveTab('pickem')
+    const showStandings = () => setActiveTab('standings')
     window.addEventListener('floosball:show-highlights', showHighlights)
     window.addEventListener('floosball:show-leaders', showLeaders)
     window.addEventListener('floosball:show-pickem', showPickem)
+    window.addEventListener('floosball:show-standings', showStandings)
     return () => {
       window.removeEventListener('floosball:show-highlights', showHighlights)
       window.removeEventListener('floosball:show-leaders', showLeaders)
       window.removeEventListener('floosball:show-pickem', showPickem)
+      window.removeEventListener('floosball:show-standings', showStandings)
     }
   }, [])
 
@@ -157,9 +186,9 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
 
   const MOBILE_SECTIONS = [
     { key: 'games', label: isOffseason ? 'Offseason' : 'Games', ref: gamesRef },
-    { key: 'standings', label: 'Standings', ref: standingsRef },
     { key: 'highlights', label: 'Highlights', ref: highlightsRef },
     { key: 'pickem', label: 'Pick-Em', ref: pickemRef },
+    { key: 'standings', label: 'Standings', ref: standingsRef },
     { key: 'leaders', label: 'Leaders', ref: leadersRef },
   ] as const
 
@@ -202,10 +231,6 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
           Each season runs 28 weeks across 4 game days per week, with 7 games per day. Games start
           on the hour. Between rounds, check standings and plan your fantasy lineup.
         </GuideSection>
-        <GuideSection title="Standings">
-          Two leagues each display wins, losses, and current playoff positioning. Toggle to Power
-          Rankings to see teams ordered by overall strength rating instead of win-loss record.
-        </GuideSection>
         <GuideSection title="Highlights">
           The highlight feed streams notable plays in real time — touchdowns, field goals, turnovers,
           clutch moments, and momentum shifts. Each entry is tagged with a badge. Tap any highlight
@@ -215,6 +240,10 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
           Predict game winners to earn points and climb the leaderboard. Pre-game picks are worth
           the most, but you can also pick mid-game. Picking underdogs pays a bonus, while favorites
           pay less.
+        </GuideSection>
+        <GuideSection title="Standings">
+          Two leagues each display wins, losses, and current playoff positioning. Toggle to Power
+          Rankings to see teams ordered by overall strength rating instead of win-loss record.
         </GuideSection>
         <GuideSection title="Leaders">
           The MVP Rankings show top-performing players this week and across the season. Stat leaders
@@ -270,7 +299,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                 </h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {nextGameCountdown && !isOffseason && (
-                    <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                    <span style={{ fontSize: '14px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
                       Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
                     </span>
                   )}
@@ -280,19 +309,10 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
               {isOffseason ? <OffseasonPanel /> : <GameGridNew handleClick={handleGameClick} />}
             </section>
 
-            {/* Standings */}
-            <section ref={standingsRef} data-tour="dashboard-standings" style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
-              <TabToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <Standings leagueIndex={0} viewMode={standingsView} />
-                <Standings leagueIndex={1} viewMode={standingsView} />
-              </div>
-            </section>
-
             {/* Highlights */}
             <section ref={highlightsRef} data-tour="dashboard-highlights" style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
               <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Highlights</h2>
-              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
+              <div style={{ backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
                 <HighlightFeed onPlayClick={handleGameClick} />
               </div>
             </section>
@@ -300,8 +320,17 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             {/* Pick-Em */}
             <section ref={pickemRef} data-tour="dashboard-pickem" style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
               <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Prognostications</h2>
-              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
+              <div style={{ backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px' }}>
                 <PickEmPanel />
+              </div>
+            </section>
+
+            {/* Standings */}
+            <section ref={standingsRef} data-tour="dashboard-standings" style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
+              <SubToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <Standings leagueIndex={0} viewMode={standingsView} />
+                <Standings leagueIndex={1} viewMode={standingsView} />
               </div>
             </section>
 
@@ -336,7 +365,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                 </h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {nextGameCountdown && !isOffseason && (
-                    <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                    <span style={{ fontSize: '14px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
                       Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
                     </span>
                   )}
@@ -346,38 +375,45 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
               {isOffseason ? <OffseasonPanel /> : <GameGridNew handleClick={handleGameClick} />}
             </section>
 
-            {/* Two columns: Standings | Highlights & Leaders */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'start' }}>
-              <section data-tour="dashboard-standings">
-                <TabToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
+            {/* Tabbed panel — full width */}
+            <section>
+              <TabToggle tabs={PANEL_TABS} active={activeTab} onChange={setActiveTab} />
+              <div data-tour="dashboard-highlights" style={{
+                ...(activeTab === 'highlights'
+                  ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px', maxHeight: '500px', overflowY: 'auto' }
+                  : { display: 'none' }),
+              }}>
+                <HighlightFeed onPlayClick={handleGameClick} />
+              </div>
+              <div data-tour="dashboard-pickem" style={{
+                ...(activeTab === 'pickem'
+                  ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px' }
+                  : { display: 'none' }),
+              }}>
+                <PickEmPanel />
+              </div>
+              <div data-tour="dashboard-standings" style={{
+                ...(activeTab === 'standings'
+                  ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px' }
+                  : { display: 'none' }),
+              }}>
+                <SubToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <Standings leagueIndex={0} viewMode={standingsView} />
-                  <Standings leagueIndex={1} viewMode={standingsView} />
+                  <Standings leagueIndex={0} viewMode={standingsView} embedded />
+                  <Standings leagueIndex={1} viewMode={standingsView} embedded />
                 </div>
-              </section>
-
-              <section>
-                <div data-tour="dashboard-highlights">
-                  <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Highlights</h2>
-                  <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', maxHeight: '400px', overflowY: 'auto', marginBottom: '24px' }}>
-                    <HighlightFeed onPlayClick={handleGameClick} />
-                  </div>
+              </div>
+              <div data-tour="dashboard-leaders" style={{
+                ...(activeTab === 'leaders'
+                  ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '10px 0', overflowY: 'auto' }
+                  : { display: 'none' }),
+              }}>
+                <MvpRankings embedded />
+                <div style={{ marginTop: '12px' }}>
+                  <PlayerLeaders embedded />
                 </div>
-                <div data-tour="dashboard-leaders">
-                  <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Leaders</h3>
-                  <MvpRankings />
-                  <div style={{ marginTop: '12px' }}>
-                    <PlayerLeaders />
-                  </div>
-                </div>
-                <div data-tour="dashboard-pickem" style={{ marginTop: '24px' }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Prognostications</h3>
-                  <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
-                    <PickEmPanel />
-                  </div>
-                </div>
-              </section>
-            </div>
+              </div>
+            </section>
           </div>
         </div>
         {sharedPortals}
@@ -389,18 +425,9 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   return (
     <>
       <div style={{ height: `calc(100vh - ${headerHeight}px - 33px)`, overflow: 'hidden', backgroundColor: '#0f172a', color: '#e2e8f0', padding: '24px', boxSizing: 'border-box' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', height: '100%', display: 'grid', gridTemplateColumns: '300px 1fr 300px', gap: '24px' }}>
+        <div style={{ height: '100%', display: 'grid', gridTemplateColumns: 'minmax(0, 960px) 380px', justifyContent: 'center', gap: '32px' }}>
 
-          {/* Left Column - Standings / Power Rankings */}
-          <div data-tour="dashboard-standings" style={{ overflowY: 'auto' }}>
-            <TabToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <Standings leagueIndex={0} viewMode={standingsView} />
-              <Standings leagueIndex={1} viewMode={standingsView} />
-            </div>
-          </div>
-
-          {/* Center Column - Games / Offseason */}
+          {/* Left Column - Games / Offseason */}
           <div data-tour="dashboard-games" style={{ overflowY: 'auto' }}>
             {isOffseason ? (
               <>
@@ -415,7 +442,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                   <h2 style={{ fontSize: '20px', fontWeight: '600' }}>Games</h2>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     {nextGameCountdown && (
-                      <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                      <span style={{ fontSize: '14px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
                         Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
                       </span>
                     )}
@@ -427,30 +454,43 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             )}
           </div>
 
-          {/* Right Column - Highlights / Leaders / Pick-Em (all mounted, display-toggled for tour) */}
+          {/* Right Column - Tabbed panel */}
           <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <TabToggle tabs={RIGHT_PANEL_TABS} active={rightPanelView} onChange={setRightPanelView} />
+            <TabToggle tabs={PANEL_TABS} active={activeTab} onChange={setActiveTab} />
             <div data-tour="dashboard-highlights" style={{
-              ...(rightPanelView === 'highlights'
-                ? { backgroundColor: '#1e293b', borderRadius: '8px', padding: '20px', overflowY: 'auto', flex: 1 }
+              ...(activeTab === 'highlights'
+                ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '20px', overflowY: 'auto', flex: 1 }
                 : { display: 'none' }),
             }}>
               <HighlightFeed onPlayClick={handleGameClick} />
             </div>
-            <div data-tour="dashboard-leaders" style={{
-              ...(rightPanelView === 'leaders' ? {} : { display: 'none' }),
-            }}>
-              <MvpRankings />
-              <div style={{ marginTop: '12px' }}>
-                <PlayerLeaders />
-              </div>
-            </div>
             <div data-tour="dashboard-pickem" style={{
-              ...(rightPanelView === 'pickem'
-                ? { backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', overflowY: 'auto', flex: 1 }
+              ...(activeTab === 'pickem'
+                ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px', overflowY: 'auto', flex: 1 }
                 : { display: 'none' }),
             }}>
               <PickEmPanel />
+            </div>
+            <div data-tour="dashboard-standings" style={{
+              ...(activeTab === 'standings'
+                ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px', overflowY: 'auto', flex: 1 }
+                : { display: 'none' }),
+            }}>
+              <SubToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <Standings leagueIndex={0} viewMode={standingsView} embedded />
+                <Standings leagueIndex={1} viewMode={standingsView} embedded />
+              </div>
+            </div>
+            <div data-tour="dashboard-leaders" style={{
+              ...(activeTab === 'leaders'
+                ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '10px 0', overflowY: 'auto', flex: 1 }
+                : { display: 'none' }),
+            }}>
+              <MvpRankings embedded />
+              <div style={{ marginTop: '12px' }}>
+                <PlayerLeaders embedded />
+              </div>
             </div>
           </div>
 

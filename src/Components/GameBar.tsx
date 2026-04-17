@@ -1,18 +1,26 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useGames } from '@/contexts/GamesContext'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { useAuth } from '@/contexts/AuthContext'
-
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 const GameBar: React.FC = () => {
   const location = useLocation()
   const { games, refetch } = useGames()
   const { user } = useAuth()
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
+  const [paused, setPaused] = useState(false)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [duration, setDuration] = useState(30)
 
   useEffect(() => { refetch() }, [])
+
+  // Calculate scroll duration based on content width
+  useEffect(() => {
+    if (!trackRef.current) return
+    const w = trackRef.current.scrollWidth / 2
+    setDuration(Math.max(30, w / 25))
+  }, [games])
 
   // Hide on dashboard
   if (location.pathname === '/dashboard' || location.pathname === '/') return null
@@ -27,103 +35,94 @@ const GameBar: React.FC = () => {
   })
   if (gameList.length === 0) return null
 
+  const renderGame = (game: any, keyPrefix: string) => {
+    const isFinal = game.status === 'Final'
+    const isActive = game.status === 'Active'
+    const homeColor = game.homeTeam.color || '#64748b'
+    const awayColor = game.awayTeam.color || '#64748b'
+    const isFavGame = favTeamId !== null && (Number(game.homeTeam.id) === favTeamId || Number(game.awayTeam.id) === favTeamId)
+
+    const statusText = isFinal
+      ? (game.quarter && game.quarter > 4 ? 'F/OT' : 'F')
+      : isActive
+        ? (game.quarter === 5 ? 'OT' : game.isHalftime ? 'Half' : `Q${game.quarter}`)
+        : 'Soon'
+
+    const awayScore = isActive || isFinal ? game.awayScore : '—'
+    const homeScore = isActive || isFinal ? game.homeScore : '—'
+
+    return (
+      <button
+        key={`${keyPrefix}-${game.id}`}
+        onClick={() => setSelectedGameId(game.id)}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          backgroundColor: isFavGame ? '#253348' : '#1e293b',
+          border: `1px solid ${isActive ? '#334155' : '#1e293b'}`,
+          borderRadius: '6px',
+          padding: '5px 10px',
+          cursor: 'pointer',
+          flexShrink: 0,
+          whiteSpace: 'nowrap',
+          fontFamily: 'inherit',
+        }}
+      >
+        <img src={`/avatars/${game.awayTeam.id}.png`} alt="" style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+        <span style={{ fontSize: '13px', fontWeight: '600', color: awayColor }}>{game.awayTeam.abbr}</span>
+        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', minWidth: '18px', textAlign: 'right' }}>{awayScore}</span>
+        {game.awayTeamPoss && isActive && <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#fff', flexShrink: 0 }} />}
+
+        <span style={{ fontSize: '11px', color: '#475569' }}>-</span>
+
+        {game.homeTeamPoss && isActive && <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#fff', flexShrink: 0 }} />}
+        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', minWidth: '18px', textAlign: 'left' }}>{homeScore}</span>
+        <span style={{ fontSize: '13px', fontWeight: '600', color: homeColor }}>{game.homeTeam.abbr}</span>
+        <img src={`/avatars/${game.homeTeam.id}.png`} alt="" style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+
+        <span style={{ width: '1px', height: '14px', backgroundColor: '#334155', flexShrink: 0, marginLeft: '4px' }} />
+        <span style={{ fontSize: '13px', fontWeight: isActive ? '600' : '400', color: isActive ? '#22c55e' : '#64748b', marginLeft: '4px' }}>{statusText}</span>
+      </button>
+    )
+  }
+
   return (
     <>
-      <div style={{
-        backgroundColor: '#0f172a',
-        borderBottom: '1px solid #1e293b',
-        overflowX: 'auto',
-        overflowY: 'hidden',
-        whiteSpace: 'nowrap',
-        padding: '6px 12px',
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '8px',
-        scrollbarWidth: 'none',
-      }}>
-        {gameList.map(game => {
-          const isFinal = game.status === 'Final'
-          const isActive = game.status === 'Active'
-          const homeColor = game.homeTeam.color || '#64748b'
-          const awayColor = game.awayTeam.color || '#64748b'
-          const isFavGame = favTeamId !== null && (Number(game.homeTeam.id) === favTeamId || Number(game.awayTeam.id) === favTeamId)
-          const favColor = isFavGame
-            ? (Number(game.homeTeam.id) === favTeamId ? game.homeTeam.color : game.awayTeam.color) || '#3b82f6'
-            : null
-
-          const statusText = isFinal
-            ? (game.quarter && game.quarter > 4 ? 'Final/OT' : 'Final')
-            : isActive
-              ? (game.quarter === 5 ? 'OT' : game.isHalftime ? 'Half' : `Q${game.quarter}`)
-              : 'Soon'
-
-          return (
-            <button
-              key={game.id}
-              onClick={() => setSelectedGameId(game.id)}
-              style={{
-                display: 'inline-flex',
-                flexDirection: 'column',
-                backgroundColor: isFavGame ? '#253348' : '#1e293b',
-                border: `1px solid ${isActive ? '#334155' : '#1e293b'}`,
-                borderRadius: '8px',
-                padding: '6px 10px',
-                cursor: 'pointer',
-                flexShrink: 0,
-                minWidth: '140px',
-                textAlign: 'left',
-                gap: '2px',
-              }}
-            >
-              {/* Away team */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <img
-                  src={`/avatars/${game.awayTeam.id}.png`}
-                  alt=""
-                  style={{ width: '16px', height: '16px', flexShrink: 0 }}
-                />
-                <span style={{ fontSize: '12px', fontWeight: '600', color: awayColor, flex: 1 }}>
-                  {game.awayTeam.abbr}
-                </span>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
-                  {isActive || isFinal ? game.awayScore : '—'}
-                </span>
-                <span style={{
-                  width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0,
-                  backgroundColor: game.awayTeamPoss && isActive ? '#ffffff' : 'transparent',
-                }} />
-              </div>
-
-              {/* Home team */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <img
-                  src={`/avatars/${game.homeTeam.id}.png`}
-                  alt=""
-                  style={{ width: '16px', height: '16px', flexShrink: 0 }}
-                />
-                <span style={{ fontSize: '12px', fontWeight: '600', color: homeColor, flex: 1 }}>
-                  {game.homeTeam.abbr}
-                </span>
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
-                  {isActive || isFinal ? game.homeScore : '—'}
-                </span>
-                <span style={{
-                  width: '5px', height: '5px', borderRadius: '50%', flexShrink: 0,
-                  backgroundColor: game.homeTeamPoss && isActive ? '#ffffff' : 'transparent',
-                }} />
-              </div>
-
-              {/* Status */}
-              <div style={{
-                fontSize: '10px', color: isActive ? '#22c55e' : '#475569',
-                borderTop: '1px solid #334155', marginTop: '2px', paddingTop: '2px',
-                fontWeight: isActive ? '600' : '400',
-              }}>
-                {statusText}
-              </div>
-            </button>
-          )
-        })}
+      <style>{`
+        @keyframes ticker-scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+      <div
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 30,
+          backgroundColor: '#0f172a',
+          borderBottom: '1px solid #1e293b',
+          overflow: 'hidden',
+          padding: '4px 0',
+        }}
+      >
+        <div
+          ref={trackRef}
+          style={{
+            display: 'flex',
+            gap: '10px',
+            width: 'fit-content',
+            animation: `ticker-scroll ${duration}s linear infinite`,
+            animationPlayState: paused ? 'paused' : 'running',
+          }}
+        >
+          {gameList.map(g => renderGame(g, 'a'))}
+          <span style={{ width: '40px', flexShrink: 0 }} />
+          {gameList.map(g => renderGame(g, 'b'))}
+          <span style={{ width: '40px', flexShrink: 0 }} />
+        </div>
       </div>
 
       {selectedGameId !== null && (

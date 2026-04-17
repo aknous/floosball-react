@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
-import { NavLink } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { CHANGELOG, ChangelogEntry } from '@/data/changelog'
 
@@ -106,20 +105,6 @@ export const Footer: React.FC = () => {
         justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <NavLink
-            to="/about"
-            style={{
-              color: '#94a3b8',
-              textDecoration: 'none',
-              fontSize: '13px',
-              fontWeight: '500',
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#cbd5e1')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
-          >
-            About
-          </NavLink>
           <a
             href="https://discord.gg/b4DZn3mVfP"
             target="_blank"

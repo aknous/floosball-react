@@ -143,7 +143,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
       {highlights.map((item, idx) => {
         const separator = idx > 0 ? (
-          <div key={`sep-${idx}`} style={{ height: '1px', backgroundColor: '#1e293b', margin: '0 12px' }} />
+          <div key={`sep-${idx}`} style={{ height: '1px', backgroundColor: '#2a3a4e', margin: '0 12px' }} />
         ) : null
         if (item.type === 'league_news') {
           const isChamp = item.text.includes('champions!')
@@ -166,11 +166,11 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                   <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: labelColor, flexShrink: 0 }} />
-                  <span style={{ fontSize: '10px', fontWeight: '700', color: labelColor, letterSpacing: '0.08em' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: labelColor, letterSpacing: '0.08em' }}>
                     {label}
                   </span>
                 </div>
-                <p style={{ fontSize: '13px', color: '#e2e8f0', margin: 0, lineHeight: '1.4' }}>
+                <p style={{ fontSize: '14px', color: '#e2e8f0', margin: 0, lineHeight: '1.4' }}>
                   {item.text}
                 </p>
               </div>
@@ -197,20 +197,20 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.08em' }}>FINAL</span>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.08em' }}>FINAL</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <img src={`/avatars/${homeTeam.id}.png`} alt={homeTeam.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
-                    <span style={{ fontSize: '13px', fontWeight: homeWon ? '700' : '400', color: homeWon ? '#e2e8f0' : '#94a3b8' }}>
+                    <span style={{ fontSize: '14px', fontWeight: homeWon ? '700' : '400', color: homeWon ? '#e2e8f0' : '#94a3b8' }}>
                       {homeTeam.abbr}
                     </span>
                   </div>
-                  <span style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', letterSpacing: '0.05em' }}>
+                  <span style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', letterSpacing: '0.05em' }}>
                     {homeScore} – {awayScore}
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: awayWon ? '700' : '400', color: awayWon ? '#e2e8f0' : '#94a3b8' }}>
+                    <span style={{ fontSize: '14px', fontWeight: awayWon ? '700' : '400', color: awayWon ? '#e2e8f0' : '#94a3b8' }}>
                       {awayTeam.abbr}
                     </span>
                     <img src={`/avatars/${awayTeam.id}.png`} alt={awayTeam.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
@@ -236,9 +236,9 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                   <img src={`/avatars/${homeTeam.id}.png`} alt={homeTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>{homeTeam.abbr}</span>
-                  <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600', letterSpacing: '0.08em' }}>KICKOFF</span>
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>{awayTeam.abbr}</span>
+                  <span style={{ fontSize: '13px', color: '#94a3b8' }}>{homeTeam.abbr}</span>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', letterSpacing: '0.08em' }}>KICKOFF</span>
+                  <span style={{ fontSize: '13px', color: '#94a3b8' }}>{awayTeam.abbr}</span>
                   <img src={`/avatars/${awayTeam.id}.png`} alt={awayTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
                 </div>
               </div>
@@ -267,10 +267,10 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <img src={`/avatars/${featuredTeam.id}.png`} alt={featuredTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
-                <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.04em' }}>
+                <span style={{ fontSize: '12px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.04em' }}>
                   {featuredTeam.abbr}
                 </span>
-                <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                <span style={{ fontSize: '12px', color: '#94a3b8' }}>
                   {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} {play.timeRemaining}
                 </span>
                 {play.isBigPlay && (
@@ -281,7 +281,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
               </div>
               {badge && (
                 <span style={{
-                  fontSize: '10px',
+                  fontSize: '11px',
                   fontWeight: '700',
                   padding: '1px 7px',
                   borderRadius: '3px',
@@ -297,13 +297,13 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
             </div>
 
             {/* Play description */}
-            <p style={{ fontSize: '12px', color: '#cbd5e1', margin: '0 0 4px 22px', lineHeight: '1.4' }}>
+            <p style={{ fontSize: '13px', color: '#cbd5e1', margin: '0 0 4px 22px', lineHeight: '1.4' }}>
               {play.description}
             </p>
 
             {/* Score after the play */}
             {hasScore && (
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '22px' }}>
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '22px' }}>
                 {homeTeam.abbr} {play.homeTeamScore} · {awayTeam.abbr} {play.awayTeamScore}
               </div>
             )}

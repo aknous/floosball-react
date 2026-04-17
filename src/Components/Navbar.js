@@ -145,32 +145,6 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
         </svg>
       </button>
 
-      {user?.favoriteTeamId && (
-        <NavLink
-          to={`/team/${user.favoriteTeamId}`}
-          onClick={onClose}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
-            padding: '10px 14px', background: 'none', borderBottom: '1px solid #334155',
-            textDecoration: 'none',
-            transition: 'background-color 0.15s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'}
-          onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-          <span style={{ fontSize: '11px', color: '#cbd5e1', flex: 1 }}>
-            My Team
-          </span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-          </svg>
-        </NavLink>
-      )}
-
       <div style={{ padding: '8px 14px', borderBottom: '1px solid #334155' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '11px', color: '#cbd5e1' }}>Email notifications</span>
@@ -227,31 +201,6 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
         </div>
       </div>
 
-
-      <NavLink
-        to="/cards"
-        onClick={onClose}
-        style={{
-          display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
-          padding: '10px 14px', background: 'none', borderBottom: '1px solid #334155',
-          textDecoration: 'none',
-          transition: 'background-color 0.15s',
-        }}
-        onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.03)'}
-        onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-          <line x1="8" y1="21" x2="16" y2="21" />
-          <line x1="12" y1="17" x2="12" y2="21" />
-        </svg>
-        <span style={{ fontSize: '11px', color: '#cbd5e1', flex: 1 }}>
-          Card Collection
-        </span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-        </svg>
-      </NavLink>
 
       {/* Notifications */}
       <div style={{ padding: '10px 14px', borderBottom: '1px solid #334155' }}>
@@ -511,7 +460,7 @@ export default function Navbar() {
   return (
     <>
       <nav style={{ backgroundColor: '#0f172a', borderBottom: '1px solid #334155', position: 'sticky', top: 0, zIndex: 50 }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: isMobile ? '12px 16px' : '16px 24px' }}>
+        <div style={{ padding: isMobile ? '12px 16px' : '16px 24px' }}>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 
@@ -529,7 +478,7 @@ export default function Navbar() {
               </NavLink>
 
               {!isMobile && !isTablet && seasonState.seasonNumber > 0 && (
-                <div style={{ display: 'flex', gap: '12px', fontSize: '14px', color: '#94a3b8' }}>
+                <div style={{ display: 'flex', gap: '12px', fontSize: '16px', color: '#94a3b8' }}>
                   <span>Season {seasonState.seasonNumber}</span>
                   <span>•</span>
                   <span>{seasonState.currentWeekText}</span>
@@ -537,10 +486,10 @@ export default function Navbar() {
               )}
 
               {!isMobile && !isTablet && champion && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '7px', paddingLeft: '8px', borderLeft: '1px solid #334155' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '10px', borderLeft: '1px solid #334155' }}>
                   <img src={`/avatars/${champion.id}.png`} alt={champion.name}
-                    style={{ width: '20px', height: '20px', flexShrink: 0 }} />
-                  <span style={{ fontSize: '13px', color: '#f59e0b', fontWeight: '500', whiteSpace: 'nowrap' }}>
+                    style={{ width: '22px', height: '22px', flexShrink: 0 }} />
+                  <span style={{ fontSize: '15px', color: '#f59e0b', fontWeight: '500', whiteSpace: 'nowrap' }}>
                     {champion.city} {champion.name}
                   </span>
                   <TrophySVG />
@@ -576,57 +525,30 @@ export default function Navbar() {
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: isTablet ? '14px' : '24px' }}>
-                {['Dashboard', 'Players', 'Fantasy'].map(label => (
-                  <NavLink key={label} to={`/${label.toLowerCase()}`}
-                    style={({ isActive }) => ({
-                      color: isActive ? '#e2e8f0' : '#94a3b8',
-                      textDecoration: 'none', fontSize: isTablet ? '13px' : '14px', fontWeight: '500', transition: 'color 0.2s'
-                    })}>
-                    {label}
-                  </NavLink>
-                ))}
-                {user?.favoriteTeamId && favoriteTeam && (
-                  <NavLink to={`/team/${user.favoriteTeamId}`}
-                    style={({ isActive }) => ({
-                      textDecoration: 'none', fontSize: isTablet ? '12px' : '13px', fontWeight: '600', transition: 'all 0.2s',
-                      display: 'flex', alignItems: 'center', gap: '6px',
-                      padding: '4px 10px', borderRadius: '6px',
-                      border: `1px solid ${favoriteTeam.color}60`,
-                      backgroundColor: isActive ? `${favoriteTeam.color}20` : `${favoriteTeam.color}10`,
-                      color: isActive ? '#e2e8f0' : '#cbd5e1',
-                    })}>
-                    <img
-                      src={`/avatars/${user.favoriteTeamId}.png`}
-                      alt=""
-                      style={{ width: '16px', height: '16px' }}
-                    />
-                    {favoriteTeam.name}
-                  </NavLink>
-                )}
                 {fantasyPoints && seasonState.currentWeek <= 28 && !seasonState.seasonComplete && (
-                  <NavLink to="/fantasy" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '0 12px', height: '31px', borderRadius: '6px', backgroundColor: 'rgba(34,197,94,0.12)' }}>
+                  <NavLink to="/fantasy" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '0 14px', height: '36px', borderRadius: '6px', backgroundColor: 'rgba(34,197,94,0.12)' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#4ade80' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '700', color: '#4ade80' }}>
                         {fantasyPoints.weekPoints.toFixed(0)}
                       </span>
-                      <span style={{ fontSize: '7px', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Week</span>
+                      <span style={{ fontSize: '8px', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Week</span>
                     </div>
-                    <div style={{ width: '1px', height: '18px', backgroundColor: 'rgba(34,197,94,0.25)' }} />
+                    <div style={{ width: '1px', height: '22px', backgroundColor: 'rgba(34,197,94,0.25)' }} />
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#4ade80' }}>
+                      <span style={{ fontSize: '14px', fontWeight: '600', color: '#4ade80' }}>
                         {fantasyPoints.seasonTotal.toFixed(0)}
                       </span>
-                      <span style={{ fontSize: '7px', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Season</span>
+                      <span style={{ fontSize: '8px', color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Season</span>
                     </div>
-                    <span style={{ fontSize: '9px', color: '#22c55e' }}>FP</span>
+                    <span style={{ fontSize: '10px', color: '#22c55e' }}>FP</span>
                   </NavLink>
                 )}
                 {user?.floobits != null && (
-                  <button onClick={() => setShowShop(true)} style={{ background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', backgroundColor: 'rgba(234,179,8,0.12)', fontFamily: 'inherit' }}>
-                    <span style={{ fontSize: '15px', fontWeight: '700', color: '#eab308' }}>
+                  <button onClick={() => setShowShop(true)} style={{ background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '6px', backgroundColor: 'rgba(234,179,8,0.12)', fontFamily: 'inherit' }}>
+                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#eab308' }}>
                       {user.floobits.toLocaleString()}
                     </span>
-                    <span style={{ fontSize: '12px', color: '#ca8a04' }}>F</span>
+                    <span style={{ fontSize: '13px', color: '#ca8a04' }}>F</span>
                   </button>
                 )}
                 {userControls}
