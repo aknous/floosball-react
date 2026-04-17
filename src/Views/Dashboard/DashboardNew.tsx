@@ -27,8 +27,8 @@ const TabToggle: React.FC<{ tabs: readonly (readonly [string, string])[]; active
         onClick={() => onChange(key)}
         style={{
           flex: 1,
-          padding: '7px 0',
-          fontSize: '12px',
+          padding: '8px 0',
+          fontSize: '13px',
           fontWeight: '600',
           color: active === key ? '#e2e8f0' : '#64748b',
           backgroundColor: active === key ? '#1e293b' : 'transparent',
@@ -57,7 +57,7 @@ const SubToggle: React.FC<{ tabs: readonly (readonly [string, string])[]; active
           border: 'none',
           backgroundColor: active === key ? '#334155' : 'transparent',
           color: active === key ? '#e2e8f0' : '#94a3b8',
-          fontSize: '12px',
+          fontSize: '13px',
           fontWeight: '600',
           cursor: 'pointer',
           transition: 'all 0.15s',
@@ -299,7 +299,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                 </h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {nextGameCountdown && !isOffseason && (
-                    <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                    <span style={{ fontSize: '14px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
                       Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
                     </span>
                   )}
@@ -312,7 +312,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             {/* Highlights */}
             <section ref={highlightsRef} data-tour="dashboard-highlights" style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
               <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Highlights</h2>
-              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
+              <div style={{ backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
                 <HighlightFeed onPlayClick={handleGameClick} />
               </div>
             </section>
@@ -320,7 +320,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             {/* Pick-Em */}
             <section ref={pickemRef} data-tour="dashboard-pickem" style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
               <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Prognostications</h2>
-              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }}>
+              <div style={{ backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px' }}>
                 <PickEmPanel />
               </div>
             </section>
@@ -365,7 +365,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                 </h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {nextGameCountdown && !isOffseason && (
-                    <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                    <span style={{ fontSize: '14px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
                       Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
                     </span>
                   )}
@@ -380,21 +380,21 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
               <TabToggle tabs={PANEL_TABS} active={activeTab} onChange={setActiveTab} />
               <div data-tour="dashboard-highlights" style={{
                 ...(activeTab === 'highlights'
-                  ? { backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', maxHeight: '500px', overflowY: 'auto' }
+                  ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px', maxHeight: '500px', overflowY: 'auto' }
                   : { display: 'none' }),
               }}>
                 <HighlightFeed onPlayClick={handleGameClick} />
               </div>
               <div data-tour="dashboard-pickem" style={{
                 ...(activeTab === 'pickem'
-                  ? { backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }
+                  ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px' }
                   : { display: 'none' }),
               }}>
                 <PickEmPanel />
               </div>
               <div data-tour="dashboard-standings" style={{
                 ...(activeTab === 'standings'
-                  ? { backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px' }
+                  ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px' }
                   : { display: 'none' }),
               }}>
                 <SubToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
@@ -405,7 +405,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
               </div>
               <div data-tour="dashboard-leaders" style={{
                 ...(activeTab === 'leaders'
-                  ? { backgroundColor: '#1e293b', borderRadius: '8px', padding: '10px 0', overflowY: 'auto' }
+                  ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '10px 0', overflowY: 'auto' }
                   : { display: 'none' }),
               }}>
                 <MvpRankings embedded />
@@ -425,13 +425,10 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   return (
     <>
       <div style={{ height: `calc(100vh - ${headerHeight}px - 33px)`, overflow: 'hidden', backgroundColor: '#0f172a', color: '#e2e8f0', padding: '24px', boxSizing: 'border-box' }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', height: '100%', display: 'grid', gridTemplateColumns: '1fr auto 340px', gap: '24px' }}>
+        <div style={{ height: '100%', display: 'grid', gridTemplateColumns: 'minmax(0, 960px) 380px', justifyContent: 'center', gap: '32px' }}>
 
-          {/* Left Column - reserved */}
-          <div />
-
-          {/* Center Column - Games / Offseason */}
-          <div data-tour="dashboard-games" style={{ overflowY: 'auto', width: '700px' }}>
+          {/* Left Column - Games / Offseason */}
+          <div data-tour="dashboard-games" style={{ overflowY: 'auto' }}>
             {isOffseason ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
@@ -445,7 +442,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                   <h2 style={{ fontSize: '20px', fontWeight: '600' }}>Games</h2>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     {nextGameCountdown && (
-                      <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                      <span style={{ fontSize: '14px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
                         Next game in <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{nextGameCountdown}</span>
                       </span>
                     )}
@@ -462,21 +459,21 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             <TabToggle tabs={PANEL_TABS} active={activeTab} onChange={setActiveTab} />
             <div data-tour="dashboard-highlights" style={{
               ...(activeTab === 'highlights'
-                ? { backgroundColor: '#1e293b', borderRadius: '8px', padding: '20px', overflowY: 'auto', flex: 1 }
+                ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '20px', overflowY: 'auto', flex: 1 }
                 : { display: 'none' }),
             }}>
               <HighlightFeed onPlayClick={handleGameClick} />
             </div>
             <div data-tour="dashboard-pickem" style={{
               ...(activeTab === 'pickem'
-                ? { backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', overflowY: 'auto', flex: 1 }
+                ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px', overflowY: 'auto', flex: 1 }
                 : { display: 'none' }),
             }}>
               <PickEmPanel />
             </div>
             <div data-tour="dashboard-standings" style={{
               ...(activeTab === 'standings'
-                ? { backgroundColor: '#1e293b', borderRadius: '8px', padding: '16px', overflowY: 'auto', flex: 1 }
+                ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '16px', overflowY: 'auto', flex: 1 }
                 : { display: 'none' }),
             }}>
               <SubToggle tabs={STANDINGS_TABS} active={standingsView} onChange={setStandingsView} />
@@ -487,7 +484,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             </div>
             <div data-tour="dashboard-leaders" style={{
               ...(activeTab === 'leaders'
-                ? { backgroundColor: '#1e293b', borderRadius: '8px', padding: '10px 0', overflowY: 'auto', flex: 1 }
+                ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', padding: '10px 0', overflowY: 'auto', flex: 1 }
                 : { display: 'none' }),
             }}>
               <MvpRankings embedded />

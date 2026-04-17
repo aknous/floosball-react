@@ -82,7 +82,7 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
 
   if (loading) {
     return (
-      <div style={{ ...(!embedded && { backgroundColor: '#1e293b', borderRadius: '8px' }), padding: '16px' }}>
+      <div style={{ ...(!embedded && { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px' }), padding: '16px' }}>
         {[...Array(6)].map((_, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid #334155' }}>
             <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: '#334155' }} />
@@ -102,12 +102,12 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
     const allTeams = leagues.flatMap(l => l.standings).sort((a, b) => b.elo - a.elo)
     if (allTeams.length === 0) return null
     return (
-      <div style={{ ...(!embedded ? { backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
+      <div style={{ ...(!embedded ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
         <div style={{ display: 'grid', gridTemplateColumns: '20px 1fr 48px 44px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
-          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600' }}>#</span>
-          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Team</span>
-          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>ELO</span>
-          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>W-L</span>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>#</span>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Team</span>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>ELO</span>
+          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>W-L</span>
         </div>
         {allTeams.map((team, index) => {
           const isFav = user?.favoriteTeamId === team.id
@@ -124,7 +124,7 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
                 borderBottom: index < allTeams.length - 1 ? '1px solid #1e293b' : 'none',
                 backgroundColor: rowBg,
               }}>
-                <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>{index + 1}</span>
+                <span style={{ fontSize: '12px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>{index + 1}</span>
                 <Link to={`/team/${team.id}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, textDecoration: 'none' }}>
                   <img
                     src={`/avatars/${team.id}.png`}
@@ -133,10 +133,10 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
                   />
                   <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '13px', fontWeight: '500', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: '14px', fontWeight: '500', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {team.city}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: '12px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {team.name}
                       </div>
                     </div>
@@ -147,10 +147,10 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
                     )}
                   </div>
                 </Link>
-                <div style={{ fontSize: '14px', fontWeight: '700', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                <div style={{ fontSize: '15px', fontWeight: '700', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                   {Math.round(team.elo)}
                 </div>
-                <div style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                <div style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                   {team.wins}-{team.losses}
                 </div>
               </div>
@@ -167,19 +167,19 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
   const displayTeams = league.standings
 
   return (
-    <div style={{ ...(!embedded ? { backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
+    <div style={{ ...(!embedded ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
       <div style={{ padding: embedded ? '4px 14px 8px' : '10px 14px', ...(!embedded && { backgroundColor: '#0f172a' }), borderBottom: '1px solid #334155' }}>
-        <span style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '14px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           {league.name}
         </span>
       </div>
 
       {/* Header row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 48px 44px 44px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
-        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Team</span>
-        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>ELO</span>
-        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>W-L</span>
-        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>PCT</span>
+        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Team</span>
+        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>ELO</span>
+        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>W-L</span>
+        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>PCT</span>
       </div>
 
       {displayTeams.map((team, index) => {
@@ -221,10 +221,10 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
             />
             <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '13px', fontWeight: '500', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '14px', fontWeight: '500', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {team.city}
                 </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '12px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {team.name}
                 </div>
               </div>
@@ -237,17 +237,17 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
           </Link>
 
           {/* ELO */}
-          <div style={{ fontSize: '13px', fontWeight: '400', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: '14px', fontWeight: '400', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
             {Math.round(team.elo)}
           </div>
 
           {/* W-L */}
-          <div style={{ fontSize: '13px', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: '14px', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
             {team.wins}-{team.losses}
           </div>
 
           {/* PCT */}
-          <div style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
             {team.winPerc.replace(/^0/, '')}
           </div>
         </div>

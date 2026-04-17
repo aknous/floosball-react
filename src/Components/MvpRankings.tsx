@@ -179,7 +179,7 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
 
   if (loading) {
     return (
-      <div style={{ ...(!embedded && { backgroundColor: '#1e293b', borderRadius: '8px' }), padding: '16px' }}>
+      <div style={{ ...(!embedded && { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px' }), padding: '16px' }}>
         <div style={{ fontSize: '13px', color: '#475569', textAlign: 'center' }}>Loading...</div>
       </div>
     )
@@ -193,9 +193,9 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       {/* MVP Section */}
-      <div style={{ ...(!embedded ? { backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
+      <div style={{ ...(!embedded ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
         <div style={{ padding: embedded ? '4px 14px 8px' : '10px 14px', ...(!embedded && { backgroundColor: '#0f172a' }), borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <span style={{ fontSize: '14px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {crownedMvp ? 'Season MVP' : 'MVP Race'}
           </span>
           <InfoTooltip text="Players ranked by z-score — how far above average each player's performance rating is compared to their peers. Higher = more dominant." />
@@ -214,11 +214,11 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
             <div>
               <Link
                 to={`/players/${crownedMvp.id}`}
-                style={{ fontSize: '14px', fontWeight: '700', color: '#fbbf24', textDecoration: 'none' }}
+                style={{ fontSize: '15px', fontWeight: '700', color: '#fbbf24', textDecoration: 'none' }}
               >
                 {crownedMvp.name}
               </Link>
-              <div style={{ fontSize: '11px', color: '#f59e0b' }}>
+              <div style={{ fontSize: '12px', color: '#f59e0b' }}>
                 {crownedMvp.teamAbbr} · {crownedMvp.position} · Season {crownedMvp.seasonNumber} MVP
               </div>
             </div>
@@ -242,7 +242,7 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
                 borderLeft: isLeader ? '2px solid #f59e0b' : '2px solid transparent',
               }}
             >
-              <span style={{ fontSize: '11px', color: isLeader ? '#f59e0b' : '#94a3b8', textAlign: 'right', fontWeight: isLeader ? '700' : '400', fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ fontSize: '12px', color: isLeader ? '#f59e0b' : '#94a3b8', textAlign: 'right', fontWeight: isLeader ? '700' : '400', fontVariantNumeric: 'tabular-nums' }}>
                 {player.rank}
               </span>
               <img
@@ -254,21 +254,21 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
                 <PlayerHoverCard playerId={player.id} playerName={player.name}>
                   <Link
                     to={`/players/${player.id}`}
-                    style={{ fontSize: '13px', color: isLeader ? '#fbbf24' : '#e2e8f0', textDecoration: 'none', display: 'inline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    style={{ fontSize: '14px', color: isLeader ? '#fbbf24' : '#e2e8f0', textDecoration: 'none', display: 'inline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                   >
                     {player.name}
                   </Link>
                 </PlayerHoverCard>
                 {isCrowned && <GiStarMedal style={{ marginLeft: '4px', fontSize: '13px', color: '#fbbf24', display: 'inline', verticalAlign: 'middle' }} title="Season MVP" />}
-                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                   {player.teamAbbr}
                   <span style={{ marginLeft: '4px', color: '#64748b' }}>· {player.position}</span>
                 </div>
                 <div style={{ marginTop: '1px' }}>
-                  <Stars stars={player.ratingStars} size={10} />
+                  <Stars stars={player.ratingStars} size={11} />
                 </div>
               </div>
-              <span style={{ fontSize: '15px', fontWeight: '700', color: isLeader ? '#fbbf24' : '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ fontSize: '16px', fontWeight: '700', color: isLeader ? '#fbbf24' : '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
                 {player.zScore > 0 ? '+' : ''}{player.zScore.toFixed(2)}
               </span>
             </div>
@@ -278,9 +278,9 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
 
       {/* All-Pro Section */}
       {allPro.length > 0 && (
-        <div style={{ ...(!embedded ? { backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
+        <div style={{ ...(!embedded ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
           <div style={{ padding: embedded ? '4px 14px 8px' : '10px 14px', ...(!embedded && { backgroundColor: '#0f172a' }), borderBottom: '1px solid #334155' }}>
-            <span style={{ fontSize: '13px', fontWeight: '600', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               All-Pro Team
             </span>
           </div>
@@ -299,7 +299,7 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
                 backgroundColor: idx % 2 === 0 ? 'rgba(167,139,250,0.04)' : 'transparent',
               }}
             >
-              <span style={{ fontSize: '11px', fontWeight: '600', color: '#a78bfa', textAlign: 'center' }}>
+              <span style={{ fontSize: '12px', fontWeight: '600', color: '#a78bfa', textAlign: 'center' }}>
                 {player.position}
               </span>
               <img
@@ -311,19 +311,19 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
                 <PlayerHoverCard playerId={player.id} playerName={player.name}>
                   <Link
                     to={`/players/${player.id}`}
-                    style={{ fontSize: '13px', color: '#e2e8f0', textDecoration: 'none', display: 'inline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    style={{ fontSize: '14px', color: '#e2e8f0', textDecoration: 'none', display: 'inline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                   >
                     {player.name}
                   </Link>
                 </PlayerHoverCard>
-                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                   {player.teamAbbr}
                 </div>
                 <div style={{ marginTop: '1px' }}>
-                  <Stars stars={player.ratingStars} size={10} />
+                  <Stars stars={player.ratingStars} size={11} />
                 </div>
               </div>
-              <span style={{ fontSize: '13px', fontWeight: '600', color: '#a78bfa', fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ fontSize: '14px', fontWeight: '600', color: '#a78bfa', fontVariantNumeric: 'tabular-nums' }}>
                 {player.zScore > 0 ? '+' : ''}{player.zScore.toFixed(2)}
               </span>
             </div>

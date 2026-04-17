@@ -55,7 +55,7 @@ const linkStyle: React.CSSProperties = {
 }
 
 const textStyle: React.CSSProperties = {
-  fontSize: '13px',
+  fontSize: '14px',
   color: '#cbd5e1',
   lineHeight: '1.7',
   margin: 0,
@@ -79,7 +79,7 @@ const labelStyle: React.CSSProperties = {
 const bulletList = (items: string[]) => (
   <div style={{ paddingLeft: '8px' }}>
     {items.map((line, i) => (
-      <div key={i} style={{ ...textStyle, fontSize: '12px', marginBottom: '3px', display: 'flex', gap: '6px' }}>
+      <div key={i} style={{ ...textStyle, fontSize: '13px', marginBottom: '4px', display: 'flex', gap: '6px' }}>
         <span style={{ color: '#94a3b8', flexShrink: 0 }}>-</span>
         <span>{line}</span>
       </div>
@@ -162,7 +162,7 @@ const Section: React.FC<{ id: string; title: string; children: React.ReactNode }
     }}
   >
     <div style={{ padding: '16px 20px 0' }}>
-      <span style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0' }}>
+      <span style={{ fontSize: '18px', fontWeight: '700', color: '#e2e8f0' }}>
         {title}
       </span>
     </div>
@@ -189,9 +189,9 @@ const DocSidebar: React.FC<{ activeId: string; headerHeight: number }> = ({ acti
     {SECTION_GROUPS.map(group => (
       <div key={group.category} style={{ marginBottom: '12px' }}>
         <div style={{
-          fontSize: '10px',
+          fontSize: '11px',
           fontWeight: '700',
-          color: '#64748b',
+          color: '#94a3b8',
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
           padding: '4px 12px 6px',
@@ -212,9 +212,9 @@ const DocSidebar: React.FC<{ activeId: string; headerHeight: number }> = ({ acti
                 border: 'none',
                 borderLeft: isActive ? '2px solid #3b82f6' : '2px solid transparent',
                 padding: '5px 12px',
-                fontSize: '12px',
+                fontSize: '13px',
                 fontWeight: isActive ? '600' : '400',
-                color: isActive ? '#e2e8f0' : '#94a3b8',
+                color: isActive ? '#e2e8f0' : '#cbd5e1',
                 cursor: 'pointer',
                 transition: 'color 0.15s, border-color 0.15s',
                 fontFamily: 'inherit',
@@ -547,7 +547,7 @@ const AboutPage: React.FC = () => {
                 CLOSED BETA
               </span>
             </div>
-            <p style={{ ...textStyle, fontSize: '12px' }}>
+            <p style={{ ...textStyle, fontSize: '13px' }}>
               Welcome to the Floosball closed beta. The simulation is under active development,
               so features may change, balancing will be adjusted, and new systems will be added
               throughout the beta period. Season data (fantasy points, cards, floobits) may
@@ -588,7 +588,7 @@ const AboutPage: React.FC = () => {
               and win probability. The right panel has three tabs: Plays, Box Score, and Stats.
             </p>
 
-            <p style={{ ...labelStyle, fontSize: '12px', marginTop: '12px' }}>Left Panel</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Left Panel</p>
             <p style={{ ...textStyle, marginBottom: '6px' }}>
               The scoreboard shows each team's avatar, city, name, record, ELO rating, score, and remaining
               timeouts. During live games, a white ring appears around the avatar of the team with possession,
@@ -685,7 +685,7 @@ const AboutPage: React.FC = () => {
               </div>
             </div>
 
-            <p style={{ ...labelStyle, fontSize: '12px', marginTop: '12px' }}>Plays Tab</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Plays Tab</p>
             <p style={{ ...textStyle, marginBottom: '6px' }}>
               A chronological feed of every play. Toggle between All Plays and Highlights (touchdowns,
               turnovers, big plays, clutch/choke moments, momentum shifts). Each play shows the clock,
@@ -743,7 +743,7 @@ const AboutPage: React.FC = () => {
                   <div style={{ padding: '8px 10px 10px', display: 'flex', gap: '10px' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#334155', flexShrink: 0, marginTop: '2px' }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', marginBottom: '4px' }}>
                         <span style={{ color: '#94a3b8' }}>{play.meta}</span>
                         <span style={{ color: '#cbd5e1', fontWeight: '500' }}>{play.down}</span>
                         <span style={{ color: '#94a3b8' }}>{play.yard}</span>
@@ -766,7 +766,7 @@ const AboutPage: React.FC = () => {
                         {play.desc}
                       </div>
                       {play.score && (
-                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>{play.score}</div>
+                        <div style={{ fontSize: '13px', color: '#94a3b8' }}>{play.score}</div>
                       )}
                     </div>
                     {play.accent && (
@@ -783,7 +783,7 @@ const AboutPage: React.FC = () => {
               ))}
             </div>
 
-            <p style={{ ...labelStyle, fontSize: '12px', marginTop: '12px' }}>Box Score Tab</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Box Score Tab</p>
             <p style={{ ...textStyle, marginBottom: '4px' }}>
               A side-by-side comparison of team-level stats:
             </p>
@@ -808,7 +808,7 @@ const AboutPage: React.FC = () => {
               ))}
             </div>
 
-            <p style={{ ...labelStyle, fontSize: '12px', marginTop: '12px' }}>Stats Tab</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Stats Tab</p>
             <p style={{ ...textStyle, marginBottom: '4px' }}>
               Individual player stats grouped by position. Each player shows their star rating and
               fantasy points earned.
@@ -820,12 +820,12 @@ const AboutPage: React.FC = () => {
               'Kicking (K): Field Goals Made, Attempts, Longest',
             ])}
 
-            <p style={{ ...labelStyle, fontSize: '12px', marginTop: '12px' }}>Play Insights</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Play Insights</p>
             <p style={{ ...textStyle, marginBottom: '6px' }}>
               Expanding a play reveals the full decision-making and execution breakdown behind that play.
               The panel has two columns: context on the left and execution on the right.
             </p>
-            <p style={{ ...textStyle, fontWeight: '600', color: '#e2e8f0', fontSize: '12px', marginBottom: '4px' }}>
+            <p style={{ ...textStyle, fontWeight: '600', color: '#e2e8f0', fontSize: '13px', marginBottom: '4px' }}>
               Context
             </p>
             {bulletList([
@@ -834,7 +834,7 @@ const AboutPage: React.FC = () => {
               'Fourth Down decisions (punt, field goal, or go for it) and field goal probability',
               'Clock Management decisions (kneel, spike, timeout, desperation FG) with rationale',
             ])}
-            <p style={{ ...textStyle, fontWeight: '600', color: '#e2e8f0', fontSize: '12px', marginTop: '8px', marginBottom: '4px' }}>
+            <p style={{ ...textStyle, fontWeight: '600', color: '#e2e8f0', fontSize: '13px', marginTop: '8px', marginBottom: '4px' }}>
               Execution
             </p>
             {bulletList([
@@ -970,7 +970,7 @@ const AboutPage: React.FC = () => {
               </div>
             </div>
 
-            <p style={{ ...labelStyle, fontSize: '12px', marginTop: '12px' }}>Matchup Preview</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Matchup Preview</p>
             <p style={textStyle}>
               For scheduled (upcoming) games, the modal shows a matchup preview instead of the play tabs.
               This displays season-to-date averages for both teams in a head-to-head comparison: points per
@@ -985,7 +985,7 @@ const AboutPage: React.FC = () => {
               Certain plays are highlighted with visual indicators in the play-by-play and highlights feed:
             </p>
             <div style={indicatorRow}>
-              <span style={{ color: '#f59e0b', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
+              <span style={{ color: '#f59e0b', fontWeight: '600', fontSize: '13px', minWidth: '110px' }}>
                 BIG PLAY
               </span>
               <span style={textStyle}>
@@ -993,7 +993,7 @@ const AboutPage: React.FC = () => {
               </span>
             </div>
             <div style={indicatorRow}>
-              <span style={{ color: '#06b6d4', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
+              <span style={{ color: '#06b6d4', fontWeight: '600', fontSize: '13px', minWidth: '110px' }}>
                 CLUTCH
               </span>
               <span style={textStyle}>
@@ -1001,7 +1001,7 @@ const AboutPage: React.FC = () => {
               </span>
             </div>
             <div style={indicatorRow}>
-              <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
+              <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '13px', minWidth: '110px' }}>
                 CHOKE
               </span>
               <span style={textStyle}>
@@ -1009,7 +1009,7 @@ const AboutPage: React.FC = () => {
               </span>
             </div>
             <div style={indicatorRow}>
-              <span style={{ color: '#f97316', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
+              <span style={{ color: '#f97316', fontWeight: '600', fontSize: '13px', minWidth: '110px' }}>
                 <svg viewBox="0 0 24 24" fill="#f97316" style={{ width: '14px', height: '14px', display: 'inline-block', verticalAlign: 'middle', marginRight: '2px' }}>
                   <path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.42-7.1A13.5 13.5 0 0 1 10.5 5.8s.5 2.7 2.5 4.2c2-1.5 2.5-4.2 2.5-4.2s2.08 1.5 3.08 2.6C20.26 10.06 20 12.93 20 15.5 20 19.42 16.97 23 12 23Zm0-2c2.76 0 5-1.79 5-4.5 0-1.5-.5-3-1.5-4l-1 1c-1 1-2.5 1-3.5 0l-1-1c-1 1-1.5 2.5-1.5 4 0 2.71 2.24 4.5 5 4.5Z" />
                 </svg>{' '}MOMENTUM
@@ -1081,7 +1081,7 @@ const AboutPage: React.FC = () => {
                   <div style={{ fontSize: '13px', fontWeight: '600', color: '#e2e8f0' }}>{item.day}</div>
                   <div style={{ fontSize: '11px', color: '#3b82f6', marginTop: '2px' }}>{item.label}</div>
                 </div>
-                <div style={{ ...textStyle, fontSize: '12px' }}>{item.desc}</div>
+                <div style={{ ...textStyle, fontSize: '13px' }}>{item.desc}</div>
               </div>
             ))}
           </Section>
@@ -1140,8 +1140,8 @@ const AboutPage: React.FC = () => {
                 { tier: 'Mega Market', color: '#a78bfa', desc: 'Large development and morale boost, major fatigue reduction' },
               ].map(t => (
                 <React.Fragment key={t.tier}>
-                  <span style={{ color: t.color, fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>{t.tier}</span>
-                  <span style={{ ...textStyle, fontSize: '12px' }}>{t.desc}</span>
+                  <span style={{ color: t.color, fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>{t.tier}</span>
+                  <span style={{ ...textStyle, fontSize: '13px' }}>{t.desc}</span>
                 </React.Fragment>
               ))}
             </div>
@@ -1245,8 +1245,8 @@ const AboutPage: React.FC = () => {
                   borderRadius: '5px',
                   backgroundColor: 'rgba(51,65,85,0.15)',
                 }}>
-                  <span style={{ color: m.color, fontWeight: '700', fontSize: '12px', minWidth: '80px' }}>{m.name}</span>
-                  <span style={{ ...textStyle, fontSize: '12px' }}>{m.desc}</span>
+                  <span style={{ color: m.color, fontWeight: '700', fontSize: '13px', minWidth: '80px' }}>{m.name}</span>
+                  <span style={{ ...textStyle, fontSize: '13px' }}>{m.desc}</span>
                 </div>
               ))}
             </div>
@@ -1310,7 +1310,7 @@ const AboutPage: React.FC = () => {
                     <span style={{ color: e.color, fontWeight: '700', fontSize: '13px' }}>{e.name}</span>
                     <span style={{ color: '#64748b', fontSize: '11px' }}>{e.count} effects</span>
                   </div>
-                  <span style={{ ...textStyle, fontSize: '12px' }}>{e.desc}</span>
+                  <span style={{ ...textStyle, fontSize: '13px' }}>{e.desc}</span>
                 </div>
               ))}
             </div>
@@ -1341,7 +1341,7 @@ const AboutPage: React.FC = () => {
                 { label: 'Champion', abbr: 'CH', color: '#f59e0b', desc: 'Unlocks the FLEX roster slot' },
                 { label: 'All-Pro', abbr: 'AP', color: '#a78bfa', desc: '+1 roster swap when equipped' },
               ].map(c => (
-                <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
                   <span style={{
                     color: c.color, fontWeight: '700', fontSize: '10px',
                     backgroundColor: `${c.color}20`, padding: '2px 6px',
@@ -1385,7 +1385,7 @@ const AboutPage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <span style={{ color: c.color, fontWeight: '700', fontSize: '13px' }}>{c.label}</span>
                 </div>
-                <p style={{ ...textStyle, fontSize: '12px' }}>{c.desc}</p>
+                <p style={{ ...textStyle, fontSize: '13px' }}>{c.desc}</p>
                 <p style={{ ...textStyle, fontSize: '11px', color: '#94a3b8', marginTop: '4px', fontStyle: 'italic' }}>
                   {c.example}
                 </p>
@@ -1475,7 +1475,7 @@ const AboutPage: React.FC = () => {
             </p>
 
             <p style={labelStyle}>Edition Thresholds</p>
-            <p style={{ ...textStyle, fontSize: '12px', marginBottom: '10px' }}>
+            <p style={{ ...textStyle, fontSize: '13px', marginBottom: '10px' }}>
               The total sell value of all input cards determines the output edition:
             </p>
             <div style={{
@@ -1517,7 +1517,7 @@ const AboutPage: React.FC = () => {
               ))}
             </div>
 
-            <p style={{ ...textStyle, marginTop: '10px', fontSize: '12px' }}>
+            <p style={{ ...textStyle, marginTop: '10px', fontSize: '13px' }}>
               Cards must be unequipped before combining. Higher-edition cards contribute more value,
               so combining a mix of editions is the most efficient path to Diamond.
             </p>
@@ -1580,7 +1580,7 @@ const AboutPage: React.FC = () => {
                 }}>
                   <div style={{ flex: 1 }}>
                     <span style={{ color: pu.color, fontWeight: '700', fontSize: '13px' }}>{pu.name}</span>
-                    <p style={{ ...textStyle, fontSize: '12px', marginTop: '2px' }}>{pu.desc}</p>
+                    <p style={{ ...textStyle, fontSize: '13px', marginTop: '2px' }}>{pu.desc}</p>
                   </div>
                   <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', flexShrink: 0 }}>
                     {pu.price}F

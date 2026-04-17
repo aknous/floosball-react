@@ -124,7 +124,7 @@ export const PlayerLeaders: React.FC<{ embedded?: boolean }> = ({ embedded = fal
   const currentCatLabel = cats.find(c => c.key === category)?.label ?? ''
 
   return (
-    <div style={{ ...(!embedded ? { backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
+    <div style={{ ...(!embedded ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
 
       {/* Position tabs */}
       <div style={{ display: 'flex', gap: '4px', padding: embedded ? '4px 12px 10px' : '10px 12px' }}>
@@ -136,7 +136,7 @@ export const PlayerLeaders: React.FC<{ embedded?: boolean }> = ({ embedded = fal
               flex: 1,
               padding: '6px 0',
               borderRadius: '6px',
-              fontSize: '11px',
+              fontSize: '12px',
               fontWeight: '600',
               color: position === pos ? '#e2e8f0' : '#94a3b8',
               backgroundColor: position === pos ? '#334155' : 'transparent',
@@ -158,7 +158,7 @@ export const PlayerLeaders: React.FC<{ embedded?: boolean }> = ({ embedded = fal
               key={c.key}
               onClick={() => setCategory(c.key)}
               style={{
-                fontSize: '11px',
+                fontSize: '12px',
                 fontWeight: '600',
                 padding: '4px 10px',
                 borderRadius: '6px',
@@ -198,7 +198,7 @@ export const PlayerLeaders: React.FC<{ embedded?: boolean }> = ({ embedded = fal
                 borderLeft: isOnRoster ? '2px solid #22c55e' : '2px solid transparent',
               }}
             >
-              <span style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{player.rank}</span>
+              <span style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{player.rank}</span>
               <img
                 src={`/avatars/${player.teamId}.png`}
                 alt=""
@@ -208,25 +208,25 @@ export const PlayerLeaders: React.FC<{ embedded?: boolean }> = ({ embedded = fal
                 <PlayerHoverCard playerId={player.id} playerName={player.name}>
                   <Link
                     to={`/players/${player.id}`}
-                    style={{ fontSize: '13px', color: '#e2e8f0', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    style={{ fontSize: '14px', color: '#e2e8f0', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                   >
                     {player.name}
                     {isOnRoster && (
-                      <span style={{ marginLeft: '5px', fontSize: '9px', fontWeight: '700', color: '#22c55e', verticalAlign: 'middle' }}>
+                      <span style={{ marginLeft: '5px', fontSize: '10px', fontWeight: '700', color: '#22c55e', verticalAlign: 'middle' }}>
                         FP
                       </span>
                     )}
                   </Link>
                 </PlayerHoverCard>
-                <div style={{ fontSize: '11px', color: '#cbd5e1' }}>
+                <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
                   {player.teamAbbr}
                   {position === 'ALL' && <span style={{ marginLeft: '4px', color: '#94a3b8' }}>· {player.position}</span>}
                 </div>
                 <div style={{ marginTop: '-2px' }}>
-                  <Stars stars={player.ratingStars} size={10} />
+                  <Stars stars={player.ratingStars} size={11} />
                 </div>
               </div>
-              <span style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
                 {formatStat(player.statValue, category)}
               </span>
             </div>

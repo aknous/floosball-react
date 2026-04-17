@@ -76,7 +76,7 @@ export const PickEmPanel: React.FC = () => {
   const totalGames = games.length
 
   return (
-    <div style={{ fontSize: '13px' }}>
+    <div style={{ fontSize: '14px' }}>
       {/* Mode Toggle + Help Button */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', padding: '0 4px', alignItems: 'center' }}>
         {(['results', 'leaderboard'] as ViewMode[]).map(m => (
@@ -90,7 +90,7 @@ export const PickEmPanel: React.FC = () => {
               border: 'none',
               backgroundColor: mode === m ? '#334155' : 'transparent',
               color: mode === m ? '#e2e8f0' : '#94a3b8',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.15s',
@@ -191,7 +191,7 @@ export const PickEmPanel: React.FC = () => {
           padding: '6px 8px', marginBottom: '6px',
           borderRadius: '6px', backgroundColor: '#1e293b',
         }}>
-          <span style={{ fontSize: '11px', color: '#94a3b8' }}>Auto-pick favorites</span>
+          <span style={{ fontSize: '12px', color: '#94a3b8' }}>Auto-pick favorites</span>
           <button
             onClick={toggleAutoPick}
             style={{
@@ -257,19 +257,19 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         }}>
           {weekSummary.clairvoyant ? (
             <div>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: '#22c55e', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '15px', fontWeight: '700', color: '#22c55e', letterSpacing: '0.05em' }}>
                 CLAIRVOYANT
               </div>
-              <div style={{ fontSize: '12px', color: '#86efac', marginTop: '2px' }}>
+              <div style={{ fontSize: '13px', color: '#86efac', marginTop: '2px' }}>
                 {weekSummary.totalPoints} pts — {weekSummary.correct}/{weekSummary.total} correct
               </div>
             </div>
           ) : (
             <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0' }}>
+              <div style={{ fontSize: '15px', fontWeight: '600', color: '#e2e8f0' }}>
                 {weekSummary.totalPoints} pts — {weekSummary.correct}/{weekSummary.total} correct
               </div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+              <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>
                 +{Math.round(weekSummary.totalPoints * 0.5)} Floobits earned
               </div>
             </div>
@@ -283,7 +283,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           border: '1px solid #334155',
           marginBottom: '6px',
           textAlign: 'center',
-          fontSize: '12px',
+          fontSize: '13px',
           color: '#94a3b8',
         }}>
           {(() => {
@@ -362,7 +362,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
           border: homeSelected ? `1px solid ${homeColor}` : '1px solid transparent',
           backgroundColor: homeSelected ? `${homeColor}22` : `${homeColor}15`,
           color: homeSelected ? homeColor : '#cbd5e1',
-          fontSize: '14px',
+          fontSize: '15px',
           fontWeight: homeSelected ? '700' : '500',
           cursor: canPick ? 'pointer' : 'default',
           textAlign: 'center',
@@ -379,7 +379,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
           />
           <span>{game.homeTeam.abbr}</span>
         </div>
-        <div style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '500', marginTop: '2px' }}>
+        <div style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: '500', marginTop: '2px' }}>
           {game.homeTeam.record} · {winPct.home}%
         </div>
       </button>
@@ -404,13 +404,13 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
             </svg>
           )
         ) : (
-          <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '600' }}>vs</span>
+          <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600' }}>vs</span>
         )}
         {/* Multiplier badge */}
         {!hasResult && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0px' }}>
             <div style={{
-              fontSize: '10px',
+              fontSize: '11px',
               fontWeight: '700',
               color: badgeColor,
               backgroundColor: `${badgeColor}18`,
@@ -422,7 +422,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
             </div>
             {game.userPick != null && displayUnderdogMult !== 1.0 && (
               <div style={{
-                fontSize: '9px', whiteSpace: 'nowrap', fontWeight: '600',
+                fontSize: '10px', whiteSpace: 'nowrap', fontWeight: '600',
                 color: displayUnderdogMult > 1.0 ? '#22c55e' : '#ef4444',
               }}>
                 {displayUnderdogMult}x
@@ -433,7 +433,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
         {/* Show earned points for resolved picks */}
         {hasResult && game.userPick != null && game.result?.pointsEarned != null && (
           <div style={{
-            fontSize: '9px',
+            fontSize: '10px',
             fontWeight: '700',
             color: isCorrect ? '#22c55e' : '#64748b',
             whiteSpace: 'nowrap',
@@ -454,7 +454,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
           border: awaySelected ? `1px solid ${awayColor}` : '1px solid transparent',
           backgroundColor: awaySelected ? `${awayColor}22` : `${awayColor}15`,
           color: awaySelected ? awayColor : '#cbd5e1',
-          fontSize: '14px',
+          fontSize: '15px',
           fontWeight: awaySelected ? '700' : '500',
           cursor: canPick ? 'pointer' : 'default',
           textAlign: 'center',
@@ -471,7 +471,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
           />
           <span>{game.awayTeam.abbr}</span>
         </div>
-        <div style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '500', marginTop: '2px' }}>
+        <div style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: '500', marginTop: '2px' }}>
           {game.awayTeam.record} · {winPct.away}%
         </div>
       </button>
@@ -515,7 +515,7 @@ const LeaderboardRow: React.FC<{
       <div style={{
         width: '28px',
         textAlign: 'center',
-        fontSize: '12px',
+        fontSize: '13px',
         fontWeight: '700',
         color: rankInfo?.color || '#94a3b8',
       }}>
@@ -523,15 +523,15 @@ const LeaderboardRow: React.FC<{
       </div>
 
       {/* Username */}
-      <div style={{ flex: 1, fontSize: '12px', fontWeight: '500', color: '#e2e8f0', minWidth: 0 }}>
+      <div style={{ flex: 1, fontSize: '13px', fontWeight: '500', color: '#e2e8f0', minWidth: 0 }}>
         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {entry.username}
-          {isMe && <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>}
+          {isMe && <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '11px' }}>(you)</span>}
         </div>
       </div>
 
       {/* Points */}
-      <div style={{ fontSize: '12px', fontWeight: '700', color: '#e2e8f0', whiteSpace: 'nowrap' }}>
+      <div style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', whiteSpace: 'nowrap' }}>
         {entry.totalPoints} pts
       </div>
 
@@ -607,7 +607,7 @@ const LeaderboardView: React.FC<LeaderboardViewProps> = ({
               border: 'none',
               backgroundColor: subMode === m ? '#334155' : 'transparent',
               color: subMode === m ? '#e2e8f0' : '#94a3b8',
-              fontSize: '11px',
+              fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.15s',
