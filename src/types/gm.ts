@@ -97,6 +97,8 @@ export interface GmVoteResult {
   id: number
   voteType: string
   targetPlayerId: number | null
+  targetName: string | null
+  directiveNames: string[]
   totalVotes: number
   threshold: number
   probability: number

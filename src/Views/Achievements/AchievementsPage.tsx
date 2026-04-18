@@ -272,10 +272,19 @@ const AchievementsPage: React.FC = () => {
           storageKey="season-goals"
           customLayout
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {guidanceGroups.map(group => (
-              <FamilyGroup key={group.family} group={group} />
-            ))}
+          <div style={{
+            display: 'grid', gap: '10px',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            alignItems: 'start',
+          }}>
+            {guidanceGroups.flatMap(group => {
+              if (group.family === 'singles') {
+                // Drop each single into the outer grid
+                return group.items.map(a => <AchievementRow key={a.id} achievement={a} />)
+              }
+              // Each tiered family occupies one cell; expands full-width inline
+              return [<TieredFamilySummary key={group.family} group={group} />]
+            })}
           </div>
         </Section>
 
@@ -384,36 +393,140 @@ const Section: React.FC<{
 }
 
 // Family sub-group within Season Goals: optional header for tiered families + grid of achievements.
+// ── Family rendering ────────────────────────────────────────────────────────
+// Singles and tiered families render differently. Tiered families collapse into
+// one summary card by default (tier dots + progress toward next tier + next
+// reward) and expand to show all tier cards on click.
+
 const FamilyGroup: React.FC<{ group: GuidanceGroup }> = ({ group }) => {
-  const completed = group.items.filter(a => a.completedAt != null).length
-  const total = group.items.length
+  // Singles bucket: grid of individual cards, no family header
+  if (group.family === 'singles') {
+    return (
+      <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', alignItems: 'start' }}>
+        {group.items.map(a => <AchievementRow key={a.id} achievement={a} />)}
+      </div>
+    )
+  }
+  // Tiered family: summary card (click to expand)
+  return <TieredFamilySummary group={group} />
+}
+
+// Format a progress value for display, aware of the Compound family's
+// mult×100 encoding (shown as e.g. "1.20x").
+const formatFamilyValue = (family: string, n: number): string => {
+  if (family === 'compound') return `${(n / 100).toFixed(2)}x`
+  return n.toLocaleString()
+}
+
+const TieredFamilySummary: React.FC<{ group: GuidanceGroup }> = ({ group }) => {
+  // Sort tiers by target ascending and find state
+  const tiers = [...group.items].sort((a, b) => a.target - b.target)
+  const total = tiers.length
+  const completed = tiers.filter(t => t.completedAt != null).length
   const allDone = completed === total
+  const nextTier = tiers.find(t => t.completedAt == null) ?? null
+  // Progress toward next tier (UserAchievement.progress is the live metric value
+  // clamped to target; for an incomplete tier it reflects the current real value).
+  const currentValue = nextTier ? nextTier.progress : (tiers[tiers.length - 1]?.target ?? 0)
+  const nextTarget = nextTier?.target ?? 0
+  const pct = nextTier && nextTarget > 0
+    ? Math.min(100, Math.round((currentValue / nextTarget) * 100))
+    : 100
+
+  const nextRewardChips: React.ReactNode = nextTier ? (() => {
+    const cfg = nextTier.rewardConfig || {}
+    const floobits = cfg.floobits ?? 0
+    const packs = cfg.packs ?? []
+    const powerups = cfg.powerups ?? []
+    const chips: React.ReactNode[] = []
+    if (floobits > 0) chips.push(<RewardChip key="f" text={`${floobits} F`} color="#fbbf24" />)
+    packs.forEach((p, i) => chips.push(<RewardChip key={`p${i}`} text={packLabel(p)} color={packColor(p)} />))
+    powerups.forEach((p, i) => chips.push(<RewardChip key={`u${i}`} text={powerupLabel(p)} color="#06b6d4" />))
+    // marginTop: auto pushes the reward chips to the bottom of the flex column
+    // so short-content summary cards don't have a big empty zone below them.
+    return chips.length
+      ? (
+        <div style={{ marginTop: 'auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
+          <RewardLabel />
+          {chips}
+        </div>
+      )
+      : null
+  })() : null
+
+  const label = group.label ?? group.family
+  const description = nextTier?.description ?? tiers[0]?.description ?? ''
+
   return (
-    <div>
-      {group.label && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '10px',
-          marginBottom: '8px', paddingBottom: '6px',
-          borderBottom: '1px solid #1e293b',
-        }}>
-          <span style={{
-            fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
-            color: '#94a3b8', textTransform: 'uppercase',
-          }}>
-            {group.label}
+    <div style={{
+      backgroundColor: '#1e2d3d',
+      border: allDone ? '1px solid #f59e0b' : '1px solid #2a3a4e',
+      borderRadius: '8px',
+      padding: '14px 16px',
+      // Match AchievementRow's season-goals height so family summaries and
+      // single cards sit at the same size across the grid.
+      height: '170px',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px',
+    }}>
+      {/* Header: name + tier dots + count */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', minWidth: 0 }}>
+          <span style={{ fontSize: '16px', fontWeight: 700, color: allDone ? '#f59e0b' : '#e2e8f0' }}>
+            {label}
           </span>
           <span style={{
-            fontSize: '11px', fontWeight: 700,
+            fontSize: '13px', fontWeight: 700,
             fontVariantNumeric: 'tabular-nums',
-            color: allDone ? '#f59e0b' : '#64748b',
+            color: allDone ? '#f59e0b' : '#94a3b8',
           }}>
             {completed}/{total}
           </span>
         </div>
-      )}
-      <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', alignItems: 'start' }}>
-        {group.items.map(a => <AchievementRow key={a.id} achievement={a} />)}
+        <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flexShrink: 0 }}>
+          {tiers.map((t, i) => (
+            <span
+              key={t.id}
+              title={`Tier ${['I','II','III','IV','V','VI'][i] ?? i + 1}`}
+              style={{
+                width: '10px', height: '10px', borderRadius: '50%',
+                backgroundColor: t.completedAt != null ? '#f59e0b' : '#2a3a4e',
+                border: t.completedAt != null ? 'none' : '1px solid #475569',
+                display: 'inline-block',
+              }}
+            />
+          ))}
+        </div>
       </div>
+
+      {/* Next tier progress + reward, or "all complete" */}
+      {allDone ? (
+        <div style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 600 }}>
+          All tiers complete
+        </div>
+      ) : (
+        <>
+          <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.4 }}>
+            {description}
+          </div>
+          <div>
+            <div style={{ height: '6px', backgroundColor: '#0f172a', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${pct}%`, backgroundColor: '#3b82f6', transition: 'width 0.3s' }} />
+            </div>
+            <div style={{
+              fontSize: '12px', color: '#94a3b8', marginTop: '4px',
+              fontVariantNumeric: 'tabular-nums', display: 'flex', justifyContent: 'space-between',
+            }}>
+              <span>{formatFamilyValue(group.family, currentValue)} / {formatFamilyValue(group.family, nextTarget)}</span>
+              <span>Next: Tier {['I','II','III','IV','V','VI'][completed] ?? ''}</span>
+            </div>
+          </div>
+          {nextRewardChips}
+        </>
+      )}
     </div>
   )
 }
@@ -436,24 +549,29 @@ const AchievementRow: React.FC<{
       borderRadius: '8px',
       padding: '14px 16px',
       opacity: complete ? 1 : 0.95,
-      minHeight: hint ? '260px' : '170px',
+      // Fixed heights per category so every card in a row is the same size:
+      //   - Rookie Goals: 340px (fits the 3-step "How to complete" guide + action
+      //     button comfortably; completed cards have extra whitespace, which is fine)
+      //   - Season Goals: 170px
+      height: a.category === 'onboarding' ? '340px' : '170px',
+      overflow: 'hidden',
       boxSizing: 'border-box',
       display: 'flex',
       flexDirection: 'column',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '14px', fontWeight: 700, color: complete ? '#f59e0b' : '#e2e8f0' }}>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: complete ? '#f59e0b' : '#e2e8f0' }}>
             {a.name}
           </div>
-          <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '4px', lineHeight: 1.45 }}>
+          <div style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '4px', lineHeight: 1.45 }}>
             {a.description}
           </div>
         </div>
         {complete && (
           <span style={{
             flexShrink: 0,
-            fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em',
+            fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
             color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)',
             padding: '3px 6px', borderRadius: '3px',
           }}>
@@ -468,7 +586,7 @@ const AchievementRow: React.FC<{
           <div style={{ height: '8px', backgroundColor: '#0f172a', borderRadius: '4px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${pct}%`, backgroundColor: '#3b82f6', transition: 'width 0.3s' }} />
           </div>
-          <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '6px', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+          <div style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '6px', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
             {a.progress} / {a.target}
           </div>
         </div>
@@ -476,9 +594,10 @@ const AchievementRow: React.FC<{
 
       {/* Rewards — pushed to the bottom so short cards don't have a huge dead zone */}
       {(floobits > 0 || packs.length > 0 || powerups.length > 0) && (
-        <div style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        <div style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
+          <RewardLabel />
           {floobits > 0 && (
-            <RewardChip text={`+${floobits} Floobits`} color="#fbbf24" />
+            <RewardChip text={`${floobits} F`} color="#fbbf24" />
           )}
           {packs.map((p, i) => (
             <RewardChip key={`pack-${i}`} text={packLabel(p)} color={packColor(p)} />
@@ -497,7 +616,7 @@ const AchievementRow: React.FC<{
           display: 'flex', flexDirection: 'column', gap: '10px',
         }}>
           <div style={{
-            fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
+            fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
             color: '#94a3b8', textTransform: 'uppercase',
           }}>
             How to complete
@@ -507,7 +626,7 @@ const AchievementRow: React.FC<{
               <div key={i} style={{
                 display: 'flex',
                 gap: '8px',
-                fontSize: '12px',
+                fontSize: '13px',
                 color: '#cbd5e1',
                 lineHeight: 1.5,
               }}>
@@ -520,7 +639,7 @@ const AchievementRow: React.FC<{
             onClick={() => onAction(hint.action)}
             style={{
               alignSelf: 'flex-start',
-              fontSize: '12px', fontWeight: 600,
+              fontSize: '13px', fontWeight: 600,
               color: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.12)',
               border: '1px solid rgba(59,130,246,0.3)', borderRadius: '4px',
               padding: '6px 12px', cursor: 'pointer',
@@ -557,7 +676,7 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{
-            fontSize: '14px',
+            fontSize: '15px',
             fontWeight: 700,
             color: unlocked ? '#f59e0b' : '#64748b',
             letterSpacing: unlocked ? 'normal' : '0.1em',
@@ -565,7 +684,7 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
             {unlocked ? a.name : '???'}
           </div>
           {unlocked && (
-            <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '4px', lineHeight: 1.45 }}>
+            <div style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '4px', lineHeight: 1.45 }}>
               {a.description}
             </div>
           )}
@@ -573,7 +692,7 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
         {unlocked && (
           <span style={{
             flexShrink: 0,
-            fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em',
+            fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
             color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)',
             padding: '3px 6px', borderRadius: '3px',
           }}>
@@ -582,8 +701,9 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
         )}
       </div>
       {unlocked && (floobits > 0 || packs.length > 0 || powerups.length > 0) && (
-        <div style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-          {floobits > 0 && <RewardChip text={`+${floobits} Floobits`} color="#fbbf24" />}
+        <div style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
+          <RewardLabel />
+          {floobits > 0 && <RewardChip text={`${floobits} F`} color="#fbbf24" />}
           {packs.map((p, i) => (
             <RewardChip key={`pack-${i}`} text={packLabel(p)} color={packColor(p)} />
           ))}
@@ -598,14 +718,28 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
 
 const RewardChip: React.FC<{ text: string; color: string }> = ({ text, color }) => (
   <span style={{
-    fontSize: '11px',
+    fontSize: '14px',
     fontWeight: 600,
     color,
     backgroundColor: `${color}20`,
-    padding: '3px 8px',
-    borderRadius: '3px',
+    padding: '4px 10px',
+    borderRadius: '4px',
   }}>
     {text}
+  </span>
+)
+
+// "Rewards:" label — consistent prefix in front of every reward chip row.
+const RewardLabel: React.FC = () => (
+  <span style={{
+    fontSize: '12px',
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    marginRight: '2px',
+  }}>
+    Rewards:
   </span>
 )
 
