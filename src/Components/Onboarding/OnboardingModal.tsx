@@ -204,6 +204,60 @@ const INFO_STEPS = [
       </>
     ),
   },
+  {
+    title: 'Rookie Goals',
+    content: (
+      <>
+        <p style={{ color: '#94a3b8', lineHeight: '1.6', marginBottom: '14px' }}>
+          Get started with six one-time goals. Each pays out Floobits when you complete it
+          and the Achievements page tracks your progress.
+        </p>
+        <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 14px 0', display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
+          <li style={{ display: 'flex', gap: '10px', fontSize: '13px', lineHeight: 1.5 }}>
+            <span style={{ color: '#64748b', flexShrink: 0 }}>-</span>
+            <span style={{ color: '#cbd5e1' }}>
+              <span style={{ color: '#e2e8f0', fontWeight: 600 }}>New Fan</span> — pick a favorite team
+            </span>
+          </li>
+          <li style={{ display: 'flex', gap: '10px', fontSize: '13px', lineHeight: 1.5 }}>
+            <span style={{ color: '#64748b', flexShrink: 0 }}>-</span>
+            <span style={{ color: '#cbd5e1' }}>
+              <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Prognosticator</span> — submit your first pick-em prediction
+            </span>
+          </li>
+          <li style={{ display: 'flex', gap: '10px', fontSize: '13px', lineHeight: 1.5 }}>
+            <span style={{ color: '#64748b', flexShrink: 0 }}>-</span>
+            <span style={{ color: '#cbd5e1' }}>
+              <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Pack Popper</span> — open your first card pack
+            </span>
+          </li>
+          <li style={{ display: 'flex', gap: '10px', fontSize: '13px', lineHeight: 1.5 }}>
+            <span style={{ color: '#64748b', flexShrink: 0 }}>-</span>
+            <span style={{ color: '#cbd5e1' }}>
+              <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Field General</span> — set your first fantasy roster
+            </span>
+          </li>
+          <li style={{ display: 'flex', gap: '10px', fontSize: '13px', lineHeight: 1.5 }}>
+            <span style={{ color: '#64748b', flexShrink: 0 }}>-</span>
+            <span style={{ color: '#cbd5e1' }}>
+              <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Deck Builder</span> — equip a card to your roster
+            </span>
+          </li>
+          <li style={{ display: 'flex', gap: '10px', fontSize: '13px', lineHeight: 1.5 }}>
+            <span style={{ color: '#64748b', flexShrink: 0 }}>-</span>
+            <span style={{ color: '#cbd5e1' }}>
+              <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Patron</span> — contribute Floobits to your team
+            </span>
+          </li>
+        </ul>
+        <p style={{ color: '#cbd5e1', lineHeight: '1.6', fontSize: '13px' }}>
+          Find step-by-step instructions and track everything from the{' '}
+          <span style={{ color: '#f59e0b', fontWeight: 600 }}>Achievements</span> tab in the sidebar.
+          Each season you'll also unlock recurring Season Goals with bigger rewards.
+        </p>
+      </>
+    ),
+  },
 ]
 
 // Total steps = username (step 0) + INFO_STEPS

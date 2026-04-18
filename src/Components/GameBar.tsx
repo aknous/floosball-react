@@ -114,7 +114,10 @@ const GameBar: React.FC = () => {
             display: 'flex',
             gap: '10px',
             width: 'fit-content',
-            animation: `ticker-scroll ${duration}s linear infinite`,
+            animationName: 'ticker-scroll',
+            animationDuration: `${duration}s`,
+            animationTimingFunction: 'linear',
+            animationIterationCount: 'infinite',
             animationPlayState: paused ? 'paused' : 'running',
           }}
         >

@@ -15,6 +15,7 @@ export interface UseWebSocketReturn<T> {
   send: (data: any) => void
   reconnect: () => void
   drainEvents: () => T[]
+  subscribe: (handler: (message: T) => void) => () => void
 }
 
 export const useWebSocket = <T = any>(
@@ -36,6 +37,9 @@ export const useWebSocket = <T = any>(
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const queueRef = useRef<T[]>([])
   const mountedRef = useRef(false)
+  // Per-message listeners — fire on every message regardless of React batching.
+  // Use this for events where each message matters (e.g. achievement_unlocked).
+  const listenersRef = useRef<Set<(message: T) => void>>(new Set())
 
   useEffect(() => {
     // Prevent double-connect on rapid re-renders
@@ -66,6 +70,10 @@ export const useWebSocket = <T = any>(
             if (message.type === 'ping') return
             queueRef.current.push(message as T)
             setData(message as T)
+            // Fire per-message listeners — unaffected by React state batching.
+            listenersRef.current.forEach(cb => {
+              try { cb(message as T) } catch (e) { console.error('WS listener error:', e) }
+            })
           } catch (err) {
             console.error('Failed to parse WebSocket message:', err)
           }
@@ -140,6 +148,9 @@ export const useWebSocket = <T = any>(
         if (message.type === 'ping') return
         queueRef.current.push(message as T)
         setData(message as T)
+        listenersRef.current.forEach(cb => {
+          try { cb(message as T) } catch (e) { console.error('WS listener error:', e) }
+        })
       } catch (err) {
         console.error('Failed to parse WebSocket message:', err)
       }
@@ -155,9 +166,14 @@ export const useWebSocket = <T = any>(
     mountedRef.current = true
   }, [channel])
 
+  const subscribe = useCallback((handler: (message: T) => void): (() => void) => {
+    listenersRef.current.add(handler)
+    return () => { listenersRef.current.delete(handler) }
+  }, [])
+
   const drainEvents = useCallback((): T[] => {
     return queueRef.current.splice(0)
   }, [])
 
-  return { data, connected, error, send, reconnect: manualReconnect, drainEvents }
+  return { data, connected, error, send, reconnect: manualReconnect, drainEvents, subscribe }
 }
