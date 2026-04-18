@@ -1,8 +1,10 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useSidebar, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from '@/contexts/SidebarContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
+
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 
 const NAV_ITEMS = [
@@ -77,6 +79,39 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
   const { user } = useAuth()
   const { unclaimedCount } = useAchievements()
   const location = useLocation()
+
+  // Look up favorite team name for the nav item. Cached in localStorage keyed
+  // by team id so name shows immediately on reload; refresh in the background.
+  const favTeamId = user?.favoriteTeamId ?? null
+  const cacheKey = favTeamId ? `favTeamName:${favTeamId}` : null
+  const [favTeamName, setFavTeamName] = useState<string | null>(() => {
+    if (!cacheKey) return null
+    try { return localStorage.getItem(cacheKey) } catch { return null }
+  })
+  useEffect(() => {
+    if (!favTeamId || !cacheKey) {
+      setFavTeamName(null)
+      return
+    }
+    // Hydrate from cache if the id changed
+    try {
+      const cached = localStorage.getItem(cacheKey)
+      if (cached) setFavTeamName(cached)
+    } catch {}
+    let cancelled = false
+    fetch(`${API_BASE}/teams/${favTeamId}`)
+      .then(r => r.json())
+      .then(json => {
+        if (cancelled) return
+        const team = json?.data ?? json
+        const name = team?.name
+        if (!name) return
+        setFavTeamName(name)
+        try { localStorage.setItem(cacheKey, name) } catch {}
+      })
+      .catch(() => { /* keep cached value */ })
+    return () => { cancelled = true }
+  }, [favTeamId, cacheKey])
   const expanded = !collapsed || (collapsed && hovered)
   const width = expanded ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED
 
@@ -204,7 +239,7 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
             />
             {expanded && (
               <span style={{ fontSize: '15px', fontWeight: '500' }}>
-                My Team
+                {favTeamName || 'My Team'}
               </span>
             )}
           </NavLink>

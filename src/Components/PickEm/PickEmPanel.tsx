@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import { usePickEm } from '@/contexts/PickEmContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useGames } from '@/contexts/GamesContext'
 import type { PickEmGame, PickEmLeaderboardEntry } from '@/types/pickem'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -40,21 +41,21 @@ export const PickEmPanel: React.FC = () => {
   } = usePickEm()
   const [mode, setMode] = useState<ViewMode>('results')
   const [showHelp, setShowHelp] = useState(false)
-  const [autoPick, setAutoPick] = useState(user?.autoPickFavorites ?? false)
+  type AutoPickMode = 'off' | 'favorites' | 'underdogs' | 'random'
+  const [autoPickMode, setAutoPickMode] = useState<AutoPickMode>(user?.autoPickMode ?? 'off')
 
-  const toggleAutoPick = useCallback(async () => {
-    const newVal = !autoPick
-    setAutoPick(newVal)
+  const changeAutoPickMode = useCallback(async (newMode: AutoPickMode) => {
+    setAutoPickMode(newMode)
     try {
       const tok = await getToken()
       if (!tok) return
       await fetch(`${API_BASE}/users/me/preferences`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-        body: JSON.stringify({ autoPickFavorites: newVal }),
+        body: JSON.stringify({ autoPickMode: newMode }),
       })
     } catch { /* silent */ }
-  }, [autoPick, getToken])
+  }, [getToken])
 
   if (loading) {
     return (
@@ -184,28 +185,43 @@ export const PickEmPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Auto-pick toggle */}
+      {/* Auto-pick mode selector */}
       {user && (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '10px',
           padding: '6px 8px', marginBottom: '6px',
           borderRadius: '6px', backgroundColor: '#1e293b',
         }}>
-          <span style={{ fontSize: '12px', color: '#94a3b8' }}>Auto-pick favorites</span>
-          <button
-            onClick={toggleAutoPick}
-            style={{
-              width: '32px', height: '18px', borderRadius: '9px', border: 'none',
-              backgroundColor: autoPick ? '#3b82f6' : '#334155',
-              cursor: 'pointer', position: 'relative', transition: 'background-color 0.2s',
-            }}
-          >
-            <div style={{
-              width: '14px', height: '14px', borderRadius: '7px',
-              backgroundColor: '#fff', position: 'absolute', top: '2px',
-              left: autoPick ? '16px' : '2px', transition: 'left 0.2s',
-            }} />
-          </button>
+          <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>Auto-pick</span>
+          <div style={{ display: 'flex', gap: '2px', backgroundColor: '#0f172a', borderRadius: '5px', padding: '2px' }}>
+            {([
+              { id: 'off',        label: 'Off' },
+              { id: 'favorites',  label: 'Favorites' },
+              { id: 'underdogs',  label: 'Underdogs' },
+              { id: 'random',     label: 'Random' },
+            ] as const).map(opt => {
+              const active = autoPickMode === opt.id
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => changeAutoPickMode(opt.id)}
+                  style={{
+                    fontSize: '11px', fontWeight: 600,
+                    padding: '3px 8px', borderRadius: '4px',
+                    border: 'none',
+                    cursor: active ? 'default' : 'pointer',
+                    backgroundColor: active ? '#3b82f6' : 'transparent',
+                    color: active ? '#fff' : '#94a3b8',
+                    transition: 'background-color 0.15s, color 0.15s',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -338,7 +354,24 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
   const displayPoints = multiplierToPoints(displayTimingMult, displayUnderdogMult)
   const badgeColor = multiplierColor(displayTimingMult)
 
-  const winPct = eloToWinPct(game.homeTeam.elo, game.awayTeam.elo)
+  // Prefer live win probability (updated via WebSocket game_state events) once the game
+  // is active — falls back to pre-game ELO calc when Scheduled/Final.
+  const { games: liveGamesMap } = useGames()
+  const liveGame = React.useMemo(() => {
+    for (const g of liveGamesMap.values()) {
+      if (
+        String(g.homeTeam?.id) === String(game.homeTeam.id)
+        && String(g.awayTeam?.id) === String(game.awayTeam.id)
+      ) {
+        return g
+      }
+    }
+    return null
+  }, [liveGamesMap, game.homeTeam.id, game.awayTeam.id])
+
+  const winPct = liveGame && liveGame.status === 'Active'
+    ? { home: Math.round(liveGame.homeWinProbability ?? 50), away: Math.round(liveGame.awayWinProbability ?? 50) }
+    : eloToWinPct(game.homeTeam.elo, game.awayTeam.elo)
 
   return (
     <div style={{

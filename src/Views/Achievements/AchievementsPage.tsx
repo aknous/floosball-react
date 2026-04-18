@@ -119,6 +119,10 @@ const FAMILY_LABELS: Record<string, string> = {
   dynamo: 'Dynamo',
   oracle: 'Oracle',
   magnate: 'Magnate',
+  podium: 'Podium',
+  pundit: 'Pundit',
+  benefactor: 'Benefactor',
+  compound: 'Compound',
 }
 
 interface GuidanceGroup {
@@ -201,6 +205,7 @@ const AchievementsPage: React.FC = () => {
 
   const onboarding = achievements.filter(a => a.category === 'onboarding')
   const guidance = achievements.filter(a => a.category === 'guidance')
+  const secrets = achievements.filter(a => a.category === 'secret')
   const completedCount = (list: Achievement[]) => list.filter(a => a.completedAt != null).length
 
   // Group guidance achievements by family (strip trailing roman numerals from key).
@@ -273,6 +278,18 @@ const AchievementsPage: React.FC = () => {
             ))}
           </div>
         </Section>
+
+        {secrets.length > 0 && (
+          <Section
+            title="Secret Achievements"
+            subtitle="Hidden until unlocked"
+            completed={completedCount(secrets)}
+            total={secrets.length}
+            storageKey="secrets"
+          >
+            {secrets.map(a => <SecretRow key={a.id} achievement={a} />)}
+          </Section>
+        )}
       </div>
     </div>
   )
@@ -357,7 +374,7 @@ const Section: React.FC<{
         customLayout
           ? <>{children}</>
           : (
-            <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+            <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', alignItems: 'start' }}>
               {children}
             </div>
           )
@@ -394,7 +411,7 @@ const FamilyGroup: React.FC<{ group: GuidanceGroup }> = ({ group }) => {
           </span>
         </div>
       )}
-      <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+      <div style={{ display: 'grid', gap: '10px', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', alignItems: 'start' }}>
         {group.items.map(a => <AchievementRow key={a.id} achievement={a} />)}
       </div>
     </div>
@@ -419,6 +436,10 @@ const AchievementRow: React.FC<{
       borderRadius: '8px',
       padding: '14px 16px',
       opacity: complete ? 1 : 0.95,
+      minHeight: hint ? '260px' : '170px',
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
         <div style={{ minWidth: 0 }}>
@@ -444,18 +465,18 @@ const AchievementRow: React.FC<{
       {/* Progress */}
       {!complete && a.target > 1 && (
         <div style={{ marginTop: '10px' }}>
-          <div style={{ height: '4px', backgroundColor: '#0f172a', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{ height: '8px', backgroundColor: '#0f172a', borderRadius: '4px', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${pct}%`, backgroundColor: '#3b82f6', transition: 'width 0.3s' }} />
           </div>
-          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '6px', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
             {a.progress} / {a.target}
           </div>
         </div>
       )}
 
-      {/* Rewards */}
+      {/* Rewards — pushed to the bottom so short cards don't have a huge dead zone */}
       {(floobits > 0 || packs.length > 0 || powerups.length > 0) && (
-        <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        <div style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
           {floobits > 0 && (
             <RewardChip text={`+${floobits} Floobits`} color="#fbbf24" />
           )}
@@ -507,6 +528,68 @@ const AchievementRow: React.FC<{
           >
             {hint.actionLabel} →
           </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Secret row — masked when locked (name "???", description hidden), full reveal when unlocked.
+const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) => {
+  const unlocked = a.completedAt != null
+  const floobits = a.rewardConfig.floobits ?? 0
+  const packs = a.rewardConfig.packs ?? []
+  const powerups = a.rewardConfig.powerups ?? []
+
+  return (
+    <div style={{
+      backgroundColor: '#1e2d3d',
+      border: unlocked ? '1px solid #f59e0b' : '1px dashed #334155',
+      borderRadius: '8px',
+      padding: '14px 16px',
+      opacity: unlocked ? 1 : 0.85,
+      height: '130px',
+      boxSizing: 'border-box',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{
+            fontSize: '14px',
+            fontWeight: 700,
+            color: unlocked ? '#f59e0b' : '#64748b',
+            letterSpacing: unlocked ? 'normal' : '0.1em',
+          }}>
+            {unlocked ? a.name : '???'}
+          </div>
+          {unlocked && (
+            <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '4px', lineHeight: 1.45 }}>
+              {a.description}
+            </div>
+          )}
+        </div>
+        {unlocked && (
+          <span style={{
+            flexShrink: 0,
+            fontSize: '9px', fontWeight: 700, letterSpacing: '0.08em',
+            color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)',
+            padding: '3px 6px', borderRadius: '3px',
+          }}>
+            DONE
+          </span>
+        )}
+      </div>
+      {unlocked && (floobits > 0 || packs.length > 0 || powerups.length > 0) && (
+        <div style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {floobits > 0 && <RewardChip text={`+${floobits} Floobits`} color="#fbbf24" />}
+          {packs.map((p, i) => (
+            <RewardChip key={`pack-${i}`} text={packLabel(p)} color={packColor(p)} />
+          ))}
+          {powerups.map((p, i) => (
+            <RewardChip key={`pu-${i}`} text={powerupLabel(p)} color="#06b6d4" />
+          ))}
         </div>
       )}
     </div>

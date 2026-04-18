@@ -139,35 +139,30 @@ const btnStyle: React.CSSProperties = {
 
 // ── Password gate ──────────────────────────────────────────────────────────
 
-// Derive a display unit from the achievement key so the admin panel shows
-// what the target/avg-progress number represents (e.g. "1,000 FP").
-const achievementUnit = (key: string): string => {
-  if (!key) return ''
+// Format an achievement target/progress number for the admin panel based on its key.
+// Most families just append a unit ("1,000 FP"); Compound renders its encoded integer
+// as a human multiplier ("1.20x").
+const formatAchievementValue = (key: string, value: number): string => {
+  if (!key) return value.toLocaleString()
   const base = key.replace(/_[ivx]+$/i, '')   // strip trailing tier: "banner_week_iii" → "banner_week"
-  const map: Record<string, string> = {
-    // Rookie goals (target=1): no unit
-    rookie: '',
-    prognosticator: '',
-    pack_popper: '',
-    field_general: '',
-    deck_builder: '',
-    patron: '',
-    // Single-target season goals
-    sharp: '',
-    sparkler: '',
-    perfect_week: '',
-    // Metric-based season goals
-    dedicated: 'weeks',
-    veteran: 'weeks',
-    curator: 'cards',
-    tycoon: 'floobits',
-    banner_week: 'FP',
-    dynamo: 'FP',
-    oracle: 'pts',
-    magnate: 'floobits',
-    racket: 'floobits',
+  if (base === 'compound') {
+    // Target stored as multiplier × 100 (e.g. 120 → "1.20x")
+    return `${(value / 100).toFixed(2)}x`
   }
-  return map[base] ?? ''
+  const unitMap: Record<string, string> = {
+    // Rookie goals (target=1): no unit
+    rookie: '', prognosticator: '', pack_popper: '', field_general: '',
+    deck_builder: '', patron: '',
+    // Single-target season goals
+    sharp: '', sparkler: '', perfect_week: '',
+    // Metric-based season goals
+    dedicated: 'weeks', veteran: 'weeks', curator: 'cards',
+    tycoon: 'floobits', banner_week: 'FP', dynamo: 'FP', oracle: 'pts',
+    magnate: 'floobits', racket: 'floobits',
+    podium: 'finishes', pundit: 'finishes', benefactor: 'floobits',
+  }
+  const unit = unitMap[base] ?? ''
+  return unit ? `${value.toLocaleString()} ${unit}` : value.toLocaleString()
 }
 
 const SESSION_KEY = 'floosball_admin_pw'
@@ -1883,8 +1878,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
             </thead>
             <tbody>
               {(achMetrics.achievements || []).map((a: any) => {
-                const unit = achievementUnit(a.key)
-                const fmt = (n: number) => `${n.toLocaleString()}${unit ? ' ' + unit : ''}`
+                const fmt = (n: number) => formatAchievementValue(a.key, n)
                 return (
                   <tr key={a.id} style={{ borderBottom: '1px solid #1e293b' }}>
                     <td style={{ padding: '6px 10px', color: '#e2e8f0', fontWeight: 500 }}>{a.name}</td>
