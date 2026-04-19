@@ -6,12 +6,13 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
 import RookiesSection from './RookiesSection'
 import MarketsSection from './MarketsSection'
-import RatingSparkline from '@/Components/RatingSparkline'
 import { Stars } from '@/Components/Stars'
+import PlayerAvatar from '@/Components/PlayerAvatar'
+import CoachAvatar from '@/Components/CoachAvatar'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type SectionId = 'overview' | 'schedule' | 'funding' | 'votes' | 'markets'
+type SectionId = 'overview' | 'funding' | 'votes' | 'markets'
 
 // The Front Office hub. Consolidates everything a fan does to influence their
 // team — funding, rookie voting, GM votes, FA ballots — plus a league-wide
@@ -232,7 +233,6 @@ export default function FrontOfficePage() {
   // and funding context stays visible regardless of which tab is active.
   const tabs: { id: SectionId; label: string }[] = [
     { id: 'overview', label: 'Overview' },
-    { id: 'schedule', label: 'Schedule' },
     { id: 'funding', label: 'Fund' },
     { id: 'votes', label: 'Front Office' },
     { id: 'markets', label: 'Markets' },
@@ -324,10 +324,6 @@ export default function FrontOfficePage() {
           retirementWatch={retirementWatch}
           prospects={prospects}
         />
-      )}
-
-      {activeSection === 'schedule' && (
-        <ScheduleTab team={team} />
       )}
 
       {activeSection === 'funding' && (
@@ -612,13 +608,11 @@ function OverviewTab({
                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', minWidth: '30px' }}>{posLabel}</span>
                 {player ? (
                   <>
+                    <PlayerAvatar name={player.name} size={32} bgColor={team.color} />
                     <Link to={`/players/${player.id}`} style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {player.name}
                     </Link>
                     <Stars stars={player.ratingStars} size={13} />
-                    {player.ratingHistory && player.ratingHistory.length > 0 && (
-                      <RatingSparkline history={player.ratingHistory} width={48} height={16} />
-                    )}
                     {player.termRemaining != null && (
                       <span style={{
                         fontSize: '12px',
@@ -658,23 +652,36 @@ function OverviewTab({
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {prospects.map(p => (
-                <div key={p.playerId} style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '4px 8px', borderRadius: '4px', backgroundColor: '#0f172a',
-                }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', minWidth: '30px' }}>{p.position}</span>
-                  <Link to={`/players/${p.playerId}`} style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {p.name}
-                  </Link>
-                  {p.ratingHistory?.length > 0 && (
-                    <RatingSparkline history={p.ratingHistory} width={44} height={14} />
-                  )}
-                  <span style={{ fontSize: '11px', color: '#94a3b8', minWidth: '24px', textAlign: 'right' as const }}>
-                    {Math.round(p.rating)}
-                  </span>
-                </div>
-              ))}
+              {prospects.map(p => {
+                // Dev window countdown — 3-season cap, then auto-released to
+                // the FA pool. "final season" means they're in their last
+                // pipeline year and will hit FA at season end unless promoted.
+                const windowLabel = p.seasonsRemaining <= 1
+                  ? 'final season'
+                  : `${p.seasonsRemaining} seasons`
+                return (
+                  <div key={p.playerId} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '4px 8px', borderRadius: '4px', backgroundColor: '#0f172a',
+                  }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', minWidth: '30px' }}>{p.position}</span>
+                    <PlayerAvatar name={p.name} size={28} bgColor={team.color} />
+                    <Link to={`/players/${p.playerId}`} style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {p.name}
+                    </Link>
+                    {p.isUndrafted && (
+                      <span style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', backgroundColor: '#1e293b', padding: '1px 5px', borderRadius: '3px', letterSpacing: '0.04em' }}>
+                        UNDRAFTED
+                      </span>
+                    )}
+                    <span style={{
+                      fontSize: '12px', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' as const,
+                    }}>
+                      {windowLabel} until FA
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>
@@ -687,10 +694,13 @@ function OverviewTab({
             <span style={PANEL_HEADER_LABEL_STYLE}>Head Coach</span>
           </div>
           <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div>
-              <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0' }}>{team.coach.name}</div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-                Overall {team.coach.overallRating} · {team.coach.seasonsCoached} season{team.coach.seasonsCoached !== 1 ? 's' : ''}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <CoachAvatar name={team.coach.name} size={64} bgColor={team.color} style={{ border: `3px solid ${team.color}` }} />
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0' }}>{team.coach.name}</div>
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                  Overall {team.coach.overallRating} · {team.coach.seasonsCoached} season{team.coach.seasonsCoached !== 1 ? 's' : ''}
+                </div>
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 20px' }}>
@@ -724,64 +734,4 @@ function OverviewTab({
   )
 }
 
-function ScheduleTab({ team }: { team: TeamSummary }) {
-  return (
-    <div style={PANEL_STYLE}>
-      <div style={PANEL_HEADER_STYLE}>
-        <span style={PANEL_HEADER_LABEL_STYLE}>Schedule · {team.schedule.length} games</span>
-      </div>
-      <div style={{ padding: '8px 0' }}>
-        {team.schedule.length === 0 ? (
-          <div style={{ padding: '16px', fontSize: '13px', color: '#94a3b8', textAlign: 'center' as const }}>
-            Schedule not available.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {team.schedule.map(g => {
-              const played = g.status?.toLowerCase() === 'final'
-              const won = g.result === 'W'
-              const lost = g.result === 'L'
-              const resultColor = won ? '#22c55e' : lost ? '#ef4444' : '#94a3b8'
-              return (
-                <div key={`${g.gameId}-${g.week}`} style={{
-                  display: 'grid',
-                  gridTemplateColumns: '40px 24px 32px minmax(0, 1fr) auto 40px',
-                  alignItems: 'center', gap: '10px',
-                  padding: '8px 14px', borderBottom: '1px solid #0f172a',
-                  fontSize: '14px',
-                }}>
-                  <span style={{ color: '#94a3b8', fontWeight: 600 }}>W{g.week}</span>
-                  <span style={{ color: '#64748b', fontSize: '12px' }}>{g.isHome ? 'vs' : '@'}</span>
-                  <img
-                    src={`/avatars/${g.opponent.id}.png`}
-                    alt={g.opponent.abbr}
-                    style={{ width: '24px', height: '24px' }}
-                  />
-                  <Link to={`/team/${g.opponent.id}`} style={{
-                    color: '#e2e8f0', textDecoration: 'none',
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {g.opponent.city} {g.opponent.name}
-                  </Link>
-                  <span style={{
-                    fontVariantNumeric: 'tabular-nums' as const,
-                    color: played ? '#cbd5e1' : '#64748b',
-                    fontWeight: 600,
-                  }}>
-                    {played ? `${g.teamScore}–${g.oppScore}` : '—'}
-                  </span>
-                  <span style={{
-                    color: resultColor, fontWeight: 700, textAlign: 'right' as const,
-                  }}>
-                    {g.result || ''}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 

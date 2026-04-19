@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import PlayerAvatar from '@/Components/PlayerAvatar'
 import { Stars } from '@/Components/Stars'
-import RatingSparkline from '@/Components/RatingSparkline'
 import CoachAvatar from '@/Components/CoachAvatar'
 import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
 import { useAuth } from '@/contexts/AuthContext'
@@ -546,9 +545,6 @@ export default function TeamPage() {
                           </Link>
                         </PlayerHoverCard>
                         <Stars stars={player.ratingStars} size={12} />
-                        {player.ratingHistory && player.ratingHistory.length > 0 && (
-                          <RatingSparkline history={player.ratingHistory} width={48} height={16} />
-                        )}
                         {player.defensivePosition && (
                           <span style={{ fontSize: '10px', fontWeight: '600', color: '#64748b', backgroundColor: '#1e293b', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
                             {player.defensivePosition}
@@ -597,9 +593,11 @@ export default function TeamPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   {prospects.map(p => {
-                    const windowLabel = p.seasonsRemaining === 0
-                      ? 'final year'
-                      : `${p.seasonsRemaining} season${p.seasonsRemaining !== 1 ? 's' : ''} left`
+                    // "2 seasons until FA" if more than a season left, or
+                    // "final season — will be FA" at the last dev window year.
+                    const windowLabel = p.seasonsRemaining <= 1
+                      ? 'final season'
+                      : `${p.seasonsRemaining} seasons`
                     return (
                       <div key={p.playerId} style={{
                         display: 'flex', alignItems: 'center', gap: '8px',
@@ -612,18 +610,16 @@ export default function TeamPage() {
                         >
                           {p.name}
                         </Link>
-                        <Stars stars={calcStars(p.rating)} size={11} />
                         {p.isUndrafted && (
                           <span style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', backgroundColor: '#1e293b', padding: '1px 5px', borderRadius: '3px', letterSpacing: '0.04em' }}>
                             UNDRAFTED
                           </span>
                         )}
-                        <RatingSparkline history={p.ratingHistory} />
-                        <span style={{ fontSize: '10px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' as const, minWidth: '22px' }}>
-                          {Math.round(p.rating)}
-                        </span>
-                        <span style={{ fontSize: '10px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                          {windowLabel}
+                        <span style={{
+                          fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap',
+                          marginLeft: 'auto', fontWeight: 600,
+                        }}>
+                          {windowLabel} until FA
                         </span>
                       </div>
                     )
