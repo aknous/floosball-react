@@ -32,11 +32,25 @@ export interface ScoutingPlayer {
   stats: PlayerStats | null
   isRookie?: boolean
   isProspect?: boolean
+  // True when the candidate is a rostered player in their walk year — i.e.
+  // they'll likely be FA at season end but aren't yet. Available during the
+  // mid-season FA voting window so fans can queue up votes early.
+  isProjected?: boolean
+  currentTeam?: string  // Set on projected candidates — the team they're leaving from
 }
 
 export interface OpenSlot {
   slot: string
   position: string
+  // True when this slot is projected to open at season end (current starter
+  // is in their walk year) — only set during the mid-season FA window.
+  projected?: boolean
+  incumbent?: {
+    id: number
+    name: string
+    rating: number
+    termRemaining: number
+  }
 }
 
 interface FaBallotModalProps {
@@ -401,11 +415,15 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                         <span style={{ fontSize: '12px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           Rookie
                         </span>
+                      ) : p.isProjected ? (
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Walk Year
+                        </span>
                       ) : (
                         <PerformanceBadge delta={p.ratingDelta} />
                       )}
                     </div>
-                    {/* Row 2: Stat line, prospect note, or rookie label */}
+                    {/* Row 2: Stat line, prospect note, rookie label, or walk-year context */}
                     {p.isProspect ? (
                       <div style={{ marginTop: '6px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
                         Pipeline prospect — rank to promote instead of sign a FA
@@ -413,6 +431,10 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                     ) : p.isRookie ? (
                       <div style={{ marginTop: '6px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
                         No professional record
+                      </div>
+                    ) : p.isProjected ? (
+                      <div style={{ marginTop: '6px', fontSize: '12px', color: '#fbbf24', fontStyle: 'italic' }}>
+                        {p.currentTeam ? `Currently on ${p.currentTeam} — ` : ''}contract expires at season end
                       </div>
                     ) : p.stats ? (
                       <div style={{ marginTop: '6px', fontSize: '12px', color: '#94a3b8', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
