@@ -48,6 +48,7 @@ interface Coach {
   aggressiveness: number
   clockManagement: number
   playerDevelopment: number
+  scouting: number
   seasonsCoached: number
 }
 
@@ -651,6 +652,7 @@ export default function TeamPage() {
                   ['Aggressiveness', team.coach.aggressiveness],
                   ['Clock Mgmt', team.coach.clockManagement],
                   ['Player Dev', team.coach.playerDevelopment],
+                  ['Scouting', team.coach.scouting],
                 ] as [string, number][]).map(([label, val]) => (
                   <div key={label}>
                     <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '3px' }}>{label}</div>

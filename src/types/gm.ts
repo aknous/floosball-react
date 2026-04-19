@@ -29,6 +29,7 @@ export interface GmCoachInfo {
   aggressiveness: number
   clockManagement: number
   playerDevelopment: number
+  scouting: number
 }
 
 export interface GmPlayerInfo {
