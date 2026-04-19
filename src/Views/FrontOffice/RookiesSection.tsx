@@ -36,28 +36,6 @@ interface UpcomingRookiesResponse {
 
 const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K']
 
-// Friendly labels for potential attributes shown in the scouted card
-const POTENTIAL_LABELS: Record<string, string> = {
-  potentialSkillRating: 'Skill Ceiling',
-  potentialSpeed: 'Speed',
-  potentialHands: 'Hands',
-  potentialAgility: 'Agility',
-  potentialPower: 'Power',
-  potentialArmStrength: 'Arm',
-  potentialAccuracy: 'Accuracy',
-  potentialLegStrength: 'Leg',
-  potentialReach: 'Reach',
-}
-
-// Primary potential attribute per position — the headline ceiling stat.
-const PRIMARY_POTENTIAL: Record<string, string[]> = {
-  QB: ['potentialSkillRating', 'potentialArmStrength', 'potentialAccuracy'],
-  RB: ['potentialSkillRating', 'potentialPower', 'potentialSpeed'],
-  WR: ['potentialSkillRating', 'potentialSpeed', 'potentialHands'],
-  TE: ['potentialSkillRating', 'potentialHands', 'potentialPower'],
-  K:  ['potentialSkillRating', 'potentialLegStrength', 'potentialAccuracy'],
-}
-
 function calcStars(rating: number) {
   return Math.min(5, Math.max(1, Math.floor((rating - 60) / 8) + 1))
 }
@@ -109,9 +87,11 @@ function RookieCard({
   votingOpen: boolean
   slotCount: number
 }) {
-  const primaryKeys = PRIMARY_POTENTIAL[rookie.position] || []
-  const secondaryKeys = Object.keys(rookie.potentials).filter(k => !primaryKeys.includes(k))
-  const [expanded, setExpanded] = useState(false)
+  // Show only the overall skill ceiling — per-attribute potentials were more
+  // noise than signal for a single glance-and-vote decision. The sparkline on
+  // the prospect pipeline already tracks growth over time, and the ballot is
+  // a preference, not a detailed scouting report.
+  const skillCeiling = rookie.potentials['potentialSkillRating']
   const selected = voteOrder != null
 
   return (
@@ -136,31 +116,11 @@ function RookieCard({
         <Stars stars={calcStars(rookie.rating)} size={13} />
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
-          Scouted Potential
+      {skillCeiling && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <PotentialCell label="Skill Ceiling" range={skillCeiling} />
         </div>
-        {primaryKeys.map(k => (
-          rookie.potentials[k] ? (
-            <PotentialCell key={k} label={POTENTIAL_LABELS[k] || k} range={rookie.potentials[k]} />
-          ) : null
-        ))}
-        {expanded && secondaryKeys.map(k => (
-          <PotentialCell key={k} label={POTENTIAL_LABELS[k] || k} range={rookie.potentials[k]} />
-        ))}
-        {secondaryKeys.length > 0 && (
-          <button
-            onClick={() => setExpanded(e => !e)}
-            style={{
-              alignSelf: 'flex-start', marginTop: '4px',
-              fontSize: '11px', color: '#64748b', background: 'none', border: 'none',
-              cursor: 'pointer', padding: 0,
-            }}
-          >
-            {expanded ? '— hide details' : '+ all attributes'}
-          </button>
-        )}
-      </div>
+      )}
 
       <button
         onClick={onToggle}
