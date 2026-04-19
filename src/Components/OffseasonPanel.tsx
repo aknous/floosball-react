@@ -87,6 +87,10 @@ export const OffseasonPanel: React.FC = () => {
   const [draftOrder, setDraftOrder] = useState<DraftTeam[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [currentTeamAbbr, setCurrentTeamAbbr] = useState<string | null>(null)
+  // Which phase of the offseason is actively streaming picks. Set by
+  // rookie_draft_start/complete and offseason_start/complete. Drives the
+  // "Rookie Draft" / "Free Agency" header label.
+  const [currentPhase, setCurrentPhase] = useState<'rookie_draft' | 'free_agency' | null>(null)
   const [completedTeams, setCompletedTeams] = useState<Set<string>>(new Set())
   const [posFilter, setPosFilter] = useState('ALL')
   const [teamFilter, setTeamFilter] = useState<string | null>(null)
@@ -360,10 +364,45 @@ export const OffseasonPanel: React.FC = () => {
     } else if (e.event === 'offseason_complete') {
       setIsComplete(true)
       setCurrentTeamAbbr(null)
+      setCurrentPhase(null)
       fetch(`${API_BASE}/offseason`)
         .then(r => r.json())
         .then(data => setFreeAgents(data.freeAgents || []))
         .catch(() => {})
+    } else if (e.event === 'rookie_draft_start') {
+      // Rookie draft phase kicks off — show phase indicator, reset per-phase state
+      setCurrentPhase('rookie_draft')
+      setCurrentTeamAbbr(null)
+    } else if (e.event === 'rookie_draft_on_clock') {
+      setCurrentTeamAbbr((e as any).teamAbbr)
+    } else if (e.event === 'rookie_draft_pick') {
+      const ev = e as any
+      setTransactions(prev => [{
+        type: 'rookie_pick' as any,
+        teamName: ev.team,
+        teamAbbr: ev.teamAbbr,
+        playerName: ev.player,
+        position: ev.position,
+        rating: ev.rating,
+        tier: ev.tier,
+      }, ...prev])
+      setTabNotify(prev => prev.transactions ? prev : { ...prev, transactions: rightTab !== 'transactions' })
+    } else if (e.event === 'rookie_draft_skip') {
+      const ev = e as any
+      setTransactions(prev => [{
+        type: 'rookie_skip' as any,
+        teamName: ev.team,
+        teamAbbr: ev.teamAbbr,
+        playerName: ev.reason === 'pipeline_full' ? '(pipeline full — forfeited pick)' : '(no eligible rookies)',
+        position: '—',
+        rating: 0,
+      }, ...prev])
+    } else if (e.event === 'rookie_draft_complete') {
+      // Rookie phase done — let offseason_start later flip the phase to free_agency
+      setCurrentPhase(null)
+      setCurrentTeamAbbr(null)
+    } else if (e.event === 'offseason_start') {
+      setCurrentPhase('free_agency')
     } else if (e.event === 'gm_vote_resolved') {
       const ev = e as GmVoteResolvedEvent
       setGmResolvedEvents(prev => [ev, ...prev])
@@ -470,7 +509,18 @@ export const OffseasonPanel: React.FC = () => {
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>Offseason</h2>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>Offseason</h2>
+          {currentPhase && (
+            <span style={{
+              fontSize: '12px', fontWeight: '700',
+              color: currentPhase === 'rookie_draft' ? '#a78bfa' : '#f59e0b',
+              letterSpacing: '0.06em', textTransform: 'uppercase' as const,
+            }}>
+              · {currentPhase === 'rookie_draft' ? 'Rookie Draft' : 'Free Agency'}
+            </span>
+          )}
+        </div>
         {isComplete && (
           <span style={{ fontSize: '11px', fontWeight: '700', color: '#22c55e', letterSpacing: '0.06em' }}>
             FREE AGENCY COMPLETE
