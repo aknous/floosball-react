@@ -31,6 +31,7 @@ export interface ScoutingPlayer {
   ratingDelta: number
   stats: PlayerStats | null
   isRookie?: boolean
+  isProspect?: boolean
 }
 
 export interface OpenSlot {
@@ -388,11 +389,15 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                     onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
                   >
-                    {/* Row 1: Stars + Name + Performance indicator */}
+                    {/* Row 1: Stars + Name + Performance/type indicator */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <Stars stars={calcStars(p.rating)} size={14} />
                       <span style={{ flex: 1, fontSize: '14px', color: '#e2e8f0', fontWeight: '600' }}>{p.name}</span>
-                      {p.isRookie ? (
+                      {p.isProspect ? (
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Prospect
+                        </span>
+                      ) : p.isRookie ? (
                         <span style={{ fontSize: '12px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           Rookie
                         </span>
@@ -400,8 +405,12 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                         <PerformanceBadge delta={p.ratingDelta} />
                       )}
                     </div>
-                    {/* Row 2: Stat line or Rookie label */}
-                    {p.isRookie ? (
+                    {/* Row 2: Stat line, prospect note, or rookie label */}
+                    {p.isProspect ? (
+                      <div style={{ marginTop: '6px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
+                        Pipeline prospect — rank to promote instead of sign a FA
+                      </div>
+                    ) : p.isRookie ? (
                       <div style={{ marginTop: '6px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
                         No professional record
                       </div>

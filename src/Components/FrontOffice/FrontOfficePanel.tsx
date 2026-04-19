@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useGmData } from '@/hooks/useGmData'
@@ -20,10 +20,32 @@ interface FrontOfficePanelProps {
 }
 
 const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }) => {
-  const { user } = useAuth()
+  const { user, getToken, refetchUser } = useAuth()
   const { seasonState } = useFloosball()
   const isMobile = useIsMobile()
   const gm = useGmData(teamId)
+  const vacancyAutoPick = (user?.vacancyAutoPick ?? 'best_available') as 'prospect' | 'fa' | 'best_available'
+  const [savingAutoPick, setSavingAutoPick] = useState(false)
+
+  // Persist the vacancy-auto-pick preference. This default is used when a vacancy
+  // opens (retirement, contract expiry, cut) AND the fan hasn't cast a ballot
+  // ranking replacements. See playerManager._tryPromoteProspect for the backend
+  // resolution path.
+  const updateVacancyAutoPick = useCallback(async (pref: 'prospect' | 'fa' | 'best_available') => {
+    setSavingAutoPick(true)
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      await fetch(`${(process.env.REACT_APP_API_URL || 'http://localhost:8000/api')}/users/me/preferences`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+        body: JSON.stringify({ vacancyAutoPick: pref }),
+      })
+      await refetchUser()
+    } finally {
+      setSavingAutoPick(false)
+    }
+  }, [getToken, refetchUser])
 
   const currentWeek = seasonState.currentWeek
   const isOffseason = seasonState.currentWeekText === 'Offseason'
@@ -195,6 +217,45 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }
         totalVotes={gm.myVotes?.counts.total ?? 0}
         floobits={user?.floobits ?? 0}
       />
+
+      {/* Vacancy auto-pick preference — used when a roster slot opens up and the
+          fan hasn't manually ranked replacements. Lets users tilt the default
+          toward prospects (rebuild-minded) or FAs (win-now). */}
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' as const }}>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
+          Vacancy Default
+        </span>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          {([
+            { id: 'prospect', label: 'Prospect First', hint: 'Promote pipeline players before signing FAs' },
+            { id: 'fa', label: 'FA First', hint: 'Sign free agents before promoting prospects' },
+            { id: 'best_available', label: 'Best Available', hint: 'Highest-rated option regardless of source' },
+          ] as { id: 'prospect' | 'fa' | 'best_available'; label: string; hint: string }[]).map(opt => {
+            const active = vacancyAutoPick === opt.id
+            return (
+              <button
+                key={opt.id}
+                onClick={() => updateVacancyAutoPick(opt.id)}
+                disabled={savingAutoPick || active}
+                title={opt.hint}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: '11px',
+                  fontWeight: active ? 700 : 500,
+                  borderRadius: '4px',
+                  border: `1px solid ${active ? teamColor : '#334155'}`,
+                  backgroundColor: active ? `${teamColor}20` : 'transparent',
+                  color: active ? '#e2e8f0' : '#94a3b8',
+                  cursor: active || savingAutoPick ? 'default' : 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
 
       <div style={{ padding: '14px' }}>
         {/* Two-column layout: Coaching (left) | Roster (right) */}

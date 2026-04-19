@@ -18,6 +18,7 @@ export interface AuthUser {
   teamFundingPct: number
   isAdmin: boolean
   autoPickMode: 'off' | 'favorites' | 'underdogs' | 'random'
+  vacancyAutoPick: 'prospect' | 'fa' | 'best_available'
 }
 
 export interface FantasyRosterPlayer {
