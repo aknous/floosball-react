@@ -11,7 +11,7 @@ import { Stars } from '@/Components/Stars'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type SectionId = 'overview' | 'schedule' | 'funding' | 'rookies' | 'votes' | 'markets'
+type SectionId = 'overview' | 'schedule' | 'funding' | 'votes' | 'markets'
 
 // The Front Office hub. Consolidates everything a fan does to influence their
 // team — funding, rookie voting, GM votes, FA ballots — plus a league-wide
@@ -234,7 +234,6 @@ export default function FrontOfficePage() {
     { id: 'overview', label: 'Overview' },
     { id: 'schedule', label: 'Schedule' },
     { id: 'funding', label: 'Fund' },
-    { id: 'rookies', label: 'Prospects' },
     { id: 'votes', label: 'Front Office' },
     { id: 'markets', label: 'Markets' },
   ]
@@ -421,20 +420,20 @@ export default function FrontOfficePage() {
           so sitting on the page bg gives them contrast. Fund tab is the one
           exception: it's a single composite control panel and reads better
           grouped into one card. */}
-      {activeSection === 'rookies' && <RookiesSection readOnly />}
-
       {activeSection === 'votes' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <FrontOfficePanel teamId={team.id} teamColor={team.color} />
-          {/* Rookie ballot lives alongside board votes — single destination
-              for every personnel-vote fans cast. Renders the full voting-
-              enabled RookiesSection (gated internally by votingOpen). */}
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '10px' }}>
-              Rookie Draft Ballot
+          {/* Rookie ballot renders only once voting opens (Week 22+). Keeps
+              the tab uncluttered while the front office is still dormant —
+              no rookie cards flooding the view before the window is active. */}
+          {currentWeek >= 22 && (
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '10px' }}>
+                Rookie Draft Ballot
+              </div>
+              <RookiesSection />
             </div>
-            <RookiesSection />
-          </div>
+          )}
         </div>
       )}
 
