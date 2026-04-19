@@ -165,7 +165,7 @@ export default function FrontOfficePage() {
   // and funding context stays visible regardless of which tab is active.
   const tabs: { id: SectionId; label: string }[] = [
     { id: 'funding', label: 'Fund' },
-    { id: 'rookies', label: 'Rookies' },
+    { id: 'rookies', label: 'Prospects' },
     { id: 'votes', label: 'Votes' },
     { id: 'markets', label: 'Markets' },
   ]
