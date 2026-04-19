@@ -170,6 +170,7 @@ interface ProspectEntry {
   seasonsRemaining: number
   isUndrafted: boolean
   promotionReady: boolean
+  starterFloor: number | null
 }
 
 const RISK_STYLES: Record<RetirementRisk, { label: string; color: string; bg: string }> = {
@@ -614,7 +615,12 @@ export default function TeamPage() {
                           </span>
                         )}
                         {p.promotionReady && (
-                          <span style={{ fontSize: '9px', fontWeight: 700, color: '#22c55e', backgroundColor: 'rgba(34,197,94,0.12)', padding: '1px 5px', borderRadius: '3px', letterSpacing: '0.04em' }}>
+                          <span
+                            title={p.starterFloor != null
+                              ? `Rating ${p.rating} ≥ weakest ${p.position} starter (${p.starterFloor}) — net upgrade`
+                              : `Position vacant — prospect can slot in`}
+                            style={{ fontSize: '9px', fontWeight: 700, color: '#22c55e', backgroundColor: 'rgba(34,197,94,0.12)', padding: '1px 5px', borderRadius: '3px', letterSpacing: '0.04em' }}
+                          >
                             READY
                           </span>
                         )}
