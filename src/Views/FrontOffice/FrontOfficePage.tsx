@@ -6,6 +6,8 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
 import RookiesSection from './RookiesSection'
 import MarketsSection from './MarketsSection'
+import RatingSparkline from '@/Components/RatingSparkline'
+import { Stars } from '@/Components/Stars'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -27,6 +29,43 @@ interface FundingSummary {
   progressToNextTier: number | null
 }
 
+interface RatingPoint { season: number; rating: number }
+
+interface RosterPlayer {
+  id: number
+  name: string
+  position: string
+  rating: number
+  ratingStars: number
+  termRemaining?: number
+  defensivePosition?: string | null
+  ratingHistory?: RatingPoint[]
+}
+
+interface CoachInfo {
+  name: string
+  overallRating: number
+  offensiveMind: number
+  defensiveMind: number
+  adaptability: number
+  aggressiveness: number
+  clockManagement: number
+  playerDevelopment: number
+  scouting?: number
+  seasonsCoached: number
+}
+
+interface ScheduleEntry {
+  gameId: number | string
+  isHome: boolean
+  week: number | null
+  opponent: { id: number; name: string; city: string; abbr: string }
+  teamScore: number
+  oppScore: number
+  status: string
+  result: string
+}
+
 interface TeamSummary {
   id: number
   name: string
@@ -35,6 +74,9 @@ interface TeamSummary {
   color: string
   record?: { wins: number; losses: number }
   funding: FundingSummary | null
+  roster: Record<string, RosterPlayer | null>
+  coach: CoachInfo | null
+  schedule: ScheduleEntry[]
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -69,6 +111,18 @@ export default function FrontOfficePage() {
   const [contributeFlash, setContributeFlash] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState<SectionId>('overview')
 
+  // Retirement watch + prospects — fetched alongside team data so Overview
+  // tab can display the same surfaces as the /team/{id} page
+  type RetirementRisk = 'safe' | 'possible' | 'likely' | 'very_likely' | 'forced'
+  interface RetirementEntry { playerId: number; risk: RetirementRisk }
+  interface ProspectEntry {
+    playerId: number; name: string; position: string; rating: number
+    tier: string | null; prospectSeasons: number; seasonsRemaining: number
+    isUndrafted: boolean; ratingHistory: RatingPoint[]
+  }
+  const [retirementWatch, setRetirementWatch] = useState<Record<number, RetirementRisk>>({})
+  const [prospects, setProspects] = useState<ProspectEntry[]>([])
+
   const favTeamId = user?.favoriteTeamId ?? null
   const currentWeek = seasonState?.currentWeek ?? 0
 
@@ -78,16 +132,29 @@ export default function FrontOfficePage() {
     if (!favTeamId) { setLoadingTeam(false); return }
     setLoadingTeam(true)
     try {
-      const [teamRes, projRes] = await Promise.all([
+      const [teamRes, projRes, watchRes, prospectsRes] = await Promise.all([
         fetch(`${API_BASE}/teams/${favTeamId}`).then(r => r.json()).catch(() => null),
         fetch(`${API_BASE}/teams/${favTeamId}/projected-funding`).then(r => r.json()).catch(() => null),
+        fetch(`${API_BASE}/teams/${favTeamId}/retirement-watch`).then(r => r.json()).catch(() => null),
+        fetch(`${API_BASE}/teams/${favTeamId}/prospects`).then(r => r.json()).catch(() => null),
       ])
+      if (watchRes?.success && watchRes.data?.watch) {
+        const byId: Record<number, RetirementRisk> = {}
+        for (const w of watchRes.data.watch) byId[w.playerId] = w.risk
+        setRetirementWatch(byId)
+      }
+      if (prospectsRes?.success && prospectsRes.data) {
+        setProspects(prospectsRes.data.prospects || [])
+      }
       if (teamRes?.success && teamRes.data) {
         const t = teamRes.data
         setTeam({
           id: t.id, name: t.name, city: t.city, abbr: t.abbr, color: t.color,
           record: { wins: Number(t.wins || 0), losses: Number(t.losses || 0) },
           funding: t.funding ?? null,
+          roster: t.roster ?? {},
+          coach: t.coach ?? null,
+          schedule: t.schedule ?? [],
         })
       }
       if (projRes?.success && projRes.data) {
@@ -180,7 +247,7 @@ export default function FrontOfficePage() {
           Team Management
         </h1>
         <div style={{ fontSize: '14px', color: '#94a3b8' }}>
-          Season {seasonState?.currentSeasonNumber ?? 1} · Week {currentWeek || '—'}
+          Season {seasonState?.seasonNumber ?? 1} · Week {currentWeek || '—'}
         </div>
       </div>
 
@@ -252,6 +319,18 @@ export default function FrontOfficePage() {
       </div>
 
       {/* Only the active tab's content renders */}
+      {activeSection === 'overview' && (
+        <OverviewTab
+          team={team}
+          retirementWatch={retirementWatch}
+          prospects={prospects}
+        />
+      )}
+
+      {activeSection === 'schedule' && (
+        <ScheduleTab team={team} />
+      )}
+
       {activeSection === 'funding' && (
         <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
           {team.funding && (
@@ -342,10 +421,21 @@ export default function FrontOfficePage() {
           so sitting on the page bg gives them contrast. Fund tab is the one
           exception: it's a single composite control panel and reads better
           grouped into one card. */}
-      {activeSection === 'rookies' && <RookiesSection />}
+      {activeSection === 'rookies' && <RookiesSection readOnly />}
 
       {activeSection === 'votes' && (
-        <FrontOfficePanel teamId={team.id} teamColor={team.color} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <FrontOfficePanel teamId={team.id} teamColor={team.color} />
+          {/* Rookie ballot lives alongside board votes — single destination
+              for every personnel-vote fans cast. Renders the full voting-
+              enabled RookiesSection (gated internally by votingOpen). */}
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '10px' }}>
+              Rookie Draft Ballot
+            </div>
+            <RookiesSection />
+          </div>
+        </div>
       )}
 
       {activeSection === 'markets' && <MarketsSection />}
@@ -469,6 +559,230 @@ function LegendDot({ color, label, value, ghost }: { color: string; label: strin
       <span style={{ color: '#94a3b8' }}>{label}</span>
       <span style={{ fontVariantNumeric: 'tabular-nums' as const, fontWeight: 600 }}>{value}</span>
     </span>
+  )
+}
+
+// Tab content components — shared panel styling, compact versions of the
+// team page's roster/coach/schedule. Live inside Team Management so fans
+// have the full team profile + management actions in one destination.
+const PANEL_STYLE: React.CSSProperties = {
+  backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' as const,
+}
+const PANEL_HEADER_STYLE: React.CSSProperties = {
+  padding: '10px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155',
+}
+const PANEL_HEADER_LABEL_STYLE: React.CSSProperties = {
+  fontSize: '13px', fontWeight: 700, color: '#94a3b8',
+  textTransform: 'uppercase' as const, letterSpacing: '0.05em',
+}
+
+const ROSTER_SLOT_ORDER: [string, string][] = [
+  ['qb', 'QB'], ['rb', 'RB'], ['wr1', 'WR1'], ['wr2', 'WR2'], ['te', 'TE'], ['k', 'K'],
+]
+
+const RISK_STYLES: Record<string, { label: string; color: string; bg: string }> = {
+  possible:    { label: 'AGING',          color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
+  likely:      { label: 'RETIRING?',      color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+  very_likely: { label: 'FAREWELL TOUR',  color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+  forced:      { label: 'FORCED EXIT',    color: '#ef4444', bg: 'rgba(239,68,68,0.2)' },
+}
+
+function OverviewTab({
+  team, retirementWatch, prospects,
+}: {
+  team: TeamSummary
+  retirementWatch: Record<number, 'safe' | 'possible' | 'likely' | 'very_likely' | 'forced'>
+  prospects: any[]
+}) {
+  const isMobile = useIsMobile()
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', alignItems: 'start' }}>
+      {/* Roster */}
+      <div style={PANEL_STYLE}>
+        <div style={PANEL_HEADER_STYLE}>
+          <span style={PANEL_HEADER_LABEL_STYLE}>Roster</span>
+        </div>
+        <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {ROSTER_SLOT_ORDER.map(([slot, posLabel]) => {
+            const player = team.roster?.[slot]
+            return (
+              <div key={slot} style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '6px 8px', borderRadius: '4px', backgroundColor: '#0f172a',
+              }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', minWidth: '30px' }}>{posLabel}</span>
+                {player ? (
+                  <>
+                    <Link to={`/players/${player.id}`} style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {player.name}
+                    </Link>
+                    <Stars stars={player.ratingStars} size={13} />
+                    {player.ratingHistory && player.ratingHistory.length > 0 && (
+                      <RatingSparkline history={player.ratingHistory} width={48} height={16} />
+                    )}
+                    {player.termRemaining != null && (
+                      <span style={{
+                        fontSize: '12px',
+                        color: player.termRemaining === 1 ? '#f59e0b' : '#94a3b8',
+                        whiteSpace: 'nowrap' as const, marginLeft: 'auto',
+                      }}>
+                        {player.termRemaining}yr
+                      </span>
+                    )}
+                    {retirementWatch[player.id] && RISK_STYLES[retirementWatch[player.id]] && (
+                      <span style={{
+                        fontSize: '10px', fontWeight: 800,
+                        color: RISK_STYLES[retirementWatch[player.id]].color,
+                        backgroundColor: RISK_STYLES[retirementWatch[player.id]].bg,
+                        padding: '2px 6px', borderRadius: '3px', letterSpacing: '0.04em',
+                      }}>
+                        {RISK_STYLES[retirementWatch[player.id]].label}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span style={{ fontSize: '14px', color: '#475569' }}>—</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Prospect Pipeline */}
+        <div style={{ padding: '10px 14px', borderTop: '1px solid #334155' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '8px' }}>
+            Prospect Pipeline · {prospects.length}
+          </div>
+          {prospects.length === 0 ? (
+            <div style={{ fontSize: '13px', color: '#64748b', padding: '4px 0' }}>
+              No prospects yet.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {prospects.map(p => (
+                <div key={p.playerId} style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '4px 8px', borderRadius: '4px', backgroundColor: '#0f172a',
+                }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', minWidth: '30px' }}>{p.position}</span>
+                  <Link to={`/players/${p.playerId}`} style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {p.name}
+                  </Link>
+                  {p.ratingHistory?.length > 0 && (
+                    <RatingSparkline history={p.ratingHistory} width={44} height={14} />
+                  )}
+                  <span style={{ fontSize: '11px', color: '#94a3b8', minWidth: '24px', textAlign: 'right' as const }}>
+                    {Math.round(p.rating)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Head Coach */}
+      {team.coach && (
+        <div style={PANEL_STYLE}>
+          <div style={PANEL_HEADER_STYLE}>
+            <span style={PANEL_HEADER_LABEL_STYLE}>Head Coach</span>
+          </div>
+          <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0' }}>{team.coach.name}</div>
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                Overall {team.coach.overallRating} · {team.coach.seasonsCoached} season{team.coach.seasonsCoached !== 1 ? 's' : ''}
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 20px' }}>
+              {([
+                ['Offensive Mind', team.coach.offensiveMind],
+                ['Defensive Mind', team.coach.defensiveMind],
+                ['Adaptability', team.coach.adaptability],
+                ['Aggressiveness', team.coach.aggressiveness],
+                ['Clock Mgmt', team.coach.clockManagement],
+                ['Player Dev', team.coach.playerDevelopment],
+                ...(team.coach.scouting != null ? [['Scouting', team.coach.scouting] as [string, number]] : []),
+              ] as [string, number][]).map(([label, val]) => (
+                <div key={label}>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '3px' }}>{label}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ flex: 1, height: '4px', backgroundColor: '#334155', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{
+                        width: `${val}%`, height: '100%',
+                        backgroundColor: val >= 85 ? '#22c55e' : val >= 72 ? '#f59e0b' : '#ef4444',
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#cbd5e1', minWidth: '24px', textAlign: 'right' as const, fontVariantNumeric: 'tabular-nums' as const }}>{val}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ScheduleTab({ team }: { team: TeamSummary }) {
+  return (
+    <div style={PANEL_STYLE}>
+      <div style={PANEL_HEADER_STYLE}>
+        <span style={PANEL_HEADER_LABEL_STYLE}>Schedule · {team.schedule.length} games</span>
+      </div>
+      <div style={{ padding: '8px 0' }}>
+        {team.schedule.length === 0 ? (
+          <div style={{ padding: '16px', fontSize: '13px', color: '#94a3b8', textAlign: 'center' as const }}>
+            Schedule not available.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {team.schedule.map(g => {
+              const played = g.status?.toLowerCase() === 'final'
+              const won = g.result === 'W'
+              const lost = g.result === 'L'
+              const resultColor = won ? '#22c55e' : lost ? '#ef4444' : '#94a3b8'
+              return (
+                <div key={`${g.gameId}-${g.week}`} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '40px 24px 32px minmax(0, 1fr) auto 40px',
+                  alignItems: 'center', gap: '10px',
+                  padding: '8px 14px', borderBottom: '1px solid #0f172a',
+                  fontSize: '14px',
+                }}>
+                  <span style={{ color: '#94a3b8', fontWeight: 600 }}>W{g.week}</span>
+                  <span style={{ color: '#64748b', fontSize: '12px' }}>{g.isHome ? 'vs' : '@'}</span>
+                  <img
+                    src={`/avatars/${g.opponent.id}.png`}
+                    alt={g.opponent.abbr}
+                    style={{ width: '24px', height: '24px' }}
+                  />
+                  <Link to={`/team/${g.opponent.id}`} style={{
+                    color: '#e2e8f0', textDecoration: 'none',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {g.opponent.city} {g.opponent.name}
+                  </Link>
+                  <span style={{
+                    fontVariantNumeric: 'tabular-nums' as const,
+                    color: played ? '#cbd5e1' : '#64748b',
+                    fontWeight: 600,
+                  }}>
+                    {played ? `${g.teamScore}–${g.oppScore}` : '—'}
+                  </span>
+                  <span style={{
+                    color: resultColor, fontWeight: 700, textAlign: 'right' as const,
+                  }}>
+                    {g.result || ''}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 

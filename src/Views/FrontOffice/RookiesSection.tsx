@@ -78,7 +78,7 @@ function ScoutingAccuracyBadge({ accuracy, range }: { accuracy: number; range: n
 }
 
 function RookieCard({
-  rookie, rank, voteOrder, onToggle, votingOpen, slotCount,
+  rookie, rank, voteOrder, onToggle, votingOpen, slotCount, readOnly,
 }: {
   rookie: ScoutedRookie
   rank: number | null
@@ -86,6 +86,7 @@ function RookieCard({
   onToggle: () => void
   votingOpen: boolean
   slotCount: number
+  readOnly?: boolean
 }) {
   // Show only the overall skill ceiling — per-attribute potentials were more
   // noise than signal for a single glance-and-vote decision. The sparkline on
@@ -122,28 +123,40 @@ function RookieCard({
         </div>
       )}
 
-      <button
-        onClick={onToggle}
-        disabled={!votingOpen || (!selected && slotCount >= 12)}
-        style={{
-          padding: '9px 14px',
-          fontSize: '14px',
-          fontWeight: 700,
-          borderRadius: '5px',
-          border: `1px solid ${selected ? '#a78bfa' : '#334155'}`,
-          backgroundColor: selected ? 'rgba(167,139,250,0.15)' : 'transparent',
-          color: selected ? '#a78bfa' : votingOpen ? '#cbd5e1' : '#475569',
-          cursor: votingOpen && (selected || slotCount < 12) ? 'pointer' : 'not-allowed',
-          transition: 'all 0.15s',
-        }}
-      >
-        {selected ? `Ranked #${voteOrder}` : votingOpen ? 'Add to ballot' : 'Voting closed'}
-      </button>
+      {!readOnly && (
+        <button
+          onClick={onToggle}
+          disabled={!votingOpen || (!selected && slotCount >= 12)}
+          style={{
+            padding: '9px 14px',
+            fontSize: '14px',
+            fontWeight: 700,
+            borderRadius: '5px',
+            border: `1px solid ${selected ? '#a78bfa' : '#334155'}`,
+            backgroundColor: selected ? 'rgba(167,139,250,0.15)' : 'transparent',
+            color: selected ? '#a78bfa' : votingOpen ? '#cbd5e1' : '#475569',
+            cursor: votingOpen && (selected || slotCount < 12) ? 'pointer' : 'not-allowed',
+            transition: 'all 0.15s',
+          }}
+        >
+          {selected ? `Ranked #${voteOrder}` : votingOpen ? 'Add to ballot' : 'Voting closed'}
+        </button>
+      )}
     </div>
   )
 }
 
-export default function RookiesSection() {
+interface RookiesSectionProps {
+  /**
+   * When true, the section renders as read-only scouting (cards + position
+   * filter) with no ballot controls. Used on the Prospects tab of Team
+   * Management. The Front Office tab renders with readOnly=false so votes
+   * can be cast when the window is open.
+   */
+  readOnly?: boolean
+}
+
+export default function RookiesSection({ readOnly = false }: RookiesSectionProps = {}) {
   const { user, getToken } = useAuth()
   const { seasonState: _seasonState } = useFloosball()
   const isMobile = useIsMobile()
@@ -228,27 +241,35 @@ export default function RookiesSection() {
         Scouting accuracy depends on your team's head coach and market tier.
       </div>
 
-      {/* Status bar */}
+      {/* Status bar — scouting badge always; ballot controls only when voting
+          is open AND this instance allows voting (readOnly=false). Read-only
+          instance on the Prospects tab still shows scouting accuracy. */}
       <div style={{
         display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px',
         padding: '12px 14px', backgroundColor: '#1e293b',
         border: '1px solid #334155', borderRadius: '8px', marginBottom: '20px',
       }}>
         <ScoutingAccuracyBadge accuracy={data.effectiveScouting} range={data.rookies[0]?.scoutingRange ?? 15} />
-        {data.votingOpen ? (
+        {readOnly ? (
+          <span style={{ fontSize: '14px', color: '#94a3b8' }}>
+            Ranking happens on the Front Office tab when voting is open.
+          </span>
+        ) : data.votingOpen ? (
           <span style={{ fontSize: '14px', color: '#22c55e', fontWeight: 600 }}>
-            Voting is open — rank your preferred rookies
+            Voting is open — rank your preferred prospects
           </span>
         ) : (
           <span style={{ fontSize: '14px', color: '#94a3b8' }}>
             Voting opens Week {data.votingOpensWeek} (current: Week {data.currentWeek})
           </span>
         )}
-        <div style={{ flex: 1 }} />
-        <span style={{ fontSize: '14px', color: '#94a3b8' }}>
-          On your ballot: {ballot.length} / 12
-        </span>
-        {data.votingOpen && ballot.length > 0 && (
+        {!readOnly && <div style={{ flex: 1 }} />}
+        {!readOnly && (
+          <span style={{ fontSize: '14px', color: '#94a3b8' }}>
+            On your ballot: {ballot.length} / 12
+          </span>
+        )}
+        {!readOnly && data.votingOpen && ballot.length > 0 && (
           <button
             onClick={submit}
             disabled={submitting || !dirty}
@@ -264,7 +285,7 @@ export default function RookiesSection() {
         )}
       </div>
 
-      {lastError && (
+      {!readOnly && lastError && (
         <div style={{
           padding: '10px 14px', marginBottom: '16px', borderRadius: '6px',
           backgroundColor: 'rgba(239,68,68,0.12)', border: '1px solid #ef4444',
@@ -314,6 +335,7 @@ export default function RookiesSection() {
             onToggle={() => toggleRookie(r.playerId)}
             votingOpen={data.votingOpen}
             slotCount={ballot.length}
+            readOnly={readOnly}
           />
         ))}
       </div>
