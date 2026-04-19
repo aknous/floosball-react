@@ -255,12 +255,11 @@ function MoverCard({
       <span style={{ color, fontSize: '12px', fontWeight: 800, minWidth: '28px' }}>
         {arrow} {Math.abs(delta)}
       </span>
-      <span style={{
-        fontSize: '10px', fontWeight: 700, color: team.color,
-        backgroundColor: `${team.color}20`, padding: '2px 6px', borderRadius: '3px',
-      }}>
-        {team.abbr}
-      </span>
+      <img
+        src={`/avatars/${team.id}.png`}
+        alt={team.abbr}
+        style={{ width: '24px', height: '24px', flexShrink: 0 }}
+      />
       <span style={{ fontSize: '12px', color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
         {team.city} {team.name}
       </span>
@@ -324,13 +323,11 @@ function TeamRow({ team, isFavorite }: { team: MarketTeam; isFavorite: boolean }
     }}>
       {/* Team block */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-        <span style={{
-          fontSize: '10px', fontWeight: 800, color: team.color, minWidth: '32px',
-          backgroundColor: `${team.color}20`, padding: '3px 6px', borderRadius: '4px',
-          textAlign: 'center' as const,
-        }}>
-          {team.abbr}
-        </span>
+        <img
+          src={`/avatars/${team.id}.png`}
+          alt={team.abbr}
+          style={{ width: '32px', height: '32px', flexShrink: 0 }}
+        />
         <Link to={`/team/${team.id}`}
           style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {team.city} {team.name}

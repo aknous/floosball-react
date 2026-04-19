@@ -189,12 +189,11 @@ export default function FrontOfficePage() {
         display: 'flex', flexWrap: 'wrap' as const, gap: '14px', alignItems: 'center',
         marginBottom: '16px',
       }}>
-        <span style={{
-          fontSize: '10px', fontWeight: 800, color: team.color,
-          backgroundColor: `${team.color}20`, padding: '5px 10px', borderRadius: '4px',
-        }}>
-          {team.abbr}
-        </span>
+        <img
+          src={`/avatars/${team.id}.png`}
+          alt={team.abbr}
+          style={{ width: '48px', height: '48px', flexShrink: 0 }}
+        />
         <div style={{ flex: 1, minWidth: '200px' }}>
           <div style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0' }}>
             <Link to={`/team/${team.id}`} style={{ color: '#e2e8f0', textDecoration: 'none' }}>
