@@ -56,6 +56,14 @@ export default function FrontOfficePage() {
   const isMobile = useIsMobile()
 
   const [team, setTeam] = useState<TeamSummary | null>(null)
+  const [projectedFunding, setProjectedFunding] = useState<{
+    projectedAutoContributions: number
+    contributingFans: number
+    totalFans: number
+    nextSeasonProjectedFunding?: number
+    nextSeasonProjectedTier?: string
+    decayRate?: number
+  } | null>(null)
   const [loadingTeam, setLoadingTeam] = useState(true)
   const [contributeBusy, setContributeBusy] = useState(false)
   const [contributeFlash, setContributeFlash] = useState<string | null>(null)
@@ -64,20 +72,26 @@ export default function FrontOfficePage() {
   const favTeamId = user?.favoriteTeamId ?? null
   const currentWeek = seasonState?.currentWeek ?? 0
 
-  // Fetch my team's summary (tier, funding, record)
+  // Fetch my team's summary (tier, funding, record) + projected next-season
+  // funding for the projection chart on the Fund tab
   const loadTeam = useCallback(async () => {
     if (!favTeamId) { setLoadingTeam(false); return }
     setLoadingTeam(true)
     try {
-      const res = await fetch(`${API_BASE}/teams/${favTeamId}`)
-      const json = await res.json()
-      if (json?.success && json.data) {
-        const t = json.data
+      const [teamRes, projRes] = await Promise.all([
+        fetch(`${API_BASE}/teams/${favTeamId}`).then(r => r.json()).catch(() => null),
+        fetch(`${API_BASE}/teams/${favTeamId}/projected-funding`).then(r => r.json()).catch(() => null),
+      ])
+      if (teamRes?.success && teamRes.data) {
+        const t = teamRes.data
         setTeam({
           id: t.id, name: t.name, city: t.city, abbr: t.abbr, color: t.color,
           record: { wins: Number(t.wins || 0), losses: Number(t.losses || 0) },
           funding: t.funding ?? null,
         })
+      }
+      if (projRes?.success && projRes.data) {
+        setProjectedFunding(projRes.data)
       }
     } finally {
       setLoadingTeam(false)
@@ -103,7 +117,7 @@ export default function FrontOfficePage() {
       if (json?.success) {
         setContributeFlash(`+${amount}F contributed`)
         refetchUser()
-        loadTeam()
+        loadTeam()  // refreshes team.funding + projected-funding
       } else {
         setContributeFlash(json?.detail || 'Contribution failed')
       }
@@ -250,6 +264,17 @@ export default function FrontOfficePage() {
             </div>
           )}
 
+          {/* Projection chart — current funding vs projected next-season vs
+              next-tier threshold. Shows at a glance whether the team is on
+              track to climb, hold, or drop tiers. */}
+          {team.funding && projectedFunding && (
+            <ProjectionChart
+              funding={team.funding}
+              projected={projectedFunding}
+              tierColor={tierColor}
+            />
+          )}
+
           <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>
             Contribute now
           </div>
@@ -328,6 +353,125 @@ export default function FrontOfficePage() {
         </div>
       )}
     </div>
+  )
+}
+
+// Projection chart — horizontal bar showing current effective funding, the
+// projected next-season effective funding (after 50% decay + projected auto
+// contributions), and the next-tier threshold (if there's one to climb to).
+// Fans can eyeball whether they're on track to climb, hold, or slip tiers.
+function ProjectionChart({
+  funding, projected, tierColor,
+}: {
+  funding: FundingSummary
+  projected: {
+    projectedAutoContributions: number
+    nextSeasonProjectedFunding?: number
+    nextSeasonProjectedTier?: string
+    decayRate?: number
+  }
+  tierColor: string
+}) {
+  const current = funding.effectiveFunding
+  const nextProjected = projected.nextSeasonProjectedFunding ?? current
+  const nextTierThreshold = funding.nextTierThreshold
+  const nextTierName = funding.nextTierName
+  const decayPct = Math.round((projected.decayRate ?? 0.5) * 100)
+  const projectedTierColor = projected.nextSeasonProjectedTier
+    ? (TIER_COLORS[projected.nextSeasonProjectedTier] || tierColor)
+    : tierColor
+
+  // Bar extent: enough headroom to see where the threshold sits beyond the
+  // higher of current vs projected funding
+  const peak = Math.max(current, nextProjected, nextTierThreshold ?? 0, 1)
+  const barMax = Math.ceil(peak * 1.15)
+  const pctOf = (v: number) => Math.min(100, Math.max(0, (v / barMax) * 100))
+
+  const currentPct = pctOf(current)
+  const projectedPct = pctOf(nextProjected)
+  const thresholdPct = nextTierThreshold != null ? pctOf(nextTierThreshold) : null
+
+  const delta = nextProjected - current
+  const deltaText = delta >= 0 ? `+${delta.toLocaleString()}F` : `${delta.toLocaleString()}F`
+  const deltaColor = delta > 0 ? '#22c55e' : delta < 0 ? '#ef4444' : '#94a3b8'
+
+  return (
+    <div style={{
+      backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '6px',
+      padding: '12px 14px', marginBottom: '16px',
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
+        marginBottom: '10px', fontSize: '11px',
+      }}>
+        <span style={{ fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+          Next Season Projection
+        </span>
+        <span style={{ color: '#64748b' }}>
+          {decayPct}% carry-forward + {projected.projectedAutoContributions.toLocaleString()}F projected
+        </span>
+      </div>
+
+      {/* Bar stack: track, projected fill (ghost), current fill, threshold marker */}
+      <div style={{ position: 'relative' as const, height: '14px', backgroundColor: '#1e293b', borderRadius: '4px', overflow: 'visible' as const, marginBottom: '6px' }}>
+        {/* Projected next-season fill (ghost, drawn behind current) */}
+        <div style={{
+          position: 'absolute' as const, left: 0, top: 0, height: '100%',
+          width: `${projectedPct}%`,
+          backgroundColor: projectedTierColor, opacity: 0.25,
+          borderRadius: '4px',
+        }} />
+        {/* Current funding fill */}
+        <div style={{
+          position: 'absolute' as const, left: 0, top: 0, height: '100%',
+          width: `${currentPct}%`,
+          backgroundColor: tierColor, opacity: 0.8,
+          borderRadius: '4px',
+        }} />
+        {/* Next-tier threshold marker line */}
+        {thresholdPct != null && (
+          <div
+            title={`Next tier (${nextTierName}) starts at ${nextTierThreshold!.toLocaleString()}F`}
+            style={{
+              position: 'absolute' as const,
+              left: `${thresholdPct}%`,
+              top: '-3px', bottom: '-3px',
+              width: '2px',
+              backgroundColor: projectedTierColor,
+            }}
+          />
+        )}
+      </div>
+
+      {/* Legend row — three values with colored dots */}
+      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '14px', fontSize: '11px', color: '#cbd5e1' }}>
+        <LegendDot color={tierColor} label="Current" value={`${current.toLocaleString()}F`} />
+        <LegendDot color={projectedTierColor} label="Projected next season" value={`${nextProjected.toLocaleString()}F`} ghost />
+        {thresholdPct != null && nextTierName && (
+          <LegendDot
+            color={projectedTierColor}
+            label={`${nextTierName.replace('_MARKET', '').toLowerCase()} tier at`}
+            value={`${nextTierThreshold!.toLocaleString()}F`}
+          />
+        )}
+        <span style={{ marginLeft: 'auto', color: deltaColor, fontWeight: 700 }}>
+          {deltaText} next season
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function LegendDot({ color, label, value, ghost }: { color: string; label: string; value: string; ghost?: boolean }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+      <span style={{
+        display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px',
+        backgroundColor: color, opacity: ghost ? 0.35 : 1,
+      }} />
+      <span style={{ color: '#94a3b8' }}>{label}</span>
+      <span style={{ fontVariantNumeric: 'tabular-nums' as const, fontWeight: 600 }}>{value}</span>
+    </span>
   )
 }
 
