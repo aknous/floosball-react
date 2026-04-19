@@ -15,7 +15,7 @@ import FantasyPage from './Views/Fantasy/FantasyPage'
 import AboutPage from './Views/About/AboutPage'
 import CardsPage from './Views/Cards/CardsPage'
 import AchievementsPage from './Views/Achievements/AchievementsPage'
-import RookiesPage from './Views/Rookies/RookiesPage'
+import FrontOfficePage from './Views/FrontOffice/FrontOfficePage'
 import Dashboard from './Views/Dashboard/Dashboard'
 import DashboardNew from './Views/Dashboard/DashboardNew'
 import BetaBlockedPage from './Components/Auth/BetaBlockedPage'
@@ -72,7 +72,7 @@ function AppLayout() {
           <Route exact path='/fantasy' element={<FantasyPage />} />
           <Route exact path='/cards' element={<CardsPage />} />
           <Route exact path='/achievements' element={<AchievementsPage />} />
-          <Route exact path='/rookies' element={<RookiesPage />} />
+          <Route exact path='/front-office' element={<FrontOfficePage />} />
           <Route exact path='/about' element={<AboutPage />} />
           <Route exact path='/admin' element={<AdminPage />} />
         </Routes>

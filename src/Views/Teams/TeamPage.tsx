@@ -476,9 +476,10 @@ export default function TeamPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' as const }}>
           {([
             { key: 'overview', label: 'Overview' },
-            { key: 'funding', label: 'Funding' },
-            ...(user?.favoriteTeamId === team.id ? [{ key: 'frontOffice', label: 'Front Office' }] : []),
             { key: 'schedule', label: 'Schedule' },
+            // Funding and Front Office are now on the dedicated /front-office hub.
+            // Favorite-team fans see a quick link inline (below); team page stays
+            // focused on roster, coach, schedule, and read-only stats.
           ] as { key: string; label: string }[]).map(tab => (
             <button
               key={tab.key}

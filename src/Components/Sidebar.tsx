@@ -50,14 +50,14 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: 'rookies',
-    label: 'Rookies',
-    path: '/rookies',
+    key: 'frontoffice',
+    label: 'Front Office',
+    path: '/front-office',
     icon: (
-      // Upward-pointing arrow + dot (prospect rising) — visually distinct from
-      // the player silhouette used for Players.
+      // Building/tower icon — represents the front-office HQ where fans fund,
+      // vote, and scout rookies.
       <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
-        <path d="M10 3a1 1 0 01.7.3l4 4a1 1 0 11-1.4 1.4L11 6.4V15a1 1 0 11-2 0V6.4L6.7 8.7A1 1 0 115.3 7.3l4-4A1 1 0 0110 3z" />
+        <path d="M4 2h12v16h-4v-4h-4v4H4V2zm2 2v2h2V4H6zm4 0v2h2V4h-2zm4 0v2h2V4h-2zM6 8v2h2V8H6zm4 0v2h2V8h-2zm4 0v2h2V8h-2zM6 12v2h2v-2H6zm8 0v2h2v-2h-2z" />
       </svg>
     ),
   },

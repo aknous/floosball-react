@@ -183,7 +183,7 @@ function RookieCard({
   )
 }
 
-export default function RookiesPage() {
+export default function RookiesSection() {
   const { user, getToken } = useAuth()
   const { seasonState: _seasonState } = useFloosball()
   const isMobile = useIsMobile()
@@ -262,16 +262,10 @@ export default function RookiesPage() {
   }
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '22px', color: '#e2e8f0', margin: 0, marginBottom: '6px' }}>
-          Rookie Class · Season {data.season}
-        </h1>
-        <div style={{ fontSize: '13px', color: '#94a3b8' }}>
-          {data.rookies.length} prospects available in the offseason rookie draft.
-          Scouting accuracy depends on your team's head coach and market tier.
-        </div>
+    <div>
+      <div style={{ marginBottom: '16px', fontSize: '13px', color: '#94a3b8' }}>
+        {data.rookies.length} prospects available in the offseason rookie draft.
+        Scouting accuracy depends on your team's head coach and market tier.
       </div>
 
       {/* Status bar */}
