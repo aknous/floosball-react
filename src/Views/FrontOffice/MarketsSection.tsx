@@ -36,6 +36,241 @@ interface MarketsResponse {
   teams: MarketTeam[]
 }
 
+interface HistoryPoint {
+  season: number
+  tier: Tier
+  tierRank: number
+  effectiveFunding: number
+}
+
+interface HistoryTeam {
+  id: number
+  name: string
+  city: string
+  abbr: string
+  color: string
+  history: HistoryPoint[]
+}
+
+interface HistoryResponse {
+  seasons: number[]
+  teams: HistoryTeam[]
+}
+
+// Time-series chart: every team's tier rank plotted over seasons. Lower rank
+// number = higher tier, so we invert the Y-axis so "up = better" feels natural.
+const TIER_RANK_LABELS: Record<number, string> = {
+  1: 'MEGA',
+  2: 'LARGE',
+  3: 'MID',
+  4: 'SMALL',
+}
+
+function TierHistoryChart({
+  history, highlightedId, onHighlight,
+}: {
+  history: HistoryResponse
+  highlightedId: number | null
+  onHighlight: (teamId: number | null) => void
+}) {
+  // Chart bounds
+  const PAD_LEFT = 44
+  const PAD_RIGHT = 12
+  const PAD_TOP = 12
+  const PAD_BOTTOM = 28
+  const WIDTH = 720
+  const HEIGHT = 260
+  const plotW = WIDTH - PAD_LEFT - PAD_RIGHT
+  const plotH = HEIGHT - PAD_TOP - PAD_BOTTOM
+
+  const seasons = history.seasons
+  if (seasons.length === 0) {
+    return (
+      <div style={{ padding: '24px', fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
+        No history yet — trajectories appear once the season rolls over.
+      </div>
+    )
+  }
+  const minSeason = seasons[0]
+  const maxSeason = seasons[seasons.length - 1]
+  const seasonSpan = Math.max(1, maxSeason - minSeason)
+
+  // Y-axis: tier rank 1..4, inverted so rank 1 is at the top
+  const rankToY = (rank: number) => PAD_TOP + ((rank - 1) / 3) * plotH
+  const seasonToX = (season: number) => PAD_LEFT + ((season - minSeason) / seasonSpan) * plotW
+
+  return (
+    <div style={{ overflowX: 'auto' as const }}>
+      <svg
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        style={{ width: '100%', minWidth: '560px', height: 'auto', display: 'block' }}
+      >
+        {/* Horizontal tier bands (subtle bg zones) */}
+        {[1, 2, 3, 4].map(r => {
+          const tier = TIER_ORDER[r - 1]
+          return (
+            <rect
+              key={r}
+              x={PAD_LEFT}
+              y={PAD_TOP + ((r - 1) / 4) * plotH}
+              width={plotW}
+              height={plotH / 4}
+              fill={TIER_COLORS[tier]}
+              opacity={0.05}
+            />
+          )
+        })}
+
+        {/* Y-axis tier labels */}
+        {[1, 2, 3, 4].map(r => (
+          <g key={r}>
+            <text x={PAD_LEFT - 8} y={rankToY(r) + 4} fontSize="10" fill="#94a3b8" textAnchor="end">
+              {TIER_RANK_LABELS[r]}
+            </text>
+            <line
+              x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT}
+              y1={rankToY(r)} y2={rankToY(r)}
+              stroke="#334155" strokeWidth={0.5} opacity={0.5}
+            />
+          </g>
+        ))}
+
+        {/* X-axis season labels */}
+        {seasons.map(s => (
+          <text
+            key={s}
+            x={seasonToX(s)}
+            y={HEIGHT - 10}
+            fontSize="10"
+            fill="#94a3b8"
+            textAnchor="middle"
+          >
+            S{s}
+          </text>
+        ))}
+
+        {/* Lines */}
+        {history.teams.map(team => {
+          if (team.history.length === 0) return null
+          const points = team.history.map(p => `${seasonToX(p.season)},${rankToY(p.tierRank)}`).join(' ')
+          const isHighlighted = highlightedId === team.id
+          const dimmed = highlightedId != null && !isHighlighted
+          return (
+            <g
+              key={team.id}
+              onMouseEnter={() => onHighlight(team.id)}
+              onMouseLeave={() => onHighlight(null)}
+              style={{ cursor: 'pointer' }}
+            >
+              <polyline
+                points={points}
+                fill="none"
+                stroke={team.color || '#64748b'}
+                strokeWidth={isHighlighted ? 2.5 : 1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={dimmed ? 0.15 : isHighlighted ? 1 : 0.7}
+              />
+              {team.history.map(p => (
+                <circle
+                  key={p.season}
+                  cx={seasonToX(p.season)}
+                  cy={rankToY(p.tierRank)}
+                  r={isHighlighted ? 4 : 2.5}
+                  fill={team.color || '#64748b'}
+                  opacity={dimmed ? 0.15 : 1}
+                />
+              ))}
+              {/* End label on the right edge for highlighted line */}
+              {isHighlighted && team.history.length > 0 && (() => {
+                const last = team.history[team.history.length - 1]
+                return (
+                  <text
+                    x={seasonToX(last.season) + 6}
+                    y={rankToY(last.tierRank) + 4}
+                    fontSize="10"
+                    fill={team.color || '#64748b'}
+                    fontWeight={700}
+                  >
+                    {team.abbr}
+                  </text>
+                )
+              })()}
+            </g>
+          )
+        })}
+      </svg>
+    </div>
+  )
+}
+
+// Risers & fallers: biggest tier-rank changes over the last 3 seasons
+// (or all history if fewer than 3). Negative delta = rank improved (up a tier).
+function computeMovers(history: HistoryResponse) {
+  const sortedSeasons = history.seasons.slice().sort((a, b) => a - b)
+  if (sortedSeasons.length < 2) return { risers: [], fallers: [] }
+  const latest = sortedSeasons[sortedSeasons.length - 1]
+  const lookback = sortedSeasons.length >= 3 ? sortedSeasons[sortedSeasons.length - 3] : sortedSeasons[0]
+
+  type Mover = { team: HistoryTeam; delta: number; fromTier: Tier; toTier: Tier }
+  const movers: Mover[] = []
+  for (const team of history.teams) {
+    const latestPoint = team.history.find(h => h.season === latest)
+    const priorPoint = team.history.find(h => h.season === lookback)
+    if (!latestPoint || !priorPoint) continue
+    // delta = prior_rank - latest_rank; positive = climbed, negative = dropped
+    const delta = priorPoint.tierRank - latestPoint.tierRank
+    if (delta === 0) continue
+    movers.push({
+      team,
+      delta,
+      fromTier: priorPoint.tier,
+      toTier: latestPoint.tier,
+    })
+  }
+  const risers = movers.filter(m => m.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 3)
+  const fallers = movers.filter(m => m.delta < 0).sort((a, b) => a.delta - b.delta).slice(0, 3)
+  return { risers, fallers }
+}
+
+function MoverCard({
+  team, delta, fromTier, toTier, kind,
+}: {
+  team: HistoryTeam
+  delta: number
+  fromTier: Tier
+  toTier: Tier
+  kind: 'riser' | 'faller'
+}) {
+  const color = kind === 'riser' ? '#22c55e' : '#ef4444'
+  const arrow = kind === 'riser' ? '▲' : '▼'
+  return (
+    <Link to={`/team/${team.id}`}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '8px',
+        padding: '8px 10px', backgroundColor: '#1e293b',
+        border: `1px solid ${color}40`, borderRadius: '6px',
+        textDecoration: 'none', color: '#e2e8f0',
+      }}>
+      <span style={{ color, fontSize: '12px', fontWeight: 800, minWidth: '28px' }}>
+        {arrow} {Math.abs(delta)}
+      </span>
+      <span style={{
+        fontSize: '10px', fontWeight: 700, color: team.color,
+        backgroundColor: `${team.color}20`, padding: '2px 6px', borderRadius: '3px',
+      }}>
+        {team.abbr}
+      </span>
+      <span style={{ fontSize: '12px', color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+        {team.city} {team.name}
+      </span>
+      <span style={{ fontSize: '10px', color: '#64748b', marginLeft: 'auto', whiteSpace: 'nowrap' as const }}>
+        {TIER_RANK_LABELS[TIER_ORDER.indexOf(fromTier) + 1]} → {TIER_RANK_LABELS[TIER_ORDER.indexOf(toTier) + 1]}
+      </span>
+    </Link>
+  )
+}
+
 const TIER_LABELS: Record<Tier, string> = {
   MEGA_MARKET: 'Mega Market',
   LARGE_MARKET: 'Large Market',
@@ -180,20 +415,29 @@ export default function MarketsSection() {
   const { user } = useAuth()
   const isMobile = useIsMobile()
   const [data, setData] = useState<MarketsResponse | null>(null)
+  const [history, setHistory] = useState<HistoryResponse | null>(null)
+  const [highlightedTeamId, setHighlightedTeamId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    fetch(`${API_BASE}/league/markets`)
-      .then(r => r.json())
-      .then(json => {
-        if (!cancelled && json?.success && json.data) setData(json.data as MarketsResponse)
-      })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setLoading(false) })
+    Promise.all([
+      fetch(`${API_BASE}/league/markets`).then(r => r.json()).catch(() => null),
+      fetch(`${API_BASE}/league/markets/history`).then(r => r.json()).catch(() => null),
+    ]).then(([markets, hist]) => {
+      if (cancelled) return
+      if (markets?.success && markets.data) setData(markets.data as MarketsResponse)
+      if (hist?.success && hist.data) setHistory(hist.data as HistoryResponse)
+    }).finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [])
+
+  // Biggest risers / fallers across last 3 seasons (or all available)
+  const movers = useMemo(() => {
+    if (!history) return { risers: [], fallers: [] }
+    return computeMovers(history)
+  }, [history])
 
   // Group by tier while preserving the server's rank ordering
   const byTier = useMemo(() => {
@@ -249,6 +493,70 @@ export default function MarketsSection() {
           {summary.topFunded && (
             <StatChip label="Top-funded team" value={`${summary.topFunded.city} ${summary.topFunded.name}`} />
           )}
+        </div>
+      )}
+
+      {/* Risers & Fallers — tier movers over last 3 seasons */}
+      {(movers.risers.length > 0 || movers.fallers.length > 0) && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: '10px', marginBottom: '20px',
+        }}>
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#22c55e', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '6px' }}>
+              Risers
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {movers.risers.length === 0 ? (
+                <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', padding: '4px 0' }}>
+                  No tier climbs in the last 3 seasons
+                </div>
+              ) : (
+                movers.risers.map(m => (
+                  <MoverCard key={m.team.id} team={m.team} delta={m.delta} fromTier={m.fromTier} toTier={m.toTier} kind="riser" />
+                ))
+              )}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: '10px', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '6px' }}>
+              Fallers
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {movers.fallers.length === 0 ? (
+                <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', padding: '4px 0' }}>
+                  No tier drops in the last 3 seasons
+                </div>
+              ) : (
+                movers.fallers.map(m => (
+                  <MoverCard key={m.team.id} team={m.team} delta={m.delta} fromTier={m.fromTier} toTier={m.toTier} kind="faller" />
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tier trajectory chart */}
+      {history && history.seasons.length > 0 && (
+        <div style={{
+          backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px',
+          padding: '12px 14px', marginBottom: '20px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#e2e8f0', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+              Tier Trajectory
+            </div>
+            <div style={{ fontSize: '10px', color: '#64748b' }}>
+              Hover a line to highlight · higher = better tier
+            </div>
+          </div>
+          <TierHistoryChart
+            history={history}
+            highlightedId={highlightedTeamId}
+            onHighlight={setHighlightedTeamId}
+          />
         </div>
       )}
 
