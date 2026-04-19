@@ -50,6 +50,18 @@ const NAV_ITEMS = [
     ),
   },
   {
+    key: 'rookies',
+    label: 'Rookies',
+    path: '/rookies',
+    icon: (
+      // Upward-pointing arrow + dot (prospect rising) — visually distinct from
+      // the player silhouette used for Players.
+      <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10 3a1 1 0 01.7.3l4 4a1 1 0 11-1.4 1.4L11 6.4V15a1 1 0 11-2 0V6.4L6.7 8.7A1 1 0 115.3 7.3l4-4A1 1 0 0110 3z" />
+      </svg>
+    ),
+  },
+  {
     key: 'achievements',
     label: 'Achievements',
     path: '/achievements',
