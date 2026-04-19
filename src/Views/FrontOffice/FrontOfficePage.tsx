@@ -9,7 +9,7 @@ import MarketsSection from './MarketsSection'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type SectionId = 'team' | 'funding' | 'rookies' | 'votes' | 'markets'
+type SectionId = 'funding' | 'rookies' | 'votes' | 'markets'
 
 // The Front Office hub. Consolidates everything a fan does to influence their
 // team — funding, rookie voting, GM votes, FA ballots — plus a league-wide
@@ -59,7 +59,7 @@ export default function FrontOfficePage() {
   const [loadingTeam, setLoadingTeam] = useState(true)
   const [contributeBusy, setContributeBusy] = useState(false)
   const [contributeFlash, setContributeFlash] = useState<string | null>(null)
-  const [activeSection, setActiveSection] = useState<SectionId>('team')
+  const [activeSection, setActiveSection] = useState<SectionId>('funding')
 
   const favTeamId = user?.favoriteTeamId ?? null
   const currentWeek = seasonState?.currentWeek ?? 0
@@ -146,10 +146,10 @@ export default function FrontOfficePage() {
   const tierColor = team.funding ? (TIER_COLORS[team.funding.tier] || '#64748b') : '#64748b'
   const tierLabel = team.funding ? (TIER_LABELS[team.funding.tier] || team.funding.tier) : '—'
 
-  // Section nav — sticky at the top so jumping between funding / rookies /
-  // votes / markets doesn't require scrolling back up
-  const sections: { id: SectionId; label: string }[] = [
-    { id: 'team', label: 'My Team' },
+  // Tabs — only the selected tab's content renders, keeping the page focused.
+  // "My Team" is promoted to a persistent summary card above the tabs so tier
+  // and funding context stays visible regardless of which tab is active.
+  const tabs: { id: SectionId; label: string }[] = [
     { id: 'funding', label: 'Fund' },
     { id: 'rookies', label: 'Rookies' },
     { id: 'votes', label: 'Votes' },
@@ -161,41 +161,73 @@ export default function FrontOfficePage() {
       {/* Header */}
       <div style={{ marginBottom: '16px' }}>
         <h1 style={{ fontSize: '22px', color: '#e2e8f0', margin: 0, marginBottom: '4px' }}>
-          {team.city} {team.name} · Front Office
+          Front Office
         </h1>
         <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-          Season {seasonState?.currentSeasonNumber ?? 1} · Week {currentWeek || '—'} · {team.record?.wins}–{team.record?.losses}
+          Season {seasonState?.currentSeasonNumber ?? 1} · Week {currentWeek || '—'}
         </div>
       </div>
 
-      {/* Section nav */}
+      {/* Persistent team summary — always visible so tier/funding stays in
+          context while the tabs below surface individual control groups */}
       <div style={{
-        position: 'sticky' as const, top: 0, zIndex: 10,
-        display: 'flex', gap: '6px', flexWrap: 'wrap' as const,
-        padding: '10px 0', marginBottom: '16px',
-        backgroundColor: '#0f172a',
-        borderBottom: '1px solid #1e293b',
+        backgroundColor: '#1e293b', borderRadius: '8px', padding: '12px 14px',
+        display: 'flex', flexWrap: 'wrap' as const, gap: '14px', alignItems: 'center',
+        marginBottom: '16px',
       }}>
-        {sections.map(s => {
+        <span style={{
+          fontSize: '10px', fontWeight: 800, color: team.color,
+          backgroundColor: `${team.color}20`, padding: '5px 10px', borderRadius: '4px',
+        }}>
+          {team.abbr}
+        </span>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0' }}>
+            <Link to={`/team/${team.id}`} style={{ color: '#e2e8f0', textDecoration: 'none' }}>
+              {team.city} {team.name}
+            </Link>
+          </div>
+          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+            {team.record?.wins}–{team.record?.losses}
+          </div>
+        </div>
+        <span style={{
+          fontSize: '13px', fontWeight: 700, color: tierColor,
+          backgroundColor: `${tierColor}20`, padding: '4px 10px', borderRadius: '4px',
+          border: `1px solid ${tierColor}40`,
+        }}>
+          {tierLabel}
+        </span>
+        {team.funding && (
+          <div style={{ fontSize: '14px', fontWeight: 700, color: '#fbbf24' }}>
+            {team.funding.effectiveFunding.toLocaleString()} F
+          </div>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div style={{
+        display: 'flex', gap: '6px', flexWrap: 'wrap' as const,
+        borderBottom: '1px solid #1e293b', marginBottom: '16px',
+      }}>
+        {tabs.map(s => {
           const active = activeSection === s.id
           return (
             <button
               key={s.id}
-              onClick={() => {
-                setActiveSection(s.id)
-                const el = document.getElementById(`fo-${s.id}`)
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              }}
+              onClick={() => setActiveSection(s.id)}
               style={{
-                padding: '6px 14px',
+                padding: '8px 16px',
                 fontSize: '13px',
                 fontWeight: active ? 700 : 500,
-                borderRadius: '5px',
-                border: `1px solid ${active ? team.color : '#334155'}`,
-                backgroundColor: active ? `${team.color}20` : 'transparent',
+                borderRadius: '5px 5px 0 0',
+                border: 'none',
+                borderBottom: `2px solid ${active ? team.color : 'transparent'}`,
+                backgroundColor: 'transparent',
                 color: active ? '#e2e8f0' : '#94a3b8',
                 cursor: 'pointer',
                 transition: 'all 0.15s',
+                marginBottom: '-1px',
               }}
             >
               {s.label}
@@ -204,44 +236,8 @@ export default function FrontOfficePage() {
         })}
       </div>
 
-      {/* My Team section */}
-      <section id="fo-team" style={{ marginBottom: '28px' }}>
-        <SectionHeader label="My Team" />
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px', display: 'flex', flexWrap: 'wrap' as const, gap: '16px', alignItems: 'center' }}>
-          <span style={{
-            fontSize: '10px', fontWeight: 800, color: team.color,
-            backgroundColor: `${team.color}20`, padding: '5px 10px', borderRadius: '4px',
-          }}>
-            {team.abbr}
-          </span>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0' }}>
-              <Link to={`/team/${team.id}`} style={{ color: '#e2e8f0', textDecoration: 'none' }}>
-                {team.city} {team.name}
-              </Link>
-            </div>
-            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-              {team.record?.wins}–{team.record?.losses}
-            </div>
-          </div>
-          <span style={{
-            fontSize: '13px', fontWeight: 700, color: tierColor,
-            backgroundColor: `${tierColor}20`, padding: '4px 10px', borderRadius: '4px',
-            border: `1px solid ${tierColor}40`,
-          }}>
-            {tierLabel}
-          </span>
-          {team.funding && (
-            <div style={{ fontSize: '14px', fontWeight: 700, color: '#fbbf24' }}>
-              {team.funding.effectiveFunding.toLocaleString()} F
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Fund section */}
-      <section id="fo-funding" style={{ marginBottom: '28px' }}>
-        <SectionHeader label="Fund the Team" />
+      {/* Only the active tab's content renders */}
+      {activeSection === 'funding' && (
         <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
           {team.funding && (
             <div style={{ marginBottom: '16px', display: 'flex', gap: '20px', flexWrap: 'wrap' as const, fontSize: '12px', color: '#cbd5e1' }}>
@@ -314,41 +310,24 @@ export default function FrontOfficePage() {
             </span>
           </div>
         </div>
-      </section>
+      )}
 
-      {/* Rookies section */}
-      <section id="fo-rookies" style={{ marginBottom: '28px' }}>
-        <SectionHeader label="Rookie Class" />
+      {activeSection === 'rookies' && (
         <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
           <RookiesSection />
         </div>
-      </section>
+      )}
 
-      {/* Votes section — existing FrontOfficePanel handles gating (week 22+) */}
-      <section id="fo-votes" style={{ marginBottom: '28px' }}>
-        <SectionHeader label="Board Votes" />
+      {activeSection === 'votes' && (
         <FrontOfficePanel teamId={team.id} teamColor={team.color} />
-      </section>
+      )}
 
-      {/* Markets section */}
-      <section id="fo-markets" style={{ marginBottom: '28px' }}>
-        <SectionHeader label="League Markets" />
+      {activeSection === 'markets' && (
         <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
           <MarketsSection />
         </div>
-      </section>
+      )}
     </div>
   )
 }
 
-function SectionHeader({ label }: { label: string }) {
-  return (
-    <div style={{
-      fontSize: '11px', fontWeight: 700, color: '#94a3b8',
-      textTransform: 'uppercase' as const, letterSpacing: '0.08em',
-      marginBottom: '8px',
-    }}>
-      {label}
-    </div>
-  )
-}
