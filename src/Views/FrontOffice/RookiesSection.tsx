@@ -49,7 +49,7 @@ function PotentialCell({ label, range }: { label: string; range: PotentialRange 
       : '—'
   const isExact = range.exact != null
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '12px' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '14px' }}>
       <span style={{ color: '#94a3b8' }}>{label}</span>
       <span style={{
         color: isExact ? '#e2e8f0' : '#cbd5e1',
@@ -68,9 +68,9 @@ function ScoutingAccuracyBadge({ accuracy, range }: { accuracy: number; range: n
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '6px',
-      padding: '4px 10px', backgroundColor: `${color}15`,
+      padding: '5px 12px', backgroundColor: `${color}15`,
       border: `1px solid ${color}40`, borderRadius: '999px',
-      fontSize: '12px', fontWeight: 600, color,
+      fontSize: '14px', fontWeight: 600, color,
     }}>
       Scouting: {accuracy} · {label}
     </span>
@@ -108,12 +108,12 @@ function RookieCard({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', minWidth: '26px' }}>#{rank}</span>
-        <span style={{ fontSize: '11px', fontWeight: 700, color: '#a78bfa', minWidth: '22px' }}>{rookie.position}</span>
-        <span style={{ flex: 1, fontSize: '14px', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', minWidth: '28px' }}>#{rank}</span>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: '#a78bfa', minWidth: '26px' }}>{rookie.position}</span>
+        <span style={{ flex: 1, fontSize: '15px', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {rookie.name}
         </span>
-        <Stars stars={calcStars(rookie.rating)} size={13} />
+        <Stars stars={calcStars(rookie.rating)} size={14} />
       </div>
 
       {skillCeiling && (
@@ -126,8 +126,8 @@ function RookieCard({
         onClick={onToggle}
         disabled={!votingOpen || (!selected && slotCount >= 12)}
         style={{
-          padding: '7px 12px',
-          fontSize: '12px',
+          padding: '9px 14px',
+          fontSize: '14px',
           fontWeight: 700,
           borderRadius: '5px',
           border: `1px solid ${selected ? '#a78bfa' : '#334155'}`,
@@ -223,7 +223,7 @@ export default function RookiesSection() {
 
   return (
     <div>
-      <div style={{ marginBottom: '16px', fontSize: '13px', color: '#94a3b8' }}>
+      <div style={{ marginBottom: '16px', fontSize: '14px', color: '#94a3b8', lineHeight: 1.5 }}>
         {data.rookies.length} prospects available in the offseason rookie draft.
         Scouting accuracy depends on your team's head coach and market tier.
       </div>
@@ -236,16 +236,16 @@ export default function RookiesSection() {
       }}>
         <ScoutingAccuracyBadge accuracy={data.effectiveScouting} range={data.rookies[0]?.scoutingRange ?? 15} />
         {data.votingOpen ? (
-          <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: 600 }}>
+          <span style={{ fontSize: '14px', color: '#22c55e', fontWeight: 600 }}>
             Voting is open — rank your preferred rookies
           </span>
         ) : (
-          <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+          <span style={{ fontSize: '14px', color: '#94a3b8' }}>
             Voting opens Week {data.votingOpensWeek} (current: Week {data.currentWeek})
           </span>
         )}
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+        <span style={{ fontSize: '14px', color: '#94a3b8' }}>
           On your ballot: {ballot.length} / 12
         </span>
         {data.votingOpen && ballot.length > 0 && (
@@ -253,7 +253,7 @@ export default function RookiesSection() {
             onClick={submit}
             disabled={submitting || !dirty}
             style={{
-              padding: '6px 14px', fontSize: '12px', fontWeight: 700, borderRadius: '5px',
+              padding: '8px 16px', fontSize: '14px', fontWeight: 700, borderRadius: '5px',
               border: '1px solid #a78bfa', backgroundColor: dirty ? '#a78bfa' : 'rgba(167,139,250,0.2)',
               color: dirty ? '#0f172a' : '#a78bfa',
               cursor: submitting || !dirty ? 'default' : 'pointer',
@@ -268,7 +268,7 @@ export default function RookiesSection() {
         <div style={{
           padding: '10px 14px', marginBottom: '16px', borderRadius: '6px',
           backgroundColor: 'rgba(239,68,68,0.12)', border: '1px solid #ef4444',
-          color: '#fca5a5', fontSize: '12px',
+          color: '#fca5a5', fontSize: '14px',
         }}>
           {lastError}
         </div>
@@ -283,8 +283,8 @@ export default function RookiesSection() {
               key={pos}
               onClick={() => setFilter(pos)}
               style={{
-                padding: '5px 12px',
-                fontSize: '12px',
+                padding: '7px 14px',
+                fontSize: '14px',
                 fontWeight: active ? 700 : 500,
                 borderRadius: '5px',
                 border: `1px solid ${active ? '#a78bfa' : '#334155'}`,

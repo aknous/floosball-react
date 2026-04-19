@@ -252,18 +252,18 @@ function MoverCard({
         border: `1px solid ${color}40`, borderRadius: '6px',
         textDecoration: 'none', color: '#e2e8f0',
       }}>
-      <span style={{ color, fontSize: '12px', fontWeight: 800, minWidth: '28px' }}>
+      <span style={{ color, fontSize: '14px', fontWeight: 800, minWidth: '32px' }}>
         {arrow} {Math.abs(delta)}
       </span>
       <img
         src={`/avatars/${team.id}.png`}
         alt={team.abbr}
-        style={{ width: '24px', height: '24px', flexShrink: 0 }}
+        style={{ width: '28px', height: '28px', flexShrink: 0 }}
       />
-      <span style={{ fontSize: '12px', color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+      <span style={{ fontSize: '14px', color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
         {team.city} {team.name}
       </span>
-      <span style={{ fontSize: '10px', color: '#64748b', marginLeft: 'auto', whiteSpace: 'nowrap' as const }}>
+      <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: 'auto', whiteSpace: 'nowrap' as const }}>
         {TIER_RANK_LABELS[TIER_ORDER.indexOf(fromTier) + 1]} → {TIER_RANK_LABELS[TIER_ORDER.indexOf(toTier) + 1]}
       </span>
     </Link>
@@ -301,7 +301,7 @@ function MovementArrow({ movement }: { movement: number }) {
   const color = movement > 0 ? '#22c55e' : '#ef4444'
   return (
     <span title={movement > 0 ? `Climbed ${movement} tier${movement > 1 ? 's' : ''}` : `Dropped ${Math.abs(movement)} tier${Math.abs(movement) > 1 ? 's' : ''}`}
-      style={{ color, fontSize: '11px', fontWeight: 700 }}>
+      style={{ color, fontSize: '13px', fontWeight: 700 }}>
       {movement > 0 ? '▲' : '▼'} {Math.abs(movement)}
     </span>
   )
@@ -329,36 +329,36 @@ function TeamRow({ team, isFavorite }: { team: MarketTeam; isFavorite: boolean }
           style={{ width: '32px', height: '32px', flexShrink: 0 }}
         />
         <Link to={`/team/${team.id}`}
-          style={{ color: '#e2e8f0', fontSize: '13px', fontWeight: 600, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          style={{ color: '#e2e8f0', fontSize: '15px', fontWeight: 600, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {team.city} {team.name}
         </Link>
-        <span style={{ fontSize: '11px', color: '#64748b', flexShrink: 0 }}>
+        <span style={{ fontSize: '13px', color: '#94a3b8', flexShrink: 0 }}>
           {team.record.wins}–{team.record.losses}
         </span>
         <MovementArrow movement={team.tierMovement} />
       </div>
 
       {/* Funding block */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        <div style={{ fontSize: '14px', fontWeight: 700, color: '#fbbf24', fontVariantNumeric: 'tabular-nums' as const }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <div style={{ fontSize: '16px', fontWeight: 700, color: '#fbbf24', fontVariantNumeric: 'tabular-nums' as const }}>
           {team.effectiveFunding.toLocaleString()} F
         </div>
-        <div style={{ fontSize: '10px', color: '#64748b' }}>
+        <div style={{ fontSize: '12px', color: '#94a3b8' }}>
           {team.baselineFunding} base · {team.fanContributions} fans · {team.carriedFunding} carry
         </div>
       </div>
 
       {/* Patrons block */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
+        <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
           {team.fanCount} contributor{team.fanCount !== 1 ? 's' : ''}
         </div>
         {team.topPatrons.length === 0 ? (
-          <div style={{ fontSize: '11px', color: '#475569', fontStyle: 'italic' }}>No patrons yet</div>
+          <div style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>No patrons yet</div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
             {team.topPatrons.slice(0, 3).map((p, i) => (
-              <div key={p.userId} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '11px' }}>
+              <div key={p.userId} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '13px' }}>
                 <span style={{ color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {i === 0 && (
                     <span style={{ color: tierColor, marginRight: '4px' }}>★</span>
@@ -388,13 +388,13 @@ function TierGroup({ tier, teams, favoriteTeamId }: { tier: Tier; teams: MarketT
         backgroundColor: `${color}10`, borderLeft: `3px solid ${color}`, borderRadius: '4px',
       }}>
         <div>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', letterSpacing: '0.02em' }}>
+          <div style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0', letterSpacing: '0.02em' }}>
             {TIER_LABELS[tier]}
-            <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 500, marginLeft: '10px' }}>
+            <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, marginLeft: '10px' }}>
               {teams.length} team{teams.length !== 1 ? 's' : ''}
             </span>
           </div>
-          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+          <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
             {TIER_EFFECTS[tier]}
           </div>
         </div>
@@ -472,7 +472,7 @@ export default function MarketsSection() {
 
   return (
     <div>
-      <div style={{ marginBottom: '16px', fontSize: '13px', color: '#94a3b8' }}>
+      <div style={{ marginBottom: '16px', fontSize: '14px', color: '#94a3b8', lineHeight: 1.5 }}>
         Tier rankings, fan contributions, and top patrons across the league.
         Market tiers are relative — teams ranked by effective funding and split into quartiles each season.
       </div>
@@ -501,12 +501,12 @@ export default function MarketsSection() {
           gap: '10px', marginBottom: '20px',
         }}>
           <div>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: '#22c55e', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '6px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#22c55e', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '8px' }}>
               Risers
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {movers.risers.length === 0 ? (
-                <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', padding: '4px 0' }}>
+                <div style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', padding: '4px 0' }}>
                   No tier climbs in the last 3 seasons
                 </div>
               ) : (
@@ -517,12 +517,12 @@ export default function MarketsSection() {
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '10px', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '6px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '8px' }}>
               Fallers
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {movers.fallers.length === 0 ? (
-                <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic', padding: '4px 0' }}>
+                <div style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', padding: '4px 0' }}>
                   No tier drops in the last 3 seasons
                 </div>
               ) : (
@@ -541,11 +541,11 @@ export default function MarketsSection() {
           backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px',
           padding: '12px 14px', marginBottom: '20px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#e2e8f0', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
               Tier Trajectory
             </div>
-            <div style={{ fontSize: '10px', color: '#64748b' }}>
+            <div style={{ fontSize: '12px', color: '#94a3b8' }}>
               Hover a line to highlight · higher = better tier
             </div>
           </div>
@@ -568,15 +568,15 @@ export default function MarketsSection() {
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
     <div style={{
-      padding: '10px 14px',
+      padding: '12px 14px',
       backgroundColor: '#1e293b',
       border: '1px solid #334155',
       borderRadius: '6px',
     }}>
-      <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '4px' }}>
+      <div style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '5px' }}>
         {label}
       </div>
-      <div style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+      <div style={{ fontSize: '16px', color: '#e2e8f0', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
         {value}
       </div>
     </div>

@@ -174,10 +174,10 @@ export default function FrontOfficePage() {
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
       {/* Header */}
       <div style={{ marginBottom: '16px' }}>
-        <h1 style={{ fontSize: '22px', color: '#e2e8f0', margin: 0, marginBottom: '4px' }}>
+        <h1 style={{ fontSize: '24px', color: '#e2e8f0', margin: 0, marginBottom: '4px' }}>
           Front Office
         </h1>
-        <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+        <div style={{ fontSize: '14px', color: '#94a3b8' }}>
           Season {seasonState?.currentSeasonNumber ?? 1} · Week {currentWeek || '—'}
         </div>
       </div>
@@ -195,24 +195,24 @@ export default function FrontOfficePage() {
           style={{ width: '48px', height: '48px', flexShrink: 0 }}
         />
         <div style={{ flex: 1, minWidth: '200px' }}>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0' }}>
+          <div style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0' }}>
             <Link to={`/team/${team.id}`} style={{ color: '#e2e8f0', textDecoration: 'none' }}>
               {team.city} {team.name}
             </Link>
           </div>
-          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+          <div style={{ fontSize: '14px', color: '#94a3b8', marginTop: '2px' }}>
             {team.record?.wins}–{team.record?.losses}
           </div>
         </div>
         <span style={{
-          fontSize: '13px', fontWeight: 700, color: tierColor,
-          backgroundColor: `${tierColor}20`, padding: '4px 10px', borderRadius: '4px',
+          fontSize: '14px', fontWeight: 700, color: tierColor,
+          backgroundColor: `${tierColor}20`, padding: '5px 12px', borderRadius: '4px',
           border: `1px solid ${tierColor}40`,
         }}>
           {tierLabel}
         </span>
         {team.funding && (
-          <div style={{ fontSize: '14px', fontWeight: 700, color: '#fbbf24' }}>
+          <div style={{ fontSize: '16px', fontWeight: 700, color: '#fbbf24' }}>
             {team.funding.effectiveFunding.toLocaleString()} F
           </div>
         )}
@@ -230,8 +230,8 @@ export default function FrontOfficePage() {
               key={s.id}
               onClick={() => setActiveSection(s.id)}
               style={{
-                padding: '8px 16px',
-                fontSize: '13px',
+                padding: '10px 18px',
+                fontSize: '15px',
                 fontWeight: active ? 700 : 500,
                 borderRadius: '5px 5px 0 0',
                 border: 'none',
@@ -253,7 +253,7 @@ export default function FrontOfficePage() {
       {activeSection === 'funding' && (
         <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
           {team.funding && (
-            <div style={{ marginBottom: '16px', display: 'flex', gap: '20px', flexWrap: 'wrap' as const, fontSize: '12px', color: '#cbd5e1' }}>
+            <div style={{ marginBottom: '16px', display: 'flex', gap: '20px', flexWrap: 'wrap' as const, fontSize: '14px', color: '#cbd5e1' }}>
               <span>Baseline <strong style={{ color: '#e2e8f0' }}>{team.funding.baselineFunding}F</strong></span>
               <span>Carried (50%) <strong style={{ color: '#e2e8f0' }}>{team.funding.carriedFunding}F</strong></span>
               <span>Fan Contributions <strong style={{ color: '#fbbf24' }}>{team.funding.fanContributions}F</strong></span>
@@ -274,7 +274,7 @@ export default function FrontOfficePage() {
             />
           )}
 
-          <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>
             Contribute now
           </div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const, alignItems: 'center', marginBottom: '12px' }}>
@@ -284,8 +284,8 @@ export default function FrontOfficePage() {
                 onClick={() => contribute(amt)}
                 disabled={contributeBusy || (user.floobits ?? 0) < amt}
                 style={{
-                  padding: '6px 14px',
-                  fontSize: '13px',
+                  padding: '8px 16px',
+                  fontSize: '14px',
                   fontWeight: 600,
                   borderRadius: '4px',
                   border: `1px solid ${(user.floobits ?? 0) < amt ? '#1e293b' : tierColor}`,
@@ -298,13 +298,13 @@ export default function FrontOfficePage() {
                 {amt}F
               </button>
             ))}
-            <span style={{ fontSize: '12px', color: '#94a3b8' }}>Balance: {user.floobits ?? 0}F</span>
+            <span style={{ fontSize: '14px', color: '#94a3b8' }}>Balance: {user.floobits ?? 0}F</span>
             {contributeFlash && (
-              <span style={{ fontSize: '12px', color: '#22c55e', marginLeft: '8px' }}>{contributeFlash}</span>
+              <span style={{ fontSize: '14px', color: '#22c55e', marginLeft: '8px' }}>{contributeFlash}</span>
             )}
           </div>
 
-          <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>
             Season-end auto-contribution
           </div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const, alignItems: 'center' }}>
@@ -315,8 +315,8 @@ export default function FrontOfficePage() {
                   key={p}
                   onClick={() => setAutoPct(p)}
                   style={{
-                    padding: '5px 12px',
-                    fontSize: '12px',
+                    padding: '7px 14px',
+                    fontSize: '14px',
                     fontWeight: selected ? 700 : 500,
                     borderRadius: '4px',
                     border: `1px solid ${selected ? tierColor : '#334155'}`,
@@ -329,7 +329,7 @@ export default function FrontOfficePage() {
                 </button>
               )
             })}
-            <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '8px' }}>
+            <span style={{ fontSize: '13px', color: '#94a3b8', marginLeft: '8px' }}>
               % of unspent Floobits auto-contributed at season end
             </span>
           </div>
@@ -397,18 +397,18 @@ function ProjectionChart({
     }}>
       <div style={{
         display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-        marginBottom: '10px', fontSize: '11px',
+        marginBottom: '10px', fontSize: '13px',
       }}>
         <span style={{ fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
           Next Season Projection
         </span>
-        <span style={{ color: '#64748b' }}>
+        <span style={{ color: '#94a3b8' }}>
           {decayPct}% carry-forward + {projected.projectedAutoContributions.toLocaleString()}F projected
         </span>
       </div>
 
       {/* Bar stack: track, projected fill (ghost), current fill, threshold marker */}
-      <div style={{ position: 'relative' as const, height: '14px', backgroundColor: '#1e293b', borderRadius: '4px', overflow: 'visible' as const, marginBottom: '6px' }}>
+      <div style={{ position: 'relative' as const, height: '18px', backgroundColor: '#1e293b', borderRadius: '4px', overflow: 'visible' as const, marginBottom: '8px' }}>
         {/* Projected next-season fill (ghost, drawn behind current) */}
         <div style={{
           position: 'absolute' as const, left: 0, top: 0, height: '100%',
@@ -439,7 +439,7 @@ function ProjectionChart({
       </div>
 
       {/* Legend row — three values with colored dots */}
-      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '14px', fontSize: '11px', color: '#cbd5e1' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '14px', fontSize: '13px', color: '#cbd5e1' }}>
         <LegendDot color={tierColor} label="Current" value={`${current.toLocaleString()}F`} />
         <LegendDot color={projectedTierColor} label="Projected next season" value={`${nextProjected.toLocaleString()}F`} ghost />
         {thresholdPct != null && nextTierName && (
