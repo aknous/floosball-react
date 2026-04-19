@@ -336,21 +336,17 @@ export default function FrontOfficePage() {
         </div>
       )}
 
-      {activeSection === 'rookies' && (
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
-          <RookiesSection />
-        </div>
-      )}
+      {/* No outer panel wrapper — child cards carry their own #1e293b background,
+          so sitting on the page bg gives them contrast. Fund tab is the one
+          exception: it's a single composite control panel and reads better
+          grouped into one card. */}
+      {activeSection === 'rookies' && <RookiesSection />}
 
       {activeSection === 'votes' && (
         <FrontOfficePanel teamId={team.id} teamColor={team.color} />
       )}
 
-      {activeSection === 'markets' && (
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
-          <MarketsSection />
-        </div>
-      )}
+      {activeSection === 'markets' && <MarketsSection />}
     </div>
   )
 }
