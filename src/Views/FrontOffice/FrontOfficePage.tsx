@@ -9,7 +9,7 @@ import MarketsSection from './MarketsSection'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type SectionId = 'funding' | 'rookies' | 'votes' | 'markets'
+type SectionId = 'overview' | 'schedule' | 'funding' | 'rookies' | 'votes' | 'markets'
 
 // The Front Office hub. Consolidates everything a fan does to influence their
 // team — funding, rookie voting, GM votes, FA ballots — plus a league-wide
@@ -67,7 +67,7 @@ export default function FrontOfficePage() {
   const [loadingTeam, setLoadingTeam] = useState(true)
   const [contributeBusy, setContributeBusy] = useState(false)
   const [contributeFlash, setContributeFlash] = useState<string | null>(null)
-  const [activeSection, setActiveSection] = useState<SectionId>('funding')
+  const [activeSection, setActiveSection] = useState<SectionId>('overview')
 
   const favTeamId = user?.favoriteTeamId ?? null
   const currentWeek = seasonState?.currentWeek ?? 0
@@ -164,9 +164,11 @@ export default function FrontOfficePage() {
   // "My Team" is promoted to a persistent summary card above the tabs so tier
   // and funding context stays visible regardless of which tab is active.
   const tabs: { id: SectionId; label: string }[] = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'schedule', label: 'Schedule' },
     { id: 'funding', label: 'Fund' },
     { id: 'rookies', label: 'Prospects' },
-    { id: 'votes', label: 'Votes' },
+    { id: 'votes', label: 'Front Office' },
     { id: 'markets', label: 'Markets' },
   ]
 
@@ -175,7 +177,7 @@ export default function FrontOfficePage() {
       {/* Header */}
       <div style={{ marginBottom: '16px' }}>
         <h1 style={{ fontSize: '24px', color: '#e2e8f0', margin: 0, marginBottom: '4px' }}>
-          Front Office
+          Team Management
         </h1>
         <div style={{ fontSize: '14px', color: '#94a3b8' }}>
           Season {seasonState?.currentSeasonNumber ?? 1} · Week {currentWeek || '—'}

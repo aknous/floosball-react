@@ -51,7 +51,7 @@ const NAV_ITEMS = [
   },
   {
     key: 'frontoffice',
-    label: 'Front Office',
+    label: 'Team Management',
     path: '/front-office',
     icon: (
       // Building/tower icon — represents the front-office HQ where fans fund,
