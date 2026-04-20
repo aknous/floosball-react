@@ -65,20 +65,20 @@ const ONBOARDING_HINTS: Record<string, OnboardingHint | ((user: any) => Onboardi
   patron: (user: any) => ({
     steps: user?.favoriteTeamId
       ? [
-          'Visit your favorite team\'s page.',
-          'Open the Funding tab.',
+          'Visit Team Management.',
+          'Open the Markets tab.',
           'Choose an amount of Floobits to donate. Contributions fund team development and recovery.',
         ]
       : [
           'You need a favorite team first. Pick one before you can contribute.',
-          'Once picked, open the Funding tab on their team page.',
+          'Once picked, open the Markets tab on Team Management.',
           'Donate any amount of Floobits to complete this goal.',
         ],
     action: user?.favoriteTeamId
       ? {
           kind: 'route',
-          path: `/team/${user.favoriteTeamId}`,
-          afterEvent: 'floosball:show-team-funding',
+          path: '/front-office',
+          afterEvent: 'floosball:show-markets',
           afterScrollTo: '[data-tour="team-funding-contribute"]',
         }
       : { kind: 'event', name: 'floosball:show-favorite-team-picker' },

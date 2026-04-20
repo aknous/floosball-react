@@ -42,9 +42,10 @@ const FrontOfficeModal: React.FC = () => {
 
   const handleVisitFrontOffice = () => {
     handleDismiss()
-    if (user?.favoriteTeamId) {
-      window.location.href = `/team/${user.favoriteTeamId}`
-    }
+    // Team Management is where the Front Office / Markets / Rookie ballot
+    // all live now. Route there with a hash so the page auto-scrolls to
+    // (and switches to) the Front Office tab.
+    window.location.href = '/front-office'
   }
 
   if (!visible) return null
@@ -114,8 +115,9 @@ const FrontOfficeModal: React.FC = () => {
         {/* Content */}
         <div style={{ padding: '22px 28px 28px', overflowY: 'auto', flex: 1 }}>
           <p style={{ color: '#cbd5e1', fontSize: '13px', lineHeight: '1.6', margin: '0 0 20px' }}>
-            The GM voting system is now active on your {hasFavoriteTeam ? '' : 'favorite '}team's page.
-            Issue directives to shape your team's roster heading into the offseason.
+            {hasFavoriteTeam
+              ? 'The GM voting system is now active on the Front Office tab of your Team Management page. Issue directives to shape your team\'s roster heading into the offseason.'
+              : 'The GM voting system is now active. Pick a favorite team to start issuing directives and shape its roster heading into the offseason.'}
           </p>
 
           {/* What you can do */}

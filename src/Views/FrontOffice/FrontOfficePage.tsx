@@ -9,6 +9,7 @@ import MarketsSection from './MarketsSection'
 import { Stars, calcStars } from '@/Components/Stars'
 import PlayerAvatar from '@/Components/PlayerAvatar'
 import CoachAvatar from '@/Components/CoachAvatar'
+import PlayerHoverCard from '@/Components/PlayerHoverCard'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -170,6 +171,25 @@ export default function FrontOfficePage() {
   }, [favTeamId])
 
   useEffect(() => { loadTeam() }, [loadTeam])
+
+  // Cross-component events: achievement hints on the Achievements page fire
+  // these to jump fans to the right tab after navigating here. The Patron
+  // hint (contribute to favorite team) dispatches `floosball:show-markets`.
+  useEffect(() => {
+    const showMarkets = () => setActiveSection('markets')
+    const showOverview = () => setActiveSection('overview')
+    const showVotes = () => setActiveSection('votes')
+    window.addEventListener('floosball:show-markets', showMarkets)
+    window.addEventListener('floosball:show-team-funding', showMarkets)  // legacy alias
+    window.addEventListener('floosball:show-overview', showOverview)
+    window.addEventListener('floosball:show-votes', showVotes)
+    return () => {
+      window.removeEventListener('floosball:show-markets', showMarkets)
+      window.removeEventListener('floosball:show-team-funding', showMarkets)
+      window.removeEventListener('floosball:show-overview', showOverview)
+      window.removeEventListener('floosball:show-votes', showVotes)
+    }
+  }, [])
 
   const contribute = async (amount: number) => {
     if (!team || contributeBusy) return
@@ -359,7 +379,7 @@ export default function FrontOfficePage() {
               />
             )}
 
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>
+            <div data-tour="team-funding-contribute" style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>
               Contribute now
             </div>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const, alignItems: 'center', marginBottom: '12px' }}>
@@ -625,9 +645,11 @@ function OverviewTab({
                 {player ? (
                   <>
                     <PlayerAvatar name={player.name} size={32} bgColor={team.color} />
-                    <Link to={`/players/${player.id}`} style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {player.name}
-                    </Link>
+                    <PlayerHoverCard playerId={player.id} playerName={player.name}>
+                      <Link to={`/players/${player.id}`} style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {player.name}
+                      </Link>
+                    </PlayerHoverCard>
                     <Stars stars={player.ratingStars} size={13} />
                     {player.termRemaining != null && (
                       <span style={{
@@ -682,9 +704,11 @@ function OverviewTab({
                   }}>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', minWidth: '30px' }}>{p.position}</span>
                     <PlayerAvatar name={p.name} size={28} bgColor={team.color} />
-                    <Link to={`/players/${p.playerId}`} style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {p.name}
-                    </Link>
+                    <PlayerHoverCard playerId={p.playerId} playerName={p.name}>
+                      <Link to={`/players/${p.playerId}`} style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {p.name}
+                      </Link>
+                    </PlayerHoverCard>
                     <Stars stars={calcStars(p.rating)} size={13} />
                     {p.isUndrafted && (
                       <span style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', backgroundColor: '#1e293b', padding: '1px 5px', borderRadius: '3px', letterSpacing: '0.04em' }}>
