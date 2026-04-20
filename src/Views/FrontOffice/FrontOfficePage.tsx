@@ -6,13 +6,13 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
 import RookiesSection from './RookiesSection'
 import MarketsSection from './MarketsSection'
-import { Stars } from '@/Components/Stars'
+import { Stars, calcStars } from '@/Components/Stars'
 import PlayerAvatar from '@/Components/PlayerAvatar'
 import CoachAvatar from '@/Components/CoachAvatar'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type SectionId = 'overview' | 'funding' | 'votes' | 'markets'
+type SectionId = 'overview' | 'markets' | 'votes'
 
 // The Front Office hub. Consolidates everything a fan does to influence their
 // team — funding, rookie voting, GM votes, FA ballots — plus a league-wide
@@ -24,10 +24,11 @@ interface FundingSummary {
   effectiveFunding: number
   baselineFunding: number
   fanContributions: number
-  carriedFunding: number
   nextTierThreshold: number | null
   nextTierName: string | null
   progressToNextTier: number | null
+  fairShare?: number
+  tierThresholds?: Record<string, number>
 }
 
 interface RatingPoint { season: number; rating: number }
@@ -83,7 +84,7 @@ interface TeamSummary {
 const TIER_COLORS: Record<string, string> = {
   MEGA_MARKET: '#a78bfa',
   LARGE_MARKET: '#3b82f6',
-  MID_MARKET: '#64748b',
+  MID_MARKET: '#2dd4bf',
   SMALL_MARKET: '#f97316',
 }
 const TIER_LABELS: Record<string, string> = {
@@ -99,14 +100,8 @@ export default function FrontOfficePage() {
   const isMobile = useIsMobile()
 
   const [team, setTeam] = useState<TeamSummary | null>(null)
-  const [projectedFunding, setProjectedFunding] = useState<{
-    projectedAutoContributions: number
-    contributingFans: number
-    totalFans: number
-    nextSeasonProjectedFunding?: number
-    nextSeasonProjectedTier?: string
-    decayRate?: number
-  } | null>(null)
+  const [projectedTier, setProjectedTier] = useState<string | null>(null)
+  const [projectedFunding, setProjectedFunding] = useState<number | null>(null)
   const [loadingTeam, setLoadingTeam] = useState(true)
   const [contributeBusy, setContributeBusy] = useState(false)
   const [contributeFlash, setContributeFlash] = useState<string | null>(null)
@@ -119,6 +114,7 @@ export default function FrontOfficePage() {
   interface ProspectEntry {
     playerId: number; name: string; position: string; rating: number
     tier: string | null; prospectSeasons: number; seasonsRemaining: number
+    draftSeason?: number | null
     isUndrafted: boolean; ratingHistory: RatingPoint[]
   }
   const [retirementWatch, setRetirementWatch] = useState<Record<number, RetirementRisk>>({})
@@ -128,16 +124,20 @@ export default function FrontOfficePage() {
   const currentWeek = seasonState?.currentWeek ?? 0
 
   // Fetch my team's summary (tier, funding, record) + projected next-season
-  // funding for the projection chart on the Fund tab
   const loadTeam = useCallback(async () => {
     if (!favTeamId) { setLoadingTeam(false); return }
     setLoadingTeam(true)
     try {
+      // `cache: 'reload'` on the team fetch bypasses the browser's 2-minute
+      // Cache-Control on /api/teams/{id}. Without this, right after a
+      // contribution the browser would serve stale funding/tier data until
+      // the cache expired. The other endpoints aren't cached as aggressively
+      // but we apply it uniformly for consistency on this page.
       const [teamRes, projRes, watchRes, prospectsRes] = await Promise.all([
-        fetch(`${API_BASE}/teams/${favTeamId}`).then(r => r.json()).catch(() => null),
-        fetch(`${API_BASE}/teams/${favTeamId}/projected-funding`).then(r => r.json()).catch(() => null),
-        fetch(`${API_BASE}/teams/${favTeamId}/retirement-watch`).then(r => r.json()).catch(() => null),
-        fetch(`${API_BASE}/teams/${favTeamId}/prospects`).then(r => r.json()).catch(() => null),
+        fetch(`${API_BASE}/teams/${favTeamId}`, { cache: 'reload' }).then(r => r.json()).catch(() => null),
+        fetch(`${API_BASE}/teams/${favTeamId}/projected-funding`, { cache: 'reload' }).then(r => r.json()).catch(() => null),
+        fetch(`${API_BASE}/teams/${favTeamId}/retirement-watch`, { cache: 'reload' }).then(r => r.json()).catch(() => null),
+        fetch(`${API_BASE}/teams/${favTeamId}/prospects`, { cache: 'reload' }).then(r => r.json()).catch(() => null),
       ])
       if (watchRes?.success && watchRes.data?.watch) {
         const byId: Record<number, RetirementRisk> = {}
@@ -159,7 +159,10 @@ export default function FrontOfficePage() {
         })
       }
       if (projRes?.success && projRes.data) {
-        setProjectedFunding(projRes.data)
+        if (projRes.data.nextSeasonProjectedTier) setProjectedTier(projRes.data.nextSeasonProjectedTier)
+        if (typeof projRes.data.nextSeasonProjectedFunding === 'number') {
+          setProjectedFunding(projRes.data.nextSeasonProjectedFunding)
+        }
       }
     } finally {
       setLoadingTeam(false)
@@ -185,7 +188,24 @@ export default function FrontOfficePage() {
       if (json?.success) {
         setContributeFlash(`+${amount}F contributed`)
         refetchUser()
-        loadTeam()  // refreshes team.funding + projected-funding
+        // Optimistically apply the server's updated funding from the POST
+        // response. /api/teams/{id} is cached (2 min), so a GET-refetch via
+        // loadTeam() would serve stale data until the cache expires. The
+        // POST response already has the authoritative new totals.
+        const updatedFunding = json.data?.funding
+        if (updatedFunding) {
+          setTeam(prev => prev ? {
+            ...prev,
+            funding: prev.funding ? {
+              ...prev.funding,
+              fanContributions: updatedFunding.fanContributions ?? prev.funding.fanContributions,
+              effectiveFunding: updatedFunding.effectiveFunding ?? prev.funding.effectiveFunding,
+            } : prev.funding,
+          } : prev)
+        }
+        // Force a fresh refetch (bypassing browser cache) so projected-
+        // tier / prospects / retirement-watch also reflect the change.
+        loadTeam()
       } else {
         setContributeFlash(json?.detail || 'Contribution failed')
       }
@@ -233,9 +253,8 @@ export default function FrontOfficePage() {
   // and funding context stays visible regardless of which tab is active.
   const tabs: { id: SectionId; label: string }[] = [
     { id: 'overview', label: 'Overview' },
-    { id: 'funding', label: 'Fund' },
-    { id: 'votes', label: 'Front Office' },
     { id: 'markets', label: 'Markets' },
+    { id: 'votes', label: 'Front Office' },
   ]
 
   return (
@@ -326,96 +345,86 @@ export default function FrontOfficePage() {
         />
       )}
 
-      {activeSection === 'funding' && (
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
-          {team.funding && (
-            <div style={{ marginBottom: '16px', display: 'flex', gap: '20px', flexWrap: 'wrap' as const, fontSize: '14px', color: '#cbd5e1' }}>
-              <span>Baseline <strong style={{ color: '#e2e8f0' }}>{team.funding.baselineFunding}F</strong></span>
-              <span>Carried (50%) <strong style={{ color: '#e2e8f0' }}>{team.funding.carriedFunding}F</strong></span>
-              <span>Fan Contributions <strong style={{ color: '#fbbf24' }}>{team.funding.fanContributions}F</strong></span>
-              {team.funding.nextTierThreshold != null && team.funding.nextTierName && (
-                <span>Next tier ({team.funding.nextTierName.replace('_MARKET', '').toLowerCase()}) at <strong style={{ color: TIER_COLORS[team.funding.nextTierName] }}>{team.funding.nextTierThreshold.toLocaleString()}F</strong></span>
-              )}
-            </div>
-          )}
-
-          {/* Projection chart — current funding vs projected next-season vs
-              next-tier threshold. Shows at a glance whether the team is on
-              track to climb, hold, or drop tiers. */}
-          {team.funding && projectedFunding && (
-            <ProjectionChart
-              funding={team.funding}
-              projected={projectedFunding}
-              tierColor={tierColor}
-            />
-          )}
-
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>
-            Contribute now
-          </div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const, alignItems: 'center', marginBottom: '12px' }}>
-            {[25, 50, 100, 250].map(amt => (
-              <button
-                key={amt}
-                onClick={() => contribute(amt)}
-                disabled={contributeBusy || (user.floobits ?? 0) < amt}
-                style={{
-                  padding: '8px 16px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  borderRadius: '4px',
-                  border: `1px solid ${(user.floobits ?? 0) < amt ? '#1e293b' : tierColor}`,
-                  backgroundColor: (user.floobits ?? 0) < amt ? 'transparent' : `${tierColor}20`,
-                  color: (user.floobits ?? 0) < amt ? '#475569' : tierColor,
-                  cursor: (user.floobits ?? 0) < amt ? 'not-allowed' : 'pointer',
-                  opacity: (user.floobits ?? 0) < amt ? 0.5 : 1,
-                }}
-              >
-                {amt}F
-              </button>
-            ))}
-            <span style={{ fontSize: '14px', color: '#94a3b8' }}>Balance: {user.floobits ?? 0}F</span>
-            {contributeFlash && (
-              <span style={{ fontSize: '14px', color: '#22c55e', marginLeft: '8px' }}>{contributeFlash}</span>
+      {activeSection === 'markets' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Team funding: a compact summary (fan contributions total +
+              projected tier movement) at the top, then contribute + auto-%
+              controls, then the league-wide Markets view below. */}
+          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
+            {team.funding && (
+              <FundingSummaryStrip
+                funding={team.funding}
+                projectedTier={projectedTier}
+                projectedFunding={projectedFunding}
+              />
             )}
-          </div>
 
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>
-            Season-end auto-contribution
-          </div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const, alignItems: 'center' }}>
-            {[0, 10, 25, 50, 75, 100].map(p => {
-              const selected = (user.teamFundingPct ?? 25) === p
-              return (
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>
+              Contribute now
+            </div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const, alignItems: 'center', marginBottom: '12px' }}>
+              {[25, 50, 100, 250].map(amt => (
                 <button
-                  key={p}
-                  onClick={() => setAutoPct(p)}
+                  key={amt}
+                  onClick={() => contribute(amt)}
+                  disabled={contributeBusy || (user.floobits ?? 0) < amt}
                   style={{
-                    padding: '7px 14px',
+                    padding: '8px 16px',
                     fontSize: '14px',
-                    fontWeight: selected ? 700 : 500,
+                    fontWeight: 600,
                     borderRadius: '4px',
-                    border: `1px solid ${selected ? tierColor : '#334155'}`,
-                    backgroundColor: selected ? `${tierColor}20` : 'transparent',
-                    color: selected ? tierColor : '#cbd5e1',
-                    cursor: 'pointer',
+                    border: `1px solid ${(user.floobits ?? 0) < amt ? '#1e293b' : tierColor}`,
+                    backgroundColor: (user.floobits ?? 0) < amt ? 'transparent' : `${tierColor}20`,
+                    color: (user.floobits ?? 0) < amt ? '#475569' : tierColor,
+                    cursor: (user.floobits ?? 0) < amt ? 'not-allowed' : 'pointer',
+                    opacity: (user.floobits ?? 0) < amt ? 0.5 : 1,
                   }}
                 >
-                  {p}%
+                  {amt}F
                 </button>
-              )
-            })}
-            <span style={{ fontSize: '13px', color: '#94a3b8', marginLeft: '8px' }}>
-              % of unspent Floobits auto-contributed at season end
-            </span>
+              ))}
+              <span style={{ fontSize: '14px', color: '#94a3b8' }}>Balance: {user.floobits ?? 0}F</span>
+              {contributeFlash && (
+                <span style={{ fontSize: '14px', color: '#22c55e', marginLeft: '8px' }}>{contributeFlash}</span>
+              )}
+            </div>
+
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '6px' }}>
+              Season-end auto-contribution
+            </div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const, alignItems: 'center' }}>
+              {[0, 10, 25, 50, 75, 100].map(p => {
+                const selected = (user.teamFundingPct ?? 25) === p
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setAutoPct(p)}
+                    style={{
+                      padding: '7px 14px',
+                      fontSize: '14px',
+                      fontWeight: selected ? 700 : 500,
+                      borderRadius: '4px',
+                      border: `1px solid ${selected ? tierColor : '#334155'}`,
+                      backgroundColor: selected ? `${tierColor}20` : 'transparent',
+                      color: selected ? tierColor : '#cbd5e1',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {p}%
+                  </button>
+                )
+              })}
+              <span style={{ fontSize: '13px', color: '#94a3b8', marginLeft: '8px' }}>
+                % of unspent Floobits auto-contributed at season end
+              </span>
+            </div>
           </div>
+
+          {/* League-wide tier standings */}
+          <MarketsSection />
         </div>
       )}
 
-      {/* No outer panel wrapper — child cards carry their own #1e293b background,
-          so sitting on the page bg gives them contrast. Fund tab is the one
-          exception: it's a single composite control panel and reads better
-          grouped into one card. */}
       {activeSection === 'votes' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <FrontOfficePanel teamId={team.id} teamColor={team.color} />
@@ -432,128 +441,135 @@ export default function FrontOfficePage() {
           )}
         </div>
       )}
-
-      {activeSection === 'markets' && <MarketsSection />}
     </div>
   )
 }
 
-// Projection chart — horizontal bar showing current effective funding, the
-// projected next-season effective funding (after 50% decay + projected auto
-// contributions), and the next-tier threshold (if there's one to climb to).
-// Fans can eyeball whether they're on track to climb, hold, or slip tiers.
-function ProjectionChart({
-  funding, projected, tierColor,
+// Compact summary strip — fan contributions, total effective funding,
+// projected next-season funding + tier, and the current next-tier threshold.
+// Replaces the old FundingSummaryPanel (gauge was redundant with the League
+// Funding chart below, but these specific numbers are still worth surfacing
+// at a glance above the contribute controls).
+const TIER_RANK_ORDER: Record<string, number> = {
+  MEGA_MARKET: 1, LARGE_MARKET: 2, MID_MARKET: 3, SMALL_MARKET: 4,
+}
+function FundingSummaryStrip({
+  funding, projectedTier, projectedFunding,
 }: {
   funding: FundingSummary
-  projected: {
-    projectedAutoContributions: number
-    nextSeasonProjectedFunding?: number
-    nextSeasonProjectedTier?: string
-    decayRate?: number
-  }
-  tierColor: string
+  projectedTier: string | null
+  projectedFunding: number | null
 }) {
-  const current = funding.effectiveFunding
-  const nextProjected = projected.nextSeasonProjectedFunding ?? current
-  const nextTierThreshold = funding.nextTierThreshold
-  const nextTierName = funding.nextTierName
-  const decayPct = Math.round((projected.decayRate ?? 0.5) * 100)
-  const projectedTierColor = projected.nextSeasonProjectedTier
-    ? (TIER_COLORS[projected.nextSeasonProjectedTier] || tierColor)
-    : tierColor
-
-  // Bar extent: enough headroom to see where the threshold sits beyond the
-  // higher of current vs projected funding
-  const peak = Math.max(current, nextProjected, nextTierThreshold ?? 0, 1)
-  const barMax = Math.ceil(peak * 1.15)
-  const pctOf = (v: number) => Math.min(100, Math.max(0, (v / barMax) * 100))
-
-  const currentPct = pctOf(current)
-  const projectedPct = pctOf(nextProjected)
-  const thresholdPct = nextTierThreshold != null ? pctOf(nextTierThreshold) : null
-
-  const delta = nextProjected - current
-  const deltaText = delta >= 0 ? `+${delta.toLocaleString()}F` : `${delta.toLocaleString()}F`
-  const deltaColor = delta > 0 ? '#22c55e' : delta < 0 ? '#ef4444' : '#94a3b8'
+  const currentTierColor = TIER_COLORS[funding.tier] ?? '#cbd5e1'
+  const projKey = projectedTier ?? funding.tier
+  const projColor = TIER_COLORS[projKey] ?? currentTierColor
+  const projLabel = TIER_LABELS[projKey] ?? projKey.replace('_MARKET', '')
+  const delta = projectedTier
+    ? (TIER_RANK_ORDER[funding.tier] ?? 3) - (TIER_RANK_ORDER[projectedTier] ?? 3)
+    : 0
+  const direction = delta > 0
+    ? { symbol: '▲', color: '#22c55e', label: `climbing from ${TIER_LABELS[funding.tier] ?? funding.tier}` }
+    : delta < 0
+      ? { symbol: '▼', color: '#ef4444', label: `slipping from ${TIER_LABELS[funding.tier] ?? funding.tier}` }
+      : { symbol: '—', color: '#94a3b8', label: `holding ${TIER_LABELS[funding.tier] ?? funding.tier}` }
+  // "Next tier threshold" should reflect the NEXT tier above where your
+  // projection has put you — not above your current locked tier. If you've
+  // already contributed enough to project into MEGA, show MEGA as reached
+  // rather than "you still need X to get to LARGE."
+  const effectiveRankForNext = projectedTier
+    ? Math.min(
+        TIER_RANK_ORDER[funding.tier] ?? 3,
+        TIER_RANK_ORDER[projectedTier] ?? 3,
+      )
+    : (TIER_RANK_ORDER[funding.tier] ?? 3)
+  const nextTierAboveProjected = effectiveRankForNext > 1
+    ? (['MEGA_MARKET', 'LARGE_MARKET', 'MID_MARKET', 'SMALL_MARKET'][effectiveRankForNext - 2] ?? null)
+    : null
+  const nextTierThresholdValue = nextTierAboveProjected
+    ? (funding.tierThresholds?.[nextTierAboveProjected] ?? funding.nextTierThreshold)
+    : null
+  const nextTierThresholdColor = nextTierAboveProjected
+    ? (TIER_COLORS[nextTierAboveProjected] ?? '#cbd5e1')
+    : '#94a3b8'
+  const nextTierThresholdLabel = nextTierAboveProjected
+    ? (TIER_LABELS[nextTierAboveProjected] ?? nextTierAboveProjected.replace('_MARKET', ''))
+    : null
 
   return (
     <div style={{
-      backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '6px',
-      padding: '12px 14px', marginBottom: '16px',
+      display: 'flex', gap: '20px 28px', flexWrap: 'wrap' as const,
+      paddingBottom: '14px', marginBottom: '14px',
+      borderBottom: '1px solid #334155',
     }}>
-      <div style={{
-        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-        marginBottom: '10px', fontSize: '13px',
-      }}>
-        <span style={{ fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
-          Next Season Projection
+      {/* Current effective funding */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '140px' }}>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+          Total Funding
         </span>
-        <span style={{ color: '#94a3b8' }}>
-          {decayPct}% carry-forward + {projected.projectedAutoContributions.toLocaleString()}F projected
+        <span style={{ fontSize: '20px', fontWeight: 700, color: currentTierColor, fontVariantNumeric: 'tabular-nums' as const }}>
+          {funding.effectiveFunding.toLocaleString()}F
+        </span>
+        <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' as const }}>
+          season start + fan contributions
         </span>
       </div>
 
-      {/* Bar stack: track, projected fill (ghost), current fill, threshold marker */}
-      <div style={{ position: 'relative' as const, height: '18px', backgroundColor: '#1e293b', borderRadius: '4px', overflow: 'visible' as const, marginBottom: '8px' }}>
-        {/* Projected next-season fill (ghost, drawn behind current) */}
-        <div style={{
-          position: 'absolute' as const, left: 0, top: 0, height: '100%',
-          width: `${projectedPct}%`,
-          backgroundColor: projectedTierColor, opacity: 0.25,
-          borderRadius: '4px',
-        }} />
-        {/* Current funding fill */}
-        <div style={{
-          position: 'absolute' as const, left: 0, top: 0, height: '100%',
-          width: `${currentPct}%`,
-          backgroundColor: tierColor, opacity: 0.8,
-          borderRadius: '4px',
-        }} />
-        {/* Next-tier threshold marker line */}
-        {thresholdPct != null && (
-          <div
-            title={`Next tier (${nextTierName}) starts at ${nextTierThreshold!.toLocaleString()}F`}
-            style={{
-              position: 'absolute' as const,
-              left: `${thresholdPct}%`,
-              top: '-3px', bottom: '-3px',
-              width: '2px',
-              backgroundColor: projectedTierColor,
-            }}
-          />
-        )}
+      {/* Fan contributions this season */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '140px' }}>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+          Fan Contributions
+        </span>
+        <span style={{ fontSize: '20px', fontWeight: 700, color: '#fbbf24', fontVariantNumeric: 'tabular-nums' as const }}>
+          {funding.fanContributions.toLocaleString()}F
+        </span>
       </div>
 
-      {/* Legend row — three values with colored dots */}
-      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '14px', fontSize: '13px', color: '#cbd5e1' }}>
-        <LegendDot color={tierColor} label="Current" value={`${current.toLocaleString()}F`} />
-        <LegendDot color={projectedTierColor} label="Projected next season" value={`${nextProjected.toLocaleString()}F`} ghost />
-        {thresholdPct != null && nextTierName && (
-          <LegendDot
-            color={projectedTierColor}
-            label={`${nextTierName.replace('_MARKET', '').toLowerCase()} tier at`}
-            value={`${nextTierThreshold!.toLocaleString()}F`}
-          />
-        )}
-        <span style={{ marginLeft: 'auto', color: deltaColor, fontWeight: 700 }}>
-          {deltaText} next season
+      {/* Projected next-season funding (post-decay) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '140px' }}>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+          Projected Funding
+        </span>
+        <span style={{ fontSize: '20px', fontWeight: 700, color: projColor, fontVariantNumeric: 'tabular-nums' as const }}>
+          {projectedFunding != null ? `${projectedFunding.toLocaleString()}F` : '—'}
+        </span>
+      </div>
+
+      {/* Next-tier threshold — follows the projected tier, not the locked
+          current tier. If projected lands in MEGA already, skip rendering
+          since there's nothing to climb toward. */}
+      {nextTierThresholdValue != null && nextTierThresholdLabel && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '140px' }}>
+          <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+            Next Tier Threshold
+          </span>
+          <span style={{ fontSize: '20px', fontWeight: 700, color: nextTierThresholdColor, fontVariantNumeric: 'tabular-nums' as const }}>
+            {nextTierThresholdValue.toLocaleString()}F
+          </span>
+          <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' as const }}>
+            to reach {nextTierThresholdLabel}
+          </span>
+        </div>
+      )}
+
+      {/* Projected tier (name + ▲/▼) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '180px' }}>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+          Projected Next Season
+        </span>
+        <span style={{
+          fontSize: '20px', fontWeight: 700, color: projColor,
+          display: 'flex', alignItems: 'center', gap: '8px',
+        }}>
+          {projLabel}
+          <span style={{ fontSize: '14px', fontWeight: 800, color: direction.color }}>
+            {direction.symbol}
+          </span>
+        </span>
+        <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' as const }}>
+          {direction.label}
         </span>
       </div>
     </div>
-  )
-}
-
-function LegendDot({ color, label, value, ghost }: { color: string; label: string; value: string; ghost?: boolean }) {
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-      <span style={{
-        display: 'inline-block', width: '8px', height: '8px', borderRadius: '2px',
-        backgroundColor: color, opacity: ghost ? 0.35 : 1,
-      }} />
-      <span style={{ color: '#94a3b8' }}>{label}</span>
-      <span style={{ fontVariantNumeric: 'tabular-nums' as const, fontWeight: 600 }}>{value}</span>
-    </span>
   )
 }
 
@@ -666,16 +682,22 @@ function OverviewTab({
                   }}>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', minWidth: '30px' }}>{p.position}</span>
                     <PlayerAvatar name={p.name} size={28} bgColor={team.color} />
-                    <Link to={`/players/${p.playerId}`} style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <Link to={`/players/${p.playerId}`} style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {p.name}
                     </Link>
+                    <Stars stars={calcStars(p.rating)} size={13} />
                     {p.isUndrafted && (
                       <span style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', backgroundColor: '#1e293b', padding: '1px 5px', borderRadius: '3px', letterSpacing: '0.04em' }}>
                         UNDRAFTED
                       </span>
                     )}
+                    {p.draftSeason != null && (
+                      <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' as const }}>
+                        drafted S{p.draftSeason}
+                      </span>
+                    )}
                     <span style={{
-                      fontSize: '12px', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' as const,
+                      fontSize: '12px', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' as const, marginLeft: 'auto',
                     }}>
                       {windowLabel} until FA
                     </span>
@@ -698,8 +720,9 @@ function OverviewTab({
               <CoachAvatar name={team.coach.name} size={64} bgColor={team.color} style={{ border: `3px solid ${team.color}` }} />
               <div>
                 <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0' }}>{team.coach.name}</div>
-                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-                  Overall {team.coach.overallRating} · {team.coach.seasonsCoached} season{team.coach.seasonsCoached !== 1 ? 's' : ''}
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Stars stars={calcStars(team.coach.overallRating)} size={13} />
+                  <span>{team.coach.seasonsCoached} season{team.coach.seasonsCoached !== 1 ? 's' : ''}</span>
                 </div>
               </div>
             </div>

@@ -47,8 +47,10 @@ interface FreeAgent {
   defensiveRating?: number
 }
 
+type TransactionType = 'pick' | 'cut' | 'rookie_pick' | 'rookie_skip'
+
 interface Transaction {
-  type: 'pick' | 'cut'
+  type: TransactionType
   teamName: string
   teamAbbr: string
   playerName: string
@@ -66,6 +68,24 @@ interface DraftTeam {
   id?: number
   color?: string
   complete?: boolean
+  fundingTier?: string
+  fundingTierRank?: number
+}
+
+// Market tier badge config — matches MarketsSection pattern so the FA draft
+// order visibly reflects the MEGA-first sort (otherwise indistinguishable from
+// the old worst-first order when most teams share the same tier).
+const TIER_LABELS: Record<string, string> = {
+  MEGA_MARKET: 'MEGA',
+  LARGE_MARKET: 'LARGE',
+  MID_MARKET: 'MID',
+  SMALL_MARKET: 'SMALL',
+}
+const TIER_COLORS: Record<string, { fg: string; bg: string }> = {
+  MEGA_MARKET:  { fg: '#fbbf24', bg: 'rgba(251,191,36,0.18)' },
+  LARGE_MARKET: { fg: '#a78bfa', bg: 'rgba(167,139,250,0.18)' },
+  MID_MARKET:   { fg: '#2dd4bf', bg: 'rgba(45,212,191,0.15)' },
+  SMALL_MARKET: { fg: '#94a3b8', bg: 'rgba(148,163,184,0.15)' },
 }
 
 interface RosterPlayer {
@@ -227,7 +247,7 @@ export const OffseasonPanel: React.FC = () => {
         if (done.size > 0) setCompletedTeams(done)
         if (data.transactions?.length > 0) {
           const txs: Transaction[] = data.transactions.map((entry: any) => ({
-            type: entry.type as 'pick' | 'cut',
+            type: (entry.type as TransactionType) ?? 'pick',
             teamName: entry.team,
             teamAbbr: entry.teamAbbr,
             playerName: entry.player,
@@ -378,7 +398,7 @@ export const OffseasonPanel: React.FC = () => {
     } else if (e.event === 'rookie_draft_pick') {
       const ev = e as any
       setTransactions(prev => [{
-        type: 'rookie_pick' as any,
+        type: 'rookie_pick',
         teamName: ev.team,
         teamAbbr: ev.teamAbbr,
         playerName: ev.player,
@@ -390,7 +410,7 @@ export const OffseasonPanel: React.FC = () => {
     } else if (e.event === 'rookie_draft_skip') {
       const ev = e as any
       setTransactions(prev => [{
-        type: 'rookie_skip' as any,
+        type: 'rookie_skip',
         teamName: ev.team,
         teamAbbr: ev.teamAbbr,
         playerName: ev.reason === 'pipeline_full' ? '(pipeline full — forfeited pick)' : '(no eligible rookies)',
@@ -398,11 +418,17 @@ export const OffseasonPanel: React.FC = () => {
         rating: 0,
       }, ...prev])
     } else if (e.event === 'rookie_draft_complete') {
-      // Rookie phase done — let offseason_start later flip the phase to free_agency
+      // Rookie phase done — next we expect fa_draft_order_update to flip into FA.
       setCurrentPhase(null)
       setCurrentTeamAbbr(null)
-    } else if (e.event === 'offseason_start') {
+    } else if (e.event === 'fa_draft_order_update') {
+      // FA phase starts: replace the draft order with the tier-sorted list but
+      // keep accumulated transactions/rosters intact (unlike offseason_start,
+      // which resets everything for the whole offseason).
+      const ev = e as { draftOrder: DraftTeam[] }
+      setDraftOrder(ev.draftOrder)
       setCurrentPhase('free_agency')
+      setCurrentTeamAbbr(null)
     } else if (e.event === 'gm_vote_resolved') {
       const ev = e as GmVoteResolvedEvent
       setGmResolvedEvents(prev => [ev, ...prev])
@@ -651,7 +677,11 @@ export const OffseasonPanel: React.FC = () => {
               const roster = rosterCache[team.abbr]
               const loading = rosterLoading.has(team.abbr)
               const teamTxs = transactions.filter(tx => tx.teamAbbr === team.abbr)
-              const signedNames = new Set(teamTxs.filter(tx => tx.type === 'pick').map(tx => tx.playerName))
+              // Any non-cut transaction is an acquisition — FA signing, rookie
+              // pick, or prospect promotion all count. Only explicit cuts are
+              // cuts. (Without this filter, rookie picks rendered as CUT
+              // because the badge ternary defaulted unknown types to CUT.)
+              const signedNames = new Set(teamTxs.filter(tx => tx.type !== 'cut').map(tx => tx.playerName))
 
               return (
                 <div key={team.abbr}>
@@ -687,8 +717,28 @@ export const OffseasonPanel: React.FC = () => {
                       fontSize: '13px',
                       fontWeight: isCurrent || isFavorite ? '600' : '400',
                       color: isDone && !isExpanded && !isFavorite ? '#94a3b8' : isFavorite ? favoriteTeamColor : '#e2e8f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '7px',
+                      minWidth: 0,
                     }}>
-                      {team.city ? `${team.city} ${team.name}` : team.name}
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {team.city ? `${team.city} ${team.name}` : team.name}
+                      </span>
+                      {team.fundingTier && TIER_LABELS[team.fundingTier] && (
+                        <span style={{
+                          fontSize: '9px',
+                          fontWeight: '700',
+                          letterSpacing: '0.05em',
+                          padding: '1px 5px',
+                          borderRadius: '3px',
+                          color: TIER_COLORS[team.fundingTier].fg,
+                          backgroundColor: TIER_COLORS[team.fundingTier].bg,
+                          flexShrink: 0,
+                        }}>
+                          {TIER_LABELS[team.fundingTier]}
+                        </span>
+                      )}
                     </span>
                     {isCurrent && (
                       <span style={{
@@ -776,25 +826,32 @@ export const OffseasonPanel: React.FC = () => {
                             Moves this offseason
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {teamTxs.map((tx, idx) => (
-                              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px' }}>
-                                <span style={{
-                                  fontSize: '9px', fontWeight: '700', minWidth: '28px',
-                                  color: tx.type === 'pick' ? '#22c55e' : '#ef4444',
-                                }}>
-                                  {tx.type === 'pick' ? 'SGN' : 'CUT'}
-                                </span>
-                                {tx.type === 'pick' && (
-                                  tx.offensiveRating != null && tx.defensiveRating != null ? (
-                                    <DualStars offensiveStars={calcStars(tx.offensiveRating)} defensiveStars={calcStars(tx.defensiveRating)} size={8} />
-                                  ) : (
-                                    <Stars stars={calcStars(tx.rating)} size={9} />
-                                  )
-                                )}
-                                <span style={{ flex: 1, color: '#e2e8f0' }}>{tx.playerName}</span>
-                                <span style={{ color: '#64748b', fontSize: '11px' }}>{tx.position}</span>
-                              </div>
-                            ))}
+                            {teamTxs.map((tx, idx) => {
+                              const badge = tx.type === 'cut' ? { label: 'CUT', color: '#ef4444' }
+                                : tx.type === 'rookie_skip' ? { label: 'SKIP', color: '#64748b' }
+                                : tx.type === 'rookie_pick' ? { label: 'DRAFT', color: '#a78bfa' }
+                                : { label: 'SGN', color: '#22c55e' }
+                              const showStars = tx.type !== 'cut' && tx.type !== 'rookie_skip'
+                              return (
+                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px' }}>
+                                  <span style={{
+                                    fontSize: '9px', fontWeight: '700', minWidth: '36px',
+                                    color: badge.color,
+                                  }}>
+                                    {badge.label}
+                                  </span>
+                                  {showStars && (
+                                    tx.offensiveRating != null && tx.defensiveRating != null ? (
+                                      <DualStars offensiveStars={calcStars(tx.offensiveRating)} defensiveStars={calcStars(tx.defensiveRating)} size={8} />
+                                    ) : (
+                                      <Stars stars={calcStars(tx.rating)} size={9} />
+                                    )
+                                  )}
+                                  <span style={{ flex: 1, color: '#e2e8f0' }}>{tx.playerName}</span>
+                                  <span style={{ color: '#64748b', fontSize: '11px' }}>{tx.position}</span>
+                                </div>
+                              )
+                            })}
                           </div>
                         </div>
                       )}
@@ -1041,35 +1098,42 @@ export const OffseasonPanel: React.FC = () => {
                     </span>
                   </div>
                   <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                    {filteredTransactions.map((tx, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px',
-                          borderBottom: '1px solid #0f172a',
-                          backgroundColor: tx.type === 'pick' ? 'rgba(34,197,94,0.04)' : 'rgba(239,68,68,0.04)',
-                        }}
-                      >
-                        <span style={{
-                          fontSize: '9px', fontWeight: '700', letterSpacing: '0.06em', minWidth: '28px',
-                          color: tx.type === 'pick' ? '#22c55e' : '#ef4444',
-                        }}>
-                          {tx.type === 'pick' ? 'SGN' : 'CUT'}
-                        </span>
-                        <span style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8', minWidth: '32px' }}>
-                          {tx.teamAbbr}
-                        </span>
-                        <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0' }}>{tx.playerName}</span>
-                        {tx.type === 'pick' && (
-                          tx.offensiveRating != null && tx.defensiveRating != null ? (
-                            <DualStars offensiveStars={calcStars(tx.offensiveRating)} defensiveStars={calcStars(tx.defensiveRating)} size={10} />
-                          ) : (
-                            <Stars stars={calcStars(tx.rating)} size={13} />
-                          )
-                        )}
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>{tx.position}</span>
-                      </div>
-                    ))}
+                    {filteredTransactions.map((tx, i) => {
+                      const badge = tx.type === 'cut' ? { label: 'CUT', color: '#ef4444', bg: 'rgba(239,68,68,0.04)' }
+                        : tx.type === 'rookie_skip' ? { label: 'SKIP', color: '#64748b', bg: 'transparent' }
+                        : tx.type === 'rookie_pick' ? { label: 'DRAFT', color: '#a78bfa', bg: 'rgba(167,139,250,0.05)' }
+                        : { label: 'SGN', color: '#22c55e', bg: 'rgba(34,197,94,0.04)' }
+                      const showStars = tx.type !== 'cut' && tx.type !== 'rookie_skip'
+                      return (
+                        <div
+                          key={i}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px',
+                            borderBottom: '1px solid #0f172a',
+                            backgroundColor: badge.bg,
+                          }}
+                        >
+                          <span style={{
+                            fontSize: '9px', fontWeight: '700', letterSpacing: '0.06em', minWidth: '36px',
+                            color: badge.color,
+                          }}>
+                            {badge.label}
+                          </span>
+                          <span style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8', minWidth: '32px' }}>
+                            {tx.teamAbbr}
+                          </span>
+                          <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0' }}>{tx.playerName}</span>
+                          {showStars && (
+                            tx.offensiveRating != null && tx.defensiveRating != null ? (
+                              <DualStars offensiveStars={calcStars(tx.offensiveRating)} defensiveStars={calcStars(tx.defensiveRating)} size={10} />
+                            ) : (
+                              <Stars stars={calcStars(tx.rating)} size={13} />
+                            )
+                          )}
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>{tx.position}</span>
+                        </div>
+                      )
+                    })}
                   </div>
                 </>
               ) : (

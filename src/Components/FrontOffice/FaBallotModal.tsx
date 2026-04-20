@@ -148,12 +148,24 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
     return ids
   }, [slotRankings])
 
-  // Available players for the active position (exclude already-selected anywhere)
+  // Available players for the active position (exclude already-selected anywhere).
+  // Dedupe by ID defensively — if the backend ever emits a player in multiple
+  // categories (FA pool + projected FA, or prospect + FA), the first entry
+  // wins. Without this dedupe a stale/inconsistent backend state could result
+  // in duplicate rows visible in the ballot picker.
   const availablePlayers = useMemo(() => {
     if (!activePosition) return []
-    return scoutingPlayers
-      .filter(p => p.position === activePosition && !allSelectedIds.has(p.id))
-      .sort((a, b) => b.rating - a.rating)
+    const seen = new Set<number>()
+    const filtered: ScoutingPlayer[] = []
+    for (const p of scoutingPlayers) {
+      if (p.position !== activePosition) continue
+      if (allSelectedIds.has(p.id)) continue
+      if (seen.has(p.id)) continue
+      seen.add(p.id)
+      filtered.push(p)
+    }
+    filtered.sort((a, b) => b.rating - a.rating)
+    return filtered
   }, [scoutingPlayers, activePosition, allSelectedIds])
 
   const activeRankings = activeSlot ? (slotRankings[activeSlot] || []) : []

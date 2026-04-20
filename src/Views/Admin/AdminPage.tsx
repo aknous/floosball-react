@@ -1031,7 +1031,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
             base: '#94a3b8', holographic: '#bae6fd', prismatic: '#f9a8d4', diamond: '#a5f3fc',
           }
           const tierColors: Record<string, string> = {
-            MEGA_MARKET: '#a78bfa', LARGE_MARKET: '#3b82f6', MID_MARKET: '#94a3b8', SMALL_MARKET: '#f97316',
+            MEGA_MARKET: '#a78bfa', LARGE_MARKET: '#3b82f6', MID_MARKET: '#2dd4bf', SMALL_MARKET: '#f97316',
           }
           const { economy, cards, fantasy, users, funding, pickEm } = analyticsData
 

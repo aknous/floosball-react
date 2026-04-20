@@ -28,6 +28,12 @@ interface PlayerData {
   teamSecondaryColor: string | null
   teamId: number | null
   teamAbbr: string | null
+  isProspect?: boolean
+  draftingTeamId?: number | null
+  draftingTeamName?: string | null
+  draftingTeamCity?: string | null
+  draftingTeamAbbr?: string | null
+  draftingTeamColor?: string | null
   seasonsPlayed: number
   ratingStars: number
   playerRating: number
@@ -40,6 +46,7 @@ interface PlayerData {
   number: number
   ratingValue: number
   championships: any[]
+  mvpAwards?: any[]
   attributes: PlayerAttributes
   stats: any[]
   allTimeStats: any
@@ -498,10 +505,12 @@ export default function PlayerPage() {
               <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{player.name}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '6px' }}>
                 <Stars stars={player.ratingStars} size={16} />
-                {player.rank && (
+                {(player.isProspect || player.rank) && (
                   <>
                     <span style={{ fontSize: '13px', color: '#475569' }}>·</span>
-                    <span style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>{player.rank}</span>
+                    <span style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>
+                      {player.isProspect ? 'Prospect' : player.rank}
+                    </span>
                   </>
                 )}
               </div>
@@ -511,6 +520,20 @@ export default function PlayerPage() {
                     <img src={`/avatars/${player.teamId}.png`} alt="" style={{ width: '32px', height: '32px' }} />
                     <span style={{ fontSize: '20px', color: teamColor, fontWeight: '600' }}>
                       {player.teamCity} {player.team}
+                    </span>
+                  </Link>
+                ) : player.isProspect && player.draftingTeamId ? (
+                  <Link to={`/team/${player.draftingTeamId}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em',
+                      color: '#0f172a', backgroundColor: '#a78bfa',
+                      padding: '2px 6px', borderRadius: '3px',
+                    }}>
+                      PROSPECT
+                    </span>
+                    <img src={`/avatars/${player.draftingTeamId}.png`} alt="" style={{ width: '28px', height: '28px' }} />
+                    <span style={{ fontSize: '18px', color: player.draftingTeamColor ?? '#cbd5e1', fontWeight: '600' }}>
+                      {player.draftingTeamCity} {player.draftingTeamName}
                     </span>
                   </Link>
                 ) : (

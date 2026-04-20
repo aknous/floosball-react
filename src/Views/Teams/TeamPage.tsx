@@ -58,7 +58,6 @@ interface FundingData {
   baselineFunding: number
   fanContributions: number
   currentFunding: number
-  carriedFunding: number
   effectiveFunding: number
   tier: string
   tierRank: number
@@ -169,6 +168,7 @@ interface ProspectEntry {
   tier: string | null
   prospectSeasons: number
   seasonsRemaining: number
+  draftSeason?: number | null
   isUndrafted: boolean
   ratingHistory: { season: number; rating: number }[]
 }
@@ -252,7 +252,7 @@ export default function TeamPage() {
     {
       target: 'team-funding-bar',
       title: 'Tier Progress',
-      content: 'Track funding progress toward the next tier. The bar shows current funding and next-season projections after 50% carry-forward decay.',
+      content: 'Track funding progress toward the next tier. The bar shows current funding and the projected tier next season.',
       placement: 'bottom',
     },
     {
@@ -402,7 +402,7 @@ export default function TeamPage() {
               <span style={{ fontSize: '13px', color: '#64748b' }}>·</span>
               <span style={{ fontSize: '13px', color: '#94a3b8' }}>ELO {Math.round(team.elo)}</span>
               {team.fundingTier && (() => {
-                const tc: Record<string, string> = { 'MEGA_MARKET': '#a78bfa', 'LARGE_MARKET': '#3b82f6', 'MID_MARKET': '#64748b', 'SMALL_MARKET': '#f97316' }
+                const tc: Record<string, string> = { 'MEGA_MARKET': '#a78bfa', 'LARGE_MARKET': '#3b82f6', 'MID_MARKET': '#2dd4bf', 'SMALL_MARKET': '#f97316' }
                 const tl: Record<string, string> = { 'MEGA_MARKET': 'Mega Market', 'LARGE_MARKET': 'Large Market', 'MID_MARKET': 'Mid Market', 'SMALL_MARKET': 'Small Market' }
                 const te: Record<string, string[]> = {
                   'MEGA_MARKET': ['Large boost to player development', 'Large boost to player morale', 'Massive reduction in fatigue buildup'],
@@ -606,13 +606,19 @@ export default function TeamPage() {
                         <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', minWidth: '28px' }}>{p.position}</span>
                         <Link
                           to={`/players/${p.playerId}`}
-                          style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: '500', textDecoration: 'none', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                          style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: '500', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         >
                           {p.name}
                         </Link>
+                        <Stars stars={calcStars(p.rating)} size={12} />
                         {p.isUndrafted && (
                           <span style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', backgroundColor: '#1e293b', padding: '1px 5px', borderRadius: '3px', letterSpacing: '0.04em' }}>
                             UNDRAFTED
+                          </span>
+                        )}
+                        {p.draftSeason != null && (
+                          <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                            drafted S{p.draftSeason}
                           </span>
                         )}
                         <span style={{
@@ -677,7 +683,7 @@ export default function TeamPage() {
           const tierColors: Record<string, string> = {
             'MEGA_MARKET': '#a78bfa',
             'LARGE_MARKET': '#3b82f6',
-            'MID_MARKET': '#64748b',
+            'MID_MARKET': '#2dd4bf',
             'SMALL_MARKET': '#f97316',
           }
           const tierLabels: Record<string, string> = {
@@ -833,12 +839,7 @@ export default function TeamPage() {
 
                 {/* Compact stats + progress */}
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px', flexWrap: 'wrap', fontSize: '12px', color: '#cbd5e1' }}>
-                  <span>Funded: <strong style={{ color: '#e2e8f0' }}>{f.currentFunding}F</strong> ({f.baselineFunding ?? 0}F base + {f.fanContributions ?? 0}F contributions)</span>
-                  {nextSeasonFunding != null && (
-                    <span>Next season: <strong style={{ color: tierColors[projectedTier] || tierColor }}>{nextSeasonFunding}F</strong>
-                      <span style={{ color: '#94a3b8', fontSize: '11px' }}> ({Math.round((projectedFunding?.decayRate ?? 0.5) * 100)}% carry)</span>
-                    </span>
-                  )}
+                  <span>Funded: <strong style={{ color: '#e2e8f0' }}>{f.currentFunding}F</strong> ({f.fanContributions ?? 0}F from fans)</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                   <span style={{ fontSize: '12px', color: '#94a3b8' }}>Projected tier:</span>

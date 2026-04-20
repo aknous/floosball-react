@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import HoverTooltip from '@/Components/HoverTooltip'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -24,10 +25,12 @@ interface MarketTeam {
   effectiveFunding: number
   baselineFunding: number
   fanContributions: number
-  carriedFunding: number
   fanCount: number
+  totalFans: number
   topPatrons: Patron[]
   tierMovement: number
+  projectedTier: Tier
+  projectedFunding: number
   record: { wins: number; losses: number }
 }
 
@@ -57,149 +60,310 @@ interface HistoryResponse {
   teams: HistoryTeam[]
 }
 
-// Time-series chart: every team's tier rank plotted over seasons. Lower rank
-// number = higher tier, so we invert the Y-axis so "up = better" feels natural.
-const TIER_RANK_LABELS: Record<number, string> = {
-  1: 'MEGA',
-  2: 'LARGE',
-  3: 'MID',
-  4: 'SMALL',
+// Short tier labels for compact chart cells
+const TIER_SHORT_LABELS: Record<Tier, string> = {
+  MEGA_MARKET: 'MEGA',
+  LARGE_MARKET: 'LARGE',
+  MID_MARKET: 'MID',
+  SMALL_MARKET: 'SMALL',
 }
 
-function TierHistoryChart({
-  history, highlightedId, onHighlight,
-}: {
-  history: HistoryResponse
-  highlightedId: number | null
-  onHighlight: (teamId: number | null) => void
-}) {
-  // Chart bounds
-  const PAD_LEFT = 44
-  const PAD_RIGHT = 12
-  const PAD_TOP = 12
-  const PAD_BOTTOM = 28
-  const WIDTH = 720
-  const HEIGHT = 260
-  const plotW = WIDTH - PAD_LEFT - PAD_RIGHT
-  const plotH = HEIGHT - PAD_TOP - PAD_BOTTOM
+const TIER_RANK: Record<Tier, number> = {
+  MEGA_MARKET: 1, LARGE_MARKET: 2, MID_MARKET: 3, SMALL_MARKET: 4,
+}
 
-  const seasons = history.seasons
-  if (seasons.length === 0) {
+// Snapshot chart: every team as a horizontal line in their primary color,
+// sorted by current funding. Tier boundaries run as dotted verticals across
+// the whole chart, so the tier a team sits in is immediately readable from
+// where its line terminates. Projected tier shown as an arrow + short badge
+// at the right, only when next-season would move to a different tier.
+function FundingSnapshotChart({
+  teams, favoriteTeamId,
+}: {
+  teams: MarketTeam[]
+  favoriteTeamId: number | null
+}) {
+  const sorted = useMemo(
+    () => teams.slice().sort((a, b) => b.effectiveFunding - a.effectiveFunding),
+    [teams]
+  )
+  if (sorted.length === 0) {
     return (
       <div style={{ padding: '24px', fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
-        No history yet — trajectories appear once the season rolls over.
+        No funding data yet.
       </div>
     )
   }
-  const minSeason = seasons[0]
-  const maxSeason = seasons[seasons.length - 1]
-  const seasonSpan = Math.max(1, maxSeason - minSeason)
 
-  // Y-axis: tier rank 1..4, inverted so rank 1 is at the top
-  const rankToY = (rank: number) => PAD_TOP + ((rank - 1) / 3) * plotH
-  const seasonToX = (season: number) => PAD_LEFT + ((season - minSeason) / seasonSpan) * plotW
+  // Plot each team's position in ratio space — share of league's fair-share.
+  // Thresholds mirror constants.FUNDING_TIER_THRESHOLDS — keep in sync.
+  const MID_RATIO = 0.85
+  const LARGE_RATIO = 1.15
+  const MEGA_RATIO = 2.0
+
+  // Filled dot = this season's LOCKED position, frozen at season start.
+  // season_start_funding = baseline + carried_funding = effective - fan_contribs.
+  // This doesn't change mid-season, so the filled dot stays put even as fans
+  // contribute (their contributions only affect projection, not current tier).
+  const seasonStartFunding = (t: MarketTeam) => t.effectiveFunding - t.fanContributions
+  const totalSeasonStart = sorted.reduce((acc, t) => acc + seasonStartFunding(t), 0)
+  const startFairShare = sorted.length > 0 ? totalSeasonStart / sorted.length : 1
+
+  // Hollow dot = next season's projected position, recomputed live as
+  // contributions roll in. Uses the projected fair-share so the ring lands
+  // in the projected-tier zone matching the backend's badge.
+  const totalProj = sorted.reduce((acc, t) => acc + (t.projectedFunding || t.effectiveFunding), 0)
+  const projFairShare = sorted.length > 0 ? totalProj / sorted.length : 1
+
+  const currentRatio = (t: MarketTeam) => seasonStartFunding(t) / Math.max(1, startFairShare)
+  const projRatio = (t: MarketTeam) =>
+    (t.projectedFunding || t.effectiveFunding) / Math.max(1, projFairShare)
+
+  // X-axis in ratio space: fit the widest line (current or projected) across
+  // all teams plus some headroom past the MEGA threshold so that band is
+  // always visible even when no team qualifies.
+  const maxRatio = Math.max(
+    ...sorted.flatMap(t => [currentRatio(t), projRatio(t)]),
+    MEGA_RATIO * 1.1,
+  )
+  const pctOf = (ratio: number) => Math.min(100, Math.max(0, (ratio / maxRatio) * 100))
+
+  const midPct = pctOf(MID_RATIO)
+  const largePct = pctOf(LARGE_RATIO)
+  const megaPct = pctOf(MEGA_RATIO)
+
+  const ROW_H = 26
+
+  // Render tier-band labels across the bar column once at the top, so each
+  // row below just has boundaries and the team line. Each label sits centered
+  // over its tier zone.
+  const tierLabelBand = (
+    <div style={{ position: 'relative' as const, height: '26px' }}>
+      {([
+        { label: 'SMALL', tier: 'SMALL_MARKET' as Tier, from: 0, to: midPct },
+        { label: 'MID', tier: 'MID_MARKET' as Tier, from: midPct, to: largePct },
+        { label: 'LARGE', tier: 'LARGE_MARKET' as Tier, from: largePct, to: megaPct },
+        { label: 'MEGA', tier: 'MEGA_MARKET' as Tier, from: megaPct, to: 100 },
+      ] as const).map(zone => {
+        const color = TIER_COLORS[zone.tier]
+        return (
+          <div
+            key={zone.label}
+            style={{
+              position: 'absolute' as const,
+              left: `${zone.from}%`,
+              width: `${zone.to - zone.from}%`,
+              top: 0,
+              bottom: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <span style={{
+              fontSize: '12px',
+              fontWeight: 800,
+              letterSpacing: '0.12em',
+              color,
+              padding: '3px 10px',
+              borderRadius: '4px',
+              backgroundColor: `${color}1A`,
+              border: `1px solid ${color}55`,
+              whiteSpace: 'nowrap' as const,
+            }}>
+              {zone.label}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+
+  // Single rendered set of vertical tier boundary lines — absolutely
+  // positioned, spanning all rows. Lives inside the rows container so it
+  // lines up with each row's bar cell via the shared grid.
+  const verticalBoundaries = (
+    <>
+      {[midPct, largePct, megaPct].map((p, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute' as const,
+            left: `${p}%`,
+            top: 0,
+            bottom: 0,
+            borderLeft: '1px dashed #475569',
+            pointerEvents: 'none' as const,
+          }}
+        />
+      ))}
+    </>
+  )
 
   return (
-    <div style={{ overflowX: 'auto' as const }}>
-      <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        style={{ width: '100%', minWidth: '560px', height: 'auto', display: 'block' }}
-      >
-        {/* Horizontal tier bands (subtle bg zones) */}
-        {[1, 2, 3, 4].map(r => {
-          const tier = TIER_ORDER[r - 1]
-          return (
-            <rect
-              key={r}
-              x={PAD_LEFT}
-              y={PAD_TOP + ((r - 1) / 4) * plotH}
-              width={plotW}
-              height={plotH / 4}
-              fill={TIER_COLORS[tier]}
-              opacity={0.05}
-            />
+    <div style={{ width: '100%' }}>
+      {/* Header: tier-band labels spanning the full bar width */}
+      <div style={{ padding: '0 10px', marginBottom: '8px' }}>
+        {tierLabelBand}
+      </div>
+
+      {/* Team rows. Each row has its own bar cell that holds the team's line
+          plus a shared set of dotted tier boundaries, so the verticals look
+          continuous down the chart. */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        {sorted.map(team => {
+          const pct = pctOf(currentRatio(team))
+          const projPct = pctOf(projRatio(team))
+          const projectedColor = TIER_COLORS[team.projectedTier]
+          const tierDelta = TIER_RANK[team.tier] - TIER_RANK[team.projectedTier]
+          const isFav = team.id === favoriteTeamId
+          const seasonStart = seasonStartFunding(team)
+          const projFundingVal = team.projectedFunding || team.effectiveFunding
+          const fundingDelta = projFundingVal - seasonStart
+
+          const currentTooltip = (
+            <div style={{ textAlign: 'left' as const, fontSize: '13px', lineHeight: 1.6 }}>
+              <div style={{ fontWeight: 700, color: team.color, marginBottom: '4px' }}>
+                {team.city} {team.name}
+              </div>
+              <div style={{ color: '#94a3b8' }}>This Season</div>
+              <div>
+                Tier:{' '}
+                <strong style={{ color: TIER_COLORS[team.tier] }}>
+                  {TIER_LABELS[team.tier]}
+                </strong>
+              </div>
+              <div>Season-start funding: <strong>{seasonStart.toLocaleString()}F</strong></div>
+              <div>Fan contributions: <strong style={{ color: '#fbbf24' }}>{team.fanContributions.toLocaleString()}F</strong></div>
+              <div>Effective now: <strong>{team.effectiveFunding.toLocaleString()}F</strong></div>
+            </div>
           )
-        })}
 
-        {/* Y-axis tier labels */}
-        {[1, 2, 3, 4].map(r => (
-          <g key={r}>
-            <text x={PAD_LEFT - 8} y={rankToY(r) + 4} fontSize="10" fill="#94a3b8" textAnchor="end">
-              {TIER_RANK_LABELS[r]}
-            </text>
-            <line
-              x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT}
-              y1={rankToY(r)} y2={rankToY(r)}
-              stroke="#334155" strokeWidth={0.5} opacity={0.5}
-            />
-          </g>
-        ))}
+          const projectedTooltip = (
+            <div style={{ textAlign: 'left' as const, fontSize: '13px', lineHeight: 1.6 }}>
+              <div style={{ fontWeight: 700, color: team.color, marginBottom: '4px' }}>
+                {team.city} {team.name}
+              </div>
+              <div style={{ color: '#94a3b8' }}>Projected Next Season</div>
+              <div>
+                Tier:{' '}
+                <strong style={{ color: projectedColor }}>
+                  {TIER_LABELS[team.projectedTier]}
+                </strong>
+                {tierDelta !== 0 && (
+                  <span style={{ marginLeft: '6px', color: tierDelta > 0 ? '#22c55e' : '#ef4444', fontWeight: 700 }}>
+                    {tierDelta > 0 ? '▲ climbing' : '▼ slipping'}
+                  </span>
+                )}
+              </div>
+              <div>Projected funding: <strong>{projFundingVal.toLocaleString()}F</strong></div>
+              <div style={{ color: fundingDelta >= 0 ? '#22c55e' : '#ef4444' }}>
+                {fundingDelta >= 0 ? '+' : ''}{fundingDelta.toLocaleString()}F vs. season start
+              </div>
+            </div>
+          )
 
-        {/* X-axis season labels */}
-        {seasons.map(s => (
-          <text
-            key={s}
-            x={seasonToX(s)}
-            y={HEIGHT - 10}
-            fontSize="10"
-            fill="#94a3b8"
-            textAnchor="middle"
-          >
-            S{s}
-          </text>
-        ))}
-
-        {/* Lines */}
-        {history.teams.map(team => {
-          if (team.history.length === 0) return null
-          const points = team.history.map(p => `${seasonToX(p.season)},${rankToY(p.tierRank)}`).join(' ')
-          const isHighlighted = highlightedId === team.id
-          const dimmed = highlightedId != null && !isHighlighted
           return (
-            <g
+            <Link
               key={team.id}
-              onMouseEnter={() => onHighlight(team.id)}
-              onMouseLeave={() => onHighlight(null)}
-              style={{ cursor: 'pointer' }}
+              to={`/team/${team.id}`}
+              style={{
+                display: 'block',
+                padding: '3px 10px',
+                backgroundColor: isFav ? `${team.color}15` : 'transparent',
+                border: `1px solid ${isFav ? team.color : 'transparent'}`,
+                borderRadius: '3px',
+                textDecoration: 'none',
+              }}
             >
-              <polyline
-                points={points}
-                fill="none"
-                stroke={team.color || '#64748b'}
-                strokeWidth={isHighlighted ? 2.5 : 1.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                opacity={dimmed ? 0.15 : isHighlighted ? 1 : 0.7}
-              />
-              {team.history.map(p => (
-                <circle
-                  key={p.season}
-                  cx={seasonToX(p.season)}
-                  cy={rankToY(p.tierRank)}
-                  r={isHighlighted ? 4 : 2.5}
-                  fill={team.color || '#64748b'}
-                  opacity={dimmed ? 0.15 : 1}
-                />
-              ))}
-              {/* End label on the right edge for highlighted line */}
-              {isHighlighted && team.history.length > 0 && (() => {
-                const last = team.history[team.history.length - 1]
-                return (
-                  <text
-                    x={seasonToX(last.season) + 6}
-                    y={rankToY(last.tierRank) + 4}
-                    fontSize="10"
-                    fill={team.color || '#64748b'}
-                    fontWeight={700}
-                  >
-                    {team.abbr}
-                  </text>
-                )
-              })()}
-            </g>
+              {/* Full-width bar cell. The team's identity (avatar + abbr)
+                  acts as the current-position marker — positioned where the
+                  filled dot used to be. Hollow ring marks the projection.
+                  Connector line bridges them in the team color. */}
+              <div style={{ position: 'relative' as const, height: `${ROW_H}px` }}>
+                {verticalBoundaries}
+                {/* Connector between current (avatar center) and projected */}
+                {Math.abs(projPct - pct) > 0.4 && (
+                  <div style={{
+                    position: 'absolute' as const,
+                    left: `${Math.min(pct, projPct)}%`,
+                    top: 'calc(50% - 1px)',
+                    height: '2px',
+                    width: `${Math.abs(projPct - pct)}%`,
+                    backgroundColor: team.color,
+                    opacity: 0.5,
+                    borderRadius: '1px',
+                    transition: 'all 0.3s ease',
+                    pointerEvents: 'none' as const,
+                  }} />
+                )}
+                {/* Projected endpoint (hollow ring) */}
+                {Math.abs(projPct - pct) > 0.4 && (
+                  <div style={{
+                    position: 'absolute' as const,
+                    left: `${projPct}%`,
+                    top: 'calc(50% - 6px)',
+                    marginLeft: '-6px',
+                    width: '12px',
+                    height: '12px',
+                    zIndex: 2,
+                  }}>
+                    <HoverTooltip content={projectedTooltip} color={team.color}>
+                      <span
+                        onClick={e => e.preventDefault()}
+                        style={{
+                          display: 'block',
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '50%',
+                          backgroundColor: '#0f172a',
+                          border: `2px solid ${team.color}`,
+                          boxSizing: 'border-box' as const,
+                        }}
+                      />
+                    </HoverTooltip>
+                  </div>
+                )}
+                {/* Current-position marker: team avatar + abbr chip, replaces
+                    the filled dot. Centered on the `pct` x-position. */}
+                <div style={{
+                  position: 'absolute' as const,
+                  left: `${pct}%`,
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  zIndex: 3,
+                }}>
+                  <HoverTooltip content={currentTooltip} color={team.color}>
+                    <span
+                      onClick={e => e.preventDefault()}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '2px 7px 2px 3px',
+                        borderRadius: '12px',
+                        backgroundColor: '#0f172a',
+                        border: `1.5px solid ${team.color}`,
+                        boxShadow: `0 0 0 2px #0f172a`,
+                        whiteSpace: 'nowrap' as const,
+                      }}
+                    >
+                      <img
+                        src={`/avatars/${team.id}.png`}
+                        alt={team.abbr}
+                        style={{ width: '18px', height: '18px', flexShrink: 0 }}
+                      />
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#e2e8f0' }}>
+                        {team.abbr}
+                      </span>
+                    </span>
+                  </HoverTooltip>
+                </div>
+              </div>
+            </Link>
           )
         })}
-      </svg>
+      </div>
     </div>
   )
 }
@@ -264,7 +428,7 @@ function MoverCard({
         {team.city} {team.name}
       </span>
       <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: 'auto', whiteSpace: 'nowrap' as const }}>
-        {TIER_RANK_LABELS[TIER_ORDER.indexOf(fromTier) + 1]} → {TIER_RANK_LABELS[TIER_ORDER.indexOf(toTier) + 1]}
+        {TIER_SHORT_LABELS[fromTier]} → {TIER_SHORT_LABELS[toTier]}
       </span>
     </Link>
   )
@@ -280,7 +444,7 @@ const TIER_LABELS: Record<Tier, string> = {
 const TIER_COLORS: Record<Tier, string> = {
   MEGA_MARKET: '#a78bfa',
   LARGE_MARKET: '#3b82f6',
-  MID_MARKET: '#94a3b8',
+  MID_MARKET: '#2dd4bf',
   SMALL_MARKET: '#64748b',
 }
 
@@ -289,121 +453,112 @@ const TIER_ORDER: Tier[] = ['MEGA_MARKET', 'LARGE_MARKET', 'MID_MARKET', 'SMALL_
 // Short, punchy explanations of what a tier buys you in the sim. Surfaces on
 // the tier header so a user hitting the page for the first time learns the
 // stakes without digging elsewhere.
-const TIER_EFFECTS: Record<Tier, string> = {
-  MEGA_MARKET: 'Top player development, 75% fatigue reduction, +confidence/determination',
-  LARGE_MARKET: 'Solid player development, 35% fatigue reduction, small morale boost',
-  MID_MARKET: 'No bonuses, no penalties — the league baseline',
-  SMALL_MARKET: 'Reduced player development, +20% fatigue, morale penalty',
-}
-
-function MovementArrow({ movement }: { movement: number }) {
-  if (movement === 0) return null
-  const color = movement > 0 ? '#22c55e' : '#ef4444'
-  return (
-    <span title={movement > 0 ? `Climbed ${movement} tier${movement > 1 ? 's' : ''}` : `Dropped ${Math.abs(movement)} tier${Math.abs(movement) > 1 ? 's' : ''}`}
-      style={{ color, fontSize: '13px', fontWeight: 700 }}>
-      {movement > 0 ? '▲' : '▼'} {Math.abs(movement)}
-    </span>
+// Fan count chart — each team's contributing fans + silent fans as a
+// stacked horizontal bar. Solid fill = users who've actually contributed
+// floobits this season; ghost fill extends to total fans (users with this
+// team set as favorite). Sorted by total fans descending.
+function FanCountChart({
+  teams, favoriteTeamId,
+}: {
+  teams: MarketTeam[]
+  favoriteTeamId: number | null
+}) {
+  const sorted = useMemo(
+    () => teams.slice().sort((a, b) => (b.totalFans - a.totalFans) || (b.fanCount - a.fanCount)),
+    [teams]
   )
-}
+  if (sorted.length === 0) {
+    return (
+      <div style={{ padding: '24px', fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
+        No fan data yet.
+      </div>
+    )
+  }
+  const maxFans = Math.max(1, ...sorted.map(t => t.totalFans))
+  const pctOf = (v: number) => Math.min(100, Math.max(0, (v / maxFans) * 100))
 
-function TeamRow({ team, isFavorite }: { team: MarketTeam; isFavorite: boolean }) {
-  const isMobile = useIsMobile()
-  const tierColor = TIER_COLORS[team.tier]
+  const ROW_H = 26
+  const ABBR_COL = 80
+
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: isMobile ? '1fr' : 'minmax(220px, 1.5fr) 130px 1fr',
-      gap: '12px',
-      alignItems: 'center',
-      padding: '12px 14px',
-      backgroundColor: isFavorite ? `${team.color}15` : '#1e293b',
-      border: `1px solid ${isFavorite ? team.color : '#334155'}`,
-      borderRadius: '6px',
-    }}>
-      {/* Team block */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-        <img
-          src={`/avatars/${team.id}.png`}
-          alt={team.abbr}
-          style={{ width: '32px', height: '32px', flexShrink: 0 }}
-        />
-        <Link to={`/team/${team.id}`}
-          style={{ color: '#e2e8f0', fontSize: '15px', fontWeight: 600, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {team.city} {team.name}
-        </Link>
-        <span style={{ fontSize: '13px', color: '#94a3b8', flexShrink: 0 }}>
-          {team.record.wins}–{team.record.losses}
-        </span>
-        <MovementArrow movement={team.tierMovement} />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+      {sorted.map(team => {
+        const isFav = team.id === favoriteTeamId
+        const totalPct = pctOf(team.totalFans)
+        const contribPct = pctOf(team.fanCount)
+        const silent = Math.max(0, team.totalFans - team.fanCount)
 
-      {/* Funding block */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-        <div style={{ fontSize: '16px', fontWeight: 700, color: '#fbbf24', fontVariantNumeric: 'tabular-nums' as const }}>
-          {team.effectiveFunding.toLocaleString()} F
-        </div>
-        <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-          {team.baselineFunding} base · {team.fanContributions} fans · {team.carriedFunding} carry
-        </div>
-      </div>
-
-      {/* Patrons block */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
-        <div style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-          {team.fanCount} contributor{team.fanCount !== 1 ? 's' : ''}
-        </div>
-        {team.topPatrons.length === 0 ? (
-          <div style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>No patrons yet</div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {team.topPatrons.slice(0, 3).map((p, i) => (
-              <div key={p.userId} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '13px' }}>
-                <span style={{ color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {i === 0 && (
-                    <span style={{ color: tierColor, marginRight: '4px' }}>★</span>
-                  )}
-                  {p.username}
-                </span>
-                <span style={{ color: '#94a3b8', fontVariantNumeric: 'tabular-nums' as const, flexShrink: 0 }}>
-                  {p.totalContributed.toLocaleString()} F
-                </span>
-              </div>
-            ))}
+        const tooltip = (
+          <div style={{ textAlign: 'left' as const, fontSize: '13px', lineHeight: 1.6 }}>
+            <div style={{ fontWeight: 700, color: team.color, marginBottom: '4px' }}>
+              {team.city} {team.name}
+            </div>
+            <div>Total fans: <strong>{team.totalFans.toLocaleString()}</strong></div>
+            <div>Contributing this season: <strong style={{ color: '#fbbf24' }}>{team.fanCount.toLocaleString()}</strong></div>
+            <div>Silent: <strong style={{ color: '#94a3b8' }}>{silent.toLocaleString()}</strong></div>
           </div>
-        )}
-      </div>
-    </div>
-  )
-}
+        )
 
-function TierGroup({ tier, teams, favoriteTeamId }: { tier: Tier; teams: MarketTeam[]; favoriteTeamId: number | null }) {
-  if (teams.length === 0) return null
-  const color = TIER_COLORS[tier]
-  return (
-    <div style={{ marginBottom: '24px' }}>
-      <div style={{
-        display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-        padding: '10px 14px', marginBottom: '8px',
-        backgroundColor: `${color}10`, borderLeft: `3px solid ${color}`, borderRadius: '4px',
-      }}>
-        <div>
-          <div style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0', letterSpacing: '0.02em' }}>
-            {TIER_LABELS[tier]}
-            <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500, marginLeft: '10px' }}>
-              {teams.length} team{teams.length !== 1 ? 's' : ''}
+        return (
+          <Link
+            key={team.id}
+            to={`/team/${team.id}`}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: `${ABBR_COL}px 1fr 80px`,
+              gap: '10px',
+              alignItems: 'center',
+              padding: '3px 10px',
+              backgroundColor: isFav ? `${team.color}15` : 'transparent',
+              border: `1px solid ${isFav ? team.color : 'transparent'}`,
+              borderRadius: '3px',
+              textDecoration: 'none',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+              <img src={`/avatars/${team.id}.png`} alt={team.abbr} style={{ width: '20px', height: '20px', flexShrink: 0 }} />
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>{team.abbr}</span>
+            </div>
+            <div style={{ position: 'relative' as const, height: `${ROW_H}px` }}>
+              <HoverTooltip content={tooltip} color={team.color}>
+                <span
+                  onClick={e => e.preventDefault()}
+                  style={{ display: 'block', position: 'relative' as const, width: '100%', height: '100%' }}
+                >
+                  {/* Silent fans (ghost) — total fans */}
+                  <span style={{
+                    position: 'absolute' as const,
+                    left: 0, top: 'calc(50% - 6px)', height: '12px',
+                    width: `${totalPct}%`,
+                    backgroundColor: team.color,
+                    opacity: 0.25,
+                    borderRadius: '2px',
+                    display: 'block',
+                  }} />
+                  {/* Contributing fans — solid overlay */}
+                  <span style={{
+                    position: 'absolute' as const,
+                    left: 0, top: 'calc(50% - 6px)', height: '12px',
+                    width: `${contribPct}%`,
+                    backgroundColor: team.color,
+                    opacity: 0.9,
+                    borderRadius: '2px',
+                    display: 'block',
+                  }} />
+                </span>
+              </HoverTooltip>
+            </div>
+            <span style={{
+              fontSize: '12px', color: '#cbd5e1',
+              fontVariantNumeric: 'tabular-nums' as const,
+              textAlign: 'right' as const, fontWeight: 600,
+            }}>
+              <span style={{ color: '#fbbf24' }}>{team.fanCount}</span>
+              <span style={{ color: '#94a3b8' }}> / {team.totalFans}</span>
             </span>
-          </div>
-          <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
-            {TIER_EFFECTS[tier]}
-          </div>
-        </div>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {teams.map(team => (
-          <TeamRow key={team.id} team={team} isFavorite={team.id === favoriteTeamId} />
-        ))}
-      </div>
+          </Link>
+        )
+      })}
     </div>
   )
 }
@@ -413,8 +568,8 @@ export default function MarketsSection() {
   const isMobile = useIsMobile()
   const [data, setData] = useState<MarketsResponse | null>(null)
   const [history, setHistory] = useState<HistoryResponse | null>(null)
-  const [highlightedTeamId, setHighlightedTeamId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const [chartTab, setChartTab] = useState<'funding' | 'fans'>('funding')
 
   useEffect(() => {
     let cancelled = false
@@ -435,17 +590,6 @@ export default function MarketsSection() {
     if (!history) return { risers: [], fallers: [] }
     return computeMovers(history)
   }, [history])
-
-  // Group by tier while preserving the server's rank ordering
-  const byTier = useMemo(() => {
-    const groups: Record<Tier, MarketTeam[]> = {
-      MEGA_MARKET: [], LARGE_MARKET: [], MID_MARKET: [], SMALL_MARKET: [],
-    }
-    if (data) {
-      for (const t of data.teams) groups[t.tier].push(t)
-    }
-    return groups
-  }, [data])
 
   // League-wide summary chips
   const summary = useMemo(() => {
@@ -473,8 +617,7 @@ export default function MarketsSection() {
   return (
     <div>
       <div style={{ marginBottom: '16px', fontSize: '14px', color: '#94a3b8', lineHeight: 1.5 }}>
-        Tier rankings, fan contributions, and top patrons across the league.
-        Market tiers are relative — teams ranked by effective funding and split into quartiles each season.
+        How each team stacks up by fan-backed funding. Tiers reset every season based on each team's share of the league's total funding.
       </div>
 
       {/* Summary row */}
@@ -488,7 +631,11 @@ export default function MarketsSection() {
           <StatChip label="Contributing fans" value={`${summary.totalFans.toLocaleString()}`} />
           <StatChip label="Avg per team" value={`${summary.avgPerTeam.toLocaleString()} F`} />
           {summary.topFunded && (
-            <StatChip label="Top-funded team" value={`${summary.topFunded.city} ${summary.topFunded.name}`} />
+            <StatChip
+              label="Top-funded team"
+              value={`${summary.topFunded.city} ${summary.topFunded.name}`}
+              avatarTeamId={summary.topFunded.id}
+            />
           )}
         </div>
       )}
@@ -535,37 +682,52 @@ export default function MarketsSection() {
         </div>
       )}
 
-      {/* Tier trajectory chart */}
-      {history && history.seasons.length > 0 && (
-        <div style={{
-          backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px',
-          padding: '12px 14px', marginBottom: '20px',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
-              Tier Trajectory
-            </div>
-            <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-              Hover a line to highlight · higher = better tier
-            </div>
-          </div>
-          <TierHistoryChart
-            history={history}
-            highlightedId={highlightedTeamId}
-            onHighlight={setHighlightedTeamId}
-          />
+      {/* Chart area with tabs — Funding (dumbbell) and Fans (stacked) views */}
+      <div style={{
+        backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px',
+        padding: '12px 14px', marginBottom: '20px',
+      }}>
+        <div style={{ display: 'flex', gap: '4px', marginBottom: '12px', borderBottom: '1px solid #1e293b' }}>
+          {([
+            { id: 'funding', label: 'Funding' },
+            { id: 'fans', label: 'Fans' },
+          ] as const).map(tab => {
+            const active = chartTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setChartTab(tab.id)}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase' as const,
+                  color: active ? '#e2e8f0' : '#64748b',
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderBottom: `2px solid ${active ? '#fbbf24' : 'transparent'}`,
+                  cursor: 'pointer',
+                  marginBottom: '-1px',
+                }}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
         </div>
-      )}
+        {chartTab === 'funding' ? (
+          <FundingSnapshotChart teams={data.teams} favoriteTeamId={favoriteTeamId} />
+        ) : (
+          <FanCountChart teams={data.teams} favoriteTeamId={favoriteTeamId} />
+        )}
+      </div>
 
-      {/* Tier groups */}
-      {TIER_ORDER.map(tier => (
-        <TierGroup key={tier} tier={tier} teams={byTier[tier]} favoriteTeamId={favoriteTeamId} />
-      ))}
     </div>
   )
 }
 
-function StatChip({ label, value }: { label: string; value: string }) {
+function StatChip({ label, value, avatarTeamId }: { label: string; value: string; avatarTeamId?: number }) {
   return (
     <div style={{
       padding: '12px 14px',
@@ -576,8 +738,17 @@ function StatChip({ label, value }: { label: string; value: string }) {
       <div style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '5px' }}>
         {label}
       </div>
-      <div style={{ fontSize: '16px', color: '#e2e8f0', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
-        {value}
+      <div style={{ fontSize: '16px', color: '#e2e8f0', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+        {avatarTeamId != null && (
+          <img
+            src={`/avatars/${avatarTeamId}.png`}
+            alt=""
+            style={{ width: '24px', height: '24px', flexShrink: 0 }}
+          />
+        )}
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+          {value}
+        </span>
       </div>
     </div>
   )

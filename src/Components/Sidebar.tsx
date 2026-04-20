@@ -159,7 +159,12 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
     >
       {/* Nav items */}
       <div style={{ flex: 1, paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        {NAV_ITEMS.map(item => {
+        {NAV_ITEMS.filter(item => {
+          // Team Management is a per-user hub (contribute, ballots, etc.).
+          // Signed-out visitors have no team to manage — hide the entry.
+          if (item.key === 'frontoffice' && !user) return false
+          return true
+        }).map(item => {
           const isActive = location.pathname === item.path || (item.path === '/dashboard' && location.pathname === '/')
           return (
             <NavLink

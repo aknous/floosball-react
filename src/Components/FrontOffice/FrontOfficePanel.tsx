@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react'
+import React, { useMemo, useState, useCallback, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useGmData } from '@/hooks/useGmData'
@@ -9,10 +9,12 @@ import HireCoachCard from './HireCoachCard'
 import CutPlayerCard from './CutPlayerCard'
 import ResignPlayerCard from './ResignPlayerCard'
 import VoteResultsBanner from './VoteResultsBanner'
+import FaBallotModal, { ScoutingPlayer, OpenSlot } from './FaBallotModal'
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 import { GM_VOTE_COST, GM_VOTES_PER_SEASON, GM_VOTES_PER_TARGET, GM_VOTES_PER_TYPE } from '@/types/gm'
 
 const GM_ACTIVE_WEEK = 22
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 interface FrontOfficePanelProps {
   teamId: number
@@ -20,36 +22,90 @@ interface FrontOfficePanelProps {
 }
 
 const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }) => {
-  const { user, getToken, refetchUser } = useAuth()
+  const { user, getToken, refetchUser, updateFloobits } = useAuth()
   const { seasonState } = useFloosball()
   const isMobile = useIsMobile()
   const gm = useGmData(teamId)
-  const vacancyAutoPick = (user?.vacancyAutoPick ?? 'best_available') as 'prospect' | 'fa' | 'best_available'
-  const [savingAutoPick, setSavingAutoPick] = useState(false)
-
-  // Persist the vacancy-auto-pick preference. This default is used when a vacancy
-  // opens (retirement, contract expiry, cut) AND the fan hasn't cast a ballot
-  // ranking replacements. See playerManager._tryPromoteProspect for the backend
-  // resolution path.
-  const updateVacancyAutoPick = useCallback(async (pref: 'prospect' | 'fa' | 'best_available') => {
-    setSavingAutoPick(true)
-    try {
-      const tok = await getToken()
-      if (!tok) return
-      await fetch(`${(process.env.REACT_APP_API_URL || 'http://localhost:8000/api')}/users/me/preferences`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-        body: JSON.stringify({ vacancyAutoPick: pref }),
-      })
-      await refetchUser()
-    } finally {
-      setSavingAutoPick(false)
-    }
-  }, [getToken, refetchUser])
 
   const currentWeek = seasonState.currentWeek
   const isOffseason = seasonState.currentWeekText === 'Offseason'
   const isActive = currentWeek >= GM_ACTIVE_WEEK || isOffseason
+
+  // FA Requisition — year-round ballot targeting the team's projected walk-year
+  // FAs + current prospects. The same modal used during the offseason FA window,
+  // surfaced here so fans can influence signings before the window closes.
+  const [faScoutingPlayers, setFaScoutingPlayers] = useState<ScoutingPlayer[]>([])
+  const [faOpenSlots, setFaOpenSlots] = useState<OpenSlot[]>([])
+  const [existingFaBallot, setExistingFaBallot] = useState<number[] | null>(null)
+  const [faModalOpen, setFaModalOpen] = useState(false)
+  const [faBallotSubmitting, setFaBallotSubmitting] = useState(false)
+  const [faWindowEnd, setFaWindowEnd] = useState<number | null>(null)
+
+  // Refetch scouting whenever the user's vote counts change — a fresh
+  // cut/resign vote can push a slot's likelyCut/likelyResigned flag over
+  // quorum, opening (or closing) an FA requisition slot. Without this the
+  // openSlots count would stay frozen at mount-time values.
+  const gmVoteSignature = gm.myVotes?.counts.total ?? 0
+  useEffect(() => {
+    if (!isActive) return
+    let cancelled = false
+    const load = async () => {
+      try {
+        const tok = await getToken()
+        if (!tok) return
+        const [scoutRes, ofsRes] = await Promise.all([
+          fetch(`${API_BASE}/gm/fa-scouting`, { headers: { Authorization: `Bearer ${tok}` } }),
+          fetch(`${API_BASE}/offseason`, { headers: { Authorization: `Bearer ${tok}` } }),
+        ])
+        const scoutJson = await scoutRes.json().catch(() => null)
+        if (!cancelled && scoutJson?.success && scoutJson.data) {
+          setFaScoutingPlayers(scoutJson.data.players || [])
+          setFaOpenSlots(scoutJson.data.openSlots || [])
+        }
+        const ofsJson = await ofsRes.json().catch(() => null)
+        if (!cancelled && ofsJson) {
+          if (ofsJson.existingBallot) setExistingFaBallot(ofsJson.existingBallot)
+          if (ofsJson.faWindowEnd) setFaWindowEnd(ofsJson.faWindowEnd * 1000)
+        }
+      } catch { /* silent */ }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [isActive, getToken, gmVoteSignature])
+
+  const handleSubmitFaBallot = useCallback(async (rankings: number[]) => {
+    const tok = await getToken()
+    if (!tok) return null
+    setFaBallotSubmitting(true)
+    try {
+      const res = await fetch(`${API_BASE}/gm/fa-ballot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+        body: JSON.stringify({ rankings }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Ballot submission failed' }))
+        alert(err.detail || 'Ballot submission failed')
+        return null
+      }
+      const json = await res.json()
+      const data = json.data ?? json
+      setExistingFaBallot(data.rankings)
+      const balRes = await fetch(`${API_BASE}/currency/balance`, { headers: { Authorization: `Bearer ${tok}` } })
+      if (balRes.ok) {
+        const bj = await balRes.json()
+        updateFloobits(bj.data?.balance ?? 0)
+      }
+      await refetchUser()
+      setFaModalOpen(false)
+      return data
+    } catch {
+      alert('Ballot submission failed')
+      return null
+    } finally {
+      setFaBallotSubmitting(false)
+    }
+  }, [getToken, updateFloobits, refetchUser])
 
   // Compute disabled vote targets based on user's vote counts
   const disabledCutIds = useMemo(() => {
@@ -218,43 +274,37 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }
         floobits={user?.floobits ?? 0}
       />
 
-      {/* Vacancy auto-pick preference — used when a roster slot opens up and the
-          fan hasn't manually ranked replacements. Lets users tilt the default
-          toward prospects (rebuild-minded) or FAs (win-now). */}
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' as const }}>
-        <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-          Vacancy Default
-        </span>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          {([
-            { id: 'prospect', label: 'Prospect First', hint: 'Promote pipeline players before signing FAs' },
-            { id: 'fa', label: 'FA First', hint: 'Sign free agents before promoting prospects' },
-            { id: 'best_available', label: 'Best Available', hint: 'Highest-rated option regardless of source' },
-          ] as { id: 'prospect' | 'fa' | 'best_available'; label: string; hint: string }[]).map(opt => {
-            const active = vacancyAutoPick === opt.id
-            return (
-              <button
-                key={opt.id}
-                onClick={() => updateVacancyAutoPick(opt.id)}
-                disabled={savingAutoPick || active}
-                title={opt.hint}
-                style={{
-                  padding: '4px 10px',
-                  fontSize: '11px',
-                  fontWeight: active ? 700 : 500,
-                  borderRadius: '4px',
-                  border: `1px solid ${active ? teamColor : '#334155'}`,
-                  backgroundColor: active ? `${teamColor}20` : 'transparent',
-                  color: active ? '#e2e8f0' : '#94a3b8',
-                  cursor: active || savingAutoPick ? 'default' : 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {opt.label}
-              </button>
-            )
-          })}
+      {/* FA Requisition — always visible when the board is active so fans can
+          find the ballot. When there are no projected openings, we explain
+          why voting isn't available rather than hiding the section entirely. */}
+      <div style={{ padding: '12px 14px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' as const }}>
+        <div style={{ flex: 1, minWidth: '200px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0', marginBottom: '2px' }}>
+            Free Agent Requisition
+          </div>
+          <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+            {faOpenSlots.length > 0
+              ? <>{faOpenSlots.length} slot{faOpenSlots.length !== 1 ? 's' : ''} projected to open · {existingFaBallot ? `ballot submitted (${existingFaBallot.length} ranked)` : 'no ballot on file'}</>
+              : <>No roster openings projected — the board will vote on vacancies once cut/resign motions settle or contracts expire</>
+            }
+          </div>
         </div>
+        <button
+          onClick={() => setFaModalOpen(true)}
+          disabled={faOpenSlots.length === 0}
+          style={{
+            padding: '6px 14px',
+            fontSize: '12px',
+            fontWeight: 700,
+            borderRadius: '4px',
+            border: `1px solid ${faOpenSlots.length === 0 ? '#334155' : teamColor}`,
+            backgroundColor: faOpenSlots.length === 0 ? 'transparent' : `${teamColor}20`,
+            color: faOpenSlots.length === 0 ? '#475569' : '#e2e8f0',
+            cursor: faOpenSlots.length === 0 ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {existingFaBallot ? 'Revise Ballot' : 'Open Ballot'}
+        </button>
       </div>
 
       <div style={{ padding: '14px' }}>
@@ -391,12 +441,23 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }
           appointed at random.
         </GuideSection>
         <GuideSection title="Free Agent Requisitions">
-          During the offseason, a voting window opens for free agent requisition ballots.
-          Rank up to 5 players in order of preference. If your team's ballot achieves quorum
-          and is ratified, the front office will prioritize those players during the draft
-          using ranked-choice voting.
+          Rank up to 5 replacements for projected roster openings — walk-year players, cut-vote
+          targets, and current prospects all appear on the same ballot. Submit any time once the
+          board convenes (Week {GM_ACTIVE_WEEK}). If the ballot achieves quorum and is ratified,
+          the front office will prioritize those names during the draft using ranked-choice voting.
         </GuideSection>
       </HelpModal>
+
+      <FaBallotModal
+        visible={faModalOpen}
+        onClose={() => setFaModalOpen(false)}
+        openSlots={faOpenSlots}
+        scoutingPlayers={faScoutingPlayers}
+        faWindowEnd={faWindowEnd}
+        onSubmit={handleSubmitFaBallot}
+        submitting={faBallotSubmitting}
+        existingBallot={existingFaBallot}
+      />
     </div>
   )
 }
