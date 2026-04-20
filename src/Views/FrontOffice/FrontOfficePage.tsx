@@ -521,16 +521,18 @@ function FundingSummaryStrip({
       paddingBottom: '14px', marginBottom: '14px',
       borderBottom: '1px solid #334155',
     }}>
-      {/* Current effective funding */}
+      {/* Current effective funding — this season, already locked into the
+          season's tier. Frames as "This Season" so users understand why a
+          later "Next Season (Projected)" reads lower (carry-forward decay). */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '140px' }}>
         <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
-          Total Funding
+          This Season
         </span>
         <span style={{ fontSize: '20px', fontWeight: 700, color: currentTierColor, fontVariantNumeric: 'tabular-nums' as const }}>
           {funding.effectiveFunding.toLocaleString()}F
         </span>
         <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' as const }}>
-          season start + fan contributions
+          tier locked · baseline + fans
         </span>
       </div>
 
@@ -542,31 +544,39 @@ function FundingSummaryStrip({
         <span style={{ fontSize: '20px', fontWeight: 700, color: '#fbbf24', fontVariantNumeric: 'tabular-nums' as const }}>
           {funding.fanContributions.toLocaleString()}F
         </span>
+        <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' as const }}>
+          included in this season total
+        </span>
       </div>
 
-      {/* Projected next-season funding (post-decay) */}
+      {/* Projected next-season funding (post-decay). Explicit "Next Season"
+          label + decay subtext so users don't read it as a lower version of
+          this season's total. */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '140px' }}>
         <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
-          Projected Funding
+          Next Season (Projected)
         </span>
         <span style={{ fontSize: '20px', fontWeight: 700, color: projColor, fontVariantNumeric: 'tabular-nums' as const }}>
           {projectedFunding != null ? `${projectedFunding.toLocaleString()}F` : '—'}
         </span>
+        <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' as const }}>
+          after 50% carry-forward
+        </span>
       </div>
 
-      {/* Next-tier threshold — follows the projected tier, not the locked
-          current tier. If projected lands in MEGA already, skip rendering
-          since there's nothing to climb toward. */}
+      {/* Next-tier threshold — the projected-funding target needed to climb a
+          tier NEXT SEASON. Compare against Next Season (Projected), not This
+          Season. If projected lands in MEGA already, skip rendering. */}
       {nextTierThresholdValue != null && nextTierThresholdLabel && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '140px' }}>
           <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
-            Next Tier Threshold
+            Next Tier Target
           </span>
           <span style={{ fontSize: '20px', fontWeight: 700, color: nextTierThresholdColor, fontVariantNumeric: 'tabular-nums' as const }}>
             {nextTierThresholdValue.toLocaleString()}F
           </span>
           <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' as const }}>
-            to reach {nextTierThresholdLabel}
+            projected funding needed to reach {nextTierThresholdLabel}
           </span>
         </div>
       )}
