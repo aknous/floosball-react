@@ -550,21 +550,6 @@ function FundingSummaryStrip({
         </span>
       </div>
 
-      {/* Projected next-season funding (post-decay). Explicit "Next Season"
-          label + decay subtext so users don't read it as a lower version of
-          this season's total. */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '140px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
-          Next Season (Projected)
-        </span>
-        <span style={{ fontSize: '20px', fontWeight: 700, color: projColor, fontVariantNumeric: 'tabular-nums' as const }}>
-          {projectedFunding != null ? `${projectedFunding.toLocaleString()}F` : '—'}
-        </span>
-        <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' as const }}>
-          after 50% carry-forward
-        </span>
-      </div>
-
       {/* Next-tier target — the lowest threshold above current effective
           funding. Always a number larger than "This Season" so it reads as
           a goal. Hidden when the team already sits in the top tier. */}
