@@ -123,7 +123,7 @@ export const Footer: React.FC = () => {
             Discord
           </a>
           <a
-            href="https://forms.gle/6f79nmjqcknTjHSf6"
+            href="https://forms.gle/s2ycdsBLxTpsWEk4A"
             target="_blank"
             rel="noopener noreferrer"
             style={{

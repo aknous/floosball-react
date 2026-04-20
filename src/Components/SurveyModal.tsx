@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-const SURVEY_URL = 'https://forms.gle/6f79nmjqcknTjHSf6'
+const SURVEY_URL = 'https://forms.gle/s2ycdsBLxTpsWEk4A'
 const STORAGE_KEY = 'lastSeenSurveySeason'
 const MID_SEASON_WEEK = 15
 
