@@ -609,45 +609,50 @@ export default function PlayerPage() {
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
 
-        {/* Rating progression — season-over-season trajectory */}
-        {ratingHistory.length > 0 && (
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' }}>
-            {sectionHeader('Rating Progression')}
-            <div style={{ padding: '16px' }}>
-              <RatingHistoryChart history={ratingHistory} teamColor={teamColor} />
-            </div>
-          </div>
-        )}
-
         {/* Championships + Career Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: '16px', alignItems: 'start' }}>
 
-          {/* Awards */}
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', minWidth: '180px' }}>
-            {sectionHeader('Awards')}
-            <div style={{ padding: '16px' }}>
-              {(player.mvpAwards?.length ?? 0) === 0 && (player.championships?.length ?? 0) === 0 ? (
-                <div style={{ fontSize: '13px', color: '#475569', fontStyle: 'italic' }}>No awards yet</div>
-              ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '16px' }}>
-                  {(player.mvpAwards ?? []).map((a: any, i: number) => (
-                    <div key={`mvp-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <GiStarMedal style={{ fontSize: '28px', color: '#fbbf24' }} />
-                      <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: '600', marginTop: '2px' }}>MVP</div>
-                      <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
-                      <div style={{ fontSize: '11px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
-                    </div>
-                  ))}
-                  {(player.championships ?? []).map((c: any, i: number) => (
-                    <div key={`champ-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <GiLaurelsTrophy style={{ fontSize: '28px', color: '#f59e0b' }} />
-                      <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', marginTop: '2px' }}>S{c.Season}</div>
-                      <div style={{ fontSize: '11px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+          {/* Left column: Awards + Rating Progression stacked */}
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '16px', minWidth: '200px' }}>
+
+            {/* Awards */}
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+              {sectionHeader('Awards')}
+              <div style={{ padding: '16px' }}>
+                {(player.mvpAwards?.length ?? 0) === 0 && (player.championships?.length ?? 0) === 0 ? (
+                  <div style={{ fontSize: '13px', color: '#475569', fontStyle: 'italic' }}>No awards yet</div>
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '16px' }}>
+                    {(player.mvpAwards ?? []).map((a: any, i: number) => (
+                      <div key={`mvp-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <GiStarMedal style={{ fontSize: '28px', color: '#fbbf24' }} />
+                        <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: '600', marginTop: '2px' }}>MVP</div>
+                        <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
+                        <div style={{ fontSize: '11px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
+                      </div>
+                    ))}
+                    {(player.championships ?? []).map((c: any, i: number) => (
+                      <div key={`champ-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <GiLaurelsTrophy style={{ fontSize: '28px', color: '#f59e0b' }} />
+                        <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', marginTop: '2px' }}>S{c.Season}</div>
+                        <div style={{ fontSize: '11px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Rating progression — tucked under Awards so it doesn't push stats below the fold */}
+            {ratingHistory.length > 0 && (
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+                {sectionHeader('Rating Progression')}
+                <div style={{ padding: '12px' }}>
+                  <RatingHistoryChart history={ratingHistory} teamColor={teamColor} />
+                </div>
+              </div>
+            )}
+
           </div>
 
           {/* Career Stats */}
@@ -682,12 +687,12 @@ export default function PlayerPage() {
 // endpoint dots and season labels on the x-axis, rating (60-100) on the y.
 // Colors by per-segment trend so climbs look green, declines red, flat gray.
 function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; teamColor: string }) {
-  const PAD_LEFT = 34
-  const PAD_RIGHT = 14
-  const PAD_TOP = 14
-  const PAD_BOTTOM = 26
-  const WIDTH = 320
-  const HEIGHT = 150
+  const PAD_LEFT = 30
+  const PAD_RIGHT = 10
+  const PAD_TOP = 12
+  const PAD_BOTTOM = 22
+  const WIDTH = 260
+  const HEIGHT = 130
   const plotW = WIDTH - PAD_LEFT - PAD_RIGHT
   const plotH = HEIGHT - PAD_TOP - PAD_BOTTOM
 
@@ -721,7 +726,7 @@ function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; te
   for (let r = yMin; r <= yMax; r += 10) gridLines.push(r)
 
   return (
-    <div style={{ maxWidth: '480px' }}>
+    <div>
       <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
         {/* Gridlines + y-axis labels */}
         {gridLines.map(r => (
