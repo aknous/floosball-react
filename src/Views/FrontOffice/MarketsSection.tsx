@@ -109,8 +109,8 @@ function FundingSnapshotChart({
   const totalSeasonStart = sorted.reduce((acc, t) => acc + seasonStartFunding(t), 0)
   const startFairShare = sorted.length > 0 ? totalSeasonStart / sorted.length : 1
 
-  // Hollow dot = next season's projected position, recomputed live as
-  // contributions roll in. Uses the projected fair-share so the ring lands
+  // Arrow = next season's projected position, recomputed live as
+  // contributions roll in. Uses the projected fair-share so the arrow lands
   // in the projected-tier zone matching the backend's badge.
   const totalProj = sorted.reduce((acc, t) => acc + (t.projectedFunding || t.effectiveFunding), 0)
   const projFairShare = sorted.length > 0 ? totalProj / sorted.length : 1
@@ -277,12 +277,16 @@ function FundingSnapshotChart({
               }}
             >
               {/* Full-width bar cell. The team's identity (avatar + abbr)
-                  acts as the current-position marker — positioned where the
-                  filled dot used to be. Hollow ring marks the projection.
-                  Connector line bridges them in the team color. */}
+                  acts as the current-position marker. The projection shows
+                  as an arrow whose TIP lands at the projected position and
+                  whose body points back toward the team — the shape itself
+                  says "moving this way," so at first glance there's no
+                  ambiguity about which end is current vs projected. */}
               <div style={{ position: 'relative' as const, height: `${ROW_H}px` }}>
                 {verticalBoundaries}
-                {/* Connector between current (avatar center) and projected */}
+                {/* Connector between current (avatar center) and projection —
+                    dashed to reinforce that this is a forecast, not a live
+                    trajectory. */}
                 {Math.abs(projPct - pct) > 0.4 && (
                   <div style={{
                     position: 'absolute' as const,
@@ -290,40 +294,43 @@ function FundingSnapshotChart({
                     top: 'calc(50% - 1px)',
                     height: '2px',
                     width: `${Math.abs(projPct - pct)}%`,
-                    backgroundColor: team.color,
-                    opacity: 0.5,
-                    borderRadius: '1px',
+                    backgroundImage: `repeating-linear-gradient(to right, ${team.color} 0 4px, transparent 4px 8px)`,
+                    opacity: 0.7,
                     transition: 'all 0.3s ease',
                     pointerEvents: 'none' as const,
                   }} />
                 )}
-                {/* Projected endpoint (hollow ring) */}
-                {Math.abs(projPct - pct) > 0.4 && (
-                  <div style={{
-                    position: 'absolute' as const,
-                    left: `${projPct}%`,
-                    top: 'calc(50% - 6px)',
-                    marginLeft: '-6px',
-                    width: '12px',
-                    height: '12px',
-                    zIndex: 2,
-                  }}>
-                    <HoverTooltip content={projectedTooltip} color={team.color}>
-                      <span
-                        onClick={e => e.preventDefault()}
-                        style={{
-                          display: 'block',
-                          width: '12px',
-                          height: '12px',
-                          borderRadius: '50%',
-                          backgroundColor: '#0f172a',
-                          border: `2px solid ${team.color}`,
-                          boxSizing: 'border-box' as const,
-                        }}
-                      />
-                    </HoverTooltip>
-                  </div>
-                )}
+                {/* Projection endpoint — arrow pointing in direction of travel */}
+                {Math.abs(projPct - pct) > 0.4 && (() => {
+                  const climbing = projPct > pct
+                  return (
+                    <div style={{
+                      position: 'absolute' as const,
+                      left: `${projPct}%`,
+                      top: 'calc(50% - 6px)',
+                      marginLeft: climbing ? '-12px' : '0',
+                      width: '12px',
+                      height: '12px',
+                      zIndex: 2,
+                    }}>
+                      <HoverTooltip content={projectedTooltip} color={team.color}>
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 12 12"
+                          style={{ display: 'block' }}
+                          onClick={e => e.preventDefault()}
+                        >
+                          {climbing ? (
+                            <path d="M 0 1 L 11 6 L 0 11 Z" fill={team.color} />
+                          ) : (
+                            <path d="M 12 1 L 1 6 L 12 11 Z" fill={team.color} />
+                          )}
+                        </svg>
+                      </HoverTooltip>
+                    </div>
+                  )
+                })()}
                 {/* Current-position marker: team avatar + abbr chip, replaces
                     the filled dot. Centered on the `pct` x-position. */}
                 <div style={{
