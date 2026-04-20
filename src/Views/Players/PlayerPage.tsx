@@ -405,6 +405,7 @@ export default function PlayerPage() {
   const [player, setPlayer] = useState<PlayerData | null>(null)
   const [ratingHistory, setRatingHistory] = useState<RatingPoint[]>([])
   const [loading, setLoading] = useState(true)
+  const [statsView, setStatsView] = useState<'offense' | 'defense'>('offense')
   const isMobile = useIsMobile()
 
   useEffect(() => {
@@ -655,26 +656,70 @@ export default function PlayerPage() {
 
           </div>
 
-          {/* Career Stats */}
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-            {sectionHeader(`Career Stats · ${POSITION_FULL[player.position] ?? player.position}`)}
-            <div style={{ overflowX: 'auto' }}>
-              {player.position === 'QB'                        && <QBStatsTable  stats={player.stats} career={player.allTimeStats} />}
-              {player.position === 'RB'                        && <RBStatsTable  stats={player.stats} career={player.allTimeStats} />}
-              {(player.position === 'WR' || player.position === 'TE') && <RcvStatsTable stats={player.stats} career={player.allTimeStats} />}
-              {player.position === 'K'                         && <KStatsTable   stats={player.stats} career={player.allTimeStats} />}
-            </div>
-          </div>
-
-          {/* Defense Stats (all positions except K) */}
-          {player.position !== 'K' && player.defensivePosition && (
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', gridColumn: isMobile ? undefined : '1 / -1' }}>
-              {sectionHeader(`Defense Stats · ${player.defensivePosition}`)}
-              <div style={{ overflowX: 'auto' }}>
-                <DefenseStatsTable stats={player.stats} career={player.allTimeStats} />
+          {/* Career Stats — toggle between offense and defense for two-way players */}
+          {(() => {
+            const hasDefense = player.position !== 'K' && !!player.defensivePosition
+            const view = hasDefense ? statsView : 'offense'
+            const offenseLabel = POSITION_FULL[player.position] ?? player.position
+            return (
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{
+                  padding: '10px 14px',
+                  backgroundColor: '#0f172a',
+                  borderBottom: '1px solid #334155',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                }}>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
+                    Career Stats · {view === 'offense' ? offenseLabel : player.defensivePosition}
+                  </span>
+                  {hasDefense && (
+                    <div style={{ display: 'flex', gap: '4px', backgroundColor: '#1e293b', borderRadius: '6px', padding: '2px' }}>
+                      {(['offense', 'defense'] as const).map(side => {
+                        const active = view === side
+                        return (
+                          <button
+                            key={side}
+                            onClick={() => setStatsView(side)}
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              textTransform: 'uppercase' as const,
+                              letterSpacing: '0.05em',
+                              color: active ? '#e2e8f0' : '#64748b',
+                              backgroundColor: active ? '#334155' : 'transparent',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontFamily: 'inherit',
+                            }}
+                          >
+                            {side}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  {view === 'offense' && (
+                    <>
+                      {player.position === 'QB'                        && <QBStatsTable  stats={player.stats} career={player.allTimeStats} />}
+                      {player.position === 'RB'                        && <RBStatsTable  stats={player.stats} career={player.allTimeStats} />}
+                      {(player.position === 'WR' || player.position === 'TE') && <RcvStatsTable stats={player.stats} career={player.allTimeStats} />}
+                      {player.position === 'K'                         && <KStatsTable   stats={player.stats} career={player.allTimeStats} />}
+                    </>
+                  )}
+                  {view === 'defense' && hasDefense && (
+                    <DefenseStatsTable stats={player.stats} career={player.allTimeStats} />
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
         </div>
 
