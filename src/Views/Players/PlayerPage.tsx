@@ -682,12 +682,12 @@ export default function PlayerPage() {
 // endpoint dots and season labels on the x-axis, rating (60-100) on the y.
 // Colors by per-segment trend so climbs look green, declines red, flat gray.
 function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; teamColor: string }) {
-  const PAD_LEFT = 42
-  const PAD_RIGHT = 16
-  const PAD_TOP = 12
-  const PAD_BOTTOM = 30
-  const WIDTH = 640
-  const HEIGHT = 200
+  const PAD_LEFT = 32
+  const PAD_RIGHT = 12
+  const PAD_TOP = 10
+  const PAD_BOTTOM = 22
+  const WIDTH = 420
+  const HEIGHT = 120
   const plotW = WIDTH - PAD_LEFT - PAD_RIGHT
   const plotH = HEIGHT - PAD_TOP - PAD_BOTTOM
 
@@ -721,8 +721,8 @@ function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; te
   for (let r = yMin; r <= yMax; r += 10) gridLines.push(r)
 
   return (
-    <div style={{ overflowX: 'auto' as const }}>
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', minWidth: '480px', height: 'auto', display: 'block' }}>
+    <div style={{ maxWidth: '460px' }}>
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
         {/* Gridlines + y-axis labels */}
         {gridLines.map(r => (
           <g key={r}>
@@ -731,7 +731,7 @@ function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; te
               y1={yFor(r)} y2={yFor(r)}
               stroke="#334155" strokeWidth={0.5} opacity={0.4}
             />
-            <text x={PAD_LEFT - 8} y={yFor(r) + 4} fontSize="11" fill="#94a3b8" textAnchor="end">
+            <text x={PAD_LEFT - 6} y={yFor(r) + 3} fontSize="9" fill="#94a3b8" textAnchor="end">
               {r}
             </text>
           </g>
@@ -739,7 +739,7 @@ function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; te
 
         {/* X-axis season labels */}
         {seasons.map(s => (
-          <text key={s} x={xFor(s)} y={HEIGHT - 10} fontSize="11" fill="#94a3b8" textAnchor="middle">
+          <text key={s} x={xFor(s)} y={HEIGHT - 8} fontSize="9" fill="#94a3b8" textAnchor="middle">
             S{s}
           </text>
         ))}
@@ -765,10 +765,10 @@ function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; te
         {/* Points with rating labels */}
         {history.map(pt => (
           <g key={pt.season}>
-            <circle cx={xFor(pt.season)} cy={yFor(pt.rating)} r={4} fill={teamColor} stroke="#0f172a" strokeWidth={1.5} />
+            <circle cx={xFor(pt.season)} cy={yFor(pt.rating)} r={3} fill={teamColor} stroke="#0f172a" strokeWidth={1.2} />
             <text
-              x={xFor(pt.season)} y={yFor(pt.rating) - 10}
-              fontSize="11" fill="#e2e8f0" fontWeight="700" textAnchor="middle"
+              x={xFor(pt.season)} y={yFor(pt.rating) - 7}
+              fontSize="9" fill="#e2e8f0" fontWeight="700" textAnchor="middle"
             >
               {pt.rating}
             </text>
