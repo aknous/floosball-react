@@ -66,7 +66,7 @@ const formatStat = (value: number, category: string): string => {
   return String(value)
 }
 
-export const PlayerLeaders: React.FC = () => {
+export const PlayerLeaders: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const [position, setPosition] = useState<Position>('ALL')
   const [category, setCategory] = useState('fantasy_points')
   const [leaders, setLeaders] = useState<Leader[]>([])
@@ -124,24 +124,24 @@ export const PlayerLeaders: React.FC = () => {
   const currentCatLabel = cats.find(c => c.key === category)?.label ?? ''
 
   return (
-    <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+    <div style={{ ...(!embedded ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
 
       {/* Position tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #334155' }}>
+      <div style={{ display: 'flex', gap: '4px', padding: embedded ? '4px 12px 10px' : '10px 12px' }}>
         {POSITIONS.map(pos => (
           <button
             key={pos}
             onClick={() => handlePositionChange(pos)}
             style={{
               flex: 1,
-              padding: '8px 0',
-              fontSize: '11px',
+              padding: '6px 0',
+              borderRadius: '6px',
+              fontSize: '12px',
               fontWeight: '600',
-              color: position === pos ? '#e2e8f0' : '#64748b',
-              backgroundColor: position === pos ? '#0f172a' : 'transparent',
+              color: position === pos ? '#e2e8f0' : '#94a3b8',
+              backgroundColor: position === pos ? '#334155' : 'transparent',
               border: 'none',
               cursor: 'pointer',
-              borderBottom: position === pos ? '2px solid #3b82f6' : '2px solid transparent',
               transition: 'all 0.15s',
             }}
           >
@@ -152,20 +152,21 @@ export const PlayerLeaders: React.FC = () => {
 
       {/* Category pills */}
       {cats.length > 1 && (
-        <div style={{ display: 'flex', gap: '6px', padding: '10px 12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '4px', padding: '4px 12px 10px', flexWrap: 'wrap' }}>
           {cats.map(c => (
             <button
               key={c.key}
               onClick={() => setCategory(c.key)}
               style={{
-                fontSize: '11px',
+                fontSize: '12px',
                 fontWeight: '600',
-                padding: '3px 8px',
-                borderRadius: '4px',
+                padding: '4px 10px',
+                borderRadius: '6px',
                 border: 'none',
                 cursor: 'pointer',
-                backgroundColor: category === c.key ? '#3b82f6' : '#0f172a',
-                color: category === c.key ? '#fff' : '#64748b',
+                backgroundColor: category === c.key ? '#334155' : 'transparent',
+                color: category === c.key ? '#e2e8f0' : '#94a3b8',
+                transition: 'all 0.15s',
               }}
             >
               {c.label}
@@ -188,16 +189,16 @@ export const PlayerLeaders: React.FC = () => {
               key={player.id}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '14px 24px 1fr auto',
+                gridTemplateColumns: embedded ? '16px 24px 1fr auto' : '14px 24px 1fr auto',
                 alignItems: 'center',
-                gap: '5px',
-                padding: '5px 6px 5px 4px',
+                gap: embedded ? '6px' : '5px',
+                padding: embedded ? '7px 14px' : '5px 6px 5px 4px',
                 borderBottom: idx < leaders.length - 1 ? '1px solid #1a2640' : 'none',
                 backgroundColor: isOnRoster ? 'rgba(34,197,94,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
                 borderLeft: isOnRoster ? '2px solid #22c55e' : '2px solid transparent',
               }}
             >
-              <span style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{player.rank}</span>
+              <span style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{player.rank}</span>
               <img
                 src={`/avatars/${player.teamId}.png`}
                 alt=""
@@ -207,25 +208,25 @@ export const PlayerLeaders: React.FC = () => {
                 <PlayerHoverCard playerId={player.id} playerName={player.name}>
                   <Link
                     to={`/players/${player.id}`}
-                    style={{ fontSize: '13px', color: '#e2e8f0', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    style={{ fontSize: '14px', color: '#e2e8f0', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                   >
                     {player.name}
                     {isOnRoster && (
-                      <span style={{ marginLeft: '5px', fontSize: '9px', fontWeight: '700', color: '#22c55e', verticalAlign: 'middle' }}>
+                      <span style={{ marginLeft: '5px', fontSize: '10px', fontWeight: '700', color: '#22c55e', verticalAlign: 'middle' }}>
                         FP
                       </span>
                     )}
                   </Link>
                 </PlayerHoverCard>
-                <div style={{ fontSize: '11px', color: '#cbd5e1' }}>
+                <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
                   {player.teamAbbr}
                   {position === 'ALL' && <span style={{ marginLeft: '4px', color: '#94a3b8' }}>· {player.position}</span>}
                 </div>
                 <div style={{ marginTop: '-2px' }}>
-                  <Stars stars={player.ratingStars} size={10} />
+                  <Stars stars={player.ratingStars} size={11} />
                 </div>
               </div>
-              <span style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
                 {formatStat(player.statValue, category)}
               </span>
             </div>

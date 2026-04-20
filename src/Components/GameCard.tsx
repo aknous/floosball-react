@@ -81,8 +81,8 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
   }, [awayScore])
 
   const cardStyle: React.CSSProperties = {
-    backgroundColor: isFav ? '#253348' : '#1e293b',
-    border: isUpsetAlert ? '2px solid #f97316' : isFeatured ? '2px solid #a78bfa' : isLive ? '2px solid #64748b' : '1px solid #334155',
+    backgroundColor: isFav ? '#253348' : '#1e2d3d',
+    border: isUpsetAlert ? '2px solid #f97316' : isFeatured ? '2px solid #a78bfa' : isLive ? '2px solid #64748b' : '1px solid #2a3a4e',
     borderRadius: '8px',
     padding: '12px',
     marginBottom: '12px',
@@ -101,7 +101,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
 
   const teamNameStyle: React.CSSProperties = {
     flex: 1,
-    fontSize: '16px',
+    fontSize: '17px',
     fontWeight: '500',
     minWidth: 0
   }
@@ -117,7 +117,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
     marginTop: '8px',
     paddingTop: '8px',
     borderTop: '1px solid #475569',
-    fontSize: '14px',
+    fontSize: '15px',
     color: '#cbd5e1',
     textAlign: 'center'
   }
@@ -144,9 +144,9 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             />
           </div>
           <div style={teamNameStyle}>
-            <div style={{ fontSize: '13px', color: '#cbd5e1', marginBottom: '2px' }}>{homeTeam.city}</div>
+            <div style={{ fontSize: '14px', color: '#cbd5e1', marginBottom: '2px' }}>{homeTeam.city}</div>
             <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {homeTeam.name} <span style={{ fontSize: '13px', color: '#94a3b8' }}>({homeTeam.record})</span>
+              {homeTeam.name} <span style={{ fontSize: '14px', color: '#94a3b8' }}>({homeTeam.record})</span>
               {homeMomentum && (
                 <svg viewBox="0 0 24 24" fill={flameColor} style={{ width: '14px', height: '14px', display: 'inline-block', marginLeft: '4px', verticalAlign: 'middle', filter: flameGlow !== 'none' ? `drop-shadow(${flameGlow})` : undefined, transition: 'all 0.5s ease' }}>
                   <path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.42-7.1A13.5 13.5 0 0 1 10.5 5.8s.5 2.7 2.5 4.2c2-1.5 2.5-4.2 2.5-4.2s2.08 1.5 3.08 2.6C20.26 10.06 20 12.93 20 15.5 20 19.42 16.97 23 12 23Zm0-2c2.76 0 5-1.79 5-4.5 0-1.5-.5-3-1.5-4l-1 1c-1 1-2.5 1-3.5 0l-1-1c-1 1-1.5 2.5-1.5 4 0 2.71 2.24 4.5 5 4.5Z" />
@@ -184,9 +184,9 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             />
           </div>
           <div style={teamNameStyle}>
-            <div style={{ fontSize: '13px', color: '#cbd5e1', marginBottom: '2px' }}>{awayTeam.city}</div>
+            <div style={{ fontSize: '14px', color: '#cbd5e1', marginBottom: '2px' }}>{awayTeam.city}</div>
             <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {awayTeam.name} <span style={{ fontSize: '13px', color: '#94a3b8' }}>({awayTeam.record})</span>
+              {awayTeam.name} <span style={{ fontSize: '14px', color: '#94a3b8' }}>({awayTeam.record})</span>
               {awayMomentum && (
                 <svg viewBox="0 0 24 24" fill={flameColor} style={{ width: '14px', height: '14px', display: 'inline-block', marginLeft: '4px', verticalAlign: 'middle', filter: flameGlow !== 'none' ? `drop-shadow(${flameGlow})` : undefined, transition: 'all 0.5s ease' }}>
                   <path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.42-7.1A13.5 13.5 0 0 1 10.5 5.8s.5 2.7 2.5 4.2c2-1.5 2.5-4.2 2.5-4.2s2.08 1.5 3.08 2.6C20.26 10.06 20 12.93 20 15.5 20 19.42 16.97 23 12 23Zm0-2c2.76 0 5-1.79 5-4.5 0-1.5-.5-3-1.5-4l-1 1c-1 1-2.5 1-3.5 0l-1-1c-1 1-1.5 2.5-1.5 4 0 2.71 2.24 4.5 5 4.5Z" />
@@ -242,7 +242,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #475569' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{
-                  fontSize: homeFavored ? '14px' : '11px',
+                  fontSize: homeFavored ? '15px' : '12px',
                   fontWeight: homeFavored ? '700' : '400',
                   color: homeTextColor,
                   fontVariantNumeric: 'tabular-nums',
@@ -264,7 +264,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                   }} />
                 </div>
                 <span style={{
-                  fontSize: awayFavored ? '14px' : '11px',
+                  fontSize: awayFavored ? '15px' : '12px',
                   fontWeight: awayFavored ? '700' : '400',
                   color: awayTextColor,
                   fontVariantNumeric: 'tabular-nums',
@@ -315,7 +315,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                   backgroundColor: homeBtnBg,
                   border: pickedHome ? `1px solid ${homeTeam.color}80` : unpickedBorder,
                   borderBottom: pickedHome ? `2px solid ${homeTeam.color}` : '2px solid transparent',
-                  fontSize: homeFavored && !hasPick ? '14px' : '13px',
+                  fontSize: homeFavored && !hasPick ? '15px' : '14px',
                   fontWeight: pickedHome || (homeFavored && !hasPick) ? '700' : '500',
                   color: homeTextColor,
                   fontVariantNumeric: 'tabular-nums',
@@ -367,7 +367,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                   backgroundColor: awayBtnBg,
                   border: pickedAway ? `1px solid ${awayTeam.color}80` : unpickedBorder,
                   borderBottom: pickedAway ? `2px solid ${awayTeam.color}` : '2px solid transparent',
-                  fontSize: awayFavored && !hasPick ? '14px' : '13px',
+                  fontSize: awayFavored && !hasPick ? '15px' : '14px',
                   fontWeight: pickedAway || (awayFavored && !hasPick) ? '700' : '500',
                   color: awayTextColor,
                   fontVariantNumeric: 'tabular-nums',
@@ -405,12 +405,12 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
           <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center' }}>
             <span>Final {(quarter ?? 0) > 4 ? '(OT)' : ''}</span>
             {isUpsetAlert && (
-              <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
+              <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
                 UPSET
               </div>
             )}
             {isFeatured && !isUpsetAlert && (
-              <div style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
+              <div style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
                 FEATURED
               </div>
             )}
@@ -421,12 +421,12 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             <span>•</span>
             <span>{timeRemaining ?? '15:00'}</span>
             {isUpsetAlert && (
-              <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
+              <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
                 UPSET ALERT
               </div>
             )}
             {isFeatured && !isUpsetAlert && (
-              <div style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
+              <div style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
                 FEATURED
               </div>
             )}
@@ -435,7 +435,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
           <span>
             {startTime ? (
               <>
-                <span style={{ color: '#94a3b8', fontSize: '12px' }}>
+                <span style={{ color: '#94a3b8', fontSize: '13px' }}>
                   {new Date(startTime * 1000).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit', hour12: true })}
                 </span>
               </>

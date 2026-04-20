@@ -10,12 +10,13 @@ interface SeasonWebSocketContextType {
   connected: boolean
   error: Event | null
   drainEvents: () => AnyEvent[]
+  subscribe: (handler: (message: AnyEvent) => void) => () => void
 }
 
 const SeasonWebSocketContext = createContext<SeasonWebSocketContextType | undefined>(undefined)
 
 export const SeasonWebSocketProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { data: event, connected, error, drainEvents, send } = useWebSocket<AnyEvent>('/season')
+  const { data: event, connected, error, drainEvents, subscribe, send } = useWebSocket<AnyEvent>('/season')
   const { user } = useAuth()
   const identifiedRef = useRef(false)
 
@@ -30,7 +31,7 @@ export const SeasonWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chi
   }, [connected, user?.id, send])
 
   return (
-    <SeasonWebSocketContext.Provider value={{ event, connected, error, drainEvents }}>
+    <SeasonWebSocketContext.Provider value={{ event, connected, error, drainEvents, subscribe }}>
       {children}
     </SeasonWebSocketContext.Provider>
   )

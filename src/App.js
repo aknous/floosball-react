@@ -2,6 +2,8 @@ import './index.css';
 import React, { useEffect, useState, useRef } from 'react'
 import Navbar from './Components/Navbar.js'
 import GameBar from './Components/GameBar'
+import Sidebar from './Components/Sidebar'
+import { SidebarProvider, SIDEBAR_WIDTH_COLLAPSED } from './contexts/SidebarContext'
 import TeamGrid from './Views/Teams/TeamGrid'
 import Team from './Views/Teams/TeamPage'
 import Player from './Views/Players/PlayerPage'
@@ -12,6 +14,8 @@ import AdminPage from './Views/Admin/AdminPage'
 import FantasyPage from './Views/Fantasy/FantasyPage'
 import AboutPage from './Views/About/AboutPage'
 import CardsPage from './Views/Cards/CardsPage'
+import AchievementsPage from './Views/Achievements/AchievementsPage'
+import FrontOfficePage from './Views/FrontOffice/FrontOfficePage'
 import Dashboard from './Views/Dashboard/Dashboard'
 import DashboardNew from './Views/Dashboard/DashboardNew'
 import BetaBlockedPage from './Components/Auth/BetaBlockedPage'
@@ -23,16 +27,21 @@ import SeasonRecapModal from './Components/SeasonRecapModal'
 import SurveyModal from './Components/SurveyModal'
 import { Footer } from './Components/Footer'
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { useIsMobile } from './hooks/useIsMobile'
 import { ClerkProvider, useUser } from '@clerk/react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { FloosballProvider } from './contexts/FloosballContext'
 import { SeasonWebSocketProvider } from './contexts/SeasonWebSocketContext'
 import { GamesProvider } from './contexts/GamesContext'
+import { AchievementsProvider } from './contexts/AchievementsContext'
+import AchievementUnlockedToast from './Components/AchievementUnlockedToast'
 import { ChakraProvider } from '@chakra-ui/react'
 
 function AppLayout() {
   const headerRef = useRef(null)
   const [headerHeight, setHeaderHeight] = useState(64)
+  const isMobile = useIsMobile()
+  const sidebarWidth = isMobile ? 0 : SIDEBAR_WIDTH_COLLAPSED
 
   useEffect(() => {
     if (!headerRef.current) return
@@ -45,12 +54,13 @@ function AppLayout() {
 
   return (
     <div className='min-h-screen relative font-pixel' style={{ backgroundColor: '#0f172a' }}>
+      {!isMobile && <Sidebar headerHeight={headerHeight} />}
       <div ref={headerRef} className='fixed w-full top-0 z-50'>
         <Navbar />
         <BetaBanner />
-        <GameBar />
       </div>
-      <div style={{ paddingTop: headerHeight, paddingBottom: 33 }}>
+      <div style={{ paddingTop: headerHeight, paddingBottom: 33, marginLeft: sidebarWidth, transition: 'margin-left 0.2s ease' }}>
+        <GameBar />
         <Routes>
           <Route exact path='/' element={<Navigate to='/dashboard' />} />
           <Route exact path='/dashboard' element={<DashboardNew headerHeight={headerHeight} />} />
@@ -61,6 +71,8 @@ function AppLayout() {
           <Route path='/players/:id' element={<Player />} />
           <Route exact path='/fantasy' element={<FantasyPage />} />
           <Route exact path='/cards' element={<CardsPage />} />
+          <Route exact path='/achievements' element={<AchievementsPage />} />
+          <Route exact path='/front-office' element={<FrontOfficePage />} />
           <Route exact path='/about' element={<AboutPage />} />
           <Route exact path='/admin' element={<AdminPage />} />
         </Routes>
@@ -245,7 +257,12 @@ function App() {
           <SeasonWebSocketProvider>
             <FloosballProvider>
               <GamesProvider>
-                <AuthGate />
+                <AchievementsProvider>
+                  <SidebarProvider>
+                    <AuthGate />
+                    <AchievementUnlockedToast />
+                  </SidebarProvider>
+                </AchievementsProvider>
               </GamesProvider>
             </FloosballProvider>
           </SeasonWebSocketProvider>

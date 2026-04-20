@@ -26,6 +26,7 @@ const SECTION_GROUPS: SectionCategory[] = [
       { id: 'prognosticate', title: 'Prognosticate' },
       { id: 'front-office', title: 'The Front Office' },
       { id: 'team-funding', title: 'Team Funding' },
+      { id: 'prospects', title: 'Prospects & Rookie Draft' },
     ],
   },
   {
@@ -39,6 +40,7 @@ const SECTION_GROUPS: SectionCategory[] = [
       { id: 'the-combine', title: 'The Combine' },
       { id: 'floobits', title: 'Floobits' },
       { id: 'power-ups', title: 'Power-Ups' },
+      { id: 'achievements', title: 'Achievements' },
     ],
   },
 ]
@@ -55,7 +57,7 @@ const linkStyle: React.CSSProperties = {
 }
 
 const textStyle: React.CSSProperties = {
-  fontSize: '13px',
+  fontSize: '14px',
   color: '#cbd5e1',
   lineHeight: '1.7',
   margin: 0,
@@ -79,7 +81,7 @@ const labelStyle: React.CSSProperties = {
 const bulletList = (items: string[]) => (
   <div style={{ paddingLeft: '8px' }}>
     {items.map((line, i) => (
-      <div key={i} style={{ ...textStyle, fontSize: '12px', marginBottom: '3px', display: 'flex', gap: '6px' }}>
+      <div key={i} style={{ ...textStyle, fontSize: '13px', marginBottom: '4px', display: 'flex', gap: '6px' }}>
         <span style={{ color: '#94a3b8', flexShrink: 0 }}>-</span>
         <span>{line}</span>
       </div>
@@ -162,7 +164,7 @@ const Section: React.FC<{ id: string; title: string; children: React.ReactNode }
     }}
   >
     <div style={{ padding: '16px 20px 0' }}>
-      <span style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0' }}>
+      <span style={{ fontSize: '18px', fontWeight: '700', color: '#e2e8f0' }}>
         {title}
       </span>
     </div>
@@ -189,9 +191,9 @@ const DocSidebar: React.FC<{ activeId: string; headerHeight: number }> = ({ acti
     {SECTION_GROUPS.map(group => (
       <div key={group.category} style={{ marginBottom: '12px' }}>
         <div style={{
-          fontSize: '10px',
+          fontSize: '11px',
           fontWeight: '700',
-          color: '#64748b',
+          color: '#94a3b8',
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
           padding: '4px 12px 6px',
@@ -212,9 +214,9 @@ const DocSidebar: React.FC<{ activeId: string; headerHeight: number }> = ({ acti
                 border: 'none',
                 borderLeft: isActive ? '2px solid #3b82f6' : '2px solid transparent',
                 padding: '5px 12px',
-                fontSize: '12px',
+                fontSize: '13px',
                 fontWeight: isActive ? '600' : '400',
-                color: isActive ? '#e2e8f0' : '#94a3b8',
+                color: isActive ? '#e2e8f0' : '#cbd5e1',
                 cursor: 'pointer',
                 transition: 'color 0.15s, border-color 0.15s',
                 fontFamily: 'inherit',
@@ -547,7 +549,7 @@ const AboutPage: React.FC = () => {
                 CLOSED BETA
               </span>
             </div>
-            <p style={{ ...textStyle, fontSize: '12px' }}>
+            <p style={{ ...textStyle, fontSize: '13px' }}>
               Welcome to the Floosball closed beta. The simulation is under active development,
               so features may change, balancing will be adjusted, and new systems will be added
               throughout the beta period. Season data (fantasy points, cards, floobits) may
@@ -588,7 +590,7 @@ const AboutPage: React.FC = () => {
               and win probability. The right panel has three tabs: Plays, Box Score, and Stats.
             </p>
 
-            <p style={{ ...labelStyle, fontSize: '12px', marginTop: '12px' }}>Left Panel</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Left Panel</p>
             <p style={{ ...textStyle, marginBottom: '6px' }}>
               The scoreboard shows each team's avatar, city, name, record, ELO rating, score, and remaining
               timeouts. During live games, a white ring appears around the avatar of the team with possession,
@@ -685,7 +687,7 @@ const AboutPage: React.FC = () => {
               </div>
             </div>
 
-            <p style={{ ...labelStyle, fontSize: '12px', marginTop: '12px' }}>Plays Tab</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Plays Tab</p>
             <p style={{ ...textStyle, marginBottom: '6px' }}>
               A chronological feed of every play. Toggle between All Plays and Highlights (touchdowns,
               turnovers, big plays, clutch/choke moments, momentum shifts). Each play shows the clock,
@@ -743,7 +745,7 @@ const AboutPage: React.FC = () => {
                   <div style={{ padding: '8px 10px 10px', display: 'flex', gap: '10px' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#334155', flexShrink: 0, marginTop: '2px' }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', marginBottom: '4px' }}>
                         <span style={{ color: '#94a3b8' }}>{play.meta}</span>
                         <span style={{ color: '#cbd5e1', fontWeight: '500' }}>{play.down}</span>
                         <span style={{ color: '#94a3b8' }}>{play.yard}</span>
@@ -766,7 +768,7 @@ const AboutPage: React.FC = () => {
                         {play.desc}
                       </div>
                       {play.score && (
-                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>{play.score}</div>
+                        <div style={{ fontSize: '13px', color: '#94a3b8' }}>{play.score}</div>
                       )}
                     </div>
                     {play.accent && (
@@ -783,7 +785,7 @@ const AboutPage: React.FC = () => {
               ))}
             </div>
 
-            <p style={{ ...labelStyle, fontSize: '12px', marginTop: '12px' }}>Box Score Tab</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Box Score Tab</p>
             <p style={{ ...textStyle, marginBottom: '4px' }}>
               A side-by-side comparison of team-level stats:
             </p>
@@ -808,7 +810,7 @@ const AboutPage: React.FC = () => {
               ))}
             </div>
 
-            <p style={{ ...labelStyle, fontSize: '12px', marginTop: '12px' }}>Stats Tab</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Stats Tab</p>
             <p style={{ ...textStyle, marginBottom: '4px' }}>
               Individual player stats grouped by position. Each player shows their star rating and
               fantasy points earned.
@@ -820,12 +822,12 @@ const AboutPage: React.FC = () => {
               'Kicking (K): Field Goals Made, Attempts, Longest',
             ])}
 
-            <p style={{ ...labelStyle, fontSize: '12px', marginTop: '12px' }}>Play Insights</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Play Insights</p>
             <p style={{ ...textStyle, marginBottom: '6px' }}>
               Expanding a play reveals the full decision-making and execution breakdown behind that play.
               The panel has two columns: context on the left and execution on the right.
             </p>
-            <p style={{ ...textStyle, fontWeight: '600', color: '#e2e8f0', fontSize: '12px', marginBottom: '4px' }}>
+            <p style={{ ...textStyle, fontWeight: '600', color: '#e2e8f0', fontSize: '13px', marginBottom: '4px' }}>
               Context
             </p>
             {bulletList([
@@ -834,7 +836,7 @@ const AboutPage: React.FC = () => {
               'Fourth Down decisions (punt, field goal, or go for it) and field goal probability',
               'Clock Management decisions (kneel, spike, timeout, desperation FG) with rationale',
             ])}
-            <p style={{ ...textStyle, fontWeight: '600', color: '#e2e8f0', fontSize: '12px', marginTop: '8px', marginBottom: '4px' }}>
+            <p style={{ ...textStyle, fontWeight: '600', color: '#e2e8f0', fontSize: '13px', marginTop: '8px', marginBottom: '4px' }}>
               Execution
             </p>
             {bulletList([
@@ -970,7 +972,7 @@ const AboutPage: React.FC = () => {
               </div>
             </div>
 
-            <p style={{ ...labelStyle, fontSize: '12px', marginTop: '12px' }}>Matchup Preview</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Matchup Preview</p>
             <p style={textStyle}>
               For scheduled (upcoming) games, the modal shows a matchup preview instead of the play tabs.
               This displays season-to-date averages for both teams in a head-to-head comparison: points per
@@ -985,7 +987,7 @@ const AboutPage: React.FC = () => {
               Certain plays are highlighted with visual indicators in the play-by-play and highlights feed:
             </p>
             <div style={indicatorRow}>
-              <span style={{ color: '#f59e0b', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
+              <span style={{ color: '#f59e0b', fontWeight: '600', fontSize: '13px', minWidth: '110px' }}>
                 BIG PLAY
               </span>
               <span style={textStyle}>
@@ -993,7 +995,7 @@ const AboutPage: React.FC = () => {
               </span>
             </div>
             <div style={indicatorRow}>
-              <span style={{ color: '#06b6d4', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
+              <span style={{ color: '#06b6d4', fontWeight: '600', fontSize: '13px', minWidth: '110px' }}>
                 CLUTCH
               </span>
               <span style={textStyle}>
@@ -1001,7 +1003,7 @@ const AboutPage: React.FC = () => {
               </span>
             </div>
             <div style={indicatorRow}>
-              <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
+              <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '13px', minWidth: '110px' }}>
                 CHOKE
               </span>
               <span style={textStyle}>
@@ -1009,7 +1011,7 @@ const AboutPage: React.FC = () => {
               </span>
             </div>
             <div style={indicatorRow}>
-              <span style={{ color: '#f97316', fontWeight: '600', fontSize: '12px', minWidth: '110px' }}>
+              <span style={{ color: '#f97316', fontWeight: '600', fontSize: '13px', minWidth: '110px' }}>
                 <svg viewBox="0 0 24 24" fill="#f97316" style={{ width: '14px', height: '14px', display: 'inline-block', verticalAlign: 'middle', marginRight: '2px' }}>
                   <path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.42-7.1A13.5 13.5 0 0 1 10.5 5.8s.5 2.7 2.5 4.2c2-1.5 2.5-4.2 2.5-4.2s2.08 1.5 3.08 2.6C20.26 10.06 20 12.93 20 15.5 20 19.42 16.97 23 12 23Zm0-2c2.76 0 5-1.79 5-4.5 0-1.5-.5-3-1.5-4l-1 1c-1 1-2.5 1-3.5 0l-1-1c-1 1-1.5 2.5-1.5 4 0 2.71 2.24 4.5 5 4.5Z" />
                 </svg>{' '}MOMENTUM
@@ -1081,7 +1083,7 @@ const AboutPage: React.FC = () => {
                   <div style={{ fontSize: '13px', fontWeight: '600', color: '#e2e8f0' }}>{item.day}</div>
                   <div style={{ fontSize: '11px', color: '#3b82f6', marginTop: '2px' }}>{item.label}</div>
                 </div>
-                <div style={{ ...textStyle, fontSize: '12px' }}>{item.desc}</div>
+                <div style={{ ...textStyle, fontSize: '13px' }}>{item.desc}</div>
               </div>
             ))}
           </Section>
@@ -1089,36 +1091,117 @@ const AboutPage: React.FC = () => {
           {/* Prognosticate */}
           <Section id="prognosticate" title="Prognosticate">
             <p style={textStyle}>
-              Prognosticate is the weekly predictions game. Pick who you think will win each matchup, either
-              before or during games. Earlier picks are worth more points: a pre-game pick earns 10 points if
-              correct, while a Q3 pick earns only 4 and a Q4 pick earns 2. Overtime picks earn 3 points (more
-              than Q4 since the outcome is basically a coin flip again). You can change your pick any time before
-              the game ends, but the point value resets to the current quarter. Points convert to Floobits at
-              2:1, and reaching 96+ points in a week earns a Clairvoyant bonus. Weekly and season leaderboards
-              rank by total points earned. Access Prognosticate from the <Link to="/dashboard" style={linkStyle}>Dashboard</Link>.
+              Prognosticate is the weekly game where you pick winners. You can set picks before kickoff or
+              swap them mid-game. Each pick locks once that specific game hits Final.
+            </p>
+
+            <p style={labelStyle}>Scoring</p>
+            <p style={textStyle}>
+              A correct pick starts from a base of 10 points and gets scaled by two factors:
+            </p>
+            {bulletList([
+              'Timing: a pick made before kickoff is always worth the full base. Once the game starts, the value decays based on what quarter you picked in and how close the game is. A pick made in a blowout decays fast because the outcome is obvious. A pick made in a close game decays slowly, since the result is still in question',
+              'Underdog bonus: picking a team with a lower ELO (or, once the game starts, a lower live win probability) pays more if they win. Picking a heavy favorite pays less',
+            ])}
+            <p style={textStyle}>
+              The final score is base × timing × underdog, rounded. Wrong picks score zero no matter when
+              you made them.
+            </p>
+
+            <p style={labelStyle}>Auto-Pick</p>
+            <p style={textStyle}>
+              If you don't want to set picks manually every week, you can have them filled in for you. Three
+              modes in your user settings:
+            </p>
+            {bulletList([
+              'Favorites: always pick the favorite by ELO',
+              'Underdogs: always pick the underdog (higher payout when they win)',
+              'Random: coin flip each game',
+            ])}
+            <p style={textStyle}>
+              Auto-picks are tagged so you can tell them apart from manual picks. You can still override any
+              auto-pick before its game is Final.
+            </p>
+
+            <p style={labelStyle}>Weekly Rewards</p>
+            <p style={textStyle}>
+              Points convert to Floobits at 2:1 at the end of each week. Score above the Clairvoyant
+              threshold in a single week and you get a bonus payout on top of that.
+            </p>
+            <p style={textStyle}>
+              Weekly and season-long leaderboards rank everyone by total points. You can find Prognosticate
+              on the <Link to="/dashboard" style={linkStyle}>Dashboard</Link>.
             </p>
           </Section>
 
           {/* The Front Office */}
           <Section id="front-office" title="The Front Office">
             <p style={textStyle}>
-              The Front Office is a fan-driven GM voting system on your favorite team's page,
-              available starting Week 22 of each season. As a board member, you can issue directives to
-              influence team decisions: fire coaches, re-sign or cut players, nominate coaching replacements,
-              and request specific free agents.
+              The Front Office is where fans vote on their favorite team's personnel decisions. It opens
+              in Week 22 and stays open through the offseason. You'll find it on the Team Management page,
+              on the "Front Office" tab. Only signed-in users with a favorite team set can participate.
             </p>
-            <p style={{ ...textStyle, marginTop: '10px' }}>
-              Each directive costs Floobits and counts toward your seasonal allowance. Motions need
-              a quorum of directives from active board members before they go up for ratification.
-              All motions are resolved during the offseason.
+
+            <p style={labelStyle}>Directives</p>
+            <p style={textStyle}>
+              As a board member you issue directives to influence what the team does at season end:
             </p>
+            {bulletList([
+              'Fire Coach: push to fire the current head coach',
+              'Hire Coach: nominate a replacement from the available coaching pool. Only matters if the fire vote ratifies',
+              'Cut Player: release a rostered player to the FA pool',
+              'Re-Sign Player: keep a walk-year player on the roster',
+              'Free Agent Requisition: rank up to 5 replacements (FAs or your own prospects) for each projected roster opening',
+            ])}
+
+            <p style={labelStyle}>Costs and Limits</p>
+            <p style={textStyle}>
+              Each directive costs Floobits. The cost doubles every time you vote against the same target,
+              so stacking votes gets expensive fast. Each season you can file up to 8 directives per type,
+              up to 5 against any single target, and 20 total. FA requisition ballots are a single flat cost.
+            </p>
+
+            <p style={labelStyle}>Quorum and Ratification</p>
+            <p style={textStyle}>
+              Every motion needs a quorum of directives before the board will consider it. The quorum size
+              scales with how many fans on that team have voted at all this season. Once quorum is met,
+              there's a 45% base chance of ratification. The more directives stack up past quorum, the
+              higher that chance climbs, up to 95%. Ratified motions take effect in the offseason.
+              Motions that fall short either deny or expire without action.
+            </p>
+
+            <p style={labelStyle}>Free Agent Requisitions</p>
+            <p style={textStyle}>
+              FA requisitions use ranked-choice voting. For each roster slot that's projected to open,
+              you rank up to 5 candidates. The pool includes current free agents, projected walk-year
+              players from other teams, and your own pipeline prospects. If you rank a prospect above an
+              FA at the same slot, the team promotes that prospect instead of signing the FA. If your
+              ballot hits quorum and ratifies, those rankings drive the team's picks in the FA draft.
+            </p>
+            <p style={textStyle}>
+              With no ballot on file the team falls back to auto-logic: promote any prospect rated 70+
+              first, then sign the best available FA for any slot still open.
+            </p>
+
+            <p style={labelStyle}>Resolution Order</p>
+            <p style={textStyle}>
+              Motions resolve during the offseason in this order:
+            </p>
+            {bulletList([
+              'Fire Coach, then Hire Coach if the fire ratified',
+              'Cut Player releases ratified cuts to the FA pool',
+              'Re-Sign Player renews walk-year contracts',
+              'Rookie Draft picks in turn, pulling from ranked rookie ballots',
+              'FA Draft picks in turn, pulling from ranked FA ballots',
+            ])}
           </Section>
 
           {/* Team Funding */}
           <Section id="team-funding" title="Team Funding">
             <p style={textStyle}>
-              Every team has a market tier that determines offseason bonuses to player development, morale,
-              and fatigue recovery. Fans fund their favorite team by contributing Floobits — either directly
+              Every team has a market tier. Your tier decides what bonuses (or penalties) your team gets
+              in the offseason: faster or slower player development, mood swings, and how quickly players
+              recover from fatigue. Fans back their favorite team by contributing Floobits either directly
               during the season or automatically at season end.
             </p>
 
@@ -1134,47 +1217,131 @@ const AboutPage: React.FC = () => {
               border: '1px solid #334155',
             }}>
               {[
-                { tier: 'Small Market', color: '#f97316', desc: 'Reduced development, lower morale, increased fatigue' },
-                { tier: 'Mid Market', color: '#64748b', desc: 'Baseline — no bonuses or penalties' },
-                { tier: 'Large Market', color: '#3b82f6', desc: 'Modest development and morale boost, moderate fatigue reduction' },
-                { tier: 'Mega Market', color: '#a78bfa', desc: 'Large development and morale boost, major fatigue reduction' },
+                { tier: 'Small Market', color: '#f97316', desc: 'Slower player development, lower morale, more fatigue' },
+                { tier: 'Mid Market', color: '#2dd4bf', desc: 'Baseline. No bonuses or penalties' },
+                { tier: 'Large Market', color: '#3b82f6', desc: 'Modest development boost, small morale boost, some fatigue reduction' },
+                { tier: 'Mega Market', color: '#a78bfa', desc: 'Big development boost, strong morale boost, major fatigue reduction' },
               ].map(t => (
                 <React.Fragment key={t.tier}>
-                  <span style={{ color: t.color, fontWeight: '700', fontSize: '12px', whiteSpace: 'nowrap' }}>{t.tier}</span>
-                  <span style={{ ...textStyle, fontSize: '12px' }}>{t.desc}</span>
+                  <span style={{ color: t.color, fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>{t.tier}</span>
+                  <span style={{ ...textStyle, fontSize: '13px' }}>{t.desc}</span>
                 </React.Fragment>
               ))}
             </div>
 
-            <p style={labelStyle}>Tier Thresholds</p>
+            <p style={labelStyle}>How Tiers Are Decided</p>
             <p style={textStyle}>
-              Tier is determined by total effective funding (baseline + fan contributions). Thresholds:
+              Tiers are relative. Your team's tier depends on how your funding stacks up against the rest
+              of the league, not a fixed Floobit target. The "fair share" is the total league funding
+              divided by the number of teams. Your team's tier comes from your ratio against that fair share:
             </p>
             {bulletList([
-              '0 – 499F: Small Market',
-              '500 – 999F: Mid Market',
-              '1,000 – 1,999F: Large Market',
-              '2,000F+: Mega Market',
+              'Mega Market: 2× fair share or higher',
+              'Large Market: 1.15× up to 2× fair share',
+              'Mid Market: within 15% of fair share either way',
+              'Small Market: below 0.85× fair share',
+            ])}
+            <p style={textStyle}>
+              Climbing means out-contributing the rest of the league, not hitting a set number. As the
+              overall economy grows, the bar to reach Mega grows with it. Your tier reflects where you
+              actually stand today.
+            </p>
+
+            <p style={labelStyle}>What Makes Up Effective Funding</p>
+            <p style={textStyle}>
+              A team's effective funding is the sum of three things:
+            </p>
+            {bulletList([
+              'Baseline: a small amount every team gets at season start',
+              'Carry-forward: part of last season\'s effective funding rolls over automatically',
+              'Fan contributions: anything fans donate this season',
+            ])}
+            <p style={textStyle}>
+              Tiers lock at the start of each season using that season's starting effective funding.
+              Anything you contribute mid-season doesn't change the current tier. It builds toward next
+              season's locked value instead.
+            </p>
+
+            <p style={labelStyle}>How to Contribute</p>
+            <p style={textStyle}>
+              Two ways to give your favorite team money, both on the Markets tab of Team Management:
+            </p>
+            {bulletList([
+              'Direct contribution: spend Floobits now in chunks of 25 / 50 / 100 / 250',
+              'Season-end auto-contribution: pick a percentage of your unspent Floobits to donate automatically when the season ends. Set it to 0% if you want to keep everything',
             ])}
 
-            <p style={labelStyle}>How Funding Works</p>
+            <p style={labelStyle}>League Funding Chart</p>
             <p style={textStyle}>
-              Each team receives a small baseline funding amount each season. On top of that, fans can contribute
-              Floobits in two ways: direct contributions at any time during the season, or a season-end
-              auto-contribution that donates a configurable percentage of your unspent Floobits to your
-              favorite team. Both are configured on your team's Funding tab.
-            </p>
-            <p style={{ ...textStyle, marginTop: '10px' }}>
-              Tiers lock at the start of each season. Any contributions made mid-season build toward
-              next season's tier, not the current one. The funding progress bar on your team page shows
-              both your current tier and the projected next-season tier.
+              The Markets tab shows a chart of every team in the league. Each team is a chip at its
+              current spot on the funding axis, connected by a line to a hollow ring at its projected
+              next-season position. Tier zones are labeled across the top. A team sitting in Large today
+              but projected to slide into Mid next season will show its chip in Large and its ring in Mid.
+              A second tab on the same chart swaps in fan totals, so you can see how many fans each team
+              has and how many are actually contributing.
             </p>
 
-            <p style={labelStyle}>Carry-Forward Decay</p>
+            <p style={labelStyle}>Projections</p>
             <p style={textStyle}>
-              At the end of each season, 50% of a team's effective funding carries over to the next season.
-              This means sustained contributions are needed to maintain or climb tiers — a single large
-              donation won't keep a team at Mega Market forever.
+              The summary at the top also shows your team's projected next-season tier. The projection
+              takes into account every fan's current balance and auto-contribution setting across the
+              league. Other teams' fans contributing pushes the tier thresholds up too, so the projected
+              number is a snapshot that shifts as the league's total pool grows.
+            </p>
+          </Section>
+
+          {/* Prospects & Rookie Draft */}
+          <Section id="prospects" title="Prospects & Rookie Draft">
+            <p style={textStyle}>
+              Every team has a prospect pipeline: rookies drafted into the organization who aren't yet on
+              the main roster. Prospects develop in the background each offseason and eventually get
+              promoted to starters or released to free agency.
+            </p>
+
+            <p style={labelStyle}>The Rookie Class</p>
+            <p style={textStyle}>
+              A new rookie class is generated at the start of every season and stays hidden until the
+              Front Office opens in Week 22. From that point on, you can scout the class on the Front
+              Office tab of Team Management. How accurately you can see each rookie's potential depends
+              on your team's coach scouting rating plus your team's funding tier. A Mega Market team with
+              a top scouting coach sees clearer projections than a Small Market team with a mediocre one.
+            </p>
+
+            <p style={labelStyle}>Rookie Draft</p>
+            <p style={textStyle}>
+              The rookie draft happens at the start of the offseason, before free agency. Picks go in
+              reverse order of regular-season record (worst team picks first), giving losing teams the
+              first shot at rebuilding.
+            </p>
+            <p style={textStyle}>
+              Fans can influence who their team picks by filing a rookie ballot during the board's active
+              window. The team uses your ranked list as its pick preference. Without a ballot, the team
+              auto-picks the best available rookie at a position where there's an open pipeline slot.
+            </p>
+            <p style={textStyle}>
+              Each team has up to two prospect slots per position. If a team already has two prospects at
+              that spot, it skips the pick rather than bench a current prospect. Any rookies not drafted
+              go straight into the free agent pool as undrafted players.
+            </p>
+
+            <p style={labelStyle}>Development Window</p>
+            <p style={textStyle}>
+              Prospects stay in the pipeline for up to 3 seasons. Each offseason they train and (usually)
+              improve. The Team Management prospect row shows how many seasons each prospect has left.
+              There are three ways out of the pipeline:
+            </p>
+            {bulletList([
+              'Promotion: the team calls them up to fill an open starter spot',
+              'Automatic release: if their dev window runs out without promotion, they go to the free agent pool as a rookie',
+              'FA ballot: fans rank them above free agents at their position, and the team promotes them instead of signing an FA',
+            ])}
+
+            <p style={labelStyle}>Auto-Promotion</p>
+            <p style={textStyle}>
+              When the offseason FA draft runs and a team has an open roster slot, the first thing it
+              tries is promoting a prospect rated 70 or higher at that position. If nobody qualifies, it
+              signs the best available free agent instead. A ranked FA ballot overrides this. If you rank
+              an FA above a prospect, the team signs the FA.
             </p>
           </Section>
 
@@ -1245,8 +1412,8 @@ const AboutPage: React.FC = () => {
                   borderRadius: '5px',
                   backgroundColor: 'rgba(51,65,85,0.15)',
                 }}>
-                  <span style={{ color: m.color, fontWeight: '700', fontSize: '12px', minWidth: '80px' }}>{m.name}</span>
-                  <span style={{ ...textStyle, fontSize: '12px' }}>{m.desc}</span>
+                  <span style={{ color: m.color, fontWeight: '700', fontSize: '13px', minWidth: '80px' }}>{m.name}</span>
+                  <span style={{ ...textStyle, fontSize: '13px' }}>{m.desc}</span>
                 </div>
               ))}
             </div>
@@ -1310,7 +1477,7 @@ const AboutPage: React.FC = () => {
                     <span style={{ color: e.color, fontWeight: '700', fontSize: '13px' }}>{e.name}</span>
                     <span style={{ color: '#64748b', fontSize: '11px' }}>{e.count} effects</span>
                   </div>
-                  <span style={{ ...textStyle, fontSize: '12px' }}>{e.desc}</span>
+                  <span style={{ ...textStyle, fontSize: '13px' }}>{e.desc}</span>
                 </div>
               ))}
             </div>
@@ -1341,7 +1508,7 @@ const AboutPage: React.FC = () => {
                 { label: 'Champion', abbr: 'CH', color: '#f59e0b', desc: 'Unlocks the FLEX roster slot' },
                 { label: 'All-Pro', abbr: 'AP', color: '#a78bfa', desc: '+1 roster swap when equipped' },
               ].map(c => (
-                <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
                   <span style={{
                     color: c.color, fontWeight: '700', fontSize: '10px',
                     backgroundColor: `${c.color}20`, padding: '2px 6px',
@@ -1385,7 +1552,7 @@ const AboutPage: React.FC = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <span style={{ color: c.color, fontWeight: '700', fontSize: '13px' }}>{c.label}</span>
                 </div>
-                <p style={{ ...textStyle, fontSize: '12px' }}>{c.desc}</p>
+                <p style={{ ...textStyle, fontSize: '13px' }}>{c.desc}</p>
                 <p style={{ ...textStyle, fontSize: '11px', color: '#94a3b8', marginTop: '4px', fontStyle: 'italic' }}>
                   {c.example}
                 </p>
@@ -1475,7 +1642,7 @@ const AboutPage: React.FC = () => {
             </p>
 
             <p style={labelStyle}>Edition Thresholds</p>
-            <p style={{ ...textStyle, fontSize: '12px', marginBottom: '10px' }}>
+            <p style={{ ...textStyle, fontSize: '13px', marginBottom: '10px' }}>
               The total sell value of all input cards determines the output edition:
             </p>
             <div style={{
@@ -1517,7 +1684,7 @@ const AboutPage: React.FC = () => {
               ))}
             </div>
 
-            <p style={{ ...textStyle, marginTop: '10px', fontSize: '12px' }}>
+            <p style={{ ...textStyle, marginTop: '10px', fontSize: '13px' }}>
               Cards must be unequipped before combining. Higher-edition cards contribute more value,
               so combining a mix of editions is the most efficient path to Diamond.
             </p>
@@ -1580,7 +1747,7 @@ const AboutPage: React.FC = () => {
                 }}>
                   <div style={{ flex: 1 }}>
                     <span style={{ color: pu.color, fontWeight: '700', fontSize: '13px' }}>{pu.name}</span>
-                    <p style={{ ...textStyle, fontSize: '12px', marginTop: '2px' }}>{pu.desc}</p>
+                    <p style={{ ...textStyle, fontSize: '13px', marginTop: '2px' }}>{pu.desc}</p>
                   </div>
                   <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', flexShrink: 0 }}>
                     {pu.price}F
@@ -1590,7 +1757,57 @@ const AboutPage: React.FC = () => {
             </div>
           </Section>
 
+          {/* Achievements */}
+          <Section id="achievements" title="Achievements">
+            <p style={textStyle}>
+              Achievements reward you with Floobits, packs, or powerups for hitting milestones across
+              the site. They split into three buckets that all live on
+              the <Link to="/achievements" style={linkStyle}>Achievements</Link> page.
+            </p>
 
+            <p style={labelStyle}>Rookie Goals</p>
+            <p style={textStyle}>
+              One-time onboarding achievements. Things like setting a favorite team, submitting your
+              first pick-em pick, opening your first pack, setting a fantasy roster, equipping a card.
+              Each has a step-by-step hint and an action button that takes you straight to the right
+              spot. Payouts are Floobits only. Once you complete a Rookie Goal, it stays completed
+              forever.
+            </p>
+
+            <p style={labelStyle}>Season Goals</p>
+            <p style={textStyle}>
+              Per-season achievements that reset every offseason, so you can earn them again each year.
+              Some are tiered (Banner Week I through IV, Dedicated I through VI) and reward larger prizes
+              as you climb. Rewards can include Floobits, card packs, or powerups.
+            </p>
+
+            <p style={labelStyle}>Secret Achievements</p>
+            <p style={textStyle}>
+              Hidden achievements that only reveal themselves once you unlock them. These reward
+              unusual patterns of play rather than straightforward milestones.
+            </p>
+
+            <p style={labelStyle}>Claiming Rewards</p>
+            <p style={textStyle}>
+              Floobits pay out instantly when the achievement completes. Packs and powerups show up in
+              your Unclaimed Rewards panel at the top of the Achievements page. Click Claim on a pack
+              to open it right there. Powerups activate on claim.
+            </p>
+
+            <p style={labelStyle}>Save for Next Season</p>
+            <p style={textStyle}>
+              You don't have to open a pack the moment you earn it. In the last four weeks of the
+              regular season, any unclaimed pack reward shows a "Save for Next Season" button. Clicking
+              it stashes the pack for season N+1 so you can open it against a fresher card pool (new
+              rookies, new edition rarities, etc.) instead of burning it on the current season.
+            </p>
+            <p style={textStyle}>
+              Stashed packs have one-season expiry. If you save a pack for next season and then forget
+              to claim it during that season, it gets swept at the following season's start. Unclaimed
+              rewards that you never stashed also get swept at the next season's start, so the general
+              rule is: claim (or stash) your rewards before the season ends.
+            </p>
+          </Section>
 
           {/* Created by */}
           <div style={{

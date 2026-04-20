@@ -484,10 +484,19 @@ interface PlayerBase {
   id: number
   name: string
   position: string | null
+  defensivePosition?: string | null
   playerRating: number
   ratingStars: number
   fantasyPoints: number
   totalFantasyPoints: number
+  defense?: {
+    sacks: number
+    ints: number
+    tackles: number
+    tfl: number
+    forcedFumbles: number
+    passBreakups: number
+  }
 }
 
 export interface GameStats {
@@ -595,6 +604,19 @@ export interface OffseasonCompleteEvent extends BaseWebSocketEvent {
   remainingFreeAgents: number
 }
 
+export interface FaDraftOrderUpdateEvent extends BaseWebSocketEvent {
+  event: 'fa_draft_order_update'
+  draftOrder: Array<{
+    name: string
+    city?: string
+    abbr: string
+    id?: number
+    color?: string
+    fundingTier?: string
+    fundingTierRank?: number
+  }>
+}
+
 // Union type for all season events
 export type SeasonWebSocketEvent =
   | WeekStartEvent
@@ -610,6 +632,7 @@ export type SeasonWebSocketEvent =
   | OffseasonCutEvent
   | OffseasonTeamCompleteEvent
   | OffseasonCompleteEvent
+  | FaDraftOrderUpdateEvent
   | GmVoteResolvedEvent
   | GmFaWindowOpenEvent
   | GmFaWindowCloseEvent

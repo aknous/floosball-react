@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import PlayerAvatar from '@/Components/PlayerAvatar'
-import { Stars } from '@/Components/Stars'
+import { Stars, SwordIcon, ShieldIcon, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { GiLaurelsTrophy, GiStarMedal } from 'react-icons/gi'
 
@@ -15,6 +15,7 @@ interface PlayerAttributes {
   xFactorStars?: number; xFactorValue?: number
   seasonPerformanceRatingStars?: number; seasonPerformanceRating?: number
   fatigue?: number
+  defensiveAttributes?: Record<string, { value: number; stars: number }>
 }
 
 interface PlayerData {
@@ -27,13 +28,25 @@ interface PlayerData {
   teamSecondaryColor: string | null
   teamId: number | null
   teamAbbr: string | null
+  isProspect?: boolean
+  draftingTeamId?: number | null
+  draftingTeamName?: string | null
+  draftingTeamCity?: string | null
+  draftingTeamAbbr?: string | null
+  draftingTeamColor?: string | null
   seasonsPlayed: number
   ratingStars: number
   playerRating: number
+  offensiveRating?: number
+  offensiveRatingStars?: number
+  defensiveRating?: number
+  defensiveRatingStars?: number
+  defensivePosition?: string | null
   rank: string
   number: number
   ratingValue: number
   championships: any[]
+  mvpAwards?: any[]
   attributes: PlayerAttributes
   stats: any[]
   allTimeStats: any
@@ -341,22 +354,70 @@ function KStatsTable({ stats, career }: { stats: any[]; career: any }) {
   )
 }
 
+function DefenseStatsTable({ stats, career }: { stats: any[]; career: any }) {
+  const d = career?.defense ?? {}
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <thead>
+        <tr>
+          {['Season', 'Team', 'TKL', 'SCK', 'INT', 'TFL', 'FF', 'PBU'].map(h => (
+            <th key={h} style={thStyle}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <tr style={{ borderBottom: '1px solid #334155' }}>
+          <td style={careerTdFirst}>CAREER</td>
+          <td style={careerTdStyle}></td>
+          <td style={careerTdStyle}>{d.tackles ?? '—'}</td>
+          <td style={careerTdStyle}>{d.sacks ?? '—'}</td>
+          <td style={careerTdStyle}>{d.ints ?? '—'}</td>
+          <td style={careerTdStyle}>{d.tfl ?? '—'}</td>
+          <td style={careerTdStyle}>{d.forcedFumbles ?? '—'}</td>
+          <td style={careerTdStyle}>{d.passBreakups ?? '—'}</td>
+        </tr>
+        {stats?.map((s, idx) => (
+          <tr key={idx} style={{
+            borderBottom: '1px solid #1a2640',
+            backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+          }}>
+            <td style={tdFirst}>S{s.season}</td>
+            {teamCell(s)}
+            <td style={tdStyle}>{s.defense?.tackles ?? '—'}</td>
+            <td style={tdStyle}>{s.defense?.sacks ?? '—'}</td>
+            <td style={tdStyle}>{s.defense?.ints ?? '—'}</td>
+            <td style={tdStyle}>{s.defense?.tfl ?? '—'}</td>
+            <td style={tdStyle}>{s.defense?.forcedFumbles ?? '—'}</td>
+            <td style={tdStyle}>{s.defense?.passBreakups ?? '—'}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
 // ── Main Page ───────────────────────────────────────────────────────────────
+
+interface RatingPoint { season: number; rating: number }
 
 export default function PlayerPage() {
   const { id } = useParams<{ id: string }>()
   const [player, setPlayer] = useState<PlayerData | null>(null)
+  const [ratingHistory, setRatingHistory] = useState<RatingPoint[]>([])
   const [loading, setLoading] = useState(true)
+  const [statsView, setStatsView] = useState<'offense' | 'defense'>('offense')
   const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!id) return
     setLoading(true)
-    fetch(`${API_BASE}/players/${id}`)
-      .then(r => r.json())
-      .then(json => { if (json.success && json.data) setPlayer(json.data) })
-      .catch(err => console.error('Failed to fetch player:', err))
-      .finally(() => setLoading(false))
+    Promise.all([
+      fetch(`${API_BASE}/players/${id}`).then(r => r.json()).catch(() => null),
+      fetch(`${API_BASE}/players/${id}/rating-history`).then(r => r.json()).catch(() => null),
+    ]).then(([playerRes, historyRes]) => {
+      if (playerRes?.success && playerRes.data) setPlayer(playerRes.data)
+      if (historyRes?.success && historyRes.data?.history) setRatingHistory(historyRes.data.history)
+    }).finally(() => setLoading(false))
   }, [id])
 
   if (loading) return (
@@ -375,13 +436,20 @@ export default function PlayerPage() {
     </div>
   )
 
-  const attrRow = (label: string, _stars: number, value: number, isOverall = false) => {
+  const DEF_ATTR_NAMES: Record<string, string> = {
+    coverage: 'Coverage', tackling: 'Tackling', playReading: 'Play Reading',
+    passRush: 'Pass Rush', runDefense: 'Run Defense', blitzing: 'Blitzing',
+  }
+
+  const attrRow = (label: string, _stars: number, value: number, isOverall = false, icon?: React.ReactNode) => {
     const barColor = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
     const pct = ((value - 60) / 40) * 100
     return (
       <div key={label} style={{ marginBottom: isOverall ? '16px' : '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
-          <span style={{ fontSize: isOverall ? '15px' : '13px', fontWeight: isOverall ? '700' : '400', color: isOverall ? '#e2e8f0' : '#94a3b8' }}>{label}</span>
+          <span style={{ fontSize: isOverall ? '15px' : '13px', fontWeight: isOverall ? '700' : '400', color: isOverall ? '#e2e8f0' : '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {icon}{label}
+          </span>
           <span style={{ fontSize: isOverall ? '22px' : '16px', fontWeight: '700', color: isOverall ? teamColor : '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
         </div>
         <div style={{ height: isOverall ? '6px' : '4px', backgroundColor: '#334155', borderRadius: '2px', overflow: 'hidden' }}>
@@ -393,17 +461,24 @@ export default function PlayerPage() {
 
   const { attributes: att } = player
 
-  const attrs: { label: string; stars: number; value: number }[] = []
+  // Build separate attribute groups for two-column layout
+  const offAttrs: { label: string; stars: number; value: number }[] = []
+  const defAttrs: { label: string; stars: number; value: number }[] = []
   if (att) {
-    attrs.push({ label: 'Overall', stars: player.ratingStars, value: player.playerRating })
-    if (att.att1 && att.att1Value != null)  attrs.push({ label: att.att1,    stars: att.att1stars ?? 1,   value: att.att1Value })
-    if (att.att2 && att.att2Value != null)  attrs.push({ label: att.att2,    stars: att.att2stars ?? 1,   value: att.att2Value })
-    if (att.att3 && att.att3Value != null)  attrs.push({ label: att.att3,    stars: att.att3stars ?? 1,   value: att.att3Value })
-    if (att.playmakingValue != null)        attrs.push({ label: 'Playmaking', stars: att.playmakingStars ?? 1, value: att.playmakingValue })
-    if (att.xFactorValue != null)           attrs.push({ label: 'X-Factor',  stars: att.xFactorStars ?? 1,    value: att.xFactorValue })
-    if (att.seasonPerformanceRating && att.seasonPerformanceRating > 0)
-      attrs.push({ label: 'Performance', stars: att.seasonPerformanceRatingStars ?? 1, value: att.seasonPerformanceRating })
+    // Offensive attributes
+    if (att.att1 && att.att1Value != null)  offAttrs.push({ label: att.att1,    stars: att.att1stars ?? 1,   value: att.att1Value })
+    if (att.att2 && att.att2Value != null)  offAttrs.push({ label: att.att2,    stars: att.att2stars ?? 1,   value: att.att2Value })
+    if (att.att3 && att.att3Value != null)  offAttrs.push({ label: att.att3,    stars: att.att3stars ?? 1,   value: att.att3Value })
+    if (att.playmakingValue != null)        offAttrs.push({ label: 'Playmaking', stars: att.playmakingStars ?? 1, value: att.playmakingValue })
+    if (att.xFactorValue != null)           offAttrs.push({ label: 'X-Factor',  stars: att.xFactorStars ?? 1,    value: att.xFactorValue })
+    // Defensive attributes (position-specific)
+    if (att.defensiveAttributes && player.defensivePosition) {
+      Object.entries(att.defensiveAttributes).forEach(([key, { value, stars }]) => {
+        defAttrs.push({ label: DEF_ATTR_NAMES[key] ?? key, stars, value })
+      })
+    }
   }
+  const hasDefense = player.defensivePosition && player.defensiveRating != null
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f172a' }}>
@@ -431,10 +506,12 @@ export default function PlayerPage() {
               <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{player.name}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '6px' }}>
                 <Stars stars={player.ratingStars} size={16} />
-                {player.rank && (
+                {(player.isProspect || player.rank) && (
                   <>
                     <span style={{ fontSize: '13px', color: '#475569' }}>·</span>
-                    <span style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>{player.rank}</span>
+                    <span style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>
+                      {player.isProspect ? 'Prospect' : player.rank}
+                    </span>
                   </>
                 )}
               </div>
@@ -444,6 +521,20 @@ export default function PlayerPage() {
                     <img src={`/avatars/${player.teamId}.png`} alt="" style={{ width: '32px', height: '32px' }} />
                     <span style={{ fontSize: '20px', color: teamColor, fontWeight: '600' }}>
                       {player.teamCity} {player.team}
+                    </span>
+                  </Link>
+                ) : player.isProspect && player.draftingTeamId ? (
+                  <Link to={`/team/${player.draftingTeamId}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em',
+                      color: '#0f172a', backgroundColor: '#a78bfa',
+                      padding: '2px 6px', borderRadius: '3px',
+                    }}>
+                      PROSPECT
+                    </span>
+                    <img src={`/avatars/${player.draftingTeamId}.png`} alt="" style={{ width: '28px', height: '28px' }} />
+                    <span style={{ fontSize: '18px', color: player.draftingTeamColor ?? '#cbd5e1', fontWeight: '600' }}>
+                      {player.draftingTeamCity} {player.draftingTeamName}
                     </span>
                   </Link>
                 ) : (
@@ -457,7 +548,45 @@ export default function PlayerPage() {
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', width: isMobile ? '100%' : undefined }}>
             {sectionHeader('Attributes')}
             <div style={{ padding: '14px 16px' }}>
-              {attrs.map((a, i) => attrRow(a.label, a.stars, a.value, i === 0))}
+              {/* Overall + Performance on top */}
+              {attrRow('Overall', player.ratingStars, player.playerRating, true)}
+              {att?.seasonPerformanceRating != null && att.seasonPerformanceRating > 0 &&
+                attrRow('Performance', att.seasonPerformanceRatingStars ?? 1, att.seasonPerformanceRating)}
+
+              {/* Offense / Defense columns side by side */}
+              {hasDefense ? (
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '0' : '16px', marginTop: '8px' }}>
+                  {/* Offense column */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #334155' }}>
+                      <SwordIcon size={13} color="#94a3b8" />
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Offense</span>
+                      {player.offensiveRating != null && (
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.offensiveRating}</span>
+                      )}
+                    </div>
+                    {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                  </div>
+                  {/* Defense column */}
+                  <div style={isMobile ? { marginTop: '12px' } : {}}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #334155' }}>
+                      <ShieldIcon size={13} color="#94a3b8" />
+                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Defense ({player.defensivePosition})</span>
+                      {player.defensiveRating != null && (
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.defensiveRating}</span>
+                      )}
+                    </div>
+                    {defAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                  </div>
+                </div>
+              ) : (
+                /* Kickers: no defense column, just show offense attrs */
+                <div style={{ marginTop: '4px' }}>
+                  {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                </div>
+              )}
+
+              {/* Fatigue */}
               {att?.fatigue != null && att.fatigue > 0 && (() => {
                 const f = att.fatigue
                 const fColor = f < 5 ? '#4ade80' : f < 10 ? '#eab308' : f < 15 ? '#f97316' : '#ef4444'
@@ -484,48 +613,218 @@ export default function PlayerPage() {
         {/* Championships + Career Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: '16px', alignItems: 'start' }}>
 
-          {/* Awards */}
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', minWidth: '180px' }}>
-            {sectionHeader('Awards')}
-            <div style={{ padding: '16px' }}>
-              {(player.mvpAwards?.length ?? 0) === 0 && (player.championships?.length ?? 0) === 0 ? (
-                <div style={{ fontSize: '13px', color: '#475569', fontStyle: 'italic' }}>No awards yet</div>
-              ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '16px' }}>
-                  {(player.mvpAwards ?? []).map((a: any, i: number) => (
-                    <div key={`mvp-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <GiStarMedal style={{ fontSize: '28px', color: '#fbbf24' }} />
-                      <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: '600', marginTop: '2px' }}>MVP</div>
-                      <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
-                      <div style={{ fontSize: '11px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
-                    </div>
-                  ))}
-                  {(player.championships ?? []).map((c: any, i: number) => (
-                    <div key={`champ-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <GiLaurelsTrophy style={{ fontSize: '28px', color: '#f59e0b' }} />
-                      <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', marginTop: '2px' }}>S{c.Season}</div>
-                      <div style={{ fontSize: '11px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+          {/* Left column: Awards + Rating Progression stacked */}
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '16px', minWidth: '200px' }}>
+
+            {/* Awards */}
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+              {sectionHeader('Awards')}
+              <div style={{ padding: '16px' }}>
+                {(player.mvpAwards?.length ?? 0) === 0 && (player.championships?.length ?? 0) === 0 ? (
+                  <div style={{ fontSize: '13px', color: '#475569', fontStyle: 'italic' }}>No awards yet</div>
+                ) : (
+                  <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '16px' }}>
+                    {(player.mvpAwards ?? []).map((a: any, i: number) => (
+                      <div key={`mvp-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <GiStarMedal style={{ fontSize: '28px', color: '#fbbf24' }} />
+                        <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: '600', marginTop: '2px' }}>MVP</div>
+                        <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
+                        <div style={{ fontSize: '11px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
+                      </div>
+                    ))}
+                    {(player.championships ?? []).map((c: any, i: number) => (
+                      <div key={`champ-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <GiLaurelsTrophy style={{ fontSize: '28px', color: '#f59e0b' }} />
+                        <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', marginTop: '2px' }}>S{c.Season}</div>
+                        <div style={{ fontSize: '11px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Rating progression — tucked under Awards so it doesn't push stats below the fold */}
+            {ratingHistory.length > 0 && (
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+                {sectionHeader('Rating Progression')}
+                <div style={{ padding: '12px' }}>
+                  <RatingHistoryChart history={ratingHistory} teamColor={teamColor} />
+                </div>
+              </div>
+            )}
+
           </div>
 
-          {/* Career Stats */}
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-            {sectionHeader(`Career Stats · ${POSITION_FULL[player.position] ?? player.position}`)}
-            <div style={{ overflowX: 'auto' }}>
-              {player.position === 'QB'                        && <QBStatsTable  stats={player.stats} career={player.allTimeStats} />}
-              {player.position === 'RB'                        && <RBStatsTable  stats={player.stats} career={player.allTimeStats} />}
-              {(player.position === 'WR' || player.position === 'TE') && <RcvStatsTable stats={player.stats} career={player.allTimeStats} />}
-              {player.position === 'K'                         && <KStatsTable   stats={player.stats} career={player.allTimeStats} />}
-            </div>
-          </div>
+          {/* Career Stats — toggle between offense and defense for two-way players */}
+          {(() => {
+            const hasDefense = player.position !== 'K' && !!player.defensivePosition
+            const view = hasDefense ? statsView : 'offense'
+            const offenseLabel = POSITION_FULL[player.position] ?? player.position
+            return (
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
+                <div style={{
+                  padding: '10px 14px',
+                  backgroundColor: '#0f172a',
+                  borderBottom: '1px solid #334155',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                }}>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
+                    Career Stats · {view === 'offense' ? offenseLabel : player.defensivePosition}
+                  </span>
+                  {hasDefense && (
+                    <div style={{ display: 'flex', gap: '4px', backgroundColor: '#1e293b', borderRadius: '6px', padding: '2px' }}>
+                      {(['offense', 'defense'] as const).map(side => {
+                        const active = view === side
+                        return (
+                          <button
+                            key={side}
+                            onClick={() => setStatsView(side)}
+                            style={{
+                              padding: '4px 10px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              textTransform: 'uppercase' as const,
+                              letterSpacing: '0.05em',
+                              color: active ? '#e2e8f0' : '#64748b',
+                              backgroundColor: active ? '#334155' : 'transparent',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontFamily: 'inherit',
+                            }}
+                          >
+                            {side}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  {view === 'offense' && (
+                    <>
+                      {player.position === 'QB'                        && <QBStatsTable  stats={player.stats} career={player.allTimeStats} />}
+                      {player.position === 'RB'                        && <RBStatsTable  stats={player.stats} career={player.allTimeStats} />}
+                      {(player.position === 'WR' || player.position === 'TE') && <RcvStatsTable stats={player.stats} career={player.allTimeStats} />}
+                      {player.position === 'K'                         && <KStatsTable   stats={player.stats} career={player.allTimeStats} />}
+                    </>
+                  )}
+                  {view === 'defense' && hasDefense && (
+                    <DefenseStatsTable stats={player.stats} career={player.allTimeStats} />
+                  )}
+                </div>
+              </div>
+            )
+          })()}
 
         </div>
 
       </div>
+    </div>
+  )
+}
+
+// Full-size rating progression chart for the player page. Line chart with
+// endpoint dots and season labels on the x-axis, rating (60-100) on the y.
+// Colors by per-segment trend so climbs look green, declines red, flat gray.
+function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; teamColor: string }) {
+  const PAD_LEFT = 30
+  const PAD_RIGHT = 10
+  const PAD_TOP = 12
+  const PAD_BOTTOM = 22
+  const WIDTH = 260
+  const HEIGHT = 130
+  const plotW = WIDTH - PAD_LEFT - PAD_RIGHT
+  const plotH = HEIGHT - PAD_TOP - PAD_BOTTOM
+
+  if (history.length === 0) return null
+
+  const seasons = history.map(h => h.season)
+  const ratings = history.map(h => h.rating)
+  const minSeason = seasons[0]
+  const maxSeason = seasons[seasons.length - 1]
+  const seasonSpan = Math.max(1, maxSeason - minSeason)
+
+  // Y scale: always show the full 60-100 range so sparkline-style illusions
+  // (a +2 rating bump looking like a huge spike) don't mislead. Rating ceiling
+  // is 100, floor is ~60 by design.
+  const yMin = 60
+  const yMax = 100
+  const yRange = yMax - yMin
+
+  const xFor = (season: number) => {
+    if (history.length === 1) return PAD_LEFT + plotW / 2
+    return PAD_LEFT + ((season - minSeason) / seasonSpan) * plotW
+  }
+  const yFor = (rating: number) => {
+    const clamped = Math.max(yMin, Math.min(yMax, rating))
+    const pct = (clamped - yMin) / yRange
+    return PAD_TOP + (1 - pct) * plotH
+  }
+
+  // Gridlines every 10 points
+  const gridLines: number[] = []
+  for (let r = yMin; r <= yMax; r += 10) gridLines.push(r)
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+        {/* Gridlines + y-axis labels */}
+        {gridLines.map(r => (
+          <g key={r}>
+            <line
+              x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT}
+              y1={yFor(r)} y2={yFor(r)}
+              stroke="#334155" strokeWidth={0.5} opacity={0.4}
+            />
+            <text x={PAD_LEFT - 6} y={yFor(r) + 3} fontSize="9" fill="#94a3b8" textAnchor="end">
+              {r}
+            </text>
+          </g>
+        ))}
+
+        {/* X-axis season labels */}
+        {seasons.map(s => (
+          <text key={s} x={xFor(s)} y={HEIGHT - 10} fontSize="9" fill="#94a3b8" textAnchor="middle">
+            S{s}
+          </text>
+        ))}
+
+        {/* Per-segment colored line so rising seasons visually pop green,
+            declines red. Flat segments use the team color. */}
+        {history.map((pt, i) => {
+          if (i === 0) return null
+          const prev = history[i - 1]
+          const delta = pt.rating - prev.rating
+          const color = delta > 0 ? '#22c55e' : delta < 0 ? '#ef4444' : teamColor
+          return (
+            <line
+              key={`seg-${i}`}
+              x1={xFor(prev.season)} y1={yFor(prev.rating)}
+              x2={xFor(pt.season)} y2={yFor(pt.rating)}
+              stroke={color} strokeWidth={2.5}
+              strokeLinecap="round"
+            />
+          )
+        })}
+
+        {/* Points with rating labels */}
+        {history.map(pt => (
+          <g key={pt.season}>
+            <circle cx={xFor(pt.season)} cy={yFor(pt.rating)} r={3.5} fill={teamColor} stroke="#0f172a" strokeWidth={1.2} />
+            <text
+              x={xFor(pt.season)} y={yFor(pt.rating) - 8}
+              fontSize="10" fill="#e2e8f0" fontWeight="700" textAnchor="middle"
+            >
+              {pt.rating}
+            </text>
+          </g>
+        ))}
+      </svg>
     </div>
   )
 }

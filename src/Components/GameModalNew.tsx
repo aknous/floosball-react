@@ -1135,23 +1135,26 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 )
 
                 // Renders a player name cell with position badge + star rating
-                const playerNameCell = (p: { id: number; name: string; position?: string | null; ratingStars?: number }) => (
-                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '2px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
-                      {p.position && (
-                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', backgroundColor: '#0f172a', padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>
-                          {p.position}
-                        </span>
+                const playerNameCell = (p: { id: number; name: string; position?: string | null; defensivePosition?: string | null; ratingStars?: number }, useDefPos?: boolean) => {
+                  const posLabel = useDefPos && p.defensivePosition ? p.defensivePosition : p.position
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '2px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                        {posLabel && (
+                          <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', backgroundColor: '#0f172a', padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>
+                            {posLabel}
+                          </span>
+                        )}
+                        <PlayerHoverCard playerId={p.id} playerName={p.name}>
+                          <span style={{ fontSize: '15px', color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                        </PlayerHoverCard>
+                      </div>
+                      {p.ratingStars != null && (
+                        <Stars stars={p.ratingStars} size={12} />
                       )}
-                      <PlayerHoverCard playerId={p.id} playerName={p.name}>
-                        <span style={{ fontSize: '15px', color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                      </PlayerHoverCard>
                     </div>
-                    {p.ratingStars != null && (
-                      <Stars stars={p.ratingStars} size={12} />
-                    )}
-                  </div>
-                )
+                  )
+                }
 
                 // cols: header labels (first col is always player name area)
                 // data: first element is the player object (for name/pos/stars), rest are stat values
@@ -1164,6 +1167,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 )
 
                 const T7 = '1fr 48px 38px 36px 36px 28px 42px'  // 6 stat cols for offense sections
+                const T8 = '1fr 48px 38px 36px 36px 28px 30px 42px'  // 7 stat cols (extra turnover col)
 
                 const teamHeader = (abbr: string, color: string) => (
                   <div style={{ fontSize: '13px', fontWeight: '700', color, padding: '4px 4px 0' }}>{abbr}</div>
@@ -1176,19 +1180,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   <div>
                     {/* PASSING */}
                     {sectionLabel('Passing')}
-                    {statRow(['Player', 'C/A', 'YDS', 'YPC', 'LNG', 'TD', 'FP'], true, T7)}
+                    {statRow(['Player', 'C/A', 'YDS', 'YPC', 'LNG', 'TD', 'INT', 'FP'], true, T8)}
                     {teamHeader(homeAbbr, homeColor)}
-                    {hp.qb && statRow([playerNameCell(hp.qb), `${hp.qb.comp}/${hp.qb.att}`, hp.qb.yards, hp.qb.ypc, hp.qb.longest, hp.qb.tds, hp.qb.fantasyPoints], false, T7)}
+                    {hp.qb && statRow([playerNameCell(hp.qb), `${hp.qb.comp}/${hp.qb.att}`, hp.qb.yards, hp.qb.ypc, hp.qb.longest, hp.qb.tds, hp.qb.ints ?? 0, hp.qb.fantasyPoints], false, T8)}
                     {teamHeader(awayAbbr, awayColor)}
-                    {ap.qb && statRow([playerNameCell(ap.qb), `${ap.qb.comp}/${ap.qb.att}`, ap.qb.yards, ap.qb.ypc, ap.qb.longest, ap.qb.tds, ap.qb.fantasyPoints], false, T7)}
+                    {ap.qb && statRow([playerNameCell(ap.qb), `${ap.qb.comp}/${ap.qb.att}`, ap.qb.yards, ap.qb.ypc, ap.qb.longest, ap.qb.tds, ap.qb.ints ?? 0, ap.qb.fantasyPoints], false, T8)}
 
                     {/* RUSHING */}
                     {sectionLabel('Rushing')}
-                    {statRow(['Player', 'CAR', 'YDS', 'YPC', 'LNG', 'TD', 'FP'], true, T7)}
+                    {statRow(['Player', 'CAR', 'YDS', 'YPC', 'LNG', 'TD', 'FUM', 'FP'], true, T8)}
                     {teamHeader(homeAbbr, homeColor)}
-                    {hp.rb && statRow([playerNameCell(hp.rb), hp.rb.carries, hp.rb.yards, hp.rb.ypc, hp.rb.longest, hp.rb.tds, hp.rb.fantasyPoints], false, T7)}
+                    {hp.rb && statRow([playerNameCell(hp.rb), hp.rb.carries, hp.rb.yards, hp.rb.ypc, hp.rb.longest, hp.rb.tds, hp.rb.fumblesLost ?? 0, hp.rb.fantasyPoints], false, T8)}
                     {teamHeader(awayAbbr, awayColor)}
-                    {ap.rb && statRow([playerNameCell(ap.rb), ap.rb.carries, ap.rb.yards, ap.rb.ypc, ap.rb.longest, ap.rb.tds, ap.rb.fantasyPoints], false, T7)}
+                    {ap.rb && statRow([playerNameCell(ap.rb), ap.rb.carries, ap.rb.yards, ap.rb.ypc, ap.rb.longest, ap.rb.tds, ap.rb.fumblesLost ?? 0, ap.rb.fantasyPoints], false, T8)}
 
                     {/* RECEIVING */}
                     {sectionLabel('Receiving')}
@@ -1205,6 +1209,31 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     {hp.k && statRow([playerNameCell(hp.k), hp.k.fgs, hp.k.fgAtt, hp.k.longest, hp.k.fantasyPoints])}
                     {teamHeader(awayAbbr, awayColor)}
                     {ap.k && statRow([playerNameCell(ap.k), ap.k.fgs, ap.k.fgAtt, ap.k.longest, ap.k.fantasyPoints])}
+
+                    {/* DEFENSE */}
+                    {(() => {
+                      const defPlayers = (players: any) =>
+                        Object.values(players).filter((p: any) => p?.defense && Object.values(p.defense).some((v: any) => (v as number) > 0))
+                      const homeDef = defPlayers(hp)
+                      const awayDef = defPlayers(ap)
+                      if (homeDef.length === 0 && awayDef.length === 0) return null
+                      return (
+                        <>
+                          {sectionLabel('Defense')}
+                          {statRow(['Player', 'TKL', 'SCK', 'INT', 'TFL', 'FF', 'PBU'], true, T7)}
+                          {homeDef.length > 0 && teamHeader(homeAbbr, homeColor)}
+                          {homeDef.map((p: any) => statRow([
+                            playerNameCell(p, true), p.defense.tackles, p.defense.sacks, p.defense.ints,
+                            p.defense.tfl, p.defense.forcedFumbles, p.defense.passBreakups
+                          ], false, T7))}
+                          {awayDef.length > 0 && teamHeader(awayAbbr, awayColor)}
+                          {awayDef.map((p: any) => statRow([
+                            playerNameCell(p, true), p.defense.tackles, p.defense.sacks, p.defense.ints,
+                            p.defense.tfl, p.defense.forcedFumbles, p.defense.passBreakups
+                          ], false, T7))}
+                        </>
+                      )
+                    })()}
                   </div>
                 )
               })()}

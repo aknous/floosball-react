@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { CHANGELOG, ChangelogEntry } from '@/data/changelog'
+import { ChangelogLine } from '@/Components/ChangelogLine'
 
 const SECTION_COLORS: Record<string, string> = {
   'New Features': '#22c55e',
@@ -30,7 +31,9 @@ const ChangelogItems: React.FC<{ entry: ChangelogEntry; fontSize: string }> = ({
               {section.items.map((item, i) => (
                 <li key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                   <span style={{ color: '#475569', fontSize: '10px', flexShrink: 0, marginTop: '4px' }}>&#9679;</span>
-                  <span style={{ color: '#94a3b8', fontSize, lineHeight: '1.5' }}>{item}</span>
+                  <span style={{ color: '#94a3b8', fontSize, lineHeight: '1.5' }}>
+                    <ChangelogLine text={item} />
+                  </span>
                 </li>
               ))}
             </ul>
@@ -44,7 +47,9 @@ const ChangelogItems: React.FC<{ entry: ChangelogEntry; fontSize: string }> = ({
       {entry.changes.map((change, i) => (
         <li key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
           <span style={{ color: '#475569', fontSize: '10px', flexShrink: 0, marginTop: '4px' }}>&#9679;</span>
-          <span style={{ color: '#94a3b8', fontSize, lineHeight: '1.5' }}>{change}</span>
+          <span style={{ color: '#94a3b8', fontSize, lineHeight: '1.5' }}>
+            <ChangelogLine text={change} />
+          </span>
         </li>
       ))}
     </ul>
@@ -152,22 +157,6 @@ const WelcomeModal: React.FC = () => {
 
         {/* Scrollable content */}
         <div style={{ padding: '22px 28px 28px', overflowY: 'auto', flex: 1 }}>
-          {/* Simulation restart notice */}
-          <div style={{
-            backgroundColor: 'rgba(245,158,11,0.1)',
-            borderRadius: '10px',
-            padding: '18px',
-            marginBottom: '20px',
-            border: '1px solid rgba(245,158,11,0.3)',
-          }}>
-            <p style={{ fontSize: '13px', fontWeight: '700', color: '#f59e0b', marginBottom: '10px', textTransform: 'uppercase' as const, letterSpacing: '0.5px' }}>
-              Fresh Start
-            </p>
-            <p style={{ color: '#cbd5e1', fontSize: '13px', lineHeight: '1.6', margin: 0 }}>
-              Unfortunately the simulation had to be restarted due to issues that corrupted some data. Everything is starting from scratch. All user accounts and login data have been preserved. Sorry for the inconvenience, and thank you for your patience!
-            </p>
-          </div>
-
           {/* Season reminders */}
           <div style={{
             backgroundColor: '#0f172a',

@@ -70,7 +70,7 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {}
 
   return (
     <div>
-      <ul className="grid grid-cols-1 tablet:grid-cols-2 gap-3">
+      <ul className="grid grid-cols-1 tablet:grid-cols-2 gap-4">
         {gamesArray.map((game) => {
           const isFavGame = favTeamId !== null && (Number(game.homeTeam.id) === favTeamId || Number(game.awayTeam.id) === favTeamId)
           const favTeamColor = isFavGame

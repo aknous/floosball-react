@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
-import { NavLink } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { CHANGELOG, ChangelogEntry } from '@/data/changelog'
+import { ChangelogLine } from '@/Components/ChangelogLine'
 
 const SECTION_COLORS: Record<string, string> = {
   'New Features': '#22c55e',
@@ -36,7 +36,7 @@ const FooterChangelogItems: React.FC<{ entry: ChangelogEntry }> = ({ entry }) =>
                   paddingLeft: '8px',
                 }}>
                   <span style={{ position: 'absolute', left: '-8px', color: '#64748b' }}>•</span>
-                  {item}
+                  <ChangelogLine text={item} />
                 </li>
               ))}
             </ul>
@@ -56,14 +56,14 @@ const FooterChangelogItems: React.FC<{ entry: ChangelogEntry }> = ({ entry }) =>
           paddingLeft: '8px',
         }}>
           <span style={{ position: 'absolute', left: '-8px', color: '#64748b' }}>•</span>
-          {change}
+          <ChangelogLine text={change} />
         </li>
       ))}
     </ul>
   )
 }
 
-const APP_VERSION = process.env.REACT_APP_VERSION || '0.9.0'
+const APP_VERSION = process.env.REACT_APP_VERSION || '0.10.0'
 
 export const Footer: React.FC = () => {
   const [showChangelog, setShowChangelog] = useState(false)
@@ -106,20 +106,6 @@ export const Footer: React.FC = () => {
         justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <NavLink
-            to="/about"
-            style={{
-              color: '#94a3b8',
-              textDecoration: 'none',
-              fontSize: '13px',
-              fontWeight: '500',
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#cbd5e1')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
-          >
-            About
-          </NavLink>
           <a
             href="https://discord.gg/b4DZn3mVfP"
             target="_blank"

@@ -7,12 +7,19 @@ export interface PickEmTeam {
   elo: number
 }
 
+export interface UnderdogInfo {
+  homeMultiplier: number
+  awayMultiplier: number
+}
+
 export interface PickEmGame {
   gameIndex: number
   homeTeam: PickEmTeam
   awayTeam: PickEmTeam
   userPick: number | null
-  pointsMultiplier: number | null     // multiplier locked in when user picked
+  pointsMultiplier: number | null     // timing multiplier locked in when user picked
+  underdogMultiplier: number | null   // underdog multiplier locked in when user picked
+  underdogInfo: UnderdogInfo | null   // pre-game underdog multipliers for each team
   pickable: boolean                    // can the user pick this game right now?
   currentMultiplier: number            // multiplier user would get if they picked now
   result: { winnerId?: number; correct?: boolean; pointsEarned?: number } | null

@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { usePickEm } from '@/contexts/PickEmContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useGames } from '@/contexts/GamesContext'
 import type { PickEmGame, PickEmLeaderboardEntry } from '@/types/pickem'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -11,9 +12,15 @@ const RANK_STYLE: Record<number, { label: string; color: string; bg: string }> =
   3: { label: '3rd', color: '#cd7f32', bg: 'rgba(205,127,50,0.15)' },
 }
 
-/** Multiplier-to-display-points (base 10) */
-function multiplierToPoints(m: number): number {
-  return Math.round(m * 10)
+/** Multiplier-to-display-points (base 10, timing x underdog) */
+function multiplierToPoints(timing: number, underdog: number = 1.0): number {
+  return Math.round(timing * underdog * 10)
+}
+
+/** Win probability from ELO (home vs away) */
+function eloToWinPct(homeElo: number, awayElo: number): { home: number; away: number } {
+  const homeWp = 1.0 / (1.0 + Math.pow(10, -(homeElo - awayElo) / 400))
+  return { home: Math.round(homeWp * 100), away: Math.round((1 - homeWp) * 100) }
 }
 
 /** Color for a multiplier value */
@@ -26,7 +33,7 @@ function multiplierColor(m: number): string {
 type ViewMode = 'results' | 'leaderboard'
 
 export const PickEmPanel: React.FC = () => {
-  const { user } = useAuth()
+  const { user, getToken } = useAuth()
   const userId = user?.id ?? null
   const {
     games, weekSummary, season, week, weekText,
@@ -34,6 +41,21 @@ export const PickEmPanel: React.FC = () => {
   } = usePickEm()
   const [mode, setMode] = useState<ViewMode>('results')
   const [showHelp, setShowHelp] = useState(false)
+  type AutoPickMode = 'off' | 'favorites' | 'underdogs' | 'random'
+  const [autoPickMode, setAutoPickMode] = useState<AutoPickMode>(user?.autoPickMode ?? 'off')
+
+  const changeAutoPickMode = useCallback(async (newMode: AutoPickMode) => {
+    setAutoPickMode(newMode)
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      await fetch(`${API_BASE}/users/me/preferences`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+        body: JSON.stringify({ autoPickMode: newMode }),
+      })
+    } catch { /* silent */ }
+  }, [getToken])
 
   if (loading) {
     return (
@@ -55,7 +77,7 @@ export const PickEmPanel: React.FC = () => {
   const totalGames = games.length
 
   return (
-    <div style={{ fontSize: '13px' }}>
+    <div style={{ fontSize: '14px' }}>
       {/* Mode Toggle + Help Button */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '8px', padding: '0 4px', alignItems: 'center' }}>
         {(['results', 'leaderboard'] as ViewMode[]).map(m => (
@@ -69,7 +91,7 @@ export const PickEmPanel: React.FC = () => {
               border: 'none',
               backgroundColor: mode === m ? '#334155' : 'transparent',
               color: mode === m ? '#e2e8f0' : '#94a3b8',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.15s',
@@ -118,7 +140,13 @@ export const PickEmPanel: React.FC = () => {
             How Prognostications Work
           </div>
           <div style={{ marginBottom: '6px' }}>
-            Pick the winner of each game. Earlier picks earn more points:
+            Pick the winner of each game. Pre-game picks are worth <span style={{ fontWeight: '600' }}>10 base points</span>. Mid-game picks are worth less depending on the quarter and how close the game is.
+          </div>
+          <div style={{ fontWeight: '600', color: '#f59e0b', marginTop: '8px', marginBottom: '4px', fontSize: '11px' }}>
+            Win Probability Modifier
+          </div>
+          <div style={{ marginBottom: '4px' }}>
+            Your points get multiplied based on win probability when you pick. Picking underdogs pays more, picking favorites pays less. Once you pick, your modifier is locked in.
           </div>
           <div style={{
             display: 'grid',
@@ -127,17 +155,72 @@ export const PickEmPanel: React.FC = () => {
             marginBottom: '6px',
             fontSize: '11px',
           }}>
-            <span><span style={{ color: '#22c55e', fontWeight: '600' }}>Pre-game</span> — 10 pts</span>
-            <span><span style={{ color: '#22c55e', fontWeight: '600' }}>Q1</span> — 8 pts</span>
-            <span><span style={{ color: '#eab308', fontWeight: '600' }}>Q2</span> — 6 pts</span>
-            <span><span style={{ color: '#eab308', fontWeight: '600' }}>Q3</span> — 4 pts</span>
-            <span><span style={{ color: '#ef4444', fontWeight: '600' }}>Q4</span> — 2 pts</span>
-            <span><span style={{ color: '#eab308', fontWeight: '600' }}>OT</span> — 3 pts</span>
+            <span><span style={{ color: '#22c55e', fontWeight: '600' }}>20% underdog</span> 2.69x</span>
+            <span><span style={{ color: '#ef4444', fontWeight: '600' }}>80% favorite</span> 0.63x</span>
+            <span><span style={{ color: '#22c55e', fontWeight: '600' }}>30% underdog</span> 1.89x</span>
+            <span><span style={{ color: '#ef4444', fontWeight: '600' }}>70% favorite</span> 0.71x</span>
+            <span><span style={{ color: '#22c55e', fontWeight: '600' }}>40% underdog</span> 1.31x</span>
+            <span><span style={{ color: '#ef4444', fontWeight: '600' }}>60% favorite</span> 0.83x</span>
+            <span><span style={{ color: '#94a3b8', fontWeight: '600' }}>50% even</span> 1.0x</span>
+          </div>
+          <div style={{ marginBottom: '6px', color: '#94a3b8' }}>
+            Pre-game win probability comes from ELO ratings. During a game it uses live win probability, so picking the trailing team gives a bigger bonus.
+          </div>
+          <div style={{ fontWeight: '600', color: '#38bdf8', marginBottom: '4px', fontSize: '11px' }}>
+            Certainty Decay
+          </div>
+          <div style={{ marginBottom: '6px' }}>
+            Close games hold their point value longer as quarters pass. Blowouts decay faster.
+          </div>
+          <div style={{ fontWeight: '600', color: '#a78bfa', marginBottom: '4px', fontSize: '11px' }}>
+            Auto-Pick
+          </div>
+          <div style={{ marginBottom: '6px' }}>
+            Enable the toggle below to auto-pick the higher-ELO team at game start for any games you haven't picked yet. You get full timing (1.0x) but the favorite penalty applies. You can override any auto-pick before the game ends.
           </div>
           <div style={{ color: '#94a3b8' }}>
-            You can change your pick at any time before the game ends. Changing resets the multiplier to the current quarter.
-            The point value shown on each game reflects what you&apos;ll earn if correct — once picked, it locks in your multiplier.
-            Floobits earned = total points x 0.5. Reach 96+ points in a week for a Clairvoyant bonus!
+            You can change your pick any time before the game ends. Changing recalculates both multipliers based on the current game state.
+            Floobits earned = total points x 0.5. Hit 96+ points in a week for a Clairvoyant bonus!
+          </div>
+        </div>
+      )}
+
+      {/* Auto-pick mode selector */}
+      {user && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '10px',
+          padding: '6px 8px', marginBottom: '6px',
+          borderRadius: '6px', backgroundColor: '#1e293b',
+        }}>
+          <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>Auto-pick</span>
+          <div style={{ display: 'flex', gap: '2px', backgroundColor: '#0f172a', borderRadius: '5px', padding: '2px' }}>
+            {([
+              { id: 'off',        label: 'Off' },
+              { id: 'favorites',  label: 'Favorites' },
+              { id: 'underdogs',  label: 'Underdogs' },
+              { id: 'random',     label: 'Random' },
+            ] as const).map(opt => {
+              const active = autoPickMode === opt.id
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => changeAutoPickMode(opt.id)}
+                  style={{
+                    fontSize: '11px', fontWeight: 600,
+                    padding: '3px 8px', borderRadius: '4px',
+                    border: 'none',
+                    cursor: active ? 'default' : 'pointer',
+                    backgroundColor: active ? '#3b82f6' : 'transparent',
+                    color: active ? '#fff' : '#94a3b8',
+                    transition: 'background-color 0.15s, color 0.15s',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
@@ -190,19 +273,19 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         }}>
           {weekSummary.clairvoyant ? (
             <div>
-              <div style={{ fontSize: '14px', fontWeight: '700', color: '#22c55e', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '15px', fontWeight: '700', color: '#22c55e', letterSpacing: '0.05em' }}>
                 CLAIRVOYANT
               </div>
-              <div style={{ fontSize: '12px', color: '#86efac', marginTop: '2px' }}>
+              <div style={{ fontSize: '13px', color: '#86efac', marginTop: '2px' }}>
                 {weekSummary.totalPoints} pts — {weekSummary.correct}/{weekSummary.total} correct
               </div>
             </div>
           ) : (
             <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0' }}>
+              <div style={{ fontSize: '15px', fontWeight: '600', color: '#e2e8f0' }}>
                 {weekSummary.totalPoints} pts — {weekSummary.correct}/{weekSummary.total} correct
               </div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+              <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>
                 +{Math.round(weekSummary.totalPoints * 0.5)} Floobits earned
               </div>
             </div>
@@ -216,13 +299,13 @@ const ResultsView: React.FC<ResultsViewProps> = ({
           border: '1px solid #334155',
           marginBottom: '6px',
           textAlign: 'center',
-          fontSize: '12px',
+          fontSize: '13px',
           color: '#94a3b8',
         }}>
           {(() => {
             const possiblePts = games.reduce((sum, g) => {
               if (g.userPick != null && g.pointsMultiplier != null) {
-                return sum + multiplierToPoints(g.pointsMultiplier)
+                return sum + multiplierToPoints(g.pointsMultiplier, g.underdogMultiplier ?? 1.0)
               }
               return sum
             }, 0)
@@ -262,11 +345,33 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
   const canPick = game.pickable && !hasResult
 
   // Show locked-in multiplier if user has picked, otherwise current available
-  const displayMultiplier = game.userPick != null && game.pointsMultiplier != null
+  const displayTimingMult = game.userPick != null && game.pointsMultiplier != null
     ? game.pointsMultiplier
     : game.currentMultiplier
-  const displayPoints = multiplierToPoints(displayMultiplier)
-  const badgeColor = multiplierColor(displayMultiplier)
+  const displayUnderdogMult = game.userPick != null && game.underdogMultiplier != null
+    ? game.underdogMultiplier
+    : 1.0
+  const displayPoints = multiplierToPoints(displayTimingMult, displayUnderdogMult)
+  const badgeColor = multiplierColor(displayTimingMult)
+
+  // Prefer live win probability (updated via WebSocket game_state events) once the game
+  // is active — falls back to pre-game ELO calc when Scheduled/Final.
+  const { games: liveGamesMap } = useGames()
+  const liveGame = React.useMemo(() => {
+    for (const g of liveGamesMap.values()) {
+      if (
+        String(g.homeTeam?.id) === String(game.homeTeam.id)
+        && String(g.awayTeam?.id) === String(game.awayTeam.id)
+      ) {
+        return g
+      }
+    }
+    return null
+  }, [liveGamesMap, game.homeTeam.id, game.awayTeam.id])
+
+  const winPct = liveGame && liveGame.status === 'Active'
+    ? { home: Math.round(liveGame.homeWinProbability ?? 50), away: Math.round(liveGame.awayWinProbability ?? 50) }
+    : eloToWinPct(game.homeTeam.elo, game.awayTeam.elo)
 
   return (
     <div style={{
@@ -290,7 +395,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
           border: homeSelected ? `1px solid ${homeColor}` : '1px solid transparent',
           backgroundColor: homeSelected ? `${homeColor}22` : `${homeColor}15`,
           color: homeSelected ? homeColor : '#cbd5e1',
-          fontSize: '14px',
+          fontSize: '15px',
           fontWeight: homeSelected ? '700' : '500',
           cursor: canPick ? 'pointer' : 'default',
           textAlign: 'center',
@@ -307,8 +412,8 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
           />
           <span>{game.homeTeam.abbr}</span>
         </div>
-        <div style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '500', marginTop: '2px' }}>
-          {game.homeTeam.record} · {Math.round(game.homeTeam.elo)}
+        <div style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: '500', marginTop: '2px' }}>
+          {game.homeTeam.record} · {winPct.home}%
         </div>
       </button>
 
@@ -332,13 +437,13 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
             </svg>
           )
         ) : (
-          <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '600' }}>vs</span>
+          <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600' }}>vs</span>
         )}
         {/* Multiplier badge */}
         {!hasResult && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0px' }}>
             <div style={{
-              fontSize: '9px',
+              fontSize: '11px',
               fontWeight: '700',
               color: badgeColor,
               backgroundColor: `${badgeColor}18`,
@@ -348,9 +453,12 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
             }}>
               {displayPoints} pt{displayPoints !== 1 ? 's' : ''}
             </div>
-            {game.userPick != null && (
-              <div style={{ fontSize: '8px', color: '#94a3b8', whiteSpace: 'nowrap' }}>
-                if correct
+            {game.userPick != null && displayUnderdogMult !== 1.0 && (
+              <div style={{
+                fontSize: '10px', whiteSpace: 'nowrap', fontWeight: '600',
+                color: displayUnderdogMult > 1.0 ? '#22c55e' : '#ef4444',
+              }}>
+                {displayUnderdogMult}x
               </div>
             )}
           </div>
@@ -358,7 +466,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
         {/* Show earned points for resolved picks */}
         {hasResult && game.userPick != null && game.result?.pointsEarned != null && (
           <div style={{
-            fontSize: '9px',
+            fontSize: '10px',
             fontWeight: '700',
             color: isCorrect ? '#22c55e' : '#64748b',
             whiteSpace: 'nowrap',
@@ -379,7 +487,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
           border: awaySelected ? `1px solid ${awayColor}` : '1px solid transparent',
           backgroundColor: awaySelected ? `${awayColor}22` : `${awayColor}15`,
           color: awaySelected ? awayColor : '#cbd5e1',
-          fontSize: '14px',
+          fontSize: '15px',
           fontWeight: awaySelected ? '700' : '500',
           cursor: canPick ? 'pointer' : 'default',
           textAlign: 'center',
@@ -396,8 +504,8 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
           />
           <span>{game.awayTeam.abbr}</span>
         </div>
-        <div style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '500', marginTop: '2px' }}>
-          {game.awayTeam.record} · {Math.round(game.awayTeam.elo)}
+        <div style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: '500', marginTop: '2px' }}>
+          {game.awayTeam.record} · {winPct.away}%
         </div>
       </button>
     </div>
@@ -440,7 +548,7 @@ const LeaderboardRow: React.FC<{
       <div style={{
         width: '28px',
         textAlign: 'center',
-        fontSize: '12px',
+        fontSize: '13px',
         fontWeight: '700',
         color: rankInfo?.color || '#94a3b8',
       }}>
@@ -448,15 +556,15 @@ const LeaderboardRow: React.FC<{
       </div>
 
       {/* Username */}
-      <div style={{ flex: 1, fontSize: '12px', fontWeight: '500', color: '#e2e8f0', minWidth: 0 }}>
+      <div style={{ flex: 1, fontSize: '13px', fontWeight: '500', color: '#e2e8f0', minWidth: 0 }}>
         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {entry.username}
-          {isMe && <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>}
+          {isMe && <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '11px' }}>(you)</span>}
         </div>
       </div>
 
       {/* Points */}
-      <div style={{ fontSize: '12px', fontWeight: '700', color: '#e2e8f0', whiteSpace: 'nowrap' }}>
+      <div style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', whiteSpace: 'nowrap' }}>
         {entry.totalPoints} pts
       </div>
 
@@ -532,7 +640,7 @@ const LeaderboardView: React.FC<LeaderboardViewProps> = ({
               border: 'none',
               backgroundColor: subMode === m ? '#334155' : 'transparent',
               color: subMode === m ? '#e2e8f0' : '#94a3b8',
-              fontSize: '11px',
+              fontSize: '12px',
               fontWeight: '600',
               cursor: 'pointer',
               transition: 'all 0.15s',

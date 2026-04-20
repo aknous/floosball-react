@@ -8,12 +8,13 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const POSITIONS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'] as const
 type PositionFilter = typeof POSITIONS[number]
 
-type StatusFilter = 'active' | 'fa' | 'retired' | 'hof'
+type StatusFilter = 'active' | 'prospects' | 'fa' | 'retired' | 'hof'
 const STATUS_TABS: { key: StatusFilter; label: string }[] = [
-  { key: 'active',  label: 'Active' },
-  { key: 'fa',      label: 'Free Agents' },
-  { key: 'retired', label: 'Retired' },
-  { key: 'hof',     label: 'Hall of Fame' },
+  { key: 'active',    label: 'Active' },
+  { key: 'prospects', label: 'Prospects' },
+  { key: 'fa',        label: 'Free Agents' },
+  { key: 'retired',   label: 'Retired' },
+  { key: 'hof',       label: 'Hall of Fame' },
 ]
 
 interface CurrentStats {
@@ -34,6 +35,10 @@ interface PlayerListItem {
   teamColor: string | null
   teamId: number | null
   teamAbbr: string | null
+  isProspect?: boolean
+  draftingTeamId?: number | null
+  draftingTeamAbbr?: string | null
+  draftingTeamColor?: string | null
   ratingStars: number
   playerRating: number
   currentStats: CurrentStats
@@ -289,6 +294,15 @@ export default function PlayersPage() {
                             <Link to={`/team/${player.teamId}`}
                               style={{ fontSize: '14px', color: player.teamColor || '#94a3b8', fontWeight: '600', textDecoration: 'none', whiteSpace: 'nowrap' }}>
                               {player.teamAbbr}
+                            </Link>
+                          </div>
+                        ) : player.isProspect && player.draftingTeamId ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }} title="Prospect">
+                            <img src={`/avatars/${player.draftingTeamId}.png`} alt=""
+                              style={{ width: '18px', height: '18px', flexShrink: 0, opacity: 0.75 }} />
+                            <Link to={`/team/${player.draftingTeamId}`}
+                              style={{ fontSize: '14px', color: player.draftingTeamColor || '#a78bfa', fontWeight: '600', textDecoration: 'none', whiteSpace: 'nowrap', fontStyle: 'italic' as const }}>
+                              {player.draftingTeamAbbr}*
                             </Link>
                           </div>
                         ) : (

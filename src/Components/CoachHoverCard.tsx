@@ -12,6 +12,7 @@ export interface CoachHoverData {
   aggressiveness?: number
   clockManagement?: number
   playerDevelopment?: number
+  scouting?: number
 }
 
 // ── Portal card ───────────────────────────────────────────────────────────────
@@ -65,6 +66,7 @@ const Card: React.FC<CardProps> = ({ data, teamColor, mouseX, mouseY }) => {
   if (data.adaptability != null) attrs.push({ label: 'Adaptability', value: data.adaptability })
   if (data.clockManagement != null) attrs.push({ label: 'Clock Mgmt', value: data.clockManagement })
   if (data.playerDevelopment != null) attrs.push({ label: 'Player Dev', value: data.playerDevelopment })
+  if (data.scouting != null) attrs.push({ label: 'Scouting', value: data.scouting })
 
   return ReactDOM.createPortal(
     <div style={{

@@ -29,6 +29,7 @@ export interface GmCoachInfo {
   aggressiveness: number
   clockManagement: number
   playerDevelopment: number
+  scouting: number
 }
 
 export interface GmPlayerInfo {
@@ -97,6 +98,8 @@ export interface GmVoteResult {
   id: number
   voteType: string
   targetPlayerId: number | null
+  targetName: string | null
+  directiveNames: string[]
   totalVotes: number
   threshold: number
   probability: number

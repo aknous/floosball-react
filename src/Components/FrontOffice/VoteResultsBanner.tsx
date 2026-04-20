@@ -21,6 +21,20 @@ const VOTE_TYPE_LABELS: Record<string, string> = {
   sign_fa: 'FA Requisition',
 }
 
+// Produces a human-readable target clause shown after the vote type.
+// cut_player / resign_player / hire_coach → single name.
+// sign_fa → ordered list of ranked directives (truncated if long).
+// fire_coach → no specific target (it targets whoever the head coach was).
+function targetText(r: GmVoteResult): string | null {
+  if (r.voteType === 'sign_fa') {
+    if (!r.directiveNames || r.directiveNames.length === 0) return null
+    const shown = r.directiveNames.slice(0, 4).join(', ')
+    const more = r.directiveNames.length > 4 ? ` +${r.directiveNames.length - 4} more` : ''
+    return shown + more
+  }
+  return r.targetName || null
+}
+
 const VoteResultsBanner: React.FC<VoteResultsBannerProps> = ({ results, teamColor }) => {
   if (results.length === 0) return null
 
@@ -40,6 +54,7 @@ const VoteResultsBanner: React.FC<VoteResultsBannerProps> = ({ results, teamColo
       {results.map(r => {
         const style = OUTCOME_STYLES[r.outcome] ?? OUTCOME_STYLES.ineligible
         const typeLabel = VOTE_TYPE_LABELS[r.voteType] ?? r.voteType
+        const target = targetText(r)
 
         return (
           <div key={r.id} style={{
@@ -60,13 +75,28 @@ const VoteResultsBanner: React.FC<VoteResultsBannerProps> = ({ results, teamColo
             }}>
               {style.label}
             </span>
-            <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
+            <span style={{ fontSize: '12px', color: '#cbd5e1', minWidth: '120px', flexShrink: 0 }}>
               {typeLabel}
             </span>
+            {target && (
+              <span style={{
+                fontSize: '12px',
+                color: '#e2e8f0',
+                fontWeight: 600,
+                flex: 1,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}>
+                {target}
+              </span>
+            )}
             <span style={{
               fontSize: '11px',
               color: '#94a3b8',
               marginLeft: 'auto',
+              flexShrink: 0,
             }}>
               {r.totalVotes}/{r.threshold} votes · {Math.round(r.probability * 100)}%
             </span>
