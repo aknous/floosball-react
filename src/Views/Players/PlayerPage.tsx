@@ -682,12 +682,12 @@ export default function PlayerPage() {
 // endpoint dots and season labels on the x-axis, rating (60-100) on the y.
 // Colors by per-segment trend so climbs look green, declines red, flat gray.
 function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; teamColor: string }) {
-  const PAD_LEFT = 32
-  const PAD_RIGHT = 12
-  const PAD_TOP = 10
-  const PAD_BOTTOM = 22
-  const WIDTH = 420
-  const HEIGHT = 120
+  const PAD_LEFT = 34
+  const PAD_RIGHT = 14
+  const PAD_TOP = 14
+  const PAD_BOTTOM = 26
+  const WIDTH = 320
+  const HEIGHT = 150
   const plotW = WIDTH - PAD_LEFT - PAD_RIGHT
   const plotH = HEIGHT - PAD_TOP - PAD_BOTTOM
 
@@ -721,7 +721,7 @@ function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; te
   for (let r = yMin; r <= yMax; r += 10) gridLines.push(r)
 
   return (
-    <div style={{ maxWidth: '460px' }}>
+    <div style={{ maxWidth: '480px' }}>
       <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
         {/* Gridlines + y-axis labels */}
         {gridLines.map(r => (
@@ -739,7 +739,7 @@ function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; te
 
         {/* X-axis season labels */}
         {seasons.map(s => (
-          <text key={s} x={xFor(s)} y={HEIGHT - 8} fontSize="9" fill="#94a3b8" textAnchor="middle">
+          <text key={s} x={xFor(s)} y={HEIGHT - 10} fontSize="9" fill="#94a3b8" textAnchor="middle">
             S{s}
           </text>
         ))}
@@ -765,10 +765,10 @@ function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; te
         {/* Points with rating labels */}
         {history.map(pt => (
           <g key={pt.season}>
-            <circle cx={xFor(pt.season)} cy={yFor(pt.rating)} r={3} fill={teamColor} stroke="#0f172a" strokeWidth={1.2} />
+            <circle cx={xFor(pt.season)} cy={yFor(pt.rating)} r={3.5} fill={teamColor} stroke="#0f172a" strokeWidth={1.2} />
             <text
-              x={xFor(pt.season)} y={yFor(pt.rating) - 7}
-              fontSize="9" fill="#e2e8f0" fontWeight="700" textAnchor="middle"
+              x={xFor(pt.season)} y={yFor(pt.rating) - 8}
+              fontSize="10" fill="#e2e8f0" fontWeight="700" textAnchor="middle"
             >
               {pt.rating}
             </text>
