@@ -492,27 +492,28 @@ function FundingSummaryStrip({
     : delta < 0
       ? { symbol: '▼', color: '#ef4444', label: `slipping from ${TIER_LABELS[funding.tier] ?? funding.tier}` }
       : { symbol: '—', color: '#94a3b8', label: `holding ${TIER_LABELS[funding.tier] ?? funding.tier}` }
-  // "Next tier threshold" should reflect the NEXT tier above where your
-  // projection has put you — not above your current locked tier. If you've
-  // already contributed enough to project into MEGA, show MEGA as reached
-  // rather than "you still need X to get to LARGE."
-  const effectiveRankForNext = projectedTier
-    ? Math.min(
-        TIER_RANK_ORDER[funding.tier] ?? 3,
-        TIER_RANK_ORDER[projectedTier] ?? 3,
-      )
-    : (TIER_RANK_ORDER[funding.tier] ?? 3)
-  const nextTierAboveProjected = effectiveRankForNext > 1
-    ? (['MEGA_MARKET', 'LARGE_MARKET', 'MID_MARKET', 'SMALL_MARKET'][effectiveRankForNext - 2] ?? null)
-    : null
-  const nextTierThresholdValue = nextTierAboveProjected
-    ? (funding.tierThresholds?.[nextTierAboveProjected] ?? funding.nextTierThreshold)
-    : null
-  const nextTierThresholdColor = nextTierAboveProjected
-    ? (TIER_COLORS[nextTierAboveProjected] ?? '#cbd5e1')
+  // "Next tier target" = the smallest tier threshold that exceeds current
+  // effective funding. Always higher than what the team has today, so the
+  // number reads as a goal to climb toward. If no threshold is higher, the
+  // team is already in the top tier and we hide the box entirely.
+  let nextTierName: Tier | null = null
+  let nextTierThresholdValue: number | null = null
+  if (funding.tierThresholds) {
+    const climbingOrder: Tier[] = ['SMALL_MARKET', 'MID_MARKET', 'LARGE_MARKET', 'MEGA_MARKET']
+    for (const name of climbingOrder) {
+      const threshold = funding.tierThresholds[name]
+      if (threshold != null && threshold > funding.effectiveFunding) {
+        nextTierName = name
+        nextTierThresholdValue = threshold
+        break
+      }
+    }
+  }
+  const nextTierThresholdColor = nextTierName
+    ? (TIER_COLORS[nextTierName] ?? '#cbd5e1')
     : '#94a3b8'
-  const nextTierThresholdLabel = nextTierAboveProjected
-    ? (TIER_LABELS[nextTierAboveProjected] ?? nextTierAboveProjected.replace('_MARKET', ''))
+  const nextTierThresholdLabel = nextTierName
+    ? (TIER_LABELS[nextTierName] ?? nextTierName.replace('_MARKET', ''))
     : null
 
   return (
@@ -564,9 +565,9 @@ function FundingSummaryStrip({
         </span>
       </div>
 
-      {/* Next-tier threshold — the projected-funding target needed to climb a
-          tier NEXT SEASON. Compare against Next Season (Projected), not This
-          Season. If projected lands in MEGA already, skip rendering. */}
+      {/* Next-tier target — the lowest threshold above current effective
+          funding. Always a number larger than "This Season" so it reads as
+          a goal. Hidden when the team already sits in the top tier. */}
       {nextTierThresholdValue != null && nextTierThresholdLabel && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '140px' }}>
           <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
@@ -576,7 +577,7 @@ function FundingSummaryStrip({
             {nextTierThresholdValue.toLocaleString()}F
           </span>
           <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' as const }}>
-            projected funding needed to reach {nextTierThresholdLabel}
+            to reach {nextTierThresholdLabel}
           </span>
         </div>
       )}
