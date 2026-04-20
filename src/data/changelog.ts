@@ -12,6 +12,59 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.10.0',
+    date: '2026-04-19',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Prospects] Rookie Draft & Scouting — every team now has scouted prospects who develop over the season and promote into the pro roster. View each team\'s pipeline, vote on rookie class priority, and track retirement risk on aging players',
+          '[Simulation] Defense & Two-Way Players — players now have defensive positions, ratings, and game stats. Sacks, interceptions, fumbles, and tackles for loss name the defenders who made them',
+          '[Simulation] Coverage schemes and blitz packages added to defensive play-calling for more realistic outcomes',
+          '[Achievements] Full goal system with Rookie Goals (onboarding milestones) and Season Goals (re-earnable each year, tiered I through IV)',
+          '[Achievements] Secret achievements reward hidden milestones',
+          '[Achievements] Unlocks pay Floobits, packs, and powerups with claim or defer-to-next-season options',
+          '[UI/UX] Team Management Hub — consolidated /front-office page replaces the old team page with tabs for Overview, Schedule, Fund, Markets, Prospects, and Board',
+          '[Front Office] League Markets — new panel shows where every team sits in the funding tier system, who\'s rising or falling, and historical tier trajectory across seasons',
+          '[UI/UX] Collapsible Sidebar — navigation moved into a left sidebar that collapses for focus or expands for labels. State persists across sessions',
+          '[Discord] Bot Integration — link your account with /link, get DM reminders for picks and roster lock, and use slash commands to check cards, roster, standings, and more',
+          '[UI/UX] Rating Sparklines — every player row shows their rating trend over recent weeks so you can spot risers and fallers at a glance',
+          '[Front Office] Year-Round Free Agency Ballots — vote on your free agency priorities starting Week 22 and keep shaping the ballot all the way through the offseason',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Pick-em] Underdog bonus — picks against the ELO favorite earn extra points',
+          '[Pick-em] Certainty decay — pre-game picks carry full value; value drops as games progress',
+          '[Pick-em] Opt-in auto-pick setting picks the ELO favorite for you when you miss a week',
+          '[Team Funding] Share-of-league tier system — your tier depends on how much you contribute relative to the league, not a fixed threshold',
+          '[Team Funding] New trajectory chart shows where your team is heading next season',
+          '[Fantasy] Playoff scoring is now frozen at the start of the playoffs — fantasy rankings reflect the regular season, not late-season chaos',
+          '[Front Office] Board Resolutions now name specific players to vote on (Fire Coach X, Cut Player Y) instead of generic directives',
+          '[Cards] Bonsai reworked — growth is now earned through roster performance each week instead of random luck, with higher levels requiring bigger weeks to keep pushing',
+          '[Cards] Eminence and Rising Tide ceilings raised so elite player seasons actually get to enjoy the upside',
+          '[Cards] Avalanche uses a smoother scaling curve so it still feels rewarding at high FP totals',
+          '[Simulation] 4th-down coaching is more aggressive in appropriate situations — fewer timid punts in modern-football scenarios',
+          '[Prospects] Prospect cards show a single Skill Ceiling rating instead of overwhelming per-attribute potentials',
+          '[Prospects] Rookie voting stays open through the playoffs — the window no longer closes once Wild Card weekend starts',
+          '[Guide] Updated with Prospects, Team Management, Achievements, and refreshed Prognosticate and Front Office sections',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Simulation] Offseason replay bug — restarting mid-offseason no longer replays free agency picks',
+          '[Front Office] FA ballot submissions now persist correctly across page refreshes',
+          '[Cards] Windfall, Fat Cat, and Martyr card effects corrected',
+          '[Front Office] Walk-year players now appear in the projected FA pool so you can plan cuts and re-signs',
+          '[Prospects] READY badge now uses a fair comparison against current roster, not an arbitrary threshold',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.9.0',
     date: '2026-04-12',
     changes: [],
