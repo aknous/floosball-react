@@ -153,20 +153,28 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
   // categories (FA pool + projected FA, or prospect + FA), the first entry
   // wins. Without this dedupe a stale/inconsistent backend state could result
   // in duplicate rows visible in the ballot picker.
-  const availablePlayers = useMemo(() => {
-    if (!activePosition) return []
+  // Prospects are split into their own group so they surface at the top of
+  // the ballot picker — promoting a prospect is different in kind from signing
+  // a free agent and should read that way.
+  const { prospects, others } = useMemo(() => {
+    if (!activePosition) return { prospects: [] as ScoutingPlayer[], others: [] as ScoutingPlayer[] }
     const seen = new Set<number>()
-    const filtered: ScoutingPlayer[] = []
+    const prospectList: ScoutingPlayer[] = []
+    const otherList: ScoutingPlayer[] = []
     for (const p of scoutingPlayers) {
       if (p.position !== activePosition) continue
       if (allSelectedIds.has(p.id)) continue
       if (seen.has(p.id)) continue
       seen.add(p.id)
-      filtered.push(p)
+      if (p.isProspect) prospectList.push(p)
+      else otherList.push(p)
     }
-    filtered.sort((a, b) => b.rating - a.rating)
-    return filtered
+    prospectList.sort((a, b) => b.rating - a.rating)
+    otherList.sort((a, b) => b.rating - a.rating)
+    return { prospects: prospectList, others: otherList }
   }, [scoutingPlayers, activePosition, allSelectedIds])
+
+  const availablePlayerCount = prospects.length + others.length
 
   const activeRankings = activeSlot ? (slotRankings[activeSlot] || []) : []
   const canAddMore = activeRankings.length < MAX_PICKS_PER_POSITION
@@ -396,77 +404,39 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                 <div style={{ fontSize: '13px', color: '#94a3b8', padding: '24px', textAlign: 'center' }}>
                   Select an open position on the left
                 </div>
-              ) : availablePlayers.length === 0 && !canAddMore ? (
+              ) : availablePlayerCount === 0 && !canAddMore ? (
                 <div style={{ fontSize: '13px', color: '#94a3b8', padding: '24px', textAlign: 'center' }}>
                   Ballot full for {activePosition} — {MAX_PICKS_PER_POSITION} candidates ranked
                 </div>
-              ) : availablePlayers.length === 0 ? (
+              ) : availablePlayerCount === 0 ? (
                 <div style={{ fontSize: '13px', color: '#94a3b8', padding: '24px', textAlign: 'center' }}>
                   No available players at {activePosition}
                 </div>
               ) : (
-                availablePlayers.map(p => (
-                  <div
-                    key={p.id}
-                    onClick={() => canAddMore && addPlayer(p.id)}
-                    style={{
-                      padding: '12px 14px',
-                      borderRadius: '6px',
-                      cursor: canAddMore ? 'pointer' : 'not-allowed',
-                      marginBottom: '2px',
-                      borderBottom: '1px solid #1a2640',
-                      opacity: canAddMore ? 1 : 0.5,
-                    }}
-                    onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
-                  >
-                    {/* Row 1: Stars + Name + Performance/type indicator */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Stars stars={calcStars(p.rating)} size={14} />
-                      <span style={{ flex: 1, fontSize: '14px', color: '#e2e8f0', fontWeight: '600' }}>{p.name}</span>
-                      {p.isProspect ? (
-                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Prospect
-                        </span>
-                      ) : p.isRookie ? (
-                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Rookie
-                        </span>
-                      ) : p.isProjected ? (
-                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          {p.projectedReason === 'cut_vote' ? 'Cut Vote' : 'Walk Year'}
-                        </span>
-                      ) : (
-                        <PerformanceBadge delta={p.ratingDelta} />
-                      )}
-                    </div>
-                    {/* Row 2: Stat line, prospect note, rookie label, or walk-year context */}
-                    {p.isProspect ? (
-                      <div style={{ marginTop: '6px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
-                        Pipeline prospect — rank to promote instead of sign a FA
-                      </div>
-                    ) : p.isRookie ? (
-                      <div style={{ marginTop: '6px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
-                        No professional record
-                      </div>
-                    ) : p.isProjected ? (
-                      <div style={{ marginTop: '6px', fontSize: '12px', color: '#fbbf24', fontStyle: 'italic' }}>
-                        {p.currentTeam ? `Currently on ${p.currentTeam} — ` : ''}
-                        {p.projectedReason === 'cut_vote'
-                          ? 'board pushing to cut'
-                          : 'contract expires at season end'}
-                      </div>
-                    ) : p.stats ? (
-                      <div style={{ marginTop: '6px', fontSize: '12px', color: '#94a3b8', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <StatLine position={p.position} stats={p.stats} />
-                      </div>
-                    ) : (
-                      <div style={{ marginTop: '6px', fontSize: '12px', color: '#475569', fontStyle: 'italic' }}>
-                        No stats recorded
-                      </div>
-                    )}
-                  </div>
-                ))
+                <>
+                  {prospects.length > 0 && (
+                    <>
+                      <SectionDivider label="Prospects" count={prospects.length} color="#a78bfa" />
+                      {prospects.map(p => (
+                        <PlayerRow
+                          key={p.id}
+                          player={p}
+                          canAddMore={canAddMore}
+                          onClick={() => canAddMore && addPlayer(p.id)}
+                        />
+                      ))}
+                      <SectionDivider label="Free Agents" count={others.length} color="#22c55e" />
+                    </>
+                  )}
+                  {others.map(p => (
+                    <PlayerRow
+                      key={p.id}
+                      player={p}
+                      canAddMore={canAddMore}
+                      onClick={() => canAddMore && addPlayer(p.id)}
+                    />
+                  ))}
+                </>
               )}
             </div>
           </div>
@@ -514,6 +484,95 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
 }
 
 /* ── Helper components ── */
+
+const SectionDivider: React.FC<{ label: string; count: number; color: string }> = ({ label, count, color }) => (
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '10px 4px 6px',
+  }}>
+    <span style={{
+      fontSize: '11px',
+      fontWeight: 700,
+      color,
+      textTransform: 'uppercase',
+      letterSpacing: '0.08em',
+    }}>
+      {label}
+    </span>
+    <span style={{ fontSize: '11px', color: '#64748b' }}>
+      {count}
+    </span>
+    <div style={{ flex: 1, height: '1px', backgroundColor: '#1e293b' }} />
+  </div>
+)
+
+const PlayerRow: React.FC<{
+  player: ScoutingPlayer
+  canAddMore: boolean
+  onClick: () => void
+}> = ({ player: p, canAddMore, onClick }) => (
+  <div
+    onClick={onClick}
+    style={{
+      padding: '12px 14px',
+      borderRadius: '6px',
+      cursor: canAddMore ? 'pointer' : 'not-allowed',
+      marginBottom: '2px',
+      borderBottom: '1px solid #1a2640',
+      opacity: canAddMore ? 1 : 0.5,
+    }}
+    onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
+    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+  >
+    {/* Row 1: Stars + Name + Performance/type indicator */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <Stars stars={calcStars(p.rating)} size={14} />
+      <span style={{ flex: 1, fontSize: '14px', color: '#e2e8f0', fontWeight: '600' }}>{p.name}</span>
+      {p.isProspect ? (
+        <span style={{ fontSize: '12px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Prospect
+        </span>
+      ) : p.isRookie ? (
+        <span style={{ fontSize: '12px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Rookie
+        </span>
+      ) : p.isProjected ? (
+        <span style={{ fontSize: '12px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {p.projectedReason === 'cut_vote' ? 'Cut Vote' : 'Walk Year'}
+        </span>
+      ) : (
+        <PerformanceBadge delta={p.ratingDelta} />
+      )}
+    </div>
+    {/* Row 2: Stat line, prospect note, rookie label, or walk-year context */}
+    {p.isProspect ? (
+      <div style={{ marginTop: '6px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
+        Pipeline prospect — rank to promote instead of sign a FA
+      </div>
+    ) : p.isRookie ? (
+      <div style={{ marginTop: '6px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
+        No professional record
+      </div>
+    ) : p.isProjected ? (
+      <div style={{ marginTop: '6px', fontSize: '12px', color: '#fbbf24', fontStyle: 'italic' }}>
+        {p.currentTeam ? `Currently on ${p.currentTeam} — ` : ''}
+        {p.projectedReason === 'cut_vote'
+          ? 'board pushing to cut'
+          : 'contract expires at season end'}
+      </div>
+    ) : p.stats ? (
+      <div style={{ marginTop: '6px', fontSize: '12px', color: '#94a3b8', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <StatLine position={p.position} stats={p.stats} />
+      </div>
+    ) : (
+      <div style={{ marginTop: '6px', fontSize: '12px', color: '#475569', fontStyle: 'italic' }}>
+        No stats recorded
+      </div>
+    )}
+  </div>
+)
 
 const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
   if (delta > 5) {

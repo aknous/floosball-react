@@ -11,6 +11,7 @@ import ResignPlayerCard from './ResignPlayerCard'
 import VoteResultsBanner from './VoteResultsBanner'
 import FaBallotModal, { ScoutingPlayer, OpenSlot } from './FaBallotModal'
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
+import { Stars, calcStars } from '@/Components/Stars'
 import { GM_VOTE_COST, GM_VOTES_PER_SEASON, GM_VOTES_PER_TARGET, GM_VOTES_PER_TYPE } from '@/types/gm'
 
 const GM_ACTIVE_WEEK = 22
@@ -574,7 +575,7 @@ const FaPoolPreview: React.FC<{
                     key={p.id}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '32px 1fr auto 60px',
+                      gridTemplateColumns: '32px 1fr auto 72px',
                       gap: '10px',
                       alignItems: 'center',
                       padding: '5px 8px',
@@ -602,12 +603,8 @@ const FaPoolPreview: React.FC<{
                     }}>
                       {badge.label}
                     </span>
-                    <span style={{
-                      color: '#cbd5e1', fontWeight: 600,
-                      fontVariantNumeric: 'tabular-nums' as const,
-                      textAlign: 'right' as const,
-                    }}>
-                      {p.rating.toFixed(1)}
+                    <span style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <Stars stars={calcStars(p.rating)} size={11} />
                     </span>
                   </div>
                 )
