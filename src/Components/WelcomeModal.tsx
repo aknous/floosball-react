@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { CHANGELOG, ChangelogEntry } from '@/data/changelog'
+import { ChangelogLine } from '@/Components/ChangelogLine'
 
 const SECTION_COLORS: Record<string, string> = {
   'New Features': '#22c55e',
@@ -30,7 +31,9 @@ const ChangelogItems: React.FC<{ entry: ChangelogEntry; fontSize: string }> = ({
               {section.items.map((item, i) => (
                 <li key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                   <span style={{ color: '#475569', fontSize: '10px', flexShrink: 0, marginTop: '4px' }}>&#9679;</span>
-                  <span style={{ color: '#94a3b8', fontSize, lineHeight: '1.5' }}>{item}</span>
+                  <span style={{ color: '#94a3b8', fontSize, lineHeight: '1.5' }}>
+                    <ChangelogLine text={item} />
+                  </span>
                 </li>
               ))}
             </ul>
@@ -44,7 +47,9 @@ const ChangelogItems: React.FC<{ entry: ChangelogEntry; fontSize: string }> = ({
       {entry.changes.map((change, i) => (
         <li key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
           <span style={{ color: '#475569', fontSize: '10px', flexShrink: 0, marginTop: '4px' }}>&#9679;</span>
-          <span style={{ color: '#94a3b8', fontSize, lineHeight: '1.5' }}>{change}</span>
+          <span style={{ color: '#94a3b8', fontSize, lineHeight: '1.5' }}>
+            <ChangelogLine text={change} />
+          </span>
         </li>
       ))}
     </ul>
