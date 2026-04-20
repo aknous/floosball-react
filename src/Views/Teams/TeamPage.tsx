@@ -26,6 +26,7 @@ interface RosterPlayer {
   termRemaining?: number
   fatigue?: number
   resilience?: number
+  ratingHistory?: { season: number; rating: number }[]
 }
 
 interface ScheduleEntry {
@@ -48,6 +49,7 @@ interface Coach {
   aggressiveness: number
   clockManagement: number
   playerDevelopment: number
+  scouting: number
   seasonsCoached: number
 }
 
@@ -56,14 +58,15 @@ interface FundingData {
   baselineFunding: number
   fanContributions: number
   currentFunding: number
-  carriedFunding: number
   effectiveFunding: number
   tier: string
   tierRank: number
+  // Market tiers are now assigned by relative rank (quartiles) across the league,
+  // so "thresholds" are live values derived from standings — only the single
+  // next-tier threshold is surfaced. No fixed per-tier floors to plot.
   nextTierThreshold: number | null
   nextTierName: string | null
   progressToNextTier: number | null
-  allTierThresholds: Record<string, number>
 }
 
 interface TeamData {
@@ -149,6 +152,55 @@ const ROSTER_SLOTS: [string, string][] = [
   ['qb', 'QB'], ['rb', 'RB'], ['wr1', 'WR1'], ['wr2', 'WR2'], ['te', 'TE'], ['k', 'K']
 ]
 
+type RetirementRisk = 'safe' | 'possible' | 'likely' | 'very_likely' | 'forced'
+interface RetirementRiskEntry {
+  playerId: number
+  risk: RetirementRisk
+  seasonsPlayed: number
+  longevity: number
+  termRemaining: number
+}
+interface ProspectEntry {
+  playerId: number
+  name: string
+  position: string
+  rating: number
+  tier: string | null
+  prospectSeasons: number
+  seasonsRemaining: number
+  draftSeason?: number | null
+  isUndrafted: boolean
+  ratingHistory: { season: number; rating: number }[]
+}
+
+const RISK_STYLES: Record<RetirementRisk, { label: string; color: string; bg: string }> = {
+  safe:         { label: '',                color: '',        bg: '' },
+  possible:     { label: 'AGING',           color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
+  likely:       { label: 'RETIRING?',       color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
+  very_likely:  { label: 'FAREWELL TOUR',   color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+  forced:       { label: 'FORCED EXIT',     color: '#ef4444', bg: 'rgba(239,68,68,0.2)' },
+}
+
+function RetirementBadge({ risk }: { risk: RetirementRisk }) {
+  if (risk === 'safe') return null
+  const style = RISK_STYLES[risk]
+  return (
+    <span style={{
+      fontSize: '9px',
+      fontWeight: 800,
+      letterSpacing: '0.06em',
+      color: style.color,
+      backgroundColor: style.bg,
+      padding: '2px 6px',
+      borderRadius: '3px',
+      flexShrink: 0,
+      whiteSpace: 'nowrap',
+    }}>
+      {style.label}
+    </span>
+  )
+}
+
 export default function TeamPage() {
   const { id } = useParams<{ id: string }>()
   const { user, getToken, refetchUser } = useAuth()
@@ -158,6 +210,9 @@ export default function TeamPage() {
   const [projectedFunding, setProjectedFunding] = useState<{ projectedAutoContributions: number, contributingFans: number, totalFans: number, nextSeasonProjectedFunding?: number, nextSeasonProjectedTier?: string, decayRate?: number } | null>(null)
   const [fundingRefresh, setFundingRefresh] = useState(0)
   const [showHelp, setShowHelp] = useState(false)
+  const [retirementWatch, setRetirementWatch] = useState<Record<number, RetirementRiskEntry>>({})
+  const [prospects, setProspects] = useState<ProspectEntry[]>([])
+  const [prospectsMeta, setProspectsMeta] = useState<{ slotCapPerPosition: number, developmentWindow: number, promotionThreshold: number } | null>(null)
   const isMobile = useIsMobile()
   const isFavTeam = !!team && user?.favoriteTeamId === team.id
 
@@ -197,7 +252,7 @@ export default function TeamPage() {
     {
       target: 'team-funding-bar',
       title: 'Tier Progress',
-      content: 'Track funding progress toward the next tier. The bar shows current funding and next-season projections after 50% carry-forward decay.',
+      content: 'Track funding progress toward the next tier. The bar shows current funding and the projected tier next season.',
       placement: 'bottom',
     },
     {
@@ -240,6 +295,34 @@ export default function TeamPage() {
       .then(json => { if (json.success && json.data) setProjectedFunding(json.data) })
       .catch(() => {})
   }, [id, activeTab, fundingRefresh])
+
+  // Retirement risk watch + prospect pipeline — visible year-round on the
+  // Overview tab so fans can see farewell-tour candidates and the team's
+  // developing prospects without waiting for offseason.
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+    Promise.all([
+      fetch(`${API_BASE}/teams/${id}/retirement-watch`).then(r => r.json()).catch(() => null),
+      fetch(`${API_BASE}/teams/${id}/prospects`).then(r => r.json()).catch(() => null),
+    ]).then(([watchJson, prospectsJson]) => {
+      if (cancelled) return
+      if (watchJson?.success && watchJson.data?.watch) {
+        const byId: Record<number, RetirementRiskEntry> = {}
+        for (const w of watchJson.data.watch) byId[w.playerId] = w
+        setRetirementWatch(byId)
+      }
+      if (prospectsJson?.success && prospectsJson.data) {
+        setProspects(prospectsJson.data.prospects || [])
+        setProspectsMeta({
+          slotCapPerPosition: prospectsJson.data.slotCapPerPosition,
+          developmentWindow: prospectsJson.data.developmentWindow,
+          promotionThreshold: prospectsJson.data.promotionThreshold,
+        })
+      }
+    })
+    return () => { cancelled = true }
+  }, [id])
 
   // External callers (e.g. the achievements page) can request a tab switch via
   // a window event so deep-links land on the correct section.
@@ -319,7 +402,7 @@ export default function TeamPage() {
               <span style={{ fontSize: '13px', color: '#64748b' }}>·</span>
               <span style={{ fontSize: '13px', color: '#94a3b8' }}>ELO {Math.round(team.elo)}</span>
               {team.fundingTier && (() => {
-                const tc: Record<string, string> = { 'MEGA_MARKET': '#a78bfa', 'LARGE_MARKET': '#3b82f6', 'MID_MARKET': '#64748b', 'SMALL_MARKET': '#f97316' }
+                const tc: Record<string, string> = { 'MEGA_MARKET': '#a78bfa', 'LARGE_MARKET': '#3b82f6', 'MID_MARKET': '#2dd4bf', 'SMALL_MARKET': '#f97316' }
                 const tl: Record<string, string> = { 'MEGA_MARKET': 'Mega Market', 'LARGE_MARKET': 'Large Market', 'MID_MARKET': 'Mid Market', 'SMALL_MARKET': 'Small Market' }
                 const te: Record<string, string[]> = {
                   'MEGA_MARKET': ['Large boost to player development', 'Large boost to player morale', 'Massive reduction in fatigue buildup'],
@@ -395,9 +478,10 @@ export default function TeamPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' as const }}>
           {([
             { key: 'overview', label: 'Overview' },
-            { key: 'funding', label: 'Funding' },
-            ...(user?.favoriteTeamId === team.id ? [{ key: 'frontOffice', label: 'Front Office' }] : []),
             { key: 'schedule', label: 'Schedule' },
+            // Funding and Front Office are now on the dedicated /front-office hub.
+            // Favorite-team fans see a quick link inline (below); team page stays
+            // focused on roster, coach, schedule, and read-only stats.
           ] as { key: string; label: string }[]).map(tab => (
             <button
               key={tab.key}
@@ -477,6 +561,9 @@ export default function TeamPage() {
                             {player.termRemaining} season{player.termRemaining !== 1 ? 's' : ''} remaining
                           </span>
                         )}
+                        {retirementWatch[player.id] && (
+                          <RetirementBadge risk={retirementWatch[player.id].risk} />
+                        )}
                       </>
                     ) : (
                       <span style={{ fontSize: '13px', color: '#475569' }}>—</span>
@@ -484,6 +571,67 @@ export default function TeamPage() {
                   </div>
                 )
               })}
+            </div>
+
+            {/* Prospect Pipeline — drafted rookies developing toward roster promotion.
+                Always rendered so empty pipelines are visible (no prospects = "drafted
+                empty rosters" hint for fans to understand the system). */}
+            <div style={{ padding: '10px 14px', borderTop: '1px solid #334155' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
+                  Prospect Pipeline
+                </span>
+                <span style={{ fontSize: '10px', color: '#64748b' }}>
+                  {prospects.length} / {(prospectsMeta?.slotCapPerPosition ?? 2) * 5} slots
+                </span>
+              </div>
+              {prospects.length === 0 ? (
+                <div style={{ fontSize: '12px', color: '#64748b', padding: '6px 0' }}>
+                  No prospects in the pipeline yet. Rookies are drafted each offseason
+                  — 24 rookies per class, worst-first order, 1 pick per team.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {prospects.map(p => {
+                    // "2 seasons until FA" if more than a season left, or
+                    // "final season — will be FA" at the last dev window year.
+                    const windowLabel = p.seasonsRemaining <= 1
+                      ? 'final season'
+                      : `${p.seasonsRemaining} seasons`
+                    return (
+                      <div key={p.playerId} style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '4px 8px', borderRadius: '4px', backgroundColor: '#0f172a',
+                      }}>
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', minWidth: '28px' }}>{p.position}</span>
+                        <Link
+                          to={`/players/${p.playerId}`}
+                          style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: '500', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                        >
+                          {p.name}
+                        </Link>
+                        <Stars stars={calcStars(p.rating)} size={12} />
+                        {p.isUndrafted && (
+                          <span style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', backgroundColor: '#1e293b', padding: '1px 5px', borderRadius: '3px', letterSpacing: '0.04em' }}>
+                            UNDRAFTED
+                          </span>
+                        )}
+                        {p.draftSeason != null && (
+                          <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                            drafted S{p.draftSeason}
+                          </span>
+                        )}
+                        <span style={{
+                          fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap',
+                          marginLeft: 'auto', fontWeight: 600,
+                        }}>
+                          {windowLabel} until FA
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -510,6 +658,7 @@ export default function TeamPage() {
                   ['Aggressiveness', team.coach.aggressiveness],
                   ['Clock Mgmt', team.coach.clockManagement],
                   ['Player Dev', team.coach.playerDevelopment],
+                  ['Scouting', team.coach.scouting],
                 ] as [string, number][]).map(([label, val]) => (
                   <div key={label}>
                     <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '3px' }}>{label}</div>
@@ -534,7 +683,7 @@ export default function TeamPage() {
           const tierColors: Record<string, string> = {
             'MEGA_MARKET': '#a78bfa',
             'LARGE_MARKET': '#3b82f6',
-            'MID_MARKET': '#64748b',
+            'MID_MARKET': '#2dd4bf',
             'SMALL_MARKET': '#f97316',
           }
           const tierLabels: Record<string, string> = {
@@ -553,41 +702,32 @@ export default function TeamPage() {
           const currentIdx = orderedTiers.indexOf(f.tier)
           const tierColor = tierColors[f.tier] || '#64748b'
 
-          const thresholds = f.allTierThresholds || {}
-          // Use the API's next-season projected tier (accounts for decay) if available
+          // Tiers are now relative quartiles; the only meaningful "line" on the bar
+          // is the live next-tier threshold (what this team needs to beat to climb).
           const nextSeasonTier = projectedFunding?.nextSeasonProjectedTier
           const projectedIdx = nextSeasonTier
             ? orderedTiers.indexOf(nextSeasonTier)
             : currentIdx
           const projectedTier = orderedTiers[Math.max(0, projectedIdx)]
 
-          // Bar: focused range that expands to include whichever thresholds the estimate is approaching
           const nextSeasonFunding = projectedFunding?.nextSeasonProjectedFunding ?? null
           const projectedTotal = projectedFunding ? f.currentFunding + projectedFunding.projectedAutoContributions : null
-          const maxFunding = Math.max(f.currentFunding, projectedTotal ?? 0, nextSeasonFunding ?? 0)
-          // Lower bound: one tier below current (or 0)
-          const lowerTier = currentIdx > 0 ? orderedTiers[currentIdx - 1] : null
-          const barMin = lowerTier ? (thresholds[lowerTier] ?? 0) : 0
-          // Upper bound: the first threshold above maxFunding (so we always show the next goal)
-          const firstThresholdAbove = orderedTiers.reduce<number | null>((found, t) => {
-            if (found != null) return found
-            const th = thresholds[t] ?? 0
-            return th > maxFunding ? th : null
-          }, null)
-          const barMax = firstThresholdAbove != null
-            ? firstThresholdAbove * 1.1
-            : maxFunding * 1.15
+          const maxFunding = Math.max(f.currentFunding, projectedTotal ?? 0, nextSeasonFunding ?? 0, f.nextTierThreshold ?? 0)
+          const barMin = 0
+          const barMax = Math.max(maxFunding * 1.15, (f.nextTierThreshold ?? 0) * 1.1, 1)
           const barRange = barMax - barMin || 1
           const fundingPct = Math.min(Math.max(((f.currentFunding - barMin) / barRange) * 100, 0), 100)
-          // Show thresholds that fall within the visible bar range
-          const tierMarkers = orderedTiers.map((t, i) => ({
-            tier: t,
-            threshold: thresholds[t] ?? 0,
-            pct: Math.min(Math.max((((thresholds[t] ?? 0) - barMin) / barRange) * 100, 0), 100),
-            color: tierColors[t] || '#64748b',
-            label: tierLabels[t] || t,
-            isCurrent: i === currentIdx,
-          })).filter(m => m.threshold > barMin && m.threshold <= barMax)
+          // Single marker: where the tier above you starts (if there is one)
+          const tierMarkers = (f.nextTierThreshold && f.nextTierName)
+            ? [{
+                tier: f.nextTierName,
+                threshold: f.nextTierThreshold,
+                pct: Math.min(Math.max(((f.nextTierThreshold - barMin) / barRange) * 100, 0), 100),
+                color: tierColors[f.nextTierName] || '#64748b',
+                label: tierLabels[f.nextTierName] || f.nextTierName,
+                isCurrent: false,
+              }]
+            : []
 
           const currentEffects = tierEffects[f.tier]
           const projectedEffects = projectedTier !== f.tier ? tierEffects[projectedTier] : null
@@ -699,12 +839,7 @@ export default function TeamPage() {
 
                 {/* Compact stats + progress */}
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px', flexWrap: 'wrap', fontSize: '12px', color: '#cbd5e1' }}>
-                  <span>Funded: <strong style={{ color: '#e2e8f0' }}>{f.currentFunding}F</strong> ({f.baselineFunding ?? 0}F base + {f.fanContributions ?? 0}F contributions)</span>
-                  {nextSeasonFunding != null && (
-                    <span>Next season: <strong style={{ color: tierColors[projectedTier] || tierColor }}>{nextSeasonFunding}F</strong>
-                      <span style={{ color: '#94a3b8', fontSize: '11px' }}> ({Math.round((projectedFunding?.decayRate ?? 0.5) * 100)}% carry)</span>
-                    </span>
-                  )}
+                  <span>Funded: <strong style={{ color: '#e2e8f0' }}>{f.currentFunding}F</strong> ({f.fanContributions ?? 0}F from fans)</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                   <span style={{ fontSize: '12px', color: '#94a3b8' }}>Projected tier:</span>

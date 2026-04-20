@@ -31,11 +31,31 @@ export interface ScoutingPlayer {
   ratingDelta: number
   stats: PlayerStats | null
   isRookie?: boolean
+  isProspect?: boolean
+  // True when the candidate is a rostered player who will likely hit FA —
+  // either in their walk year with no resign-vote consensus, OR cut-voted
+  // by the board regardless of contract.
+  isProjected?: boolean
+  // 'walk_year' = contract expiring | 'cut_vote' = board pushing to cut
+  projectedReason?: 'walk_year' | 'cut_vote'
+  currentTeam?: string  // Set on projected candidates — the team they're leaving from
 }
 
 export interface OpenSlot {
   slot: string
   position: string
+  // True when this slot is projected to open at season end:
+  //   - 'vacant' — actually empty right now
+  //   - 'walk_year' — incumbent's contract is expiring, no strong resign vote
+  //   - 'cut_vote_likely' — board pushing to cut incumbent regardless of contract
+  projected?: boolean
+  reason?: 'vacant' | 'walk_year' | 'cut_vote_likely'
+  incumbent?: {
+    id: number
+    name: string
+    rating: number
+    termRemaining: number
+  }
 }
 
 interface FaBallotModalProps {
@@ -128,12 +148,24 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
     return ids
   }, [slotRankings])
 
-  // Available players for the active position (exclude already-selected anywhere)
+  // Available players for the active position (exclude already-selected anywhere).
+  // Dedupe by ID defensively — if the backend ever emits a player in multiple
+  // categories (FA pool + projected FA, or prospect + FA), the first entry
+  // wins. Without this dedupe a stale/inconsistent backend state could result
+  // in duplicate rows visible in the ballot picker.
   const availablePlayers = useMemo(() => {
     if (!activePosition) return []
-    return scoutingPlayers
-      .filter(p => p.position === activePosition && !allSelectedIds.has(p.id))
-      .sort((a, b) => b.rating - a.rating)
+    const seen = new Set<number>()
+    const filtered: ScoutingPlayer[] = []
+    for (const p of scoutingPlayers) {
+      if (p.position !== activePosition) continue
+      if (allSelectedIds.has(p.id)) continue
+      if (seen.has(p.id)) continue
+      seen.add(p.id)
+      filtered.push(p)
+    }
+    filtered.sort((a, b) => b.rating - a.rating)
+    return filtered
   }, [scoutingPlayers, activePosition, allSelectedIds])
 
   const activeRankings = activeSlot ? (slotRankings[activeSlot] || []) : []
@@ -388,22 +420,41 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                     onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
                   >
-                    {/* Row 1: Stars + Name + Performance indicator */}
+                    {/* Row 1: Stars + Name + Performance/type indicator */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <Stars stars={calcStars(p.rating)} size={14} />
                       <span style={{ flex: 1, fontSize: '14px', color: '#e2e8f0', fontWeight: '600' }}>{p.name}</span>
-                      {p.isRookie ? (
+                      {p.isProspect ? (
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Prospect
+                        </span>
+                      ) : p.isRookie ? (
                         <span style={{ fontSize: '12px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                           Rookie
+                        </span>
+                      ) : p.isProjected ? (
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          {p.projectedReason === 'cut_vote' ? 'Cut Vote' : 'Walk Year'}
                         </span>
                       ) : (
                         <PerformanceBadge delta={p.ratingDelta} />
                       )}
                     </div>
-                    {/* Row 2: Stat line or Rookie label */}
-                    {p.isRookie ? (
+                    {/* Row 2: Stat line, prospect note, rookie label, or walk-year context */}
+                    {p.isProspect ? (
+                      <div style={{ marginTop: '6px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
+                        Pipeline prospect — rank to promote instead of sign a FA
+                      </div>
+                    ) : p.isRookie ? (
                       <div style={{ marginTop: '6px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
                         No professional record
+                      </div>
+                    ) : p.isProjected ? (
+                      <div style={{ marginTop: '6px', fontSize: '12px', color: '#fbbf24', fontStyle: 'italic' }}>
+                        {p.currentTeam ? `Currently on ${p.currentTeam} — ` : ''}
+                        {p.projectedReason === 'cut_vote'
+                          ? 'board pushing to cut'
+                          : 'contract expires at season end'}
                       </div>
                     ) : p.stats ? (
                       <div style={{ marginTop: '6px', fontSize: '12px', color: '#94a3b8', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>

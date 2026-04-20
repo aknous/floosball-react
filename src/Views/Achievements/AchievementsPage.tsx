@@ -233,6 +233,7 @@ const AchievementsPage: React.FC = () => {
         {pendingRewards.length > 0 && (
           <PendingRewardsSection
             rewards={pendingRewards}
+            currentSeason={currentSeason}
             onClaim={claimReward}
             onDefer={deferReward}
             onPackOpened={setOpenedPack}
@@ -745,10 +746,11 @@ const RewardLabel: React.FC = () => (
 
 const PendingRewardsSection: React.FC<{
   rewards: PendingReward[]
+  currentSeason: number
   onClaim: (id: number) => Promise<{ kind: string; packName?: string; cards?: any[] } | null>
   onDefer: (id: number) => Promise<void>
   onPackOpened: (pack: { packName: string; cards: CardData[] }) => void
-}> = ({ rewards, onClaim, onDefer, onPackOpened }) => {
+}> = ({ rewards, currentSeason, onClaim, onDefer, onPackOpened }) => {
   const [busyId, setBusyId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -807,6 +809,11 @@ const PendingRewardsSection: React.FC<{
         {rewards.map(r => {
           const busy = busyId === r.id
           const deferred = r.deferUntilSeason != null
+          // A deferred reward can be claimed once the target season has
+          // arrived. Previously used `!r.canDefer` which is always true for
+          // already-deferred rewards — meaning the Claim button stayed
+          // disabled even after the target season rolled over.
+          const lockedByDefer = deferred && currentSeason > 0 && currentSeason < (r.deferUntilSeason as number)
           const label = r.kind === 'pack' ? packLabel(r.slug) : powerupLabel(r.slug)
           const sourceText = r.source.startsWith('achievement:')
             ? `Earned from ${r.source.replace('achievement:', '').replace(/_/g, ' ')}`
@@ -850,13 +857,15 @@ const PendingRewardsSection: React.FC<{
                 )}
                 <button
                   onClick={() => handleClaim(r)}
-                  disabled={busy || (deferred && !r.canDefer)}
+                  disabled={busy || lockedByDefer}
+                  title={lockedByDefer ? `Available in season ${r.deferUntilSeason}` : undefined}
                   style={{
                     fontSize: '12px', fontWeight: 700,
                     color: '#0f172a', backgroundColor: '#f59e0b',
                     border: 'none', borderRadius: '4px',
-                    padding: '6px 12px', cursor: busy ? 'default' : 'pointer',
-                    opacity: busy ? 0.5 : 1,
+                    padding: '6px 12px',
+                    cursor: busy || lockedByDefer ? 'not-allowed' : 'pointer',
+                    opacity: busy || lockedByDefer ? 0.5 : 1,
                   }}
                 >
                   {busy ? 'Claiming...' : 'Claim'}

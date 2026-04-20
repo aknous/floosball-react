@@ -87,6 +87,12 @@ const GameBar: React.FC = () => {
     )
   }
 
+  // Small slates (playoffs, short weeks) don't need the scrolling ticker —
+  // there's room to show every game at once, and scrolling a half-full track
+  // looks awkward. Center the list in place below the threshold.
+  const SCROLL_THRESHOLD = 12
+  const shouldScroll = gameList.length >= SCROLL_THRESHOLD
+
   return (
     <>
       <style>{`
@@ -106,26 +112,42 @@ const GameBar: React.FC = () => {
           borderBottom: '1px solid #1e293b',
           overflow: 'hidden',
           padding: '4px 0',
+          display: shouldScroll ? 'block' : 'flex',
+          justifyContent: shouldScroll ? undefined : 'center',
         }}
       >
-        <div
-          ref={trackRef}
-          style={{
-            display: 'flex',
-            gap: '10px',
-            width: 'fit-content',
-            animationName: 'ticker-scroll',
-            animationDuration: `${duration}s`,
-            animationTimingFunction: 'linear',
-            animationIterationCount: 'infinite',
-            animationPlayState: paused ? 'paused' : 'running',
-          }}
-        >
-          {gameList.map(g => renderGame(g, 'a'))}
-          <span style={{ width: '40px', flexShrink: 0 }} />
-          {gameList.map(g => renderGame(g, 'b'))}
-          <span style={{ width: '40px', flexShrink: 0 }} />
-        </div>
+        {shouldScroll ? (
+          <div
+            ref={trackRef}
+            style={{
+              display: 'flex',
+              gap: '10px',
+              width: 'fit-content',
+              animationName: 'ticker-scroll',
+              animationDuration: `${duration}s`,
+              animationTimingFunction: 'linear',
+              animationIterationCount: 'infinite',
+              animationPlayState: paused ? 'paused' : 'running',
+            }}
+          >
+            {gameList.map(g => renderGame(g, 'a'))}
+            <span style={{ width: '40px', flexShrink: 0 }} />
+            {gameList.map(g => renderGame(g, 'b'))}
+            <span style={{ width: '40px', flexShrink: 0 }} />
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              gap: '10px',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              maxWidth: '100%',
+            }}
+          >
+            {gameList.map(g => renderGame(g, 'static'))}
+          </div>
+        )}
       </div>
 
       {selectedGameId !== null && (

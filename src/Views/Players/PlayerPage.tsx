@@ -28,6 +28,12 @@ interface PlayerData {
   teamSecondaryColor: string | null
   teamId: number | null
   teamAbbr: string | null
+  isProspect?: boolean
+  draftingTeamId?: number | null
+  draftingTeamName?: string | null
+  draftingTeamCity?: string | null
+  draftingTeamAbbr?: string | null
+  draftingTeamColor?: string | null
   seasonsPlayed: number
   ratingStars: number
   playerRating: number
@@ -40,6 +46,7 @@ interface PlayerData {
   number: number
   ratingValue: number
   championships: any[]
+  mvpAwards?: any[]
   attributes: PlayerAttributes
   stats: any[]
   allTimeStats: any
@@ -391,20 +398,25 @@ function DefenseStatsTable({ stats, career }: { stats: any[]; career: any }) {
 
 // ── Main Page ───────────────────────────────────────────────────────────────
 
+interface RatingPoint { season: number; rating: number }
+
 export default function PlayerPage() {
   const { id } = useParams<{ id: string }>()
   const [player, setPlayer] = useState<PlayerData | null>(null)
+  const [ratingHistory, setRatingHistory] = useState<RatingPoint[]>([])
   const [loading, setLoading] = useState(true)
   const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!id) return
     setLoading(true)
-    fetch(`${API_BASE}/players/${id}`)
-      .then(r => r.json())
-      .then(json => { if (json.success && json.data) setPlayer(json.data) })
-      .catch(err => console.error('Failed to fetch player:', err))
-      .finally(() => setLoading(false))
+    Promise.all([
+      fetch(`${API_BASE}/players/${id}`).then(r => r.json()).catch(() => null),
+      fetch(`${API_BASE}/players/${id}/rating-history`).then(r => r.json()).catch(() => null),
+    ]).then(([playerRes, historyRes]) => {
+      if (playerRes?.success && playerRes.data) setPlayer(playerRes.data)
+      if (historyRes?.success && historyRes.data?.history) setRatingHistory(historyRes.data.history)
+    }).finally(() => setLoading(false))
   }, [id])
 
   if (loading) return (
@@ -493,10 +505,12 @@ export default function PlayerPage() {
               <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{player.name}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '6px' }}>
                 <Stars stars={player.ratingStars} size={16} />
-                {player.rank && (
+                {(player.isProspect || player.rank) && (
                   <>
                     <span style={{ fontSize: '13px', color: '#475569' }}>·</span>
-                    <span style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>{player.rank}</span>
+                    <span style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic' }}>
+                      {player.isProspect ? 'Prospect' : player.rank}
+                    </span>
                   </>
                 )}
               </div>
@@ -506,6 +520,20 @@ export default function PlayerPage() {
                     <img src={`/avatars/${player.teamId}.png`} alt="" style={{ width: '32px', height: '32px' }} />
                     <span style={{ fontSize: '20px', color: teamColor, fontWeight: '600' }}>
                       {player.teamCity} {player.team}
+                    </span>
+                  </Link>
+                ) : player.isProspect && player.draftingTeamId ? (
+                  <Link to={`/team/${player.draftingTeamId}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em',
+                      color: '#0f172a', backgroundColor: '#a78bfa',
+                      padding: '2px 6px', borderRadius: '3px',
+                    }}>
+                      PROSPECT
+                    </span>
+                    <img src={`/avatars/${player.draftingTeamId}.png`} alt="" style={{ width: '28px', height: '28px' }} />
+                    <span style={{ fontSize: '18px', color: player.draftingTeamColor ?? '#cbd5e1', fontWeight: '600' }}>
+                      {player.draftingTeamCity} {player.draftingTeamName}
                     </span>
                   </Link>
                 ) : (
@@ -581,6 +609,16 @@ export default function PlayerPage() {
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
 
+        {/* Rating progression — season-over-season trajectory */}
+        {ratingHistory.length > 0 && (
+          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' }}>
+            {sectionHeader('Rating Progression')}
+            <div style={{ padding: '16px' }}>
+              <RatingHistoryChart history={ratingHistory} teamColor={teamColor} />
+            </div>
+          </div>
+        )}
+
         {/* Championships + Career Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: '16px', alignItems: 'start' }}>
 
@@ -636,6 +674,107 @@ export default function PlayerPage() {
         </div>
 
       </div>
+    </div>
+  )
+}
+
+// Full-size rating progression chart for the player page. Line chart with
+// endpoint dots and season labels on the x-axis, rating (60-100) on the y.
+// Colors by per-segment trend so climbs look green, declines red, flat gray.
+function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; teamColor: string }) {
+  const PAD_LEFT = 42
+  const PAD_RIGHT = 16
+  const PAD_TOP = 12
+  const PAD_BOTTOM = 30
+  const WIDTH = 640
+  const HEIGHT = 200
+  const plotW = WIDTH - PAD_LEFT - PAD_RIGHT
+  const plotH = HEIGHT - PAD_TOP - PAD_BOTTOM
+
+  if (history.length === 0) return null
+
+  const seasons = history.map(h => h.season)
+  const ratings = history.map(h => h.rating)
+  const minSeason = seasons[0]
+  const maxSeason = seasons[seasons.length - 1]
+  const seasonSpan = Math.max(1, maxSeason - minSeason)
+
+  // Y scale: always show the full 60-100 range so sparkline-style illusions
+  // (a +2 rating bump looking like a huge spike) don't mislead. Rating ceiling
+  // is 100, floor is ~60 by design.
+  const yMin = 60
+  const yMax = 100
+  const yRange = yMax - yMin
+
+  const xFor = (season: number) => {
+    if (history.length === 1) return PAD_LEFT + plotW / 2
+    return PAD_LEFT + ((season - minSeason) / seasonSpan) * plotW
+  }
+  const yFor = (rating: number) => {
+    const clamped = Math.max(yMin, Math.min(yMax, rating))
+    const pct = (clamped - yMin) / yRange
+    return PAD_TOP + (1 - pct) * plotH
+  }
+
+  // Gridlines every 10 points
+  const gridLines: number[] = []
+  for (let r = yMin; r <= yMax; r += 10) gridLines.push(r)
+
+  return (
+    <div style={{ overflowX: 'auto' as const }}>
+      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', minWidth: '480px', height: 'auto', display: 'block' }}>
+        {/* Gridlines + y-axis labels */}
+        {gridLines.map(r => (
+          <g key={r}>
+            <line
+              x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT}
+              y1={yFor(r)} y2={yFor(r)}
+              stroke="#334155" strokeWidth={0.5} opacity={0.4}
+            />
+            <text x={PAD_LEFT - 8} y={yFor(r) + 4} fontSize="11" fill="#94a3b8" textAnchor="end">
+              {r}
+            </text>
+          </g>
+        ))}
+
+        {/* X-axis season labels */}
+        {seasons.map(s => (
+          <text key={s} x={xFor(s)} y={HEIGHT - 10} fontSize="11" fill="#94a3b8" textAnchor="middle">
+            S{s}
+          </text>
+        ))}
+
+        {/* Per-segment colored line so rising seasons visually pop green,
+            declines red. Flat segments use the team color. */}
+        {history.map((pt, i) => {
+          if (i === 0) return null
+          const prev = history[i - 1]
+          const delta = pt.rating - prev.rating
+          const color = delta > 0 ? '#22c55e' : delta < 0 ? '#ef4444' : teamColor
+          return (
+            <line
+              key={`seg-${i}`}
+              x1={xFor(prev.season)} y1={yFor(prev.rating)}
+              x2={xFor(pt.season)} y2={yFor(pt.rating)}
+              stroke={color} strokeWidth={2.5}
+              strokeLinecap="round"
+            />
+          )
+        })}
+
+        {/* Points with rating labels */}
+        {history.map(pt => (
+          <g key={pt.season}>
+            <circle cx={xFor(pt.season)} cy={yFor(pt.rating)} r={4} fill={teamColor} stroke="#0f172a" strokeWidth={1.5} />
+            <text
+              x={xFor(pt.season)} y={yFor(pt.rating) - 10}
+              fontSize="11" fill="#e2e8f0" fontWeight="700" textAnchor="middle"
+            >
+              {pt.rating}
+            </text>
+          </g>
+        ))}
+      </svg>
     </div>
   )
 }

@@ -1170,12 +1170,6 @@ const AboutPage: React.FC = () => {
               both your current tier and the projected next-season tier.
             </p>
 
-            <p style={labelStyle}>Carry-Forward Decay</p>
-            <p style={textStyle}>
-              At the end of each season, 50% of a team's effective funding carries over to the next season.
-              This means sustained contributions are needed to maintain or climb tiers — a single large
-              donation won't keep a team at Mega Market forever.
-            </p>
           </Section>
 
           {/* ── Fantasy ── */}

@@ -604,6 +604,19 @@ export interface OffseasonCompleteEvent extends BaseWebSocketEvent {
   remainingFreeAgents: number
 }
 
+export interface FaDraftOrderUpdateEvent extends BaseWebSocketEvent {
+  event: 'fa_draft_order_update'
+  draftOrder: Array<{
+    name: string
+    city?: string
+    abbr: string
+    id?: number
+    color?: string
+    fundingTier?: string
+    fundingTierRank?: number
+  }>
+}
+
 // Union type for all season events
 export type SeasonWebSocketEvent =
   | WeekStartEvent
@@ -619,6 +632,7 @@ export type SeasonWebSocketEvent =
   | OffseasonCutEvent
   | OffseasonTeamCompleteEvent
   | OffseasonCompleteEvent
+  | FaDraftOrderUpdateEvent
   | GmVoteResolvedEvent
   | GmFaWindowOpenEvent
   | GmFaWindowCloseEvent

@@ -50,6 +50,18 @@ const NAV_ITEMS = [
     ),
   },
   {
+    key: 'frontoffice',
+    label: 'Team Management',
+    path: '/front-office',
+    icon: (
+      // Building/tower icon — represents the front-office HQ where fans fund,
+      // vote, and scout rookies.
+      <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M4 2h12v16h-4v-4h-4v4H4V2zm2 2v2h2V4H6zm4 0v2h2V4h-2zm4 0v2h2V4h-2zM6 8v2h2V8H6zm4 0v2h2V8h-2zm4 0v2h2V8h-2zM6 12v2h2v-2H6zm8 0v2h2v-2h-2z" />
+      </svg>
+    ),
+  },
+  {
     key: 'achievements',
     label: 'Achievements',
     path: '/achievements',
@@ -147,7 +159,12 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
     >
       {/* Nav items */}
       <div style={{ flex: 1, paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        {NAV_ITEMS.map(item => {
+        {NAV_ITEMS.filter(item => {
+          // Team Management is a per-user hub (contribute, ballots, etc.).
+          // Signed-out visitors have no team to manage — hide the entry.
+          if (item.key === 'frontoffice' && !user) return false
+          return true
+        }).map(item => {
           const isActive = location.pathname === item.path || (item.path === '/dashboard' && location.pathname === '/')
           return (
             <NavLink
@@ -175,7 +192,18 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
               }}
             >
               <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', position: 'relative' }}>
-                {item.icon}
+                {/* Team Management gets the favorite team's avatar as its icon
+                    when the user has one set — the page is a team-specific
+                    hub, so using the team's logo is more meaningful than the
+                    generic building icon. Falls back to the building if the
+                    user hasn't picked a favorite team yet. */}
+                {item.key === 'frontoffice' && user?.favoriteTeamId ? (
+                  <img
+                    src={`/avatars/${user.favoriteTeamId}.png`}
+                    alt={favTeamName || 'Team Management'}
+                    style={{ width: '24px', height: '24px' }}
+                  />
+                ) : item.icon}
                 {item.key === 'achievements' && unclaimedCount > 0 && !expanded && (
                   <span style={{
                     position: 'absolute', top: '-2px', right: '-4px',
@@ -207,43 +235,6 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
           )
         })}
 
-        {/* My Team — conditional */}
-        {user?.favoriteTeamId && (
-          <NavLink
-            to={`/team/${user.favoriteTeamId}`}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '10px 0',
-              paddingLeft: '20px',
-              textDecoration: 'none',
-              color: location.pathname === `/team/${user.favoriteTeamId}` ? '#e2e8f0' : '#cbd5e1',
-              backgroundColor: location.pathname === `/team/${user.favoriteTeamId}` ? 'rgba(59,130,246,0.1)' : 'transparent',
-              borderLeft: location.pathname === `/team/${user.favoriteTeamId}` ? '3px solid #3b82f6' : '3px solid transparent',
-              transition: 'all 0.15s',
-              whiteSpace: 'nowrap',
-              minHeight: '40px',
-            }}
-            onMouseEnter={e => {
-              if (location.pathname !== `/team/${user.favoriteTeamId}`) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'
-            }}
-            onMouseLeave={e => {
-              if (location.pathname !== `/team/${user.favoriteTeamId}`) e.currentTarget.style.backgroundColor = 'transparent'
-            }}
-          >
-            <img
-              src={`/avatars/${user.favoriteTeamId}.png`}
-              alt="My Team"
-              style={{ width: '24px', height: '24px', flexShrink: 0 }}
-            />
-            {expanded && (
-              <span style={{ fontSize: '15px', fontWeight: '500' }}>
-                {favTeamName || 'My Team'}
-              </span>
-            )}
-          </NavLink>
-        )}
         {/* Toggle */}
         <button
           onClick={handleToggle}
