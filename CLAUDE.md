@@ -18,6 +18,14 @@ Backend repo is at `../floosball/` — `python run_api.py --fresh --timing=fast`
 - Newer components use inline styles (not Tailwind) for precision
 - Global font via Tailwind class `font-pixel`; fixed elements rendered outside the main app div (toasts, portals) need `className="font-pixel"` explicitly
 
+## Changelog Convention
+Every changelog item in `src/data/changelog.ts` must start with a bracketed area tag: `'[Tag] rest of the line...'`. The tag renders as a colored chip via `src/Components/ChangelogLine.tsx` in both the Footer panel and the Welcome-to-Season modal.
+
+Allowed tags (add new ones to `TAG_COLORS` in `ChangelogLine.tsx` when introducing a new area):
+`UI/UX`, `Simulation`, `Fantasy`, `Cards`, `Pick-em`, `Achievements`, `Front Office`, `Prospects`, `Team Funding`, `Discord`, `Guide`
+
+Keep items user-facing: surface-level language, no technical jargon, no internal terminology (endpoint names, commit hashes, component names). Group into `New Features` / `Changes` / `Fixes` sections.
+
 ## Tech Stack
 - React 18, TypeScript (newer files .tsx, some legacy .js like `App.js`, `Navbar.js`)
 - Tailwind CSS + Chakra UI (Chakra for modals/overlays; Tailwind for layout)
