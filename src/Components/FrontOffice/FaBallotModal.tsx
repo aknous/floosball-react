@@ -5,7 +5,7 @@ import { GM_FA_BALLOT_MAX_RANKINGS, GM_FA_BALLOT_COST } from '@/types/gm'
 
 const MAX_PICKS_PER_POSITION = 3
 
-interface PlayerStats {
+export interface PlayerStats {
   gamesPlayed: number
   fantasyPoints: number
   passingYards?: number
@@ -602,7 +602,7 @@ const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
   )
 }
 
-const StatLine: React.FC<{ position: string; stats: PlayerStats }> = ({ stats, position }) => {
+export const StatLine: React.FC<{ position: string; stats: PlayerStats }> = ({ stats, position }) => {
   const parts: string[] = []
   if (position === 'QB') {
     if (stats.passingYards !== undefined) parts.push(`${stats.passingYards.toLocaleString()} yds`)

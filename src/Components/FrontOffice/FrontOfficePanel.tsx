@@ -9,7 +9,7 @@ import HireCoachCard from './HireCoachCard'
 import CutPlayerCard from './CutPlayerCard'
 import ResignPlayerCard from './ResignPlayerCard'
 import VoteResultsBanner from './VoteResultsBanner'
-import FaBallotModal, { ScoutingPlayer, OpenSlot } from './FaBallotModal'
+import FaBallotModal, { ScoutingPlayer, OpenSlot, StatLine } from './FaBallotModal'
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 import { Stars, calcStars } from '@/Components/Stars'
 import { GM_VOTE_COST, GM_VOTES_PER_SEASON, GM_VOTES_PER_TARGET, GM_VOTES_PER_TYPE } from '@/types/gm'
@@ -574,38 +574,51 @@ const FaPoolPreview: React.FC<{
                   <div
                     key={p.id}
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: '32px 1fr auto 72px',
-                      gap: '10px',
-                      alignItems: 'center',
-                      padding: '5px 8px',
+                      padding: '6px 8px',
                       borderRadius: '4px',
                       backgroundColor: '#0f172a',
                       fontSize: '12px',
                     }}
                   >
-                    <span style={{ color: '#64748b', fontWeight: 600, fontVariantNumeric: 'tabular-nums' as const }}>
-                      {p.position}
-                    </span>
-                    <span style={{ color: '#e2e8f0' }}>
-                      {p.name}
-                      {p.currentTeam && (
-                        <span style={{ color: '#64748b', marginLeft: '6px', fontSize: '11px' }}>
-                          ({p.currentTeam})
-                        </span>
-                      )}
-                    </span>
-                    <span style={{
-                      fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em',
-                      color: badge.color, padding: '1px 6px', borderRadius: '3px',
-                      backgroundColor: `${badge.color}15`, border: `1px solid ${badge.color}40`,
-                      whiteSpace: 'nowrap' as const,
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '32px 1fr auto 72px',
+                      gap: '10px',
+                      alignItems: 'center',
                     }}>
-                      {badge.label}
-                    </span>
-                    <span style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <Stars stars={calcStars(p.rating)} size={11} />
-                    </span>
+                      <span style={{ color: '#64748b', fontWeight: 600, fontVariantNumeric: 'tabular-nums' as const }}>
+                        {p.position}
+                      </span>
+                      <span style={{ color: '#e2e8f0' }}>
+                        {p.name}
+                        {p.currentTeam && (
+                          <span style={{ color: '#64748b', marginLeft: '6px', fontSize: '11px' }}>
+                            ({p.currentTeam})
+                          </span>
+                        )}
+                      </span>
+                      <span style={{
+                        fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em',
+                        color: badge.color, padding: '1px 6px', borderRadius: '3px',
+                        backgroundColor: `${badge.color}15`, border: `1px solid ${badge.color}40`,
+                        whiteSpace: 'nowrap' as const,
+                      }}>
+                        {badge.label}
+                      </span>
+                      <span style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Stars stars={calcStars(p.rating)} size={11} />
+                      </span>
+                    </div>
+                    {p.stats ? (
+                      <div style={{
+                        marginTop: '4px',
+                        paddingLeft: '42px',
+                        fontSize: '11px',
+                        color: '#94a3b8',
+                      }}>
+                        <StatLine position={p.position} stats={p.stats} />
+                      </div>
+                    ) : null}
                   </div>
                 )
               })}
