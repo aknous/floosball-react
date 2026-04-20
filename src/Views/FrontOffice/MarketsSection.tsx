@@ -284,7 +284,9 @@ function FundingSnapshotChart({
                   ambiguity about which end is current vs projected. */}
               <div style={{ position: 'relative' as const, height: `${ROW_H}px` }}>
                 {verticalBoundaries}
-                {/* Connector between current (avatar center) and projection */}
+                {/* Connector between current (avatar center) and projection —
+                    dashed to reinforce that this is a forecast, not a live
+                    trajectory. */}
                 {Math.abs(projPct - pct) > 0.4 && (
                   <div style={{
                     position: 'absolute' as const,
@@ -292,9 +294,8 @@ function FundingSnapshotChart({
                     top: 'calc(50% - 1px)',
                     height: '2px',
                     width: `${Math.abs(projPct - pct)}%`,
-                    backgroundColor: team.color,
-                    opacity: 0.5,
-                    borderRadius: '1px',
+                    backgroundImage: `repeating-linear-gradient(to right, ${team.color} 0 4px, transparent 4px 8px)`,
+                    opacity: 0.7,
                     transition: 'all 0.3s ease',
                     pointerEvents: 'none' as const,
                   }} />
