@@ -15,11 +15,24 @@ const GameBar: React.FC = () => {
 
   useEffect(() => { refetch() }, [])
 
-  // Calculate scroll duration based on content width
+  // Scroll duration tracks the track's actual pixel width so speed stays
+  // consistent at ~25 px/s. The initial scrollWidth is measured BEFORE avatar
+  // images load, which yields a shorter track; once images resolve the track
+  // expands and the -50% keyframe suddenly has more pixels to cover in the
+  // same duration, causing the visible speed-up. ResizeObserver refires
+  // whenever the real width changes, keeping duration in sync through image
+  // load, font swap, and window resize.
   useEffect(() => {
-    if (!trackRef.current) return
-    const w = trackRef.current.scrollWidth / 2
-    setDuration(Math.max(30, w / 25))
+    const el = trackRef.current
+    if (!el) return
+    const recalc = () => {
+      const w = el.scrollWidth / 2
+      if (w > 0) setDuration(Math.max(30, w / 25))
+    }
+    recalc()
+    const observer = new ResizeObserver(recalc)
+    observer.observe(el)
+    return () => observer.disconnect()
   }, [games])
 
   // Hide on dashboard
