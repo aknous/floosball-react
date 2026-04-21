@@ -12,7 +12,7 @@ const POSITION_LABELS: Record<number, string> = {
 }
 type PositionFilter = 'all' | 1 | 2 | 3 | 4 | 5
 type EditionFilter = 'all' | 'base' | 'holographic' | 'prismatic' | 'diamond'
-type SortMode = 'match' | 'rating' | 'edition' | 'name'
+type SortMode = 'match' | 'rating' | 'edition'
 
 const EDITION_ORDER: Record<string, number> = {
   diamond: 0, prismatic: 1, holographic: 2, base: 3,
@@ -179,9 +179,6 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
           return b.playerRating - a.playerRating
         })
         break
-      case 'name':
-        sorted.sort((a, b) => a.playerName.localeCompare(b.playerName))
-        break
       case 'match':
       default:
         sorted.sort((a, b) => {
@@ -315,7 +312,6 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
                 <option value="match">Match first</option>
                 <option value="rating">Highest rated</option>
                 <option value="edition">Rarest first</option>
-                <option value="name">A → Z</option>
               </select>
             </div>
             <label style={{
