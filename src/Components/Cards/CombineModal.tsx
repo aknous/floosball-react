@@ -44,17 +44,18 @@ function cardValue(c: CardData): number {
 
 interface CardPickerProps {
   cards: CardData[]
-  onSelect: (card: CardData) => void
+  onConfirm: (selected: CardData[]) => void
   onCancel: () => void
   title: string
   filter?: (card: CardData) => boolean
 }
 
-function CardPicker({ cards, onSelect, onCancel, title, filter }: CardPickerProps) {
+function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerProps) {
   const [query, setQuery] = useState('')
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all')
   const [editionFilter, setEditionFilter] = useState<EditionFilter>('all')
   const [sortMode, setSortMode] = useState<PickerSortMode>('value_asc')
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
   const displayed = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -99,6 +100,22 @@ function CardPicker({ cards, onSelect, onCancel, title, filter }: CardPickerProp
 
   const rawCount = filter ? cards.filter(filter).length : cards.length
 
+  const toggleCard = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selectedCards = useMemo(
+    () => cards.filter(c => selectedIds.has(c.id)),
+    [cards, selectedIds]
+  )
+  const selectedCount = selectedCards.length
+  const selectedValue = selectedCards.reduce((sum, c) => sum + cardValue(c), 0)
+
   return (
     <div style={{
       position: 'absolute', inset: 0, zIndex: 2,
@@ -113,6 +130,7 @@ function CardPicker({ cards, onSelect, onCancel, title, filter }: CardPickerProp
           <div style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0' }}>{title}</div>
           <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
             {displayed.length} of {rawCount} cards
+            {selectedCount > 0 && ` \u00b7 ${selectedCount} selected`}
           </div>
         </div>
         <button onClick={onCancel} style={{
@@ -202,11 +220,82 @@ function CardPicker({ cards, onSelect, onCancel, title, filter }: CardPickerProp
           <span style={{ color: '#94a3b8', fontSize: '13px', marginTop: '40px' }}>
             {rawCount === 0 ? 'No eligible cards available' : 'No cards match your filters'}
           </span>
-        ) : displayed.map(card => (
-          <div key={card.id} onClick={() => onSelect(card)} style={{ cursor: 'pointer' }}>
-            <TradingCard card={card} size="sm" />
-          </div>
-        ))}
+        ) : displayed.map(card => {
+          const isSelected = selectedIds.has(card.id)
+          return (
+            <div
+              key={card.id}
+              onClick={() => toggleCard(card.id)}
+              style={{
+                cursor: 'pointer',
+                position: 'relative',
+                outline: isSelected ? '3px solid #f59e0b' : 'none',
+                outlineOffset: '2px',
+                borderRadius: '12px',
+                transform: isSelected ? 'scale(0.96)' : 'none',
+                transition: 'transform 0.12s, outline-color 0.12s',
+              }}
+            >
+              <TradingCard card={card} size="sm" />
+              {isSelected && (
+                <div style={{
+                  position: 'absolute',
+                  top: '6px', right: '6px',
+                  width: '22px', height: '22px',
+                  borderRadius: '50%',
+                  backgroundColor: '#f59e0b',
+                  color: '#0f172a',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '13px', fontWeight: 800,
+                  border: '2px solid #0f172a',
+                  zIndex: 2,
+                }}>
+                  &#10003;
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer: confirm / cancel */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: '10px', padding: '12px 16px', borderTop: '1px solid #1e293b',
+        flexShrink: 0,
+      }}>
+        <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+          {selectedCount > 0
+            ? `${selectedCount} card${selectedCount === 1 ? '' : 's'} \u00b7 value ${selectedValue}`
+            : 'Click cards to select'}
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '8px 16px', borderRadius: '6px',
+              backgroundColor: 'transparent', border: '1px solid #334155',
+              color: '#94a3b8', fontSize: '11px', fontWeight: 700,
+              fontFamily: 'pressStart', cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(selectedCards)}
+            disabled={selectedCount === 0}
+            style={{
+              padding: '8px 18px', borderRadius: '6px',
+              backgroundColor: selectedCount === 0 ? '#334155' : '#f59e0b',
+              border: 'none',
+              color: selectedCount === 0 ? '#64748b' : '#0f172a',
+              fontSize: '11px', fontWeight: 700, fontFamily: 'pressStart',
+              cursor: selectedCount === 0 ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {selectedCount === 0 ? 'Add Cards' : `Add ${selectedCount} Card${selectedCount === 1 ? '' : 's'}`}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -650,9 +739,11 @@ export default function CombineModal({ visible, onClose, onComplete }: CombineMo
               {blendPicking && (
                 <CardPicker
                   cards={availableCards}
-                  title="Select a card to add"
-                  onSelect={(card) => {
-                    setBlendOfferings(prev => [...prev, card])
+                  title="Select cards to add"
+                  onConfirm={(picked) => {
+                    if (picked.length > 0) {
+                      setBlendOfferings(prev => [...prev, ...picked])
+                    }
                     setBlendPicking(false)
                   }}
                   onCancel={() => setBlendPicking(false)}
