@@ -168,14 +168,6 @@ const CardEquipment: React.FC = () => {
   const [saving, setSaving] = useState(false)
   const [gamesActive, setGamesActive] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const [extraSlotPowerup, setExtraSlotPowerup] = useState<{
-    slug: string
-    displayName: string
-    expiresAtWeek: number
-    weeksRemaining: number
-    expiring: boolean
-    pending: boolean
-  } | null>(null)
 
   const [deckCards, setDeckCards] = useState<CardData[]>([])
   const [deckLoading, setDeckLoading] = useState(false)
@@ -197,7 +189,6 @@ const CardEquipment: React.FC = () => {
       setGamesActive(json.data?.gamesActive ?? false)
       const slotCount = json.data?.hasExtraSlot ? 6 : 5
       setNumSlots(slotCount)
-      setExtraSlotPowerup(json.data?.extraSlotPowerup ?? null)
 
       const newSlots: (EquippedSlot | null)[] = Array(slotCount).fill(null)
       for (const eq of equipped) {
@@ -439,33 +430,6 @@ const CardEquipment: React.FC = () => {
           </span>
         )}
       </div>
-
-      {/* Accession (6th slot) expiry indicator — mirrors the FLEX Slot line
-          in FantasyRoster so users know when the extra slot powerup lapses. */}
-      {extraSlotPowerup && (
-        <div style={{
-          fontSize: isMobile ? '12px' : '13px', color: '#22d3ee', lineHeight: '1.5',
-          marginTop: '6px', marginBottom: '6px', padding: isMobile ? '6px 10px' : '6px 14px',
-          backgroundColor: 'rgba(34,211,238,0.08)', borderRadius: '8px',
-          border: '1px solid rgba(34,211,238,0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}>
-          <span style={{ fontWeight: '700' }}>
-            {extraSlotPowerup.pending ? 'Accession Pending' : '6th Slot Active'}
-          </span>
-          <span style={{
-            fontSize: '10px',
-            color: extraSlotPowerup.expiring ? '#f59e0b' : '#94a3b8',
-            fontWeight: extraSlotPowerup.expiring ? '700' : '400',
-          }}>
-            {extraSlotPowerup.pending
-              ? `Starts next week \u00b7 ${extraSlotPowerup.weeksRemaining} week${extraSlotPowerup.weeksRemaining !== 1 ? 's' : ''}`
-              : extraSlotPowerup.expiring
-                ? 'Expires after this week'
-                : `${extraSlotPowerup.weeksRemaining} week${extraSlotPowerup.weeksRemaining !== 1 ? 's' : ''} remaining`}
-          </span>
-        </div>
-      )}
 
       {/* Collapsed mini-cards */}
       {!expanded && !loading && (
