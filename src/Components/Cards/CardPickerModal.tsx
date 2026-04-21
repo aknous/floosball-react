@@ -214,7 +214,10 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
     >
       <div
         style={{
-          width: '100%', maxWidth: '700px', maxHeight: '85vh',
+          width: '100%', maxWidth: '700px',
+          // Fixed height so the modal doesn't jump around as filters change
+          // the card count. Card grid inside handles its own scrolling.
+          height: isMobile ? '92vh' : '85vh',
           backgroundColor: '#1e293b', border: '1px solid #334155',
           borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
           fontFamily: 'pressStart', display: 'flex', flexDirection: 'column',
