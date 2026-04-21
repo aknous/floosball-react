@@ -12,6 +12,32 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.10.1',
+    date: '2026-04-21',
+    changes: [],
+    sections: [
+      {
+        label: 'Changes',
+        items: [
+          '[UI/UX] Card equip modal adds search, position and edition filters, sort options, and a match-roster-only toggle. Modal is now a fixed size.',
+          '[UI/UX] Combine modal upgraded with the same search/filter/sort tools, and you can now multi-select cards to sacrifice instead of adding them one at a time.',
+          '[Front Office] Team Management funding summary relabeled for clarity — "This Season", "Next Tier Target", and "Projected Next Season" now each read correctly in isolation.',
+          '[UI/UX] Markets chart projection marker is now a directional arrow on a dashed line, so it\'s obvious which way a team is heading.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Achievements] Curator now counts unique cards from all sources, not just bought packs. Users who were stuck at 10 unique cards will catch up automatically.',
+          '[Achievements] Unclaimed rewards no longer go missing after a server deploy.',
+          '[Fantasy] Discord week report fantasy scores fixed — were roughly doubling at week end.',
+          '[Cards] Fat Cat correctly reads your Floobits balance at week-end (was banking 0 FP).',
+          '[Cards] 4-star player cards now render in green instead of blue — card tier color matches the star count across the whole rating range.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.10.0',
     date: '2026-04-19',
     changes: [],

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import ReactDOM from 'react-dom'
 import { createAvatar } from '@dicebear/core'
 import { openPeeps } from '@dicebear/collection'
+import { calcStars, STAR_COLORS } from '@/Components/Stars'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -260,13 +261,11 @@ const SIZES = {
   lg: { width: 260, height: 430, font: 16, nameFont: 20, avatar: 128, pad: 16, starSize: 34 },
 }
 
-const getTierColor = (rating: number): string => {
-  if (rating >= 95) return '#f59e0b' // 5★ gold
-  if (rating >= 85) return '#22c55e' // 4★ green
-  if (rating >= 75) return '#3b82f6' // 3★ blue
-  if (rating >= 65) return '#94a3b8' // 2★ gray
-  return '#ef4444'                   // 1★ red
-}
+// Delegate to calcStars + STAR_COLORS so the card's tier color can't drift out
+// of sync with the star count it displays. Previously hardcoded thresholds here
+// used different cutoffs (95/85/75/65) than the backend star bands (92/84/76/68),
+// which caused e.g. an 84-rated player to render 4 stars but in 3-star blue.
+const getTierColor = (rating: number): string => STAR_COLORS[calcStars(rating)]
 
 const ClassificationBadge: React.FC<{
   abbr: string
@@ -704,7 +703,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const behaviorKey = getBehaviorTag(card)
   const behaviorTag = behaviorKey ? BEHAVIOR_TAGS[behaviorKey] : null
 
-  const stars = card.ratingStars || Math.min(5, Math.max(1, (card.playerRating - 60) / 8 + 1) | 0)
+  const stars = card.ratingStars || calcStars(card.playerRating)
   const tierColor = getTierColor(card.playerRating)
 
   const playerAvatarUri = useMemo(() => {

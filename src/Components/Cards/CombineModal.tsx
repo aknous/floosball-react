@@ -24,28 +24,97 @@ const editionSort: Record<string, number> = {
   diamond: 0, prismatic: 1, holographic: 2, base: 3,
 }
 
-function sortCards(cards: CardData[]): CardData[] {
-  return [...cards].sort((a, b) => {
-    const ea = editionSort[a.edition] ?? 99
-    const eb = editionSort[b.edition] ?? 99
-    if (ea !== eb) return ea - eb
-    return b.playerRating - a.playerRating
-  })
+type PositionFilter = 'all' | 1 | 2 | 3 | 4 | 5
+type EditionFilter = 'all' | 'base' | 'holographic' | 'prismatic' | 'diamond'
+type PickerSortMode = 'value_asc' | 'rating_desc' | 'rarest'
+
+const EDITION_PILL_LABELS: Record<EditionFilter, string> = {
+  all: 'All',
+  base: 'Base',
+  holographic: 'Holo',
+  prismatic: 'Prism',
+  diamond: 'Diamond',
+}
+
+function cardValue(c: CardData): number {
+  return c.combineValue || c.sellValue || 0
 }
 
 // ─── Sub-component: Card Picker Grid ───────────────────────────────────────
 
 interface CardPickerProps {
   cards: CardData[]
-  onSelect: (card: CardData) => void
+  onConfirm: (selected: CardData[]) => void
   onCancel: () => void
   title: string
   filter?: (card: CardData) => boolean
 }
 
-function CardPicker({ cards, onSelect, onCancel, title, filter }: CardPickerProps) {
-  const filtered = filter ? cards.filter(filter) : cards
-  const sorted = sortCards(filtered)
+function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerProps) {
+  const [query, setQuery] = useState('')
+  const [positionFilter, setPositionFilter] = useState<PositionFilter>('all')
+  const [editionFilter, setEditionFilter] = useState<EditionFilter>('all')
+  const [sortMode, setSortMode] = useState<PickerSortMode>('value_asc')
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+
+  const displayed = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    let out = filter ? cards.filter(filter) : cards
+    if (q) {
+      out = out.filter(c =>
+        c.playerName.toLowerCase().includes(q) ||
+        (c.displayName || '').toLowerCase().includes(q) ||
+        (c.effectName || '').toLowerCase().includes(q)
+      )
+    }
+    if (positionFilter !== 'all') {
+      out = out.filter(c => c.position === positionFilter)
+    }
+    if (editionFilter !== 'all') {
+      out = out.filter(c => c.edition === editionFilter)
+    }
+    const sorted = [...out]
+    switch (sortMode) {
+      case 'rating_desc':
+        sorted.sort((a, b) => b.playerRating - a.playerRating)
+        break
+      case 'rarest':
+        sorted.sort((a, b) => {
+          const ea = editionSort[a.edition] ?? 99
+          const eb = editionSort[b.edition] ?? 99
+          if (ea !== eb) return ea - eb
+          return b.playerRating - a.playerRating
+        })
+        break
+      case 'value_asc':
+      default:
+        sorted.sort((a, b) => {
+          const va = cardValue(a)
+          const vb = cardValue(b)
+          if (va !== vb) return va - vb
+          return a.playerRating - b.playerRating
+        })
+    }
+    return sorted
+  }, [cards, filter, query, positionFilter, editionFilter, sortMode])
+
+  const rawCount = filter ? cards.filter(filter).length : cards.length
+
+  const toggleCard = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selectedCards = useMemo(
+    () => cards.filter(c => selectedIds.has(c.id)),
+    [cards, selectedIds]
+  )
+  const selectedCount = selectedCards.length
+  const selectedValue = selectedCards.reduce((sum, c) => sum + cardValue(c), 0)
 
   return (
     <div style={{
@@ -55,28 +124,223 @@ function CardPicker({ cards, onSelect, onCancel, title, filter }: CardPickerProp
     }}>
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '16px 20px', borderBottom: '1px solid #1e293b',
+        padding: '14px 20px 10px', borderBottom: '1px solid #1e293b',
       }}>
-        <span style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0' }}>{title}</span>
+        <div>
+          <div style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0' }}>{title}</div>
+          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
+            {displayed.length} of {rawCount} cards
+            {selectedCount > 0 && ` \u00b7 ${selectedCount} selected`}
+          </div>
+        </div>
         <button onClick={onCancel} style={{
           background: 'none', border: 'none', color: '#64748b',
           fontSize: '18px', cursor: 'pointer', padding: '4px',
         }}>x</button>
       </div>
+
+      {/* Toolbar */}
+      <div style={{ padding: '10px 16px', borderBottom: '1px solid #1e293b', flexShrink: 0 }}>
+        <input
+          type="text"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search player or effect..."
+          style={{
+            width: '100%',
+            padding: '7px 10px',
+            fontSize: '12px',
+            fontFamily: 'inherit',
+            backgroundColor: '#1e293b',
+            color: '#e2e8f0',
+            border: '1px solid #334155',
+            borderRadius: '6px',
+            outline: 'none',
+            marginBottom: '8px',
+          }}
+        />
+        <CombinePillRow
+          label="Position"
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 1, label: 'QB' },
+            { value: 2, label: 'RB' },
+            { value: 3, label: 'WR' },
+            { value: 4, label: 'TE' },
+            { value: 5, label: 'K' },
+          ]}
+          value={positionFilter}
+          onChange={(v) => setPositionFilter(v as PositionFilter)}
+        />
+        <div style={{ height: '6px' }} />
+        <CombinePillRow
+          label="Edition"
+          options={(['all', 'base', 'holographic', 'prismatic', 'diamond'] as EditionFilter[]).map(e => ({
+            value: e,
+            label: EDITION_PILL_LABELS[e],
+          }))}
+          value={editionFilter}
+          onChange={(v) => setEditionFilter(v as EditionFilter)}
+        />
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px',
+        }}>
+          <span style={{
+            fontSize: '10px', color: '#94a3b8', fontWeight: 600,
+            textTransform: 'uppercase' as const, letterSpacing: '0.05em',
+          }}>Sort</span>
+          <select
+            value={sortMode}
+            onChange={e => setSortMode(e.target.value as PickerSortMode)}
+            style={{
+              padding: '4px 8px',
+              fontSize: '11px',
+              fontFamily: 'inherit',
+              backgroundColor: '#1e293b',
+              color: '#e2e8f0',
+              border: '1px solid #334155',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              outline: 'none',
+            }}
+          >
+            <option value="value_asc">Lowest value</option>
+            <option value="rating_desc">Highest rated</option>
+            <option value="rarest">Rarest first</option>
+          </select>
+        </div>
+      </div>
+
       <div style={{
         flex: 1, overflowY: 'auto', padding: '16px',
         display: 'flex', flexWrap: 'wrap', gap: '12px',
         justifyContent: 'center', alignContent: 'flex-start',
       }}>
-        {sorted.length === 0 ? (
+        {displayed.length === 0 ? (
           <span style={{ color: '#94a3b8', fontSize: '13px', marginTop: '40px' }}>
-            No eligible cards available
+            {rawCount === 0 ? 'No eligible cards available' : 'No cards match your filters'}
           </span>
-        ) : sorted.map(card => (
-          <div key={card.id} onClick={() => onSelect(card)} style={{ cursor: 'pointer' }}>
-            <TradingCard card={card} size="sm" />
-          </div>
-        ))}
+        ) : displayed.map(card => {
+          const isSelected = selectedIds.has(card.id)
+          return (
+            <div
+              key={card.id}
+              onClick={() => toggleCard(card.id)}
+              style={{
+                cursor: 'pointer',
+                position: 'relative',
+                outline: isSelected ? '3px solid #f59e0b' : 'none',
+                outlineOffset: '2px',
+                borderRadius: '12px',
+                transform: isSelected ? 'scale(0.96)' : 'none',
+                transition: 'transform 0.12s, outline-color 0.12s',
+              }}
+            >
+              <TradingCard card={card} size="sm" />
+              {isSelected && (
+                <div style={{
+                  position: 'absolute',
+                  top: '6px', right: '6px',
+                  width: '22px', height: '22px',
+                  borderRadius: '50%',
+                  backgroundColor: '#f59e0b',
+                  color: '#0f172a',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '13px', fontWeight: 800,
+                  border: '2px solid #0f172a',
+                  zIndex: 2,
+                }}>
+                  &#10003;
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Footer: confirm / cancel */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: '10px', padding: '12px 16px', borderTop: '1px solid #1e293b',
+        flexShrink: 0,
+      }}>
+        <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+          {selectedCount > 0
+            ? `${selectedCount} card${selectedCount === 1 ? '' : 's'} \u00b7 value ${selectedValue}`
+            : 'Click cards to select'}
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '8px 16px', borderRadius: '6px',
+              backgroundColor: 'transparent', border: '1px solid #334155',
+              color: '#94a3b8', fontSize: '11px', fontWeight: 700,
+              fontFamily: 'pressStart', cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(selectedCards)}
+            disabled={selectedCount === 0}
+            style={{
+              padding: '8px 18px', borderRadius: '6px',
+              backgroundColor: selectedCount === 0 ? '#334155' : '#f59e0b',
+              border: 'none',
+              color: selectedCount === 0 ? '#64748b' : '#0f172a',
+              fontSize: '11px', fontWeight: 700, fontFamily: 'pressStart',
+              cursor: selectedCount === 0 ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {selectedCount === 0 ? 'Add Cards' : `Add ${selectedCount} Card${selectedCount === 1 ? '' : 's'}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Compact filter pill row used by the picker toolbar.
+function CombinePillRow<T extends string | number>({
+  label, options, value, onChange,
+}: {
+  label: string
+  options: { value: T; label: string }[]
+  value: T
+  onChange: (v: T) => void
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+      <span style={{
+        fontSize: '10px', color: '#94a3b8', fontWeight: 600,
+        textTransform: 'uppercase' as const, letterSpacing: '0.05em',
+        minWidth: '52px',
+      }}>{label}</span>
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+        {options.map(opt => {
+          const active = opt.value === value
+          return (
+            <button
+              key={String(opt.value)}
+              onClick={() => onChange(opt.value)}
+              style={{
+                padding: '3px 10px',
+                fontSize: '10px',
+                fontWeight: 700,
+                fontFamily: 'inherit',
+                border: `1px solid ${active ? '#f59e0b' : '#334155'}`,
+                backgroundColor: active ? 'rgba(245,158,11,0.15)' : 'transparent',
+                color: active ? '#f59e0b' : '#94a3b8',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                transition: 'all 0.1s',
+              }}
+            >
+              {opt.label}
+            </button>
+          )
+        })}
       </div>
     </div>
   )
@@ -286,7 +550,10 @@ export default function CombineModal({ visible, onClose, onComplete }: CombineMo
         onClick={(e) => e.stopPropagation()}
         style={{
           position: 'relative',
-          width: '100%', maxWidth: '800px', maxHeight: '90vh',
+          width: '100%', maxWidth: '800px',
+          // Fixed height so the panel doesn't resize as offerings are added
+          // or the picker overlays open. Inner regions scroll as needed.
+          height: '90vh',
           backgroundColor: '#0f172a',
           border: `1px solid #334155`,
           borderRadius: '12px',
@@ -338,7 +605,7 @@ export default function CombineModal({ visible, onClose, onComplete }: CombineMo
         {/* Body */}
         <div style={{
           flex: 1, overflowY: 'auto', padding: '20px',
-          position: 'relative', minHeight: '400px',
+          position: 'relative',
         }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '60px 0', color: '#64748b', fontSize: '13px' }}>
@@ -472,9 +739,11 @@ export default function CombineModal({ visible, onClose, onComplete }: CombineMo
               {blendPicking && (
                 <CardPicker
                   cards={availableCards}
-                  title="Select a card to add"
-                  onSelect={(card) => {
-                    setBlendOfferings(prev => [...prev, card])
+                  title="Select cards to add"
+                  onConfirm={(picked) => {
+                    if (picked.length > 0) {
+                      setBlendOfferings(prev => [...prev, ...picked])
+                    }
                     setBlendPicking(false)
                   }}
                   onCancel={() => setBlendPicking(false)}
