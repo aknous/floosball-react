@@ -12,6 +12,40 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.10.1',
+    date: '2026-04-21',
+    changes: [],
+    sections: [
+      {
+        label: 'Changes',
+        items: [
+          '[UI/UX] Card equip modal adds search, position and edition filters, sort options, and a match-roster-only toggle. Modal is now a fixed size.',
+          '[UI/UX] Combine modal upgraded with the same search/filter/sort tools, and you can now multi-select cards to sacrifice instead of adding them one at a time.',
+          '[Front Office] Team Management funding summary relabeled for clarity — "This Season", "Next Tier Target", and "Projected Next Season" now each read correctly in isolation.',
+          '[UI/UX] Markets chart projection marker is now a directional arrow on a dashed line, so it\'s obvious which way a team is heading.',
+          '[UI/UX] GameBar ticker no longer speeds up on first load — stays at a consistent scroll speed.',
+          '[UI/UX] Player page: tighter Rating Progression chart moved next to Awards, plus Offense/Defense stats toggle for two-way players.',
+          '[Cards] Bonsai reworked to grow from roster performance rather than random chance.',
+          '[Cards] Eminence & Rising Tide ceilings raised so elite seasons get real upside.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Achievements] Curator now counts unique cards from all sources, not just bought packs. Users who were stuck at 10 unique cards will catch up automatically.',
+          '[Achievements] Unclaimed rewards no longer go missing after a server deploy.',
+          '[Fantasy] Discord week report fantasy scores fixed — were roughly doubling at week end.',
+          '[Cards] Fat Cat correctly reads your Floobits balance at week-end (was banking 0 FP).',
+          '[Cards] 4-star player cards now render in green instead of blue — card tier color matches the star count across the whole rating range.',
+          '[Team Funding] Funding tiers recomputed against the new share-of-league thresholds. Labels on the Markets chart and team page now match.',
+          '[UI/UX] Fresh-start notice removed from the Welcome to Season modal.',
+          '[UI/UX] Survey link updated to the new form.',
+          '[UI/UX] Account signup no longer crashes when the browser fires parallel requests on first login.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.10.0',
     date: '2026-04-19',
     changes: [],
