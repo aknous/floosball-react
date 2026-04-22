@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useCardProjection, TIER_STYLES, EquippedCardProjection } from '@/hooks/useCardProjection'
 import { createAvatar } from '@dicebear/core'
 import { openPeeps } from '@dicebear/collection'
 
@@ -172,6 +173,16 @@ const CardEquipment: React.FC = () => {
   const [deckCards, setDeckCards] = useState<CardData[]>([])
   const [deckLoading, setDeckLoading] = useState(false)
   const deckFetchedRef = useRef(false)
+
+  // Card payout projections keyed by slot — shown as a tier chip on each
+  // equipped slot. Fetches candidate projections too so the picker modal
+  // (opened from here) can show effectiveness per card.
+  const { equipped: equippedProjection, candidatesByUserCardId } = useCardProjection(true)
+  const projectionBySlot = useMemo(() => {
+    const m = new Map<number, EquippedCardProjection>()
+    for (const c of equippedProjection?.cards ?? []) m.set(c.slotNumber, c)
+    return m
+  }, [equippedProjection])
 
   const isLocked = slots.some(s => s?.locked)
   const displaySlots = slots
@@ -549,6 +560,30 @@ const CardEquipment: React.FC = () => {
                       </div>
                     </HoverTooltip>
                   )}
+                  {/* Projection chip — what this card is projected to
+                      output this week based on season averages */}
+                  {(() => {
+                    const proj = projectionBySlot.get(slotNum)
+                    if (!proj) return null
+                    const tierCfg = TIER_STYLES[proj.tier]
+                    const label = proj.outputType === 'mult' && proj.projectedMult > 1
+                      ? `×${proj.projectedMult.toFixed(2)}`
+                      : proj.outputType === 'floobits' && proj.projectedFloobits > 0
+                        ? `+${proj.projectedFloobits}F`
+                        : `${proj.projectedFP > 0 ? '+' : ''}${proj.projectedFP.toFixed(1)} FP`
+                    return (
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '5px',
+                        marginTop: '3px',
+                        fontSize: '10px', fontWeight: 700,
+                        color: tierCfg.color, backgroundColor: tierCfg.bg,
+                        padding: '1px 6px', borderRadius: '3px',
+                      }}>
+                        <span>{tierCfg.short}</span>
+                        <span style={{ fontVariantNumeric: 'tabular-nums' as const }}>{label}</span>
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             )
@@ -716,6 +751,7 @@ const CardEquipment: React.FC = () => {
         onSelect={(card) => pickerSlot && handleEquip(card, pickerSlot)}
         excludeCardIds={equippedCardIds}
         rosterPlayerIds={fantasyPlayerIds}
+        candidateProjections={candidatesByUserCardId}
       />
     </div>
   )

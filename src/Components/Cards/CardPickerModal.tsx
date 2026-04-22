@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import TradingCard, { CardData } from './TradingCard'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { TIER_STYLES, CandidateProjection } from '@/hooks/useCardProjection'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -29,8 +30,17 @@ const PickerCard: React.FC<{
   card: CardData
   isMatch: boolean
   onSelect: (card: CardData) => void
-}> = ({ card, isMatch, onSelect }) => {
+  projection?: CandidateProjection
+}> = ({ card, isMatch, onSelect, projection }) => {
   const [hovered, setHovered] = useState(false)
+  const tierCfg = projection ? TIER_STYLES[projection.tier] : null
+  const projLabel = projection
+    ? (projection.outputType === 'mult' && projection.projectedMult > 1
+        ? `×${projection.projectedMult.toFixed(2)}`
+        : projection.outputType === 'floobits' && projection.projectedFloobits > 0
+          ? `+${projection.projectedFloobits}F`
+          : `${projection.projectedFP > 0 ? '+' : ''}${projection.projectedFP.toFixed(1)} FP`)
+    : null
   return (
     <div
       style={{
@@ -62,6 +72,26 @@ const PickerCard: React.FC<{
             MATCH
           </div>
         )}
+        {/* Projection effectiveness chip — shows at-a-glance how effective
+            this card is expected to be given the user's current roster
+            and team state. */}
+        {projection && tierCfg && (
+          <div
+            title={`${tierCfg.label} — projected ${projLabel}`}
+            style={{
+              position: 'absolute', top: 4, right: 4,
+              display: 'inline-flex', alignItems: 'center', gap: '4px',
+              fontSize: '9px', fontWeight: 700,
+              color: tierCfg.color, backgroundColor: tierCfg.bg,
+              padding: '2px 5px', borderRadius: '4px',
+              border: `1px solid ${tierCfg.color}33`,
+              zIndex: 1,
+            }}
+          >
+            <span>{tierCfg.short}</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums' as const }}>{projLabel}</span>
+          </div>
+        )}
       </div>
       <button
         onClick={() => onSelect(card)}
@@ -88,10 +118,11 @@ interface CardPickerModalProps {
   onSelect: (card: CardData) => void
   excludeCardIds: number[]  // user_card IDs already equipped in other slots
   rosterPlayerIds: Set<number>
+  candidateProjections?: Map<number, import('@/hooks/useCardProjection').CandidateProjection>
 }
 
 const CardPickerModal: React.FC<CardPickerModalProps> = ({
-  visible, onClose, onSelect, excludeCardIds, rosterPlayerIds,
+  visible, onClose, onSelect, excludeCardIds, rosterPlayerIds, candidateProjections,
 }) => {
   const { getToken } = useAuth()
   const isMobile = useIsMobile()
@@ -349,7 +380,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
               {displayed.map(card => {
                 const isMatch = rosterPlayerIds.has(card.playerId)
                 return (
-                  <PickerCard key={card.id} card={card} isMatch={isMatch} onSelect={onSelect} />
+                  <PickerCard key={card.id} card={card} isMatch={isMatch} onSelect={onSelect} projection={candidateProjections?.get(card.id)} />
                 )
               })}
             </div>
