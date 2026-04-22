@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFantasyLivePoints } from '@/hooks/useFantasyLivePoints'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
-import { useCardProjection, TIER_STYLES, formatProjectionOutput, formatProjectionOdds, formatRangeLabel, rangeSourceHint } from '@/hooks/useCardProjection'
+import { useCardProjection, TIER_STYLES, formatProjectionOutput, formatProjectionOdds, formatRangeLabel } from '@/hooks/useCardProjection'
 import type { CardBreakdownEntry, EquationSummary, ModifierInfo, FavoriteTeamData, PlayerGameStats } from '@/hooks/useFantasySnapshot'
 import { Stars } from '@/Components/Stars'
 import HoverTooltip from '@/Components/HoverTooltip'
@@ -654,24 +654,10 @@ const ProjectedWeekSummary: React.FC = () => {
                     : hasRange
                       ? formatRangeLabel(c.range!)
                       : formatProjectionOutput(c)
-                const hint = hasRange ? rangeSourceHint(c.range!) : ''
-                const rowTooltip = hint ? `${tierCfg.label} — ${hint}` : tierCfg.label
                 return (
                   <div key={c.slotNumber} style={{
                     display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 0', fontSize: '12px',
                   }}>
-                    <HoverTooltip text={rowTooltip} color={tierCfg.color}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          fontSize: '10px', fontWeight: 700,
-                          color: tierCfg.color, backgroundColor: tierCfg.bg,
-                          padding: '1px 5px', borderRadius: '3px', minWidth: '22px', textAlign: 'center' as const,
-                        }}
-                      >
-                        {tierCfg.short}
-                      </span>
-                    </HoverTooltip>
                     <span style={{ flex: 1, color: '#cbd5e1' }}>{c.displayName}</span>
                     <span style={{ color: tierCfg.color, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                       {outputLabel}

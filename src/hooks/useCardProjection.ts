@@ -129,11 +129,13 @@ export function useCardProjection(includeCandidates: boolean = false): UseCardPr
  * picker modal.
  */
 export const TIER_STYLES: Record<ProjectionTier, { label: string; color: string; bg: string; short: string }> = {
-  strong:    { label: 'Strong',        short: '++', color: '#22c55e', bg: 'rgba(34,197,94,0.15)' },
+  strong:    { label: 'Strong',        short: '++', color: '#22c55e', bg: 'rgba(34,197,94,0.15)'  },
   good:      { label: 'Good',          short: '+',  color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
-  moderate:  { label: 'Light',         short: '=',  color: '#94a3b8', bg: 'rgba(148,163,184,0.10)' },
+  // Steady = active but modest. Teal chosen over gray so the pill doesn't
+  // read as 'disabled' at a glance.
+  moderate:  { label: 'Steady',        short: '=',  color: '#2dd4bf', bg: 'rgba(45,212,191,0.12)' },
   variable:  { label: 'Might trigger', short: '?',  color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
-  nullified: { label: "Won't trigger", short: '×',  color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+  nullified: { label: "Won't trigger", short: '×',  color: '#ef4444', bg: 'rgba(239,68,68,0.15)'  },
 }
 
 /**

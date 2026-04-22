@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { useCardProjection, TIER_STYLES, EquippedCardProjection, formatProjectionOutput, formatProjectionOdds, formatRangeLabel, rangeSourceHint } from '@/hooks/useCardProjection'
+import { useCardProjection, TIER_STYLES, EquippedCardProjection, formatProjectionOutput, formatProjectionOdds, formatRangeLabel } from '@/hooks/useCardProjection'
 import { createAvatar } from '@dicebear/core'
 import { openPeeps } from '@dicebear/collection'
 
@@ -181,23 +181,19 @@ const ProjectionPill: React.FC<{
       : hasRange
         ? formatRangeLabel(proj.range!)
         : formatProjectionOutput(proj)
-  const hint = hasRange ? rangeSourceHint(proj.range!) : ''
-  const tooltip = hint ? `${tierCfg.label} — ${hint}` : tierCfg.label
   return (
-    <HoverTooltip text={tooltip} color={tierCfg.color}>
-      <span
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: '6px',
-          fontSize: '10px', fontWeight: 700,
-          color: tierCfg.color, backgroundColor: tierCfg.bg,
-          padding: '3px 9px', borderRadius: '4px',
-          border: `1px solid ${tierCfg.color}55`,
-        }}
-      >
-        <span>{tierCfg.short}</span>
-        <span style={{ fontVariantNumeric: 'tabular-nums' as const }}>{label}</span>
-      </span>
-    </HoverTooltip>
+    <span
+      style={{
+        display: 'inline-flex', alignItems: 'center',
+        fontSize: '10px', fontWeight: 700,
+        color: tierCfg.color, backgroundColor: tierCfg.bg,
+        padding: '3px 9px', borderRadius: '4px',
+        border: `1px solid ${tierCfg.color}55`,
+        fontVariantNumeric: 'tabular-nums' as const,
+      }}
+    >
+      {label}
+    </span>
   )
 }
 
@@ -623,23 +619,19 @@ const CardEquipment: React.FC = () => {
                         : hasRange
                           ? formatRangeLabel(proj.range!)
                           : formatProjectionOutput(proj)
-                    const hint = hasRange ? rangeSourceHint(proj.range!) : ''
-                    const tooltipTitle = hint ? `${tierCfg.label} — ${hint}` : tierCfg.label
                     return (
                       <div style={{ marginTop: '3px' }}>
-                        <HoverTooltip text={tooltipTitle} color={tierCfg.color}>
-                          <span
-                            style={{
-                              display: 'inline-flex', alignItems: 'center', gap: '5px',
-                              fontSize: '10px', fontWeight: 700,
-                              color: tierCfg.color, backgroundColor: tierCfg.bg,
-                              padding: '1px 6px', borderRadius: '3px',
-                            }}
-                          >
-                            <span>{tierCfg.short}</span>
-                            <span style={{ fontVariantNumeric: 'tabular-nums' as const }}>{label}</span>
-                          </span>
-                        </HoverTooltip>
+                        <span
+                          style={{
+                            display: 'inline-flex', alignItems: 'center',
+                            fontSize: '10px', fontWeight: 700,
+                            color: tierCfg.color, backgroundColor: tierCfg.bg,
+                            padding: '1px 6px', borderRadius: '3px',
+                            fontVariantNumeric: 'tabular-nums' as const,
+                          }}
+                        >
+                          {label}
+                        </span>
                       </div>
                     )
                   })()}

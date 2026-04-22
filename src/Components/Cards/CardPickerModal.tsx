@@ -3,8 +3,7 @@ import ReactDOM from 'react-dom'
 import TradingCard, { CardData } from './TradingCard'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { TIER_STYLES, CandidateProjection, formatProjectionOutput, formatProjectionOdds, formatRangeLabel, rangeSourceHint } from '@/hooks/useCardProjection'
-import HoverTooltip from '@/Components/HoverTooltip'
+import { TIER_STYLES, CandidateProjection, formatProjectionOutput, formatProjectionOdds, formatRangeLabel } from '@/hooks/useCardProjection'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -47,10 +46,6 @@ const PickerCard: React.FC<{
             ? formatRangeLabel(projection.range!)
             : formatProjectionOutput(projection))
     : null
-  const projHint = hasRange && projection ? rangeSourceHint(projection.range!) : ''
-  const projTooltip = projection && tierCfg
-    ? (projHint ? `${tierCfg.label} — ${projHint}` : tierCfg.label)
-    : undefined
   return (
     <div
       style={{
@@ -86,20 +81,18 @@ const PickerCard: React.FC<{
       {/* Projection effectiveness chip — placed between card and equip
           button so it's legible without fighting the card art. */}
       {projection && tierCfg && (
-        <HoverTooltip text={projTooltip} color={tierCfg.color}>
-          <span
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px',
-              fontSize: '10px', fontWeight: 700,
-              color: tierCfg.color, backgroundColor: tierCfg.bg,
-              padding: '3px 9px', borderRadius: '4px',
-              border: `1px solid ${tierCfg.color}55`,
-            }}
-          >
-            <span>{tierCfg.short}</span>
-            <span style={{ fontVariantNumeric: 'tabular-nums' as const }}>{projLabel}</span>
-          </span>
-        </HoverTooltip>
+        <span
+          style={{
+            display: 'inline-flex', alignItems: 'center',
+            fontSize: '10px', fontWeight: 700,
+            color: tierCfg.color, backgroundColor: tierCfg.bg,
+            padding: '3px 9px', borderRadius: '4px',
+            border: `1px solid ${tierCfg.color}55`,
+            fontVariantNumeric: 'tabular-nums' as const,
+          }}
+        >
+          {projLabel}
+        </span>
       )}
       <button
         onClick={() => onSelect(card)}
