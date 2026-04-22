@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFantasyLivePoints } from '@/hooks/useFantasyLivePoints'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
-import { useCardProjection, TIER_STYLES } from '@/hooks/useCardProjection'
+import { useCardProjection, TIER_STYLES, formatProjectionOutput, formatProjectionOdds, formatRangeLabel, rangeSourceHint } from '@/hooks/useCardProjection'
 import type { CardBreakdownEntry, EquationSummary, ModifierInfo, FavoriteTeamData, PlayerGameStats } from '@/hooks/useFantasySnapshot'
 import { Stars } from '@/Components/Stars'
 import HoverTooltip from '@/Components/HoverTooltip'
@@ -568,12 +568,12 @@ const PointsBreakdownPanel: React.FC<{
 
 /**
  * Pre-lock projection card — shown at the top of the Breakdown panel
- * before games start. Estimates what the current lineup + equipped cards
- * will score this week based on per-player season averages and an ELO-
- * driven win-probability forecast.
+ * before games start. Collapsed by default to keep the Base Payout total
+ * at eye level; click to expand the per-card breakdown.
  */
 const ProjectedWeekSummary: React.FC = () => {
   const { equipped, loading } = useCardProjection(false)
+  const [open, setOpen] = useState(false)
   if (loading || !equipped) return null
   const { projectedRosterFP, totalBonusFP, projectedTotalFP, cards, opponent, winProbability } = equipped
 
@@ -590,66 +590,97 @@ const ProjectedWeekSummary: React.FC = () => {
       padding: '10px 12px',
       marginBottom: '12px',
     }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '8px',
-        marginBottom: '8px',
-      }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+          background: 'transparent', border: 'none', padding: 0,
+          cursor: 'pointer', textAlign: 'left' as const,
+        }}
+      >
+        <span style={{
+          fontSize: '10px', color: '#60a5fa',
+          transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+          transition: 'transform 0.15s',
+          display: 'inline-block', width: '10px',
+        }}>▶</span>
         <span style={{
           fontSize: '11px', fontWeight: 700, color: '#60a5fa',
           textTransform: 'uppercase' as const, letterSpacing: '0.06em',
         }}>
           Projected This Week
         </span>
-        <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-          Based on season averages{opponent ? ` · vs ${opponent} (${Math.round(winProbability * 100)}% win)` : ''}
-        </span>
-      </div>
-      <div style={row}>
-        <span style={{ color: '#cbd5e1' }}>Roster FP</span>
-        <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{projectedRosterFP.toFixed(1)}</span>
-      </div>
-      <div style={row}>
-        <span style={{ color: '#cbd5e1' }}>Card Bonus</span>
-        <span style={{ color: totalBonusFP > 0 ? '#4ade80' : '#94a3b8', fontWeight: 600 }}>
-          {totalBonusFP > 0 ? '+' : ''}{totalBonusFP.toFixed(1)}
-        </span>
-      </div>
-      <div style={{ ...row, borderTop: '1px solid rgba(59,130,246,0.3)', marginTop: '4px', paddingTop: '6px' }}>
-        <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '13px' }}>Base Payout</span>
-        <span style={{ color: '#60a5fa', fontWeight: 700, fontSize: '14px' }}>
+        {opponent && (
+          <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+            vs {opponent} ({Math.round(winProbability * 100)}% win)
+          </span>
+        )}
+        <span style={{
+          marginLeft: 'auto', color: '#60a5fa',
+          fontWeight: 700, fontSize: '14px', fontVariantNumeric: 'tabular-nums' as const,
+        }}>
           {projectedTotalFP.toFixed(1)} FP
         </span>
-      </div>
-      {cards.length > 0 && (
+      </button>
+      {open && (
         <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(59,130,246,0.2)' }}>
-          <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '5px' }}>
-            Per card
+          <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
+            Based on season averages and ELO forecasts. Game-specific bonuses (comebacks, walk-offs) aren't included.
           </div>
-          {cards.map(c => {
-            const tierCfg = TIER_STYLES[c.tier]
-            const outputLabel = c.outputType === 'mult' && c.projectedMult > 1
-              ? `×${c.projectedMult.toFixed(2)}`
-              : c.outputType === 'floobits' && c.projectedFloobits > 0
-                ? `+${c.projectedFloobits}F`
-                : `${c.projectedFP > 0 ? '+' : ''}${c.projectedFP.toFixed(1)} FP`
-            return (
-              <div key={c.slotNumber} style={{
-                display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 0', fontSize: '12px',
-              }}>
-                <span style={{
-                  fontSize: '10px', fontWeight: 700,
-                  color: tierCfg.color, backgroundColor: tierCfg.bg,
-                  padding: '1px 5px', borderRadius: '3px', minWidth: '22px', textAlign: 'center' as const,
-                }}>
-                  {tierCfg.short}
-                </span>
-                <span style={{ flex: 1, color: '#cbd5e1' }}>{c.displayName}</span>
-                <span style={{ color: tierCfg.color, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                  {outputLabel}
-                </span>
+          <div style={row}>
+            <span style={{ color: '#cbd5e1' }}>Roster FP</span>
+            <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{projectedRosterFP.toFixed(1)}</span>
+          </div>
+          <div style={row}>
+            <span style={{ color: '#cbd5e1' }}>Card Bonus</span>
+            <span style={{ color: totalBonusFP > 0 ? '#4ade80' : '#94a3b8', fontWeight: 600 }}>
+              {totalBonusFP > 0 ? '+' : ''}{totalBonusFP.toFixed(1)}
+            </span>
+          </div>
+          {cards.length > 0 && (
+            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(59,130,246,0.2)' }}>
+              <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '5px' }}>
+                Per card
               </div>
-            )
-          })}
+              {cards.map(c => {
+                const tierCfg = TIER_STYLES[c.tier]
+                const isNullified = c.tier === 'nullified'
+                const hasOdds = !!c.odds && !isNullified
+                const hasRange = !!c.range && !isNullified && !hasOdds
+                const outputLabel = isNullified
+                  ? tierCfg.label
+                  : hasOdds
+                    ? formatProjectionOdds(c.odds!)
+                    : hasRange
+                      ? formatRangeLabel(c.range!)
+                      : formatProjectionOutput(c)
+                const hint = hasRange ? rangeSourceHint(c.range!) : ''
+                const rowTooltip = hint ? `${tierCfg.label} — ${hint}` : tierCfg.label
+                return (
+                  <div key={c.slotNumber} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 0', fontSize: '12px',
+                  }}>
+                    <HoverTooltip text={rowTooltip} color={tierCfg.color}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          fontSize: '10px', fontWeight: 700,
+                          color: tierCfg.color, backgroundColor: tierCfg.bg,
+                          padding: '1px 5px', borderRadius: '3px', minWidth: '22px', textAlign: 'center' as const,
+                        }}
+                      >
+                        {tierCfg.short}
+                      </span>
+                    </HoverTooltip>
+                    <span style={{ flex: 1, color: '#cbd5e1' }}>{c.displayName}</span>
+                    <span style={{ color: tierCfg.color, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                      {outputLabel}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

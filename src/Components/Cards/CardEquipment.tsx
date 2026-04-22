@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { useCardProjection, TIER_STYLES, EquippedCardProjection } from '@/hooks/useCardProjection'
+import { useCardProjection, TIER_STYLES, EquippedCardProjection, formatProjectionOutput, formatProjectionOdds, formatRangeLabel, rangeSourceHint } from '@/hooks/useCardProjection'
 import { createAvatar } from '@dicebear/core'
 import { openPeeps } from '@dicebear/collection'
 
@@ -154,6 +154,53 @@ const EquippedCardSlot: React.FC<{
     </div>
   )
 }
+
+/**
+ * Shared projection pill — shows the tier short-code plus output label
+ * (or tier name for zero-output cards). Range / trigger-chance appears
+ * on hover via the title attribute.
+ */
+const ProjectionPill: React.FC<{
+  proj: EquippedCardProjection | import('@/hooks/useCardProjection').CandidateProjection;
+  tierCfg: { label: string; short: string; color: string; bg: string };
+}> = ({ proj, tierCfg }) => {
+  // Render priority:
+  //   1. Nullified cards always show × label (dead effect).
+  //   2. Cards with odds (chance/outcome dependent) show "40% · +12 FP"
+  //      — concrete conditional instead of vague "might trigger".
+  //   3. Cards with a range (RNG, chance base/enhanced, stat-estimated)
+  //      show "+min to +max FP" — honest variance.
+  //   4. Otherwise show the single exact number (Vagabond ×1.09, etc.).
+  const isNullified = proj.tier === 'nullified'
+  const hasOdds = !!proj.odds && !isNullified
+  const hasRange = !!proj.range && !isNullified && !hasOdds
+  const label = isNullified
+    ? tierCfg.label
+    : hasOdds
+      ? formatProjectionOdds(proj.odds!)
+      : hasRange
+        ? formatRangeLabel(proj.range!)
+        : formatProjectionOutput(proj)
+  const hint = hasRange ? rangeSourceHint(proj.range!) : ''
+  const tooltip = hint ? `${tierCfg.label} — ${hint}` : tierCfg.label
+  return (
+    <HoverTooltip text={tooltip} color={tierCfg.color}>
+      <span
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: '6px',
+          fontSize: '10px', fontWeight: 700,
+          color: tierCfg.color, backgroundColor: tierCfg.bg,
+          padding: '3px 9px', borderRadius: '4px',
+          border: `1px solid ${tierCfg.color}55`,
+        }}
+      >
+        <span>{tierCfg.short}</span>
+        <span style={{ fontVariantNumeric: 'tabular-nums' as const }}>{label}</span>
+      </span>
+    </HoverTooltip>
+  )
+}
+
 
 const CardEquipment: React.FC = () => {
   const { getToken, fantasyPlayerIds } = useAuth()
@@ -566,21 +613,33 @@ const CardEquipment: React.FC = () => {
                     const proj = projectionBySlot.get(slotNum)
                     if (!proj) return null
                     const tierCfg = TIER_STYLES[proj.tier]
-                    const label = proj.outputType === 'mult' && proj.projectedMult > 1
-                      ? `×${proj.projectedMult.toFixed(2)}`
-                      : proj.outputType === 'floobits' && proj.projectedFloobits > 0
-                        ? `+${proj.projectedFloobits}F`
-                        : `${proj.projectedFP > 0 ? '+' : ''}${proj.projectedFP.toFixed(1)} FP`
+                    const isNullified = proj.tier === 'nullified'
+                    const hasOdds = !!proj.odds && !isNullified
+                    const hasRange = !!proj.range && !isNullified && !hasOdds
+                    const label = isNullified
+                      ? tierCfg.label
+                      : hasOdds
+                        ? formatProjectionOdds(proj.odds!)
+                        : hasRange
+                          ? formatRangeLabel(proj.range!)
+                          : formatProjectionOutput(proj)
+                    const hint = hasRange ? rangeSourceHint(proj.range!) : ''
+                    const tooltipTitle = hint ? `${tierCfg.label} — ${hint}` : tierCfg.label
                     return (
-                      <div style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '5px',
-                        marginTop: '3px',
-                        fontSize: '10px', fontWeight: 700,
-                        color: tierCfg.color, backgroundColor: tierCfg.bg,
-                        padding: '1px 6px', borderRadius: '3px',
-                      }}>
-                        <span>{tierCfg.short}</span>
-                        <span style={{ fontVariantNumeric: 'tabular-nums' as const }}>{label}</span>
+                      <div style={{ marginTop: '3px' }}>
+                        <HoverTooltip text={tooltipTitle} color={tierCfg.color}>
+                          <span
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '5px',
+                              fontSize: '10px', fontWeight: 700,
+                              color: tierCfg.color, backgroundColor: tierCfg.bg,
+                              padding: '1px 6px', borderRadius: '3px',
+                            }}
+                          >
+                            <span>{tierCfg.short}</span>
+                            <span style={{ fontVariantNumeric: 'tabular-nums' as const }}>{label}</span>
+                          </span>
+                        </HoverTooltip>
                       </div>
                     )
                   })()}
@@ -612,17 +671,23 @@ const CardEquipment: React.FC = () => {
                 const tourTag = !firstCardTagged ? 'fantasy-card-read' : undefined
                 const flipProp = tourTag ? tourFlipped : undefined
                 firstCardTagged = true
+                const proj = projectionBySlot.get(slotNum)
+                const tierCfg = proj ? TIER_STYLES[proj.tier] : null
                 return (
-                  <EquippedCardSlot
-                    key={slotNum}
-                    slot={slot}
-                    slotNum={slotNum}
-                    canEdit={canEdit}
-                    onUnequip={handleUnequip}
-                    compact
-                    dataTour={tourTag}
-                    forceFlipped={flipProp}
-                  />
+                  <div key={slotNum} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                    <EquippedCardSlot
+                      slot={slot}
+                      slotNum={slotNum}
+                      canEdit={canEdit}
+                      onUnequip={handleUnequip}
+                      compact
+                      dataTour={tourTag}
+                      forceFlipped={flipProp}
+                    />
+                    {proj && tierCfg && (
+                      <ProjectionPill proj={proj} tierCfg={tierCfg} />
+                    )}
+                  </div>
                 )
               }
 
@@ -721,21 +786,31 @@ const CardEquipment: React.FC = () => {
             }}>
               {availableDeck.map(card => {
                 const isMatch = fantasyPlayerIds.has(card.playerId)
+                const proj = candidatesByUserCardId.get(card.id)
+                const tierCfg = proj ? TIER_STYLES[proj.tier] : null
                 return (
-                  <div key={card.id} style={{ position: 'relative', transition: 'transform 0.15s ease' }}
+                  <div key={card.id} style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                    transition: 'transform 0.15s ease',
+                  }}
                     onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-4px)')}
                     onMouseLeave={e => (e.currentTarget.style.transform = 'none')}>
-                    <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch ? (card.teamColor || '#ffffff') : undefined} staticGlow noHoverLift />
-                    {isMatch && (
-                      <div style={{
-                        position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
-                        fontSize: '8px', color: '#60a5fa', fontWeight: '700',
-                        backgroundColor: 'rgba(96,165,250,0.20)',
-                        padding: '2px 5px', borderRadius: '4px',
-                        pointerEvents: 'none',
-                      }}>
-                        MATCH
-                      </div>
+                    <div style={{ position: 'relative' }}>
+                      <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch ? (card.teamColor || '#ffffff') : undefined} staticGlow noHoverLift />
+                      {isMatch && (
+                        <div style={{
+                          position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
+                          fontSize: '8px', color: '#60a5fa', fontWeight: '700',
+                          backgroundColor: 'rgba(96,165,250,0.20)',
+                          padding: '2px 5px', borderRadius: '4px',
+                          pointerEvents: 'none',
+                        }}>
+                          MATCH
+                        </div>
+                      )}
+                    </div>
+                    {proj && tierCfg && (
+                      <ProjectionPill proj={proj} tierCfg={tierCfg} />
                     )}
                   </div>
                 )

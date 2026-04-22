@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom'
 import TradingCard, { CardData } from './TradingCard'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { TIER_STYLES, CandidateProjection } from '@/hooks/useCardProjection'
+import { TIER_STYLES, CandidateProjection, formatProjectionOutput, formatProjectionOdds, formatRangeLabel, rangeSourceHint } from '@/hooks/useCardProjection'
+import HoverTooltip from '@/Components/HoverTooltip'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -34,13 +35,22 @@ const PickerCard: React.FC<{
 }> = ({ card, isMatch, onSelect, projection }) => {
   const [hovered, setHovered] = useState(false)
   const tierCfg = projection ? TIER_STYLES[projection.tier] : null
-  const projLabel = projection
-    ? (projection.outputType === 'mult' && projection.projectedMult > 1
-        ? `×${projection.projectedMult.toFixed(2)}`
-        : projection.outputType === 'floobits' && projection.projectedFloobits > 0
-          ? `+${projection.projectedFloobits}F`
-          : `${projection.projectedFP > 0 ? '+' : ''}${projection.projectedFP.toFixed(1)} FP`)
+  const isNullified = projection?.tier === 'nullified'
+  const hasOdds = !!projection?.odds && !isNullified
+  const hasRange = !!projection?.range && !isNullified && !hasOdds
+  const projLabel = projection && tierCfg
+    ? (isNullified
+        ? tierCfg.label
+        : hasOdds
+          ? formatProjectionOdds(projection.odds!)
+          : hasRange
+            ? formatRangeLabel(projection.range!)
+            : formatProjectionOutput(projection))
     : null
+  const projHint = hasRange && projection ? rangeSourceHint(projection.range!) : ''
+  const projTooltip = projection && tierCfg
+    ? (projHint ? `${tierCfg.label} — ${projHint}` : tierCfg.label)
+    : undefined
   return (
     <div
       style={{
@@ -72,27 +82,25 @@ const PickerCard: React.FC<{
             MATCH
           </div>
         )}
-        {/* Projection effectiveness chip — shows at-a-glance how effective
-            this card is expected to be given the user's current roster
-            and team state. */}
-        {projection && tierCfg && (
-          <div
-            title={`${tierCfg.label} — projected ${projLabel}`}
+      </div>
+      {/* Projection effectiveness chip — placed between card and equip
+          button so it's legible without fighting the card art. */}
+      {projection && tierCfg && (
+        <HoverTooltip text={projTooltip} color={tierCfg.color}>
+          <span
             style={{
-              position: 'absolute', top: 4, right: 4,
-              display: 'inline-flex', alignItems: 'center', gap: '4px',
-              fontSize: '9px', fontWeight: 700,
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              fontSize: '10px', fontWeight: 700,
               color: tierCfg.color, backgroundColor: tierCfg.bg,
-              padding: '2px 5px', borderRadius: '4px',
-              border: `1px solid ${tierCfg.color}33`,
-              zIndex: 1,
+              padding: '3px 9px', borderRadius: '4px',
+              border: `1px solid ${tierCfg.color}55`,
             }}
           >
             <span>{tierCfg.short}</span>
             <span style={{ fontVariantNumeric: 'tabular-nums' as const }}>{projLabel}</span>
-          </div>
-        )}
-      </div>
+          </span>
+        </HoverTooltip>
+      )}
       <button
         onClick={() => onSelect(card)}
         style={{
