@@ -46,6 +46,8 @@ interface ActivePowerup {
   expiring?: boolean
   overrideModifier?: string
   count?: number
+  boostedCap?: number
+  standardCap?: number
 }
 
 const BASE_SLOTS = [
@@ -1018,6 +1020,35 @@ export const FantasyRoster: React.FC = () => {
               fontWeight: flexPU.expiring ? '700' : '400',
             }}>
               {flexPU.expiring ? 'Expires after this week' : `${flexPU.weeksRemaining ?? 0} week${(flexPU.weeksRemaining ?? 0) !== 1 ? 's' : ''} remaining`}
+            </span>
+          </div>
+        )
+      })()}
+
+      {/* Active Endowment (income_boost) indicator — raised weekly FP floobit cap */}
+      {(() => {
+        const boostPU = activePowerups.find(p => p.slug === 'income_boost')
+        if (!boostPU) return null
+        const capText = boostPU.boostedCap && boostPU.standardCap
+          ? ` · cap ${boostPU.standardCap}F \u2192 ${boostPU.boostedCap}F`
+          : ''
+        return (
+          <div style={{
+            fontSize: isMobile ? '12px' : '13px', color: '#fbbf24', lineHeight: '1.5',
+            marginBottom: '6px', padding: isMobile ? '6px 10px' : '6px 14px',
+            backgroundColor: 'rgba(251,191,36,0.08)', borderRadius: '8px',
+            border: '1px solid rgba(251,191,36,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <span style={{ fontWeight: '700' }}>
+              Endowment Active<span style={{ color: '#eab308', fontWeight: 400, fontSize: '11px' }}>{capText}</span>
+            </span>
+            <span style={{
+              fontSize: '10px',
+              color: boostPU.expiring ? '#f59e0b' : '#94a3b8',
+              fontWeight: boostPU.expiring ? '700' : '400',
+            }}>
+              {boostPU.expiring ? 'Expires after this week' : `${boostPU.weeksRemaining ?? 0} week${(boostPU.weeksRemaining ?? 0) !== 1 ? 's' : ''} remaining`}
             </span>
           </div>
         )

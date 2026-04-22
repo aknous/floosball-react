@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
+import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useGmData } from '@/hooks/useGmData'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import VoteBudgetBar from './VoteBudgetBar'
@@ -19,12 +20,22 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 interface FrontOfficePanelProps {
   teamId: number
+  teamAbbr: string
   teamColor: string
 }
 
-const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }) => {
+interface FanVoteEntry {
+  id: number
+  name: string
+  position: string
+  rating: number
+  isProspect?: boolean
+}
+
+const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, teamColor }) => {
   const { user, getToken, refetchUser, updateFloobits } = useAuth()
   const { seasonState } = useFloosball()
+  const { event: wsEvent } = useSeasonWebSocket()
   const isMobile = useIsMobile()
   const gm = useGmData(teamId)
 
@@ -43,6 +54,29 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }
   const [faWindowEnd, setFaWindowEnd] = useState<number | null>(null)
   const [poolPreviewOpen, setPoolPreviewOpen] = useState(false)
   const [poolPositionFilter, setPoolPositionFilter] = useState<'ALL' | 'QB' | 'RB' | 'WR' | 'TE' | 'K'>('ALL')
+  // Per-position fan vote tallies for THIS team (keyed by position name).
+  // Two sources: live (raw ballot tallies during voting window) and resolved
+  // (post-IRV rankings once the offseason ballot resolves).
+  const [teamFaVotes, setTeamFaVotes] = useState<Record<string, FanVoteEntry[]>>({})
+  const [liveBallotTally, setLiveBallotTally] = useState<Record<string, (FanVoteEntry & { votes: number; firstChoice: number })[]>>({})
+  const [totalBallots, setTotalBallots] = useState<number>(0)
+  const [fanVotesOpen, setFanVotesOpen] = useState(true)
+  // Bumped whenever a WS event signals that the ballot state may have
+  // changed — forces the fetch effect to re-run so the Fan Vote Tallies
+  // appear immediately after voting closes, not after all drafts are over.
+  const [refetchToken, setRefetchToken] = useState(0)
+
+  useEffect(() => {
+    const ev = wsEvent as { event?: string } | null
+    if (!ev?.event) return
+    if (
+      ev.event === 'gm_fa_window_close' ||
+      ev.event === 'gm_fa_directives' ||
+      ev.event === 'offseason_predraft_start'
+    ) {
+      setRefetchToken(t => t + 1)
+    }
+  }, [wsEvent])
 
   // Refetch scouting whenever the user's vote counts change — a fresh
   // cut/resign vote can push a slot's likelyCut/likelyResigned flag over
@@ -64,17 +98,22 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }
         if (!cancelled && scoutJson?.success && scoutJson.data) {
           setFaScoutingPlayers(scoutJson.data.players || [])
           setFaOpenSlots(scoutJson.data.openSlots || [])
+          setLiveBallotTally(scoutJson.data.ballotTally || {})
+          setTotalBallots(scoutJson.data.totalBallots || 0)
         }
         const ofsJson = await ofsRes.json().catch(() => null)
         if (!cancelled && ofsJson) {
           if (ofsJson.existingBallot) setExistingFaBallot(ofsJson.existingBallot)
           if (ofsJson.faWindowEnd) setFaWindowEnd(ofsJson.faWindowEnd * 1000)
+          const results = ofsJson.faVoteResults?.[teamAbbr]
+          if (results) setTeamFaVotes(results)
+          else setTeamFaVotes({})
         }
       } catch { /* silent */ }
     }
     load()
     return () => { cancelled = true }
-  }, [isActive, getToken, gmVoteSignature])
+  }, [isActive, getToken, gmVoteSignature, teamAbbr, refetchToken])
 
   const handleSubmitFaBallot = useCallback(async (rankings: number[]) => {
     const tok = await getToken()
@@ -220,21 +259,90 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }
     </div>
   )
 
-  // Offseason: show results banner — no active voting during free agency
+  // Offseason: show results banner + resolved fan vote tallies — no active
+  // voting during free agency, but the ballot results are worth surfacing
+  // here so users don't have to hunt for them in the offseason panel.
   if (isOffseason) {
     const hasResults = gm.results && gm.results.results.length > 0
+    const hasResolvedTallies = Object.keys(teamFaVotes).length > 0
     return (
       <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
         {sectionHeader('The Front Office')}
         <div style={{ padding: '14px' }}>
           {hasResults ? (
             <VoteResultsBanner results={gm.results!.results} teamColor={teamColor} />
-          ) : (
+          ) : !hasResolvedTallies ? (
             <div style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' }}>
-              FA ballots are tallied when the voting window closes. Use the offseason panel to submit your ballot.
+              FA ballots are tallied when the voting window closes.
             </div>
-          )}
+          ) : null}
         </div>
+        {hasResolvedTallies && (
+          <div style={{ borderTop: '1px solid #334155' }}>
+            <button
+              onClick={() => setFanVotesOpen(v => !v)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '10px 14px', background: 'transparent', border: 'none',
+                cursor: 'pointer', textAlign: 'left' as const,
+              }}
+            >
+              <span style={{
+                fontSize: '10px', color: '#64748b',
+                transform: fanVotesOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.15s',
+              }}>▶</span>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>
+                Fan Vote Tallies
+              </span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                Resolved rankings for each open slot
+              </span>
+            </button>
+            {fanVotesOpen && (
+              <div style={{ padding: '4px 14px 14px' }}>
+                {Object.entries(teamFaVotes).map(([posName, ranked]) => (
+                  <div key={posName} style={{ marginTop: '8px' }}>
+                    <div style={{
+                      fontSize: '10px', fontWeight: 700, color: '#94a3b8',
+                      textTransform: 'uppercase' as const, letterSpacing: '0.06em',
+                      marginBottom: '4px',
+                    }}>
+                      {posName}
+                    </div>
+                    {ranked.map((p, idx) => (
+                      <div key={`${p.id}-${idx}`} style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '3px 0', fontSize: '12px',
+                        borderBottom: idx < ranked.length - 1 ? '1px solid #1e293b' : 'none',
+                      }}>
+                        <span style={{
+                          fontSize: '11px', fontWeight: 700,
+                          color: idx === 0 ? '#f59e0b' : '#94a3b8',
+                          minWidth: '20px',
+                        }}>
+                          {idx + 1}.
+                        </span>
+                        <Stars stars={calcStars(p.rating)} size={10} />
+                        <span style={{ flex: 1, color: '#e2e8f0' }}>
+                          {p.name}
+                          {p.isProspect && (
+                            <span style={{
+                              fontSize: '9px', fontWeight: 700, color: '#f59e0b',
+                              marginLeft: '8px', letterSpacing: '0.04em',
+                            }}>
+                              PROSPECT
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     )
   }
@@ -321,6 +429,94 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }
         positionFilter={poolPositionFilter}
         onPositionFilter={setPoolPositionFilter}
       />
+
+      {/* Fan Vote Tallies — live raw tallies during the voting window; once
+          the offseason ballot resolves, show the post-IRV rankings instead. */}
+      {(() => {
+        const resolved = Object.keys(teamFaVotes).length > 0
+        const live = Object.keys(liveBallotTally).length > 0
+        if (!resolved && !live) return null
+        const data = resolved ? teamFaVotes : liveBallotTally
+        return (
+          <div style={{ borderBottom: '1px solid #334155' }}>
+            <button
+              onClick={() => setFanVotesOpen(v => !v)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '10px 14px', background: 'transparent', border: 'none',
+                cursor: 'pointer', textAlign: 'left' as const,
+              }}
+            >
+              <span style={{
+                fontSize: '10px', color: '#64748b',
+                transform: fanVotesOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.15s',
+              }}>▶</span>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>
+                Fan Vote Tallies
+              </span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                {resolved
+                  ? 'Resolved rankings for each open slot'
+                  : `Live tally — ${totalBallots} ballot${totalBallots === 1 ? '' : 's'} in so far`}
+              </span>
+            </button>
+            {fanVotesOpen && (
+              <div style={{ padding: '4px 14px 14px' }}>
+                {Object.entries(data).map(([posName, ranked]) => (
+                  <div key={posName} style={{ marginTop: '8px' }}>
+                    <div style={{
+                      fontSize: '10px', fontWeight: 700, color: '#94a3b8',
+                      textTransform: 'uppercase' as const, letterSpacing: '0.06em',
+                      marginBottom: '4px',
+                    }}>
+                      {posName}
+                    </div>
+                    {ranked.map((p, idx) => {
+                      const votes = (p as { votes?: number }).votes
+                      return (
+                        <div key={`${p.id}-${idx}`} style={{
+                          display: 'flex', alignItems: 'center', gap: '8px',
+                          padding: '3px 0', fontSize: '12px',
+                          borderBottom: idx < ranked.length - 1 ? '1px solid #1e293b' : 'none',
+                        }}>
+                          <span style={{
+                            fontSize: '11px', fontWeight: 700,
+                            color: idx === 0 ? '#f59e0b' : '#94a3b8',
+                            minWidth: '20px',
+                          }}>
+                            {idx + 1}.
+                          </span>
+                          <Stars stars={calcStars(p.rating)} size={10} />
+                          <span style={{ flex: 1, color: '#e2e8f0' }}>
+                            {p.name}
+                            {p.isProspect && (
+                              <span style={{
+                                fontSize: '9px', fontWeight: 700, color: '#f59e0b',
+                                marginLeft: '8px', letterSpacing: '0.04em',
+                              }}>
+                                PROSPECT
+                              </span>
+                            )}
+                          </span>
+                          {!resolved && votes != null && (
+                            <span style={{
+                              fontSize: '11px', fontWeight: 700, color: '#60a5fa',
+                              fontVariantNumeric: 'tabular-nums',
+                            }}>
+                              {votes} vote{votes === 1 ? '' : 's'}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       <div style={{ padding: '14px' }}>
         {/* Two-column layout: Coaching (left) | Roster (right) */}
@@ -440,7 +636,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamColor }
           can be considered for ratification. The quorum scales with the number of
           active board members — fans of this team who have issued at least one directive
           this season. Once quorum is met, there is a base 45% likelihood of ratification,
-          increasing to 95% as directives accumulate to double the quorum.
+          climbing to a guaranteed ratification once directives reach double the quorum.
         </GuideSection>
         <GuideSection title="Resolution">
           All motions are resolved at the end of the season during the offseason proceedings.

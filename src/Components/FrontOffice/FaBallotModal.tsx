@@ -263,8 +263,27 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
               Free Agent Requisition
             </div>
             <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>
-              Rank up to {MAX_PICKS_PER_POSITION} candidates per position.
+              Rank up to {MAX_PICKS_PER_POSITION} candidates per position — free agents and your team's prospects all go on the same ballot.
               {isUpdate ? ' Revisions: complimentary.' : ` First filing: ${GM_FA_BALLOT_COST} Floobits.`}
+            </div>
+            <div style={{
+              fontSize: '12px', color: '#cbd5e1', marginTop: '10px',
+              padding: '8px 10px', backgroundColor: 'rgba(59,130,246,0.08)',
+              border: '1px solid rgba(59,130,246,0.25)', borderRadius: '6px',
+              lineHeight: 1.5,
+            }}>
+              <div style={{ marginBottom: '4px' }}>
+                <span style={{ color: '#60a5fa', fontWeight: 700 }}>Prospect #1:</span>{' '}
+                promoted immediately at the start of the offseason.
+              </div>
+              <div style={{ marginBottom: '4px' }}>
+                <span style={{ color: '#60a5fa', fontWeight: 700 }}>FA #1:</span>{' '}
+                the front office pursues them in the FA draft. If they sign elsewhere first, the ballot drops to your next pick.
+              </div>
+              <div>
+                <span style={{ color: '#60a5fa', fontWeight: 700 }}>No ballot:</span>{' '}
+                the team signs the best available FA, or promotes a qualifying prospect if one exists.
+              </div>
             </div>
           </div>
           {faWindowEnd && (
@@ -542,11 +561,13 @@ const PlayerRow: React.FC<{
         <span style={{ fontSize: '12px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           {p.projectedReason === 'cut_vote' ? 'Cut Vote' : 'Walk Year'}
         </span>
-      ) : (
+      ) : p.stats ? (
         <PerformanceBadge delta={p.ratingDelta} />
-      )}
+      ) : null}
     </div>
-    {/* Row 2: Stat line, prospect note, rookie label, or walk-year context */}
+    {/* Row 2: Stat line, prospect note, rookie label, or walk-year context.
+        Projected FAs (walk year / cut vote) still show their current-season
+        stats — context note sits above so fans can spot good value at a glance. */}
     {p.isProspect ? (
       <div style={{ marginTop: '6px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
         Pipeline prospect — rank to promote instead of sign a FA
@@ -555,21 +576,26 @@ const PlayerRow: React.FC<{
       <div style={{ marginTop: '6px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
         No professional record
       </div>
-    ) : p.isProjected ? (
-      <div style={{ marginTop: '6px', fontSize: '12px', color: '#fbbf24', fontStyle: 'italic' }}>
-        {p.currentTeam ? `Currently on ${p.currentTeam} — ` : ''}
-        {p.projectedReason === 'cut_vote'
-          ? 'board pushing to cut'
-          : 'contract expires at season end'}
-      </div>
-    ) : p.stats ? (
-      <div style={{ marginTop: '6px', fontSize: '12px', color: '#94a3b8', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <StatLine position={p.position} stats={p.stats} />
-      </div>
     ) : (
-      <div style={{ marginTop: '6px', fontSize: '12px', color: '#475569', fontStyle: 'italic' }}>
-        No stats recorded
-      </div>
+      <>
+        {p.isProjected && (
+          <div style={{ marginTop: '6px', fontSize: '12px', color: '#fbbf24', fontStyle: 'italic' }}>
+            {p.currentTeam ? `Currently on ${p.currentTeam} — ` : ''}
+            {p.projectedReason === 'cut_vote'
+              ? 'board pushing to cut'
+              : 'contract expires at season end'}
+          </div>
+        )}
+        {p.stats ? (
+          <div style={{ marginTop: '6px', fontSize: '12px', color: '#94a3b8', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <StatLine position={p.position} stats={p.stats} />
+          </div>
+        ) : (
+          <div style={{ marginTop: '6px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+            No stats this season
+          </div>
+        )}
+      </>
     )}
   </div>
 )

@@ -689,6 +689,9 @@ export default function MarketsSection() {
         </div>
       )}
 
+      {/* Tier perks — what each market tier actually gives a team */}
+      <TierPerksPanel />
+
       {/* Chart area with tabs — Funding (dumbbell) and Fans (stacked) views */}
       <div style={{
         backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px',
@@ -730,6 +733,96 @@ export default function MarketsSection() {
         )}
       </div>
 
+    </div>
+  )
+}
+
+function TierPerksPanel() {
+  const [open, setOpen] = useState(false)
+  const perks: { tier: Tier; faPriority: string; devBonus: string; morale: string; fatigue: string }[] = [
+    { tier: 'MEGA_MARKET',  faPriority: '1st pick',  devBonus: 'Strong growth', morale: 'Boost',       fatigue: 'Strong recovery' },
+    { tier: 'LARGE_MARKET', faPriority: '2nd pick',  devBonus: 'Faster growth', morale: 'Small boost', fatigue: 'Better recovery' },
+    { tier: 'MID_MARKET',   faPriority: '3rd pick',  devBonus: 'Baseline',      morale: 'Neutral',     fatigue: 'Baseline' },
+    { tier: 'SMALL_MARKET', faPriority: '4th pick',  devBonus: 'Slower growth', morale: 'Penalty',     fatigue: 'Slower recovery' },
+  ]
+  const rows: { label: string; key: 'faPriority' | 'devBonus' | 'morale' | 'fatigue' }[] = [
+    { label: 'FA signing priority', key: 'faPriority' },
+    { label: 'Player development',  key: 'devBonus' },
+    { label: 'Morale',              key: 'morale' },
+    { label: 'Fatigue recovery',    key: 'fatigue' },
+  ]
+  return (
+    <div style={{ marginBottom: '20px' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          backgroundColor: 'transparent', border: 'none', cursor: 'pointer',
+          padding: '6px 0', color: '#cbd5e1',
+        }}
+      >
+        <span style={{
+          fontSize: '10px', color: '#64748b',
+          transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+          transition: 'transform 0.15s',
+        }}>
+          ▶
+        </span>
+        <span style={{
+          fontSize: '12px', fontWeight: 700,
+          textTransform: 'uppercase' as const, letterSpacing: '0.06em',
+        }}>
+          What do tiers do?
+        </span>
+        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400 }}>
+          Higher tiers pick first in FA, develop players faster, and keep the locker room fresher
+        </span>
+      </button>
+      {open && (
+        <div style={{
+          backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px',
+          padding: '12px 14px', marginTop: '8px', overflowX: 'auto',
+        }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '480px' }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left', fontSize: '11px', color: '#94a3b8', fontWeight: 600, padding: '6px 8px', borderBottom: '1px solid #1e293b' }}>
+                  Perk
+                </th>
+                {perks.map(p => (
+                  <th key={p.tier} style={{
+                    textAlign: 'center', fontSize: '11px', fontWeight: 700,
+                    color: TIER_COLORS[p.tier], padding: '6px 8px',
+                    borderBottom: '1px solid #1e293b', letterSpacing: '0.06em',
+                  }}>
+                    {TIER_LABELS[p.tier].toUpperCase()}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, ri) => (
+                <tr key={row.key}>
+                  <td style={{
+                    fontSize: '12px', color: '#cbd5e1', fontWeight: 600,
+                    padding: '6px 8px', borderBottom: ri < rows.length - 1 ? '1px solid #1e293b' : 'none',
+                  }}>
+                    {row.label}
+                  </td>
+                  {perks.map(p => (
+                    <td key={p.tier} style={{
+                      fontSize: '12px', color: '#e2e8f0', textAlign: 'center',
+                      padding: '6px 8px', borderBottom: ri < rows.length - 1 ? '1px solid #1e293b' : 'none',
+                    }}>
+                      {p[row.key]}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
