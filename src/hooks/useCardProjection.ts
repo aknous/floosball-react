@@ -3,67 +3,48 @@ import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-export type ProjectionTier = 'strong' | 'good' | 'moderate' | 'variable' | 'nullified'
-export type ProjectionCertainty = 'exact' | 'estimated' | 'contingent'
-
-export interface ProjectionRange {
-  min: number
-  max: number
-  triggerChance: number | null
-  outputType: 'fp' | 'mult' | 'floobits'
-  // How the range was derived — drives tooltip wording.
-  source?: 'chance' | 'random_roll' | 'stats_estimate'
+export interface AmplifierStatus {
+  description: string   // e.g. "Boosts chance cards +25%" / "No effect — no chance cards equipped"
+  active: boolean       // whether the required companion cards are present
 }
 
-export interface ProjectionOdds {
-  probability: number         // 0-1 chance of the upside path hitting
-  ifHitsFP: number
-  ifHitsFloobits: number
-  ifHitsMult: number
-  outputType: 'fp' | 'mult' | 'floobits'
-}
-
-export interface EquippedCardProjection {
+export interface CardProjection {
   slotNumber: number
   effectName: string
   displayName: string
+  kind: 'output' | 'amplifier'
+  outputType: 'fp' | 'mult' | 'floobits'
   projectedFP: number
   projectedFloobits: number
   projectedMult: number
+  // Realistic ceiling — the output on a hot week (inflated stats,
+  // chance cards triggering, team winning). When this diverges from
+  // the expected value the pill shows "est. X · up to Y" so the
+  // upside is visible for scaling cards (Odometer, Avalanche, etc.).
+  bestCaseFP: number
+  bestCaseFloobits: number
+  bestCaseMult: number
   isMatch: boolean
-  tier: ProjectionTier
-  equation: string
-  outputType: 'fp' | 'mult' | 'floobits'
-  range?: ProjectionRange | null
-  odds?: ProjectionOdds | null
-  certainty?: ProjectionCertainty
+  amplifier: AmplifierStatus | null
+  estimated: boolean
+}
+
+export interface CandidateProjection extends CardProjection {
+  userCardId: number
+  replacesSlot?: number
+  replacesEffect?: string
 }
 
 export interface EquippedProjections {
-  cards: EquippedCardProjection[]
+  cards: CardProjection[]
   totalBonusFP: number
   totalFloobits: number
   multFactors: number[]
   projectedRosterFP: number
   projectedTotalFP: number
+  bestCaseTotalFP: number
   opponent: string
   winProbability: number
-}
-
-export interface CandidateProjection {
-  userCardId: number
-  effectName: string
-  displayName: string
-  projectedFP: number
-  projectedFloobits: number
-  projectedMult: number
-  isMatch: boolean
-  tier: ProjectionTier
-  outputType: 'fp' | 'mult' | 'floobits'
-  equation: string
-  range?: ProjectionRange | null
-  odds?: ProjectionOdds | null
-  certainty?: ProjectionCertainty
 }
 
 interface UseCardProjectionResult {
@@ -74,13 +55,10 @@ interface UseCardProjectionResult {
   refetch: () => void
 }
 
-/**
- * Fetches per-card payout projections for the current user for the upcoming
- * week. When includeCandidates is true the payload also carries solo
- * projections for every card in the user's collection — used to power the
- * effectiveness chips in the card picker modal.
- */
-export function useCardProjection(includeCandidates: boolean = false): UseCardProjectionResult {
+export function useCardProjection(
+  includeCandidates: boolean = false,
+  replaceSlot: number | null = null,
+): UseCardProjectionResult {
   const { getToken } = useAuth()
   const [equipped, setEquipped] = useState<EquippedProjections | null>(null)
   const [candidates, setCandidates] = useState<CandidateProjection[]>([])
@@ -95,14 +73,13 @@ export function useCardProjection(includeCandidates: boolean = false): UseCardPr
       try {
         setLoading(true)
         const tok = await getToken()
-        if (!tok) {
-          setLoading(false)
-          return
-        }
-        const url = `${API_BASE}/fantasy/card-projection${includeCandidates ? '?include_candidates=true' : ''}`
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${tok}` },
-        })
+        if (!tok) { setLoading(false); return }
+        const params = new URLSearchParams()
+        if (includeCandidates) params.set('include_candidates', 'true')
+        if (replaceSlot != null) params.set('replace_slot', String(replaceSlot))
+        const qs = params.toString()
+        const url = `${API_BASE}/fantasy/card-projection${qs ? `?${qs}` : ''}`
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${tok}` } })
         const json = await res.json().catch(() => null)
         if (cancelled) return
         if (json?.success && json.data) {
@@ -115,110 +92,92 @@ export function useCardProjection(includeCandidates: boolean = false): UseCardPr
     }
     load()
     return () => { cancelled = true }
-  }, [getToken, includeCandidates, token])
+  }, [getToken, includeCandidates, replaceSlot, token])
 
   const candidatesByUserCardId = new Map<number, CandidateProjection>()
   for (const c of candidates) candidatesByUserCardId.set(c.userCardId, c)
-
   return { equipped, candidates, candidatesByUserCardId, loading, refetch }
 }
 
-/**
- * Tier display config — shared across all surfaces so colors stay
- * consistent between Fantasy breakdown, equipped slots, and the
- * picker modal.
- */
-export const TIER_STYLES: Record<ProjectionTier, { label: string; color: string; bg: string; short: string }> = {
-  strong:    { label: 'Strong',        short: '++', color: '#22c55e', bg: 'rgba(34,197,94,0.15)'  },
-  good:      { label: 'Good',          short: '+',  color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
-  // Steady = active but modest. Teal chosen over gray so the pill doesn't
-  // read as 'disabled' at a glance.
-  moderate:  { label: 'Steady',        short: '=',  color: '#2dd4bf', bg: 'rgba(45,212,191,0.12)' },
-  variable:  { label: 'Might trigger', short: '?',  color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
-  nullified: { label: "Won't trigger", short: '×',  color: '#ef4444', bg: 'rgba(239,68,68,0.15)'  },
-}
 
 /**
- * Shared formatter for projection output — produces a concise label like
- * "+3.5 FP", "×1.40", "+25F". Handles the three output types uniformly.
- * For zero-output cards the number is still rendered ("×1.00", "+0.0 FP")
- * so deterministic baselines (Vagabond with 0 swaps, Opulence with no
- * floobits) read as concrete state instead of "???".
+ * Render-ready description of what a projection pill should show.
+ *   label    — the primary pill text (expected value / tier status)
+ *   ceiling  — optional secondary label shown below the pill when the
+ *              card has meaningful upside ("up to +Y FP"). Kept out of
+ *              the pill body so the primary pill width stays consistent.
+ *   color    — foreground text / icon color
+ *   bg       — pill background color
  */
-export function formatProjectionOutput(proj: {
-  projectedFP: number
-  projectedFloobits: number
-  projectedMult: number
-  outputType: 'fp' | 'mult' | 'floobits'
-}): string {
+export interface PillStyle {
+  label: string
+  ceiling?: string
+  color: string
+  bg: string
+}
+
+// Output-type colors. Pill color communicates the kind of output the
+// card produces rather than how "strong" the number is — green for FP,
+// pink for FPx, gold for Floobits. Red is reserved for genuinely dead
+// projections (no output and nothing to amplify).
+const FP_COLOR       = { color: '#22c55e', bg: 'rgba(34,197,94,0.15)'  }
+const FPX_COLOR      = { color: '#ec4899', bg: 'rgba(236,72,153,0.15)' }
+const FLOOBITS_COLOR = { color: '#fbbf24', bg: 'rgba(251,191,36,0.15)' }
+const AMPLIFIER_COLOR = { color: '#a78bfa', bg: 'rgba(167,139,250,0.15)' }
+const DEAD_COLOR     = { color: '#ef4444', bg: 'rgba(239,68,68,0.15)'  }
+
+
+/**
+ * Derives a pill label + color from a projection.
+ *   Output cards → value formatted + color of the output type
+ *   Amplifier active → descriptive status in amplifier purple
+ *   Amplifier inactive → descriptive status in red (dead effect)
+ *   Output card with zero projected output → red (dead)
+ */
+export function projectionPillStyle(proj: CardProjection): PillStyle {
+  if (proj.kind === 'amplifier' && proj.amplifier) {
+    const c = proj.amplifier.active ? AMPLIFIER_COLOR : DEAD_COLOR
+    return { label: proj.amplifier.description, color: c.color, bg: c.bg }
+  }
+
+  const hasOutput = (
+    proj.projectedFP > 0.05
+    || proj.projectedFloobits > 0
+    || proj.projectedMult > 1.0
+  )
+  const { primary, ceiling } = formatOutput(proj)
+  const label = proj.estimated && hasOutput ? `est. ${primary}` : primary
+  if (!hasOutput) {
+    return { label: primary, color: DEAD_COLOR.color, bg: DEAD_COLOR.bg }
+  }
+  const c =
+    proj.outputType === 'mult'     ? FPX_COLOR :
+    proj.outputType === 'floobits' ? FLOOBITS_COLOR :
+                                     FP_COLOR
+  return { label, ceiling, color: c.color, bg: c.bg }
+}
+
+
+function formatOutput(proj: CardProjection): { primary: string; ceiling?: string } {
   if (proj.outputType === 'mult') {
     const m = proj.projectedMult > 0 ? proj.projectedMult : 1
-    return `×${m.toFixed(2)}`
+    const ceil = proj.bestCaseMult > 0 ? proj.bestCaseMult : m
+    const out: { primary: string; ceiling?: string } = { primary: `×${m.toFixed(2)}` }
+    if (ceil - m >= 0.05) out.ceiling = `up to ×${ceil.toFixed(2)}`
+    return out
   }
   if (proj.outputType === 'floobits') {
-    return `+${Math.max(0, proj.projectedFloobits)}F`
+    const v = Math.max(0, proj.projectedFloobits)
+    const ceil = Math.max(v, proj.bestCaseFloobits)
+    const out: { primary: string; ceiling?: string } = { primary: `+${v}F` }
+    if (ceil - v >= 1) out.ceiling = `up to +${ceil}F`
+    return out
   }
-  return `${proj.projectedFP > 0 ? '+' : ''}${proj.projectedFP.toFixed(1)} FP`
-}
-
-/**
- * Format a range as a compact "+min to +max FP" label. Used by cards
- * that produce genuine output variance (RNG rolls, chance cards with
- * base/enhanced split, stat-estimated FP bands).
- */
-export function formatRangeLabel(range: ProjectionRange): string {
-  if (range.outputType === 'mult') {
-    return `×${range.min.toFixed(2)}–${range.max.toFixed(2)}`
+  const v = proj.projectedFP
+  const ceil = Math.max(v, proj.bestCaseFP)
+  const out: { primary: string; ceiling?: string } = {
+    primary: `${v > 0 ? '+' : ''}${v.toFixed(1)} FP`,
   }
-  if (range.outputType === 'floobits') {
-    return `+${Math.round(range.min)}–${Math.round(range.max)}F`
-  }
-  return `+${range.min.toFixed(1)} to +${range.max.toFixed(1)} FP`
-}
-
-/**
- * Tooltip hint describing why a range exists. Omitted for cards without
- * a range (single deterministic value).
- */
-export function rangeSourceHint(range: ProjectionRange): string {
-  switch (range.source) {
-    case 'random_roll':    return 'Random roll between these bounds'
-    case 'chance':         return 'Base value + chance to upgrade'
-    case 'stats_estimate': return 'Estimate from season averages (±25%)'
-    default:               return ''
-  }
-}
-
-/**
- * Formats an odds payload for display: "40% · +12 FP" — probability of
- * the upside path plus what the card outputs if it hits. More concrete
- * than a generic "might trigger" badge.
- */
-export function formatProjectionOdds(odds: ProjectionOdds): string {
-  const pct = Math.round(odds.probability * 100)
-  let ifHits: string
-  if (odds.outputType === 'mult' && odds.ifHitsMult > 1) {
-    ifHits = `×${odds.ifHitsMult.toFixed(2)}`
-  } else if (odds.outputType === 'floobits' && odds.ifHitsFloobits > 0) {
-    ifHits = `+${odds.ifHitsFloobits}F`
-  } else {
-    ifHits = `${odds.ifHitsFP > 0 ? '+' : ''}${odds.ifHitsFP.toFixed(1)} FP`
-  }
-  return `${pct}% · ${ifHits}`
-}
-
-/**
- * Formats a projection range for display. Returns a compact "a–b" with
- * trigger chance when relevant. Only defined for cards where a range
- * actually exists (chance cards with distinct base / enhanced values).
- */
-export function formatProjectionRange(range: ProjectionRange): string {
-  const unit = range.outputType === 'mult' ? '×' : range.outputType === 'floobits' ? 'F' : ' FP'
-  const fmt = (v: number) => (range.outputType === 'mult' ? v.toFixed(2) : v.toFixed(1))
-  const prefix = range.outputType === 'mult' ? '' : (range.min >= 0 ? '+' : '')
-  const base = `${prefix}${fmt(range.min)}–${fmt(range.max)}${unit}`
-  if (range.triggerChance != null) {
-    return `${base} · ${Math.round(range.triggerChance * 100)}% trigger`
-  }
-  return base
+  if (ceil - v >= 0.5) out.ceiling = `up to +${ceil.toFixed(1)} FP`
+  return out
 }

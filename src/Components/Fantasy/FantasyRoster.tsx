@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFantasyLivePoints } from '@/hooks/useFantasyLivePoints'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
-import { useCardProjection, TIER_STYLES, formatProjectionOutput, formatProjectionOdds, formatRangeLabel } from '@/hooks/useCardProjection'
+import { useCardProjection, projectionPillStyle } from '@/hooks/useCardProjection'
 import type { CardBreakdownEntry, EquationSummary, ModifierInfo, FavoriteTeamData, PlayerGameStats } from '@/hooks/useFantasySnapshot'
 import { Stars } from '@/Components/Stars'
 import HoverTooltip from '@/Components/HoverTooltip'
@@ -575,7 +575,8 @@ const ProjectedWeekSummary: React.FC = () => {
   const { equipped, loading } = useCardProjection(false)
   const [open, setOpen] = useState(false)
   if (loading || !equipped) return null
-  const { projectedRosterFP, totalBonusFP, projectedTotalFP, cards, opponent, winProbability } = equipped
+  const { projectedRosterFP, totalBonusFP, projectedTotalFP, bestCaseTotalFP, cards, opponent, winProbability } = equipped
+  const hasUpside = bestCaseTotalFP > projectedTotalFP + 0.5
 
   const row: React.CSSProperties = {
     display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
@@ -616,10 +617,23 @@ const ProjectedWeekSummary: React.FC = () => {
           </span>
         )}
         <span style={{
-          marginLeft: 'auto', color: '#60a5fa',
-          fontWeight: 700, fontSize: '14px', fontVariantNumeric: 'tabular-nums' as const,
+          marginLeft: 'auto', display: 'flex', flexDirection: 'column',
+          alignItems: 'flex-end', lineHeight: 1.2,
         }}>
-          {projectedTotalFP.toFixed(1)} FP
+          <span style={{
+            color: '#60a5fa',
+            fontWeight: 700, fontSize: '14px', fontVariantNumeric: 'tabular-nums' as const,
+          }}>
+            {projectedTotalFP.toFixed(1)} FP
+          </span>
+          {hasUpside && (
+            <span style={{
+              fontSize: '11px', color: '#60a5fa', opacity: 0.7,
+              fontVariantNumeric: 'tabular-nums' as const,
+            }}>
+              up to {bestCaseTotalFP.toFixed(1)}
+            </span>
+          )}
         </span>
       </button>
       {open && (
@@ -643,24 +657,19 @@ const ProjectedWeekSummary: React.FC = () => {
                 Per card
               </div>
               {cards.map(c => {
-                const tierCfg = TIER_STYLES[c.tier]
-                const isNullified = c.tier === 'nullified'
-                const hasOdds = !!c.odds && !isNullified
-                const hasRange = !!c.range && !isNullified && !hasOdds
-                const outputLabel = isNullified
-                  ? tierCfg.label
-                  : hasOdds
-                    ? formatProjectionOdds(c.odds!)
-                    : hasRange
-                      ? formatRangeLabel(c.range!)
-                      : formatProjectionOutput(c)
+                const style = projectionPillStyle(c)
                 return (
                   <div key={c.slotNumber} style={{
-                    display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 0', fontSize: '12px',
+                    display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 0', fontSize: '13px',
                   }}>
                     <span style={{ flex: 1, color: '#cbd5e1' }}>{c.displayName}</span>
-                    <span style={{ color: tierCfg.color, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                      {outputLabel}
+                    <span style={{ color: style.color, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                      {style.label}
+                      {style.ceiling && (
+                        <span style={{ fontSize: '11px', fontWeight: 400, marginLeft: '6px', opacity: 0.75 }}>
+                          · {style.ceiling}
+                        </span>
+                      )}
                     </span>
                   </div>
                 )

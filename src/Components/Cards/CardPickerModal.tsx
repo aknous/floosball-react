@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom'
 import TradingCard, { CardData } from './TradingCard'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { TIER_STYLES, CandidateProjection, formatProjectionOutput, formatProjectionOdds, formatRangeLabel } from '@/hooks/useCardProjection'
+import { CandidateProjection, projectionPillStyle, useCardProjection } from '@/hooks/useCardProjection'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -33,19 +33,7 @@ const PickerCard: React.FC<{
   projection?: CandidateProjection
 }> = ({ card, isMatch, onSelect, projection }) => {
   const [hovered, setHovered] = useState(false)
-  const tierCfg = projection ? TIER_STYLES[projection.tier] : null
-  const isNullified = projection?.tier === 'nullified'
-  const hasOdds = !!projection?.odds && !isNullified
-  const hasRange = !!projection?.range && !isNullified && !hasOdds
-  const projLabel = projection && tierCfg
-    ? (isNullified
-        ? tierCfg.label
-        : hasOdds
-          ? formatProjectionOdds(projection.odds!)
-          : hasRange
-            ? formatRangeLabel(projection.range!)
-            : formatProjectionOutput(projection))
-    : null
+  const style = projection ? projectionPillStyle(projection) : null
   return (
     <div
       style={{
@@ -80,19 +68,31 @@ const PickerCard: React.FC<{
       </div>
       {/* Projection effectiveness chip — placed between card and equip
           button so it's legible without fighting the card art. */}
-      {projection && tierCfg && (
-        <span
-          style={{
-            display: 'inline-flex', alignItems: 'center',
-            fontSize: '10px', fontWeight: 700,
-            color: tierCfg.color, backgroundColor: tierCfg.bg,
-            padding: '3px 9px', borderRadius: '4px',
-            border: `1px solid ${tierCfg.color}55`,
-            fontVariantNumeric: 'tabular-nums' as const,
-          }}
-        >
-          {projLabel}
-        </span>
+      {projection && style && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+          <span
+            style={{
+              display: 'inline-flex', alignItems: 'center',
+              fontSize: '12px', fontWeight: 700,
+              color: style.color, backgroundColor: style.bg,
+              padding: '4px 10px', borderRadius: '5px',
+              border: `1px solid ${style.color}55`,
+              fontVariantNumeric: 'tabular-nums' as const,
+              whiteSpace: 'nowrap' as const,
+            }}
+          >
+            {style.label}
+          </span>
+          {style.ceiling && (
+            <span style={{
+              fontSize: '10px', color: style.color, opacity: 0.8,
+              fontVariantNumeric: 'tabular-nums' as const,
+              whiteSpace: 'nowrap' as const,
+            }}>
+              {style.ceiling}
+            </span>
+          )}
+        </div>
       )}
       <button
         onClick={() => onSelect(card)}
@@ -119,13 +119,19 @@ interface CardPickerModalProps {
   onSelect: (card: CardData) => void
   excludeCardIds: number[]  // user_card IDs already equipped in other slots
   rosterPlayerIds: Set<number>
-  candidateProjections?: Map<number, import('@/hooks/useCardProjection').CandidateProjection>
+  // Slot the picker is scoped to. Candidate projections are computed
+  // as if each card replaced whatever currently occupies this slot —
+  // so FPx chain changes, chance-synergy changes, and straight-swap
+  // deltas all land accurately.
+  targetSlot?: number | null
 }
 
 const CardPickerModal: React.FC<CardPickerModalProps> = ({
-  visible, onClose, onSelect, excludeCardIds, rosterPlayerIds, candidateProjections,
+  visible, onClose, onSelect, excludeCardIds, rosterPlayerIds, targetSlot,
 }) => {
   const { getToken } = useAuth()
+  // Only fetch candidate projections while the modal is actually open.
+  const { candidatesByUserCardId } = useCardProjection(visible, visible ? (targetSlot ?? null) : null)
   const isMobile = useIsMobile()
   const [cards, setCards] = useState<CardData[]>([])
   const [loading, setLoading] = useState(false)
@@ -381,7 +387,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
               {displayed.map(card => {
                 const isMatch = rosterPlayerIds.has(card.playerId)
                 return (
-                  <PickerCard key={card.id} card={card} isMatch={isMatch} onSelect={onSelect} projection={candidateProjections?.get(card.id)} />
+                  <PickerCard key={card.id} card={card} isMatch={isMatch} onSelect={onSelect} projection={candidatesByUserCardId.get(card.id)} />
                 )
               })}
             </div>
