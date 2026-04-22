@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { Stars, calcStars, DualStars } from './Stars'
@@ -47,7 +47,7 @@ interface FreeAgent {
   defensiveRating?: number
 }
 
-type TransactionType = 'pick' | 'cut' | 'rookie_pick' | 'rookie_skip'
+type TransactionType = 'pick' | 'cut' | 'expired' | 'rookie_pick' | 'rookie_skip' | 'resign' | 'promotion'
 
 interface Transaction {
   type: TransactionType
@@ -59,6 +59,28 @@ interface Transaction {
   tier?: string
   offensiveRating?: number
   defensiveRating?: number
+}
+
+interface SetupPlayer {
+  name: string
+  position: string
+  rating: number
+  tier: string
+  reason?: 'gm_vote' | 'expired'
+}
+
+interface TeamSetup {
+  resigns: SetupPlayer[]
+  cuts: SetupPlayer[]
+  promotions: SetupPlayer[]
+}
+
+interface Prospect {
+  id: number
+  name: string
+  position: string
+  rating: number
+  tier: string
 }
 
 interface DraftTeam {
@@ -108,9 +130,14 @@ export const OffseasonPanel: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [currentTeamAbbr, setCurrentTeamAbbr] = useState<string | null>(null)
   // Which phase of the offseason is actively streaming picks. Set by
-  // rookie_draft_start/complete and offseason_start/complete. Drives the
-  // "Rookie Draft" / "Free Agency" header label.
-  const [currentPhase, setCurrentPhase] = useState<'rookie_draft' | 'free_agency' | null>(null)
+  // offseason_predraft_start, rookie_draft_start, fa_draft_order_update.
+  // Drives the header label, team-row grouping, and right-panel content.
+  const [currentPhase, setCurrentPhase] = useState<'predraft' | 'rookie_draft' | 'free_agency' | null>(null)
+  const [predraftSetups, setPredraftSetups] = useState<Record<string, TeamSetup>>({})
+  const [rookies, setRookies] = useState<Prospect[]>([])
+  // Once the user manually expands a team, auto-expand during the predraft
+  // roll-through stops taking over — they're reading the UI on their terms.
+  const userExpandedRef = useRef<boolean>(false)
   const [completedTeams, setCompletedTeams] = useState<Set<string>>(new Set())
   const [posFilter, setPosFilter] = useState('ALL')
   const [teamFilter, setTeamFilter] = useState<string | null>(null)
@@ -246,15 +273,46 @@ export const OffseasonPanel: React.FC = () => {
         const done = new Set<string>(order.filter(t => t.complete).map(t => t.abbr))
         if (done.size > 0) setCompletedTeams(done)
         if (data.transactions?.length > 0) {
-          const txs: Transaction[] = data.transactions.map((entry: any) => ({
-            type: (entry.type as TransactionType) ?? 'pick',
-            teamName: entry.team,
-            teamAbbr: entry.teamAbbr,
-            playerName: entry.player,
-            position: entry.position,
-            rating: entry.rating,
-            tier: entry.tier,
-          }))
+          const txs: Transaction[] = []
+          const setupMap: Record<string, TeamSetup> = {}
+          for (const entry of data.transactions) {
+            if (entry.type === 'team_setup') {
+              setupMap[entry.teamAbbr] = {
+                resigns: entry.resigns || [],
+                cuts: entry.cuts || [],
+                promotions: entry.promotions || [],
+              }
+              for (const p of (entry.cuts || []) as SetupPlayer[]) {
+                const txType: TransactionType = p.reason === 'expired' ? 'expired' : 'cut'
+                txs.push({ type: txType, teamName: entry.team, teamAbbr: entry.teamAbbr,
+                  playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
+              }
+              for (const p of (entry.resigns || []) as SetupPlayer[]) {
+                txs.push({ type: 'resign', teamName: entry.team, teamAbbr: entry.teamAbbr,
+                  playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
+              }
+              for (const p of (entry.promotions || []) as SetupPlayer[]) {
+                txs.push({ type: 'promotion', teamName: entry.team, teamAbbr: entry.teamAbbr,
+                  playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
+              }
+              continue
+            }
+            // Promotion picks in the FA draft are yielded as type='pick'
+            // with isPromotion=True — surface them as the 'promotion' tx.
+            const txType: TransactionType = entry.isPromotion
+              ? 'promotion'
+              : ((entry.type as TransactionType) ?? 'pick')
+            txs.push({
+              type: txType,
+              teamName: entry.team,
+              teamAbbr: entry.teamAbbr,
+              playerName: entry.player,
+              position: entry.position,
+              rating: entry.rating,
+              tier: entry.tier,
+            })
+          }
+          setPredraftSetups(setupMap)
           setTransactions(txs.reverse())
           if (txs.length > 0) setCurrentTeamAbbr(txs[0].teamAbbr)
         }
@@ -267,6 +325,14 @@ export const OffseasonPanel: React.FC = () => {
         if (data.faPool?.length > 0) setFaPool(data.faPool)
         if (data.existingBallot) setExistingBallot(data.existingBallot)
         if (data.faDirectives?.length > 0) setFaDirectives(data.faDirectives)
+        if (data.gmResolutions?.length > 0) {
+          setGmResolvedEvents(data.gmResolutions as GmVoteResolvedEvent[])
+        }
+        // Restore the active phase so tier grouping and prospect swap persist
+        // across refreshes mid-offseason.
+        if (data.phase && (data.phase === 'predraft' || data.phase === 'rookie_draft' || data.phase === 'free_agency')) {
+          setCurrentPhase(data.phase)
+        }
         // If draft already finished, mark complete and clear on-the-clock
         if (data.draftComplete) {
           setIsComplete(true)
@@ -312,6 +378,9 @@ export const OffseasonPanel: React.FC = () => {
       setPickedPlayerNames(new Set())
       setGmResolvedEvents([])
       setTabNotify({ directives: false, transactions: false })
+      setPredraftSetups({})
+      setRookies([])
+      userExpandedRef.current = false
       // Seed roster cache from pre-FA snapshots so rosters populate live from picks
       const snapshots = (ev as any).rosterSnapshots as Record<string, TeamRosterData> | undefined
       setRosterCache(snapshots || {})
@@ -331,11 +400,15 @@ export const OffseasonPanel: React.FC = () => {
     } else if (e.event === 'offseason_on_clock') {
       setCurrentTeamAbbr(e.teamAbbr)
     } else if (e.event === 'offseason_pick') {
-      const ev = e as OffseasonPickEvent
-      setFreeAgents(prev => prev.filter(fa => fa.name !== ev.playerName))
+      const ev = e as OffseasonPickEvent & { isPromotion?: boolean }
+      // Promotions are prospects moving onto the roster — they were never in
+      // the FA pool, so skip the FA-filter step for those.
+      if (!ev.isPromotion) {
+        setFreeAgents(prev => prev.filter(fa => fa.name !== ev.playerName))
+      }
       setPickedPlayerNames(prev => new Set([...prev, ev.playerName]))
       setTransactions(prev => [{
-        type: 'pick',
+        type: ev.isPromotion ? 'promotion' : 'pick',
         teamName: ev.teamName,
         teamAbbr: ev.teamAbbr,
         playerName: ev.playerName,
@@ -389,10 +462,78 @@ export const OffseasonPanel: React.FC = () => {
         .then(r => r.json())
         .then(data => setFreeAgents(data.freeAgents || []))
         .catch(() => {})
+    } else if (e.event === 'offseason_predraft_start') {
+      setCurrentPhase('predraft')
+      setCurrentTeamAbbr(null)
+      setPredraftSetups({})
+    } else if (e.event === 'offseason_team_setup') {
+      const ev = e as {
+        teamName: string; teamAbbr: string; teamId: number;
+        resigns: SetupPlayer[]; cuts: SetupPlayer[]; promotions: SetupPlayer[];
+      }
+      setPredraftSetups(prev => ({
+        ...prev,
+        [ev.teamAbbr]: {
+          resigns: ev.resigns || [],
+          cuts: ev.cuts || [],
+          promotions: ev.promotions || [],
+        },
+      }))
+      const hasMoves = (ev.resigns?.length ?? 0) + (ev.cuts?.length ?? 0) + (ev.promotions?.length ?? 0) > 0
+      if (hasMoves && !userExpandedRef.current) setExpandedTeam(ev.teamAbbr)
+      // Merge setup items into the transactions stream so the
+      // Transactions tab and Moves-this-offseason block reflect them.
+      const setupTxs: Transaction[] = []
+      for (const p of ev.cuts || []) {
+        const txType: TransactionType = p.reason === 'expired' ? 'expired' : 'cut'
+        setupTxs.push({ type: txType, teamName: ev.teamName, teamAbbr: ev.teamAbbr,
+          playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
+      }
+      for (const p of ev.resigns || []) {
+        setupTxs.push({ type: 'resign', teamName: ev.teamName, teamAbbr: ev.teamAbbr,
+          playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
+      }
+      for (const p of ev.promotions || []) {
+        setupTxs.push({ type: 'promotion', teamName: ev.teamName, teamAbbr: ev.teamAbbr,
+          playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
+      }
+      if (setupTxs.length > 0) {
+        setTransactions(prev => [...setupTxs, ...prev])
+        // Promotions update local roster cache — they moved onto the roster
+        if (ev.promotions?.length) {
+          setRosterCache(prev => {
+            const existing = prev[ev.teamAbbr]
+            if (!existing) return prev
+            const updated = { ...existing }
+            const posSlotMap: Record<string, string[]> = {
+              'QB': ['qb'], 'RB': ['rb'], 'WR': ['wr1', 'wr2'], 'TE': ['te'], 'K': ['k'],
+            }
+            for (const promo of ev.promotions) {
+              const slots = posSlotMap[promo.position] || []
+              for (const slot of slots) {
+                if (!updated[slot]) {
+                  updated[slot] = { id: 0, name: promo.name, position: promo.position,
+                    rating: promo.rating, tier: promo.tier, termRemaining: 3 }
+                  break
+                }
+              }
+            }
+            return { ...prev, [ev.teamAbbr]: updated }
+          })
+        }
+      }
+    } else if (e.event === 'offseason_predraft_complete') {
+      setCurrentPhase(null)
+      setCurrentTeamAbbr(null)
+      setExpandedTeam(null)
     } else if (e.event === 'rookie_draft_start') {
       // Rookie draft phase kicks off — show phase indicator, reset per-phase state
       setCurrentPhase('rookie_draft')
       setCurrentTeamAbbr(null)
+      setExpandedTeam(null)
+      const ev = e as { rookies?: Prospect[]; totalRookies?: number }
+      console.log('[Offseason] rookie_draft_start', { totalRookies: ev.totalRookies, rookieCount: ev.rookies?.length ?? 0 })
+      setRookies(ev.rookies || [])
     } else if (e.event === 'rookie_draft_on_clock') {
       setCurrentTeamAbbr((e as any).teamAbbr)
     } else if (e.event === 'rookie_draft_pick') {
@@ -406,6 +547,7 @@ export const OffseasonPanel: React.FC = () => {
         rating: ev.rating,
         tier: ev.tier,
       }, ...prev])
+      setRookies(prev => prev.filter(r => r.name !== ev.player))
       setTabNotify(prev => prev.transactions ? prev : { ...prev, transactions: rightTab !== 'transactions' })
     } else if (e.event === 'rookie_draft_skip') {
       const ev = e as any
@@ -421,6 +563,7 @@ export const OffseasonPanel: React.FC = () => {
       // Rookie phase done — next we expect fa_draft_order_update to flip into FA.
       setCurrentPhase(null)
       setCurrentTeamAbbr(null)
+      setRookies([])
     } else if (e.event === 'fa_draft_order_update') {
       // FA phase starts: replace the draft order with the tier-sorted list but
       // keep accumulated transactions/rosters intact (unlike offseason_start,
@@ -432,6 +575,7 @@ export const OffseasonPanel: React.FC = () => {
     } else if (e.event === 'gm_vote_resolved') {
       const ev = e as GmVoteResolvedEvent
       setGmResolvedEvents(prev => [ev, ...prev])
+      setTabNotify(prev => prev.directives ? prev : { ...prev, directives: rightTab !== 'directives' })
     } else if (e.event === 'gm_fa_window_open') {
       const ev = e as GmFaWindowOpenEvent
       setFaWindowOpen(true)
@@ -474,6 +618,25 @@ export const OffseasonPanel: React.FC = () => {
   // Rotate draft order so the "on the clock" team is first
   // Static order — no reordering, just highlight the "on the clock" team
   const cyclicOrder = draftOrder
+
+  // During FA phase the backend sends teams tier-sorted (MEGA-market first,
+  // then best-funded within tier). Group them so the UI can insert a header
+  // row per tier, making the signing priority visible.
+  const TIER_ORDER = ['MEGA_MARKET', 'LARGE_MARKET', 'MID_MARKET', 'SMALL_MARKET']
+  const teamGroups = useMemo(() => {
+    if (currentPhase !== 'free_agency') {
+      return [{ tier: null as string | null, teams: cyclicOrder }]
+    }
+    const byTier: Record<string, DraftTeam[]> = {}
+    for (const t of cyclicOrder) {
+      const key = t.fundingTier || 'MID_MARKET'
+      if (!byTier[key]) byTier[key] = []
+      byTier[key].push(t)
+    }
+    return TIER_ORDER
+      .filter(tier => byTier[tier]?.length > 0)
+      .map(tier => ({ tier, teams: byTier[tier] }))
+  }, [currentPhase, cyclicOrder])
 
   const filteredAgents = posFilter === 'ALL'
     ? freeAgents
@@ -540,10 +703,14 @@ export const OffseasonPanel: React.FC = () => {
           {currentPhase && (
             <span style={{
               fontSize: '12px', fontWeight: '700',
-              color: currentPhase === 'rookie_draft' ? '#a78bfa' : '#f59e0b',
+              color: currentPhase === 'rookie_draft' ? '#a78bfa'
+                : currentPhase === 'predraft' ? '#38bdf8'
+                : '#f59e0b',
               letterSpacing: '0.06em', textTransform: 'uppercase' as const,
             }}>
-              · {currentPhase === 'rookie_draft' ? 'Rookie Draft' : 'Free Agency'}
+              · {currentPhase === 'rookie_draft' ? 'Rookie Draft'
+                : currentPhase === 'predraft' ? 'Team Setup'
+                : 'Free Agency'}
             </span>
           )}
         </div>
@@ -666,10 +833,35 @@ export const OffseasonPanel: React.FC = () => {
 
           {cyclicOrder.length === 0 ? (
             <div style={{ padding: '16px 14px', fontSize: '13px', color: '#94a3b8' }}>
-              Waiting for free agency to begin…
+              Waiting for the offseason to begin…
             </div>
           ) : (
-            cyclicOrder.map((team, i) => {
+            teamGroups.map(group => (
+              <React.Fragment key={group.tier ?? 'flat'}>
+                {group.tier && TIER_LABELS[group.tier] && (
+                  <div style={{
+                    padding: '6px 14px',
+                    backgroundColor: TIER_COLORS[group.tier].bg,
+                    borderBottom: '1px solid #0f172a',
+                    borderTop: '1px solid #0f172a',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}>
+                    <span style={{
+                      fontSize: '10px',
+                      fontWeight: '800',
+                      letterSpacing: '0.08em',
+                      color: TIER_COLORS[group.tier].fg,
+                    }}>
+                      {TIER_LABELS[group.tier]} MARKET
+                    </span>
+                    <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                      {group.teams.length} team{group.teams.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
+                {group.teams.map((team, i) => {
               const isCurrent = team.abbr === currentTeamAbbr && !isComplete
               const isDone = completedTeams.has(team.abbr) || isComplete
               const isExpanded = expandedTeam === team.abbr
@@ -677,10 +869,11 @@ export const OffseasonPanel: React.FC = () => {
               const roster = rosterCache[team.abbr]
               const loading = rosterLoading.has(team.abbr)
               const teamTxs = transactions.filter(tx => tx.teamAbbr === team.abbr)
-              // Any non-cut transaction is an acquisition — FA signing, rookie
-              // pick, or prospect promotion all count. Only explicit cuts are
-              // cuts. (Without this filter, rookie picks rendered as CUT
-              // because the badge ternary defaulted unknown types to CUT.)
+              // Any non-cut transaction keeps the player on (or adds them to)
+              // the roster — FA sign, rookie pick, prospect promotion, re-sign.
+              // Explicit cuts remove. (Without this filter, non-sign types
+              // rendered as CUT because the badge ternary defaulted unknown
+              // types to CUT.)
               const signedNames = new Set(teamTxs.filter(tx => tx.type !== 'cut').map(tx => tx.playerName))
 
               return (
@@ -688,7 +881,10 @@ export const OffseasonPanel: React.FC = () => {
 
                   {/* Team row (clickable) */}
                   <div
-                    onClick={() => setExpandedTeam(prev => prev === team.abbr ? null : team.abbr)}
+                    onClick={() => {
+                      userExpandedRef.current = true
+                      setExpandedTeam(prev => prev === team.abbr ? null : team.abbr)
+                    }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -828,14 +1024,17 @@ export const OffseasonPanel: React.FC = () => {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             {teamTxs.map((tx, idx) => {
                               const badge = tx.type === 'cut' ? { label: 'CUT', color: '#ef4444' }
+                                : tx.type === 'expired' ? { label: 'TO FA', color: '#a16207' }
                                 : tx.type === 'rookie_skip' ? { label: 'SKIP', color: '#64748b' }
                                 : tx.type === 'rookie_pick' ? { label: 'DRAFT', color: '#a78bfa' }
-                                : { label: 'SGN', color: '#22c55e' }
-                              const showStars = tx.type !== 'cut' && tx.type !== 'rookie_skip'
+                                : tx.type === 'promotion' ? { label: 'PROMOTED', color: '#f59e0b' }
+                                : tx.type === 'resign' ? { label: 'RE-SIGN', color: '#38bdf8' }
+                                : { label: 'SIGN', color: '#22c55e' }
+                              const showStars = tx.type !== 'cut' && tx.type !== 'expired' && tx.type !== 'rookie_skip'
                               return (
                                 <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px' }}>
                                   <span style={{
-                                    fontSize: '9px', fontWeight: '700', minWidth: '36px',
+                                    fontSize: '9px', fontWeight: '700', minWidth: '58px',
                                     color: badge.color,
                                   }}>
                                     {badge.label}
@@ -861,7 +1060,9 @@ export const OffseasonPanel: React.FC = () => {
 
                 </div>
               )
-            })
+            })}
+              </React.Fragment>
+            ))
           )}
         </div>
 
@@ -871,7 +1072,10 @@ export const OffseasonPanel: React.FC = () => {
           <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px' }}>
             {(['players', 'directives', 'transactions'] as const).map(tab => {
               const isActive = rightTab === tab
-              const label = tab === 'players' ? `Players${freeAgents.length > 0 ? ` (${freeAgents.length})` : ''}`
+              const playersLabel = currentPhase === 'rookie_draft'
+                ? `Prospects${rookies.length > 0 ? ` (${rookies.length})` : ''}`
+                : `Players${freeAgents.length > 0 ? ` (${freeAgents.length})` : ''}`
+              const label = tab === 'players' ? playersLabel
                 : tab === 'directives' ? 'Directives'
                 : `Transactions${transactions.length > 0 ? ` (${transactions.length})` : ''}`
               const hasNotify = tab !== 'players' && tabNotify[tab as 'directives' | 'transactions']
@@ -907,8 +1111,47 @@ export const OffseasonPanel: React.FC = () => {
             })}
           </div>
 
-          {/* Players tab */}
-          {rightTab === 'players' && (
+          {/* Players tab — swaps to rookie pool during rookie draft phase */}
+          {rightTab === 'players' && currentPhase === 'rookie_draft' && (
+            <>
+              <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px' }}>
+                {POSITIONS.map(pos => (
+                  <button key={pos} style={posPillStyle(pos)} onClick={() => setPosFilter(pos)}>
+                    {pos}
+                  </button>
+                ))}
+              </div>
+              <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '500px', overflowY: 'auto' }}>
+                {rookies.length === 0 ? (
+                  <div style={{ color: '#94a3b8', fontSize: '13px', padding: '10px 6px' }}>
+                    {currentPhase === 'rookie_draft' ? 'All prospects drafted.' : 'Waiting for rookie draft…'}
+                  </div>
+                ) : (
+                  (posFilter === 'ALL' ? rookies : rookies.filter(r => r.position === posFilter))
+                    .sort((a, b) => b.rating - a.rating)
+                    .map((r, i) => (
+                    <div
+                      key={`${r.name}-${i}`}
+                      style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '4px', padding: '5px 8px', fontSize: '13px' }}
+                    >
+                      <Stars stars={calcStars(r.rating)} />
+                      <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {r.id ? (
+                          <PlayerHoverCard playerId={r.id} playerName={r.name}>
+                            <span style={{ color: '#e2e8f0', cursor: 'pointer' }}>{r.name}</span>
+                          </PlayerHoverCard>
+                        ) : (
+                          <span style={{ color: '#e2e8f0' }}>{r.name}</span>
+                        )}
+                      </span>
+                      <span style={{ color: '#64748b', fontSize: '11px' }}>{r.position}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+          {rightTab === 'players' && currentPhase !== 'rookie_draft' && (
             <>
               <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px' }}>
                 {POSITIONS.map(pos => (
@@ -920,7 +1163,11 @@ export const OffseasonPanel: React.FC = () => {
               <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '500px', overflowY: 'auto' }}>
                 {filteredAgents.length === 0 ? (
                   <div style={{ color: '#94a3b8', fontSize: '13px', padding: '10px 6px' }}>
-                    {freeAgents.length === 0 ? 'Waiting for free agency…' : 'No players at this position.'}
+                    {freeAgents.length === 0
+                      ? (currentPhase === 'predraft' ? 'Team setup in progress…'
+                        : currentPhase === 'free_agency' ? 'Free agency complete.'
+                        : 'Waiting for the offseason to begin…')
+                      : 'No players at this position.'}
                   </div>
                 ) : (
                   filteredAgents.map((fa, i) => {
@@ -1100,10 +1347,13 @@ export const OffseasonPanel: React.FC = () => {
                   <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
                     {filteredTransactions.map((tx, i) => {
                       const badge = tx.type === 'cut' ? { label: 'CUT', color: '#ef4444', bg: 'rgba(239,68,68,0.04)' }
+                        : tx.type === 'expired' ? { label: 'TO FA', color: '#a16207', bg: 'rgba(161,98,7,0.05)' }
                         : tx.type === 'rookie_skip' ? { label: 'SKIP', color: '#64748b', bg: 'transparent' }
                         : tx.type === 'rookie_pick' ? { label: 'DRAFT', color: '#a78bfa', bg: 'rgba(167,139,250,0.05)' }
-                        : { label: 'SGN', color: '#22c55e', bg: 'rgba(34,197,94,0.04)' }
-                      const showStars = tx.type !== 'cut' && tx.type !== 'rookie_skip'
+                        : tx.type === 'promotion' ? { label: 'PROMOTED', color: '#f59e0b', bg: 'rgba(245,158,11,0.06)' }
+                        : tx.type === 'resign' ? { label: 'RE-SIGN', color: '#38bdf8', bg: 'rgba(56,189,248,0.05)' }
+                        : { label: 'SIGN', color: '#22c55e', bg: 'rgba(34,197,94,0.04)' }
+                      const showStars = tx.type !== 'cut' && tx.type !== 'expired' && tx.type !== 'rookie_skip'
                       return (
                         <div
                           key={i}
@@ -1114,7 +1364,7 @@ export const OffseasonPanel: React.FC = () => {
                           }}
                         >
                           <span style={{
-                            fontSize: '9px', fontWeight: '700', letterSpacing: '0.06em', minWidth: '36px',
+                            fontSize: '9px', fontWeight: '700', letterSpacing: '0.06em', minWidth: '58px',
                             color: badge.color,
                           }}>
                             {badge.label}

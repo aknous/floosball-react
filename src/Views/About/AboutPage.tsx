@@ -1166,7 +1166,8 @@ const AboutPage: React.FC = () => {
               Every motion needs a quorum of directives before the board will consider it. The quorum size
               scales with how many fans on that team have voted at all this season. Once quorum is met,
               there's a 45% base chance of ratification. The more directives stack up past quorum, the
-              higher that chance climbs, up to 95%. Ratified motions take effect in the offseason.
+              higher that chance climbs — at double the quorum, ratification is guaranteed. Ratified
+              motions take effect in the offseason.
               Motions that fall short either deny or expire without action.
             </p>
 

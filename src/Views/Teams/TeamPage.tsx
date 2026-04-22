@@ -996,7 +996,7 @@ export default function TeamPage() {
 
         {/* === FRONT OFFICE TAB === */}
         {activeTab === 'frontOffice' && user?.favoriteTeamId === team.id && (
-          <FrontOfficePanel teamId={team.id} teamColor={team.color} />
+          <FrontOfficePanel teamId={team.id} teamAbbr={team.abbr} teamColor={team.color} />
         )}
 
         {/* === SCHEDULE TAB === */}
