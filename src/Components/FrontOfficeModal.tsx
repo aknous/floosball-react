@@ -136,6 +136,8 @@ const FrontOfficeModal: React.FC = () => {
                 { label: 'Hire Coach', desc: 'Bring in a new head coach' },
                 { label: 'Cut Player', desc: 'Release a player from the roster' },
                 { label: 'Re-sign Player', desc: 'Lock in a player before free agency' },
+                { label: 'Sign Free Agent', desc: 'Rank free agents the front office should pursue in the offseason draft' },
+                { label: 'Promote Prospect', desc: 'Rank a team prospect on the same ballot — they move up from the pipeline if they win enough votes' },
               ].map(item => (
                 <div key={item.label} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                   <span style={{ color: '#3b82f6', fontSize: '11px', flexShrink: 0, marginTop: '2px' }}>&#9654;</span>

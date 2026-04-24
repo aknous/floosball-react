@@ -447,7 +447,7 @@ export default function FrontOfficePage() {
 
       {activeSection === 'votes' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <FrontOfficePanel teamId={team.id} teamColor={team.color} />
+          <FrontOfficePanel teamId={team.id} teamAbbr={team.abbr} teamColor={team.color} />
           {/* Rookie ballot renders only once voting opens (Week 22+). Keeps
               the tab uncluttered while the front office is still dormant —
               no rookie cards flooding the view before the window is active. */}

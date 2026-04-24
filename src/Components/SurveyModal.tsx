@@ -78,7 +78,7 @@ const SurveyModal: React.FC = () => {
         <div style={{ padding: '28px 28px 0', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
-              Here's a Survey
+              Another Survey
             </h2>
             <button
               onClick={handleDismiss}
@@ -111,9 +111,17 @@ const SurveyModal: React.FC = () => {
             color: '#cbd5e1',
             fontSize: '13px',
             lineHeight: '1.7',
-            margin: '0 0 24px',
+            margin: '0 0 16px',
           }}>
             We want to know what you think. Does this suck? Does it rule? Are you in love? What would you change? Please take a quick survey to help us make Floosball even better!
+          </p>
+          <p style={{
+            color: '#94a3b8',
+            fontSize: '12px',
+            lineHeight: '1.6',
+            margin: '0 0 24px',
+          }}>
+            This is a new survey! If you filled out last week's, please take this one too. Your answers help shape what comes next. Thanks to all who participated last week! Your responses helped dictate some of the changes that were implemented in the latest update.
           </p>
 
           <button
