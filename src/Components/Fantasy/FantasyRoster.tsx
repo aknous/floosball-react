@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFantasyLivePoints } from '@/hooks/useFantasyLivePoints'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
+import { useCardProjection, projectionPillStyle } from '@/hooks/useCardProjection'
 import type { CardBreakdownEntry, EquationSummary, ModifierInfo, FavoriteTeamData, PlayerGameStats } from '@/hooks/useFantasySnapshot'
 import { Stars } from '@/Components/Stars'
 import HoverTooltip from '@/Components/HoverTooltip'
@@ -565,6 +566,123 @@ const PointsBreakdownPanel: React.FC<{
   )
 }
 
+/**
+ * Pre-lock projection card — shown at the top of the Breakdown panel
+ * before games start. Collapsed by default to keep the Base Payout total
+ * at eye level; click to expand the per-card breakdown.
+ */
+const ProjectedWeekSummary: React.FC = () => {
+  const { equipped, loading } = useCardProjection(false)
+  const [open, setOpen] = useState(false)
+  if (loading || !equipped) return null
+  const { projectedRosterFP, totalBonusFP, projectedTotalFP, bestCaseTotalFP, cards, opponent, winProbability } = equipped
+  const hasUpside = bestCaseTotalFP > projectedTotalFP + 0.5
+
+  const row: React.CSSProperties = {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+    fontSize: '12px', padding: '3px 0',
+  }
+
+  return (
+    <div style={{
+      backgroundColor: 'rgba(59,130,246,0.08)',
+      border: '1px solid rgba(59,130,246,0.3)',
+      borderRadius: '8px',
+      padding: '10px 12px',
+      marginBottom: '12px',
+    }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+          background: 'transparent', border: 'none', padding: 0,
+          cursor: 'pointer', textAlign: 'left' as const,
+        }}
+      >
+        <span style={{
+          fontSize: '10px', color: '#60a5fa',
+          transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+          transition: 'transform 0.15s',
+          display: 'inline-block', width: '10px',
+        }}>▶</span>
+        <span style={{
+          fontSize: '11px', fontWeight: 700, color: '#60a5fa',
+          textTransform: 'uppercase' as const, letterSpacing: '0.06em',
+        }}>
+          Projected This Week
+        </span>
+        {opponent && (
+          <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+            vs {opponent} ({Math.round(winProbability * 100)}% win)
+          </span>
+        )}
+        <span style={{
+          marginLeft: 'auto', display: 'flex', flexDirection: 'column',
+          alignItems: 'flex-end', lineHeight: 1.2,
+        }}>
+          <span style={{
+            color: '#60a5fa',
+            fontWeight: 700, fontSize: '14px', fontVariantNumeric: 'tabular-nums' as const,
+          }}>
+            {projectedTotalFP.toFixed(1)} FP
+          </span>
+          {hasUpside && (
+            <span style={{
+              fontSize: '11px', color: '#60a5fa', opacity: 0.7,
+              fontVariantNumeric: 'tabular-nums' as const,
+            }}>
+              up to {bestCaseTotalFP.toFixed(1)}
+            </span>
+          )}
+        </span>
+      </button>
+      {open && (
+        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(59,130,246,0.2)' }}>
+          <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '6px' }}>
+            Based on season averages and ELO forecasts. Game-specific bonuses (comebacks, walk-offs) aren't included.
+          </div>
+          <div style={row}>
+            <span style={{ color: '#cbd5e1' }}>Roster FP</span>
+            <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{projectedRosterFP.toFixed(1)}</span>
+          </div>
+          <div style={row}>
+            <span style={{ color: '#cbd5e1' }}>Card Bonus</span>
+            <span style={{ color: totalBonusFP > 0 ? '#4ade80' : '#94a3b8', fontWeight: 600 }}>
+              {totalBonusFP > 0 ? '+' : ''}{totalBonusFP.toFixed(1)}
+            </span>
+          </div>
+          {cards.length > 0 && (
+            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(59,130,246,0.2)' }}>
+              <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '5px' }}>
+                Per card
+              </div>
+              {cards.map(c => {
+                const style = projectionPillStyle(c)
+                return (
+                  <div key={c.slotNumber} style={{
+                    display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 0', fontSize: '13px',
+                  }}>
+                    <span style={{ flex: 1, color: '#cbd5e1' }}>{c.displayName}</span>
+                    <span style={{ color: style.color, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                      {style.label}
+                      {style.ceiling && (
+                        <span style={{ fontSize: '11px', fontWeight: 400, marginLeft: '6px', opacity: 0.75 }}>
+                          · {style.ceiling}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
 export const FantasyRoster: React.FC = () => {
   const isMobile = useIsMobile()
   const { user, getToken, refetchRoster } = useAuth()
@@ -965,17 +1083,25 @@ export const FantasyRoster: React.FC = () => {
 
           {/* Breakdown view */}
           {viewMode === 'breakdown' && (
-            <PointsBreakdownPanel
-              playerSummaries={playerSummaries}
-              breakdowns={cardBreakdowns}
-              equationSummary={equationSummary}
-              weekPlayerFP={weekPlayerFP}
-              weekCardBonus={weekCardBonus}
-              seasonEarnedFP={seasonEarnedFP}
-              seasonCardBonus={seasonCardBonus}
-              seasonTotal={seasonTotal}
-              modifier={modifier}
-            />
+            <>
+              {/* Pre-lock projection — shows what the current lineup +
+                  equipped cards are projected to score this week,
+                  based on per-player season averages and ELO forecasts. */}
+              {!gamesActive && !gamesInProgress && (
+                <ProjectedWeekSummary />
+              )}
+              <PointsBreakdownPanel
+                playerSummaries={playerSummaries}
+                breakdowns={cardBreakdowns}
+                equationSummary={equationSummary}
+                weekPlayerFP={weekPlayerFP}
+                weekCardBonus={weekCardBonus}
+                seasonEarnedFP={seasonEarnedFP}
+                seasonCardBonus={seasonCardBonus}
+                seasonTotal={seasonTotal}
+                modifier={modifier}
+              />
+            </>
           )}
         </div>
       )}
