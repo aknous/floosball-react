@@ -12,6 +12,43 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.11.0',
+    date: '2026-04-27',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Personality] Every player has a personality — base vibes (Stoic, Chill, Fiery, Goofy, Wholesome, Cool, Lively, Melancholy, Unhinged) plus rare variants like Mystic, Alien, Prophet, Knight, Fossil, and Ghost',
+          '[Personality] Players react after big plays — touchdowns, field goals, sacks, interceptions, fumbles, turnovers on downs, clutch moments, and big momentum swings now show in-character reactions in the play feed',
+          '[Personality] Defensive players react too — when a defender gets the sack, picks off the ball, or forces the fumble, sometimes the camera goes to them instead of the offense',
+          '[Personality] Sideline cutaways — between drives, at halftime, and on big moments, the camera occasionally cuts to a player on the sideline mid-bit (a Goofy doing a magic trick, a Mystic drinking water with two hands, an Alien poking the turf)',
+          '[Personality] Postgame reactions — when a game ends, the winning team\'s players react positively and the losing team\'s players react negatively',
+          '[Personality] Mood system — every player has a 1-5 mood that shifts based on their recent performance. Mood names are personality-flavored (a Stoic is "Composed" or "Locked In", a Cool is "Smooth" or "Untouchable", a Mystic is "Foreseeing" or "Threaded")',
+          '[Personality] Mood badge on the player hover card replaces the old skill bars — color hints at the underlying personality vibe',
+          '[Cards] Card score projections (WORK IN PROGRESS) — every equipped card now shows its projected output for the upcoming week (FP, FPx, Floobits, or a contextual status for amplifiers) based on your roster\'s season averages. Amplifiers like Lemons compute their actual FP impact against your equipped hand',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Cards] Rebalanced card effects — Possession dialed back into the base-tier range, Lemons reworked (no longer zeros the top card), several effects renamed and tuned',
+          '[UI/UX] Highlights feed cleaned up — only shows scores, turnovers, and game start/end cards. Big-play backgrounds, lightning markers, clutch/choke/momentum badges, and sideline cutaways now live exclusively in the per-game modal where they belong',
+          '[UI/UX] Reaction text in the highlights feed bumped from 11px to 13px to match the modal',
+          '[UI/UX] Sideline cutaways in the game modal now match the regular play row layout — team avatar at left, accent border, italic body',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Personality] Reactions feel less repetitive — picker draws from a shuffled deck so every line in a pool shows once before any repeats. With pools of 40+ lines per personality, the same reaction shouldn\'t surface twice in a single game',
+          '[Simulation] Kneeling out the clock on a turnover on downs no longer duplicates the play in the game feed',
+          '[Cards] Card descriptions and tooltips clarified to drop misleading static numbers where the actual value is computed at runtime',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.10.1',
     date: '2026-04-21',
     changes: [],

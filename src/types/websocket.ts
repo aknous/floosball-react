@@ -222,6 +222,18 @@ export interface PlayInsights {
   playCall?: 'run' | 'short' | 'medium' | 'long'
 }
 
+// Personality reaction event fired on significant plays. Combines the
+// player's personality (vibe or variant) with their optional quirk to
+// produce a flavor line displayed beneath the play.
+export interface PersonalityEvent {
+  text: string
+  playerId: number
+  playerName: string
+  personality: string  // base vibe or variant name
+  quirk: string | null
+  event: string  // trigger key like 'td_scored', 'int_thrown'
+}
+
 // Play event details
 export interface PlayEvent {
   playNumber: number
@@ -252,6 +264,7 @@ export interface PlayEvent {
   isChokePlay?: boolean
   isMomentumShift?: boolean
   insights?: PlayInsights | null
+  personalityEvent?: PersonalityEvent | null
 }
 
 // Game Events
@@ -418,6 +431,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
     isChokePlay: boolean
     isMomentumShift: boolean
     insights?: PlayInsights | null
+    personalityEvent?: PersonalityEvent | null
   } | null
   finalPlay?: {
     playNumber: number
@@ -445,6 +459,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
     isChokePlay: boolean
     isMomentumShift: boolean
     insights?: PlayInsights | null
+    personalityEvent?: PersonalityEvent | null
   } | null
   homeWinProbability: number
   awayWinProbability: number
@@ -458,6 +473,22 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   homeTimeouts: number
   awayTimeouts: number
   gameStats?: GameStats
+  sidelineCutaway?: SidelineCutaway | null
+}
+
+// Sideline cutaway — fires on downtime moments (possession changes, halftime,
+// quarter starts, two-minute warning). Catches a random sideline player
+// mid-activity, broadcaster-cutaway style.
+export interface SidelineCutaway {
+  text: string
+  playerId: number
+  playerName: string
+  teamId: number | null
+  teamAbbr: string | null
+  personality: string
+  quirk: string | null
+  event: string  // 'sideline'
+  trigger?: string  // 'possession_change' | 'event' | 'halftime'
 }
 
 export interface TeamGameStats {
