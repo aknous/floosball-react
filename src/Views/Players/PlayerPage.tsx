@@ -7,6 +7,37 @@ import { GiLaurelsTrophy, GiStarMedal } from 'react-icons/gi'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+const MOOD_COLORS: Record<string, string> = {
+  electric: '#22c55e',
+  confident: '#4ade80',
+  steady: '#94a3b8',
+  frustrated: '#f97316',
+  miserable: '#ef4444',
+}
+
+// Rarity-tier color mapping for quirks (mirrors backend personalityData tiers)
+const QUIRK_TIER_COLORS: Record<string, string> = {
+  common:   '#94a3b8',  // slate
+  uncommon: '#c4b5fd',  // light purple
+  rare:     '#f472b6',  // pink
+  unique:   '#a5f3fc',  // cyan
+}
+
+interface PersonalityBlock {
+  archetype?: string
+  archetypeLabel?: string
+  quirk?: string
+  quirkLabel?: string
+  quirkTier?: string
+}
+
+interface DemeanorDrift {
+  direction: 'composed' | 'volatile'
+  from?: string
+  season?: number
+  week?: number
+}
+
 interface PlayerAttributes {
   att1?: string; att1Value?: number; att1stars?: number
   att2?: string; att2Value?: number; att2stars?: number
@@ -16,6 +47,11 @@ interface PlayerAttributes {
   seasonPerformanceRatingStars?: number; seasonPerformanceRating?: number
   fatigue?: number
   defensiveAttributes?: Record<string, { value: number; stars: number }>
+  mood?: string
+  moodTier?: string
+  demeanor?: string
+  demeanorDrift?: DemeanorDrift
+  personality?: PersonalityBlock
 }
 
 interface PlayerData {
@@ -541,6 +577,58 @@ export default function PlayerPage() {
                   <span style={{ fontSize: '14px', color: '#64748b' }}>Free Agent</span>
                 )}
               </div>
+              {att?.personality?.archetypeLabel && (
+                <div style={{ marginTop: '10px', fontSize: '12px', color: '#e2e8f0', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  {att.personality.archetypeLabel}
+                </div>
+              )}
+              {att?.mood && (
+                <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '14px', color: MOOD_COLORS[att.moodTier || 'steady'] || '#94a3b8', fontWeight: '600' }}>
+                    {att.mood}
+                  </span>
+                  {att.demeanor && (
+                    <span style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                      {att.demeanor}
+                      {att.demeanorDrift && (
+                        <span
+                          title={`Drifting ${att.demeanorDrift.direction} (from ${att.demeanorDrift.from ?? '—'})`}
+                          style={{
+                            color: att.demeanorDrift.direction === 'volatile' ? '#f97316' : '#38bdf8',
+                            fontSize: '12px',
+                            marginLeft: '2px',
+                            fontStyle: 'normal',
+                          }}
+                        >
+                          {att.demeanorDrift.direction === 'volatile' ? '↗' : '↙'}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                  {att?.personality?.quirkLabel && (() => {
+                    const tier = (att.personality.quirkTier || 'common').toLowerCase()
+                    const color = QUIRK_TIER_COLORS[tier] || '#94a3b8'
+                    return (
+                      <span
+                        title={`${att.personality.quirkLabel} · ${tier}`}
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: '700',
+                          padding: '2px 8px',
+                          borderRadius: '3px',
+                          backgroundColor: `${color}22`,
+                          color: color,
+                          border: `1px solid ${color}55`,
+                          letterSpacing: '0.04em',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {att.personality.quirkLabel}
+                      </span>
+                    )
+                  })()}
+                </div>
+              )}
             </div>
           </div>
 

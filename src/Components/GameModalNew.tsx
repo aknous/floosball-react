@@ -7,6 +7,7 @@ import TeamHoverCard from './TeamHoverCard'
 import { Stars } from './Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { PlayInsightsPanel } from './PlayInsightsPanel'
+import { personalityAccent } from '@/utils/personality'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -153,6 +154,57 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             Drive
           </span>
           <div style={{ flex: 1, height: '1px', backgroundColor: '#1e3a5f' }} />
+        </div>
+      )
+    }
+
+    // Skip reaction events (legacy gameFeed entries — reactions now render inline on plays)
+    if (play.type === 'reaction' || play.event?.type === 'reaction') return null
+
+    // Sideline cutaway — flavor entry between plays, formatted to mirror a regular play row
+    if (play.isSidelineCutaway && play.sidelineCutaway) {
+      const cutaway = play.sidelineCutaway
+      const accent = personalityAccent(cutaway.personality)
+      return (
+        <div key={`${keyPrefix}-${index}-cutaway`} style={{ borderBottom: '1px solid #334155' }}>
+          <div style={{
+            paddingBottom: '12px',
+            paddingTop: '6px',
+            paddingLeft: '10px',
+            paddingRight: '6px',
+            display: 'flex',
+            gap: '12px',
+          }}>
+            {cutaway.teamId != null ? (
+              <img
+                src={`/avatars/${cutaway.teamId}.png`}
+                alt={cutaway.teamAbbr || ''}
+                crossOrigin="anonymous"
+                style={{ width: '40px', height: '40px', flexShrink: 0 }}
+              />
+            ) : (
+              <div style={{ width: '40px', flexShrink: 0 }} />
+            )}
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
+                <span>{play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}</span>
+                <span>•</span>
+                <span style={{ color: '#cbd5e1', fontWeight: '500', letterSpacing: '0.04em' }}>SIDELINE</span>
+              </div>
+              <p style={{
+                fontSize: '13px',
+                color: '#e2e8f0',
+                fontStyle: 'italic',
+                margin: 0,
+                backgroundColor: `${accent}10`,
+                padding: '4px 8px',
+                borderRadius: '4px',
+                borderLeft: `2px solid ${accent}`,
+              }}>
+                {cutaway.text}
+              </p>
+            </div>
+          </div>
         </div>
       )
     }
@@ -323,7 +375,29 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 )}
               </div>
             </div>
-            <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) ? '4px' : '0' }}>{play.description}</p>
+            <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) || play.reaction || play.personalityEvent ? '4px' : '0' }}>{play.description}</p>
+            {play.reaction && (
+              <p style={{ fontSize: '13px', color: '#e2e8f0', fontStyle: 'italic', margin: '4px 0 0', backgroundColor: 'rgba(51,65,85,0.5)', padding: '4px 8px', borderRadius: '4px', borderLeft: '2px solid #475569' }}>
+                {play.reaction.text}
+              </p>
+            )}
+            {play.personalityEvent && (() => {
+              const accent = personalityAccent(play.personalityEvent.personality)
+              return (
+                <p style={{
+                  fontSize: '13px',
+                  color: '#e2e8f0',
+                  fontStyle: 'italic',
+                  margin: '4px 0 0',
+                  backgroundColor: `${accent}10`,
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  borderLeft: `2px solid ${accent}`,
+                }}>
+                  {play.personalityEvent.text}
+                </p>
+              )
+            })()}
             {play.scoreChange && play.homeTeamScore != null && (
               <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                 {gameData.homeTeam.abbr} {play.homeTeamScore} – {play.awayTeamScore} {gameData.awayTeam.abbr}

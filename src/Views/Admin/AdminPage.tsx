@@ -44,6 +44,17 @@ interface MonitorData {
   timing: { mode: string | null; catchingUp: boolean }
   counts: { teams: number; activePlayers: number; freeAgents: number; retiredPlayers: number; hallOfFame: number }
   websockets: { total_connections: number; unique_users: number; channels: Record<string, number> }
+  personality?: {
+    total: number
+    baseVibes: number
+    commonVariants: number
+    rareVariants: number
+    unassigned: number
+    quirked: number
+    rareVariantList: string[]
+    personalityCounts: Record<string, number>
+    quirkCounts: Record<string, number>
+  }
 }
 
 interface AnalyticsData {
@@ -722,6 +733,17 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     counts: { teams: number; activePlayers: number; freeAgents: number; retiredPlayers: number; hallOfFame: number }
     memory: { rssMb: number; totalMb?: number; scheduleGames: number; gamesWithPlays: number; totalPlaysInMemory: number; pid: number }
     websockets: Record<string, any>
+    personality?: {
+      total: number
+      baseVibes: number
+      commonVariants: number
+      rareVariants: number
+      unassigned: number
+      quirked: number
+      rareVariantList: string[]
+      personalityCounts: Record<string, number>
+      quirkCounts: Record<string, number>
+    }
   }
   const [monitorData, setMonitorData] = useState<MonitorData | null>(null)
   const [monitorError, setMonitorError] = useState<string | null>(null)
@@ -859,7 +881,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
           <div style={{ fontSize: '13px', color: '#ef4444', marginBottom: '12px' }}>{monitorError}</div>
         )}
         {monitorData && (() => {
-          const { deploySafety, simulation, season, liveGames, timing, counts, memory, websockets } = monitorData
+          const { deploySafety, simulation, season, liveGames, timing, counts, memory, websockets, personality } = monitorData
           const statBox: React.CSSProperties = {
             backgroundColor: '#0f172a', borderRadius: '6px', padding: '12px 14px',
           }
@@ -989,6 +1011,62 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
               <div style={{ ...statBox, marginTop: '10px', display: 'flex', gap: '24px' }}>
                 {season.champion && <div style={smallStat}>Champion: <span style={{ color: '#fbbf24', fontWeight: '600' }}>{season.champion}</span></div>}
                 {season.mvp && <div style={smallStat}>MVP: <span style={{ color: '#fbbf24', fontWeight: '600' }}>{season.mvp}</span></div>}
+              </div>
+            )}
+
+            {/* Personality Distribution */}
+            {personality && personality.total > 0 && (
+              <div style={{ ...statBox, marginTop: '10px' }}>
+                <div style={{ ...statLabel, marginBottom: '8px' }}>Personality Distribution</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '10px' }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>Base Vibes</div>
+                    <div style={{ ...statValue, fontSize: '20px' }}>{personality.baseVibes}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>Common Variants</div>
+                    <div style={{ ...statValue, fontSize: '20px', color: '#a78bfa' }}>{personality.commonVariants}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>Rare Variants</div>
+                    <div style={{ ...statValue, fontSize: '20px', color: '#f59e0b' }}>{personality.rareVariants}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>Quirked</div>
+                    <div style={{ ...statValue, fontSize: '20px' }}>{personality.quirked}</div>
+                  </div>
+                </div>
+                {personality.unassigned > 0 && (
+                  <div style={{ fontSize: '11px', color: '#f59e0b', marginBottom: '8px' }}>
+                    {personality.unassigned} unassigned (will be backfilled on next boot)
+                  </div>
+                )}
+                {personality.rareVariantList.length > 0 && (
+                  <div style={{ fontSize: '11px', color: '#cbd5e1', marginBottom: '8px' }}>
+                    <span style={{ color: '#94a3b8' }}>Rare variants in league:</span>{' '}
+                    {personality.rareVariantList.join(', ')}
+                  </div>
+                )}
+                <details style={{ marginTop: '8px' }}>
+                  <summary style={{ cursor: 'pointer', fontSize: '11px', color: '#94a3b8' }}>
+                    Personality counts
+                  </summary>
+                  <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '6px', columnCount: 2, columnGap: '20px' }}>
+                    {Object.entries(personality.personalityCounts).map(([name, count]) => (
+                      <div key={name}>{name}: {count}</div>
+                    ))}
+                  </div>
+                </details>
+                <details style={{ marginTop: '4px' }}>
+                  <summary style={{ cursor: 'pointer', fontSize: '11px', color: '#94a3b8' }}>
+                    Quirk counts
+                  </summary>
+                  <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '6px', columnCount: 2, columnGap: '20px' }}>
+                    {Object.entries(personality.quirkCounts).map(([name, count]) => (
+                      <div key={name}>{name}: {count}</div>
+                    ))}
+                  </div>
+                </details>
               </div>
             )}
           </>
