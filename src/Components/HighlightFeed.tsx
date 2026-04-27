@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react'
 import { useGames } from '@/contexts/GamesContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
+import { personalityAccent } from '@/utils/personality'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -55,9 +56,6 @@ const getBadge = (play: any): { label: string; color: string } | null => {
     if (play.playType === 'FieldGoal') return { label: 'FG', color: '#22c55e' }
     return { label: 'SCORE', color: '#22c55e' }
   }
-  if (play.isClutchPlay) return { label: 'CLUTCH', color: '#06b6d4' }
-  if (play.isChokePlay) return { label: 'CHOKE', color: '#ef4444' }
-  if (play.isMomentumShift) return { label: 'MOMENTUM', color: '#f97316' }
   return null
 }
 
@@ -109,7 +107,13 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
 
       plays.forEach((play: any) => {
         if (!play.playNumber) return
-        if (!(play.isTouchdown || play.isTurnover || play.scoreChange || play.isBigPlay || play.isClutchPlay || play.isChokePlay || play.isMomentumShift)) return
+
+        // Sideline cutaways are intentionally excluded from the global highlights
+        // feed (too chatty across many simultaneous games). They still appear in
+        // the per-game modal where they belong as flavor.
+        if (play.isSidelineCutaway) return
+
+        if (!(play.isTouchdown || play.isTurnover || play.scoreChange)) return
 
         // For turnovers (without TD), feature the defensive team — they benefited
         const isTurnoverOnly = play.isTurnover && !play.isTouchdown
@@ -221,7 +225,6 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
           )
         }
 
-        // Game-start card
         if (item.type === 'game_start') {
           const { homeTeam, awayTeam, gameId } = item
           return (
@@ -257,7 +260,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
             <div
               onClick={() => onPlayClick(gameId)}
               style={{
-                backgroundColor: play.isBigPlay ? '#1a1300' : `${featuredTeam.color}15`,
+                backgroundColor: `${featuredTeam.color}15`,
                 borderRadius: '6px',
                 padding: '10px 12px',
                 cursor: 'pointer',
@@ -273,11 +276,6 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
                 <span style={{ fontSize: '12px', color: '#94a3b8' }}>
                   {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} {play.timeRemaining}
                 </span>
-                {play.isBigPlay && (
-                  <svg viewBox="0 0 24 24" fill="#d97706" style={{ width: '12px', height: '12px', flexShrink: 0 }} title="Big WP swing">
-                    <path d="M3.75 13.5 14.25 2.25 12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
-                  </svg>
-                )}
               </div>
               {badge && (
                 <span style={{
@@ -301,21 +299,20 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
               {play.description}
             </p>
 
-            {/* Personality event (Layer 1/2/3 reaction) */}
+            {/* Personality reaction (vibe or variant + optional quirk) */}
             {play.personalityEvent && (() => {
-              const layer = play.personalityEvent.layer
-              const accent = layer === 'crowd' ? '#a78bfa' : layer === 'quirk' ? '#f472b6' : '#38bdf8'
+              const accent = personalityAccent(play.personalityEvent.personality)
               return (
                 <p style={{
-                  fontSize: '11px',
+                  fontSize: '13px',
                   color: '#e2e8f0',
                   fontStyle: 'italic',
                   margin: '0 0 4px 22px',
-                  padding: '3px 6px',
-                  borderRadius: '3px',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
                   backgroundColor: `${accent}12`,
                   borderLeft: `2px solid ${accent}`,
-                  lineHeight: '1.4',
+                  lineHeight: '1.45',
                 }}>
                   {play.personalityEvent.text}
                 </p>

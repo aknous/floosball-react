@@ -222,15 +222,14 @@ export interface PlayInsights {
   playCall?: 'run' | 'short' | 'medium' | 'long'
 }
 
-// Personality reaction event fired on significant plays (Layer 1 archetype,
-// Layer 2 quirk sideline, Layer 3 crowd atmosphere).
+// Personality reaction event fired on significant plays. Combines the
+// player's personality (vibe or variant) with their optional quirk to
+// produce a flavor line displayed beneath the play.
 export interface PersonalityEvent {
-  layer: 'archetype' | 'quirk' | 'crowd'
   text: string
   playerId: number
   playerName: string
-  archetype: string
-  demeanor: string | null
+  personality: string  // base vibe or variant name
   quirk: string | null
   event: string  // trigger key like 'td_scored', 'int_thrown'
 }
@@ -474,6 +473,22 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   homeTimeouts: number
   awayTimeouts: number
   gameStats?: GameStats
+  sidelineCutaway?: SidelineCutaway | null
+}
+
+// Sideline cutaway — fires on downtime moments (possession changes, halftime,
+// quarter starts, two-minute warning). Catches a random sideline player
+// mid-activity, broadcaster-cutaway style.
+export interface SidelineCutaway {
+  text: string
+  playerId: number
+  playerName: string
+  teamId: number | null
+  teamAbbr: string | null
+  personality: string
+  quirk: string | null
+  event: string  // 'sideline'
+  trigger?: string  // 'possession_change' | 'event' | 'halftime'
 }
 
 export interface TeamGameStats {

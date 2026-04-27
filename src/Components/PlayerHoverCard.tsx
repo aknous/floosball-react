@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import { Link } from 'react-router-dom'
 import PlayerAvatar from './PlayerAvatar'
 import { Stars, SwordIcon, ShieldIcon } from './Stars'
+import { personalityAccent, personalityTier } from '@/utils/personality'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -28,20 +29,10 @@ interface PlayerDetail {
     xFactorStars?: number; xFactorValue?: number
     seasonPerformanceRating?: number
     fatigue?: number
-    mood?: string
-    moodTier?: string
-    demeanor?: string
-    demeanorDrift?: {
-      direction: 'composed' | 'volatile'
-      from?: string
-    }
-    personality?: {
-      archetype?: string
-      archetypeLabel?: string
-      quirk?: string
-      quirkLabel?: string
-      quirkTier?: string
-    }
+    mood?: string         // mood name like "Composed" / "Studying"
+    moodTier?: string     // tier name like "steady" / "electric"
+    personality?: string  // personality key like "stoic" / "alien"
+    quirk?: string        // quirk key like "snacker" / "bling"
   }
 }
 
@@ -65,13 +56,9 @@ const MOOD_COLORS: Record<string, string> = {
   miserable: '#ef4444',
 }
 
-// Rarity-tier color mapping for quirks (mirrors backend personalityData tiers)
-const QUIRK_TIER_COLORS: Record<string, string> = {
-  common:   '#94a3b8',
-  uncommon: '#c4b5fd',
-  rare:     '#f472b6',
-  unique:   '#a5f3fc',
-}
+// Display labels: "stoic" → "Stoic", "trash_talker" → "Trash Talker"
+const formatLabel = (key: string): string =>
+  key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 
 const CARD_WIDTH = 260
 const CARD_HEIGHT_EST = 260
@@ -212,59 +199,25 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
           )
         })()}
 
-        {/* Archetype label (permanent identity) */}
-        {att?.personality?.archetypeLabel && (
-          <div style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '6px' }}>
-            {att.personality.archetypeLabel}
-          </div>
-        )}
-
-        {/* Demeanor + Mood + Quirk badges */}
-        {(att?.demeanor || att?.mood || att?.personality?.quirkLabel) && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
-            {att.demeanor && (
+        {/* Mood badge — personality-flavored mood name only; the personality itself stays hidden */}
+        {att?.mood && (() => {
+          const accent = att.personality ? personalityAccent(att.personality) : '#94a3b8'
+          return (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
               <span style={{
-                fontSize: '11px', color: '#cbd5e1', backgroundColor: '#334155',
-                padding: '3px 8px', borderRadius: '4px',
+                fontSize: '11px',
+                color: accent,
+                backgroundColor: `${accent}1a`,
+                border: `1px solid ${accent}66`,
+                padding: '3px 8px',
+                borderRadius: '4px',
+                fontWeight: '600',
               }}>
-                Demeanor: <span style={{ fontWeight: '600' }}>{att.demeanor}</span>
-                {att.demeanorDrift && (
-                  <span style={{
-                    marginLeft: '4px',
-                    color: att.demeanorDrift.direction === 'volatile' ? '#f97316' : '#38bdf8',
-                  }}>
-                    {att.demeanorDrift.direction === 'volatile' ? '↗' : '↙'}
-                  </span>
-                )}
+                Mood: <span style={{ fontWeight: '700' }}>{att.mood}</span>
               </span>
-            )}
-            {att.mood && (
-              <span style={{
-                fontSize: '11px', color: MOOD_COLORS[att.moodTier || 'steady'] || '#94a3b8',
-                backgroundColor: '#334155', padding: '3px 8px', borderRadius: '4px',
-              }}>
-                Mood: <span style={{ fontWeight: '600' }}>{att.mood}</span>
-              </span>
-            )}
-            {att?.personality?.quirkLabel && (() => {
-              const tier = (att.personality.quirkTier || 'common').toLowerCase()
-              const color = QUIRK_TIER_COLORS[tier] || '#94a3b8'
-              return (
-                <span style={{
-                  fontSize: '11px',
-                  color,
-                  backgroundColor: `${color}22`,
-                  border: `1px solid ${color}55`,
-                  padding: '3px 8px',
-                  borderRadius: '4px',
-                  fontWeight: '600',
-                }}>
-                  {att.personality.quirkLabel}
-                </span>
-              )
-            })()}
-          </div>
-        )}
+            </div>
+          )
+        })()}
       </div>
     </div>,
     document.body
