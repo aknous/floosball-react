@@ -633,36 +633,27 @@ const CardEquipment: React.FC = () => {
                       </div>
                     </HoverTooltip>
                   )}
-                  {/* Projection chip — what this card is projected to
-                      output this week based on season averages */}
+                  {/* Projection chip — primary value only on the mini card.
+                      Ceiling info shows on the expanded card view. */}
                   {(() => {
                     const proj = projectionBySlot.get(slotNum)
                     if (!proj) return null
                     const style = projectionPillStyle(proj)
                     return (
-                      <div style={{ marginTop: '3px', display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                        <span
-                          style={{
-                            display: 'inline-flex', alignItems: 'center',
-                            fontSize: '11px', fontWeight: 700,
-                            color: style.color, backgroundColor: style.bg,
-                            padding: '2px 7px', borderRadius: '4px',
-                            fontVariantNumeric: 'tabular-nums' as const,
-                            whiteSpace: 'nowrap' as const,
-                          }}
-                        >
-                          {style.label}
-                        </span>
-                        {style.ceiling && (
-                          <span style={{
-                            fontSize: '9px', color: style.color, opacity: 0.8,
-                            fontVariantNumeric: 'tabular-nums' as const,
-                            whiteSpace: 'nowrap' as const,
-                          }}>
-                            {style.ceiling}
-                          </span>
-                        )}
-                      </div>
+                      <span
+                        title={style.ceiling}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center',
+                          marginTop: '3px',
+                          fontSize: '11px', fontWeight: 700,
+                          color: style.color, backgroundColor: style.bg,
+                          padding: '2px 7px', borderRadius: '4px',
+                          fontVariantNumeric: 'tabular-nums' as const,
+                          whiteSpace: 'nowrap' as const,
+                        }}
+                      >
+                        {style.label}
+                      </span>
                     )
                   })()}
                 </div>
