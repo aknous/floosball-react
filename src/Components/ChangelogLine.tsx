@@ -12,6 +12,7 @@ const TAG_COLORS: Record<string, { fg: string; bg: string }> = {
   'Team Funding':  { fg: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
   'Discord':       { fg: '#818cf8', bg: 'rgba(129,140,248,0.12)' },
   'Guide':         { fg: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
+  'Personality':   { fg: '#fb7185', bg: 'rgba(251,113,133,0.12)' },
 }
 
 const TAG_RE = /^\[([^\]]+)\]\s*/

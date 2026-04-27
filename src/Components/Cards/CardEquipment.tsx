@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useCardProjection, CardProjection, projectionPillStyle } from '@/hooks/useCardProjection'
 import { createAvatar } from '@dicebear/core'
 import { openPeeps } from '@dicebear/collection'
 
@@ -154,6 +155,41 @@ const EquippedCardSlot: React.FC<{
   )
 }
 
+/**
+ * Projection pill — direct output for simple cards, descriptive status
+ * for amplifiers (context-checked against the equipped hand).
+ */
+const ProjectionPill: React.FC<{ proj: CardProjection }> = ({ proj }) => {
+  const style = projectionPillStyle(proj)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+      <span
+        style={{
+          display: 'inline-flex', alignItems: 'center',
+          fontSize: '12px', fontWeight: 700,
+          color: style.color, backgroundColor: style.bg,
+          padding: '4px 10px', borderRadius: '5px',
+          border: `1px solid ${style.color}55`,
+          fontVariantNumeric: 'tabular-nums' as const,
+          whiteSpace: 'nowrap' as const,
+        }}
+      >
+        {style.label}
+      </span>
+      {style.ceiling && (
+        <span style={{
+          fontSize: '10px', color: style.color, opacity: 0.8,
+          fontVariantNumeric: 'tabular-nums' as const,
+          whiteSpace: 'nowrap' as const,
+        }}>
+          {style.ceiling}
+        </span>
+      )}
+    </div>
+  )
+}
+
+
 const CardEquipment: React.FC = () => {
   const { getToken, fantasyPlayerIds } = useAuth()
   const { event: wsEvent, connected: wsConnected } = useSeasonWebSocket()
@@ -168,10 +204,30 @@ const CardEquipment: React.FC = () => {
   const [saving, setSaving] = useState(false)
   const [gamesActive, setGamesActive] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [extraSlotPowerup, setExtraSlotPowerup] = useState<{
+    slug: string
+    displayName: string
+    expiresAtWeek: number
+    weeksRemaining: number
+    expiring: boolean
+    pending: boolean
+  } | null>(null)
 
   const [deckCards, setDeckCards] = useState<CardData[]>([])
   const [deckLoading, setDeckLoading] = useState(false)
   const deckFetchedRef = useRef(false)
+
+  // Equipped-card projections keyed by slot. The picker modal fetches
+  // its own slot-scoped candidate projections when it opens. The
+  // Eligible Cards browse grid also fetches candidates (no slot target)
+  // so users see per-card output / amplifier status while browsing.
+  const { equipped: equippedProjection } = useCardProjection(false)
+  const { candidatesByUserCardId: browseCandidates } = useCardProjection(expanded, null)
+  const projectionBySlot = useMemo(() => {
+    const m = new Map<number, CardProjection>()
+    for (const c of equippedProjection?.cards ?? []) m.set(c.slotNumber, c)
+    return m
+  }, [equippedProjection])
 
   const isLocked = slots.some(s => s?.locked)
   const displaySlots = slots
@@ -189,6 +245,7 @@ const CardEquipment: React.FC = () => {
       setGamesActive(json.data?.gamesActive ?? false)
       const slotCount = json.data?.hasExtraSlot ? 6 : 5
       setNumSlots(slotCount)
+      setExtraSlotPowerup(json.data?.extraSlotPowerup ?? null)
 
       const newSlots: (EquippedSlot | null)[] = Array(slotCount).fill(null)
       for (const eq of equipped) {
@@ -431,6 +488,33 @@ const CardEquipment: React.FC = () => {
         )}
       </div>
 
+      {/* Accession (6th slot) expiry indicator — mirrors the FLEX Slot line
+          in FantasyRoster so users know when the extra slot powerup lapses. */}
+      {extraSlotPowerup && (
+        <div style={{
+          fontSize: isMobile ? '12px' : '13px', color: '#22d3ee', lineHeight: '1.5',
+          marginTop: '6px', marginBottom: '6px', padding: isMobile ? '6px 10px' : '6px 14px',
+          backgroundColor: 'rgba(34,211,238,0.08)', borderRadius: '8px',
+          border: '1px solid rgba(34,211,238,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <span style={{ fontWeight: '700' }}>
+            {extraSlotPowerup.pending ? 'Accession Pending' : '6th Slot Active'}
+          </span>
+          <span style={{
+            fontSize: '10px',
+            color: extraSlotPowerup.expiring ? '#f59e0b' : '#94a3b8',
+            fontWeight: extraSlotPowerup.expiring ? '700' : '400',
+          }}>
+            {extraSlotPowerup.pending
+              ? `Starts next week \u00b7 ${extraSlotPowerup.weeksRemaining} week${extraSlotPowerup.weeksRemaining !== 1 ? 's' : ''}`
+              : extraSlotPowerup.expiring
+                ? 'Expires after this week'
+                : `${extraSlotPowerup.weeksRemaining} week${extraSlotPowerup.weeksRemaining !== 1 ? 's' : ''} remaining`}
+          </span>
+        </div>
+      )}
+
       {/* Collapsed mini-cards */}
       {!expanded && !loading && (
         <div style={{
@@ -549,6 +633,29 @@ const CardEquipment: React.FC = () => {
                       </div>
                     </HoverTooltip>
                   )}
+                  {/* Projection chip — primary value only on the mini card.
+                      Ceiling info shows on the expanded card view. */}
+                  {(() => {
+                    const proj = projectionBySlot.get(slotNum)
+                    if (!proj) return null
+                    const style = projectionPillStyle(proj)
+                    return (
+                      <span
+                        title={style.ceiling}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center',
+                          marginTop: '3px',
+                          fontSize: '11px', fontWeight: 700,
+                          color: style.color, backgroundColor: style.bg,
+                          padding: '2px 7px', borderRadius: '4px',
+                          fontVariantNumeric: 'tabular-nums' as const,
+                          whiteSpace: 'nowrap' as const,
+                        }}
+                      >
+                        {style.label}
+                      </span>
+                    )
+                  })()}
                 </div>
               </div>
             )
@@ -577,17 +684,22 @@ const CardEquipment: React.FC = () => {
                 const tourTag = !firstCardTagged ? 'fantasy-card-read' : undefined
                 const flipProp = tourTag ? tourFlipped : undefined
                 firstCardTagged = true
+                const proj = projectionBySlot.get(slotNum)
                 return (
-                  <EquippedCardSlot
-                    key={slotNum}
-                    slot={slot}
-                    slotNum={slotNum}
-                    canEdit={canEdit}
-                    onUnequip={handleUnequip}
-                    compact
-                    dataTour={tourTag}
-                    forceFlipped={flipProp}
-                  />
+                  <div key={slotNum} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                    <EquippedCardSlot
+                      slot={slot}
+                      slotNum={slotNum}
+                      canEdit={canEdit}
+                      onUnequip={handleUnequip}
+                      compact
+                      dataTour={tourTag}
+                      forceFlipped={flipProp}
+                    />
+                    {proj && (
+                      <ProjectionPill proj={proj} />
+                    )}
+                  </div>
                 )
               }
 
@@ -686,21 +798,30 @@ const CardEquipment: React.FC = () => {
             }}>
               {availableDeck.map(card => {
                 const isMatch = fantasyPlayerIds.has(card.playerId)
+                const proj = browseCandidates.get(card.id)
                 return (
-                  <div key={card.id} style={{ position: 'relative', transition: 'transform 0.15s ease' }}
+                  <div key={card.id} style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                    transition: 'transform 0.15s ease',
+                  }}
                     onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-4px)')}
                     onMouseLeave={e => (e.currentTarget.style.transform = 'none')}>
-                    <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch ? (card.teamColor || '#ffffff') : undefined} staticGlow noHoverLift />
-                    {isMatch && (
-                      <div style={{
-                        position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
-                        fontSize: '8px', color: '#60a5fa', fontWeight: '700',
-                        backgroundColor: 'rgba(96,165,250,0.20)',
-                        padding: '2px 5px', borderRadius: '4px',
-                        pointerEvents: 'none',
-                      }}>
-                        MATCH
-                      </div>
+                    <div style={{ position: 'relative' }}>
+                      <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch ? (card.teamColor || '#ffffff') : undefined} staticGlow noHoverLift />
+                      {isMatch && (
+                        <div style={{
+                          position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
+                          fontSize: '8px', color: '#60a5fa', fontWeight: '700',
+                          backgroundColor: 'rgba(96,165,250,0.20)',
+                          padding: '2px 5px', borderRadius: '4px',
+                          pointerEvents: 'none',
+                        }}>
+                          MATCH
+                        </div>
+                      )}
+                    </div>
+                    {proj && (
+                      <ProjectionPill proj={proj} />
                     )}
                   </div>
                 )
@@ -716,6 +837,7 @@ const CardEquipment: React.FC = () => {
         onSelect={(card) => pickerSlot && handleEquip(card, pickerSlot)}
         excludeCardIds={equippedCardIds}
         rosterPlayerIds={fantasyPlayerIds}
+        targetSlot={pickerSlot}
       />
     </div>
   )

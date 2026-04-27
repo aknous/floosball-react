@@ -188,6 +188,17 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               }
             }
 
+            // Sideline cutaway — render as a flavor entry in the feed (between
+            // plays, ordered immediately after the play that just happened).
+            const cutawayEntry = gsEvt.sidelineCutaway ? {
+              isSidelineCutaway: true,
+              sidelineCutaway: gsEvt.sidelineCutaway,
+              quarter: gsEvt.quarter,
+              timeRemaining: gsEvt.timeRemaining,
+              // give it a sortable playNumber just after the most recent play
+              playNumber: (existingPlays[0]?.playNumber ?? 0) + 0.5,
+            } : null
+
             updated.set(gameId, {
               ...curGame,
               status: gsEvt.status,
@@ -213,7 +224,12 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               momentum: gsEvt.momentum,
               momentumTeam: gsEvt.momentumTeam,
               gameStats: gsEvt.gameStats ?? curGame.gameStats,
-              plays: lastPlayData ? [lastPlayData, ...existingPlays] : existingPlays
+              plays: (() => {
+                let next = existingPlays
+                if (lastPlayData) next = [lastPlayData, ...next]
+                if (cutawayEntry) next = [cutawayEntry, ...next]
+                return next
+              })(),
             })
             break
           }

@@ -120,7 +120,7 @@ const SAMPLE_CARDS: CardData[] = [
     edition: 'prismatic', seasonCreated: 1, isRookie: false,
     displayName: 'On Fire', category: 'streak', outputType: 'mult',
     tagline: 'Keep the flame alive',
-    tooltip: "Don't let the flame die. FPx that grows each week your K slot makes a FG. Resets if they don't.",
+    tooltip: "Don't let the flame die. FPx that grows each week your roster's K makes a FG. Resets if they don't.",
     detail: '1.03 FPx, +0.01 per consecutive FG week. Resets if no FG. Each other streak card adds +1 bonus tick',
     sellValue: 75, isActive: true, acquiredAt: null, acquiredVia: '',
     effectConfig: { displayName: 'On Fire', tagline: 'Keep the flame alive', detail: '1.03 FPx, +0.01 per consecutive FG week. Resets if no FG', category: 'streak', outputType: 'mult' },
