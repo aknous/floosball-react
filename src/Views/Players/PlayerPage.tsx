@@ -52,6 +52,11 @@ interface PlayerAttributes {
   demeanor?: string
   demeanorDrift?: DemeanorDrift
   personality?: PersonalityBlock
+  // Flavor fields — assigned once at player creation
+  hometown?: string
+  favorite_category?: string
+  favorite_item?: string
+  motto?: string
 }
 
 interface PlayerData {
@@ -627,6 +632,42 @@ export default function PlayerPage() {
                       </span>
                     )
                   })()}
+                </div>
+              )}
+
+              {/* Flavor — hometown, favorite, motto. Pure character flavor. */}
+              {(att?.hometown || att?.favorite_item || att?.motto) && (
+                <div style={{
+                  marginTop: '14px',
+                  paddingTop: '12px',
+                  borderTop: '1px solid #334155',
+                  display: 'flex',
+                  flexDirection: 'column' as const,
+                  gap: '6px',
+                  fontSize: '13px',
+                  color: '#cbd5e1',
+                  textAlign: 'left' as const,
+                }}>
+                  {att.hometown && (
+                    <div>
+                      <span style={{ color: '#64748b', fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginRight: '8px' }}>From</span>
+                      {att.hometown}
+                    </div>
+                  )}
+                  {att.favorite_item && att.favorite_category && (
+                    <div>
+                      <span style={{ color: '#64748b', fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginRight: '8px' }}>
+                        Favorite {att.favorite_category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      </span>
+                      {att.favorite_item}
+                    </div>
+                  )}
+                  {att.motto && (
+                    <div style={{ marginTop: '4px', fontStyle: 'italic' as const, color: '#e2e8f0' }}>
+                      <span style={{ color: '#64748b', fontStyle: 'normal' as const, fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginRight: '8px' }}>Motto</span>
+                      "{att.motto}"
+                    </div>
+                  )}
                 </div>
               )}
             </div>
