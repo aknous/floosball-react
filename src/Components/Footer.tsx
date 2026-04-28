@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useAppSettings } from '@/hooks/useAppSettings'
 import { CHANGELOG, ChangelogEntry } from '@/data/changelog'
 import { ChangelogLine } from '@/Components/ChangelogLine'
 
@@ -72,6 +73,7 @@ export const Footer: React.FC = () => {
   const panelRef = useRef<HTMLDivElement>(null)
   const isMobile = useIsMobile()
   const latest = CHANGELOG[0]
+  const { feedback_url, feedback_visible } = useAppSettings()
 
   useEffect(() => {
     if (!showChangelog) return
@@ -122,22 +124,24 @@ export const Footer: React.FC = () => {
           >
             Discord
           </a>
-          <a
-            href="https://forms.gle/s2ycdsBLxTpsWEk4A"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: '#94a3b8',
-              textDecoration: 'none',
-              fontSize: '13px',
-              fontWeight: '500',
-              transition: 'color 0.15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#cbd5e1')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
-          >
-            Feedback
-          </a>
+          {feedback_visible && (
+            <a
+              href={feedback_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: '#94a3b8',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: '500',
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#cbd5e1')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
+            >
+              Feedback
+            </a>
+          )}
         </div>
 
         <div ref={badgeRef} style={{ position: 'relative' }}>

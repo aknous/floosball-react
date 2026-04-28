@@ -2,14 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useAppSettings } from '@/hooks/useAppSettings'
 
-const SURVEY_URL = 'https://forms.gle/s2ycdsBLxTpsWEk4A'
 const STORAGE_KEY = 'lastSeenSurveySeason'
 const MID_SEASON_WEEK = 15
 
 const SurveyModal: React.FC = () => {
   const { seasonState } = useFloosball()
   const isMobile = useIsMobile()
+  const { survey_url } = useAppSettings()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -40,7 +41,7 @@ const SurveyModal: React.FC = () => {
   }, [seasonState.seasonNumber])
 
   const handleTakeSurvey = () => {
-    window.open(SURVEY_URL, '_blank')
+    window.open(survey_url, '_blank')
     handleDismiss()
   }
 
