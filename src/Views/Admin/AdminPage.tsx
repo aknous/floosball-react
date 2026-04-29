@@ -827,8 +827,8 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
 
   // ── App Settings ──────────────────────────────────────────────────
   const [settingsForm, setSettingsForm] = useState<{
-    feedback_url: string; feedback_visible: boolean; survey_url: string
-  }>({ feedback_url: '', feedback_visible: true, survey_url: '' })
+    feedback_url: string; feedback_visible: boolean; survey_url: string; survey_visible: boolean; survey_text: string
+  }>({ feedback_url: '', feedback_visible: true, survey_url: '', survey_visible: false, survey_text: '' })
   const [settingsLoading, setSettingsLoading] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
@@ -844,6 +844,8 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
         feedback_url: data.feedback_url || '',
         feedback_visible: data.feedback_visible !== false,
         survey_url: data.survey_url || '',
+        survey_visible: data.survey_visible === true,
+        survey_text: data.survey_text || '',
       })
     } catch (e: any) {
       setSettingsError(e?.message || 'Failed to load settings')
@@ -2274,6 +2276,44 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
                 fontFamily: 'inherit',
               }}
             />
+          </div>
+
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#cbd5e1', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={settingsForm.survey_visible}
+                onChange={e => setSettingsForm(s => ({ ...s, survey_visible: e.target.checked }))}
+                disabled={settingsLoading}
+                style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+              />
+              Show survey modal this week
+            </label>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
+              Survey modal text
+            </label>
+            <textarea
+              value={settingsForm.survey_text}
+              onChange={e => setSettingsForm(s => ({ ...s, survey_text: e.target.value }))}
+              disabled={settingsLoading}
+              placeholder="Leave empty to use the default copy."
+              rows={5}
+              style={{
+                width: '100%', padding: '10px 12px',
+                fontSize: '13px', color: '#e2e8f0',
+                backgroundColor: '#0f172a',
+                border: '1px solid #334155', borderRadius: '4px',
+                fontFamily: 'inherit',
+                resize: 'vertical' as const,
+                lineHeight: 1.5,
+              }}
+            />
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+              Shown above the "Take the Survey" button. Newlines are preserved.
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>

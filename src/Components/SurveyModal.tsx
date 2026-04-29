@@ -10,10 +10,14 @@ const MID_SEASON_WEEK = 15
 const SurveyModal: React.FC = () => {
   const { seasonState } = useFloosball()
   const isMobile = useIsMobile()
-  const { survey_url } = useAppSettings()
+  const { survey_url, survey_visible, survey_text } = useAppSettings()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    if (!survey_visible) {
+      setVisible(false)
+      return
+    }
     const sn = seasonState.seasonNumber
     const week = seasonState.currentWeek
     if (!sn || sn <= 0 || !week || week < MID_SEASON_WEEK) return
@@ -21,7 +25,7 @@ const SurveyModal: React.FC = () => {
     if (lastSeen !== String(sn)) {
       setVisible(true)
     }
-  }, [seasonState.seasonNumber, seasonState.currentWeek])
+  }, [seasonState.seasonNumber, seasonState.currentWeek, survey_visible])
 
   useEffect(() => {
     if (!visible) return
@@ -108,22 +112,36 @@ const SurveyModal: React.FC = () => {
 
         {/* Content */}
         <div style={{ padding: '22px 28px 28px' }}>
-          <p style={{
-            color: '#cbd5e1',
-            fontSize: '13px',
-            lineHeight: '1.7',
-            margin: '0 0 16px',
-          }}>
-            We want to know what you think. Does this suck? Does it rule? Are you in love? What would you change? Please take a quick survey to help us make Floosball even better!
-          </p>
-          <p style={{
-            color: '#94a3b8',
-            fontSize: '12px',
-            lineHeight: '1.6',
-            margin: '0 0 24px',
-          }}>
-            This is a new survey! If you filled out last week's, please take this one too. Your answers help shape what comes next. Thanks to all who participated last week! Your responses helped dictate some of the changes that were implemented in the latest update.
-          </p>
+          {survey_text && survey_text.trim() ? (
+            <p style={{
+              color: '#cbd5e1',
+              fontSize: '13px',
+              lineHeight: '1.7',
+              margin: '0 0 24px',
+              whiteSpace: 'pre-wrap' as const,
+            }}>
+              {survey_text}
+            </p>
+          ) : (
+            <>
+              <p style={{
+                color: '#cbd5e1',
+                fontSize: '13px',
+                lineHeight: '1.7',
+                margin: '0 0 16px',
+              }}>
+                We want to know what you think. Does this suck? Does it rule? Are you in love? What would you change? Please take a quick survey to help us make Floosball even better!
+              </p>
+              <p style={{
+                color: '#94a3b8',
+                fontSize: '12px',
+                lineHeight: '1.6',
+                margin: '0 0 24px',
+              }}>
+                This is a new survey! If you filled out last week's, please take this one too. Your answers help shape what comes next. Thanks to all who participated last week! Your responses helped dictate some of the changes that were implemented in the latest update.
+              </p>
+            </>
+          )}
 
           <button
             onClick={handleTakeSurvey}

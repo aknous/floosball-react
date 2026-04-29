@@ -6,12 +6,16 @@ export interface AppSettings {
   feedback_url: string
   feedback_visible: boolean
   survey_url: string
+  survey_visible: boolean
+  survey_text: string
 }
 
 const DEFAULTS: AppSettings = {
   feedback_url: 'https://forms.gle/s2ycdsBLxTpsWEk4A',
   feedback_visible: true,
   survey_url: 'https://forms.gle/s2ycdsBLxTpsWEk4A',
+  survey_visible: false,
+  survey_text: '',
 }
 
 let cache: AppSettings | null = null
