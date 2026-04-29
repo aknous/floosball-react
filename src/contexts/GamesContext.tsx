@@ -52,10 +52,16 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             }
           })
 
-          // Merge: use API plays as base, overlay any enrichment from WebSocket
+          // Merge: use API plays as base, overlay any enrichment from WebSocket.
+          // Stamp _receivedAt for plays that came from REST without one — back-
+          // dated by one hour so they always sort below anything fired live.
+          const restBaseMs = Date.now() - 60 * 60 * 1000
           const mergedPlays = gameData.plays.map((p: any) => {
             const enrich = enrichByPlayNumber.get(p.playNumber)
-            return enrich ? { ...p, ...enrich } : p
+            const merged = enrich ? { ...p, ...enrich } : p
+            return merged._receivedAt
+              ? merged
+              : { ...merged, _receivedAt: restBaseMs - (1000 - (p.playNumber || 0)) * 1000 }
           })
 
           updated.set(gameId, { ...game, plays: mergedPlays, gameStats: gameData.gameStats ?? game.gameStats, matchupPreview: gameData.matchupPreview ?? game.matchupPreview })
@@ -167,8 +173,12 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
           case 'game_state': {
             const gsEvt = evt as any
+            // Stamp _receivedAt so the cross-source HighlightFeed can sort
+            // plays by recency against off-day events (which use epoch-ms).
+            const nowMs = Date.now()
             const lastPlayData = gsEvt.lastPlay ? {
               ...gsEvt.lastPlay,
+              _receivedAt: nowMs,
               homeWinProbability: gsEvt.homeWinProbability,
               awayWinProbability: gsEvt.awayWinProbability,
               homeWpa: gsEvt.homeWpa,
@@ -176,7 +186,9 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             } : null
 
             // finalPlay carries the actual last gameplay play alongside the "Final" event.
-            const finalPlayData = gsEvt.finalPlay ?? null
+            const finalPlayData = gsEvt.finalPlay
+              ? { ...gsEvt.finalPlay, _receivedAt: nowMs }
+              : null
             const curGame = updated.get(gameId)!
             let existingPlays = curGame.plays || []
             if (finalPlayData?.description) {
@@ -197,6 +209,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               timeRemaining: gsEvt.timeRemaining,
               // give it a sortable playNumber just after the most recent play
               playNumber: (existingPlays[0]?.playNumber ?? 0) + 0.5,
+              _receivedAt: nowMs,
             } : null
 
             updated.set(gameId, {
@@ -248,13 +261,14 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           case 'play_complete': {
             const pcEvt = evt as any
             const curGame = updated.get(gameId)!
+            const stampedPlay = { ...pcEvt.play, _receivedAt: Date.now() }
             updated.set(gameId, {
               ...curGame,
               quarter: pcEvt.play.quarter ?? curGame.quarter,
               timeRemaining: pcEvt.play.timeRemaining ?? curGame.timeRemaining,
               homeWinProbability: pcEvt.play.homeWinProbability ?? curGame.homeWinProbability,
               awayWinProbability: pcEvt.play.awayWinProbability ?? curGame.awayWinProbability,
-              plays: [pcEvt.play, ...(curGame.plays || [])]
+              plays: [stampedPlay, ...(curGame.plays || [])]
             })
             break
           }
@@ -287,8 +301,11 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               homeWinProbability: finalHomeWp,
               awayWinProbability: finalAwayWp,
               quarter: 4,
-              timeRemaining: '0:00'
-            })
+              timeRemaining: '0:00',
+              // Stamp when this game ended so the HighlightFeed can sort the
+              // game_end card by real recency, not pin it to the top forever.
+              _endedAt: Date.now(),
+            } as any)
             hasGameEnd = true
             break
           }

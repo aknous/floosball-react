@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
-import { createAvatar } from '@dicebear/core'
-import { openPeeps } from '@dicebear/collection'
 import { calcStars, STAR_COLORS } from '@/Components/Stars'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -706,19 +704,6 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const stars = card.ratingStars || calcStars(card.playerRating)
   const tierColor = getTierColor(card.playerRating)
 
-  const playerAvatarUri = useMemo(() => {
-    return createAvatar(openPeeps, {
-      seed: card.playerName,
-      size: d.avatar,
-      backgroundColor: [(card.teamColor || tierColor).replace('#', '')],
-      backgroundType: ['solid'],
-      maskProbability: 0,
-      facialHairProbability: 40,
-      accessoriesProbability: 40,
-      accessories: ['glasses', 'glasses2', 'glasses3', 'glasses4', 'glasses5', 'sunglasses', 'sunglasses2'],
-      headContrastColor: ['2c1b18', '4a312c', 'a55728', 'b58143', 'c93305', 'd6b370', 'cb8442', 'deb777', 'e8e1e1', '8d4a43'],
-    }).toDataUri()
-  }, [card.playerName, d.avatar, card.teamColor, tierColor])
 
   const edition = card.edition
   const glowConfig = GLOW_CONFIGS[edition]
@@ -808,14 +793,11 @@ const TradingCard: React.FC<TradingCardProps> = ({
             position: 'relative', zIndex: 3,
             minHeight: 0, overflow: 'hidden',
           }}>
-            {/* Player avatar */}
+            {/* Team avatar — center medallion (replaces player initials) */}
             <div style={{
               width: d.avatar, height: d.avatar,
               flexShrink: 0,
               borderRadius: '50%',
-              border: glowColor
-                ? `2.5px solid ${hexToRgba(glowColor, 0.85)}`
-                : `2px solid ${edStyle.borderColor}80`,
               boxShadow: glowColor
                 ? `0 0 8px ${hexToRgba(glowColor, 0.6)}, 0 0 18px ${hexToRgba(glowColor, 0.3)}`
                 : 'none',
@@ -824,14 +806,19 @@ const TradingCard: React.FC<TradingCardProps> = ({
               ['--glow-color-soft' as any]: glowColor ? hexToRgba(glowColor, 0.3) : undefined,
               ['--glow-color-bright' as any]: glowColor ? hexToRgba(glowColor, 0.9) : undefined,
               marginBottom: '2px',
-              background: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               overflow: 'hidden',
             }}>
-              <img
-                src={playerAvatarUri}
-                alt={card.playerName}
-                style={{ width: '100%', height: '100%' }}
-              />
+              {card.teamId ? (
+                <img
+                  src={`/avatars/${card.teamId}.png`}
+                  alt=""
+                  crossOrigin="anonymous"
+                  style={{ width: '90%', height: '90%', objectFit: 'contain' }}
+                />
+              ) : null}
             </div>
 
             {/* Position badge */}
@@ -895,22 +882,6 @@ const TradingCard: React.FC<TradingCardProps> = ({
               </div>
             )}
           </div>
-
-          {/* Small team avatar accent */}
-          {card.teamId && (
-            <img
-              src={`/avatars/${card.teamId}.png`}
-              alt=""
-              style={{
-                position: 'absolute',
-                bottom: d.pad,
-                left: d.pad,
-                width: 18,
-                height: 18,
-                opacity: 1,
-              }}
-            />
-          )}
 
           {/* Sell value / expired / equipped badges */}
           {(showSellValue || !card.isActive || card.isEquipped) && (
