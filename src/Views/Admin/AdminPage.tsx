@@ -764,7 +764,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     }
   }, [password])
 
-  type Section = 'monitor' | 'analytics' | 'achievements' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users'
+  type Section = 'monitor' | 'analytics' | 'achievements' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users' | 'settings'
   const [activeSection, setActiveSection] = useState<Section>('monitor')
 
   // Auto-refresh monitor every 30s when active
@@ -825,6 +825,65 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     if (activeSection === 'achievements') fetchAchievements()
   }, [activeSection, fetchAchievements])
 
+  // ── App Settings ──────────────────────────────────────────────────
+  const [settingsForm, setSettingsForm] = useState<{
+    feedback_url: string; feedback_visible: boolean; survey_url: string; survey_visible: boolean; survey_text: string
+  }>({ feedback_url: '', feedback_visible: true, survey_url: '', survey_visible: false, survey_text: '' })
+  const [settingsLoading, setSettingsLoading] = useState(false)
+  const [settingsSaved, setSettingsSaved] = useState<string | null>(null)
+  const [settingsError, setSettingsError] = useState<string | null>(null)
+
+  const fetchSettings = useCallback(async () => {
+    setSettingsLoading(true)
+    setSettingsError(null)
+    try {
+      const res = await fetch(`${API_BASE}/app-settings`)
+      if (!res.ok) throw new Error(`status ${res.status}`)
+      const data = await res.json()
+      setSettingsForm({
+        feedback_url: data.feedback_url || '',
+        feedback_visible: data.feedback_visible !== false,
+        survey_url: data.survey_url || '',
+        survey_visible: data.survey_visible === true,
+        survey_text: data.survey_text || '',
+      })
+    } catch (e: any) {
+      setSettingsError(e?.message || 'Failed to load settings')
+    } finally {
+      setSettingsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeSection === 'settings') fetchSettings()
+  }, [activeSection, fetchSettings])
+
+  const saveSettings = async () => {
+    setSettingsLoading(true)
+    setSettingsSaved(null)
+    setSettingsError(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/app-settings`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(settingsForm),
+      })
+      if (!res.ok) {
+        const detail = await res.text()
+        throw new Error(detail || `status ${res.status}`)
+      }
+      // Bust the module-level cache so next page load gets fresh values
+      const { invalidateAppSettings } = await import('@/hooks/useAppSettings')
+      invalidateAppSettings()
+      setSettingsSaved('Saved (refresh page to see across the app)')
+      setTimeout(() => setSettingsSaved(null), 4000)
+    } catch (e: any) {
+      setSettingsError(e?.message || 'Save failed')
+    } finally {
+      setSettingsLoading(false)
+    }
+  }
+
   const tabs: { id: Section; label: string }[] = [
     { id: 'monitor', label: 'Monitor' },
     { id: 'analytics', label: 'Analytics' },
@@ -836,6 +895,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     { id: 'cards', label: 'Cards' },
     { id: 'floobits', label: 'Floobits' },
     { id: 'users', label: 'Users' },
+    { id: 'settings', label: 'Settings' },
   ]
 
   return (
@@ -2151,6 +2211,132 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
             </table>
           </div>
         )}
+      </div>}
+
+      {/* Settings */}
+      {activeSection === 'settings' && <div style={sectionStyle}>
+        <h2 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 16px 0' }}>App Settings</h2>
+        <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>
+          Runtime-editable settings. Changes apply on the next page load for any user (cached client-side per session).
+        </p>
+
+        {settingsError && (
+          <div style={{ fontSize: '13px', color: '#ef4444', marginBottom: '12px' }}>{settingsError}</div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '560px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
+              Feedback URL
+            </label>
+            <input
+              type="text"
+              value={settingsForm.feedback_url}
+              onChange={e => setSettingsForm(s => ({ ...s, feedback_url: e.target.value }))}
+              disabled={settingsLoading}
+              placeholder="https://forms.gle/..."
+              style={{
+                width: '100%', padding: '8px 10px',
+                fontSize: '13px', color: '#e2e8f0',
+                backgroundColor: '#0f172a',
+                border: '1px solid #334155', borderRadius: '4px',
+                fontFamily: 'inherit',
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#cbd5e1', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={settingsForm.feedback_visible}
+                onChange={e => setSettingsForm(s => ({ ...s, feedback_visible: e.target.checked }))}
+                disabled={settingsLoading}
+                style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+              />
+              Show Feedback button in footer
+            </label>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
+              Survey URL (mid-season modal)
+            </label>
+            <input
+              type="text"
+              value={settingsForm.survey_url}
+              onChange={e => setSettingsForm(s => ({ ...s, survey_url: e.target.value }))}
+              disabled={settingsLoading}
+              placeholder="https://forms.gle/..."
+              style={{
+                width: '100%', padding: '8px 10px',
+                fontSize: '13px', color: '#e2e8f0',
+                backgroundColor: '#0f172a',
+                border: '1px solid #334155', borderRadius: '4px',
+                fontFamily: 'inherit',
+              }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#cbd5e1', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={settingsForm.survey_visible}
+                onChange={e => setSettingsForm(s => ({ ...s, survey_visible: e.target.checked }))}
+                disabled={settingsLoading}
+                style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+              />
+              Show survey modal this week
+            </label>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
+              Survey modal text
+            </label>
+            <textarea
+              value={settingsForm.survey_text}
+              onChange={e => setSettingsForm(s => ({ ...s, survey_text: e.target.value }))}
+              disabled={settingsLoading}
+              placeholder="Leave empty to use the default copy."
+              rows={5}
+              style={{
+                width: '100%', padding: '10px 12px',
+                fontSize: '13px', color: '#e2e8f0',
+                backgroundColor: '#0f172a',
+                border: '1px solid #334155', borderRadius: '4px',
+                fontFamily: 'inherit',
+                resize: 'vertical' as const,
+                lineHeight: 1.5,
+              }}
+            />
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+              Shown above the "Take the Survey" button. Newlines are preserved.
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
+            <button
+              onClick={saveSettings}
+              disabled={settingsLoading}
+              style={{
+                padding: '8px 16px',
+                fontSize: '13px', fontWeight: '600',
+                backgroundColor: settingsLoading ? '#334155' : '#3b82f6',
+                color: '#ffffff',
+                border: 'none', borderRadius: '4px',
+                cursor: settingsLoading ? 'not-allowed' : 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              {settingsLoading ? 'Saving…' : 'Save'}
+            </button>
+            {settingsSaved && (
+              <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: '600' }}>{settingsSaved}</span>
+            )}
+          </div>
+        </div>
       </div>}
     </div>
     </div>

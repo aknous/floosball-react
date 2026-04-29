@@ -2,25 +2,37 @@ import React, { useState, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useAppSettings } from '@/hooks/useAppSettings'
 
-const SURVEY_URL = 'https://forms.gle/s2ycdsBLxTpsWEk4A'
+// Tracks which season the user has already dismissed the modal in.
+// One season == one real-world week, so this is effectively "show
+// once per real-world week" — once you dismiss it, it stays hidden
+// until the next season ticks over (and the admin toggle is still on).
 const STORAGE_KEY = 'lastSeenSurveySeason'
-const MID_SEASON_WEEK = 15
+// Earliest in-game week the modal is allowed to appear at. Skips
+// the early-season weeks so the survey lands when users have had
+// time to actually form opinions.
+const SURVEY_MIN_WEEK = 15
 
 const SurveyModal: React.FC = () => {
   const { seasonState } = useFloosball()
   const isMobile = useIsMobile()
+  const { survey_url, survey_visible, survey_text } = useAppSettings()
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
+    if (!survey_visible) {
+      setVisible(false)
+      return
+    }
     const sn = seasonState.seasonNumber
     const week = seasonState.currentWeek
-    if (!sn || sn <= 0 || !week || week < MID_SEASON_WEEK) return
+    if (!sn || sn <= 0 || !week || week < SURVEY_MIN_WEEK) return
     const lastSeen = localStorage.getItem(STORAGE_KEY)
     if (lastSeen !== String(sn)) {
       setVisible(true)
     }
-  }, [seasonState.seasonNumber, seasonState.currentWeek])
+  }, [seasonState.seasonNumber, seasonState.currentWeek, survey_visible])
 
   useEffect(() => {
     if (!visible) return
@@ -40,7 +52,7 @@ const SurveyModal: React.FC = () => {
   }, [seasonState.seasonNumber])
 
   const handleTakeSurvey = () => {
-    window.open(SURVEY_URL, '_blank')
+    window.open(survey_url, '_blank')
     handleDismiss()
   }
 
@@ -107,22 +119,36 @@ const SurveyModal: React.FC = () => {
 
         {/* Content */}
         <div style={{ padding: '22px 28px 28px' }}>
-          <p style={{
-            color: '#cbd5e1',
-            fontSize: '13px',
-            lineHeight: '1.7',
-            margin: '0 0 16px',
-          }}>
-            We want to know what you think. Does this suck? Does it rule? Are you in love? What would you change? Please take a quick survey to help us make Floosball even better!
-          </p>
-          <p style={{
-            color: '#94a3b8',
-            fontSize: '12px',
-            lineHeight: '1.6',
-            margin: '0 0 24px',
-          }}>
-            This is a new survey! If you filled out last week's, please take this one too. Your answers help shape what comes next. Thanks to all who participated last week! Your responses helped dictate some of the changes that were implemented in the latest update.
-          </p>
+          {survey_text && survey_text.trim() ? (
+            <p style={{
+              color: '#cbd5e1',
+              fontSize: '13px',
+              lineHeight: '1.7',
+              margin: '0 0 24px',
+              whiteSpace: 'pre-wrap' as const,
+            }}>
+              {survey_text}
+            </p>
+          ) : (
+            <>
+              <p style={{
+                color: '#cbd5e1',
+                fontSize: '13px',
+                lineHeight: '1.7',
+                margin: '0 0 16px',
+              }}>
+                We want to know what you think. Does this suck? Does it rule? Are you in love? What would you change? Please take a quick survey to help us make Floosball even better!
+              </p>
+              <p style={{
+                color: '#94a3b8',
+                fontSize: '12px',
+                lineHeight: '1.6',
+                margin: '0 0 24px',
+              }}>
+                This is a new survey! If you filled out last week's, please take this one too. Your answers help shape what comes next. Thanks to all who participated last week! Your responses helped dictate some of the changes that were implemented in the latest update.
+              </p>
+            </>
+          )}
 
           <button
             onClick={handleTakeSurvey}
