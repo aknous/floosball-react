@@ -4,8 +4,15 @@ import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAppSettings } from '@/hooks/useAppSettings'
 
+// Tracks which season the user has already dismissed the modal in.
+// One season == one real-world week, so this is effectively "show
+// once per real-world week" — once you dismiss it, it stays hidden
+// until the next season ticks over (and the admin toggle is still on).
 const STORAGE_KEY = 'lastSeenSurveySeason'
-const MID_SEASON_WEEK = 15
+// Earliest in-game week the modal is allowed to appear at. Skips
+// the early-season weeks so the survey lands when users have had
+// time to actually form opinions.
+const SURVEY_MIN_WEEK = 15
 
 const SurveyModal: React.FC = () => {
   const { seasonState } = useFloosball()
@@ -20,7 +27,7 @@ const SurveyModal: React.FC = () => {
     }
     const sn = seasonState.seasonNumber
     const week = seasonState.currentWeek
-    if (!sn || sn <= 0 || !week || week < MID_SEASON_WEEK) return
+    if (!sn || sn <= 0 || !week || week < SURVEY_MIN_WEEK) return
     const lastSeen = localStorage.getItem(STORAGE_KEY)
     if (lastSeen !== String(sn)) {
       setVisible(true)
