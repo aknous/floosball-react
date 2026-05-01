@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useFloosball } from '@/contexts/FloosballContext'
 import { Stars, calcStars, DualStars } from './Stars'
 import PlayerHoverCard from './PlayerHoverCard'
+import PlayerLink from './PlayerLink'
 import FaBallotModal from './FrontOffice/FaBallotModal'
 import type { ScoutingPlayer, OpenSlot } from './FrontOffice/FaBallotModal'
 import type {
@@ -53,6 +55,7 @@ interface Transaction {
   type: TransactionType
   teamName: string
   teamAbbr: string
+  playerId?: number | null
   playerName: string
   position: string
   rating: number
@@ -62,6 +65,7 @@ interface Transaction {
 }
 
 interface SetupPlayer {
+  id?: number | null
   name: string
   position: string
   rating: number
@@ -103,11 +107,14 @@ const TIER_LABELS: Record<string, string> = {
   MID_MARKET: 'MID',
   SMALL_MARKET: 'SMALL',
 }
+// Match the canonical tier palette used by TeamPage's TierBadge so users
+// see the same colors here as on team detail pages: purple → blue → teal
+// → orange for MEGA → LARGE → MID → SMALL.
 const TIER_COLORS: Record<string, { fg: string; bg: string }> = {
-  MEGA_MARKET:  { fg: '#fbbf24', bg: 'rgba(251,191,36,0.18)' },
-  LARGE_MARKET: { fg: '#a78bfa', bg: 'rgba(167,139,250,0.18)' },
+  MEGA_MARKET:  { fg: '#a78bfa', bg: 'rgba(167,139,250,0.18)' },
+  LARGE_MARKET: { fg: '#3b82f6', bg: 'rgba(59,130,246,0.18)' },
   MID_MARKET:   { fg: '#2dd4bf', bg: 'rgba(45,212,191,0.15)' },
-  SMALL_MARKET: { fg: '#94a3b8', bg: 'rgba(148,163,184,0.15)' },
+  SMALL_MARKET: { fg: '#f97316', bg: 'rgba(249,115,22,0.18)' },
 }
 
 interface RosterPlayer {
@@ -124,6 +131,7 @@ type TeamRosterData = Record<string, RosterPlayer | null>
 export const OffseasonPanel: React.FC = () => {
   const { event } = useSeasonWebSocket()
   const { user, getToken, updateFloobits } = useAuth()
+  const { seasonState } = useFloosball()
 
   const [freeAgents, setFreeAgents] = useState<FreeAgent[]>([])
   const [draftOrder, setDraftOrder] = useState<DraftTeam[]>([])
@@ -172,6 +180,55 @@ export const OffseasonPanel: React.FC = () => {
   const favoriteTeamColor = favoriteTeam?.color ?? '#f59e0b'
 
   const isFavoriteOnClock = favoriteTeamAbbr != null && currentTeamAbbr === favoriteTeamAbbr
+
+  // Phase-aware header content. Two mutually-exclusive surfaces:
+  //   • Waiting phases (post_bowl, frontoffice, pre_fa) → countdown to the
+  //     next phase. The current phase is implied by what's coming next, so
+  //     we don't double-label it.
+  //   • Active phases (rookie_draft, fa_draft, training) → static label,
+  //     no countdown (the panel content itself shows progress).
+  const offseasonPhase = seasonState.offseasonPhase
+  const offseasonPhaseTargetTime = seasonState.offseasonPhaseTargetTime
+  const [phaseCountdown, setPhaseCountdown] = useState('')
+  const [phaseLabel, setPhaseLabel] = useState('')
+  useEffect(() => {
+    const NEXT_LABEL: Record<string, string> = {
+      post_bowl: 'Offseason',
+      frontoffice: 'Rookie Draft',
+      pre_fa: 'Free Agency',
+    }
+    const ACTIVE_LABEL: Record<string, string> = {
+      rookie_draft: 'Rookie Draft',
+      fa_draft: 'Free Agency',
+      training: 'Offseason Training',
+    }
+    // Only set an active label for phases that are actually in-flight
+    // (picks streaming, training crunching) — waiting phases use the
+    // countdown alone so the header doesn't double up.
+    if (offseasonPhase && ACTIVE_LABEL[offseasonPhase] && !offseasonPhaseTargetTime) {
+      setPhaseLabel(ACTIVE_LABEL[offseasonPhase])
+    } else {
+      setPhaseLabel('')
+    }
+    if (!offseasonPhase || !offseasonPhaseTargetTime) {
+      setPhaseCountdown('')
+      return
+    }
+    const next = NEXT_LABEL[offseasonPhase]
+    if (!next) { setPhaseCountdown(''); return }
+    const tick = () => {
+      const diff = new Date(offseasonPhaseTargetTime).getTime() - Date.now()
+      if (diff <= 0) { setPhaseCountdown(`${next} starting soon`); return }
+      const hours = Math.floor(diff / 3600000)
+      const minutes = Math.floor((diff % 3600000) / 60000)
+      if (hours > 0) setPhaseCountdown(`${next} in ${hours}h ${minutes}m`)
+      else if (minutes > 0) setPhaseCountdown(`${next} in ${minutes}m`)
+      else setPhaseCountdown(`${next} starting soon`)
+    }
+    tick()
+    const id = setInterval(tick, 30000)
+    return () => clearInterval(id)
+  }, [offseasonPhase, offseasonPhaseTargetTime])
 
   // FA window countdown timer
   useEffect(() => {
@@ -264,7 +321,7 @@ export const OffseasonPanel: React.FC = () => {
         const token = await getToken()
         const headers: Record<string, string> = {}
         if (token) headers['Authorization'] = `Bearer ${token}`
-        const res = await fetch(`${API_BASE}/offseason`, { headers })
+        const res = await fetch(`${API_BASE}/offseason?t=${Date.now()}`, { headers })
         const data = await res.json()
         setFreeAgents(data.freeAgents || [])
         const order: DraftTeam[] = data.draftOrder || []
@@ -285,15 +342,15 @@ export const OffseasonPanel: React.FC = () => {
               for (const p of (entry.cuts || []) as SetupPlayer[]) {
                 const txType: TransactionType = p.reason === 'expired' ? 'expired' : 'cut'
                 txs.push({ type: txType, teamName: entry.team, teamAbbr: entry.teamAbbr,
-                  playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
+                  playerId: p.id, playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
               }
               for (const p of (entry.resigns || []) as SetupPlayer[]) {
                 txs.push({ type: 'resign', teamName: entry.team, teamAbbr: entry.teamAbbr,
-                  playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
+                  playerId: p.id, playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
               }
               for (const p of (entry.promotions || []) as SetupPlayer[]) {
                 txs.push({ type: 'promotion', teamName: entry.team, teamAbbr: entry.teamAbbr,
-                  playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
+                  playerId: p.id, playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
               }
               continue
             }
@@ -306,6 +363,7 @@ export const OffseasonPanel: React.FC = () => {
               type: txType,
               teamName: entry.team,
               teamAbbr: entry.teamAbbr,
+              playerId: entry.playerId,
               playerName: entry.player,
               position: entry.position,
               rating: entry.rating,
@@ -314,7 +372,14 @@ export const OffseasonPanel: React.FC = () => {
           }
           setPredraftSetups(setupMap)
           setTransactions(txs.reverse())
-          if (txs.length > 0) setCurrentTeamAbbr(txs[0].teamAbbr)
+          // Only restore "on the clock" highlight if we're in an active
+          // draft round-robin. Outside those phases (front-office setup,
+          // pre-FA wait, post-draft training) there's no clock running —
+          // leaving it on the most-recent transaction's team made the
+          // marker stick on whichever team had the last front-office move.
+          if (txs.length > 0 && (data.phase === 'rookie_draft' || data.phase === 'free_agency')) {
+            setCurrentTeamAbbr(txs[0].teamAbbr)
+          }
         }
         // Restore FA window state if it's currently open
         if (data.faWindowOpen && data.faWindowEnd) {
@@ -332,6 +397,15 @@ export const OffseasonPanel: React.FC = () => {
         // across refreshes mid-offseason.
         if (data.phase && (data.phase === 'predraft' || data.phase === 'rookie_draft' || data.phase === 'free_agency')) {
           setCurrentPhase(data.phase)
+        }
+        // Restore upcoming rookies so a refresh mid-rookie-draft keeps the
+        // right-panel pool populated. The WS rookie_draft_start event also
+        // populates this, but a refresh has no event replay — rely on the API.
+        // Always set (even if empty) so the state is authoritative — the
+        // backend filters by is_upcoming_rookie, so an empty array genuinely
+        // means all rookies have been drafted.
+        if (data.rookies && Array.isArray(data.rookies)) {
+          setRookies(data.rookies)
         }
         // If draft already finished, mark complete and clear on-the-clock
         if (data.draftComplete) {
@@ -352,7 +426,12 @@ export const OffseasonPanel: React.FC = () => {
     const team = draftOrder.find(t => t.abbr === expandedTeam)
     if (!team?.id) return
     setRosterLoading(prev => new Set([...prev, expandedTeam]))
-    fetch(`${API_BASE}/teams/${team.id}`)
+    // Cache-bust the team fetch — the endpoint sets a 2-minute Cache-Control
+    // header, which serves stale rosters from the browser cache when the
+    // user expands a team right after a sign/cut. The offseason mutates
+    // rosters on the order of seconds, not minutes, so we always want fresh
+    // data here.
+    fetch(`${API_BASE}/teams/${team.id}?t=${Date.now()}`)
       .then(r => r.json())
       .then(data => setRosterCache(prev => ({ ...prev, [expandedTeam]: data.data?.roster || {} })))
       .catch(() => setRosterCache(prev => ({ ...prev, [expandedTeam]: {} })))
@@ -389,7 +468,7 @@ export const OffseasonPanel: React.FC = () => {
       Promise.resolve(token).then(tok => {
         const headers: Record<string, string> = {}
         if (tok) headers['Authorization'] = `Bearer ${tok}`
-        fetch(`${API_BASE}/offseason`, { headers })
+        fetch(`${API_BASE}/offseason?t=${Date.now()}`, { headers })
           .then(r => r.json())
           .then(data => {
             setFreeAgents(data.freeAgents || [])
@@ -411,26 +490,38 @@ export const OffseasonPanel: React.FC = () => {
         type: ev.isPromotion ? 'promotion' : 'pick',
         teamName: ev.teamName,
         teamAbbr: ev.teamAbbr,
+        playerId: (ev as any).playerId,
         playerName: ev.playerName,
         position: ev.position,
         rating: ev.rating,
         tier: ev.tier,
       }, ...prev])
       setTabNotify(prev => prev.transactions ? prev : { ...prev, transactions: rightTab !== 'transactions' })
-      // Add the signed player to the local roster cache (don't re-fetch — API has post-sim state)
+      // Add the signed player to the local roster cache. Use the slot the
+      // backend tells us was filled (added via `slot` field on the event) —
+      // critical for WR signs, where the backend's `_attemptRosterFill`
+      // picks wr1/wr2 randomly. Without an explicit slot the frontend would
+      // fill wr1 while the backend filled wr2, leaving wr2 stuck on OPEN
+      // until a refetch landed.
       setRosterCache(prev => {
         const existing = prev[ev.teamAbbr]
         if (!existing) return prev
         const updated = { ...existing }
-        // Find the first empty slot matching this position
         const posSlotMap: Record<string, string[]> = {
           'QB': ['qb'], 'RB': ['rb'], 'WR': ['wr1', 'wr2'], 'TE': ['te'], 'K': ['k'],
         }
-        const slots = posSlotMap[ev.position] || []
-        for (const slot of slots) {
-          if (!updated[slot]) {
-            updated[slot] = { id: 0, name: ev.playerName, position: ev.position, rating: ev.rating, tier: ev.tier, termRemaining: 3 }
-            break
+        const explicitSlot = (ev as any).slot as string | null | undefined
+        const player = { id: (ev as any).playerId ?? 0, name: ev.playerName, position: ev.position, rating: ev.rating, tier: ev.tier, termRemaining: 3 }
+        if (explicitSlot && posSlotMap[ev.position]?.includes(explicitSlot)) {
+          updated[explicitSlot] = player
+        } else {
+          // Fallback: first empty slot at this position (legacy path / older events)
+          const slots = posSlotMap[ev.position] || []
+          for (const slot of slots) {
+            if (!updated[slot]) {
+              updated[slot] = player
+              break
+            }
           }
         }
         return { ...prev, [ev.teamAbbr]: updated }
@@ -445,6 +536,7 @@ export const OffseasonPanel: React.FC = () => {
         type: 'cut',
         teamName: ev.teamName,
         teamAbbr: ev.teamAbbr,
+        playerId: (ev as any).playerId,
         playerName: ev.playerName,
         position: ev.position,
         rating: ev.rating,
@@ -487,28 +579,41 @@ export const OffseasonPanel: React.FC = () => {
       for (const p of ev.cuts || []) {
         const txType: TransactionType = p.reason === 'expired' ? 'expired' : 'cut'
         setupTxs.push({ type: txType, teamName: ev.teamName, teamAbbr: ev.teamAbbr,
-          playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
+          playerId: p.id, playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
       }
       for (const p of ev.resigns || []) {
         setupTxs.push({ type: 'resign', teamName: ev.teamName, teamAbbr: ev.teamAbbr,
-          playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
+          playerId: p.id, playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
       }
       for (const p of ev.promotions || []) {
         setupTxs.push({ type: 'promotion', teamName: ev.teamName, teamAbbr: ev.teamAbbr,
-          playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
+          playerId: p.id, playerName: p.name, position: p.position, rating: p.rating, tier: p.tier })
       }
       if (setupTxs.length > 0) {
         setTransactions(prev => [...setupTxs, ...prev])
-        // Promotions update local roster cache — they moved onto the roster
-        if (ev.promotions?.length) {
+        // Cuts + promotions both mutate the local roster cache so the
+        // dashboard panel reflects empty slots without needing a page
+        // refresh. Cuts clear the slot whose occupant matches by name;
+        // promotions fill the first empty slot at their position.
+        if (ev.cuts?.length || ev.promotions?.length) {
           setRosterCache(prev => {
             const existing = prev[ev.teamAbbr]
             if (!existing) return prev
             const updated = { ...existing }
+            // Clear cut players from their slots
+            const cutNames = new Set((ev.cuts || []).map(c => c.name))
+            if (cutNames.size > 0) {
+              for (const slot of Object.keys(updated)) {
+                const occupant = updated[slot]
+                if (occupant && cutNames.has(occupant.name)) {
+                  updated[slot] = null
+                }
+              }
+            }
             const posSlotMap: Record<string, string[]> = {
               'QB': ['qb'], 'RB': ['rb'], 'WR': ['wr1', 'wr2'], 'TE': ['te'], 'K': ['k'],
             }
-            for (const promo of ev.promotions) {
+            for (const promo of (ev.promotions || [])) {
               const slots = posSlotMap[promo.position] || []
               for (const slot of slots) {
                 if (!updated[slot]) {
@@ -542,6 +647,7 @@ export const OffseasonPanel: React.FC = () => {
         type: 'rookie_pick',
         teamName: ev.team,
         teamAbbr: ev.teamAbbr,
+        playerId: ev.playerId,
         playerName: ev.player,
         position: ev.position,
         rating: ev.rating,
@@ -565,13 +671,20 @@ export const OffseasonPanel: React.FC = () => {
       setCurrentTeamAbbr(null)
       setRookies([])
     } else if (e.event === 'fa_draft_order_update') {
-      // FA phase starts: replace the draft order with the tier-sorted list but
-      // keep accumulated transactions/rosters intact (unlike offseason_start,
+      // FA phase preview: replace the draft order with the tier-sorted list
+      // and populate the FA pool. Fires during the pre-FA wait so the team
+      // board switches to tier groupings and the FA list populates *before*
+      // picks start streaming, not at the moment of the first pick. Keep
+      // accumulated transactions/rosters intact (unlike offseason_start,
       // which resets everything for the whole offseason).
-      const ev = e as { draftOrder: DraftTeam[] }
+      const ev = e as { draftOrder: DraftTeam[]; faPool?: FreeAgent[] | null }
       setDraftOrder(ev.draftOrder)
       setCurrentPhase('free_agency')
       setCurrentTeamAbbr(null)
+      if (ev.faPool && Array.isArray(ev.faPool)) {
+        setFreeAgents(ev.faPool)
+        setFaPool(ev.faPool.filter(p => p.id != null) as Array<{ id: number; name: string; position: string; rating: number; tier: string }>)
+      }
     } else if (e.event === 'gm_vote_resolved') {
       const ev = e as GmVoteResolvedEvent
       setGmResolvedEvents(prev => [ev, ...prev])
@@ -591,7 +704,7 @@ export const OffseasonPanel: React.FC = () => {
       Promise.resolve(token).then(tok => {
         const headers: Record<string, string> = {}
         if (tok) headers['Authorization'] = `Bearer ${tok}`
-        fetch(`${API_BASE}/offseason`, { headers })
+        fetch(`${API_BASE}/offseason?t=${Date.now()}`, { headers })
           .then(r => r.json())
           .then(data => {
             setFreeAgents(data.freeAgents || [])
@@ -698,7 +811,7 @@ export const OffseasonPanel: React.FC = () => {
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' as const }}>
           <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>Offseason</h2>
           {currentPhase && (
             <span style={{
@@ -711,6 +824,19 @@ export const OffseasonPanel: React.FC = () => {
               · {currentPhase === 'rookie_draft' ? 'Rookie Draft'
                 : currentPhase === 'predraft' ? 'Team Setup'
                 : 'Free Agency'}
+            </span>
+          )}
+          {!currentPhase && phaseLabel && (
+            <span style={{
+              fontSize: '12px', fontWeight: '700', color: '#f59e0b',
+              letterSpacing: '0.06em', textTransform: 'uppercase' as const,
+            }}>
+              · {phaseLabel}
+            </span>
+          )}
+          {phaseCountdown && (
+            <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+              {phaseCountdown}
             </span>
           )}
         </div>
@@ -815,32 +941,50 @@ export const OffseasonPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Side-by-side: Team Accordion + Tabbed Panel */}
+      {/* Side-by-side: Team Accordion + Tabbed Panel.
+          Both columns share a fixed max height so the whole offseason
+          component doesn't grow with the team list — the team accordion
+          scrolls its content within the shared height, and the right
+          panel's internal lists already scroll within their own caps. */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'start' }}>
 
         {/* Team Accordion */}
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-          <div style={{ padding: '8px 14px', borderBottom: '1px solid #0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{
+          backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden',
+          maxHeight: '720px', display: 'flex', flexDirection: 'column' as const,
+        }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid #0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Teams
             </span>
             {!isComplete && completedTeams.size > 0 && (
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>
                 {completedTeams.size}/{draftOrder.length} done
               </span>
             )}
           </div>
 
+          <div style={{ flex: 1, overflowY: 'auto' as const }}>
           {cyclicOrder.length === 0 ? (
             <div style={{ padding: '16px 14px', fontSize: '13px', color: '#94a3b8' }}>
-              Waiting for the offseason to begin…
+              {phaseCountdown ? (
+                <>
+                  Front office decisions are in.{' '}
+                  <span style={{ color: '#f59e0b', fontWeight: 600 }}>{phaseCountdown}</span>
+                </>
+              ) : (
+                <>Waiting for the offseason to begin…</>
+              )}
+              <div style={{ marginTop: '8px', fontSize: '11px', color: '#64748b' }}>
+                Coach decisions, re-signs, cuts, and the FA pool have been resolved. The rookie draft kicks off at noon Eastern, followed by free agency.
+              </div>
             </div>
           ) : (
             teamGroups.map(group => (
               <React.Fragment key={group.tier ?? 'flat'}>
                 {group.tier && TIER_LABELS[group.tier] && (
                   <div style={{
-                    padding: '6px 14px',
+                    padding: '8px 14px',
                     backgroundColor: TIER_COLORS[group.tier].bg,
                     borderBottom: '1px solid #0f172a',
                     borderTop: '1px solid #0f172a',
@@ -849,14 +993,14 @@ export const OffseasonPanel: React.FC = () => {
                     gap: '8px',
                   }}>
                     <span style={{
-                      fontSize: '10px',
+                      fontSize: '11px',
                       fontWeight: '800',
                       letterSpacing: '0.08em',
                       color: TIER_COLORS[group.tier].fg,
                     }}>
                       {TIER_LABELS[group.tier]} MARKET
                     </span>
-                    <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>
                       {group.teams.length} team{group.teams.length !== 1 ? 's' : ''}
                     </span>
                   </div>
@@ -869,12 +1013,20 @@ export const OffseasonPanel: React.FC = () => {
               const roster = rosterCache[team.abbr]
               const loading = rosterLoading.has(team.abbr)
               const teamTxs = transactions.filter(tx => tx.teamAbbr === team.abbr)
-              // Any non-cut transaction keeps the player on (or adds them to)
-              // the roster — FA sign, rookie pick, prospect promotion, re-sign.
-              // Explicit cuts remove. (Without this filter, non-sign types
-              // rendered as CUT because the badge ternary defaulted unknown
-              // types to CUT.)
-              const signedNames = new Set(teamTxs.filter(tx => tx.type !== 'cut').map(tx => tx.playerName))
+              // Map player name → most-recent transaction type so the
+              // roster slot badge reflects the latest action. transactions
+              // is stored newest-first (new entries are prepended), so we
+              // iterate in reverse here — that way the *newest* tx for a
+              // given player ends up as the final Map.set call and wins.
+              // Without the reverse, a draft-then-promote sequence would
+              // show DRAFTED because rookie_pick (older) was iterated last
+              // and clobbered the promotion entry.
+              const txByName = new Map<string, string>()
+              for (let i = teamTxs.length - 1; i >= 0; i--) {
+                const tx = teamTxs[i]
+                if (tx.type === 'cut' || tx.type === 'expired') continue
+                txByName.set(tx.playerName, tx.type)
+              }
 
               return (
                 <div key={team.abbr}>
@@ -910,7 +1062,7 @@ export const OffseasonPanel: React.FC = () => {
                     />
                     <span style={{
                       flex: 1,
-                      fontSize: '13px',
+                      fontSize: '14px',
                       fontWeight: isCurrent || isFavorite ? '600' : '400',
                       color: isDone && !isExpanded && !isFavorite ? '#94a3b8' : isFavorite ? favoriteTeamColor : '#e2e8f0',
                       display: 'flex',
@@ -923,10 +1075,10 @@ export const OffseasonPanel: React.FC = () => {
                       </span>
                       {team.fundingTier && TIER_LABELS[team.fundingTier] && (
                         <span style={{
-                          fontSize: '9px',
+                          fontSize: '10px',
                           fontWeight: '700',
                           letterSpacing: '0.05em',
-                          padding: '1px 5px',
+                          padding: '2px 6px',
                           borderRadius: '3px',
                           color: TIER_COLORS[team.fundingTier].fg,
                           backgroundColor: TIER_COLORS[team.fundingTier].bg,
@@ -938,23 +1090,23 @@ export const OffseasonPanel: React.FC = () => {
                     </span>
                     {isCurrent && (
                       <span style={{
-                        fontSize: '9px', fontWeight: '700', color: '#22c55e',
+                        fontSize: '10px', fontWeight: '700', color: '#22c55e',
                         letterSpacing: '0.08em', backgroundColor: 'rgba(34,197,94,0.12)',
-                        border: '1px solid rgba(34,197,94,0.35)', padding: '2px 6px', borderRadius: '3px',
+                        border: '1px solid rgba(34,197,94,0.35)', padding: '3px 7px', borderRadius: '3px',
                       }}>
                         ON THE CLOCK
                       </span>
                     )}
                     {isDone && !isCurrent && (
                       <span style={{
-                        fontSize: '9px', fontWeight: '700', color: '#94a3b8',
+                        fontSize: '11px', fontWeight: '700', color: '#94a3b8',
                         letterSpacing: '0.06em', backgroundColor: 'rgba(148,163,184,0.1)',
-                        border: '1px solid rgba(148,163,184,0.2)', padding: '2px 6px', borderRadius: '3px',
+                        border: '1px solid rgba(148,163,184,0.2)', padding: '3px 7px', borderRadius: '3px',
                       }}>
                         DONE
                       </span>
                     )}
-                    <span style={{ fontSize: '9px', color: '#64748b', marginLeft: '2px' }}>
+                    <span style={{ fontSize: '10px', color: '#64748b', marginLeft: '2px' }}>
                       {isExpanded ? '▲' : '▼'}
                     </span>
                   </div>
@@ -972,56 +1124,67 @@ export const OffseasonPanel: React.FC = () => {
 
                       {/* Roster */}
                       <div>
-                        <div style={{ fontSize: '10px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '7px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
                           Roster
                         </div>
                         {loading ? (
-                          <div style={{ fontSize: '12px', color: '#94a3b8' }}>Loading…</div>
+                          <div style={{ fontSize: '13px', color: '#94a3b8' }}>Loading…</div>
                         ) : roster ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                             {ROSTER_SLOTS.map(({ key, label }) => {
                               const player = roster[key]
                               if (!player) {
                                 return (
                                   <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', minWidth: '26px' }}>{label}</span>
+                                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', minWidth: '28px' }}>{label}</span>
                                     <span style={{
-                                      fontSize: '9px', fontWeight: '700', color: '#ef4444',
-                                      backgroundColor: 'rgba(239,68,68,0.25)', padding: '1px 5px', borderRadius: '3px',
+                                      fontSize: '10px', fontWeight: '700', color: '#ef4444',
+                                      backgroundColor: 'rgba(239,68,68,0.25)', padding: '2px 6px', borderRadius: '3px',
                                     }}>OPEN</span>
                                   </div>
                                 )
                               }
-                              const isNewSigning = signedNames.has(player.name)
+                              const txType = txByName.get(player.name)
+                              const slotBadge = txType === 'promotion'
+                                ? { label: 'PROMOTED', color: '#f59e0b', bg: 'rgba(245,158,11,0.22)' }
+                                : txType === 'resign'
+                                  ? { label: 'RESIGNED', color: '#38bdf8', bg: 'rgba(56,189,248,0.22)' }
+                                  : txType === 'rookie_pick'
+                                    ? { label: 'DRAFTED', color: '#a78bfa', bg: 'rgba(167,139,250,0.22)' }
+                                    : txType === 'pick'
+                                      ? { label: 'SIGNED', color: '#22c55e', bg: 'rgba(34,197,94,0.22)' }
+                                      : null
                               return (
                                 <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', minWidth: '26px' }}>{label}</span>
-                                  <Stars stars={calcStars(player.rating)} size={9} />
-                                  <PlayerHoverCard playerId={player.id} playerName={player.name}>
-                                    <span style={{ flex: 1, fontSize: '12px', color: '#e2e8f0', cursor: 'pointer' }}>{player.name}</span>
-                                  </PlayerHoverCard>
-                                  {isNewSigning && (
+                                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', minWidth: '28px' }}>{label}</span>
+                                  <Stars stars={calcStars(player.rating)} size={10} />
+                                  <PlayerLink
+                                    playerId={player.id}
+                                    playerName={player.name}
+                                    style={{ flex: 1, fontSize: '13px', color: '#e2e8f0' }}
+                                  />
+                                  {slotBadge && (
                                     <span style={{
-                                      fontSize: '8px', fontWeight: '700', color: '#22c55e',
-                                      backgroundColor: 'rgba(34,197,94,0.25)', padding: '1px 5px', borderRadius: '3px', letterSpacing: '0.04em',
-                                    }}>NEW</span>
+                                      fontSize: '10px', fontWeight: '700', color: slotBadge.color,
+                                      backgroundColor: slotBadge.bg, padding: '2px 6px', borderRadius: '3px', letterSpacing: '0.04em',
+                                    }}>{slotBadge.label}</span>
                                   )}
                                 </div>
                               )
                             })}
                           </div>
                         ) : (
-                          <div style={{ fontSize: '12px', color: '#94a3b8' }}>Roster unavailable</div>
+                          <div style={{ fontSize: '13px', color: '#94a3b8' }}>Roster unavailable</div>
                         )}
                       </div>
 
                       {/* Per-team moves */}
                       {teamTxs.length > 0 && (
                         <div>
-                          <div style={{ fontSize: '10px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '7px' }}>
                             Moves this offseason
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                             {teamTxs.map((tx, idx) => {
                               const badge = tx.type === 'cut' ? { label: 'CUT', color: '#ef4444' }
                                 : tx.type === 'expired' ? { label: 'TO FA', color: '#a16207' }
@@ -1030,24 +1193,28 @@ export const OffseasonPanel: React.FC = () => {
                                 : tx.type === 'promotion' ? { label: 'PROMOTED', color: '#f59e0b' }
                                 : tx.type === 'resign' ? { label: 'RE-SIGN', color: '#38bdf8' }
                                 : { label: 'SIGN', color: '#22c55e' }
-                              const showStars = tx.type !== 'cut' && tx.type !== 'expired' && tx.type !== 'rookie_skip'
+                              const showStars = tx.type !== 'rookie_skip'
                               return (
-                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px' }}>
+                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px' }}>
                                   <span style={{
-                                    fontSize: '9px', fontWeight: '700', minWidth: '58px',
+                                    fontSize: '10px', fontWeight: '700', minWidth: '62px',
                                     color: badge.color,
                                   }}>
                                     {badge.label}
                                   </span>
                                   {showStars && (
                                     tx.offensiveRating != null && tx.defensiveRating != null ? (
-                                      <DualStars offensiveStars={calcStars(tx.offensiveRating)} defensiveStars={calcStars(tx.defensiveRating)} size={8} />
+                                      <DualStars offensiveStars={calcStars(tx.offensiveRating)} defensiveStars={calcStars(tx.defensiveRating)} size={9} />
                                     ) : (
-                                      <Stars stars={calcStars(tx.rating)} size={9} />
+                                      <Stars stars={calcStars(tx.rating)} size={10} />
                                     )
                                   )}
-                                  <span style={{ flex: 1, color: '#e2e8f0' }}>{tx.playerName}</span>
-                                  <span style={{ color: '#64748b', fontSize: '11px' }}>{tx.position}</span>
+                                  <PlayerLink
+                                    playerId={tx.playerId}
+                                    playerName={tx.playerName}
+                                    style={{ flex: 1, color: '#e2e8f0' }}
+                                  />
+                                  <span style={{ color: '#64748b', fontSize: '12px' }}>{tx.position}</span>
                                 </div>
                               )
                             })}
@@ -1064,12 +1231,16 @@ export const OffseasonPanel: React.FC = () => {
               </React.Fragment>
             ))
           )}
+          </div>
         </div>
 
         {/* Right column: Tabbed panel */}
-        <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', minWidth: 0 }}>
+        <div style={{
+          backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', minWidth: 0,
+          maxHeight: '720px', display: 'flex', flexDirection: 'column' as const,
+        }}>
           {/* Tab bar */}
-          <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px' }}>
+          <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px', flexShrink: 0 }}>
             {(['players', 'directives', 'transactions'] as const).map(tab => {
               const isActive = rightTab === tab
               const playersLabel = currentPhase === 'rookie_draft'
@@ -1121,7 +1292,7 @@ export const OffseasonPanel: React.FC = () => {
                   </button>
                 ))}
               </div>
-              <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '500px', overflowY: 'auto' }}>
+              <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '640px', overflowY: 'auto' }}>
                 {rookies.length === 0 ? (
                   <div style={{ color: '#94a3b8', fontSize: '13px', padding: '10px 6px' }}>
                     {currentPhase === 'rookie_draft' ? 'All prospects drafted.' : 'Waiting for rookie draft…'}
@@ -1136,15 +1307,13 @@ export const OffseasonPanel: React.FC = () => {
                     >
                       <Stars stars={calcStars(r.rating)} />
                       <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {r.id ? (
-                          <PlayerHoverCard playerId={r.id} playerName={r.name}>
-                            <span style={{ color: '#e2e8f0', cursor: 'pointer' }}>{r.name}</span>
-                          </PlayerHoverCard>
-                        ) : (
-                          <span style={{ color: '#e2e8f0' }}>{r.name}</span>
-                        )}
+                        <PlayerLink
+                          playerId={r.id}
+                          playerName={r.name}
+                          style={{ color: '#e2e8f0' }}
+                        />
                       </span>
-                      <span style={{ color: '#64748b', fontSize: '11px' }}>{r.position}</span>
+                      <span style={{ color: '#64748b', fontSize: '12px' }}>{r.position}</span>
                     </div>
                   ))
                 )}
@@ -1160,7 +1329,7 @@ export const OffseasonPanel: React.FC = () => {
                   </button>
                 ))}
               </div>
-              <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '500px', overflowY: 'auto' }}>
+              <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '640px', overflowY: 'auto' }}>
                 {filteredAgents.length === 0 ? (
                   <div style={{ color: '#94a3b8', fontSize: '13px', padding: '10px 6px' }}>
                     {freeAgents.length === 0
@@ -1183,13 +1352,11 @@ export const OffseasonPanel: React.FC = () => {
                           <Stars stars={calcStars(fa.rating)} />
                         )}
                         <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {fa.id ? (
-                            <PlayerHoverCard playerId={fa.id} playerName={fa.name}>
-                              <span style={{ color: '#e2e8f0', cursor: 'pointer' }}>{fa.name}</span>
-                            </PlayerHoverCard>
-                          ) : (
-                            <span style={{ color: '#e2e8f0' }}>{fa.name}</span>
-                          )}
+                          <PlayerLink
+                            playerId={fa.id}
+                            playerName={fa.name}
+                            style={{ color: '#e2e8f0' }}
+                          />
                           {posRank != null && (
                             <span style={{
                               fontSize: '10px',
@@ -1216,7 +1383,7 @@ export const OffseasonPanel: React.FC = () => {
 
           {/* Directives tab */}
           {rightTab === 'directives' && (
-            <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+            <div style={{ maxHeight: '640px', overflowY: 'auto' }}>
               {/* Board Directives */}
               {faDirectives.length > 0 && (
                 <div>
@@ -1253,16 +1420,18 @@ export const OffseasonPanel: React.FC = () => {
                           </span>
                           <Stars stars={calcStars(p.rating)} size={10} />
                           <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '12px', color: isPicked ? '#94a3b8' : '#e2e8f0' }}>
-                              {p.name}
-                            </span>
+                            <PlayerLink
+                              playerId={p.id}
+                              playerName={p.name}
+                              style={{ fontSize: '13px', color: isPicked ? '#94a3b8' : '#e2e8f0' }}
+                            />
                             {signedByUs && (
-                              <span style={{ fontSize: '9px', color: '#22c55e', fontWeight: '700', letterSpacing: '0.04em' }}>
+                              <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: '700', letterSpacing: '0.04em' }}>
                                 SIGNED
                               </span>
                             )}
                             {takenByOther && (
-                              <span style={{ fontSize: '9px', color: '#ef4444', fontWeight: '700', letterSpacing: '0.04em' }}>
+                              <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: '700', letterSpacing: '0.04em' }}>
                                 TAKEN
                               </span>
                             )}
@@ -1344,7 +1513,7 @@ export const OffseasonPanel: React.FC = () => {
                       {filteredTransactions.length} move{filteredTransactions.length !== 1 ? 's' : ''}
                     </span>
                   </div>
-                  <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                  <div style={{ maxHeight: '640px', overflowY: 'auto' }}>
                     {filteredTransactions.map((tx, i) => {
                       const badge = tx.type === 'cut' ? { label: 'CUT', color: '#ef4444', bg: 'rgba(239,68,68,0.04)' }
                         : tx.type === 'expired' ? { label: 'TO FA', color: '#a16207', bg: 'rgba(161,98,7,0.05)' }
@@ -1353,7 +1522,7 @@ export const OffseasonPanel: React.FC = () => {
                         : tx.type === 'promotion' ? { label: 'PROMOTED', color: '#f59e0b', bg: 'rgba(245,158,11,0.06)' }
                         : tx.type === 'resign' ? { label: 'RE-SIGN', color: '#38bdf8', bg: 'rgba(56,189,248,0.05)' }
                         : { label: 'SIGN', color: '#22c55e', bg: 'rgba(34,197,94,0.04)' }
-                      const showStars = tx.type !== 'cut' && tx.type !== 'expired' && tx.type !== 'rookie_skip'
+                      const showStars = tx.type !== 'rookie_skip'
                       return (
                         <div
                           key={i}
@@ -1364,15 +1533,19 @@ export const OffseasonPanel: React.FC = () => {
                           }}
                         >
                           <span style={{
-                            fontSize: '9px', fontWeight: '700', letterSpacing: '0.06em', minWidth: '58px',
+                            fontSize: '10px', fontWeight: '700', letterSpacing: '0.06em', minWidth: '62px',
                             color: badge.color,
                           }}>
                             {badge.label}
                           </span>
-                          <span style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8', minWidth: '32px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', minWidth: '34px' }}>
                             {tx.teamAbbr}
                           </span>
-                          <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0' }}>{tx.playerName}</span>
+                          <PlayerLink
+                            playerId={tx.playerId}
+                            playerName={tx.playerName}
+                            style={{ flex: 1, fontSize: '13px', color: '#e2e8f0' }}
+                          />
                           {showStars && (
                             tx.offensiveRating != null && tx.defensiveRating != null ? (
                               <DualStars offensiveStars={calcStars(tx.offensiveRating)} defensiveStars={calcStars(tx.defensiveRating)} size={10} />
@@ -1380,7 +1553,7 @@ export const OffseasonPanel: React.FC = () => {
                               <Stars stars={calcStars(tx.rating)} size={13} />
                             )
                           )}
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>{tx.position}</span>
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>{tx.position}</span>
                         </div>
                       )
                     })}

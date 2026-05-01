@@ -612,6 +612,9 @@ export interface OffseasonPickEvent extends BaseWebSocketEvent {
   position: string
   rating: number
   tier: string
+  // True when the pick is a fan-voted prospect promotion rather than a
+  // free-agent signing — drives the PROMOTED vs SIGNED badge in the UI.
+  isPromotion?: boolean
 }
 
 export interface OffseasonCutEvent extends BaseWebSocketEvent {

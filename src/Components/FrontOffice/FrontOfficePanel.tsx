@@ -13,6 +13,7 @@ import VoteResultsBanner from './VoteResultsBanner'
 import FaBallotModal, { ScoutingPlayer, OpenSlot, StatLine } from './FaBallotModal'
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 import { Stars, calcStars } from '@/Components/Stars'
+import PlayerLink from '@/Components/PlayerLink'
 import { GM_VOTE_COST, GM_VOTES_PER_SEASON, GM_VOTES_PER_TARGET, GM_VOTES_PER_TYPE } from '@/types/gm'
 
 const GM_ACTIVE_WEEK = 22
@@ -41,7 +42,11 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
 
   const currentWeek = seasonState.currentWeek
   const isOffseason = seasonState.currentWeekText === 'Offseason'
-  const isActive = currentWeek >= GM_ACTIVE_WEEK || isOffseason
+  // Cover the post-bowl gap (currentWeekText still 'Floos Bowl' for an hour
+  // after the championship) and the between-seasons window — the board stays
+  // available for the duration of the offseason window, not just the period
+  // the backend has flipped the week label.
+  const isActive = currentWeek >= GM_ACTIVE_WEEK || isOffseason || seasonState.seasonComplete
 
   // FA Requisition — year-round ballot targeting the team's projected walk-year
   // FAs + current prospects. The same modal used during the offseason FA window,
@@ -62,9 +67,36 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   const [totalBallots, setTotalBallots] = useState<number>(0)
   const [fanVotesOpen, setFanVotesOpen] = useState(true)
   // Bumped whenever a WS event signals that the ballot state may have
-  // changed — forces the fetch effect to re-run so the Fan Vote Tallies
+  // changed — forces the fetch effect to re-run so the Vote Tallies sections
   // appear immediately after voting closes, not after all drafts are over.
   const [refetchToken, setRefetchToken] = useState(0)
+
+  // Per-team offseason moves: cuts, resigns, promotions, rookie pick, FA
+  // signings, coach decision. All sourced from /api/offseason transactions
+  // + GM resolutions, filtered to this team. Rebuilt on every refetch.
+  type Mover = { id?: number | null; name: string; position: string; rating: number; tier?: string; reason?: string }
+  type CoachMove = { type: 'fire' | 'hire' | 'retire'; coachName?: string; outcome?: string }
+  const [offseasonMoves, setOffseasonMoves] = useState<{
+    resigns: Mover[]
+    cuts: Mover[]
+    promotions: Mover[]
+    rookies: Mover[]
+    faSignings: Mover[]
+    coach: CoachMove[]
+  }>({ resigns: [], cuts: [], promotions: [], rookies: [], faSignings: [], coach: [] })
+  const [movesOpen, setMovesOpen] = useState(true)
+
+  // Aggregated team-wide rookie ballot tally (Borda count of all fans of the
+  // team). Parallel to teamFaVotes, but for the rookie draft. Populated
+  // when the rookie draft tallies ballots — so visible after the draft is
+  // underway.
+  type RankedRookie = {
+    id: number; name: string; position: string; rating: number;
+    tier: string | null; draftedByTeamId: number | null;
+    draftedByTeamAbbr: string | null;
+  }
+  const [teamRookieTally, setTeamRookieTally] = useState<RankedRookie[]>([])
+  const [rookieTallyOpen, setRookieTallyOpen] = useState(true)
 
   useEffect(() => {
     const ev = wsEvent as { event?: string } | null
@@ -72,7 +104,12 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
     if (
       ev.event === 'gm_fa_window_close' ||
       ev.event === 'gm_fa_directives' ||
-      ev.event === 'offseason_predraft_start'
+      ev.event === 'offseason_predraft_start' ||
+      ev.event === 'offseason_team_setup' ||
+      ev.event === 'offseason_pick' ||
+      ev.event === 'rookie_draft_pick' ||
+      ev.event === 'gm_vote_resolved' ||
+      ev.event === 'offseason_complete'
     ) {
       setRefetchToken(t => t + 1)
     }
@@ -108,12 +145,62 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           const results = ofsJson.faVoteResults?.[teamAbbr]
           if (results) setTeamFaVotes(results)
           else setTeamFaVotes({})
+
+          // Team-wide rookie ballot tally (parallel to FA tallies)
+          const rookieTally = ofsJson.rookieBallotResults?.[teamAbbr]
+          if (rookieTally && Array.isArray(rookieTally)) setTeamRookieTally(rookieTally)
+          else setTeamRookieTally([])
+
+          // Filter offseason transactions + GM resolutions down to this team's
+          // moves. team_setup carries arrays for resigns/cuts/promotions; rookie_pick
+          // and pick (FA signing) are individual events. teamAbbr is the join key
+          // since teamId isn't included on every transaction shape.
+          const txs: any[] = ofsJson.transactions || []
+          const teamSetup = txs.find(t => t?.type === 'team_setup' && t?.teamAbbr === teamAbbr)
+          const rookies = txs
+            .filter(t => t?.type === 'rookie_pick' && t?.teamAbbr === teamAbbr)
+            .map(t => ({ id: t.playerId, name: t.player, position: t.position, rating: t.rating, tier: t.tier }))
+          const faSignings = txs
+            .filter(t => t?.type === 'pick' && t?.teamAbbr === teamAbbr && !t?.isPromotion)
+            .map(t => ({ id: t.playerId, name: t.player, position: t.position, rating: t.rating, tier: t.tier }))
+          const promotions = txs
+            .filter(t => t?.type === 'pick' && t?.teamAbbr === teamAbbr && t?.isPromotion)
+            .map(t => ({ id: t.playerId, name: t.player, position: t.position, rating: t.rating, tier: t.tier }))
+            .concat((teamSetup?.promotions || []).map((p: any) => ({
+              id: p.id, name: p.name, position: p.position, rating: p.rating, tier: p.tier,
+            })))
+
+          const coach: CoachMove[] = []
+          const resolutions: any[] = ofsJson.gmResolutions || []
+          for (const r of resolutions) {
+            if (r?.teamId !== teamId) continue
+            if (r?.voteType === 'fire_coach') {
+              coach.push({ type: 'fire', coachName: r.targetPlayerName, outcome: r.outcome })
+            } else if (r?.voteType === 'hire_coach') {
+              coach.push({ type: 'hire', coachName: r.targetPlayerName, outcome: r.outcome })
+            }
+          }
+
+          setOffseasonMoves({
+            resigns: (teamSetup?.resigns || []).map((p: any) => ({
+              id: p.id, name: p.name, position: p.position, rating: p.rating, tier: p.tier,
+            })),
+            cuts: (teamSetup?.cuts || []).map((p: any) => ({
+              id: p.id, name: p.name, position: p.position, rating: p.rating, tier: p.tier,
+              reason: p.reason,
+            })),
+            promotions,
+            rookies,
+            faSignings,
+            coach,
+          })
         }
+
       } catch { /* silent */ }
     }
     load()
     return () => { cancelled = true }
-  }, [isActive, getToken, gmVoteSignature, teamAbbr, refetchToken])
+  }, [isActive, getToken, gmVoteSignature, teamAbbr, teamId, refetchToken])
 
   const handleSubmitFaBallot = useCallback(async (rankings: number[]) => {
     const tok = await getToken()
@@ -245,9 +332,9 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
 
   // Section header matching TeamPage pattern
   const sectionHeader = (label: string, withHelp?: boolean) => (
-    <div style={{ padding: '10px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ padding: '11px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <span style={{
-        fontSize: '12px',
+        fontSize: '13px',
         fontWeight: '600',
         color: '#94a3b8',
         textTransform: 'uppercase' as const,
@@ -259,24 +346,204 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
     </div>
   )
 
-  // Offseason: show results banner + resolved fan vote tallies — no active
-  // voting during free agency, but the ballot results are worth surfacing
-  // here so users don't have to hunt for them in the offseason panel.
+  // Offseason: show results banner + per-team moves + resolved fan vote
+  // tallies. No active voting during free agency — the offseason view is
+  // a record of decisions: GM votes, signings, rookies drafted, cuts.
   if (isOffseason) {
     const hasResults = gm.results && gm.results.results.length > 0
     const hasResolvedTallies = Object.keys(teamFaVotes).length > 0
+    const moves = offseasonMoves
+    const movesEmpty =
+      moves.coach.length === 0 &&
+      moves.resigns.length === 0 &&
+      moves.cuts.length === 0 &&
+      moves.promotions.length === 0 &&
+      moves.rookies.length === 0 &&
+      moves.faSignings.length === 0
+    const moverRow = (m: Mover, badge?: { text: string; color: string }) => (
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '8px',
+        padding: '5px 0', fontSize: '13px',
+      }}>
+        <Stars stars={calcStars(m.rating)} size={11} />
+        <PlayerLink
+          playerId={m.id}
+          playerName={m.name}
+          style={{ flex: 1, color: '#e2e8f0' }}
+        />
+        <span style={{ fontSize: '12px', color: '#94a3b8' }}>{m.position}</span>
+        {badge && (
+          <span style={{
+            fontSize: '10px', fontWeight: 700, color: badge.color,
+            letterSpacing: '0.04em', textTransform: 'uppercase' as const,
+          }}>
+            {badge.text}
+          </span>
+        )}
+      </div>
+    )
+    const subSection = (label: string, color: string, children: React.ReactNode) => (
+      <div style={{ marginTop: '12px' }}>
+        <div style={{
+          fontSize: '11px', fontWeight: 700, color,
+          textTransform: 'uppercase' as const, letterSpacing: '0.06em',
+          marginBottom: '6px',
+        }}>
+          {label}
+        </div>
+        {children}
+      </div>
+    )
     return (
       <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
         {sectionHeader('The Front Office')}
         <div style={{ padding: '14px' }}>
           {hasResults ? (
             <VoteResultsBanner results={gm.results!.results} teamColor={teamColor} />
-          ) : !hasResolvedTallies ? (
+          ) : !hasResolvedTallies && movesEmpty ? (
             <div style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', textAlign: 'center' }}>
               FA ballots are tallied when the voting window closes.
             </div>
           ) : null}
         </div>
+        {!movesEmpty && (
+          <div style={{ borderTop: '1px solid #334155' }}>
+            <button
+              onClick={() => setMovesOpen(v => !v)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '10px 14px', background: 'transparent', border: 'none',
+                cursor: 'pointer', textAlign: 'left' as const,
+              }}
+            >
+              <span style={{
+                fontSize: '10px', color: '#64748b',
+                transform: movesOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.15s',
+              }}>▶</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>
+                Offseason Moves
+              </span>
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                Roster decisions for {teamAbbr}
+              </span>
+            </button>
+            {movesOpen && (
+              <div style={{ padding: '4px 14px 14px' }}>
+                {moves.coach.length > 0 && subSection('Coach', '#a78bfa', (
+                  <div>
+                    {moves.coach.map((c, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '8px', padding: '5px 0', fontSize: '13px' }}>
+                        <span style={{
+                          fontSize: '10px', fontWeight: 700,
+                          color: c.outcome === 'success' ? '#22c55e' : '#94a3b8',
+                          letterSpacing: '0.04em', textTransform: 'uppercase' as const,
+                          minWidth: '50px',
+                        }}>
+                          {c.type === 'fire' ? 'Fire' : c.type === 'hire' ? 'Hire' : 'Retire'}
+                        </span>
+                        <span style={{ flex: 1, color: '#e2e8f0' }}>{c.coachName || '—'}</span>
+                        <span style={{
+                          fontSize: '10px', fontWeight: 700,
+                          color: c.outcome === 'success' ? '#22c55e' : '#f43f5e',
+                          letterSpacing: '0.04em', textTransform: 'uppercase' as const,
+                        }}>
+                          {c.outcome === 'success' ? 'Passed' : 'Failed'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                {moves.resigns.length > 0 && subSection('Re-signs', '#22c55e', moves.resigns.map((m, i) => (
+                  <div key={i}>{moverRow(m)}</div>
+                )))}
+                {moves.promotions.length > 0 && subSection('Prospect Promotions', '#38bdf8', moves.promotions.map((m, i) => (
+                  <div key={i}>{moverRow(m)}</div>
+                )))}
+                {moves.rookies.length > 0 && subSection('Rookie Picks', '#a78bfa', moves.rookies.map((m, i) => (
+                  <div key={i}>{moverRow(m)}</div>
+                )))}
+                {moves.faSignings.length > 0 && subSection('Free Agent Signings', '#f59e0b', moves.faSignings.map((m, i) => (
+                  <div key={i}>{moverRow(m)}</div>
+                )))}
+                {moves.cuts.length > 0 && subSection('Cuts', '#f43f5e', moves.cuts.map((m, i) => (
+                  <div key={i}>{moverRow(m, m.reason === 'gm_vote' ? { text: 'GM Vote', color: '#f43f5e' } : { text: 'Expired', color: '#94a3b8' })}</div>
+                )))}
+              </div>
+            )}
+          </div>
+        )}
+        {teamRookieTally.length > 0 && (
+          <div style={{ borderTop: '1px solid #334155' }}>
+            <button
+              onClick={() => setRookieTallyOpen(v => !v)}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '10px 14px', background: 'transparent', border: 'none',
+                cursor: 'pointer', textAlign: 'left' as const,
+              }}
+            >
+              <span style={{
+                fontSize: '10px', color: '#64748b',
+                transform: rookieTallyOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.15s',
+              }}>▶</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>
+                Rookie Vote Tallies
+              </span>
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                Aggregated rookie ballot for {teamAbbr}
+              </span>
+            </button>
+            {rookieTallyOpen && (
+              <div style={{ padding: '4px 14px 14px' }}>
+                {teamRookieTally.map((p, idx) => {
+                  const draftedByMe = p.draftedByTeamAbbr === teamAbbr
+                  const draftedByOther = !!p.draftedByTeamAbbr && !draftedByMe
+                  const status = draftedByMe
+                    ? { label: 'Drafted by us', color: '#22c55e' }
+                    : draftedByOther
+                      ? { label: `Picked by ${p.draftedByTeamAbbr}`, color: '#f43f5e' }
+                      : null
+                  return (
+                    <div key={`${p.id}-${idx}`} style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '5px 0', fontSize: '13px',
+                      borderBottom: idx < teamRookieTally.length - 1 ? '1px solid #1e293b' : 'none',
+                    }}>
+                      <span style={{
+                        fontSize: '12px', fontWeight: 700,
+                        color: idx === 0 ? '#f59e0b' : '#94a3b8',
+                        minWidth: '22px',
+                      }}>
+                        {idx + 1}.
+                      </span>
+                      <Stars stars={calcStars(p.rating)} size={11} />
+                      <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', color: '#e2e8f0' }}>
+                        <PlayerLink
+                          playerId={p.id}
+                          playerName={p.name}
+                          style={{ color: '#e2e8f0' }}
+                        />
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>
+                          {p.position}
+                        </span>
+                      </span>
+                      {status && (
+                        <span style={{
+                          fontSize: '10px', fontWeight: 700, color: status.color,
+                          letterSpacing: '0.04em', textTransform: 'uppercase' as const,
+                        }}>
+                          {status.label}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
         {hasResolvedTallies && (
           <div style={{ borderTop: '1px solid #334155' }}>
             <button
@@ -292,44 +559,48 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                 transform: fanVotesOpen ? 'rotate(90deg)' : 'rotate(0deg)',
                 transition: 'transform 0.15s',
               }}>▶</span>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>
-                Fan Vote Tallies
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>
+                Free Agent Vote Tallies
               </span>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>
                 Resolved rankings for each open slot
               </span>
             </button>
             {fanVotesOpen && (
               <div style={{ padding: '4px 14px 14px' }}>
                 {Object.entries(teamFaVotes).map(([posName, ranked]) => (
-                  <div key={posName} style={{ marginTop: '8px' }}>
+                  <div key={posName} style={{ marginTop: '10px' }}>
                     <div style={{
-                      fontSize: '10px', fontWeight: 700, color: '#94a3b8',
+                      fontSize: '11px', fontWeight: 700, color: '#94a3b8',
                       textTransform: 'uppercase' as const, letterSpacing: '0.06em',
-                      marginBottom: '4px',
+                      marginBottom: '6px',
                     }}>
                       {posName}
                     </div>
                     {ranked.map((p, idx) => (
                       <div key={`${p.id}-${idx}`} style={{
                         display: 'flex', alignItems: 'center', gap: '8px',
-                        padding: '3px 0', fontSize: '12px',
+                        padding: '4px 0', fontSize: '13px',
                         borderBottom: idx < ranked.length - 1 ? '1px solid #1e293b' : 'none',
                       }}>
                         <span style={{
-                          fontSize: '11px', fontWeight: 700,
+                          fontSize: '12px', fontWeight: 700,
                           color: idx === 0 ? '#f59e0b' : '#94a3b8',
-                          minWidth: '20px',
+                          minWidth: '22px',
                         }}>
                           {idx + 1}.
                         </span>
-                        <Stars stars={calcStars(p.rating)} size={10} />
-                        <span style={{ flex: 1, color: '#e2e8f0' }}>
-                          {p.name}
+                        <Stars stars={calcStars(p.rating)} size={11} />
+                        <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0' }}>
+                          <PlayerLink
+                            playerId={p.id}
+                            playerName={p.name}
+                            style={{ color: '#e2e8f0' }}
+                          />
                           {p.isProspect && (
                             <span style={{
-                              fontSize: '9px', fontWeight: 700, color: '#f59e0b',
-                              marginLeft: '8px', letterSpacing: '0.04em',
+                              fontSize: '10px', fontWeight: 700, color: '#f59e0b',
+                              letterSpacing: '0.04em',
                             }}>
                               PROSPECT
                             </span>
@@ -452,10 +723,10 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                 transform: fanVotesOpen ? 'rotate(90deg)' : 'rotate(0deg)',
                 transition: 'transform 0.15s',
               }}>▶</span>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>
-                Fan Vote Tallies
+              <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>
+                Free Agent Vote Tallies
               </span>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>
                 {resolved
                   ? 'Resolved rankings for each open slot'
                   : `Live tally — ${totalBallots} ballot${totalBallots === 1 ? '' : 's'} in so far`}
@@ -464,11 +735,11 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
             {fanVotesOpen && (
               <div style={{ padding: '4px 14px 14px' }}>
                 {Object.entries(data).map(([posName, ranked]) => (
-                  <div key={posName} style={{ marginTop: '8px' }}>
+                  <div key={posName} style={{ marginTop: '10px' }}>
                     <div style={{
-                      fontSize: '10px', fontWeight: 700, color: '#94a3b8',
+                      fontSize: '11px', fontWeight: 700, color: '#94a3b8',
                       textTransform: 'uppercase' as const, letterSpacing: '0.06em',
-                      marginBottom: '4px',
+                      marginBottom: '6px',
                     }}>
                       {posName}
                     </div>
@@ -477,23 +748,27 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                       return (
                         <div key={`${p.id}-${idx}`} style={{
                           display: 'flex', alignItems: 'center', gap: '8px',
-                          padding: '3px 0', fontSize: '12px',
+                          padding: '4px 0', fontSize: '13px',
                           borderBottom: idx < ranked.length - 1 ? '1px solid #1e293b' : 'none',
                         }}>
                           <span style={{
-                            fontSize: '11px', fontWeight: 700,
+                            fontSize: '12px', fontWeight: 700,
                             color: idx === 0 ? '#f59e0b' : '#94a3b8',
-                            minWidth: '20px',
+                            minWidth: '22px',
                           }}>
                             {idx + 1}.
                           </span>
-                          <Stars stars={calcStars(p.rating)} size={10} />
-                          <span style={{ flex: 1, color: '#e2e8f0' }}>
-                            {p.name}
+                          <Stars stars={calcStars(p.rating)} size={11} />
+                          <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0' }}>
+                            <PlayerLink
+                              playerId={p.id}
+                              playerName={p.name}
+                              style={{ color: '#e2e8f0' }}
+                            />
                             {p.isProspect && (
                               <span style={{
-                                fontSize: '9px', fontWeight: 700, color: '#f59e0b',
-                                marginLeft: '8px', letterSpacing: '0.04em',
+                                fontSize: '10px', fontWeight: 700, color: '#f59e0b',
+                                letterSpacing: '0.04em',
                               }}>
                                 PROSPECT
                               </span>
@@ -501,7 +776,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                           </span>
                           {!resolved && votes != null && (
                             <span style={{
-                              fontSize: '11px', fontWeight: 700, color: '#60a5fa',
+                              fontSize: '12px', fontWeight: 700, color: '#60a5fa',
                               fontVariantNumeric: 'tabular-nums',
                             }}>
                               {votes} vote{votes === 1 ? '' : 's'}

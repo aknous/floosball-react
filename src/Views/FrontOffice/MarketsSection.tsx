@@ -452,7 +452,7 @@ const TIER_COLORS: Record<Tier, string> = {
   MEGA_MARKET: '#a78bfa',
   LARGE_MARKET: '#3b82f6',
   MID_MARKET: '#2dd4bf',
-  SMALL_MARKET: '#64748b',
+  SMALL_MARKET: '#f97316',
 }
 
 const TIER_ORDER: Tier[] = ['MEGA_MARKET', 'LARGE_MARKET', 'MID_MARKET', 'SMALL_MARKET']

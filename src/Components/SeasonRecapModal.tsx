@@ -664,7 +664,8 @@ const SeasonRecapModal: React.FC = () => {
 }
 
 const TIER_LABELS: Record<string, string> = { SMALL_MARKET: 'Small Market', MID_MARKET: 'Mid Market', LARGE_MARKET: 'Large Market', MEGA_MARKET: 'Mega Market' }
-const TIER_COLORS: Record<string, string> = { SMALL_MARKET: '#94a3b8', MID_MARKET: '#38bdf8', LARGE_MARKET: '#a78bfa', MEGA_MARKET: '#f59e0b' }
+// Standardized to match TeamPage / MarketsSection / OffseasonPanel palette.
+const TIER_COLORS: Record<string, string> = { SMALL_MARKET: '#f97316', MID_MARKET: '#2dd4bf', LARGE_MARKET: '#3b82f6', MEGA_MARKET: '#a78bfa' }
 
 const TierBadge: React.FC<{ tier: string; label?: string }> = ({ tier, label }) => {
   const color = TIER_COLORS[tier] || '#94a3b8'
