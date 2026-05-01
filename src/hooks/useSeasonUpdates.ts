@@ -4,6 +4,14 @@ import type { SeasonWebSocketEvent } from '@/types/websocket'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+export type OffseasonPhase =
+  | 'post_bowl'
+  | 'frontoffice'
+  | 'rookie_draft'
+  | 'pre_fa'
+  | 'fa_draft'
+  | 'training'
+
 export interface SeasonState {
   seasonNumber: number
   currentWeek: number
@@ -14,6 +22,8 @@ export interface SeasonState {
   regularSeasonOver: boolean
   nextGameStartTime: string | null
   nextSeasonStartTime: string | null
+  offseasonPhase: OffseasonPhase | null
+  offseasonPhaseTargetTime: string | null
 }
 
 export const useSeasonUpdates = () => {
@@ -30,6 +40,8 @@ export const useSeasonUpdates = () => {
     regularSeasonOver: false,
     nextGameStartTime: null,
     nextSeasonStartTime: null,
+    offseasonPhase: null,
+    offseasonPhaseTargetTime: null,
   })
 
   const fetchSeasonData = useCallback(async () => {
@@ -46,6 +58,8 @@ export const useSeasonUpdates = () => {
           completedGames: result.data.completed_games || [],
           nextGameStartTime: result.data.next_game_start_time || null,
           nextSeasonStartTime: result.data.next_season_start_time || null,
+          offseasonPhase: result.data.offseason_phase || null,
+          offseasonPhaseTargetTime: result.data.offseason_phase_target_time || null,
           seasonComplete: result.data.is_complete || false,
           regularSeasonOver: result.data.regular_season_over || false,
         }))
@@ -148,11 +162,66 @@ export const useSeasonUpdates = () => {
         break
 
       case 'offseason_start':
+        // Backend just entered the front-office phase. Re-fetch so we get
+        // the new offseason_phase + target_time without waiting on the next
+        // poll. The 30s navbar countdown tick is too slow for the user's
+        // first paint after the bowl ends.
         setSeasonState(prev => ({
           ...prev,
           currentWeekText: 'Offseason',
           activeGames: [],
-          completedGames: []
+          completedGames: [],
+        }))
+        fetchSeasonData()
+        break
+
+      case 'offseason_phase_change' as any: {
+        // Live phase transition — backend fires this every time the offseason
+        // flow moves between post_bowl / frontoffice / rookie_draft / pre_fa /
+        // fa_draft / training. Pull the phase + target straight from the event
+        // so countdowns flip without waiting for the next /api/season poll.
+        const ev = event as any
+        const phase = ev.phase ?? null
+        const targetTime = ev.targetTime ?? null
+        setSeasonState(prev => ({
+          ...prev,
+          offseasonPhase: phase,
+          offseasonPhaseTargetTime: targetTime,
+        }))
+        break
+      }
+
+      // Fallbacks: if offseason_phase_change is dropped (e.g., coalesced by
+      // React batching when bursts of events arrive at once), these
+      // pre-existing draft-start / window-close events still drive the phase
+      // forward so the navbar countdown doesn't stay stuck on "starting soon".
+      case 'rookie_draft_start' as any:
+        setSeasonState(prev => ({
+          ...prev,
+          offseasonPhase: 'rookie_draft' as OffseasonPhase,
+          offseasonPhaseTargetTime: null,
+        }))
+        break
+
+      case 'rookie_draft_complete' as any:
+        // Pre-FA wait kicks in next — re-fetch to pick up the new target time
+        fetchSeasonData()
+        break
+
+      case 'gm_fa_window_close' as any:
+        // Window close fires right when the FA draft starts.
+        setSeasonState(prev => ({
+          ...prev,
+          offseasonPhase: 'fa_draft' as OffseasonPhase,
+          offseasonPhaseTargetTime: null,
+        }))
+        break
+
+      case 'offseason_complete' as any:
+        setSeasonState(prev => ({
+          ...prev,
+          offseasonPhase: 'training' as OffseasonPhase,
+          offseasonPhaseTargetTime: null,
         }))
         break
     }

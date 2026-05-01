@@ -298,6 +298,48 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0)
   const isMobile = useIsMobile()
   const isTablet = useIsMobile(1200)
+
+  // Phase-aware offseason countdown. Each waiting phase has a target time
+  // for the *next* phase, and the navbar replaces the week-text slot with
+  // "<NextPhase> in Xh Ym" so users can see what's coming next without
+  // hunting around. Active phases (rookie_draft, fa_draft, training) just
+  // show the phase label.
+  const offseasonPhase = seasonState.offseasonPhase
+  const offseasonPhaseTargetTime = seasonState.offseasonPhaseTargetTime
+  const [offseasonCountdown, setOffseasonCountdown] = useState('')
+  useEffect(() => {
+    if (!offseasonPhase) { setOffseasonCountdown(''); return }
+    const NEXT_LABEL = {
+      post_bowl: 'Offseason',
+      frontoffice: 'Rookie Draft',
+      rookie_draft: 'Rookie Draft',
+      pre_fa: 'Free Agency',
+      fa_draft: 'Free Agency',
+      training: 'Offseason Training',
+    }
+    const ACTIVE_LABEL = {
+      rookie_draft: 'Rookie Draft',
+      fa_draft: 'Free Agency',
+      training: 'Offseason Training',
+    }
+    if (!offseasonPhaseTargetTime) {
+      setOffseasonCountdown(ACTIVE_LABEL[offseasonPhase] || '')
+      return
+    }
+    const tick = () => {
+      const diff = new Date(offseasonPhaseTargetTime).getTime() - Date.now()
+      const label = NEXT_LABEL[offseasonPhase] || 'Offseason'
+      if (diff <= 0) { setOffseasonCountdown(`${label} starting soon`); return }
+      const hours = Math.floor(diff / 3600000)
+      const minutes = Math.floor((diff % 3600000) / 60000)
+      if (hours > 0) setOffseasonCountdown(`${label} in ${hours}h ${minutes}m`)
+      else if (minutes > 0) setOffseasonCountdown(`${label} in ${minutes}m`)
+      else setOffseasonCountdown(`${label} starting soon`)
+    }
+    tick()
+    const id = setInterval(tick, 30000)
+    return () => clearInterval(id)
+  }, [offseasonPhase, offseasonPhaseTargetTime])
   // Poll for notification count
   const hasUser = !!user
   useEffect(() => {
@@ -366,7 +408,11 @@ export default function Navbar() {
 
   const fetchChampion = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/reigning-champion`)
+      // Cache-bust query param — endpoint has a 10-min Cache-Control header,
+      // which means a re-fetch after the bowl ends would otherwise return
+      // the pre-bowl champion from browser cache. Burn it on every call so
+      // post-bowl refetches actually hit the backend.
+      const res = await axios.get(`${API_BASE}/reigning-champion?t=${Date.now()}`)
       setChampion(res.data?.data || null)
     } catch { setChampion(null) }
   }
@@ -374,7 +420,14 @@ export default function Navbar() {
   useEffect(() => { fetchStandings() }, [user?.favoriteTeamId])
   useEffect(() => { fetchChampion() }, [])
   useEffect(() => {
-    if (lastEvent?.event === 'season_end') { fetchStandings(); fetchChampion() }
+    // Refetch on season_end (reigning champion just changed) and on
+    // offseason_start (in case season_end was missed when broadcasting
+    // was disabled — happens in OFFSEASON_TEST mode and other silent
+    // simulation timings).
+    if (lastEvent?.event === 'season_end' || lastEvent?.event === 'offseason_start') {
+      fetchStandings()
+      fetchChampion()
+    }
   }, [lastEvent])
 
   // Fantasy points from snapshot (single source of truth)
@@ -493,7 +546,9 @@ export default function Navbar() {
                 <div style={{ display: 'flex', gap: '12px', fontSize: '16px', color: '#94a3b8' }}>
                   <span>Season {seasonState.seasonNumber}</span>
                   <span>•</span>
-                  <span>{seasonState.currentWeekText}</span>
+                  <span style={offseasonCountdown ? { color: '#f59e0b' } : undefined}>
+                    {offseasonCountdown || seasonState.currentWeekText}
+                  </span>
                 </div>
               )}
 
@@ -573,7 +628,9 @@ export default function Navbar() {
               <div style={{ fontSize: '13px', color: '#64748b', paddingBottom: '8px', display: 'flex', gap: '8px' }}>
                 {seasonState.seasonNumber > 0 && (<><span>Season {seasonState.seasonNumber}</span>
                 <span>•</span>
-                <span>{seasonState.currentWeekText}</span></>)}
+                <span style={offseasonCountdown ? { color: '#f59e0b' } : undefined}>
+                  {offseasonCountdown || seasonState.currentWeekText}
+                </span></>)}
                 {champion && (
                   <>
                     <span>•</span>
