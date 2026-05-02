@@ -307,26 +307,45 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}
-                  {/* Clock-stopped icon — only on non-scoring stops, since
-                      scoring plays already imply the clock will stop and the
-                      scoreboard / badge make that obvious. */}
-                  {play.clockStopped && !play.scoreChange && (
-                    <span
-                      title="Clock stopped after this play"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        color: '#fbbf24',
-                        marginLeft: '2px',
-                      }}>
-                      <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
-                           stroke="currentColor" strokeWidth="1.5"
-                           strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="8" cy="8" r="6.5" />
-                        <line x1="6.5" y1="5.5" x2="6.5" y2="10.5" />
-                        <line x1="9.5" y1="5.5" x2="9.5" y2="10.5" />
-                      </svg>
-                    </span>
+                  {/* Clock state — pause-in-circle when stopped, play-in-circle
+                      when running. Hidden on scoring plays since the score
+                      already conveys the clock will stop, and adding an icon
+                      there would just be noise. */}
+                  {!play.scoreChange && (
+                    play.clockStopped ? (
+                      <span
+                        title="Clock stopped after this play"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          color: '#fbbf24',
+                          marginLeft: '2px',
+                        }}>
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
+                             stroke="currentColor" strokeWidth="1.5"
+                             strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="8" cy="8" r="6.5" />
+                          <line x1="6.5" y1="5.5" x2="6.5" y2="10.5" />
+                          <line x1="9.5" y1="5.5" x2="9.5" y2="10.5" />
+                        </svg>
+                      </span>
+                    ) : (
+                      <span
+                        title="Clock kept running after this play"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          color: '#22c55e',
+                          marginLeft: '2px',
+                        }}>
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
+                             stroke="currentColor" strokeWidth="1.5"
+                             strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="8" cy="8" r="6.5" />
+                          <path d="M6.5 5.5 L11 8 L6.5 10.5 Z" fill="currentColor" />
+                        </svg>
+                      </span>
+                    )
                   )}
                 </span>
                 {downText && (
