@@ -305,7 +305,24 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
               {/* Left: clock / situation */}
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span>{play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}
+                  {play.clockStopped && (
+                    <span
+                      title="Clock stopped after this play"
+                      style={{
+                        color: '#fbbf24',
+                        fontSize: '10px',
+                        fontWeight: '600',
+                        letterSpacing: '0.04em',
+                        padding: '0px 4px',
+                        borderRadius: '2px',
+                        backgroundColor: 'rgba(251,191,36,0.12)',
+                      }}>
+                      CLOCK STOPS
+                    </span>
+                  )}
+                </span>
                 {downText && (
                   <>
                     <span>•</span>
