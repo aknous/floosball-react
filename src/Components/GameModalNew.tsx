@@ -307,19 +307,25 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}
-                  {play.clockStopped && (
+                  {/* Clock-stopped icon — only on non-scoring stops, since
+                      scoring plays already imply the clock will stop and the
+                      scoreboard / badge make that obvious. */}
+                  {play.clockStopped && !play.scoreChange && (
                     <span
                       title="Clock stopped after this play"
                       style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
                         color: '#fbbf24',
-                        fontSize: '10px',
-                        fontWeight: '600',
-                        letterSpacing: '0.04em',
-                        padding: '0px 4px',
-                        borderRadius: '2px',
-                        backgroundColor: 'rgba(251,191,36,0.12)',
+                        marginLeft: '2px',
                       }}>
-                      CLOCK STOPS
+                      <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
+                           stroke="currentColor" strokeWidth="1.5"
+                           strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="8" cy="8" r="6.5" />
+                        <line x1="6.5" y1="5.5" x2="6.5" y2="10.5" />
+                        <line x1="9.5" y1="5.5" x2="9.5" y2="10.5" />
+                      </svg>
                     </span>
                   )}
                 </span>
