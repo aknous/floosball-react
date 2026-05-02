@@ -17,6 +17,31 @@ interface GameModalNewProps {
   gameId: number
 }
 
+/** Tiny icon + tooltip shown wherever we surface clock state. Used both in
+    the per-play feed row and next to the main game clock. */
+const ClockStateIcon: React.FC<{ stopped: boolean }> = ({ stopped }) => {
+  const color = stopped ? '#fbbf24' : '#22c55e'
+  return (
+    <HoverTooltip text={stopped ? 'Clock stopped' : 'Clock running'} color={color}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', color, marginLeft: '2px' }}>
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
+             stroke="currentColor" strokeWidth="1.5"
+             strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="8" cy="8" r="6.5" />
+          {stopped ? (
+            <>
+              <line x1="6.5" y1="5.5" x2="6.5" y2="10.5" />
+              <line x1="9.5" y1="5.5" x2="9.5" y2="10.5" />
+            </>
+          ) : (
+            <path d="M6.5 5.5 L11 8 L6.5 10.5 Z" fill="currentColor" />
+          )}
+        </svg>
+      </span>
+    </HoverTooltip>
+  )
+}
+
 /** Returns a consistent badge background color for any PlayResult string. */
 /** Returns true for play results that warrant a badge in the field graphic (scores + turnovers). */
 function isFieldBadgeResult(playResult: string): boolean {
@@ -312,32 +337,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       when running. Hidden on scoring plays since the score
                       already conveys the clock will stop, and adding an icon
                       there would just be noise. */}
-                  {!play.scoreChange && (
-                    play.clockStopped ? (
-                      <HoverTooltip text="Clock stopped after this play" color="#fbbf24">
-                        <span style={{ display: 'inline-flex', alignItems: 'center', color: '#fbbf24', marginLeft: '2px' }}>
-                          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
-                               stroke="currentColor" strokeWidth="1.5"
-                               strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="8" cy="8" r="6.5" />
-                            <line x1="6.5" y1="5.5" x2="6.5" y2="10.5" />
-                            <line x1="9.5" y1="5.5" x2="9.5" y2="10.5" />
-                          </svg>
-                        </span>
-                      </HoverTooltip>
-                    ) : (
-                      <HoverTooltip text="Clock kept running after this play" color="#22c55e">
-                        <span style={{ display: 'inline-flex', alignItems: 'center', color: '#22c55e', marginLeft: '2px' }}>
-                          <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
-                               stroke="currentColor" strokeWidth="1.5"
-                               strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="8" cy="8" r="6.5" />
-                            <path d="M6.5 5.5 L11 8 L6.5 10.5 Z" fill="currentColor" />
-                          </svg>
-                        </span>
-                      </HoverTooltip>
-                    )
-                  )}
+                  {!play.scoreChange && <ClockStateIcon stopped={!!play.clockStopped} />}
                 </span>
                 {downText && (
                   <>
@@ -702,13 +702,27 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             {/* Game status + down/distance */}
             <div style={{ padding: '10px 16px', borderBottom: '1px solid #334155', textAlign: 'center' }}>
               {/* Row 1: clock / final */}
-              <div style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '600', marginBottom: '3px' }}>
+              <div style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '600', marginBottom: '3px',
+                            display: 'inline-flex', alignItems: 'center', gap: '6px',
+                            justifyContent: 'center', width: '100%' }}>
                 {gameData.status === 'Final' ? (
-                  `Final${gameData.isOvertime ? ' (OT)' : ''}`
+                  <span>Final{gameData.isOvertime ? ' (OT)' : ''}</span>
                 ) : gameData.status === 'Active' ? (
-                  `${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.timeRemaining}`
+                  <>
+                    <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.timeRemaining}`}</span>
+                    {(() => {
+                      // Mirror the per-play icon: derive current clock state
+                      // from the most recent real play. plays are newest-first.
+                      const latest = gameData.plays?.find((p: any) => !p.event && p.playResult != null)
+                      if (!latest) return null
+                      // Hide when the latest play scored — same noise gate as
+                      // the per-play row.
+                      if (latest.scoreChange) return null
+                      return <ClockStateIcon stopped={!!latest.clockStopped} />
+                    })()}
+                  </>
                 ) : (
-                  gameData.status
+                  <span>{gameData.status}</span>
                 )}
               </div>
               {/* Row 2: down & distance (active only) */}
