@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useGames } from '@/contexts/GamesContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
@@ -47,7 +48,19 @@ interface LeagueNewsHighlight {
   text: string
 }
 
-type HighlightItem = PlayHighlight | GameEndHighlight | GameStartHighlight | LeagueNewsHighlight
+interface OffDayHighlight {
+  type: 'off_day'
+  id: string
+  sortKey: number
+  playerId: number
+  playerName: string
+  teamId: number | null
+  teamAbbr: string | null
+  personality: string
+  text: string
+}
+
+type HighlightItem = PlayHighlight | GameEndHighlight | GameStartHighlight | LeagueNewsHighlight | OffDayHighlight
 
 const getBadge = (play: any): { label: string; color: string } | null => {
   if (play.isTouchdown) return { label: 'TD', color: '#22c55e' }
@@ -63,6 +76,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
   const { games } = useGames()
   const { event } = useSeasonWebSocket()
   const [newsItems, setNewsItems] = useState<LeagueNewsHighlight[]>([])
+  const [offDayItems, setOffDayItems] = useState<OffDayHighlight[]>([])
 
   useEffect(() => {
     if (!event || event.event !== 'league_news') return
@@ -74,6 +88,54 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
       text,
     }, ...prev])
   }, [event])
+
+  useEffect(() => {
+    if (!event) return
+    const evtName = (event as any).event
+    if (evtName === 'player_off_day') {
+      const e = event as any
+      setOffDayItems(prev => [{
+        type: 'off_day' as const,
+        id: `offday-${Date.now()}-${Math.random()}`,
+        sortKey: Date.now(),
+        playerId: e.playerId,
+        playerName: e.playerName,
+        teamId: e.teamId ?? null,
+        teamAbbr: e.teamAbbr ?? null,
+        personality: e.personality,
+        text: e.text,
+      }, ...prev].slice(0, 30))
+    } else if (evtName === 'game_start' || evtName === 'week_start') {
+      // New round / week starting — clear off-day chatter from the previous
+      // idle window so the feed is fresh for the upcoming games.
+      setOffDayItems([])
+    }
+  }, [event])
+
+  // Backfill the off-day feed on mount from the backend ring buffer so the
+  // feed isn't empty after a browser refresh.
+  useEffect(() => {
+    fetch(`${API_BASE}/recent-off-day`)
+      .then(r => r.json())
+      .then(j => {
+        if (!j?.success || !Array.isArray(j.data)) return
+        const seeded: OffDayHighlight[] = j.data.map((e: any, i: number) => ({
+          type: 'off_day' as const,
+          id: `offday-seed-${i}-${e.timestamp || Date.now()}`,
+          // Sort the seeded ones BEFORE any new live events: use timestamp
+          // when present, else a small monotonic offset from now.
+          sortKey: e.timestamp ? new Date(e.timestamp).getTime() : Date.now() - i * 1000,
+          playerId: e.playerId,
+          playerName: e.playerName,
+          teamId: e.teamId ?? null,
+          teamAbbr: e.teamAbbr ?? null,
+          personality: e.personality,
+          text: e.text,
+        }))
+        setOffDayItems(seeded)
+      })
+      .catch(() => {})
+  }, [])
 
   const highlights = useMemo<HighlightItem[]>(() => {
     const items: HighlightItem[] = []
@@ -92,12 +154,19 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
         })
       }
 
-      // Game-end card — floats to the top of the feed
+      // Game-end card — sortKey is when the game ended (epoch ms) so it sits
+      // naturally with other timestamped items in the feed. Pinning it to the
+      // top forever made off-day chatter from the next idle window stack
+      // underneath stale final scores.
       if (status === 'Final') {
+        const endedAt = (game as any)._endedAt
         items.push({
           type: 'game_end',
           gameId,
-          sortKey: Number.MAX_SAFE_INTEGER,
+          // Falls back to "an hour ago" for Final games that came in via REST
+          // without an _endedAt stamp — keeps them in the feed but doesn't
+          // dominate over anything live.
+          sortKey: endedAt ?? (Date.now() - 60 * 60 * 1000),
           homeTeam,
           awayTeam,
           homeScore,
@@ -131,7 +200,10 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
         items.push({
           type: 'play',
           gameId,
-          sortKey: play.playNumber,
+          // Sort plays by _receivedAt (epoch ms) so they interleave correctly
+          // with off-day items (also epoch ms). Falls back to playNumber for
+          // plays that somehow lack a stamp (shouldn't happen in practice).
+          sortKey: play._receivedAt ?? play.playNumber,
           play,
           featuredTeam,
           homeTeam,
@@ -140,8 +212,8 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
       })
     })
 
-    return [...items, ...newsItems].sort((a, b) => b.sortKey - a.sortKey)
-  }, [games, newsItems])
+    return [...items, ...newsItems, ...offDayItems].sort((a, b) => b.sortKey - a.sortKey)
+  }, [games, newsItems, offDayItems])
 
   if (highlights.length === 0) {
     return (
@@ -157,6 +229,50 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
         const separator = idx > 0 ? (
           <div key={`sep-${idx}`} style={{ height: '1px', backgroundColor: '#2a3a4e', margin: '0 12px' }} />
         ) : null
+        if (item.type === 'off_day') {
+          const accent = personalityAccent(item.personality)
+          return (
+            <React.Fragment key={item.id}>
+              {separator}
+              <Link
+                to={`/players/${item.playerId}`}
+                style={{
+                  display: 'block',
+                  textDecoration: 'none',
+                  backgroundColor: `${accent}10`,
+                  borderRadius: '6px',
+                  padding: '10px 12px',
+                  borderLeft: `2px solid ${accent}`,
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  {item.teamId != null && (
+                    <img src={`/avatars/${item.teamId}.png`} alt={item.teamAbbr || ''} style={{ width: '14px', height: '14px', flexShrink: 0 }} />
+                  )}
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: '#e2e8f0', letterSpacing: '0.02em' }}>
+                    {item.playerName}
+                  </span>
+                  {item.teamAbbr && (
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600' }}>
+                      · {item.teamAbbr}
+                    </span>
+                  )}
+                </div>
+                <p style={{
+                  fontSize: '13px',
+                  color: '#cbd5e1',
+                  fontStyle: 'italic',
+                  margin: 0,
+                  lineHeight: '1.45',
+                }}>
+                  {item.text}
+                </p>
+              </Link>
+            </React.Fragment>
+          )
+        }
+
         if (item.type === 'league_news') {
           const isChamp = item.text.includes('champions!')
           const isTopSeed = item.text.includes('top seed') || item.text.includes('#1 seed')

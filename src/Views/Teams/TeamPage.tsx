@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
-import PlayerAvatar from '@/Components/PlayerAvatar'
 import { Stars } from '@/Components/Stars'
 import CoachAvatar from '@/Components/CoachAvatar'
 import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
@@ -535,7 +534,6 @@ export default function TeamPage() {
                     <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', minWidth: '28px' }}>{posLabel}</span>
                     {player ? (
                       <>
-                        <PlayerAvatar name={player.name} size={32} bgColor={team.color} />
                         <PlayerHoverCard playerId={player.id} playerName={player.name}>
                           <Link
                             to={`/players/${player.id}`}

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import PlayerAvatar from '@/Components/PlayerAvatar'
 import { Stars, SwordIcon, ShieldIcon, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { GiLaurelsTrophy, GiStarMedal } from 'react-icons/gi'
+import { personalityAccent } from '@/utils/personality'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -445,8 +445,10 @@ export default function PlayerPage() {
   const { id } = useParams<{ id: string }>()
   const [player, setPlayer] = useState<PlayerData | null>(null)
   const [ratingHistory, setRatingHistory] = useState<RatingPoint[]>([])
+  const [quotes, setQuotes] = useState<Array<{ text: string; event?: string; personality?: string; timestamp?: string }>>([])
   const [loading, setLoading] = useState(true)
   const [statsView, setStatsView] = useState<'offense' | 'defense'>('offense')
+  const [detailTab, setDetailTab] = useState<'attributes' | 'progression' | 'profile' | 'moments' | 'awards'>('attributes')
   const isMobile = useIsMobile()
 
   useEffect(() => {
@@ -455,9 +457,11 @@ export default function PlayerPage() {
     Promise.all([
       fetch(`${API_BASE}/players/${id}`).then(r => r.json()).catch(() => null),
       fetch(`${API_BASE}/players/${id}/rating-history`).then(r => r.json()).catch(() => null),
-    ]).then(([playerRes, historyRes]) => {
+      fetch(`${API_BASE}/players/${id}/quotes`).then(r => r.json()).catch(() => null),
+    ]).then(([playerRes, historyRes, quotesRes]) => {
       if (playerRes?.success && playerRes.data) setPlayer(playerRes.data)
       if (historyRes?.success && historyRes.data?.history) setRatingHistory(historyRes.data.history)
+      if (quotesRes?.success && Array.isArray(quotesRes.data)) setQuotes(quotesRes.data)
     }).finally(() => setLoading(false))
   }, [id])
 
@@ -526,19 +530,49 @@ export default function PlayerPage() {
 
       {/* Hero + Attributes */}
       <div style={{
-        background: `linear-gradient(135deg, ${teamColor}50 0%, #0f172a 55%)`,
+        backgroundColor: '#0f172a',
         borderBottom: '1px solid #1e293b',
         padding: isMobile ? '20px 16px' : '28px 24px',
       }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', display: isMobile ? 'flex' : 'grid', flexDirection: 'column', gridTemplateColumns: isMobile ? undefined : 'auto 400px', gap: isMobile ? '20px' : '32px', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: isMobile ? 'flex' : 'grid', flexDirection: 'column', gridTemplateColumns: isMobile ? undefined : '210px auto 380px 230px', gap: isMobile ? '20px' : '20px', alignItems: 'stretch', justifyContent: 'center' }}>
 
-          {/* Left: Avatar + Jersey + Name */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? '12px' : '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
-              <PlayerAvatar name={player.name} size={isMobile ? 100 : 144} bgColor={player.teamColor} style={{ border: `3px solid ${teamColor}` }} />
-              <div style={{ width: isMobile ? '100px' : '144px' }}>
-                <PlayerJersey color={teamColor} secondary={teamSecondary} number={player.number} name={player.name} />
+          {/* Far-left: Profile (hometown / favorite / motto). Pure character flavor.
+              Immediately visible on desktop; on mobile it falls below the jersey
+              block since the grid collapses to a single column. */}
+          {!isMobile && (att?.hometown || att?.favorite_item || att?.motto) && (
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', alignSelf: 'stretch' }}>
+              {sectionHeader('Profile')}
+              <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
+                {att?.hometown && (
+                  <div>
+                    <div style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '3px' }}>Hometown</div>
+                    <div style={{ fontSize: '13px', color: '#e2e8f0' }}>{att.hometown}</div>
+                  </div>
+                )}
+                {att?.favorite_item && att?.favorite_category && (
+                  <div>
+                    <div style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '3px' }}>
+                      Favorite {att.favorite_category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#e2e8f0' }}>{att.favorite_item}</div>
+                  </div>
+                )}
+                {att?.motto && (
+                  <div>
+                    <div style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '3px' }}>Motto</div>
+                    <div style={{ fontSize: '13px', color: '#e2e8f0', fontStyle: 'italic' as const }}>"{att.motto}"</div>
+                  </div>
+                )}
               </div>
+            </div>
+          )}
+          {/* Spacer to keep grid columns aligned when player has no profile data */}
+          {!isMobile && !(att?.hometown || att?.favorite_item || att?.motto) && <div />}
+
+          {/* Middle: Jersey + Name */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '12px' : '16px' }}>
+            <div style={{ width: isMobile ? '100px' : '144px' }}>
+              <PlayerJersey color={teamColor} secondary={teamSecondary} number={player.number} name={player.name} />
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: isMobile ? '11px' : '13px', color: '#64748b' }}>
@@ -587,205 +621,303 @@ export default function PlayerPage() {
                   {att.personality.archetypeLabel}
                 </div>
               )}
-              {att?.mood && (
-                <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '14px', color: MOOD_COLORS[att.moodTier || 'steady'] || '#94a3b8', fontWeight: '600' }}>
-                    {att.mood}
-                  </span>
-                  {att.demeanor && (
-                    <span style={{ fontSize: '13px', color: '#94a3b8', fontStyle: 'italic', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                      {att.demeanor}
-                      {att.demeanorDrift && (
-                        <span
-                          title={`Drifting ${att.demeanorDrift.direction} (from ${att.demeanorDrift.from ?? '—'})`}
-                          style={{
-                            color: att.demeanorDrift.direction === 'volatile' ? '#f97316' : '#38bdf8',
-                            fontSize: '12px',
-                            marginLeft: '2px',
-                            fontStyle: 'normal',
-                          }}
-                        >
-                          {att.demeanorDrift.direction === 'volatile' ? '↗' : '↙'}
-                        </span>
-                      )}
-                    </span>
-                  )}
-                  {att?.personality?.quirkLabel && (() => {
-                    const tier = (att.personality.quirkTier || 'common').toLowerCase()
-                    const color = QUIRK_TIER_COLORS[tier] || '#94a3b8'
-                    return (
-                      <span
-                        title={`${att.personality.quirkLabel} · ${tier}`}
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: '700',
-                          padding: '2px 8px',
-                          borderRadius: '3px',
-                          backgroundColor: `${color}22`,
-                          color: color,
-                          border: `1px solid ${color}55`,
-                          letterSpacing: '0.04em',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {att.personality.quirkLabel}
-                      </span>
-                    )
-                  })()}
-                </div>
-              )}
-
-              {/* Flavor — hometown, favorite, motto. Pure character flavor. */}
-              {(att?.hometown || att?.favorite_item || att?.motto) && (
-                <div style={{
-                  marginTop: '14px',
-                  paddingTop: '12px',
-                  borderTop: '1px solid #334155',
-                  display: 'flex',
-                  flexDirection: 'column' as const,
-                  gap: '6px',
-                  fontSize: '13px',
-                  color: '#cbd5e1',
-                  textAlign: 'left' as const,
-                }}>
-                  {att.hometown && (
-                    <div>
-                      <span style={{ color: '#64748b', fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginRight: '8px' }}>From</span>
-                      {att.hometown}
-                    </div>
-                  )}
-                  {att.favorite_item && att.favorite_category && (
-                    <div>
-                      <span style={{ color: '#64748b', fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginRight: '8px' }}>
-                        Favorite {att.favorite_category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                      </span>
-                      {att.favorite_item}
-                    </div>
-                  )}
-                  {att.motto && (
-                    <div style={{ marginTop: '4px', fontStyle: 'italic' as const, color: '#e2e8f0' }}>
-                      <span style={{ color: '#64748b', fontStyle: 'normal' as const, fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginRight: '8px' }}>Motto</span>
-                      "{att.motto}"
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right: Attributes */}
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', width: isMobile ? '100%' : undefined }}>
-            {sectionHeader('Attributes')}
-            <div style={{ padding: '14px 16px' }}>
-              {/* Overall + Performance on top */}
-              {attrRow('Overall', player.ratingStars, player.playerRating, true)}
-              {att?.seasonPerformanceRating != null && att.seasonPerformanceRating > 0 &&
-                attrRow('Performance', att.seasonPerformanceRatingStars ?? 1, att.seasonPerformanceRating)}
-
-              {/* Offense / Defense columns side by side */}
-              {hasDefense ? (
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '0' : '16px', marginTop: '8px' }}>
-                  {/* Offense column */}
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #334155' }}>
-                      <SwordIcon size={13} color="#94a3b8" />
-                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Offense</span>
-                      {player.offensiveRating != null && (
-                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.offensiveRating}</span>
-                      )}
-                    </div>
-                    {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
-                  </div>
-                  {/* Defense column */}
-                  <div style={isMobile ? { marginTop: '12px' } : {}}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #334155' }}>
-                      <ShieldIcon size={13} color="#94a3b8" />
-                      <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Defense ({player.defensivePosition})</span>
-                      {player.defensiveRating != null && (
-                        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.defensiveRating}</span>
-                      )}
-                    </div>
-                    {defAttrs.map(a => attrRow(a.label, a.stars, a.value))}
-                  </div>
-                </div>
-              ) : (
-                /* Kickers: no defense column, just show offense attrs */
-                <div style={{ marginTop: '4px' }}>
-                  {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
-                </div>
-              )}
-
-              {/* Fatigue */}
-              {att?.fatigue != null && att.fatigue > 0 && (() => {
-                const f = att.fatigue
-                const fColor = f < 5 ? '#4ade80' : f < 10 ? '#eab308' : f < 15 ? '#f97316' : '#ef4444'
+              {att?.mood && (() => {
+                const accent = MOOD_COLORS[att.moodTier || 'steady'] || '#94a3b8'
                 return (
-                  <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #334155' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '13px', color: '#94a3b8' }}>Fatigue</span>
-                      <span style={{ fontSize: '13px', color: fColor, fontWeight: '600' }}>{f.toFixed(1)}%</span>
-                    </div>
-                    <div style={{ height: '6px', backgroundColor: '#0f172a', borderRadius: '3px' }}>
-                      <div style={{ width: `${Math.min(f / 20 * 100, 100)}%`, height: '100%', backgroundColor: fColor, borderRadius: '3px' }} />
-                    </div>
+                  <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                    <span style={{
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: accent,
+                      backgroundColor: `${accent}1a`,
+                      border: `1px solid ${accent}66`,
+                      padding: '3px 10px',
+                      borderRadius: '4px',
+                    }}>
+                      Mood: <span style={{ fontWeight: '700' }}>{att.mood}</span>
+                    </span>
                   </div>
                 )
               })()}
+
             </div>
           </div>
+
+          {/* Third column: Tabbed detail container — Attributes / Progression /
+              Awards. Profile and Moments live in their own columns now, so they
+              are not duplicated as tabs here. Tabs whose source data is empty
+              are hidden so we don't show a dead tab. */}
+          {(() => {
+            const hasProgression = ratingHistory.length > 0
+            const hasAwards = (player.mvpAwards?.length ?? 0) > 0 || (player.championships?.length ?? 0) > 0
+
+            const tabs: Array<{ key: typeof detailTab; label: string; show: boolean }> = [
+              { key: 'attributes',  label: 'Attributes',  show: true },
+              { key: 'progression', label: 'Progression', show: hasProgression },
+              { key: 'awards',      label: 'Awards',      show: hasAwards },
+            ]
+            const visibleTabs = tabs.filter(t => t.show)
+            // If somehow the active tab got hidden, fall back to attributes
+            const activeTab = visibleTabs.some(t => t.key === detailTab) ? detailTab : 'attributes'
+
+            return (
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', width: isMobile ? '100%' : undefined, alignSelf: 'stretch', display: 'flex', flexDirection: 'column' as const }}>
+                {/* Tab strip */}
+                <div style={{ display: 'flex', backgroundColor: '#0f172a', borderBottom: '1px solid #334155' }}>
+                  {visibleTabs.map(t => {
+                    const active = activeTab === t.key
+                    return (
+                      <button
+                        key={t.key}
+                        onClick={() => setDetailTab(t.key)}
+                        style={{
+                          flex: 1,
+                          padding: '10px 8px',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          color: active ? '#e2e8f0' : '#94a3b8',
+                          backgroundColor: active ? '#1e293b' : 'transparent',
+                          border: 'none',
+                          borderBottom: active ? `2px solid ${teamColor}` : '2px solid transparent',
+                          cursor: 'pointer',
+                          textTransform: 'uppercase' as const,
+                          letterSpacing: '0.05em',
+                          fontFamily: 'inherit',
+                          transition: 'background-color 0.15s, color 0.15s',
+                        }}
+                      >
+                        {t.label}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Panels — all tabs live in the same CSS grid cell so the
+                    container's height locks to max(tab heights). Non-active
+                    tabs are hidden via visibility but still occupy layout,
+                    so switching tabs never resizes the container. */}
+                <div style={{ padding: '14px 16px', flex: 1, display: 'grid', gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }}>
+                  {/* Attributes panel */}
+                  <div style={{
+                    gridArea: '1 / 1',
+                    visibility: activeTab === 'attributes' ? 'visible' : 'hidden',
+                    pointerEvents: activeTab === 'attributes' ? 'auto' : 'none',
+                  }}>
+                    {/* Overall + Performance on top */}
+                    {attrRow('Overall', player.ratingStars, player.playerRating, true)}
+                    {att?.seasonPerformanceRating != null && att.seasonPerformanceRating > 0 &&
+                      attrRow('Performance', att.seasonPerformanceRatingStars ?? 1, att.seasonPerformanceRating)}
+
+                    {/* Offense / Defense columns side by side */}
+                    {hasDefense ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '0' : '16px', marginTop: '8px' }}>
+                        {/* Offense column */}
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #334155' }}>
+                            <SwordIcon size={13} color="#94a3b8" />
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Offense</span>
+                            {player.offensiveRating != null && (
+                              <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.offensiveRating}</span>
+                            )}
+                          </div>
+                          {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                        </div>
+                        {/* Defense column */}
+                        <div style={isMobile ? { marginTop: '12px' } : {}}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #334155' }}>
+                            <ShieldIcon size={13} color="#94a3b8" />
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Defense ({player.defensivePosition})</span>
+                            {player.defensiveRating != null && (
+                              <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.defensiveRating}</span>
+                            )}
+                          </div>
+                          {defAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Kickers: no defense column, just show offense attrs */
+                      <div style={{ marginTop: '4px' }}>
+                        {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                      </div>
+                    )}
+
+                    {/* Fatigue */}
+                    {att?.fatigue != null && att.fatigue > 0 && (() => {
+                      const f = att.fatigue
+                      const fColor = f < 5 ? '#4ade80' : f < 10 ? '#eab308' : f < 15 ? '#f97316' : '#ef4444'
+                      return (
+                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #334155' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '13px', color: '#94a3b8' }}>Fatigue</span>
+                            <span style={{ fontSize: '13px', color: fColor, fontWeight: '600' }}>{f.toFixed(1)}%</span>
+                          </div>
+                          <div style={{ height: '6px', backgroundColor: '#0f172a', borderRadius: '3px' }}>
+                            <div style={{ width: `${Math.min(f / 20 * 100, 100)}%`, height: '100%', backgroundColor: fColor, borderRadius: '3px' }} />
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </div>
+
+                  {/* Progression panel */}
+                  {hasProgression && (
+                    <div style={{
+                      gridArea: '1 / 1',
+                      visibility: activeTab === 'progression' ? 'visible' : 'hidden',
+                      pointerEvents: activeTab === 'progression' ? 'auto' : 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minHeight: 0,
+                    }}>
+                      <RatingHistoryChart history={ratingHistory} teamColor={teamColor} />
+                    </div>
+                  )}
+
+                  {/* Awards panel */}
+                  {hasAwards && (
+                    <div style={{
+                      gridArea: '1 / 1',
+                      visibility: activeTab === 'awards' ? 'visible' : 'hidden',
+                      pointerEvents: activeTab === 'awards' ? 'auto' : 'none',
+                      display: 'flex',
+                      flexWrap: 'wrap' as const,
+                      gap: '16px',
+                      alignContent: 'flex-start',
+                    }}>
+                      {(player.mvpAwards ?? []).map((a: any, i: number) => (
+                        <div key={`mvp-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <GiStarMedal style={{ fontSize: '28px', color: '#fbbf24' }} />
+                          <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: '600', marginTop: '2px' }}>MVP</div>
+                          <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
+                          <div style={{ fontSize: '11px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
+                        </div>
+                      ))}
+                      {(player.championships ?? []).map((c: any, i: number) => (
+                        <div key={`champ-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <GiLaurelsTrophy style={{ fontSize: '28px', color: '#f59e0b' }} />
+                          <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', marginTop: '2px' }}>S{c.Season}</div>
+                          <div style={{ fontSize: '11px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Far-right: Recent Moments — recent personality quotes, immediately
+              visible without clicking a tab. Mobile keeps it in the lower stack
+              since the header collapses to a single column. */}
+          {!isMobile && quotes.length > 0 && (
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', alignSelf: 'stretch', minWidth: 0 }}>
+              {sectionHeader('Recent Moments')}
+              <div style={{ padding: '10px', display: 'flex', flexDirection: 'column' as const, gap: '6px' }}>
+                {quotes.slice(0, 4).map((q, i) => {
+                  const accent = q.personality ? personalityAccent(q.personality) : '#64748b'
+                  return (
+                    <div
+                      key={`${q.timestamp || i}`}
+                      style={{
+                        backgroundColor: `${accent}10`,
+                        borderLeft: `2px solid ${accent}`,
+                        borderRadius: '4px',
+                        padding: '6px 8px',
+                      }}
+                    >
+                      <p style={{
+                        fontSize: '12px',
+                        color: '#cbd5e1',
+                        fontStyle: 'italic' as const,
+                        margin: 0,
+                        lineHeight: 1.4,
+                        overflowWrap: 'break-word' as const,
+                      }}>
+                        {q.text}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          {/* Spacer to keep grid columns aligned when player has no quotes */}
+          {!isMobile && quotes.length === 0 && <div />}
 
         </div>
       </div>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
 
-        {/* Championships + Career Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: '16px', alignItems: 'start' }}>
-
-          {/* Left column: Awards + Rating Progression stacked */}
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '16px', minWidth: '200px' }}>
-
-            {/* Awards */}
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-              {sectionHeader('Awards')}
-              <div style={{ padding: '16px' }}>
-                {(player.mvpAwards?.length ?? 0) === 0 && (player.championships?.length ?? 0) === 0 ? (
-                  <div style={{ fontSize: '13px', color: '#475569', fontStyle: 'italic' }}>No awards yet</div>
-                ) : (
-                  <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '16px' }}>
-                    {(player.mvpAwards ?? []).map((a: any, i: number) => (
-                      <div key={`mvp-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <GiStarMedal style={{ fontSize: '28px', color: '#fbbf24' }} />
-                        <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: '600', marginTop: '2px' }}>MVP</div>
-                        <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
-                        <div style={{ fontSize: '11px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
-                      </div>
-                    ))}
-                    {(player.championships ?? []).map((c: any, i: number) => (
-                      <div key={`champ-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <GiLaurelsTrophy style={{ fontSize: '28px', color: '#f59e0b' }} />
-                        <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', marginTop: '2px' }}>S{c.Season}</div>
-                        <div style={{ fontSize: '11px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Rating progression — tucked under Awards so it doesn't push stats below the fold */}
-            {ratingHistory.length > 0 && (
-              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-                {sectionHeader('Rating Progression')}
-                <div style={{ padding: '12px' }}>
-                  <RatingHistoryChart history={ratingHistory} teamColor={teamColor} />
+        {/* Mobile-only: Profile and Recent Moments below the jersey area
+            since the header collapses to a single column on mobile. */}
+        {isMobile && (att?.hometown || att?.favorite_item || att?.motto) && (
+          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' }}>
+            {sectionHeader('Profile')}
+            <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
+              {att?.hometown && (
+                <div>
+                  <div style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '3px' }}>Hometown</div>
+                  <div style={{ fontSize: '13px', color: '#e2e8f0' }}>{att.hometown}</div>
                 </div>
-              </div>
-            )}
-
+              )}
+              {att?.favorite_item && att?.favorite_category && (
+                <div>
+                  <div style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '3px' }}>
+                    Favorite {att.favorite_category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#e2e8f0' }}>{att.favorite_item}</div>
+                </div>
+              )}
+              {att?.motto && (
+                <div>
+                  <div style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '3px' }}>Motto</div>
+                  <div style={{ fontSize: '13px', color: '#e2e8f0', fontStyle: 'italic' as const }}>"{att.motto}"</div>
+                </div>
+              )}
+            </div>
           </div>
+        )}
+        {isMobile && quotes.length > 0 && (
+          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' }}>
+            {sectionHeader('Recent Moments')}
+            <div style={{ padding: '10px', display: 'flex', flexDirection: 'column' as const, gap: '6px' }}>
+              {quotes.slice(0, 4).map((q, i) => {
+                const accent = q.personality ? personalityAccent(q.personality) : '#64748b'
+                return (
+                  <div
+                    key={`${q.timestamp || i}`}
+                    style={{
+                      backgroundColor: `${accent}10`,
+                      borderLeft: `2px solid ${accent}`,
+                      borderRadius: '4px',
+                      padding: '6px 8px',
+                    }}
+                  >
+                    <p style={{
+                      fontSize: '12px',
+                      color: '#cbd5e1',
+                      fontStyle: 'italic' as const,
+                      margin: 0,
+                      lineHeight: 1.4,
+                      overflowWrap: 'break-word' as const,
+                    }}>
+                      {q.text}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
-          {/* Career Stats — toggle between offense and defense for two-way players */}
+        {/* Career Stats — toggle between offense and defense for two-way players.
+            Full-width since the rest of the personality content lives up in the
+            header row. */}
+        <div>
+
+          {/* Career Stats */}
           {(() => {
             const hasDefense = player.position !== 'K' && !!player.defensivePosition
             const view = hasDefense ? statsView : 'offense'
@@ -861,12 +993,15 @@ export default function PlayerPage() {
 // endpoint dots and season labels on the x-axis, rating (60-100) on the y.
 // Colors by per-segment trend so climbs look green, declines red, flat gray.
 function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; teamColor: string }) {
-  const PAD_LEFT = 30
-  const PAD_RIGHT = 10
-  const PAD_TOP = 12
-  const PAD_BOTTOM = 22
-  const WIDTH = 260
-  const HEIGHT = 130
+  const PAD_LEFT = 36
+  const PAD_RIGHT = 12
+  const PAD_TOP = 16
+  const PAD_BOTTOM = 28
+  // viewBox aspect ratio matched to the Progression tab's available space
+  // (~340×340 after tab strip + padding) so the chart scales to fill the
+  // panel without leaving large empty margins above/below.
+  const WIDTH = 340
+  const HEIGHT = 340
   const plotW = WIDTH - PAD_LEFT - PAD_RIGHT
   const plotH = HEIGHT - PAD_TOP - PAD_BOTTOM
 
@@ -900,60 +1035,62 @@ function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; te
   for (let r = yMin; r <= yMax; r += 10) gridLines.push(r)
 
   return (
-    <div>
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
-        {/* Gridlines + y-axis labels */}
-        {gridLines.map(r => (
-          <g key={r}>
-            <line
-              x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT}
-              y1={yFor(r)} y2={yFor(r)}
-              stroke="#334155" strokeWidth={0.5} opacity={0.4}
-            />
-            <text x={PAD_LEFT - 6} y={yFor(r) + 3} fontSize="9" fill="#94a3b8" textAnchor="end">
-              {r}
-            </text>
-          </g>
-        ))}
-
-        {/* X-axis season labels */}
-        {seasons.map(s => (
-          <text key={s} x={xFor(s)} y={HEIGHT - 10} fontSize="9" fill="#94a3b8" textAnchor="middle">
-            S{s}
+    <svg
+      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+      preserveAspectRatio="xMidYMid meet"
+      style={{ width: '100%', height: '100%', maxHeight: '100%', display: 'block' }}
+    >
+      {/* Gridlines + y-axis labels */}
+      {gridLines.map(r => (
+        <g key={r}>
+          <line
+            x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT}
+            y1={yFor(r)} y2={yFor(r)}
+            stroke="#334155" strokeWidth={0.8} opacity={0.4}
+          />
+          <text x={PAD_LEFT - 6} y={yFor(r) + 4} fontSize="12" fill="#94a3b8" textAnchor="end">
+            {r}
           </text>
-        ))}
+        </g>
+      ))}
 
-        {/* Per-segment colored line so rising seasons visually pop green,
-            declines red. Flat segments use the team color. */}
-        {history.map((pt, i) => {
-          if (i === 0) return null
-          const prev = history[i - 1]
-          const delta = pt.rating - prev.rating
-          const color = delta > 0 ? '#22c55e' : delta < 0 ? '#ef4444' : teamColor
-          return (
-            <line
-              key={`seg-${i}`}
-              x1={xFor(prev.season)} y1={yFor(prev.rating)}
-              x2={xFor(pt.season)} y2={yFor(pt.rating)}
-              stroke={color} strokeWidth={2.5}
-              strokeLinecap="round"
-            />
-          )
-        })}
+      {/* X-axis season labels */}
+      {seasons.map(s => (
+        <text key={s} x={xFor(s)} y={HEIGHT - 10} fontSize="12" fill="#94a3b8" textAnchor="middle">
+          S{s}
+        </text>
+      ))}
 
-        {/* Points with rating labels */}
-        {history.map(pt => (
-          <g key={pt.season}>
-            <circle cx={xFor(pt.season)} cy={yFor(pt.rating)} r={3.5} fill={teamColor} stroke="#0f172a" strokeWidth={1.2} />
-            <text
-              x={xFor(pt.season)} y={yFor(pt.rating) - 8}
-              fontSize="10" fill="#e2e8f0" fontWeight="700" textAnchor="middle"
-            >
-              {pt.rating}
-            </text>
-          </g>
-        ))}
-      </svg>
-    </div>
+      {/* Per-segment colored line so rising seasons visually pop green,
+          declines red. Flat segments use the team color. */}
+      {history.map((pt, i) => {
+        if (i === 0) return null
+        const prev = history[i - 1]
+        const delta = pt.rating - prev.rating
+        const color = delta > 0 ? '#22c55e' : delta < 0 ? '#ef4444' : teamColor
+        return (
+          <line
+            key={`seg-${i}`}
+            x1={xFor(prev.season)} y1={yFor(prev.rating)}
+            x2={xFor(pt.season)} y2={yFor(pt.rating)}
+            stroke={color} strokeWidth={3.5}
+            strokeLinecap="round"
+          />
+        )
+      })}
+
+      {/* Points with rating labels */}
+      {history.map(pt => (
+        <g key={pt.season}>
+          <circle cx={xFor(pt.season)} cy={yFor(pt.rating)} r={5} fill={teamColor} stroke="#0f172a" strokeWidth={1.5} />
+          <text
+            x={xFor(pt.season)} y={yFor(pt.rating) - 10}
+            fontSize="13" fill="#e2e8f0" fontWeight="700" textAnchor="middle"
+          >
+            {pt.rating}
+          </text>
+        </g>
+      ))}
+    </svg>
   )
 }
