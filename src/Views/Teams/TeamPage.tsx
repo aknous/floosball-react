@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import TutorialOverlay from '@/Components/Tutorial/TutorialOverlay'
 import TourPrompt from '@/Components/Tutorial/TourPrompt'
+import TeamFormBadge, { TeamFormState } from '@/Components/TeamFormBadge'
 import { useTutorial, TutorialStep } from '@/Components/Tutorial/useTutorial'
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 
@@ -87,6 +88,7 @@ interface TeamData {
   fundingTier?: string
   fundingTierRank?: number
   funding?: FundingData
+  formState?: string
   clinchedPlayoffs: boolean
   clinchedTopSeed: boolean
   floosbowlChampion: boolean
@@ -398,6 +400,9 @@ export default function TeamPage() {
             <div style={{ fontSize: isMobile ? '20px' : '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{team.name}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', flexWrap: 'wrap' as const }}>
               <span style={{ fontSize: '15px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{team.wins}–{team.losses}</span>
+              {team.formState && team.formState !== 'UNKNOWN' && (
+                <TeamFormBadge state={team.formState as TeamFormState} />
+              )}
               <span style={{ fontSize: '13px', color: '#64748b' }}>·</span>
               <span style={{ fontSize: '13px', color: '#94a3b8' }}>ELO {Math.round(team.elo)}</span>
               {team.fundingTier && (() => {
