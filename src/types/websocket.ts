@@ -274,6 +274,8 @@ export interface PlayEvent {
   isBigPlay?: boolean
   isClutchPlay?: boolean
   isChokePlay?: boolean
+  clutchPerformers?: string[]
+  chokePerformers?: string[]
   isMomentumShift?: boolean
   insights?: PlayInsights | null
   personalityEvent?: PersonalityEvent | null

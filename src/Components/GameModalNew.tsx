@@ -356,16 +356,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     ⚡ <span style={{ color: bigPlayTeamColor }}>{bigPlayTeamAbbr}</span> +{wpaValue.toFixed(1)}%
                   </span>
                 )}
-                {isClutchPlay && (
-                  <span style={{ color: '#06b6d4', fontWeight: '600', fontSize: '11px' }}>
-                    ◆ CLUTCH
-                  </span>
-                )}
-                {isChokePlay && (
-                  <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '11px' }}>
-                    ▼ CHOKE
-                  </span>
-                )}
                 {isMomentumShift && !isBigPlay && !isClutchPlay && !isChokePlay && (
                   <span style={{ color: '#f97316', fontWeight: '600', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                     <svg width="11" height="13" viewBox="0 0 12 16" fill="#f97316"><path d="M6 0C6 0 2 4 2 8c0 2.2 1.8 4 4 4s4-1.8 4-4C10 4 6 0 6 0zm0 10.5c-1.4 0-2.5-1.1-2.5-2.5 0-1.9 2.5-5.5 2.5-5.5s2.5 3.6 2.5 5.5c0 1.4-1.1 2.5-2.5 2.5z"/></svg>
@@ -417,6 +407,26 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               </div>
             </div>
             <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) || play.reaction || play.personalityEvent ? '4px' : '0' }}>{play.description}</p>
+            {/* Clutch / choke attribution. Replaces the old badge with a
+                short line below the play text naming the player(s) who
+                actually rose to or buckled under the pressure. */}
+            {(play.isClutchPlay || play.isChokePlay) && (() => {
+              const performers = play.isClutchPlay
+                ? (play.clutchPerformers ?? [])
+                : (play.chokePerformers ?? [])
+              if (!performers.length) return null
+              const label = play.isClutchPlay ? 'Clutch' : 'Choke'
+              const color = play.isClutchPlay ? '#06b6d4' : '#ef4444'
+              const symbol = play.isClutchPlay ? '◆' : '▼'
+              return (
+                <p style={{ fontSize: '12px', color: '#94a3b8', margin: '3px 0 0' }}>
+                  <span style={{ color, fontWeight: 700, marginRight: '6px' }}>
+                    {symbol} {label}
+                  </span>
+                  <span style={{ color: '#cbd5e1' }}>{performers.join(', ')}</span>
+                </p>
+              )
+            })()}
             {play.reaction && (
               <p style={{ fontSize: '13px', color: '#e2e8f0', fontStyle: 'italic', margin: '4px 0 0', backgroundColor: 'rgba(51,65,85,0.5)', padding: '4px 8px', borderRadius: '4px', borderLeft: '2px solid #475569' }}>
                 {play.reaction.text}
