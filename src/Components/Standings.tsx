@@ -3,7 +3,7 @@ import axios from 'axios'
 import { Link } from 'react-router-dom'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import TeamHoverCard from '@/Components/TeamHoverCard'
-import TeamFormBadge, { TeamFormState } from '@/Components/TeamFormBadge'
+import HoverTooltip from '@/Components/HoverTooltip'
 
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -235,8 +235,14 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
                   <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clipRule="evenodd" />
                 </svg>
               )}
-              {team.formState && team.formState !== 'UNKNOWN' && (
-                <TeamFormBadge state={team.formState as TeamFormState} size="dot" />
+              {team.formState === 'HOT_STREAK' && (
+                <HoverTooltip text={`Won ${(team as any).streak ?? 3}+ in a row`} color="#ef4444">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"
+                       strokeLinecap="round" strokeLinejoin="round"
+                       style={{ width: '12px', height: '12px', flexShrink: 0 }}>
+                    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" fill="#ef444433" />
+                  </svg>
+                </HoverTooltip>
               )}
             </div>
           </Link>
