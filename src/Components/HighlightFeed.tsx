@@ -113,6 +113,14 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
         // the per-game modal where they belong as flavor.
         if (play.isSidelineCutaway) return
 
+        // PAT attempts now fire as their own play with scoreChange=true on a
+        // successful kick. The TD that preceded them is already a highlight,
+        // so featuring the XP separately would double-list the same scoring
+        // moment. Ditto 2-pt — its preceding TD is the highlight.
+        const pr = String(play.playResult ?? '')
+        if (pr === 'XP Good' || pr === 'XP No Good'
+            || pr === 'Touchdown, 2-Pt Good' || pr === 'Touchdown, 2-Pt No Good') return
+
         if (!(play.isTouchdown || play.isTurnover || play.scoreChange)) return
 
         // For turnovers (without TD), feature the defensive team — they benefited

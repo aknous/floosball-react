@@ -20,6 +20,7 @@ interface GameModalNewProps {
 /** Returns true for play results that warrant a badge in the field graphic (scores + turnovers). */
 function isFieldBadgeResult(playResult: string): boolean {
   return playResult.includes('Touchdown') || playResult.includes('2-Pt')
+    || playResult === 'XP Good' || playResult === 'XP No Good'
     || playResult === 'Field Goal is Good' || playResult === 'Safety'
     || playResult === 'Fumble' || playResult === 'Interception'
     || playResult === 'Turnover On Downs' || playResult === 'Punt'
@@ -29,12 +30,19 @@ function getResultColor(playResult: string): string | null {
   if (!playResult) return null
   if (playResult === '2nd Down' || playResult === '3rd Down') return null
   if (playResult === '1st Down') return '#3b82f6'
+  // XP now fires as its own play (PlayResult.ExtraPointGood / ExtraPointNoGood).
+  // Check XP first because 'XP Good' would otherwise match the legacy 'Touchdown'
+  // include below if both ever co-occurred. 'Touchdown, XP is Good' / 'Touchdown,
+  // XP No Good' enums survive in historical game data and stay green for
+  // backward-compatible coloring via the Touchdown match.
+  if (playResult === 'XP Good') return '#22c55e'
+  if (playResult === 'XP No Good') return '#f59e0b'
   if (playResult.includes('Touchdown')) return '#22c55e'
   if (playResult === 'Field Goal is Good') return '#22c55e'
   if (playResult === 'Safety') return '#ef4444'
   if (playResult.includes('2-Pt') && !playResult.includes('No Good')) return '#22c55e'
   if (playResult === 'Fumble' || playResult === 'Interception' || playResult === 'Turnover On Downs') return '#ef4444'
-  if (playResult === '4th Down' || playResult.includes('2-Pt No Good') || playResult === 'XP No Good') return '#f59e0b'
+  if (playResult === '4th Down' || playResult.includes('2-Pt No Good')) return '#f59e0b'
   if (playResult === 'Punt' || playResult === 'Field Goal is No Good') return '#94a3b8'
   return '#64748b'
 }
