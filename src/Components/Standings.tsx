@@ -236,7 +236,7 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
                 </svg>
               )}
               {team.formState === 'HOT_STREAK' && (
-                <HoverTooltip text={`Won ${(team as any).streak ?? 3}+ in a row`} color="#ef4444">
+                <HoverTooltip text="Hot Streak" color="#ef4444">
                   <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"
                        strokeLinecap="round" strokeLinejoin="round"
                        style={{ width: '12px', height: '12px', flexShrink: 0 }}>
