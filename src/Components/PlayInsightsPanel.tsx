@@ -576,6 +576,46 @@ const ClockMgmtSection: React.FC<{ data: NonNullable<PlayInsights['clockMgmt']> 
   )
 }
 
+const TempoSection: React.FC<{ data: NonNullable<PlayInsights['tempo']> }> = ({ data }) => {
+  const intentLabels: Record<string, string> = {
+    hurryUp: 'Hurry-up',
+    burnClock: 'Burn clock',
+    neutral: 'Normal',
+  }
+  // Color the IQ-offset against the situation: hurryUp negative offsets are
+  // good (saved time), burnClock positive offsets are good (more time used).
+  // Neutral plays show the offset uncolored.
+  const offsetColor =
+    data.intent === 'hurryUp' && data.iqOffset < 0 ? '#22c55e' :
+    data.intent === 'hurryUp' && data.iqOffset > 0 ? '#f59e0b' :
+    data.intent === 'burnClock' && data.iqOffset > 0 ? '#22c55e' :
+    data.intent === 'burnClock' && data.iqOffset < 0 ? '#f59e0b' :
+    '#e2e8f0'
+  const offsetText = data.iqOffset === 0 ? '0s' : `${data.iqOffset > 0 ? '+' : ''}${data.iqOffset}s`
+  return (
+    <div>
+      <SectionLabel label="Tempo" />
+      <Row label="Intent" value={intentLabels[data.intent] ?? data.intent} />
+      <Row label="Pre-snap" value={`${data.finalSeconds}s`} />
+      {data.intent !== 'neutral' && (
+        <>
+          <Row label="Situation base" value={`${data.baseTime}s`} />
+          <Row label="Coach IQ adj." value={offsetText} color={offsetColor} />
+          <Row
+            label="Coach clock IQ"
+            value={
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <FillBar value={data.coachClockIQ * 100} color="#06b6d4" width={50} />
+                <span style={{ minWidth: 30, textAlign: 'right' }}>{Math.round(data.coachClockIQ * 100)}</span>
+              </span>
+            }
+          />
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Main component ──
 
 export const PlayInsightsPanel: React.FC<PlayInsightsPanelProps> = ({ insights }) => {
@@ -588,6 +628,7 @@ export const PlayInsightsPanel: React.FC<PlayInsightsPanelProps> = ({ insights }
   if (insights.coach) leftSections.push(<CoachSection key="coach" data={insights.coach} playCall={insights.playCall} />)
   if (insights.fourthDown) leftSections.push(<FourthDownSection key="4th" data={insights.fourthDown} />)
   if (insights.clockMgmt) leftSections.push(<ClockMgmtSection key="clk" data={insights.clockMgmt} />)
+  if (insights.tempo) leftSections.push(<TempoSection key="tempo" data={insights.tempo} />)
 
   if (insights.players) rightSections.push(<PlayersSection key="plyr" data={insights.players} />)
   if (insights.run) rightSections.push(<RunSection key="run" data={insights.run} />)
