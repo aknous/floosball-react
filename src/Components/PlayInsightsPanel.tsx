@@ -197,8 +197,10 @@ function coachMindLabel(v: number | null): string {
   return 'Limited'
 }
 
-const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCall?: string }> = ({ data, playCall }) => {
+const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCall?: string; tempo?: PlayInsights['tempo'] }> = ({ data, playCall, tempo }) => {
   const callLabels: Record<string, string> = { run: 'Run', short: 'Short Pass', medium: 'Medium Pass', long: 'Long Pass' }
+  const tempoLabels: Record<string, string> = { hurryUp: 'Hurry-up', burnClock: 'Burn clock', neutral: 'Normal' }
+  const tempoColors: Record<string, string> = { hurryUp: '#f59e0b', burnClock: '#06b6d4', neutral: '#94a3b8' }
   const gp = data.gameplan
   const def = data.oppDefense
   const offLabel = data.offenseAbbr ?? 'OFF'
@@ -212,6 +214,9 @@ const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCal
       <SectionLabel label="Stratagem" />
       {playCall && (
         <Row label="Play Call" value={callLabels[playCall] ?? playCall} color={playCallColors[playCall] ?? '#e2e8f0'} />
+      )}
+      {tempo && (
+        <Row label="Tempo" value={tempoLabels[tempo.intent] ?? tempo.intent} color={tempoColors[tempo.intent] ?? '#e2e8f0'} />
       )}
 
       {/* ── Offensive coach's gameplan ── */}
@@ -585,7 +590,7 @@ export const PlayInsightsPanel: React.FC<PlayInsightsPanelProps> = ({ insights }
   const rightSections: React.ReactNode[] = []
 
   if (insights.situation) leftSections.push(<SituationSection key="sit" data={insights.situation} />)
-  if (insights.coach) leftSections.push(<CoachSection key="coach" data={insights.coach} playCall={insights.playCall} />)
+  if (insights.coach) leftSections.push(<CoachSection key="coach" data={insights.coach} playCall={insights.playCall} tempo={insights.tempo} />)
   if (insights.fourthDown) leftSections.push(<FourthDownSection key="4th" data={insights.fourthDown} />)
   if (insights.clockMgmt) leftSections.push(<ClockMgmtSection key="clk" data={insights.clockMgmt} />)
 

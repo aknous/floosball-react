@@ -640,7 +640,17 @@ export default function Navbar() {
                   </>
                 )}
               </div>
-              {[['Dashboard', '/dashboard'], ['Players', '/players'], ['Fantasy', '/fantasy']].map(([label, path]) => (
+              {/* Mirror desktop sidebar so mobile users have parity access
+                  to Cards / Team Management / Achievements / Guide. */}
+              {[
+                ['Dashboard', '/dashboard'],
+                ['Players', '/players'],
+                ['Fantasy', '/fantasy'],
+                ['Cards', '/cards'],
+                ['Team Management', '/front-office'],
+                ['Achievements', '/achievements'],
+                ['Guide', '/about'],
+              ].map(([label, path]) => (
                 <NavLink key={label} to={path} onClick={() => setMenuOpen(false)}
                   style={({ isActive }) => navLinkStyle(isActive)}>
                   {label}

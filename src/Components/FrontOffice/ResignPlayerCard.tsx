@@ -1,7 +1,6 @@
 import React from 'react'
 import { Stars, calcStars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
-import PlayerAvatar from '@/Components/PlayerAvatar'
 import ProbabilityMeter from './ProbabilityMeter'
 import type { GmPlayerInfo, GmVoteTally } from '@/types/gm'
 
@@ -82,7 +81,6 @@ const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
                 }}>
                   {p.position}
                 </span>
-                <PlayerAvatar name={p.name} size={28} bgColor={teamColor} />
                 <PlayerHoverCard playerId={p.id} playerName={p.name}>
                   <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '500', cursor: 'default' }}>
                     {p.name}

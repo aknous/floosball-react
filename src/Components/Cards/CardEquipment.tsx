@@ -7,8 +7,7 @@ import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useCardProjection, CardProjection, projectionPillStyle } from '@/hooks/useCardProjection'
-import { createAvatar } from '@dicebear/core'
-import { openPeeps } from '@dicebear/collection'
+import PlayerAvatar from '@/Components/PlayerAvatar'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -550,17 +549,6 @@ const CardEquipment: React.FC = () => {
             const tooltip = slot.card.tooltip || slot.card.effectConfig?.tooltip || ''
             const outputType = slot.card.outputType || slot.card.effectConfig?.outputType || ''
             const outputColor = OUTPUT_TYPE_COLORS[outputType] || '#94a3b8'
-            const avatarUri = createAvatar(openPeeps, {
-              seed: slot.card.playerName,
-              size: 36,
-              backgroundColor: [(slot.card.teamColor || '#475569').replace('#', '')],
-              backgroundType: ['solid' as const],
-              maskProbability: 0,
-              facialHairProbability: 40,
-              accessoriesProbability: 40,
-              accessories: ['glasses', 'glasses2', 'glasses3', 'glasses4', 'glasses5', 'sunglasses', 'sunglasses2'],
-              headContrastColor: ['2c1b18', '4a312c', 'a55728', 'b58143', 'c93305', 'd6b370', 'cb8442', 'deb777', 'e8e1e1', '8d4a43'],
-            }).toDataUri()
             return (
               <div
                 key={slotNum}
@@ -576,23 +564,25 @@ const CardEquipment: React.FC = () => {
                   display: 'flex', alignItems: 'center', gap: '10px',
                 }}
               >
-                {/* Player avatar */}
-                <div style={{
-                  width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                  border: slot.isMatch
-                    ? `2px solid ${hexToRgba(slot.card.teamColor || '#ffffff', 0.85)}`
-                    : `1.5px solid ${ed.border}80`,
-                  boxShadow: slot.isMatch
-                    ? `0 0 8px ${hexToRgba(slot.card.teamColor || '#ffffff', 0.6)}, 0 0 18px ${hexToRgba(slot.card.teamColor || '#ffffff', 0.3)}`
-                    : 'none',
-                  animation: slot.isMatch ? 'matchGlowPulse 2.5s ease-in-out infinite' : 'none',
-                  ['--glow-color' as any]: hexToRgba(slot.card.teamColor || '#ffffff', 0.6),
-                  ['--glow-color-soft' as any]: hexToRgba(slot.card.teamColor || '#ffffff', 0.3),
-                  ['--glow-color-bright' as any]: hexToRgba(slot.card.teamColor || '#ffffff', 0.9),
-                  overflow: 'hidden',
-                }}>
-                  <img src={avatarUri} alt="" style={{ width: '100%', height: '100%' }} />
-                </div>
+                {/* Team avatar — visual identity for the equipped card */}
+                <PlayerAvatar
+                  name={slot.card.playerName}
+                  size={36}
+                  teamId={slot.card.teamId}
+                  style={{
+                    border: slot.isMatch
+                      ? `2px solid ${hexToRgba(slot.card.teamColor || '#ffffff', 0.85)}`
+                      : `1.5px solid ${ed.border}80`,
+                    boxShadow: slot.isMatch
+                      ? `0 0 8px ${hexToRgba(slot.card.teamColor || '#ffffff', 0.6)}, 0 0 18px ${hexToRgba(slot.card.teamColor || '#ffffff', 0.3)}`
+                      : 'none',
+                    animation: slot.isMatch ? 'matchGlowPulse 2.5s ease-in-out infinite' : 'none',
+                    ['--glow-color' as any]: hexToRgba(slot.card.teamColor || '#ffffff', 0.6),
+                    ['--glow-color-soft' as any]: hexToRgba(slot.card.teamColor || '#ffffff', 0.3),
+                    ['--glow-color-bright' as any]: hexToRgba(slot.card.teamColor || '#ffffff', 0.9),
+                  }}
+                />
+                {/* spacer for original layout — handled by PlayerAvatar */}
                 {/* Text content */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   {/* Top row: edition label + match badge + unequip */}

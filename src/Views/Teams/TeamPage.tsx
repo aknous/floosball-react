@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
-import PlayerAvatar from '@/Components/PlayerAvatar'
 import { Stars } from '@/Components/Stars'
-import CoachAvatar from '@/Components/CoachAvatar'
 import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import TutorialOverlay from '@/Components/Tutorial/TutorialOverlay'
 import TourPrompt from '@/Components/Tutorial/TourPrompt'
+import TeamFormBadge, { TeamFormState } from '@/Components/TeamFormBadge'
 import { useTutorial, TutorialStep } from '@/Components/Tutorial/useTutorial'
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 
@@ -88,6 +87,18 @@ interface TeamData {
   fundingTier?: string
   fundingTierRank?: number
   funding?: FundingData
+  formState?: string
+  lockerRoom?: {
+    vulnerability: number
+    vulnerabilityTier: string
+    vulnerabilityLabel: string
+    resolve: number
+    resolveTier: string
+    resolveLabel: string
+    fortitude: number
+    fortitudeTier: string
+    fortitudeLabel: string
+  }
   clinchedPlayoffs: boolean
   clinchedTopSeed: boolean
   floosbowlChampion: boolean
@@ -399,6 +410,34 @@ export default function TeamPage() {
             <div style={{ fontSize: isMobile ? '20px' : '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{team.name}</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', flexWrap: 'wrap' as const }}>
               <span style={{ fontSize: '15px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{team.wins}–{team.losses}</span>
+              {team.formState && team.formState !== 'UNKNOWN' && (
+                <TeamFormBadge state={team.formState as TeamFormState} />
+              )}
+              {team.lockerRoom && (() => {
+                const fColors: Record<string, string> = {
+                  hardened:  '#22c55e',
+                  resilient: '#4ade80',
+                  steady:    '#94a3b8',
+                  wobbly:    '#f59e0b',
+                  brittle:   '#ef4444',
+                }
+                const accent = fColors[team.lockerRoom!.fortitudeTier] || '#94a3b8'
+                const lr = team.lockerRoom!
+                const tip = `Fortitude — locker-room mental state, blending resolve (mental backbone) and vulnerability (proneness to coasting/cracking).\nResolve: ${lr.resolveLabel} (${lr.resolve})\nVuln: ${lr.vulnerabilityLabel} (${lr.vulnerability})`
+                return (
+                  <span title={tip} style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: accent,
+                    backgroundColor: `${accent}1a`,
+                    border: `1px solid ${accent}66`,
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                  }}>
+                    Fortitude: <span style={{ fontWeight: 700 }}>{lr.fortitudeLabel}</span>
+                  </span>
+                )
+              })()}
               <span style={{ fontSize: '13px', color: '#64748b' }}>·</span>
               <span style={{ fontSize: '13px', color: '#94a3b8' }}>ELO {Math.round(team.elo)}</span>
               {team.fundingTier && (() => {
@@ -535,7 +574,6 @@ export default function TeamPage() {
                     <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', minWidth: '28px' }}>{posLabel}</span>
                     {player ? (
                       <>
-                        <PlayerAvatar name={player.name} size={32} bgColor={team.color} />
                         <PlayerHoverCard playerId={player.id} playerName={player.name}>
                           <Link
                             to={`/players/${player.id}`}
@@ -641,7 +679,6 @@ export default function TeamPage() {
             {sectionHeader('Head Coach')}
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <CoachAvatar name={team.coach.name} size={80} bgColor={team.color} style={{ border: `3px solid ${team.color}` }} />
                 <div>
                   <div style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>{team.coach.name}</div>
                   <Stars stars={calcStars(team.coach.overallRating)} size={13} />

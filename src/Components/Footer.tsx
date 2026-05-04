@@ -64,7 +64,7 @@ const FooterChangelogItems: React.FC<{ entry: ChangelogEntry }> = ({ entry }) =>
   )
 }
 
-const APP_VERSION = process.env.REACT_APP_VERSION || '0.11.0'
+const APP_VERSION = process.env.REACT_APP_VERSION || '0.13.0'
 
 export const Footer: React.FC = () => {
   const [showChangelog, setShowChangelog] = useState(false)
