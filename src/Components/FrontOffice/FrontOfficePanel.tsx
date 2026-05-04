@@ -836,6 +836,48 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
 
           {/* Right column: Roster */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {(gm.eligible.retiringPlayers?.length ?? 0) > 0 && (
+              <div style={{
+                background: '#1e2d3d',
+                border: '1px solid #2a3a4e',
+                borderLeft: '3px solid #f59e0b',
+                borderRadius: '6px',
+                padding: '14px 16px',
+              }}>
+                <div style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#f59e0b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  marginBottom: '8px',
+                }}>
+                  Retirement Watch
+                </div>
+                <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px' }}>
+                  These veterans have announced they will retire after this season. Plan replacements via the FA ballot.
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {gm.eligible.retiringPlayers!.map(p => (
+                    <div key={p.id} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontSize: '12px',
+                      color: '#cbd5e1',
+                      padding: '4px 0',
+                    }}>
+                      <span>
+                        <span style={{ color: '#94a3b8', marginRight: '8px' }}>{p.position}</span>
+                        {p.name}
+                      </span>
+                      <span style={{ color: '#94a3b8', fontSize: '11px' }}>OVR {p.rating}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <ResignPlayerCard
               players={gm.eligible.expiringPlayers}
               tallies={gm.summary?.tallies ?? []}
@@ -850,7 +892,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
             />
 
             <CutPlayerCard
-              players={gm.eligible.rosteredPlayers.filter(p => p.termRemaining > 1)}
+              players={gm.eligible.rosteredPlayers.filter(p => p.termRemaining > 1 && !p.willRetire)}
               tallies={gm.summary?.tallies ?? []}
               teamColor={teamColor}
               voting={gm.voting}

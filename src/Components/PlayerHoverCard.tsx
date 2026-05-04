@@ -30,6 +30,8 @@ interface PlayerDetail {
     fatigue?: number
     mood?: string         // mood name like "Composed" / "Studying"
     moodTier?: string     // tier name like "steady" / "electric"
+    attitudeLabel?: string  // "Leader" / "Positive" / "Steady" / "Sour" / "Toxic"
+    attitudeTier?: string   // tier key for color mapping
     personality?: string  // personality key like "stoic" / "alien"
     quirk?: string        // quirk key like "snacker" / "bling"
   }
@@ -125,9 +127,17 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
           <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '12px' }}>Free Agent</div>
         )}
 
-        {/* Mood badge — personality-flavored mood name only; the personality itself stays hidden */}
+        {/* Mood badge — catchall mental state (confidence + determination + locker-room attitude).
+            Color uses the green→red mood-tier spectrum so toxicity reads red, leadership reads green. */}
         {att?.mood && (() => {
-          const accent = att.personality ? personalityAccent(att.personality) : '#94a3b8'
+          const moodColors: Record<string, string> = {
+            electric:   '#22c55e',
+            confident:  '#4ade80',
+            steady:     '#94a3b8',
+            frustrated: '#f97316',
+            miserable:  '#ef4444',
+          }
+          const accent = moodColors[att.moodTier || 'steady'] || '#94a3b8'
           return (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
               <span style={{

@@ -89,6 +89,17 @@ interface TeamData {
   fundingTierRank?: number
   funding?: FundingData
   formState?: string
+  lockerRoom?: {
+    vulnerability: number
+    vulnerabilityTier: string
+    vulnerabilityLabel: string
+    resolve: number
+    resolveTier: string
+    resolveLabel: string
+    fortitude: number
+    fortitudeTier: string
+    fortitudeLabel: string
+  }
   clinchedPlayoffs: boolean
   clinchedTopSeed: boolean
   floosbowlChampion: boolean
@@ -403,6 +414,31 @@ export default function TeamPage() {
               {team.formState && team.formState !== 'UNKNOWN' && (
                 <TeamFormBadge state={team.formState as TeamFormState} />
               )}
+              {team.lockerRoom && (() => {
+                const fColors: Record<string, string> = {
+                  hardened:  '#22c55e',
+                  resilient: '#4ade80',
+                  steady:    '#94a3b8',
+                  wobbly:    '#f59e0b',
+                  brittle:   '#ef4444',
+                }
+                const accent = fColors[team.lockerRoom!.fortitudeTier] || '#94a3b8'
+                const lr = team.lockerRoom!
+                const tip = `Fortitude — locker-room mental state, blending resolve (mental backbone) and vulnerability (proneness to coasting/cracking).\nResolve: ${lr.resolveLabel} (${lr.resolve})\nVuln: ${lr.vulnerabilityLabel} (${lr.vulnerability})`
+                return (
+                  <span title={tip} style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: accent,
+                    backgroundColor: `${accent}1a`,
+                    border: `1px solid ${accent}66`,
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                  }}>
+                    Fortitude: <span style={{ fontWeight: 700 }}>{lr.fortitudeLabel}</span>
+                  </span>
+                )
+              })()}
               <span style={{ fontSize: '13px', color: '#64748b' }}>·</span>
               <span style={{ fontSize: '13px', color: '#94a3b8' }}>ELO {Math.round(team.elo)}</span>
               {team.fundingTier && (() => {

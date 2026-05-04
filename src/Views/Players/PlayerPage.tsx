@@ -15,6 +15,14 @@ const MOOD_COLORS: Record<string, string> = {
   miserable: '#ef4444',
 }
 
+const ATTITUDE_COLORS: Record<string, string> = {
+  leader:   '#22c55e',
+  positive: '#4ade80',
+  steady:   '#94a3b8',
+  sour:     '#f97316',
+  toxic:    '#ef4444',
+}
+
 // Rarity-tier color mapping for quirks (mirrors backend personalityData tiers)
 const QUIRK_TIER_COLORS: Record<string, string> = {
   common:   '#94a3b8',  // slate
@@ -49,6 +57,9 @@ interface PlayerAttributes {
   defensiveAttributes?: Record<string, { value: number; stars: number }>
   mood?: string
   moodTier?: string
+  attitudeValue?: number
+  attitudeLabel?: string
+  attitudeTier?: string
   demeanor?: string
   demeanorDrift?: DemeanorDrift
   personality?: PersonalityBlock
@@ -625,15 +636,17 @@ export default function PlayerPage() {
                 const accent = MOOD_COLORS[att.moodTier || 'steady'] || '#94a3b8'
                 return (
                   <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
-                    <span style={{
-                      fontSize: '12px',
-                      fontWeight: '600',
-                      color: accent,
-                      backgroundColor: `${accent}1a`,
-                      border: `1px solid ${accent}66`,
-                      padding: '3px 10px',
-                      borderRadius: '4px',
-                    }}>
+                    <span
+                      title="Mental state — blends week-to-week confidence/determination with locker-room presence (attitude)."
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: accent,
+                        backgroundColor: `${accent}1a`,
+                        border: `1px solid ${accent}66`,
+                        padding: '3px 10px',
+                        borderRadius: '4px',
+                      }}>
                       Mood: <span style={{ fontWeight: '700' }}>{att.mood}</span>
                     </span>
                   </div>
