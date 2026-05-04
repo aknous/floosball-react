@@ -104,7 +104,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
         teamAbbr: e.teamAbbr ?? null,
         personality: e.personality,
         text: e.text,
-      }, ...prev].slice(0, 30))
+      }, ...prev].slice(0, 12))
     } else if (evtName === 'game_start' || evtName === 'week_start') {
       // New round / week starting — clear off-day chatter from the previous
       // idle window so the feed is fresh for the upcoming games.
@@ -224,7 +224,16 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '2px',
+      // Hard cap on visible feed height so the page doesn't grow indefinitely
+      // when off-day quotes pile up over multi-hour idle gaps. Anything
+      // past this scrolls inside the panel.
+      maxHeight: '70vh',
+      overflowY: 'auto',
+    }}>
       {highlights.map((item, idx) => {
         const separator = idx > 0 ? (
           <div key={`sep-${idx}`} style={{ height: '1px', backgroundColor: '#2a3a4e', margin: '0 12px' }} />
