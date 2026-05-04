@@ -93,7 +93,11 @@ const WelcomeModal: React.FC = () => {
 
   if (!visible) return null
 
-  const latest = CHANGELOG[0]
+  // Welcome modal highlights the last feature release (major/minor), not patch
+  // bumps. Patch versions (vX.Y.Z where Z > 0) are typically bug fixes — show
+  // the most recent vX.Y.0 entry instead so users see the broader release notes.
+  const isFeatureRelease = (version: string) => /^v?\d+\.\d+\.0(?:\D|$)/.test(version)
+  const latest = CHANGELOG.find(e => isFeatureRelease(e.version)) ?? CHANGELOG[0]
 
   return ReactDOM.createPortal(
     <div
