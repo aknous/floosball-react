@@ -884,6 +884,37 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     }
   }
 
+  // ── Personality YAML reload ──────────────────────────────────────
+  const [reloadLoading, setReloadLoading] = useState(false)
+  const [reloadResult, setReloadResult] = useState<string | null>(null)
+  const [reloadError, setReloadError] = useState<string | null>(null)
+
+  const reloadPersonalityTemplates = async () => {
+    setReloadLoading(true)
+    setReloadResult(null)
+    setReloadError(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/personality/reload`, {
+        method: 'POST',
+        headers,
+      })
+      if (!res.ok) {
+        const detail = await res.text()
+        throw new Error(detail || `status ${res.status}`)
+      }
+      const data = await res.json()
+      setReloadResult(
+        `Loaded — ${data.personalities} personalities, ${data.quirks} quirks, ` +
+        `${data.hometowns} hometowns, ${data.favoriteCategories} favorite categories`
+      )
+      setTimeout(() => setReloadResult(null), 6000)
+    } catch (e: any) {
+      setReloadError(e?.message || 'Reload failed')
+    } finally {
+      setReloadLoading(false)
+    }
+  }
+
   const tabs: { id: Section; label: string }[] = [
     { id: 'monitor', label: 'Monitor' },
     { id: 'analytics', label: 'Analytics' },
@@ -2334,6 +2365,42 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
             </button>
             {settingsSaved && (
               <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: '600' }}>{settingsSaved}</span>
+            )}
+          </div>
+        </div>
+
+        <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #1e293b', maxWidth: '560px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: '700', margin: '0 0 8px 0', color: '#e2e8f0' }}>
+            Personality Templates
+          </h3>
+          <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '12px', lineHeight: 1.5 }}>
+            Hot-reload <code style={{ color: '#cbd5e1' }}>vibe_reactions.yaml</code>,{' '}
+            <code style={{ color: '#cbd5e1' }}>quirk_reactions.yaml</code>, and{' '}
+            <code style={{ color: '#cbd5e1' }}>player_flavor.yaml</code> from disk. Use after uploading
+            new template files (e.g. via <code style={{ color: '#cbd5e1' }}>fly ssh sftp</code>) to apply
+            changes without restarting.
+          </p>
+          {reloadError && (
+            <div style={{ fontSize: '13px', color: '#ef4444', marginBottom: '10px' }}>{reloadError}</div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={reloadPersonalityTemplates}
+              disabled={reloadLoading}
+              style={{
+                padding: '8px 16px',
+                fontSize: '13px', fontWeight: '600',
+                backgroundColor: reloadLoading ? '#334155' : '#3b82f6',
+                color: '#ffffff',
+                border: 'none', borderRadius: '4px',
+                cursor: reloadLoading ? 'not-allowed' : 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              {reloadLoading ? 'Reloading…' : 'Reload YAML Files'}
+            </button>
+            {reloadResult && (
+              <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: '600' }}>{reloadResult}</span>
             )}
           </div>
         </div>
