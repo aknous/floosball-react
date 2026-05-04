@@ -30,6 +30,7 @@ export interface GmCoachInfo {
   clockManagement: number
   playerDevelopment: number
   scouting: number
+  attitude?: number
 }
 
 export interface GmPlayerInfo {
@@ -39,6 +40,7 @@ export interface GmPlayerInfo {
   rating: number
   tier: string
   termRemaining: number
+  willRetire?: boolean
 }
 
 export interface GmEligibleTargets {
@@ -47,6 +49,7 @@ export interface GmEligibleTargets {
   availableCoaches: GmCoachInfo[]
   rosteredPlayers: GmPlayerInfo[]
   expiringPlayers: GmPlayerInfo[]
+  retiringPlayers?: GmPlayerInfo[]
 }
 
 export interface GmVoteTally {
@@ -103,7 +106,7 @@ export interface GmVoteResult {
   totalVotes: number
   threshold: number
   probability: number
-  outcome: 'success' | 'below_threshold' | 'failed_roll' | 'ineligible'
+  outcome: 'success' | 'below_threshold' | 'failed_roll' | 'ineligible' | 'retiring'
   details: string | null
   resolvedAt: string | null
 }

@@ -1,39 +1,46 @@
-import React, { useMemo } from 'react'
-import { createAvatar } from '@dicebear/core'
-import { openPeeps } from '@dicebear/collection'
+import React from 'react'
 
 interface CoachAvatarProps {
-  name: string
+  name?: string
+  teamId?: number | null
   size?: number
-  bgColor?: string | null
   style?: React.CSSProperties
   className?: string
 }
 
-const CoachAvatar: React.FC<CoachAvatarProps> = ({ name, size = 80, bgColor, style, className }) => {
-  const bg = bgColor ? bgColor.replace('#', '') : '1e293b'
-  const dataUri = useMemo(() => {
-    return createAvatar(openPeeps, {
-      seed: `coach:${name}`,
-      size,
-      backgroundColor: [bg],
-      backgroundType: ['solid'],
-      maskProbability: 0,
-      facialHairProbability: 40,
-      accessoriesProbability: 50,
-      accessories: ['glasses', 'glasses2', 'glasses3', 'glasses4', 'glasses5', 'sunglasses', 'sunglasses2'],
-      headContrastColor: ['2c1b18', '4a312c', 'a55728', 'b58143', 'c93305', 'd6b370', 'cb8442', 'deb777', 'e8e1e1', '8d4a43'],
-    }).toDataUri()
-  }, [name, size, bg])
+// Coach "avatar" — same direction as PlayerAvatar: render the team
+// identity rather than a generated face or initials. Falls back to a
+// neutral gray circle when there's no team (unsigned coach pool).
+const CoachAvatar: React.FC<CoachAvatarProps> = ({ name, teamId, size = 80, style, className }) => {
+  const baseStyle: React.CSSProperties = {
+    width: size,
+    height: size,
+    flexShrink: 0,
+    borderRadius: '50%',
+    objectFit: 'contain',
+    ...style,
+  }
+
+  if (teamId) {
+    return (
+      <img
+        className={className}
+        title={name}
+        alt=""
+        src={`/avatars/${teamId}.png`}
+        style={baseStyle}
+      />
+    )
+  }
 
   return (
-    <img
-      src={dataUri}
-      alt={name}
-      width={size}
-      height={size}
-      style={{ borderRadius: '50%', flexShrink: 0, ...style }}
+    <div
       className={className}
+      title={name}
+      style={{
+        ...baseStyle,
+        backgroundColor: '#334155',
+      }}
     />
   )
 }

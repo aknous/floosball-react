@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
+import TeamFormBadge, { TeamFormState } from './TeamFormBadge'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -29,6 +30,7 @@ interface TeamDetail {
   elo: number
   winningStreak: boolean
   streak: number
+  formState?: string
   clinchedPlayoffs: boolean
   clinchedTopSeed: boolean
   leagueChampion: boolean
@@ -93,10 +95,13 @@ const Card: React.FC<{ data: TeamDetail; mouseX: number; mouseY: number }> = ({ 
               {data.city} {data.name}
             </div>
             <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{data.league}</div>
-            <div style={{ fontSize: '14px', color: '#cbd5e1', marginTop: '3px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ fontSize: '14px', color: '#cbd5e1', marginTop: '3px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' as const }}>
               {data.wins}-{data.losses}
               {streak >= 2 && <span style={{ color: '#22c55e', fontSize: '12px' }}>W{streak}</span>}
               {streak <= -2 && <span style={{ color: '#ef4444', fontSize: '12px' }}>L{Math.abs(streak)}</span>}
+              {data.formState && data.formState !== 'UNKNOWN' && (
+                <TeamFormBadge state={data.formState as TeamFormState} size="small" />
+              )}
             </div>
             <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
               ELO <span style={{ color: '#cbd5e1', fontWeight: '600' }}>{Math.round(data.elo)}</span>

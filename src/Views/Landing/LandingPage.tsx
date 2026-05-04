@@ -75,7 +75,7 @@ const LandingPage: React.FC = () => {
           color: '#94a3b8',
           margin: 0,
         }}>
-          A simulated football league you didn't ask for
+          Another iteration begins
         </p>
       </div>
 

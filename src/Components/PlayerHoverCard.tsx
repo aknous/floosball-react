@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { Link } from 'react-router-dom'
-import PlayerAvatar from './PlayerAvatar'
 import { Stars, SwordIcon, ShieldIcon } from './Stars'
 import { personalityAccent, personalityTier } from '@/utils/personality'
 
@@ -31,9 +30,17 @@ interface PlayerDetail {
     fatigue?: number
     mood?: string         // mood name like "Composed" / "Studying"
     moodTier?: string     // tier name like "steady" / "electric"
+    attitudeLabel?: string  // "Leader" / "Positive" / "Steady" / "Sour" / "Toxic"
+    attitudeTier?: string   // tier key for color mapping
     personality?: string  // personality key like "stoic" / "alien"
     quirk?: string        // quirk key like "snacker" / "bling"
   }
+  latestQuote?: {
+    text: string
+    event?: string
+    personality?: string
+    timestamp?: string
+  } | null
 }
 
 const POSITION_FULL: Record<string, string> = {
@@ -98,16 +105,13 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
       }} />
 
       <div style={{ padding: '14px' }}>
-        {/* Avatar + name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-          <PlayerAvatar name={data.name} size={72} bgColor={data.teamColor} style={{ border: `2px solid ${color}` }} />
-          <div>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{data.name}</div>
-            <div style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>
-              {POSITION_FULL[data.position] ?? data.position}
-            </div>
-            <div style={{ marginTop: '3px' }}><Stars stars={data.ratingStars} size={20} /></div>
+        {/* Name + position + stars */}
+        <div style={{ marginBottom: '12px' }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{data.name}</div>
+          <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px' }}>
+            {POSITION_FULL[data.position] ?? data.position}
           </div>
+          <div style={{ marginTop: '3px' }}><Stars stars={data.ratingStars} size={20} /></div>
         </div>
 
         {/* Team */}
@@ -120,8 +124,36 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
             </span>
           </div>
         ) : (
-          <div style={{ fontSize: '14px', color: '#475569', marginBottom: '12px' }}>Free Agent</div>
+          <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '12px' }}>Free Agent</div>
         )}
+
+        {/* Mood badge — catchall mental state (confidence + determination + locker-room attitude).
+            Color uses the green→red mood-tier spectrum so toxicity reads red, leadership reads green. */}
+        {att?.mood && (() => {
+          const moodColors: Record<string, string> = {
+            electric:   '#22c55e',
+            confident:  '#4ade80',
+            steady:     '#94a3b8',
+            frustrated: '#f97316',
+            miserable:  '#ef4444',
+          }
+          const accent = moodColors[att.moodTier || 'steady'] || '#94a3b8'
+          return (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+              <span style={{
+                fontSize: '11px',
+                color: accent,
+                backgroundColor: `${accent}1a`,
+                border: `1px solid ${accent}66`,
+                padding: '3px 8px',
+                borderRadius: '4px',
+                fontWeight: '600',
+              }}>
+                Mood: <span style={{ fontWeight: '700' }}>{att.mood}</span>
+              </span>
+            </div>
+          )
+        })()}
 
         {/* Rating bar */}
         <div style={{ marginBottom: '10px' }}>
@@ -199,25 +231,33 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
           )
         })()}
 
-        {/* Mood badge — personality-flavored mood name only; the personality itself stays hidden */}
-        {att?.mood && (() => {
-          const accent = att.personality ? personalityAccent(att.personality) : '#94a3b8'
+        {/* Latest personality quote — most recent thing this player said
+            or did, drawn from the in-memory quote buffer on the backend. */}
+        {data.latestQuote?.text && (() => {
+          const accent = data.latestQuote.personality
+            ? personalityAccent(data.latestQuote.personality)
+            : (att?.personality ? personalityAccent(att.personality) : '#94a3b8')
           return (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
-              <span style={{
-                fontSize: '11px',
-                color: accent,
-                backgroundColor: `${accent}1a`,
-                border: `1px solid ${accent}66`,
-                padding: '3px 8px',
-                borderRadius: '4px',
-                fontWeight: '600',
+            <div style={{
+              marginTop: '4px',
+              padding: '8px 10px',
+              backgroundColor: `${accent}10`,
+              borderLeft: `2px solid ${accent}`,
+              borderRadius: '4px',
+            }}>
+              <p style={{
+                fontSize: '12px',
+                color: '#cbd5e1',
+                fontStyle: 'italic' as const,
+                margin: 0,
+                lineHeight: 1.4,
               }}>
-                Mood: <span style={{ fontWeight: '700' }}>{att.mood}</span>
-              </span>
+                {data.latestQuote.text}
+              </p>
             </div>
           )
         })()}
+
       </div>
     </div>,
     document.body

@@ -1,39 +1,48 @@
-import React, { useMemo } from 'react'
-import { createAvatar } from '@dicebear/core'
-import { openPeeps } from '@dicebear/collection'
+import React from 'react'
 
 interface PlayerAvatarProps {
-  name: string
+  name?: string
+  teamId?: number | null
   size?: number
-  bgColor?: string | null
   style?: React.CSSProperties
   className?: string
 }
 
-const PlayerAvatar: React.FC<PlayerAvatarProps> = ({ name, size = 32, bgColor, style, className }) => {
-  const bg = bgColor ? bgColor.replace('#', '') : '1e293b'
-  const dataUri = useMemo(() => {
-    return createAvatar(openPeeps, {
-      seed: name,
-      size,
-      backgroundColor: [bg],
-      backgroundType: ['solid'],
-      maskProbability: 0,
-      facialHairProbability: 40,
-      accessoriesProbability: 40,
-      accessories: ['glasses', 'glasses2', 'glasses3', 'glasses4', 'glasses5', 'sunglasses', 'sunglasses2'],
-      headContrastColor: ['2c1b18', '4a312c', 'a55728', 'b58143', 'c93305', 'd6b370', 'cb8442', 'deb777', 'e8e1e1', '8d4a43'],
-    }).toDataUri()
-  }, [name, size, bg])
+// Player "avatar" — renders the team avatar PNG so the visual identity
+// belongs to the team, not a generated face / initials. Falls back to a
+// neutral gray circle when there's no team (free agents, retired with
+// missing team metadata, etc.).
+const PlayerAvatar: React.FC<PlayerAvatarProps> = ({ name, teamId, size = 32, style, className }) => {
+  const baseStyle: React.CSSProperties = {
+    width: size,
+    height: size,
+    flexShrink: 0,
+    borderRadius: '50%',
+    objectFit: 'contain',
+    ...style,
+  }
 
+  if (teamId) {
+    return (
+      <img
+        className={className}
+        title={name}
+        alt=""
+        src={`/avatars/${teamId}.png`}
+        style={baseStyle}
+      />
+    )
+  }
+
+  // No team → neutral placeholder
   return (
-    <img
-      src={dataUri}
-      alt={name}
-      width={size}
-      height={size}
-      style={{ borderRadius: '50%', flexShrink: 0, ...style }}
+    <div
       className={className}
+      title={name}
+      style={{
+        ...baseStyle,
+        backgroundColor: '#334155',
+      }}
     />
   )
 }

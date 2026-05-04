@@ -209,6 +209,17 @@ export interface PlayInsightsClockMgmt {
   fgProbability?: number
 }
 
+// Tempo entry — captured by calculatePreSnapTime to expose how the offensive
+// coach's clockManagement attribute interacts with the situation to set the
+// pre-snap clock burn.
+export interface PlayInsightsTempo {
+  intent: 'hurryUp' | 'burnClock' | 'neutral'
+  baseTime: number       // Seconds the situation alone would burn
+  coachClockIQ: number   // Normalized clockManagement (0.0–1.0)
+  iqOffset: number       // How much the coach added/subtracted vs baseTime
+  finalSeconds: number   // Actual seconds consumed before the snap
+}
+
 export interface PlayInsights {
   situation?: PlayInsightsSituation
   coach?: PlayInsightsCoach
@@ -219,6 +230,7 @@ export interface PlayInsights {
   fg?: PlayInsightsFg
   players?: PlayInsightsPlayer[]
   clockMgmt?: PlayInsightsClockMgmt
+  tempo?: PlayInsightsTempo
   playCall?: 'run' | 'short' | 'medium' | 'long'
 }
 
@@ -262,6 +274,8 @@ export interface PlayEvent {
   isBigPlay?: boolean
   isClutchPlay?: boolean
   isChokePlay?: boolean
+  clutchPerformers?: string[]
+  chokePerformers?: string[]
   isMomentumShift?: boolean
   insights?: PlayInsights | null
   personalityEvent?: PersonalityEvent | null

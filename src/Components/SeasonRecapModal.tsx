@@ -379,7 +379,7 @@ const SeasonRecapModal: React.FC = () => {
                       Most Valuable Player
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <PlayerAvatar name={seasonData.mvp.name || ''} size={56} bgColor={seasonData.mvp.teamColor || '#1e293b'} style={{ borderRadius: '50%', flexShrink: 0 }} />
+                      <PlayerAvatar name={seasonData.mvp.name || ''} size={56} teamId={seasonData.mvp.teamId} style={{ borderRadius: '50%', flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '17px', fontWeight: '700', color: '#e2e8f0' }}>
@@ -421,7 +421,7 @@ const SeasonRecapModal: React.FC = () => {
                           borderRadius: '6px',
                           border: '1px solid #334155',
                         }}>
-                          <PlayerAvatar name={p.name || ''} size={42} bgColor={p.teamColor || '#1e293b'} style={{ borderRadius: '50%', flexShrink: 0 }} />
+                          <PlayerAvatar name={p.name || ''} size={42} teamId={p.teamId} style={{ borderRadius: '50%', flexShrink: 0 }} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0' }}>{p.name}</span>

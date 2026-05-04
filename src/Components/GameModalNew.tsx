@@ -4,6 +4,7 @@ import { useGames } from '@/contexts/GamesContext'
 import { XIcon } from '@heroicons/react/solid'
 import PlayerHoverCard from './PlayerHoverCard'
 import TeamHoverCard from './TeamHoverCard'
+import HoverTooltip from './HoverTooltip'
 import { Stars } from './Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { PlayInsightsPanel } from './PlayInsightsPanel'
@@ -16,10 +17,36 @@ interface GameModalNewProps {
   gameId: number
 }
 
+/** Tiny icon + tooltip shown wherever we surface clock state. Used both in
+    the per-play feed row and next to the main game clock. */
+const ClockStateIcon: React.FC<{ stopped: boolean }> = ({ stopped }) => {
+  const color = stopped ? '#fbbf24' : '#22c55e'
+  return (
+    <HoverTooltip text={stopped ? 'Clock stopped' : 'Clock running'} color={color}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', color, marginLeft: '2px' }}>
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none"
+             stroke="currentColor" strokeWidth="1.5"
+             strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="8" cy="8" r="6.5" />
+          {stopped ? (
+            <>
+              <line x1="6.5" y1="5.5" x2="6.5" y2="10.5" />
+              <line x1="9.5" y1="5.5" x2="9.5" y2="10.5" />
+            </>
+          ) : (
+            <path d="M6.5 5.5 L11 8 L6.5 10.5 Z" fill="currentColor" />
+          )}
+        </svg>
+      </span>
+    </HoverTooltip>
+  )
+}
+
 /** Returns a consistent badge background color for any PlayResult string. */
 /** Returns true for play results that warrant a badge in the field graphic (scores + turnovers). */
 function isFieldBadgeResult(playResult: string): boolean {
   return playResult.includes('Touchdown') || playResult.includes('2-Pt')
+    || playResult === 'XP Good' || playResult === 'XP No Good'
     || playResult === 'Field Goal is Good' || playResult === 'Safety'
     || playResult === 'Fumble' || playResult === 'Interception'
     || playResult === 'Turnover On Downs' || playResult === 'Punt'
@@ -29,12 +56,19 @@ function getResultColor(playResult: string): string | null {
   if (!playResult) return null
   if (playResult === '2nd Down' || playResult === '3rd Down') return null
   if (playResult === '1st Down') return '#3b82f6'
+  // XP now fires as its own play (PlayResult.ExtraPointGood / ExtraPointNoGood).
+  // Check XP first because 'XP Good' would otherwise match the legacy 'Touchdown'
+  // include below if both ever co-occurred. 'Touchdown, XP is Good' / 'Touchdown,
+  // XP No Good' enums survive in historical game data and stay green for
+  // backward-compatible coloring via the Touchdown match.
+  if (playResult === 'XP Good') return '#22c55e'
+  if (playResult === 'XP No Good') return '#f59e0b'
   if (playResult.includes('Touchdown')) return '#22c55e'
   if (playResult === 'Field Goal is Good') return '#22c55e'
   if (playResult === 'Safety') return '#ef4444'
   if (playResult.includes('2-Pt') && !playResult.includes('No Good')) return '#22c55e'
   if (playResult === 'Fumble' || playResult === 'Interception' || playResult === 'Turnover On Downs') return '#ef4444'
-  if (playResult === '4th Down' || playResult.includes('2-Pt No Good') || playResult === 'XP No Good') return '#f59e0b'
+  if (playResult === '4th Down' || playResult.includes('2-Pt No Good')) return '#f59e0b'
   if (playResult === 'Punt' || playResult === 'Field Goal is No Good') return '#94a3b8'
   return '#64748b'
 }
@@ -297,7 +331,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
               {/* Left: clock / situation */}
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span>{play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}
+                  {/* Clock state — pause-in-circle when stopped, play-in-circle
+                      when running. Hidden on scoring plays since the score
+                      already conveys the clock will stop, and adding an icon
+                      there would just be noise. */}
+                  {!play.scoreChange && <ClockStateIcon stopped={!!play.clockStopped} />}
+                </span>
                 {downText && (
                   <>
                     <span>•</span>
@@ -313,16 +354,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 {isBigPlay && (
                   <span style={{ color: '#d97706', fontWeight: '600' }}>
                     ⚡ <span style={{ color: bigPlayTeamColor }}>{bigPlayTeamAbbr}</span> +{wpaValue.toFixed(1)}%
-                  </span>
-                )}
-                {isClutchPlay && (
-                  <span style={{ color: '#06b6d4', fontWeight: '600', fontSize: '11px' }}>
-                    ◆ CLUTCH
-                  </span>
-                )}
-                {isChokePlay && (
-                  <span style={{ color: '#ef4444', fontWeight: '600', fontSize: '11px' }}>
-                    ▼ CHOKE
                   </span>
                 )}
                 {isMomentumShift && !isBigPlay && !isClutchPlay && !isChokePlay && (
@@ -376,6 +407,26 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               </div>
             </div>
             <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) || play.reaction || play.personalityEvent ? '4px' : '0' }}>{play.description}</p>
+            {/* Clutch / choke attribution. Replaces the old badge with a
+                short line below the play text naming the player(s) who
+                actually rose to or buckled under the pressure. */}
+            {(play.isClutchPlay || play.isChokePlay) && (() => {
+              const performers = play.isClutchPlay
+                ? (play.clutchPerformers ?? [])
+                : (play.chokePerformers ?? [])
+              if (!performers.length) return null
+              const label = play.isClutchPlay ? 'Clutch' : 'Choke'
+              const color = play.isClutchPlay ? '#06b6d4' : '#ef4444'
+              const symbol = play.isClutchPlay ? '◆' : '▼'
+              return (
+                <p style={{ fontSize: '12px', color: '#94a3b8', margin: '3px 0 0' }}>
+                  <span style={{ color, fontWeight: 700, marginRight: '6px' }}>
+                    {symbol} {label}
+                  </span>
+                  <span style={{ color: '#cbd5e1' }}>{performers.join(', ')}</span>
+                </p>
+              )
+            })()}
             {play.reaction && (
               <p style={{ fontSize: '13px', color: '#e2e8f0', fontStyle: 'italic', margin: '4px 0 0', backgroundColor: 'rgba(51,65,85,0.5)', padding: '4px 8px', borderRadius: '4px', borderLeft: '2px solid #475569' }}>
                 {play.reaction.text}
@@ -661,13 +712,27 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             {/* Game status + down/distance */}
             <div style={{ padding: '10px 16px', borderBottom: '1px solid #334155', textAlign: 'center' }}>
               {/* Row 1: clock / final */}
-              <div style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '600', marginBottom: '3px' }}>
+              <div style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '600', marginBottom: '3px',
+                            display: 'inline-flex', alignItems: 'center', gap: '6px',
+                            justifyContent: 'center', width: '100%' }}>
                 {gameData.status === 'Final' ? (
-                  `Final${gameData.isOvertime ? ' (OT)' : ''}`
+                  <span>Final{gameData.isOvertime ? ' (OT)' : ''}</span>
                 ) : gameData.status === 'Active' ? (
-                  `${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.timeRemaining}`
+                  <>
+                    <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.timeRemaining}`}</span>
+                    {(() => {
+                      // Mirror the per-play icon: derive current clock state
+                      // from the most recent real play. plays are newest-first.
+                      const latest = gameData.plays?.find((p: any) => !p.event && p.playResult != null)
+                      if (!latest) return null
+                      // Hide when the latest play scored — same noise gate as
+                      // the per-play row.
+                      if (latest.scoreChange) return null
+                      return <ClockStateIcon stopped={!!latest.clockStopped} />
+                    })()}
+                  </>
                 ) : (
-                  gameData.status
+                  <span>{gameData.status}</span>
                 )}
               </div>
               {/* Row 2: down & distance (active only) */}
