@@ -224,16 +224,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '2px',
-      // Hard cap on visible feed height so the page doesn't grow indefinitely
-      // when off-day quotes pile up over multi-hour idle gaps. Anything
-      // past this scrolls inside the panel.
-      maxHeight: '70vh',
-      overflowY: 'auto',
-    }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
       {highlights.map((item, idx) => {
         const separator = idx > 0 ? (
           <div key={`sep-${idx}`} style={{ height: '1px', backgroundColor: '#2a3a4e', margin: '0 12px' }} />
