@@ -17,7 +17,17 @@ interface AchievementsContextValue {
   currentWeek: number
   loading: boolean
   refetch: () => Promise<void>
-  claimReward: (rewardId: number) => Promise<{ kind: string; packName?: string; cards?: any[] } | null>
+  claimReward: (rewardId: number) => Promise<{
+    kind: string
+    packName?: string
+    // Legacy free-grant path
+    cards?: any[]
+    // Reveal+select flow (achievement packs use this now)
+    pendingId?: number
+    revealed?: any[]
+    cardsKept?: number
+    cardsPerPack?: number
+  } | null>
   deferReward: (rewardId: number) => Promise<void>
   // Unlock toast queue
   latestUnlock: AchievementUnlockedEvent | null
