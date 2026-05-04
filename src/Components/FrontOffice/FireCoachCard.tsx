@@ -1,5 +1,4 @@
 import React from 'react'
-import CoachAvatar from '@/Components/CoachAvatar'
 import CoachHoverCard from '@/Components/CoachHoverCard'
 import { Stars, calcStars } from '@/Components/Stars'
 import ProbabilityMeter from './ProbabilityMeter'
@@ -53,7 +52,6 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
 
       <CoachHoverCard coach={coach} teamColor={teamColor}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', cursor: 'default' }}>
-          <CoachAvatar name={coach.name} size={48} bgColor={teamColor} style={{ border: `2px solid ${teamColor}` }} />
           <div>
             <div style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0' }}>{coach.name}</div>
             <div style={{ marginTop: '2px' }}>

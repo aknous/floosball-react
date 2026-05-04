@@ -7,8 +7,6 @@ import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
 import RookiesSection from './RookiesSection'
 import MarketsSection from './MarketsSection'
 import { Stars, calcStars } from '@/Components/Stars'
-import PlayerAvatar from '@/Components/PlayerAvatar'
-import CoachAvatar from '@/Components/CoachAvatar'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -640,7 +638,6 @@ function OverviewTab({
                 <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', minWidth: '30px' }}>{posLabel}</span>
                 {player ? (
                   <>
-                    <PlayerAvatar name={player.name} size={32} bgColor={team.color} />
                     <PlayerHoverCard playerId={player.id} playerName={player.name}>
                       <Link to={`/players/${player.id}`} style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {player.name}
@@ -699,7 +696,6 @@ function OverviewTab({
                     padding: '4px 8px', borderRadius: '4px', backgroundColor: '#0f172a',
                   }}>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', minWidth: '30px' }}>{p.position}</span>
-                    <PlayerAvatar name={p.name} size={28} bgColor={team.color} />
                     <PlayerHoverCard playerId={p.playerId} playerName={p.name}>
                       <Link to={`/players/${p.playerId}`} style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {p.name}
@@ -737,7 +733,6 @@ function OverviewTab({
           </div>
           <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <CoachAvatar name={team.coach.name} size={64} bgColor={team.color} style={{ border: `3px solid ${team.color}` }} />
               <div>
                 <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0' }}>{team.coach.name}</div>
                 <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>

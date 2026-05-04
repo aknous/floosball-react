@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { Stars } from '@/Components/Stars'
-import CoachAvatar from '@/Components/CoachAvatar'
 import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -680,7 +679,6 @@ export default function TeamPage() {
             {sectionHeader('Head Coach')}
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <CoachAvatar name={team.coach.name} size={80} bgColor={team.color} style={{ border: `3px solid ${team.color}` }} />
                 <div>
                   <div style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>{team.coach.name}</div>
                   <Stars stars={calcStars(team.coach.overallRating)} size={13} />

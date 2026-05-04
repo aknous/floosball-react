@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
-import CoachAvatar from './CoachAvatar'
 import { Stars, calcStars } from './Stars'
 
 export interface CoachHoverData {
@@ -85,14 +84,12 @@ const Card: React.FC<CardProps> = ({ data, teamColor, mouseX, mouseY }) => {
       <div style={{ height: '4px', backgroundColor: color }} />
 
       <div style={{ padding: '14px' }}>
-        {/* Avatar + name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-          <CoachAvatar name={data.name} size={64} bgColor={teamColor} style={{ border: `2px solid ${color}` }} />
-          <div>
-            <div style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{data.name}</div>
-            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>Head Coach</div>
-            <div style={{ marginTop: '3px' }}><Stars stars={calcStars(data.overallRating)} size={18} /></div>
-          </div>
+        {/* Name + role (avatar dropped — team identity carried by the
+            color stripe at the top of the card). */}
+        <div style={{ marginBottom: '12px' }}>
+          <div style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{data.name}</div>
+          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>Head Coach</div>
+          <div style={{ marginTop: '3px' }}><Stars stars={calcStars(data.overallRating)} size={18} /></div>
         </div>
 
         {/* Overall bar */}

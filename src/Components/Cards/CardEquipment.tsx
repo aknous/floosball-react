@@ -564,11 +564,11 @@ const CardEquipment: React.FC = () => {
                   display: 'flex', alignItems: 'center', gap: '10px',
                 }}
               >
-                {/* Player initials badge */}
+                {/* Team avatar — visual identity for the equipped card */}
                 <PlayerAvatar
                   name={slot.card.playerName}
                   size={36}
-                  bgColor={slot.card.teamColor || '#475569'}
+                  teamId={slot.card.teamId}
                   style={{
                     border: slot.isMatch
                       ? `2px solid ${hexToRgba(slot.card.teamColor || '#ffffff', 0.85)}`
