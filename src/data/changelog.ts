@@ -12,6 +12,26 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.13.1',
+    date: '2026-05-04',
+    changes: [],
+    sections: [
+      {
+        label: 'Fixes',
+        items: [
+          '[Personality] Off-day quotes in the highlights feed no longer show the player name twice. The feed card already attributes the speaker in a header above the quote, so first-person lines render without the auto "Name:" prefix and third-person lines use the player\'s first name only.',
+          '[UI/UX] Highlights feed scrolls inside its panel instead of growing the page when off-day quotes pile up over long idle gaps between games.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[UI/UX] Off-day quote retention dropped from 30 to 12. Feed rotates through fresh content faster during multi-hour idle windows.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.13.0',
     date: '2026-05-03',
     changes: [],
