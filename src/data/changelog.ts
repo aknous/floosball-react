@@ -12,6 +12,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.13.3',
+    date: '2026-05-04',
+    changes: [],
+    sections: [
+      {
+        label: 'Changes',
+        items: [
+          '[Personality] Off-day and sideline lines varied. Conversational archetypes (fiery, paranoid, ghost, dramatic, trash-talker, and others) now use natural contractions instead of formal phrasing. Repeated refusal-pattern closers ("and I will not be...") rewritten for variety.',
+          '[Prospects] Promoted prospects now get a jersey number on call-up. Existing prospects without numbers get backfilled on next server boot.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.13.1',
     date: '2026-05-04',
     changes: [],
