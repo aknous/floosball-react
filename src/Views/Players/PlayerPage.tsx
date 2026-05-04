@@ -539,49 +539,31 @@ export default function PlayerPage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f172a' }}>
 
-      {/* Hero + Attributes */}
+      {/* Hero + Attributes — hero stack on the left (jersey, name, team,
+          Mood, hometown, favorite, motto), attributes/progression panel
+          on the right.  Recent Moments lives below the 2-col row. */}
       <div style={{
         backgroundColor: '#0f172a',
         borderBottom: '1px solid #1e293b',
         padding: isMobile ? '20px 16px' : '28px 24px',
       }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: isMobile ? 'flex' : 'grid', flexDirection: 'column', gridTemplateColumns: isMobile ? undefined : '210px auto 380px 230px', gap: isMobile ? '20px' : '20px', alignItems: 'stretch', justifyContent: 'center' }}>
+        <div style={{
+          maxWidth: '1200px', margin: '0 auto',
+          display: 'flex', flexDirection: 'column' as const,
+          gap: isMobile ? '20px' : '24px',
+        }}>
 
-          {/* Far-left: Profile (hometown / favorite / motto). Pure character flavor.
-              Immediately visible on desktop; on mobile it falls below the jersey
-              block since the grid collapses to a single column. */}
-          {!isMobile && (att?.hometown || att?.favorite_item || att?.motto) && (
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', alignSelf: 'stretch' }}>
-              {sectionHeader('Profile')}
-              <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column' as const, gap: '12px' }}>
-                {att?.hometown && (
-                  <div>
-                    <div style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '3px' }}>Hometown</div>
-                    <div style={{ fontSize: '13px', color: '#e2e8f0' }}>{att.hometown}</div>
-                  </div>
-                )}
-                {att?.favorite_item && att?.favorite_category && (
-                  <div>
-                    <div style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '3px' }}>
-                      Favorite {att.favorite_category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#e2e8f0' }}>{att.favorite_item}</div>
-                  </div>
-                )}
-                {att?.motto && (
-                  <div>
-                    <div style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '3px' }}>Motto</div>
-                    <div style={{ fontSize: '13px', color: '#e2e8f0', fontStyle: 'italic' as const }}>"{att.motto}"</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          {/* Spacer to keep grid columns aligned when player has no profile data */}
-          {!isMobile && !(att?.hometown || att?.favorite_item || att?.motto) && <div />}
+        {/* Hero + Attributes + Moments 3-col row (collapses to single column on mobile) */}
+        <div style={{
+          display: isMobile ? 'flex' : 'grid',
+          flexDirection: 'column' as const,
+          gridTemplateColumns: isMobile ? undefined : '320px 1fr 300px',
+          gap: isMobile ? '20px' : '20px',
+          alignItems: 'start',
+        }}>
 
-          {/* Middle: Jersey + Name */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: isMobile ? '12px' : '16px' }}>
+          {/* ── Left column: hero stack ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', gap: isMobile ? '12px' : '16px' }}>
             <div style={{ width: isMobile ? '100px' : '144px' }}>
               <PlayerJersey color={teamColor} secondary={teamSecondary} number={player.number} name={player.name} />
             </div>
@@ -653,13 +635,39 @@ export default function PlayerPage() {
                 )
               })()}
 
+              {/* Profile flavor inline in the hero, label-on-each-line format. */}
+              {(att?.hometown || att?.favorite_item || att?.motto) && (() => {
+                const labelStyle: React.CSSProperties = { color: '#94a3b8', fontWeight: 600 }
+                const valueStyle: React.CSSProperties = { color: '#cbd5e1' }
+                const favLabel = att?.favorite_category
+                  ? att.favorite_category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+                  : null
+                return (
+                  <div style={{ marginTop: '12px', textAlign: 'left', display: 'flex', flexDirection: 'column' as const, gap: '5px', fontSize: '14px', maxWidth: '300px' }}>
+                    {att?.hometown && (
+                      <div>
+                        <span style={labelStyle}>From:</span> <span style={valueStyle}>{att.hometown}</span>
+                      </div>
+                    )}
+                    {att?.favorite_item && favLabel && (
+                      <div>
+                        <span style={labelStyle}>Favorite {favLabel}:</span> <span style={valueStyle}>{att.favorite_item}</span>
+                      </div>
+                    )}
+                    {att?.motto && (
+                      <div>
+                        <span style={labelStyle}>Motto:</span> <span style={{ ...valueStyle, fontStyle: 'italic' as const }}>"{att.motto}"</span>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
+
             </div>
           </div>
 
-          {/* Third column: Tabbed detail container — Attributes / Progression /
-              Awards. Profile and Moments live in their own columns now, so they
-              are not duplicated as tabs here. Tabs whose source data is empty
-              are hidden so we don't show a dead tab. */}
+          {/* ── Right column: Attributes / Progression / Awards tabbed panel.
+              Tabs whose source data is empty are hidden. ── */}
           {(() => {
             const hasProgression = ratingHistory.length > 0
             const hasAwards = (player.mvpAwards?.length ?? 0) > 0 || (player.championships?.length ?? 0) > 0
@@ -674,7 +682,7 @@ export default function PlayerPage() {
             const activeTab = visibleTabs.some(t => t.key === detailTab) ? detailTab : 'attributes'
 
             return (
-              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', width: isMobile ? '100%' : undefined, alignSelf: 'stretch', display: 'flex', flexDirection: 'column' as const }}>
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', width: isMobile ? '100%' : undefined, display: 'flex', flexDirection: 'column' as const }}>
                 {/* Tab strip */}
                 <div style={{ display: 'flex', backgroundColor: '#0f172a', borderBottom: '1px solid #334155' }}>
                   {visibleTabs.map(t => {
@@ -709,13 +717,13 @@ export default function PlayerPage() {
                     container's height locks to max(tab heights). Non-active
                     tabs are hidden via visibility but still occupy layout,
                     so switching tabs never resizes the container. */}
-                <div style={{ padding: '14px 16px', flex: 1, display: 'grid', gridTemplateColumns: '1fr', gridTemplateRows: '1fr' }}>
+                {/* Conditional rendering instead of stacked grid cells —
+                    panel sizes to the active tab's content. Tab switch will
+                    resize, accepted tradeoff to avoid persistent empty space. */}
+                <div style={{ padding: '14px 16px' }}>
                   {/* Attributes panel */}
-                  <div style={{
-                    gridArea: '1 / 1',
-                    visibility: activeTab === 'attributes' ? 'visible' : 'hidden',
-                    pointerEvents: activeTab === 'attributes' ? 'auto' : 'none',
-                  }}>
+                  {activeTab === 'attributes' && (
+                  <div>
                     {/* Overall + Performance on top */}
                     {attrRow('Overall', player.ratingStars, player.playerRating, true)}
                     {att?.seasonPerformanceRating != null && att.seasonPerformanceRating > 0 &&
@@ -771,28 +779,25 @@ export default function PlayerPage() {
                       )
                     })()}
                   </div>
+                  )}
 
-                  {/* Progression panel */}
-                  {hasProgression && (
+                  {/* Progression panel — capped height so the chart scales
+                      down to fit instead of pushing the attributes panel
+                      taller on tab switch. */}
+                  {activeTab === 'progression' && hasProgression && (
                     <div style={{
-                      gridArea: '1 / 1',
-                      visibility: activeTab === 'progression' ? 'visible' : 'hidden',
-                      pointerEvents: activeTab === 'progression' ? 'auto' : 'none',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      minHeight: 0,
+                      height: '280px',
                     }}>
                       <RatingHistoryChart history={ratingHistory} teamColor={teamColor} />
                     </div>
                   )}
 
                   {/* Awards panel */}
-                  {hasAwards && (
+                  {activeTab === 'awards' && hasAwards && (
                     <div style={{
-                      gridArea: '1 / 1',
-                      visibility: activeTab === 'awards' ? 'visible' : 'hidden',
-                      pointerEvents: activeTab === 'awards' ? 'auto' : 'none',
                       display: 'flex',
                       flexWrap: 'wrap' as const,
                       gap: '16px',
@@ -820,13 +825,13 @@ export default function PlayerPage() {
             )
           })()}
 
-          {/* Far-right: Recent Moments — recent personality quotes, immediately
-              visible without clicking a tab. Mobile keeps it in the lower stack
-              since the header collapses to a single column. */}
-          {!isMobile && quotes.length > 0 && (
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', alignSelf: 'stretch', minWidth: 0 }}>
+          {/* ── Right column: Recent Moments — quotes streaming next to attrs.
+              Capped at a reasonable height so long quote lists don't push
+              the column way past the attributes panel. ── */}
+          {!isMobile && (quotes.length > 0 ? (
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', minWidth: 0, display: 'flex', flexDirection: 'column' as const, maxHeight: '320px' }}>
               {sectionHeader('Recent Moments')}
-              <div style={{ padding: '10px', display: 'flex', flexDirection: 'column' as const, gap: '6px' }}>
+              <div style={{ padding: '10px', display: 'flex', flexDirection: 'column' as const, gap: '6px', overflowY: 'auto' }}>
                 {quotes.slice(0, 4).map((q, i) => {
                   const accent = q.personality ? personalityAccent(q.personality) : '#64748b'
                   return (
@@ -854,9 +859,13 @@ export default function PlayerPage() {
                 })}
               </div>
             </div>
-          )}
-          {/* Spacer to keep grid columns aligned when player has no quotes */}
-          {!isMobile && quotes.length === 0 && <div />}
+          ) : (
+            /* Spacer keeps the 3-col grid aligned when no quotes yet */
+            <div />
+          ))}
+
+        </div>
+        {/* /Hero + Attributes + Moments 3-col row */}
 
         </div>
       </div>

@@ -12,6 +12,57 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.13.0',
+    date: '2026-05-03',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Simulation] Season-long form states for every team (Hot Streak, Complacent, Spiraling, Resolute, and others). Form affects game outcomes. Hot teams overperform their ELO, complacent teams cool off, losing teams with backbone get a Cinderella lift.',
+          '[UI/UX] Team Form badge on the team page, standings, and team hover cards.',
+          '[UI/UX] Fortitude pill on the team page. Combines vulnerability and resolve into a single tier (Hardened, Resilient, Steady, Wobbly, Brittle) showing locker-room health.',
+          '[UI/UX] Player Mood pill now blends locker-room attitude with confidence and determination. Color goes green to red (leader to toxic).',
+          '[Front Office] Coaches have an Attitude attribute (toxic to leader). Affects locker-room contagion, attitude drift, and a small game-day boost from players playing hard for a leader.',
+          '[Front Office] Retirement Watch. Players who plan to retire after this season get flagged at week 22 when the Front Office opens. They\'re blocked from resign votes so you can put your votes toward replacements via the FA ballot.',
+          '[Simulation] Per-matchup context modifiers. Heavy favorites with low discipline fall into trap games, clinched teams coast late, on-bubble teams push for the playoffs, heavy underdogs with high determination overperform.',
+          '[Simulation] Mental attributes split into two pools. Game attributes (discipline, focus, pressure, instinct) stay 60-100. Locker-room attributes (attitude, resilience, selfBelief) now span 30-100, widening the spread.',
+          '[Simulation] Extra points are now their own play in the feed, separate from the touchdown. Missed XPs in close games affect win probability appropriately.',
+          '[Simulation] Clutch/choke detection rewritten. Now tied to game pressure and credits multiple players when a key play involves more than one (e.g. QB and receiver on a clutch TD).',
+          '[Simulation] Tempo intent stamped on every play. New Tempo section in the play insights panel.',
+          '[UI/UX] Player profile reworked. Adds locker-room flavor (hometown, favorite, motto) and a Recent Moments column with personality quotes.',
+          '[Personality] Players have hometown, favorite item, and motto flavor. Off-day quote feed runs between rounds.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[UI/UX] Player and coach avatars removed from team-scoped pages where the team is already implicit. Cross-team views (MVP/All-Pro on season recap, equipped cards) show the team logo instead.',
+          '[UI/UX] Mobile menu now includes Cards, Team Management, Achievements, and Guide.',
+          '[UI/UX] Game feed shows a clock-stops icon next to plays that stop the clock and a play-continues icon when the clock keeps running.',
+          '[UI/UX] Touchdown and extra-point badges are now separate entries in the feed.',
+          '[UI/UX] Standings: Hot Streak teams get a flame icon, team form state shown in hover card.',
+          '[UI/UX] Form-state tooltips trimmed to short phrases.',
+          '[Simulation] FA contract runway softened for top-tier players. High-rated veterans get longer offers at the end of their careers.',
+          '[Simulation] End-of-Q2 4th-down at midfield no longer punts. Teams take a shot or kick if in range, scaled by coach aggressiveness.',
+          '[Simulation] OT and end-of-Q4 long-shot field goals (under 55%) sometimes go for it instead of kicking, scaled by coach aggressiveness.',
+          '[Simulation] OT 1st-down field goal to win the game now requires a near-automatic kick (88-96% probability), pushing teams to advance for a chip shot.',
+          '[Front Office] Coach hire and fire votes persist across server restarts.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Simulation] Burn-the-clock plays now work in Q1/Q2 (quarter gate was missing).',
+          '[Simulation] Field goal play text now includes the result, not just "kicks the field goal".',
+          '[Simulation] Sideline-pass touchdowns no longer say "out of bounds".',
+          '[Simulation] Kickoff event persists in the play feed instead of vanishing on reload.',
+          '[Front Office] /api/offseason no longer returns the wrong draft order during the pre-FA refresh window.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.11.0',
     date: '2026-04-27',
     changes: [],
