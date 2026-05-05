@@ -12,6 +12,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.13.5',
+    date: '2026-05-04',
+    changes: [],
+    sections: [
+      {
+        label: 'Fixes',
+        items: [
+          '[UI/UX] Mobile roster rows on the team page and front office now stack vertically so player names use the full row width instead of getting truncated.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.13.4',
     date: '2026-05-04',
     changes: [],
