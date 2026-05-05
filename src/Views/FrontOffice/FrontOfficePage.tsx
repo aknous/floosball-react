@@ -40,6 +40,8 @@ interface RosterPlayer {
   ratingStars: number
   termRemaining?: number
   defensivePosition?: string | null
+  serviceTime?: string
+  fatigue?: number
   ratingHistory?: RatingPoint[]
 }
 
@@ -632,40 +634,108 @@ function OverviewTab({
             const player = team.roster?.[slot]
             return (
               <div key={slot} style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '6px 8px', borderRadius: '4px', backgroundColor: '#0f172a',
+                display: 'grid',
+                gridTemplateColumns: 'auto minmax(0, 1fr) auto auto auto',
+                columnGap: '10px',
+                alignItems: 'center',
+                padding: '7px 10px',
+                borderRadius: '4px',
+                backgroundColor: '#0f172a',
               }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', minWidth: '30px' }}>{posLabel}</span>
-                {player ? (
-                  <>
-                    <PlayerHoverCard playerId={player.id} playerName={player.name}>
-                      <Link to={`/players/${player.id}`} style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {player.name}
-                      </Link>
-                    </PlayerHoverCard>
-                    <Stars stars={player.ratingStars} size={13} />
-                    {player.termRemaining != null && (
+                {/* Position labels — offensive + defensive grouped */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: '70px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>{posLabel}</span>
+                  <span style={{
+                    fontSize: '10px', fontWeight: 600,
+                    color: player?.defensivePosition ? '#94a3b8' : 'transparent',
+                    backgroundColor: player?.defensivePosition ? '#1e293b' : 'transparent',
+                    padding: '1px 6px', borderRadius: '3px', minWidth: '32px',
+                    textAlign: 'center', letterSpacing: '0.04em',
+                  }}>
+                    {player?.defensivePosition || ''}
+                  </span>
+                </div>
+                {player ? (() => {
+                  // Fatigue (0-100 scale) → status pill
+                  const fatigue = player.fatigue ?? 0
+                  let statusLabel = 'Fresh'
+                  let statusColor = '#22c55e'
+                  if (fatigue > 7) { statusLabel = 'Worn'; statusColor = '#ef4444' }
+                  else if (fatigue > 4) { statusLabel = 'Worked'; statusColor = '#f59e0b' }
+                  else if (fatigue > 2) { statusLabel = 'Active'; statusColor = '#94a3b8' }
+                  // Service time → short label
+                  const svc = player.serviceTime || ''
+                  let svcLabel = ''
+                  let svcColor = '#64748b'
+                  if (svc === 'Rookie') { svcLabel = 'Rookie'; svcColor = '#22c55e' }
+                  else if (svc === 'Established') { svcLabel = 'Estab.'; svcColor = '#94a3b8' }
+                  else if (svc === 'Veteran') { svcLabel = 'Veteran'; svcColor = '#94a3b8' }
+                  else if (svc === 'Grizzled Veteran') { svcLabel = 'Grizzled'; svcColor = '#f59e0b' }
+                  else if (svc === 'Ancient Veteran') { svcLabel = 'Ancient'; svcColor = '#ef4444' }
+                  return (
+                    <>
+                      {/* Name + stars */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                        <PlayerHoverCard playerId={player.id} playerName={player.name}>
+                          <Link to={`/players/${player.id}`} style={{
+                            fontSize: '14px', color: '#e2e8f0', fontWeight: 600,
+                            textDecoration: 'none', overflow: 'hidden',
+                            textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                          }}>
+                            {player.name}
+                          </Link>
+                        </PlayerHoverCard>
+                        <Stars stars={player.ratingStars} size={11} />
+                      </div>
+                      {/* Play-time status pill */}
                       <span style={{
-                        fontSize: '12px',
-                        color: player.termRemaining === 1 ? '#f59e0b' : '#94a3b8',
-                        whiteSpace: 'nowrap' as const, marginLeft: 'auto',
+                        fontSize: '10px', fontWeight: 600,
+                        color: statusColor,
+                        backgroundColor: `${statusColor}1a`,
+                        border: `1px solid ${statusColor}55`,
+                        padding: '1px 7px', borderRadius: '3px',
+                        letterSpacing: '0.03em', whiteSpace: 'nowrap',
+                        minWidth: '52px', textAlign: 'center',
                       }}>
-                        {player.termRemaining}yr
+                        {statusLabel}
                       </span>
-                    )}
-                    {retirementWatch[player.id] && RISK_STYLES[retirementWatch[player.id]] && (
-                      <span style={{
-                        fontSize: '10px', fontWeight: 800,
-                        color: RISK_STYLES[retirementWatch[player.id]].color,
-                        backgroundColor: RISK_STYLES[retirementWatch[player.id]].bg,
-                        padding: '2px 6px', borderRadius: '3px', letterSpacing: '0.04em',
-                      }}>
-                        {RISK_STYLES[retirementWatch[player.id]].label}
+                      {/* Contract: term + service stacked */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', minWidth: '74px' }}>
+                        <span style={{
+                          fontSize: '12px',
+                          color: player.termRemaining === 1 ? '#f59e0b' : '#94a3b8',
+                          fontVariantNumeric: 'tabular-nums',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {player.termRemaining != null ? `${player.termRemaining}yr left` : ''}
+                        </span>
+                        {svcLabel && (
+                          <span style={{
+                            fontSize: '10px', fontWeight: 600,
+                            color: svcColor, letterSpacing: '0.04em',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {svcLabel}
+                          </span>
+                        )}
+                      </div>
+                      {/* Retirement risk badge */}
+                      <span style={{ minWidth: '56px', display: 'flex', justifyContent: 'flex-end' }}>
+                        {retirementWatch[player.id] && RISK_STYLES[retirementWatch[player.id]] && (
+                          <span style={{
+                            fontSize: '10px', fontWeight: 800,
+                            color: RISK_STYLES[retirementWatch[player.id]].color,
+                            backgroundColor: RISK_STYLES[retirementWatch[player.id]].bg,
+                            padding: '2px 6px', borderRadius: '3px', letterSpacing: '0.04em',
+                          }}>
+                            {RISK_STYLES[retirementWatch[player.id]].label}
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </>
-                ) : (
-                  <span style={{ fontSize: '14px', color: '#475569' }}>—</span>
+                    </>
+                  )
+                })() : (
+                  <span style={{ fontSize: '14px', color: '#475569', gridColumn: 'span 4' }}>—</span>
                 )}
               </div>
             )
@@ -692,28 +762,52 @@ function OverviewTab({
                   : `${p.seasonsRemaining} seasons`
                 return (
                   <div key={p.playerId} style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    padding: '4px 8px', borderRadius: '4px', backgroundColor: '#0f172a',
+                    display: 'grid',
+                    gridTemplateColumns: '32px minmax(0, 1fr) auto auto',
+                    columnGap: '10px',
+                    alignItems: 'center',
+                    padding: '6px 10px',
+                    borderRadius: '4px',
+                    backgroundColor: '#0f172a',
                   }}>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', minWidth: '30px' }}>{p.position}</span>
-                    <PlayerHoverCard playerId={p.playerId} playerName={p.name}>
-                      <Link to={`/players/${p.playerId}`} style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: 500, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {p.name}
-                      </Link>
-                    </PlayerHoverCard>
-                    <Stars stars={calcStars(p.rating)} size={13} />
-                    {p.isUndrafted && (
-                      <span style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', backgroundColor: '#1e293b', padding: '1px 5px', borderRadius: '3px', letterSpacing: '0.04em' }}>
-                        UNDRAFTED
-                      </span>
-                    )}
-                    {p.draftSeason != null && (
-                      <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' as const }}>
-                        drafted S{p.draftSeason}
-                      </span>
-                    )}
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8' }}>{p.position}</span>
+                    {/* Name + Stars stacked */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                      <PlayerHoverCard playerId={p.playerId} playerName={p.name}>
+                        <Link to={`/players/${p.playerId}`} style={{
+                          fontSize: '13px', color: '#e2e8f0', fontWeight: 600,
+                          textDecoration: 'none', overflow: 'hidden',
+                          textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                        }}>
+                          {p.name}
+                        </Link>
+                      </PlayerHoverCard>
+                      <Stars stars={calcStars(p.rating)} size={11} />
+                    </div>
+                    {/* Draft origin — undrafted chip OR drafted-season label */}
                     <span style={{
-                      fontSize: '12px', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' as const, marginLeft: 'auto',
+                      fontSize: p.isUndrafted ? '9px' : '11px',
+                      fontWeight: p.isUndrafted ? 700 : 500,
+                      color: '#64748b',
+                      backgroundColor: p.isUndrafted ? '#1e293b' : 'transparent',
+                      padding: p.isUndrafted ? '1px 5px' : 0,
+                      borderRadius: '3px',
+                      letterSpacing: p.isUndrafted ? '0.04em' : 'normal',
+                      whiteSpace: 'nowrap',
+                      minWidth: '70px', textAlign: 'right',
+                    }}>
+                      {p.isUndrafted
+                        ? 'UNDRAFTED'
+                        : p.draftSeason != null
+                          ? `drafted S${p.draftSeason}`
+                          : ''}
+                    </span>
+                    {/* FA timeline */}
+                    <span style={{
+                      fontSize: '12px',
+                      color: p.seasonsRemaining <= 1 ? '#f59e0b' : '#94a3b8',
+                      whiteSpace: 'nowrap', fontWeight: 600,
+                      minWidth: '110px', textAlign: 'right',
                     }}>
                       {windowLabel} until FA
                     </span>

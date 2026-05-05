@@ -644,6 +644,7 @@ export default function Navbar() {
                   to Cards / Team Management / Achievements / Guide. */}
               {[
                 ['Dashboard', '/dashboard'],
+                ['League', '/teams'],
                 ['Players', '/players'],
                 ['Fantasy', '/fantasy'],
                 ['Cards', '/cards'],

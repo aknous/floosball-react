@@ -19,6 +19,17 @@ const NAV_ITEMS = [
     ),
   },
   {
+    key: 'teams',
+    label: 'League',
+    path: '/teams',
+    icon: (
+      // Pennant flag on a pole — classic team-spirit aesthetic
+      <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M3 2h2v1l11 4-11 4v7H3V2z" />
+      </svg>
+    ),
+  },
+  {
     key: 'players',
     label: 'Players',
     path: '/players',

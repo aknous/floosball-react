@@ -2,6 +2,7 @@ import React from 'react'
 import { Stars, calcStars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import ProbabilityMeter from './ProbabilityMeter'
+import { getContrastTextColor } from '@/utils/colors'
 import type { GmPlayerInfo, GmVoteTally } from '@/types/gm'
 
 interface CutPlayerCardProps {
@@ -113,7 +114,7 @@ const CutPlayerCard: React.FC<CutPlayerCardProps> = ({
                   style={{
                     padding: '4px 8px',
                     backgroundColor: isDisabled ? '#1e293b' : teamColor,
-                    color: isDisabled ? '#475569' : '#fff',
+                    color: isDisabled ? '#475569' : getContrastTextColor(teamColor),
                     border: 'none',
                     borderRadius: '4px',
                     fontSize: '11px',
