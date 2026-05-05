@@ -1083,33 +1083,27 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 const awayAbbr = gameData.awayTeam.abbr
                 const homeColor = gameData.homeTeam.color
                 const awayColor = gameData.awayTeam.color
-
-                const compBar = (homeVal: number, awayVal: number) => {
-                  const total = homeVal + awayVal
-                  if (total === 0) return null
-                  const homePct = (homeVal / total) * 100
-                  return (
-                    <div style={{ display: 'flex', height: '4px', borderRadius: '2px', overflow: 'hidden', marginTop: '4px' }}>
-                      <div style={{ width: `${homePct}%`, backgroundColor: homeColor, transition: 'width 0.3s' }} />
-                      <div style={{ flex: 1, backgroundColor: awayColor, transition: 'width 0.3s' }} />
-                    </div>
-                  )
-                }
+                const homeId = gameData.homeTeam.id
+                const awayId = gameData.awayTeam.id
+                const homeName = gameData.homeTeam.name
+                const awayName = gameData.awayTeam.name
+                const homeCity = gameData.homeTeam.city
+                const awayCity = gameData.awayTeam.city
 
                 type MatchupRow = { label: string; home: number; away: number; flip?: boolean }
                 const sections: { title: string; rows: MatchupRow[] }[] = [
                   { title: 'Scoring', rows: [
                     { label: 'Points / Game', home: h.avgPts, away: a.avgPts },
-                    { label: 'Points Allowed / Game', home: h.avgPtsAlwd, away: a.avgPtsAlwd, flip: true },
+                    { label: 'Points Allowed', home: h.avgPtsAlwd, away: a.avgPtsAlwd, flip: true },
                   ]},
                   { title: 'Passing', rows: [
                     { label: 'Pass Yards / Game', home: h.avgPassYards, away: a.avgPassYards },
-                    { label: 'Pass Yards Allowed / Game', home: h.avgPassYardsAlwd, away: a.avgPassYardsAlwd, flip: true },
+                    { label: 'Pass Yards Allowed', home: h.avgPassYardsAlwd, away: a.avgPassYardsAlwd, flip: true },
                     { label: 'Pass TDs / Game', home: h.avgPassTds, away: a.avgPassTds },
                   ]},
                   { title: 'Rushing', rows: [
                     { label: 'Rush Yards / Game', home: h.avgRunYards, away: a.avgRunYards },
-                    { label: 'Rush Yards Allowed / Game', home: h.avgRunYardsAlwd, away: a.avgRunYardsAlwd, flip: true },
+                    { label: 'Rush Yards Allowed', home: h.avgRunYardsAlwd, away: a.avgRunYardsAlwd, flip: true },
                     { label: 'Rush TDs / Game', home: h.avgRunTds, away: a.avgRunTds },
                   ]},
                   { title: 'Defense', rows: [
@@ -1118,43 +1112,120 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   ]},
                 ]
 
+                const matchupRow = (row: MatchupRow) => {
+                  const homeWins = row.flip ? row.home < row.away : row.home > row.away
+                  const awayWins = row.flip ? row.away < row.home : row.away > row.home
+                  const tied = row.home === row.away
+                  const cellBase: React.CSSProperties = {
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    color: '#e2e8f0',
+                    fontVariantNumeric: 'tabular-nums',
+                    padding: '12px 16px',
+                    transition: 'background-color 0.2s',
+                  }
+                  return (
+                    <div key={row.label} style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 160px 1fr',
+                      alignItems: 'stretch',
+                      borderTop: '1px solid #1e293b',
+                    }}>
+                      <div style={{
+                        ...cellBase,
+                        textAlign: 'right',
+                        backgroundColor: tied ? 'transparent' : (homeWins ? `${homeColor}33` : 'transparent'),
+                        borderRight: tied || !homeWins ? 'none' : `2px solid ${homeColor}`,
+                      }}>{row.home.toFixed(1)}</div>
+                      <div style={{
+                        textAlign: 'center',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        color: '#94a3b8',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        whiteSpace: 'nowrap',
+                        padding: '12px 18px',
+                        alignSelf: 'center',
+                      }}>{row.label}</div>
+                      <div style={{
+                        ...cellBase,
+                        textAlign: 'left',
+                        backgroundColor: tied ? 'transparent' : (awayWins ? `${awayColor}33` : 'transparent'),
+                        borderLeft: tied || !awayWins ? 'none' : `2px solid ${awayColor}`,
+                      }}>{row.away.toFixed(1)}</div>
+                    </div>
+                  )
+                }
+
                 return (
                   <div>
-                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '16px' }}>
-                      Matchup Preview
-                    </div>
-                    {/* Header */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '0 24px', marginBottom: '8px', padding: '0 4px' }}>
-                      <div style={{ fontSize: '13px', fontWeight: '700', color: homeColor, minWidth: '48px', textAlign: 'center' }}>{homeAbbr}</div>
-                      <div />
-                      <div style={{ fontSize: '13px', fontWeight: '700', color: awayColor, minWidth: '48px', textAlign: 'center' }}>{awayAbbr}</div>
-                    </div>
-                    {sections.map(section => (
-                      <div key={section.title}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '14px 4px 6px' }}>
-                          {section.title}
+                    {/* Team header — avatars + city/name with team-color accents */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto 1fr',
+                      alignItems: 'center',
+                      gap: '0 20px',
+                      padding: '16px 18px',
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #1e293b',
+                      borderRadius: '6px',
+                      marginBottom: '12px',
+                      backgroundImage: `linear-gradient(90deg, ${homeColor}1a 0%, transparent 35%, transparent 65%, ${awayColor}1a 100%)`,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end', minWidth: 0 }}>
+                        <div style={{ textAlign: 'right', minWidth: 0 }}>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeCity}</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeName}</div>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: homeColor, letterSpacing: '0.08em', marginTop: '2px' }}>{homeAbbr}</div>
                         </div>
-                        {section.rows.map((row, i) => {
-                          // For "allowed" stats, lower is better — flip highlights
-                          const homeBetter = row.flip ? row.home < row.away : row.home > row.away
-                          const awayBetter = row.flip ? row.away < row.home : row.away > row.home
-                          const tied = row.home === row.away
-                          return (
-                            <div key={row.label} style={{ padding: '6px 4px', borderTop: '1px solid #1e293b', backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '0 24px', alignItems: 'center' }}>
-                                <div style={{ fontSize: '14px', fontWeight: homeBetter && !tied ? '700' : '400', color: homeBetter && !tied ? '#e2e8f0' : '#94a3b8', minWidth: '48px', textAlign: 'center' }}>
-                                  {typeof row.home === 'number' ? row.home.toFixed(1) : row.home}
-                                </div>
-                                <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center' }}>{row.label}</div>
-                                <div style={{ fontSize: '14px', fontWeight: awayBetter && !tied ? '700' : '400', color: awayBetter && !tied ? '#e2e8f0' : '#94a3b8', minWidth: '48px', textAlign: 'center' }}>
-                                  {typeof row.away === 'number' ? row.away.toFixed(1) : row.away}
-                                </div>
-                              </div>
-                              {!row.flip && compBar(row.home, row.away)}
-                              {row.flip && compBar(row.away, row.home)}
-                            </div>
-                          )
-                        })}
+                        <img src={`/avatars/${homeId}.png`} alt={homeName} style={{ width: '52px', height: '52px', flexShrink: 0 }} />
+                      </div>
+                      <div style={{
+                        fontSize: '11px', fontWeight: 700, color: '#475569',
+                        textTransform: 'uppercase', letterSpacing: '0.15em',
+                        padding: '0 4px',
+                      }}>vs</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', minWidth: 0 }}>
+                        <img src={`/avatars/${awayId}.png`} alt={awayName} style={{ width: '52px', height: '52px', flexShrink: 0 }} />
+                        <div style={{ textAlign: 'left', minWidth: 0 }}>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayCity}</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayName}</div>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: awayColor, letterSpacing: '0.08em', marginTop: '2px' }}>{awayAbbr}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Matchup preview banner */}
+                    <div style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#64748b',
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      textAlign: 'center',
+                      padding: '6px 0 14px',
+                    }}>Season Averages</div>
+
+                    {sections.map(section => (
+                      <div key={section.title} style={{
+                        backgroundColor: '#0f172a',
+                        border: '1px solid #1e293b',
+                        borderRadius: '6px',
+                        marginTop: '12px',
+                        overflow: 'hidden',
+                      }}>
+                        <div style={{
+                          padding: '8px 14px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          color: '#cbd5e1',
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase',
+                          backgroundColor: '#1e293b',
+                          borderBottom: '1px solid #334155',
+                        }}>{section.title}</div>
+                        {section.rows.map(matchupRow)}
                       </div>
                     ))}
                   </div>
@@ -1278,64 +1349,113 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   },
                 ]
 
-                // Centered HOME | LABEL | AWAY row, with leader value highlighted in team color.
-                const compareRow = (row: BoxRow, even: boolean) => {
+                // Centered HOME | LABEL | AWAY row. The leading side gets its
+                // cell tinted in the team color so the winner "lights up"
+                // visually; the trailing cell stays neutral.
+                const compareRow = (row: BoxRow) => {
                   const homeWins = row.lowerBetter ? row.homeNum < row.awayNum : row.homeNum > row.awayNum
                   const awayWins = row.lowerBetter ? row.awayNum < row.homeNum : row.awayNum > row.homeNum
                   const tied = row.homeNum === row.awayNum
+                  const cellBase: React.CSSProperties = {
+                    fontSize: '20px',
+                    fontWeight: 700,
+                    color: '#e2e8f0',
+                    fontVariantNumeric: 'tabular-nums',
+                    padding: '12px 16px',
+                    transition: 'background-color 0.2s',
+                  }
                   return (
                     <div key={row.label} style={{
                       display: 'grid',
-                      gridTemplateColumns: '1fr auto 1fr',
-                      alignItems: 'center',
-                      gap: '0 16px',
-                      padding: '12px 14px',
-                      backgroundColor: even ? 'transparent' : 'rgba(255,255,255,0.015)',
+                      gridTemplateColumns: '1fr 160px 1fr',
+                      alignItems: 'stretch',
                       borderTop: '1px solid #1e293b',
                     }}>
                       <div style={{
+                        ...cellBase,
                         textAlign: 'right',
-                        fontSize: '20px',
-                        fontWeight: 700,
-                        color: tied ? '#e2e8f0' : (homeWins ? homeColor : '#64748b'),
-                        fontVariantNumeric: 'tabular-nums',
+                        backgroundColor: tied
+                          ? 'transparent'
+                          : (homeWins ? `${homeColor}33` : 'transparent'),
+                        borderRight: tied || !homeWins ? 'none' : `2px solid ${homeColor}`,
                       }}>{row.home}</div>
                       <div style={{
                         textAlign: 'center',
                         fontSize: '12px',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         color: '#94a3b8',
                         textTransform: 'uppercase',
                         letterSpacing: '0.06em',
                         whiteSpace: 'nowrap',
+                        padding: '12px 18px',
+                        alignSelf: 'center',
                       }}>{row.label}</div>
                       <div style={{
+                        ...cellBase,
                         textAlign: 'left',
-                        fontSize: '20px',
-                        fontWeight: 700,
-                        color: tied ? '#e2e8f0' : (awayWins ? awayColor : '#64748b'),
-                        fontVariantNumeric: 'tabular-nums',
+                        backgroundColor: tied
+                          ? 'transparent'
+                          : (awayWins ? `${awayColor}33` : 'transparent'),
+                        borderLeft: tied || !awayWins ? 'none' : `2px solid ${awayColor}`,
                       }}>{row.away}</div>
                     </div>
                   )
                 }
 
+                const homeId = gameData.homeTeam.id
+                const awayId = gameData.awayTeam.id
+                const homeName = gameData.homeTeam.name
+                const awayName = gameData.awayTeam.name
+                const homeCity = gameData.homeTeam.city
+                const awayCity = gameData.awayTeam.city
+
                 return (
                   <div>
-                    {/* Big team header — abbr + score-like layout for the columns */}
+                    {/* Team header — avatars + city/name with team-color accents */}
                     <div style={{
                       display: 'grid',
                       gridTemplateColumns: '1fr auto 1fr',
                       alignItems: 'center',
-                      gap: '0 16px',
-                      padding: '14px 14px',
-                      backgroundColor: '#1e293b',
-                      borderRadius: '6px 6px 0 0',
-                      marginBottom: '0',
+                      gap: '0 20px',
+                      padding: '16px 18px',
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #1e293b',
+                      borderRadius: '6px',
+                      marginBottom: '12px',
+                      backgroundImage: `linear-gradient(90deg, ${homeColor}1a 0%, transparent 35%, transparent 65%, ${awayColor}1a 100%)`,
                     }}>
-                      <div style={{ textAlign: 'right', fontSize: '18px', fontWeight: 800, color: homeColor, letterSpacing: '0.06em' }}>{homeAbbr}</div>
-                      <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>vs</div>
-                      <div style={{ textAlign: 'left', fontSize: '18px', fontWeight: 800, color: awayColor, letterSpacing: '0.06em' }}>{awayAbbr}</div>
+                      {/* Home side */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end', minWidth: 0 }}>
+                        <div style={{ textAlign: 'right', minWidth: 0 }}>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeCity}</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeName}</div>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: homeColor, letterSpacing: '0.08em', marginTop: '2px' }}>{homeAbbr}</div>
+                        </div>
+                        <img
+                          src={`/avatars/${homeId}.png`}
+                          alt={homeName}
+                          style={{ width: '52px', height: '52px', flexShrink: 0 }}
+                        />
+                      </div>
+                      {/* Center divider */}
+                      <div style={{
+                        fontSize: '11px', fontWeight: 700, color: '#475569',
+                        textTransform: 'uppercase', letterSpacing: '0.15em',
+                        padding: '0 4px',
+                      }}>vs</div>
+                      {/* Away side */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', minWidth: 0 }}>
+                        <img
+                          src={`/avatars/${awayId}.png`}
+                          alt={awayName}
+                          style={{ width: '52px', height: '52px', flexShrink: 0 }}
+                        />
+                        <div style={{ textAlign: 'left', minWidth: 0 }}>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayCity}</div>
+                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayName}</div>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: awayColor, letterSpacing: '0.08em', marginTop: '2px' }}>{awayAbbr}</div>
+                        </div>
+                      </div>
                     </div>
 
                     {sections.map((section) => (
@@ -1356,7 +1476,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                           backgroundColor: '#1e293b',
                           borderBottom: '1px solid #334155',
                         }}>{section.title}</div>
-                        {section.rows.map((row, i) => compareRow(row, i % 2 === 0))}
+                        {section.rows.map((row) => compareRow(row))}
                       </div>
                     ))}
                   </div>
