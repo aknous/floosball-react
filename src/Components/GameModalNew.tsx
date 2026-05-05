@@ -1224,37 +1224,139 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 const awayAbbr = gameData.awayTeam.abbr
                 const homeColor = gameData.homeTeam.color
                 const awayColor = gameData.awayTeam.color
-                const rows: { label: string; home: string | number; away: string | number }[] = [
-                  { label: 'Total Yards',   home: h.totalYards,  away: a.totalYards  },
-                  { label: 'Total Plays',   home: h.totalPlays,  away: a.totalPlays  },
-                  { label: 'First Downs',   home: h.firstDowns,  away: a.firstDowns  },
-                  { label: '3rd Down',      home: `${h.thirdDownConv ?? 0}/${h.thirdDownAtt ?? 0}`,   away: `${a.thirdDownConv ?? 0}/${a.thirdDownAtt ?? 0}`   },
-                  { label: '4th Down',      home: `${h.fourthDownConv ?? 0}/${h.fourthDownAtt ?? 0}`, away: `${a.fourthDownConv ?? 0}/${a.fourthDownAtt ?? 0}` },
-                  { label: 'Pass Yards',    home: h.passYards,   away: a.passYards   },
-                  { label: 'Completions',   home: `${h.passComp}/${h.passAtt}`, away: `${a.passComp}/${a.passAtt}` },
-                  { label: 'Interceptions', home: h.passInts,    away: a.passInts    },
-                  { label: 'Rush Yards',    home: h.rushYards,   away: a.rushYards   },
-                  { label: 'Rush Carries',  home: h.rushCarries, away: a.rushCarries },
-                  { label: 'Turnovers',     home: h.turnovers,   away: a.turnovers   },
-                  { label: 'Sacks',         home: h.sacks,       away: a.sacks       },
+
+                // For each row, return numeric values used to determine the
+                // "leader" side (lower-is-better stats flip the comparison).
+                type BoxRow = { label: string; home: string | number; away: string | number; homeNum: number; awayNum: number; lowerBetter?: boolean }
+                // Per-attempt efficiency stats (rounded to 1 decimal)
+                const ratio = (num: number, denom: number) =>
+                  denom > 0 ? +(num / denom).toFixed(1) : 0
+                const hYpPlay = ratio(h.totalYards, h.totalPlays)
+                const aYpPlay = ratio(a.totalYards, a.totalPlays)
+                const hYpa = ratio(h.passYards, h.passAtt)
+                const aYpa = ratio(a.passYards, a.passAtt)
+                const hYpc = ratio(h.rushYards, h.rushCarries)
+                const aYpc = ratio(a.rushYards, a.rushCarries)
+
+                const sections: { title: string; rows: BoxRow[] }[] = [
+                  {
+                    title: 'Total Offense',
+                    rows: [
+                      { label: 'Total Yards',  home: h.totalYards, away: a.totalYards, homeNum: h.totalYards, awayNum: a.totalYards },
+                      { label: 'Total Plays',  home: h.totalPlays, away: a.totalPlays, homeNum: h.totalPlays, awayNum: a.totalPlays },
+                      { label: 'Yards / Play', home: hYpPlay,      away: aYpPlay,      homeNum: hYpPlay,      awayNum: aYpPlay },
+                      { label: 'First Downs',  home: h.firstDowns, away: a.firstDowns, homeNum: h.firstDowns, awayNum: a.firstDowns },
+                    ],
+                  },
+                  {
+                    title: 'Passing',
+                    rows: [
+                      { label: 'Pass Yards',    home: h.passYards, away: a.passYards, homeNum: h.passYards, awayNum: a.passYards },
+                      { label: 'Completions',   home: `${h.passComp}/${h.passAtt}`, away: `${a.passComp}/${a.passAtt}`, homeNum: h.passComp, awayNum: a.passComp },
+                      { label: 'Yards / Att',   home: hYpa, away: aYpa, homeNum: hYpa, awayNum: aYpa },
+                      { label: 'Pass TDs',      home: h.passTds, away: a.passTds, homeNum: h.passTds, awayNum: a.passTds },
+                      { label: 'Interceptions', home: h.passInts, away: a.passInts, homeNum: h.passInts, awayNum: a.passInts, lowerBetter: true },
+                      { label: 'Sacks Allowed', home: a.sacks, away: h.sacks, homeNum: a.sacks, awayNum: h.sacks, lowerBetter: true },
+                    ],
+                  },
+                  {
+                    title: 'Rushing',
+                    rows: [
+                      { label: 'Rush Yards',   home: h.rushYards,   away: a.rushYards,   homeNum: h.rushYards,   awayNum: a.rushYards   },
+                      { label: 'Rush Carries', home: h.rushCarries, away: a.rushCarries, homeNum: h.rushCarries, awayNum: a.rushCarries },
+                      { label: 'Yards / Carry', home: hYpc, away: aYpc, homeNum: hYpc, awayNum: aYpc },
+                      { label: 'Rush TDs',     home: h.rushTds,     away: a.rushTds,     homeNum: h.rushTds,     awayNum: a.rushTds     },
+                    ],
+                  },
+                  {
+                    title: 'Conversions & Mistakes',
+                    rows: [
+                      { label: '3rd Down',  home: `${h.thirdDownConv ?? 0}/${h.thirdDownAtt ?? 0}`, away: `${a.thirdDownConv ?? 0}/${a.thirdDownAtt ?? 0}`, homeNum: h.thirdDownConv ?? 0, awayNum: a.thirdDownConv ?? 0 },
+                      { label: '4th Down',  home: `${h.fourthDownConv ?? 0}/${h.fourthDownAtt ?? 0}`, away: `${a.fourthDownConv ?? 0}/${a.fourthDownAtt ?? 0}`, homeNum: h.fourthDownConv ?? 0, awayNum: a.fourthDownConv ?? 0 },
+                      { label: 'Turnovers', home: h.turnovers, away: a.turnovers, homeNum: h.turnovers, awayNum: a.turnovers, lowerBetter: true },
+                    ],
+                  },
                 ]
+
+                // Centered HOME | LABEL | AWAY row, with leader value highlighted in team color.
+                const compareRow = (row: BoxRow, even: boolean) => {
+                  const homeWins = row.lowerBetter ? row.homeNum < row.awayNum : row.homeNum > row.awayNum
+                  const awayWins = row.lowerBetter ? row.awayNum < row.homeNum : row.awayNum > row.homeNum
+                  const tied = row.homeNum === row.awayNum
+                  return (
+                    <div key={row.label} style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto 1fr',
+                      alignItems: 'center',
+                      gap: '0 16px',
+                      padding: '12px 14px',
+                      backgroundColor: even ? 'transparent' : 'rgba(255,255,255,0.015)',
+                      borderTop: '1px solid #1e293b',
+                    }}>
+                      <div style={{
+                        textAlign: 'right',
+                        fontSize: '20px',
+                        fontWeight: 700,
+                        color: tied ? '#e2e8f0' : (homeWins ? homeColor : '#64748b'),
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>{row.home}</div>
+                      <div style={{
+                        textAlign: 'center',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: '#94a3b8',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        whiteSpace: 'nowrap',
+                      }}>{row.label}</div>
+                      <div style={{
+                        textAlign: 'left',
+                        fontSize: '20px',
+                        fontWeight: 700,
+                        color: tied ? '#e2e8f0' : (awayWins ? awayColor : '#64748b'),
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>{row.away}</div>
+                    </div>
+                  )
+                }
+
                 return (
                   <div>
-                    {/* Header */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px', marginBottom: '8px', padding: '0 4px' }}>
-                      <div />
-                      <div style={{ fontSize: '13px', fontWeight: '700', color: homeColor, minWidth: '48px', textAlign: 'center' }}>{homeAbbr}</div>
-                      <div style={{ fontSize: '13px', fontWeight: '700', color: awayColor, minWidth: '48px', textAlign: 'center' }}>{awayAbbr}</div>
+                    {/* Big team header — abbr + score-like layout for the columns */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr auto 1fr',
+                      alignItems: 'center',
+                      gap: '0 16px',
+                      padding: '14px 14px',
+                      backgroundColor: '#1e293b',
+                      borderRadius: '6px 6px 0 0',
+                      marginBottom: '0',
+                    }}>
+                      <div style={{ textAlign: 'right', fontSize: '18px', fontWeight: 800, color: homeColor, letterSpacing: '0.06em' }}>{homeAbbr}</div>
+                      <div style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>vs</div>
+                      <div style={{ textAlign: 'left', fontSize: '18px', fontWeight: 800, color: awayColor, letterSpacing: '0.06em' }}>{awayAbbr}</div>
                     </div>
-                    {rows.map((row, i) => (
-                      <div key={row.label} style={{
-                        display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '0 24px',
-                        padding: '8px 4px', borderTop: '1px solid #1e293b',
-                        backgroundColor: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'
+
+                    {sections.map((section) => (
+                      <div key={section.title} style={{
+                        backgroundColor: '#0f172a',
+                        border: '1px solid #1e293b',
+                        borderRadius: '6px',
+                        marginTop: '12px',
+                        overflow: 'hidden',
                       }}>
-                        <div style={{ fontSize: '13px', color: '#94a3b8' }}>{row.label}</div>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', minWidth: '48px', textAlign: 'center' }}>{row.home}</div>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', minWidth: '48px', textAlign: 'center' }}>{row.away}</div>
+                        <div style={{
+                          padding: '8px 14px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          color: '#cbd5e1',
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase',
+                          backgroundColor: '#1e293b',
+                          borderBottom: '1px solid #334155',
+                        }}>{section.title}</div>
+                        {section.rows.map((row, i) => compareRow(row, i % 2 === 0))}
                       </div>
                     ))}
                   </div>
@@ -1268,111 +1370,173 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 const awayAbbr = gameData.awayTeam.abbr
                 const homeColor = gameData.homeTeam.color
                 const awayColor = gameData.awayTeam.color
-
-                const sectionLabel = (text: string) => (
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '14px 4px 6px' }}>{text}</div>
-                )
+                const hp = gs.home.players
+                const ap = gs.away.players
 
                 // Renders a player name cell with position badge + star rating
                 const playerNameCell = (p: { id: number; name: string; position?: string | null; defensivePosition?: string | null; ratingStars?: number }, useDefPos?: boolean) => {
                   const posLabel = useDefPos && p.defensivePosition ? p.defensivePosition : p.position
                   return (
-                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '2px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
-                        {posLabel && (
-                          <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', backgroundColor: '#0f172a', padding: '1px 5px', borderRadius: '3px', flexShrink: 0 }}>
-                            {posLabel}
-                          </span>
-                        )}
-                        <PlayerHoverCard playerId={p.id} playerName={p.name}>
-                          <span style={{ fontSize: '15px', color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                        </PlayerHoverCard>
-                      </div>
-                      {p.ratingStars != null && (
-                        <Stars stars={p.ratingStars} size={12} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                      {posLabel && (
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', backgroundColor: '#1e293b', padding: '2px 6px', borderRadius: '3px', flexShrink: 0, minWidth: '32px', textAlign: 'center' }}>
+                          {posLabel}
+                        </span>
                       )}
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '1px' }}>
+                        <PlayerHoverCard playerId={p.id} playerName={p.name}>
+                          <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{p.name}</span>
+                        </PlayerHoverCard>
+                        {p.ratingStars != null && <Stars stars={p.ratingStars} size={11} />}
+                      </div>
                     </div>
                   )
                 }
 
-                // cols: header labels (first col is always player name area)
-                // data: first element is the player object (for name/pos/stars), rest are stat values
-                const statRow = (cols: (string | number | React.ReactNode)[], bold = false, template = '1fr 36px 36px 36px 42px') => (
-                  <div style={{ display: 'grid', gridTemplateColumns: template, gap: '0 6px', padding: '8px 4px', borderTop: '1px solid #1e293b' }}>
-                    {cols.map((c, i) => (
-                      <div key={i} style={{ minWidth: 0, fontSize: bold ? '12px' : '15px', fontWeight: bold ? '700' : '400', color: bold ? '#64748b' : '#e2e8f0', textAlign: i === 0 ? 'left' : 'center', overflow: i === 0 ? 'hidden' : 'visible' }}>{c}</div>
-                    ))}
-                  </div>
-                )
+                // Section card — full-width panel with section title, then column
+                // headers, then home/away player groups separated by team-color
+                // bars. Single full-width grid keeps player names roomy.
+                const sectionCard = (
+                  label: string,
+                  headerCols: string[],
+                  homeRows: React.ReactNode[][],
+                  awayRows: React.ReactNode[][],
+                  template: string,
+                ) => {
+                  const teamGroup = (abbr: string, color: string, rows: React.ReactNode[][]) => (
+                    <>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '6px 14px',
+                        backgroundColor: `${color}14`,
+                        borderTop: '1px solid #1e293b',
+                        borderLeft: `3px solid ${color}`,
+                      }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color, letterSpacing: '0.06em' }}>{abbr}</span>
+                      </div>
+                      {rows.length === 0 ? (
+                        <div style={{ padding: '10px 14px', fontSize: '12px', color: '#475569', borderTop: '1px solid #1e293b' }}>—</div>
+                      ) : rows.map((row, ri) => (
+                        <div key={`${abbr}-${ri}`} style={{
+                          display: 'grid',
+                          gridTemplateColumns: template,
+                          columnGap: '8px',
+                          padding: '10px 14px',
+                          borderTop: '1px solid #1e293b',
+                          fontSize: '14px',
+                          color: '#e2e8f0',
+                          fontVariantNumeric: 'tabular-nums',
+                          alignItems: 'center',
+                        }}>
+                          {row.map((c, i) => (
+                            <div key={i} style={{
+                              textAlign: i === 0 ? 'left' : 'center',
+                              minWidth: 0,
+                              overflow: i === 0 ? 'hidden' : 'visible',
+                            }}>{c}</div>
+                          ))}
+                        </div>
+                      ))}
+                    </>
+                  )
+                  return (
+                    <div style={{
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #1e293b',
+                      borderRadius: '6px',
+                      overflow: 'hidden',
+                      marginBottom: '14px',
+                    }}>
+                      <div style={{
+                        padding: '10px 14px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        color: '#cbd5e1',
+                        letterSpacing: '0.1em',
+                        textTransform: 'uppercase',
+                        backgroundColor: '#1e293b',
+                        borderBottom: '1px solid #334155',
+                      }}>{label}</div>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: template,
+                        columnGap: '8px',
+                        padding: '8px 14px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        color: '#94a3b8',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        borderTop: '1px solid #1e293b',
+                      }}>
+                        {headerCols.map((c, i) => (
+                          <div key={i} style={{ textAlign: i === 0 ? 'left' : 'center' }}>{c}</div>
+                        ))}
+                      </div>
+                      {teamGroup(homeAbbr, homeColor, homeRows)}
+                      {teamGroup(awayAbbr, awayColor, awayRows)}
+                    </div>
+                  )
+                }
 
-                const T7 = '1fr 48px 38px 36px 36px 28px 42px'  // 6 stat cols for offense sections
-                const T8 = '1fr 48px 38px 36px 36px 28px 30px 42px'  // 7 stat cols (extra turnover col)
+                // Templates: full-width grids — names get plenty of room.
+                const T_PASS = '1fr 60px 50px 44px 32px 32px 44px'      // C/A YDS LNG TD INT FP
+                const T_RUSH = '1fr 40px 50px 44px 32px 36px 44px'      // CAR YDS LNG TD FUM FP
+                const T_RCV  = '1fr 40px 50px 50px 44px 32px 44px'      // REC YDS YPR YAC TD FP
+                const T_K    = '1fr 60px 50px 44px 44px'                // FG/ATT YDS LNG FP
+                const T_DEF  = '1fr 36px 36px 36px 36px 36px 40px'      // TKL SCK INT TFL FF PBU
 
-                const teamHeader = (abbr: string, color: string) => (
-                  <div style={{ fontSize: '13px', fontWeight: '700', color, padding: '4px 4px 0' }}>{abbr}</div>
-                )
+                const passingHeaders = ['Player', 'C/A', 'YDS', 'LNG', 'TD', 'INT', 'FP']
+                const rushingHeaders = ['Player', 'CAR', 'YDS', 'LNG', 'TD', 'FUM', 'FP']
+                const receivingHeaders = ['Player', 'REC', 'YDS', 'YPR', 'YAC', 'TD', 'FP']
+                const kickingHeaders = ['Player', 'FG', 'YDS', 'LNG', 'FP']
+                const defenseHeaders = ['Player', 'TKL', 'SCK', 'INT', 'TFL', 'FF', 'PBU']
 
-                const hp = gs.home.players
-                const ap = gs.away.players
+                const passRow = (p: any) => p ? [
+                  playerNameCell(p), `${p.comp}/${p.att}`, p.yards, p.longest, p.tds, p.ints ?? 0, p.fantasyPoints,
+                ] : null
+                const rushRow = (p: any) => p ? [
+                  playerNameCell(p), p.carries, p.yards, p.longest, p.tds, p.fumblesLost ?? 0, p.fantasyPoints,
+                ] : null
+                const rcvRow = (p: any) => p ? [
+                  playerNameCell(p), p.receptions, p.yards, p.ypr, p.yac, p.tds, p.fantasyPoints,
+                ] : null
+                const kRow = (p: any) => p ? [
+                  playerNameCell(p), `${p.fgs}/${p.fgAtt}`, p.fgYards ?? 0, p.longest, p.fantasyPoints,
+                ] : null
+                const defRow = (p: any) => [
+                  playerNameCell(p, true), p.defense.tackles, p.defense.sacks, p.defense.ints,
+                  p.defense.tfl, p.defense.forcedFumbles, p.defense.passBreakups,
+                ]
+
+                const compactRows = (arr: (React.ReactNode[] | null)[]) => arr.filter(Boolean) as React.ReactNode[][]
+
+                const homePassRows = compactRows([passRow(hp.qb)])
+                const awayPassRows = compactRows([passRow(ap.qb)])
+                const homeRushRows = compactRows([rushRow(hp.rb)])
+                const awayRushRows = compactRows([rushRow(ap.rb)])
+                const homeRcvRows = compactRows([rcvRow(hp.wr1), rcvRow(hp.wr2), rcvRow(hp.te)])
+                const awayRcvRows = compactRows([rcvRow(ap.wr1), rcvRow(ap.wr2), rcvRow(ap.te)])
+                const homeKRows = compactRows([kRow(hp.k)])
+                const awayKRows = compactRows([kRow(ap.k)])
+
+                const defPlayers = (players: any) =>
+                  Object.values(players).filter(
+                    (p: any) => p?.defense && Object.values(p.defense).some((v: any) => (v as number) > 0)
+                  )
+                const homeDefPlayers = defPlayers(hp) as any[]
+                const awayDefPlayers = defPlayers(ap) as any[]
+                const homeDefRows = homeDefPlayers.map(defRow)
+                const awayDefRows = awayDefPlayers.map(defRow)
 
                 return (
                   <div>
-                    {/* PASSING */}
-                    {sectionLabel('Passing')}
-                    {statRow(['Player', 'C/A', 'YDS', 'YPC', 'LNG', 'TD', 'INT', 'FP'], true, T8)}
-                    {teamHeader(homeAbbr, homeColor)}
-                    {hp.qb && statRow([playerNameCell(hp.qb), `${hp.qb.comp}/${hp.qb.att}`, hp.qb.yards, hp.qb.ypc, hp.qb.longest, hp.qb.tds, hp.qb.ints ?? 0, hp.qb.fantasyPoints], false, T8)}
-                    {teamHeader(awayAbbr, awayColor)}
-                    {ap.qb && statRow([playerNameCell(ap.qb), `${ap.qb.comp}/${ap.qb.att}`, ap.qb.yards, ap.qb.ypc, ap.qb.longest, ap.qb.tds, ap.qb.ints ?? 0, ap.qb.fantasyPoints], false, T8)}
-
-                    {/* RUSHING */}
-                    {sectionLabel('Rushing')}
-                    {statRow(['Player', 'CAR', 'YDS', 'YPC', 'LNG', 'TD', 'FUM', 'FP'], true, T8)}
-                    {teamHeader(homeAbbr, homeColor)}
-                    {hp.rb && statRow([playerNameCell(hp.rb), hp.rb.carries, hp.rb.yards, hp.rb.ypc, hp.rb.longest, hp.rb.tds, hp.rb.fumblesLost ?? 0, hp.rb.fantasyPoints], false, T8)}
-                    {teamHeader(awayAbbr, awayColor)}
-                    {ap.rb && statRow([playerNameCell(ap.rb), ap.rb.carries, ap.rb.yards, ap.rb.ypc, ap.rb.longest, ap.rb.tds, ap.rb.fumblesLost ?? 0, ap.rb.fantasyPoints], false, T8)}
-
-                    {/* RECEIVING */}
-                    {sectionLabel('Receiving')}
-                    {statRow(['Player', 'REC', 'YDS', 'YPR', 'YAC', 'TD', 'FP'], true, T7)}
-                    {teamHeader(homeAbbr, homeColor)}
-                    {[hp.wr1, hp.wr2, hp.te].filter(Boolean).map((p) => p && statRow([playerNameCell(p), p.receptions, p.yards, p.ypr, p.yac, p.tds, p.fantasyPoints], false, T7))}
-                    {teamHeader(awayAbbr, awayColor)}
-                    {[ap.wr1, ap.wr2, ap.te].filter(Boolean).map((p) => p && statRow([playerNameCell(p), p.receptions, p.yards, p.ypr, p.yac, p.tds, p.fantasyPoints], false, T7))}
-
-                    {/* KICKING */}
-                    {sectionLabel('Kicking')}
-                    {statRow(['Player', 'FG', 'ATT', 'LNG', 'FP'], true)}
-                    {teamHeader(homeAbbr, homeColor)}
-                    {hp.k && statRow([playerNameCell(hp.k), hp.k.fgs, hp.k.fgAtt, hp.k.longest, hp.k.fantasyPoints])}
-                    {teamHeader(awayAbbr, awayColor)}
-                    {ap.k && statRow([playerNameCell(ap.k), ap.k.fgs, ap.k.fgAtt, ap.k.longest, ap.k.fantasyPoints])}
-
-                    {/* DEFENSE */}
-                    {(() => {
-                      const defPlayers = (players: any) =>
-                        Object.values(players).filter((p: any) => p?.defense && Object.values(p.defense).some((v: any) => (v as number) > 0))
-                      const homeDef = defPlayers(hp)
-                      const awayDef = defPlayers(ap)
-                      if (homeDef.length === 0 && awayDef.length === 0) return null
-                      return (
-                        <>
-                          {sectionLabel('Defense')}
-                          {statRow(['Player', 'TKL', 'SCK', 'INT', 'TFL', 'FF', 'PBU'], true, T7)}
-                          {homeDef.length > 0 && teamHeader(homeAbbr, homeColor)}
-                          {homeDef.map((p: any) => statRow([
-                            playerNameCell(p, true), p.defense.tackles, p.defense.sacks, p.defense.ints,
-                            p.defense.tfl, p.defense.forcedFumbles, p.defense.passBreakups
-                          ], false, T7))}
-                          {awayDef.length > 0 && teamHeader(awayAbbr, awayColor)}
-                          {awayDef.map((p: any) => statRow([
-                            playerNameCell(p, true), p.defense.tackles, p.defense.sacks, p.defense.ints,
-                            p.defense.tfl, p.defense.forcedFumbles, p.defense.passBreakups
-                          ], false, T7))}
-                        </>
-                      )
-                    })()}
+                    {sectionCard('Passing', passingHeaders, homePassRows, awayPassRows, T_PASS)}
+                    {sectionCard('Rushing', rushingHeaders, homeRushRows, awayRushRows, T_RUSH)}
+                    {sectionCard('Receiving', receivingHeaders, homeRcvRows, awayRcvRows, T_RCV)}
+                    {sectionCard('Kicking', kickingHeaders, homeKRows, awayKRows, T_K)}
+                    {(homeDefRows.length > 0 || awayDefRows.length > 0) &&
+                      sectionCard('Defense', defenseHeaders, homeDefRows, awayDefRows, T_DEF)}
                   </div>
                 )
               })()}
