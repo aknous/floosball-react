@@ -857,18 +857,22 @@ export const FantasyRoster: React.FC = () => {
         fetchRoster()
       }
       refetchRoster()
+      // Powerups (FLEX, income boost, etc.) tick down with the week —
+      // refresh so the "X weeks remaining" indicator stays current.
+      fetchActivePowerups()
     }
-  }, [wsEvent, fetchRoster, refetchRoster])
+  }, [wsEvent, fetchRoster, refetchRoster, fetchActivePowerups])
 
   // Re-fetch on WS reconnect (covers missed events while tab was backgrounded)
   useEffect(() => {
     if (wsConnected) {
       if (wsWasConnected.current) {
         fetchRoster()
+        fetchActivePowerups()
       }
       wsWasConnected.current = true
     }
-  }, [wsConnected, fetchRoster])
+  }, [wsConnected, fetchRoster, fetchActivePowerups])
 
   const handlePlayerSelect = (slotKey: string, player: any) => {
     const rp: FantasyRosterPlayer = {
