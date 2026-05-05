@@ -250,6 +250,10 @@ interface TradingCardProps {
   noHoverLift?: boolean  // disable translateY on hover (parent handles it)
   onHoverChange?: (hovered: boolean) => void
   forceFlipped?: boolean  // externally control flip state (e.g. tutorial)
+  // For All-Pro cards in equipped context: 'active' = swap grant available,
+  // 'used' = grant already consumed. Undefined for non-equipped cards or
+  // non-All-Pro cards — badge renders normally.
+  apSwapState?: 'active' | 'used'
 }
 
 const SIZES = {
@@ -272,7 +276,10 @@ const ClassificationBadge: React.FC<{
   borderColor: string
   tooltip: string
   fontSize: number
-}> = ({ abbr, color, bgColor, borderColor, tooltip, fontSize }) => {
+  // For All-Pro badges in equipped context: 'active' = unused swap available,
+  // 'used' = swap consumed this cycle. Undefined = no swap state to show.
+  swapState?: 'active' | 'used'
+}> = ({ abbr, color, bgColor, borderColor, tooltip, fontSize, swapState }) => {
   const [show, setShow] = useState(false)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const ref = useRef<HTMLSpanElement>(null)
@@ -283,6 +290,20 @@ const ClassificationBadge: React.FC<{
     setPos({ x: rect.left + rect.width / 2, y: rect.top })
     setShow(true)
   }
+
+  // Dim the badge when the All-Pro swap grant has already been used this
+  // cycle so users can see at a glance which AP cards still carry an
+  // unused swap.
+  const isUsed = swapState === 'used'
+  const badgeOpacity = isUsed ? 0.45 : 1
+  // Tooltip override for AP swap state
+  const effectiveTooltip = swapState === 'active' ? 'All-Pro — Swap available'
+    : swapState === 'used' ? 'All-Pro — Swap used this cycle'
+    : tooltip
+  // Dot color: green for active, gray for used
+  const dotColor = swapState === 'active' ? '#22c55e'
+    : swapState === 'used' ? '#64748b'
+    : null
 
   return (
     <>
@@ -295,9 +316,24 @@ const ClassificationBadge: React.FC<{
           backgroundColor: bgColor, padding: '1px 5px',
           borderRadius: '3px', border: `1px solid ${borderColor}`,
           cursor: 'default',
+          opacity: badgeOpacity,
+          display: 'inline-flex', alignItems: 'center', gap: '3px',
+          transition: 'opacity 0.2s',
         }}
       >
         {abbr}
+        {dotColor && (
+          <span
+            style={{
+              width: '5px', height: '5px',
+              borderRadius: '50%',
+              backgroundColor: dotColor,
+              display: 'inline-block',
+              boxShadow: swapState === 'active' ? `0 0 4px ${dotColor}` : 'none',
+              flexShrink: 0,
+            }}
+          />
+        )}
       </span>
       {show && ReactDOM.createPortal(
         <div style={{
@@ -318,7 +354,7 @@ const ClassificationBadge: React.FC<{
           fontFamily: 'pressStart',
           whiteSpace: 'nowrap',
         }}>
-          {tooltip}
+          {effectiveTooltip}
         </div>,
         document.body
       )}
@@ -678,7 +714,7 @@ const DiamondEdgeShimmer: React.FC = () => (
 )
 
 const TradingCard: React.FC<TradingCardProps> = ({
-  card, size = 'md', selected = false, onSelect, onClick, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped,
+  card, size = 'md', selected = false, onSelect, onClick, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState,
 }) => {
   const [hovered, setHovered] = useState(false)
   const [flipped, setFlipped] = useState(false)
@@ -774,6 +810,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
                 borderColor={cfg.borderColor}
                 tooltip={cfg.tooltip}
                 fontSize={d.font - 3}
+                swapState={key === 'all_pro' ? apSwapState : undefined}
               />
             )
           })}
