@@ -2,6 +2,7 @@ import React from 'react'
 import CoachHoverCard from '@/Components/CoachHoverCard'
 import { Stars, calcStars } from '@/Components/Stars'
 import ProbabilityMeter from './ProbabilityMeter'
+import { getContrastTextColor } from '@/utils/colors'
 import type { GmCoachInfo, GmVoteTally } from '@/types/gm'
 
 interface HireCoachCardProps {
@@ -124,7 +125,7 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
                   flexShrink: 0,
                   padding: '4px 10px',
                   backgroundColor: isDisabled ? '#1e293b' : teamColor,
-                  color: isDisabled ? '#475569' : '#fff',
+                  color: isDisabled ? '#475569' : getContrastTextColor(teamColor),
                   border: 'none',
                   borderRadius: '4px',
                   fontSize: '11px',

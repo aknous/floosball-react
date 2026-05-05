@@ -4,7 +4,7 @@ import Navbar from './Components/Navbar.js'
 import GameBar from './Components/GameBar'
 import Sidebar from './Components/Sidebar'
 import { SidebarProvider, SIDEBAR_WIDTH_COLLAPSED } from './contexts/SidebarContext'
-import TeamGrid from './Views/Teams/TeamGrid'
+import TeamsPage from './Views/Teams/TeamsPage'
 import Team from './Views/Teams/TeamPage'
 import Player from './Views/Players/PlayerPage'
 import Stats from './Views/Stats/Stats'
@@ -66,7 +66,7 @@ function AppLayout() {
           <Route exact path='/dashboard' element={<DashboardNew headerHeight={headerHeight} />} />
           <Route exact path='/dashboard/old' element={<Dashboard />} />
           <Route exact path='/players' element={<Players />} />
-          <Route exact path='/teams' element={<TeamGrid />} />
+          <Route exact path='/teams' element={<TeamsPage />} />
           <Route path='/team/:id' element={<Team />} />
           <Route path='/players/:id' element={<Player />} />
           <Route exact path='/fantasy' element={<FantasyPage />} />
