@@ -153,7 +153,7 @@ const CLASSIFICATION_CONFIG: Record<string, {
   all_pro: {
     label: 'All-Pro', abbr: 'AP', color: '#a78bfa',
     bgColor: 'rgba(167,139,250,0.15)', borderColor: 'rgba(167,139,250,0.3)',
-    tooltip: 'All-Pro — +1 roster swap on equip',
+    tooltip: 'All-Pro — +1 roster swap when equipped, refreshes each game day',
   },
 }
 
@@ -277,7 +277,7 @@ const ClassificationBadge: React.FC<{
   tooltip: string
   fontSize: number
   // For All-Pro badges in equipped context: 'active' = unused swap available,
-  // 'used' = swap consumed this cycle. Undefined = no swap state to show.
+  // 'used' = swap consumed this game day. Undefined = no swap state to show.
   swapState?: 'active' | 'used'
 }> = ({ abbr, color, bgColor, borderColor, tooltip, fontSize, swapState }) => {
   const [show, setShow] = useState(false)
@@ -292,13 +292,13 @@ const ClassificationBadge: React.FC<{
   }
 
   // Dim the badge when the All-Pro swap grant has already been used this
-  // cycle so users can see at a glance which AP cards still carry an
+  // game day so users can see at a glance which AP cards still carry an
   // unused swap.
   const isUsed = swapState === 'used'
   const badgeOpacity = isUsed ? 0.45 : 1
   // Tooltip override for AP swap state
   const effectiveTooltip = swapState === 'active' ? 'All-Pro — Swap available'
-    : swapState === 'used' ? 'All-Pro — Swap used this cycle'
+    : swapState === 'used' ? 'All-Pro — Swap used this game day'
     : tooltip
   // Dot color: green for active, gray for used
   const dotColor = swapState === 'active' ? '#22c55e'

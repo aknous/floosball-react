@@ -228,8 +228,9 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
           with detailed stats and scoring drives.
         </GuideSection>
         <GuideSection title="Season Structure">
-          Each season runs 28 weeks across 4 game days per week, with 7 games per day. Games start
-          on the hour. Between rounds, check standings and plan your fantasy lineup.
+          Each season runs 28 weeks split into 4 game days of 7 weeks each (weeks 1–7, 8–14,
+          15–21, 22–28). Games start on the hour. Between rounds, check standings and plan your
+          fantasy lineup.
         </GuideSection>
         <GuideSection title="Highlights">
           The highlight feed streams notable plays in real time — touchdowns, field goals, turnovers,

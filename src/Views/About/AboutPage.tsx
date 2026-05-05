@@ -1427,6 +1427,14 @@ const AboutPage: React.FC = () => {
               what they earned and start fresh with the replacement. Swaps are only available between games.
               Once games start for the week, your roster locks.
             </p>
+            <p style={textStyle}>
+              When equipped, an All-Pro card grants an additional roster swap that refreshes once per
+              game day. A game day is one of the four 7-week segments of the regular season (weeks 1–7,
+              8–14, 15–21, 22–28). The card's badge shows whether its swap is still available — a green
+              dot means unused, a dim badge with a gray dot means you've already spent it this game
+              day. The badge resets when the next game day begins, so an All-Pro card you keep
+              equipped grants a new swap roughly every 7 weeks.
+            </p>
 
             <p style={labelStyle}>Participation Reward</p>
             <p style={textStyle}>
@@ -1507,7 +1515,7 @@ const AboutPage: React.FC = () => {
                 { label: 'Rookie', abbr: 'R', color: '#fbbf24', desc: 'Sells for 2x Floobits' },
                 { label: 'MVP', abbr: 'MVP', color: '#3b82f6', desc: 'Unlocks a 6th card equipment slot' },
                 { label: 'Champion', abbr: 'CH', color: '#f59e0b', desc: 'Unlocks the FLEX roster slot' },
-                { label: 'All-Pro', abbr: 'AP', color: '#a78bfa', desc: '+1 roster swap when equipped' },
+                { label: 'All-Pro', abbr: 'AP', color: '#a78bfa', desc: '+1 roster swap when equipped, refreshes each game day' },
               ].map(c => (
                 <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
                   <span style={{
