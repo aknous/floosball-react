@@ -12,6 +12,43 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.13.4',
+    date: '2026-05-04',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[UI/UX] New League page replacing the old team grid. Standings split by league, favorite team highlighted, postseason status icons (champion, top seed, clinched, eliminated) on every card.',
+          '[UI/UX] Team Nav Strip on the team page. Hop between teams without leaving the page.',
+          '[UI/UX] Roster table restructured into a column grid with service-time tags (Rookie / Veteran / Vested / Lifer) and a play-time status pill (Fresh / Active / Worked / Worn).',
+          '[UI/UX] Game Modal Stats tab redesigned. Stats grouped into sectioned cards with team-color headers instead of a flat list.',
+          '[UI/UX] Game Modal Box Score redesigned. Side-by-side comparison with cell-tint highlighting on the winning team for each stat. Adds Y/Play, Y/Att, Pass TDs, Y/Carry, Rush TDs.',
+          '[UI/UX] Pregame matchup preview now uses the same comparison layout as the box score.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Simulation] Late-game field-goal decisions smarter. Trailing teams defer FGs to drain clock when they have the ball and time, and only kick on the last play of the drive.',
+          '[Simulation] Hail Mary nerfed. Lower base completion, much higher coverage and sack rates so desperation throws play closer to reality.',
+          '[Simulation] Clutch and choke tags now credit defensive players (sackers, interceptors, forced-fumble forcers), not just the offense.',
+          '[Simulation] Play text calls out the blitzer on a sack and the lead tackler on completed passes.',
+          '[Simulation] Per-range field goal tracking (under 20, 20–40, 40–50, over 50) recorded for stats and percentages.',
+          '[Front Office] Vote buttons use the team color with auto-contrasting text so light-team labels stay legible.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Simulation] Player fatigue now persists across server restarts mid-season instead of resetting to fresh.',
+          '[Simulation] Career stats no longer show zeros after a server restart — fixes a stale reference and a JSON column persistence bug.',
+          '[Simulation] Per-range FG counters no longer get wiped by the season-stats backfill on boot.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.13.3',
     date: '2026-05-04',
     changes: [],
