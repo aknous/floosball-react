@@ -241,6 +241,16 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   }, [getToken, updateFloobits, refetchUser])
 
   // Compute disabled vote targets based on user's vote counts
+  // Helper: per-target tally already meets/exceeds threshold (directive
+  // is guaranteed to pass, so further votes are wasteful and the backend
+  // rejects them).
+  const targetThresholdMet = (voteType: string, targetId: number): boolean => {
+    const tally = gm.summary?.tallies.find(
+      t => t.voteType === voteType && t.targetPlayerId === targetId
+    )
+    return !!tally && tally.threshold > 0 && tally.votes >= tally.threshold
+  }
+
   const disabledCutIds = useMemo(() => {
     const ids = new Set<number>()
     if (!gm.myVotes) return ids
@@ -257,8 +267,12 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
         if (!isNaN(pid)) ids.add(pid)
       }
     }
+    // Threshold already met — directive will pass without more votes
+    gm.eligible?.rosteredPlayers.forEach(p => {
+      if (targetThresholdMet('cut_player', p.id)) ids.add(p.id)
+    })
     return ids
-  }, [gm.myVotes, gm.eligible])
+  }, [gm.myVotes, gm.eligible, gm.summary])
 
   const disabledResignIds = useMemo(() => {
     const ids = new Set<number>()
@@ -274,14 +288,24 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
         if (!isNaN(pid)) ids.add(pid)
       }
     }
+    gm.eligible?.expiringPlayers.forEach(p => {
+      if (targetThresholdMet('resign_player', p.id)) ids.add(p.id)
+    })
     return ids
-  }, [gm.myVotes, gm.eligible])
+  }, [gm.myVotes, gm.eligible, gm.summary])
 
   const fireCoachDisabled = useMemo(() => {
     if (!gm.myVotes) return false
     const { perType } = gm.myVotes.counts
-    return (perType['fire_coach'] ?? 0) >= perTypeCap('fire_coach')
-  }, [gm.myVotes])
+    if ((perType['fire_coach'] ?? 0) >= perTypeCap('fire_coach')) return true
+    // Fire votes are aggregated against a single target=null, so check the
+    // tally directly instead of going through targetThresholdMet.
+    const fireTally = gm.summary?.tallies.find(t => t.voteType === 'fire_coach')
+    if (fireTally && fireTally.threshold > 0 && fireTally.votes >= fireTally.threshold) {
+      return true
+    }
+    return false
+  }, [gm.myVotes, gm.summary])
 
   const disabledHireCoachIds = useMemo(() => {
     const ids = new Set<number>()
