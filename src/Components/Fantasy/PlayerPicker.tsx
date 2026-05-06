@@ -181,8 +181,16 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
     if (!visible) return
     setLoading(true)
     const pos = POSITION_MAP[position] || position
-    const params: Record<string, any> = { category: 'fantasy_points', limit: 50 }
-    if (position !== 'FLEX') params.position = pos
+    // FLEX accepts any position, so pull a much larger pool — top 50 across
+    // all positions skews heavily toward QBs (highest scorers) and misses
+    // most RBs/WRs/TEs/Ks plus any of the user's card-matched players who
+    // sit below the cutoff. 300 covers the entire active roster pool.
+    const isFlex = position === 'FLEX'
+    const params: Record<string, any> = {
+      category: 'fantasy_points',
+      limit: isFlex ? 300 : 50,
+    }
+    if (!isFlex) params.position = pos
     axios.get(`${API_BASE}/stats/leaders`, { params })
       .then(res => {
         const data = res.data?.data?.leaders || res.data?.leaders || []
