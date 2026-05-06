@@ -59,6 +59,9 @@ interface EquippedSlot {
   card: CardData
   isMatch: boolean
   locked: boolean
+  // For All-Pro cards: true = swap grant unused, false = grant used,
+  // null = card is not All-Pro (no grant context).
+  swapBonusActive?: boolean | null
 }
 
 // Sample card shown during tutorial when user has no equipped cards
@@ -118,6 +121,11 @@ const EquippedCardSlot: React.FC<{
         noHoverLift
         onHoverChange={setHovered}
         forceFlipped={forceFlipped}
+        apSwapState={
+          slot.swapBonusActive === true ? 'active'
+          : slot.swapBonusActive === false ? 'used'
+          : undefined
+        }
       />
 
       {slot.isMatch && (

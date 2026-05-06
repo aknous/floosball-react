@@ -96,14 +96,14 @@ const DASHBOARD_TOUR_STEPS: TutorialStep[] = [
   {
     target: 'dashboard-standings',
     title: 'Standings',
-    content: 'Two leagues each have their own standings table — wins, losses, and playoff positioning. Toggle to Power Rankings to see teams ranked by overall strength instead of record.',
+    content: 'Two leagues each have their own standings table with wins, losses, and playoff positioning. Toggle to Power Rankings to see teams ranked by overall strength instead of record.',
     placement: 'left',
     onEnter: () => window.dispatchEvent(new Event('floosball:show-standings')),
   },
   {
     target: 'dashboard-leaders',
     title: 'Leaders',
-    content: 'The MVP rankings and stat leaders show who is dominating in passing, rushing, and receiving — both this week and across the season.',
+    content: 'The MVP rankings and stat leaders show who is dominating in passing, rushing, and receiving, both this week and across the season.',
     placement: 'left',
     onEnter: () => window.dispatchEvent(new Event('floosball:show-leaders')),
   },
@@ -228,11 +228,12 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
           with detailed stats and scoring drives.
         </GuideSection>
         <GuideSection title="Season Structure">
-          Each season runs 28 weeks across 4 game days per week, with 7 games per day. Games start
-          on the hour. Between rounds, check standings and plan your fantasy lineup.
+          Each season runs 28 weeks split into 4 game days of 7 weeks each (weeks 1–7, 8–14,
+          15–21, 22–28). Games start on the hour. Between rounds, check standings and plan your
+          fantasy lineup.
         </GuideSection>
         <GuideSection title="Highlights">
-          The highlight feed streams notable plays in real time — touchdowns, field goals, turnovers,
+          The highlight feed streams notable plays in real time: touchdowns, field goals, turnovers,
           clutch moments, and momentum shifts. Each entry is tagged with a badge. Tap any highlight
           to jump into that game.
         </GuideSection>
@@ -247,7 +248,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
         </GuideSection>
         <GuideSection title="Leaders">
           The MVP Rankings show top-performing players this week and across the season. Stat leaders
-          break down individual categories — passing yards, rushing yards, touchdowns, and more.
+          break down individual categories: passing yards, rushing yards, touchdowns, and more.
         </GuideSection>
       </HelpModal>
 

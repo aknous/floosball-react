@@ -1,7 +1,6 @@
 import React from 'react'
 import CoachHoverCard from '@/Components/CoachHoverCard'
 import { Stars, calcStars } from '@/Components/Stars'
-import ProbabilityMeter from './ProbabilityMeter'
 import { getContrastTextColor } from '@/utils/colors'
 import type { GmCoachInfo, GmVoteTally } from '@/types/gm'
 
@@ -76,48 +75,84 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
         </span>
       </div>
       <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '8px' }}>
-        Should the grievance succeed, nominate a preferred replacement.
+        Should the grievance succeed, nominate a preferred replacement. Whoever has the most votes is hired.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {availableCoaches.map(c => {
-          const coachId = c.id
-          if (coachId === null) return null
-          const tally = tallies.find(
-            t => t.voteType === 'hire_coach' && t.targetPlayerId === coachId
+        {(() => {
+          const hireTallies = tallies.filter(
+            t => t.voteType === 'hire_coach' && t.targetPlayerId !== null && t.targetPlayerId !== undefined
           )
-          const isVoting = voting === `hire_coach:${coachId}`
-          const cost = getCost(coachId)
-          const isDisabled = globalDisabled || disabledIds.has(coachId) || balance < cost
+          const maxVotes = hireTallies.reduce((m, t) => Math.max(m, t.votes), 0)
+          const leaderCount = maxVotes > 0
+            ? hireTallies.filter(t => t.votes === maxVotes).length
+            : 0
+          return availableCoaches.map(c => {
+            const coachId = c.id
+            if (coachId === null) return null
+            const tally = tallies.find(
+              t => t.voteType === 'hire_coach' && t.targetPlayerId === coachId
+            )
+            const votes = tally?.votes ?? 0
+            const isLeader = votes > 0 && votes === maxVotes
+            const isSoleLeader = isLeader && leaderCount === 1
+            const isVoting = voting === `hire_coach:${coachId}`
+            const cost = getCost(coachId)
+            const isDisabled = globalDisabled || disabledIds.has(coachId) || balance < cost
 
-          return (
-            <div key={coachId} style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '6px 8px',
-              borderRadius: '6px',
-              backgroundColor: '#0f172a',
-            }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <CoachHoverCard coach={c} teamColor={teamColor}>
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#e2e8f0', cursor: 'default' }}>
-                      {c.name}
-                    </span>
-                  </CoachHoverCard>
-                  <Stars stars={calcStars(c.overallRating)} size={12} />
-                </div>
-                {tally && (
-                  <div style={{ marginTop: '3px' }}>
-                    <ProbabilityMeter
-                      votes={tally.votes}
-                      threshold={tally.threshold}
-                      probability={tally.probability}
-                      compact
-                    />
+            return (
+              <div key={coachId} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 8px',
+                borderRadius: '6px',
+                backgroundColor: '#0f172a',
+                border: isSoleLeader ? `1px solid ${teamColor}` : '1px solid transparent',
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <CoachHoverCard coach={c} teamColor={teamColor}>
+                      <span style={{ fontSize: '13px', fontWeight: '600', color: '#e2e8f0', cursor: 'default' }}>
+                        {c.name}
+                      </span>
+                    </CoachHoverCard>
+                    <Stars stars={calcStars(c.overallRating)} size={12} />
+                    {isSoleLeader && (
+                      <span style={{
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        letterSpacing: '0.06em',
+                        color: getContrastTextColor(teamColor),
+                        backgroundColor: teamColor,
+                        padding: '1px 6px',
+                        borderRadius: '3px',
+                      }}>
+                        LEADING
+                      </span>
+                    )}
+                    {isLeader && !isSoleLeader && (
+                      <span style={{
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        letterSpacing: '0.06em',
+                        color: '#f59e0b',
+                        backgroundColor: 'rgba(245,158,11,0.15)',
+                        padding: '1px 6px',
+                        borderRadius: '3px',
+                      }}>
+                        TIED
+                      </span>
+                    )}
                   </div>
-                )}
-              </div>
+                  <div style={{
+                    marginTop: '2px',
+                    fontSize: '11px',
+                    color: isLeader ? '#cbd5e1' : '#94a3b8',
+                    fontWeight: isLeader ? 600 : 400,
+                  }}>
+                    {votes} {votes === 1 ? 'vote' : 'votes'}
+                  </div>
+                </div>
               <button
                 onClick={() => onVote(coachId)}
                 disabled={isDisabled || isVoting}
@@ -135,11 +170,12 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
                   whiteSpace: 'nowrap',
                 }}
               >
-                {isVoting ? '...' : `Nominate \u2014 ${cost} F`}
+                {isVoting ? '...' : `Nominate · ${cost} F`}
               </button>
             </div>
           )
-        })}
+          })
+        })()}
       </div>
     </div>
   )
