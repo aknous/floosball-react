@@ -300,12 +300,12 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
               style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '22px', padding: '2px 6px' }}
             >x</button>
           </div>
-          {(isFlex || (hasCards && hasEquippedSignal)) && (
+          {isFlex && (
             <div style={{
               display: 'flex', flexWrap: 'wrap', gap: '6px',
-              marginTop: '12px', alignItems: 'center',
+              marginTop: '12px',
             }}>
-              {isFlex && FLEX_FILTERS.map(f => {
+              {FLEX_FILTERS.map(f => {
                 const active = flexFilter === f
                 return (
                   <button
@@ -328,27 +328,6 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
                   </button>
                 )
               })}
-              {hasCards && hasEquippedSignal && (
-                <button
-                  onClick={() => setEquippedOnly(o => !o)}
-                  style={{
-                    padding: '4px 12px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    letterSpacing: '0.04em',
-                    borderRadius: '999px',
-                    border: `1px solid ${equippedOnly ? '#22c55e' : '#334155'}`,
-                    backgroundColor: equippedOnly ? 'rgba(34,197,94,0.15)' : 'transparent',
-                    color: equippedOnly ? '#86efac' : '#94a3b8',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s',
-                    marginLeft: isFlex ? '6px' : 0,
-                  }}
-                  title="Show only players whose cards you have equipped"
-                >
-                  {equippedOnly ? '✓ Equipped only' : 'Equipped only'}
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -361,16 +340,52 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
             <div style={{ padding: '32px', textAlign: 'center', fontSize: '14px', color: '#94a3b8' }}>No players available</div>
           ) : (
             <>
-              {/* Card matches section */}
-              {cardMatches.length > 0 && (
+              {/* Card matches section — header renders whenever the user
+                  has any cards, even if the filtered match list is empty,
+                  so the "Equipped only" toggle stays reachable. */}
+              {hasCards && (
                 <>
                   <div style={{
                     padding: '10px 20px', fontSize: '12px', fontWeight: '700',
                     color: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.08)',
                     borderBottom: '1px solid rgba(167,139,250,0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: '8px',
                   }}>
-                    Your Cards
+                    <span>Your Cards</span>
+                    {hasEquippedSignal && (
+                      <button
+                        onClick={() => setEquippedOnly(o => !o)}
+                        style={{
+                          padding: '3px 10px',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          letterSpacing: 'normal',
+                          textTransform: 'none',
+                          borderRadius: '999px',
+                          border: `1px solid ${equippedOnly ? '#22c55e' : '#475569'}`,
+                          backgroundColor: equippedOnly ? 'rgba(34,197,94,0.15)' : 'transparent',
+                          color: equippedOnly ? '#86efac' : '#94a3b8',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                        }}
+                        title="Show only players whose cards you have equipped"
+                      >
+                        {equippedOnly ? '✓ Equipped only' : 'Equipped only'}
+                      </button>
+                    )}
                   </div>
+                  {cardMatches.length === 0 && (
+                    <div style={{
+                      padding: '14px 20px', fontSize: '12px', color: '#64748b',
+                      fontStyle: 'italic',
+                      borderBottom: '1px solid rgba(167,139,250,0.15)',
+                    }}>
+                      {equippedOnly
+                        ? 'No equipped-card matches in this list.'
+                        : 'No matches in this list.'}
+                    </div>
+                  )}
                   {cardMatches.map(player => (
                     <PlayerRow key={player.id} player={player} hoveredId={hoveredId}
                       setHoveredId={setHoveredId} onSelect={onSelect}
