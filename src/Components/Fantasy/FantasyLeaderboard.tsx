@@ -205,12 +205,6 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
               <span style={{ color: '#94a3b8' }}>Top 25%</span>
               <span style={{ color: '#eab308', fontWeight: '600', marginLeft: 'auto' }}>{topPctPrize}F</span>
             </div>
-            {mode === 'season' && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px' }}>
-                <span style={{ color: '#94a3b8' }}>Season End Payout</span>
-                <span style={{ color: '#eab308', fontWeight: '600', marginLeft: 'auto' }}>1F per 25 FP</span>
-              </div>
-            )}
           </div>
         )
       })()}
