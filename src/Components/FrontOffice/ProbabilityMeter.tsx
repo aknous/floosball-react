@@ -15,14 +15,16 @@ const ProbabilityMeter: React.FC<ProbabilityMeterProps> = ({
   compact = false,
   accentColor,
 }) => {
-  const pct = Math.min(votes / Math.max(threshold, 1), 2) * 50 // 0–100 scale where threshold = 50%
+  // Fill bar shows progress toward threshold — 100% width when votes meet
+  // or exceed threshold. Votes are now resolved deterministically: at
+  // threshold or above, the vote passes.
+  const pct = Math.min(100, (votes / Math.max(threshold, 1)) * 100)
   const probPct = Math.round(probability * 100)
 
-  // Color: red below threshold, amber near, green above
+  // Color: red below threshold, green at/above (will pass)
   const barColor =
-    votes >= threshold * 1.5 ? '#22c55e'
-      : votes >= threshold ? '#f59e0b'
-        : accentColor || '#ef4444'
+    votes >= threshold ? '#22c55e'
+      : accentColor || '#ef4444'
 
   const labelColor = votes >= threshold ? '#22c55e' : '#94a3b8'
 
@@ -66,7 +68,7 @@ const ProbabilityMeter: React.FC<ProbabilityMeterProps> = ({
         </span>
         {votes > 0 && (
           <span style={{ color: labelColor }}>
-            {probPct}% likelihood
+            {votes >= threshold ? 'Will pass' : `${probPct}%`}
           </span>
         )}
       </div>
