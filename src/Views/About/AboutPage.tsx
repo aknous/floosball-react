@@ -1166,7 +1166,7 @@ const AboutPage: React.FC = () => {
               Every motion needs a quorum of directives before the board will consider it. The quorum size
               scales with how many fans on that team have voted at all this season. Once quorum is met,
               there's a 45% base chance of ratification. The more directives stack up past quorum, the
-              higher that chance climbs — at double the quorum, ratification is guaranteed. Ratified
+              higher that chance climbs, and at double the quorum, ratification is guaranteed. Ratified
               motions take effect in the offseason.
               Motions that fall short either deny or expire without action.
             </p>
@@ -1427,6 +1427,14 @@ const AboutPage: React.FC = () => {
               what they earned and start fresh with the replacement. Swaps are only available between games.
               Once games start for the week, your roster locks.
             </p>
+            <p style={textStyle}>
+              When equipped, an All-Pro card grants an additional roster swap that refreshes once per
+              game day. A game day is one of the four 7-week segments of the regular season (weeks 1–7,
+              8–14, 15–21, 22–28). The card's badge shows whether its swap is still available. A green
+              dot means unused; a dim badge with a gray dot means you've already spent it this game
+              day. The badge resets when the next game day begins, so an All-Pro card you keep
+              equipped grants a new swap roughly every 7 weeks.
+            </p>
 
             <p style={labelStyle}>Participation Reward</p>
             <p style={textStyle}>
@@ -1507,7 +1515,7 @@ const AboutPage: React.FC = () => {
                 { label: 'Rookie', abbr: 'R', color: '#fbbf24', desc: 'Sells for 2x Floobits' },
                 { label: 'MVP', abbr: 'MVP', color: '#3b82f6', desc: 'Unlocks a 6th card equipment slot' },
                 { label: 'Champion', abbr: 'CH', color: '#f59e0b', desc: 'Unlocks the FLEX roster slot' },
-                { label: 'All-Pro', abbr: 'AP', color: '#a78bfa', desc: '+1 roster swap when equipped' },
+                { label: 'All-Pro', abbr: 'AP', color: '#a78bfa', desc: '+1 roster swap when equipped, refreshes each game day' },
               ].map(c => (
                 <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
                   <span style={{
@@ -1718,7 +1726,7 @@ const AboutPage: React.FC = () => {
               'Roster swaps: 15 Floobits base, +15 per repeat swap in same slot (season-long)',
               'Power-Ups: Dispensation, Annulment, Conscription, Accession, Patronage, Endowment',
               'Front Office directives (10-15 Floobits each)',
-              'Season-end tax: 25% of unspent Floobits fund your favorite team between seasons — teams with more funding become larger markets with better player development and morale',
+              'Season-end tax: 25% of unspent Floobits fund your favorite team between seasons. Teams with more funding become larger markets with better player development and morale',
             ])}
           </Section>
 
