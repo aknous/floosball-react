@@ -822,6 +822,15 @@ export const FantasyRoster: React.FC = () => {
     return () => window.removeEventListener('floosball:shop-purchase', handler)
   }, [fetchRoster, fetchActivePowerups])
 
+  // Re-fetch roster after a card equip/unequip — equipping or removing an
+  // All-Pro card changes the user's swap count, and CardEquipment dispatches
+  // 'cards-equipped' on every successful save.
+  useEffect(() => {
+    const handler = () => { fetchRoster(true) }
+    window.addEventListener('cards-equipped', handler)
+    return () => window.removeEventListener('cards-equipped', handler)
+  }, [fetchRoster])
+
   // Fetch card collection so PlayerPicker can show card details
   useEffect(() => {
     const fetchCards = async () => {
