@@ -12,8 +12,8 @@ export const GM_VOTE_COST: Record<string, number> = {
 }
 
 export const GM_VOTES_PER_SEASON = 20
-export const GM_VOTES_PER_TYPE = 8
-export const GM_VOTES_PER_TARGET = 5
+export const GM_VOTES_PER_TYPE = 4
+export const GM_VOTES_PER_TARGET = 4
 export const GM_FA_BALLOT_COST = 15
 export const GM_FA_BALLOT_MAX_RANKINGS = 18
 
