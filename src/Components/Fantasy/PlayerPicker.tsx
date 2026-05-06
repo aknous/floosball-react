@@ -170,10 +170,23 @@ const PlayerRow: React.FC<{
   </button>
 )
 
+// Position filter chips shown only when the picker is in FLEX mode (the
+// list spans every position). The user can narrow the list down to one
+// position or stay on "All".
+const FLEX_FILTERS = ['All', 'QB', 'RB', 'WR', 'TE', 'K'] as const
+type FlexFilter = typeof FLEX_FILTERS[number]
+
 export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, onSelect, position, excludeIds, playerCards }) => {
   const [players, setPlayers] = useState<PlayerOption[]>([])
   const [loading, setLoading] = useState(false)
   const [hoveredId, setHoveredId] = useState<number | null>(null)
+  const [flexFilter, setFlexFilter] = useState<FlexFilter>('All')
+
+  // Reset position filter when picker reopens — otherwise a previous "K"
+  // selection would persist and quietly hide everyone on the next open.
+  useEffect(() => {
+    if (visible) setFlexFilter('All')
+  }, [visible])
 
   // Stabilize excludeIds to avoid infinite re-fetch loop (array reference changes every render)
   const excludeKey = excludeIds.join(',')
@@ -221,13 +234,20 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
 
   if (!visible) return null
 
+  const isFlex = position === 'FLEX'
+  // Apply the position filter only in FLEX mode — single-position pickers
+  // ignore it entirely.
+  const filteredPlayers = isFlex && flexFilter !== 'All'
+    ? players.filter(p => p.position === flexFilter)
+    : players
+
   const hasCards = playerCards && playerCards.size > 0
   const cardMatches = hasCards
-    ? players.filter(p => playerCards.has(p.id))
+    ? filteredPlayers.filter(p => playerCards.has(p.id))
     : []
   const otherPlayers = hasCards
-    ? players.filter(p => !playerCards.has(p.id))
-    : players
+    ? filteredPlayers.filter(p => !playerCards.has(p.id))
+    : filteredPlayers
 
   return ReactDOM.createPortal(
     <div
@@ -265,13 +285,43 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
               style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '22px', padding: '2px 6px' }}
             >x</button>
           </div>
+          {isFlex && (
+            <div style={{
+              display: 'flex', flexWrap: 'wrap', gap: '6px',
+              marginTop: '12px',
+            }}>
+              {FLEX_FILTERS.map(f => {
+                const active = flexFilter === f
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setFlexFilter(f)}
+                    style={{
+                      padding: '4px 12px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      letterSpacing: '0.04em',
+                      borderRadius: '999px',
+                      border: `1px solid ${active ? '#a78bfa' : '#334155'}`,
+                      backgroundColor: active ? 'rgba(167,139,250,0.18)' : 'transparent',
+                      color: active ? '#c4b5fd' : '#94a3b8',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {f}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Player list */}
         <div style={{ overflowY: 'auto', padding: '4px 0' }}>
           {loading ? (
             <div style={{ padding: '32px', textAlign: 'center', fontSize: '14px', color: '#94a3b8' }}>Loading...</div>
-          ) : players.length === 0 ? (
+          ) : filteredPlayers.length === 0 ? (
             <div style={{ padding: '32px', textAlign: 'center', fontSize: '14px', color: '#94a3b8' }}>No players available</div>
           ) : (
             <>
