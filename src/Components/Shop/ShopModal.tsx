@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import TradingCard, { CardData } from '../Cards/TradingCard'
 import PackOpeningModal from '../Cards/PackOpeningModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useTemplateProjections, projectionPillStyle, TemplateProjection } from '@/hooks/useCardProjection'
 import {
   GiCardDraw, GiCrownCoin, GiGemChain, GiCrystalShine,
   GiSwapBag, GiMagicSwirl, GiFlexibleStar, GiCardPlay, GiPerspectiveDiceSixFacesRandom,
@@ -95,6 +96,39 @@ const POWERUP_ICONS: Record<string, React.ComponentType<{ size?: number; color?:
   income_boost: GiCrownCoin,
 }
 
+// ─── Projection pill for shop cards (compact, sm-card-friendly) ─────────
+
+const ShopProjectionPill: React.FC<{ proj: TemplateProjection }> = ({ proj }) => {
+  const style = projectionPillStyle(proj)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+      <span
+        style={{
+          display: 'inline-flex', alignItems: 'center',
+          fontSize: '10px', fontWeight: 700,
+          color: style.color, backgroundColor: style.bg,
+          padding: '2px 8px', borderRadius: '4px',
+          border: `1px solid ${style.color}55`,
+          fontVariantNumeric: 'tabular-nums' as const,
+          whiteSpace: 'nowrap' as const,
+        }}
+      >
+        {style.label}
+      </span>
+      {style.ceiling && (
+        <span style={{
+          fontSize: '9px', color: style.color, opacity: 0.8,
+          fontVariantNumeric: 'tabular-nums' as const,
+          whiteSpace: 'nowrap' as const,
+        }}>
+          {style.ceiling}
+        </span>
+      )}
+    </div>
+  )
+}
+
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
@@ -106,6 +140,11 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
   const [packs, setPacks] = useState<PackType[]>([])
   const [starter, setStarter] = useState<StarterPack | null>(null)
   const [featured, setFeatured] = useState<FeaturedCard[]>([])
+
+  // Project featured-card weekly output against the current user's roster
+  // so the shop pill shows expected FP/FPx/Floobits before the user buys.
+  const featuredTemplateIds = useMemo(() => featured.map(f => f.templateId), [featured])
+  const { byTemplateId: featuredProjections } = useTemplateProjections(featuredTemplateIds)
   const [powerups, setPowerups] = useState<PowerupItem[]>([])
   const [balance, setBalance] = useState(user?.floobits ?? 0)
   const [loading, setLoading] = useState(true)
@@ -488,6 +527,9 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                 card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
                                 size="sm"
                               />
+                              {featuredProjections.get(card.templateId) && (
+                                <ShopProjectionPill proj={featuredProjections.get(card.templateId)!} />
+                              )}
                               <button
                                 onClick={() => handleBuyCard(card.templateId)}
                                 disabled={!canAfford || isBuying3 || !user || !shopOpen}

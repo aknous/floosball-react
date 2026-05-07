@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import ReactDOM from 'react-dom'
 import TradingCard, { CardData } from './TradingCard'
+import { useTemplateProjections, projectionPillStyle, TemplateProjection } from '@/hooks/useCardProjection'
 
 interface PackOpeningModalProps {
   packName: string
@@ -158,6 +159,39 @@ const ScreenFlash: React.FC<{ active: boolean }> = ({ active }) => {
   )
 }
 
+// ─── Projection Pill (inline, kept self-contained for the modal) ──────────
+
+const ProjectionPillInline: React.FC<{ proj: TemplateProjection }> = ({ proj }) => {
+  const style = projectionPillStyle(proj)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+      <span
+        style={{
+          display: 'inline-flex', alignItems: 'center',
+          fontSize: '12px', fontWeight: 700,
+          color: style.color, backgroundColor: style.bg,
+          padding: '4px 10px', borderRadius: '5px',
+          border: `1px solid ${style.color}55`,
+          fontVariantNumeric: 'tabular-nums' as const,
+          whiteSpace: 'nowrap' as const,
+        }}
+      >
+        {style.label}
+      </span>
+      {style.ceiling && (
+        <span style={{
+          fontSize: '10px', color: style.color, opacity: 0.8,
+          fontVariantNumeric: 'tabular-nums' as const,
+          whiteSpace: 'nowrap' as const,
+        }}>
+          {style.ceiling}
+        </span>
+      )}
+    </div>
+  )
+}
+
+
 // ─── Main Modal ────────────────────────────────────────────────────────────
 
 const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
@@ -176,6 +210,15 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   // must pick which to keep before the modal closes.
   const isSelectionMode =
     pendingId != null && cardsKept != null && cardsKept < cards.length
+
+  // Fetch projections for the revealed cards so the user can compare
+  // expected weekly output before picking. Only fires in selection mode
+  // (free packs / starter packs auto-keep everything, no need to compare).
+  const templateIds = useMemo(
+    () => (isSelectionMode ? cards.map(c => c.templateId).filter(Boolean) : []),
+    [isSelectionMode, cards],
+  )
+  const { byTemplateId: projByTemplateId } = useTemplateProjections(templateIds)
 
   // Sort cards: base first, diamond last (rarest revealed last for drama)
   const sortedCards = [...cards].sort(
@@ -372,14 +415,19 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                   )}
 
                   {isRevealed ? (
-                    <TradingCard
-                      card={card}
-                      size="md"
-                      // In selection mode, hijack the card's click to toggle
-                      // the keep selection. TradingCard otherwise flips on
-                      // click — we don't want both behaviors stacked.
-                      onClick={selectable ? () => toggleSelect(i) : undefined}
-                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      <TradingCard
+                        card={card}
+                        size="md"
+                        // In selection mode, hijack the card's click to toggle
+                        // the keep selection. TradingCard otherwise flips on
+                        // click — we don't want both behaviors stacked.
+                        onClick={selectable ? () => toggleSelect(i) : undefined}
+                      />
+                      {selectable && projByTemplateId.get(card.templateId) && (
+                        <ProjectionPillInline proj={projByTemplateId.get(card.templateId)!} />
+                      )}
+                    </div>
                   ) : (
                     <div style={{
                       width: 180, height: 260, borderRadius: '10px',
