@@ -30,6 +30,10 @@ interface PlayerPickerProps {
   position: string   // e.g. 'QB', 'RB', 'WR', 'TE', 'K'
   excludeIds: number[]
   playerCards?: Map<number, PlayerCardInfo[]>
+  // Player IDs of cards the user currently has equipped. When provided
+  // the picker shows an "Equipped only" toggle that narrows the
+  // matches section to just these players.
+  equippedPlayerIds?: Set<number>
 }
 
 const POSITION_MAP: Record<string, string> = {
@@ -170,10 +174,28 @@ const PlayerRow: React.FC<{
   </button>
 )
 
-export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, onSelect, position, excludeIds, playerCards }) => {
+// Position filter chips shown only when the picker is in FLEX mode (the
+// list spans every position). The user can narrow the list down to one
+// position or stay on "All".
+const FLEX_FILTERS = ['All', 'QB', 'RB', 'WR', 'TE', 'K'] as const
+type FlexFilter = typeof FLEX_FILTERS[number]
+
+export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, onSelect, position, excludeIds, playerCards, equippedPlayerIds }) => {
   const [players, setPlayers] = useState<PlayerOption[]>([])
   const [loading, setLoading] = useState(false)
   const [hoveredId, setHoveredId] = useState<number | null>(null)
+  const [flexFilter, setFlexFilter] = useState<FlexFilter>('All')
+  const [equippedOnly, setEquippedOnly] = useState(false)
+
+  // Reset filters when picker reopens — otherwise a previous "K" or
+  // "Equipped only" selection would persist and quietly hide everyone
+  // on the next open.
+  useEffect(() => {
+    if (visible) {
+      setFlexFilter('All')
+      setEquippedOnly(false)
+    }
+  }, [visible])
 
   // Stabilize excludeIds to avoid infinite re-fetch loop (array reference changes every render)
   const excludeKey = excludeIds.join(',')
@@ -181,8 +203,16 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
     if (!visible) return
     setLoading(true)
     const pos = POSITION_MAP[position] || position
-    const params: Record<string, any> = { category: 'fantasy_points', limit: 50 }
-    if (position !== 'FLEX') params.position = pos
+    // FLEX accepts any position, so pull a much larger pool — top 50 across
+    // all positions skews heavily toward QBs (highest scorers) and misses
+    // most RBs/WRs/TEs/Ks plus any of the user's card-matched players who
+    // sit below the cutoff. 300 covers the entire active roster pool.
+    const isFlex = position === 'FLEX'
+    const params: Record<string, any> = {
+      category: 'fantasy_points',
+      limit: isFlex ? 300 : 50,
+    }
+    if (!isFlex) params.position = pos
     axios.get(`${API_BASE}/stats/leaders`, { params })
       .then(res => {
         const data = res.data?.data?.leaders || res.data?.leaders || []
@@ -213,13 +243,26 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
 
   if (!visible) return null
 
-  const hasCards = playerCards && playerCards.size > 0
-  const cardMatches = hasCards
-    ? players.filter(p => playerCards.has(p.id))
-    : []
-  const otherPlayers = hasCards
-    ? players.filter(p => !playerCards.has(p.id))
+  const isFlex = position === 'FLEX'
+  // Apply the position filter only in FLEX mode — single-position pickers
+  // ignore it entirely.
+  const filteredPlayers = isFlex && flexFilter !== 'All'
+    ? players.filter(p => p.position === flexFilter)
     : players
+
+  const hasCards = playerCards && playerCards.size > 0
+  const hasEquippedSignal = !!equippedPlayerIds
+  // When the "Equipped only" toggle is on, the matches section narrows to
+  // just the players whose cards the user currently has equipped.
+  const matchPredicate = (p: PlayerOption) => {
+    if (!playerCards || !playerCards.has(p.id)) return false
+    if (equippedOnly && equippedPlayerIds) return equippedPlayerIds.has(p.id)
+    return true
+  }
+  const cardMatches = hasCards ? filteredPlayers.filter(matchPredicate) : []
+  const otherPlayers = hasCards
+    ? filteredPlayers.filter(p => !playerCards.has(p.id))
+    : filteredPlayers
 
   return ReactDOM.createPortal(
     <div
@@ -257,26 +300,92 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
               style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '22px', padding: '2px 6px' }}
             >x</button>
           </div>
+          {isFlex && (
+            <div style={{
+              display: 'flex', flexWrap: 'wrap', gap: '6px',
+              marginTop: '12px',
+            }}>
+              {FLEX_FILTERS.map(f => {
+                const active = flexFilter === f
+                return (
+                  <button
+                    key={f}
+                    onClick={() => setFlexFilter(f)}
+                    style={{
+                      padding: '4px 12px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      letterSpacing: '0.04em',
+                      borderRadius: '999px',
+                      border: `1px solid ${active ? '#a78bfa' : '#334155'}`,
+                      backgroundColor: active ? 'rgba(167,139,250,0.18)' : 'transparent',
+                      color: active ? '#c4b5fd' : '#94a3b8',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {f}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Player list */}
         <div style={{ overflowY: 'auto', padding: '4px 0' }}>
           {loading ? (
             <div style={{ padding: '32px', textAlign: 'center', fontSize: '14px', color: '#94a3b8' }}>Loading...</div>
-          ) : players.length === 0 ? (
+          ) : filteredPlayers.length === 0 ? (
             <div style={{ padding: '32px', textAlign: 'center', fontSize: '14px', color: '#94a3b8' }}>No players available</div>
           ) : (
             <>
-              {/* Card matches section */}
-              {cardMatches.length > 0 && (
+              {/* Card matches section — header renders whenever the user
+                  has any cards, even if the filtered match list is empty,
+                  so the "Equipped only" toggle stays reachable. */}
+              {hasCards && (
                 <>
                   <div style={{
                     padding: '10px 20px', fontSize: '12px', fontWeight: '700',
                     color: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.08)',
                     borderBottom: '1px solid rgba(167,139,250,0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: '8px',
                   }}>
-                    Your Cards
+                    <span>Your Cards</span>
+                    {hasEquippedSignal && (
+                      <button
+                        onClick={() => setEquippedOnly(o => !o)}
+                        style={{
+                          padding: '3px 10px',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          letterSpacing: 'normal',
+                          textTransform: 'none',
+                          borderRadius: '999px',
+                          border: `1px solid ${equippedOnly ? '#22c55e' : '#475569'}`,
+                          backgroundColor: equippedOnly ? 'rgba(34,197,94,0.15)' : 'transparent',
+                          color: equippedOnly ? '#86efac' : '#94a3b8',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                        }}
+                        title="Show only players whose cards you have equipped"
+                      >
+                        {equippedOnly ? '✓ Equipped only' : 'Equipped only'}
+                      </button>
+                    )}
                   </div>
+                  {cardMatches.length === 0 && (
+                    <div style={{
+                      padding: '14px 20px', fontSize: '12px', color: '#64748b',
+                      fontStyle: 'italic',
+                      borderBottom: '1px solid rgba(167,139,250,0.15)',
+                    }}>
+                      {equippedOnly
+                        ? 'No equipped-card matches in this list.'
+                        : 'No matches in this list.'}
+                    </div>
+                  )}
                   {cardMatches.map(player => (
                     <PlayerRow key={player.id} player={player} hoveredId={hoveredId}
                       setHoveredId={setHoveredId} onSelect={onSelect}

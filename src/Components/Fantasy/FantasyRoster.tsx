@@ -713,6 +713,7 @@ export const FantasyRoster: React.FC = () => {
   const [dirty, setDirty] = useState(false)
 
   const [playerCards, setPlayerCards] = useState<Map<number, PlayerCardInfo[]>>(new Map())
+  const [equippedPlayerIds, setEquippedPlayerIds] = useState<Set<number>>(new Set())
   const [activePowerups, setActivePowerups] = useState<ActivePowerup[]>([])
 
   const dirtyRef = useRef(false)
@@ -822,17 +823,32 @@ export const FantasyRoster: React.FC = () => {
     return () => window.removeEventListener('floosball:shop-purchase', handler)
   }, [fetchRoster, fetchActivePowerups])
 
-  // Fetch card collection so PlayerPicker can show card details
+  // Re-fetch roster after a card equip/unequip — equipping or removing an
+  // All-Pro card changes the user's swap count, and CardEquipment dispatches
+  // 'cards-equipped' on every successful save.
   useEffect(() => {
-    const fetchCards = async () => {
-      try {
-        const tok = await getToken()
-        if (!tok) return
-        const res = await fetch(`${API_BASE}/cards/collection?activeOnly=true`, {
+    const handler = () => { fetchRoster(true) }
+    window.addEventListener('cards-equipped', handler)
+    return () => window.removeEventListener('cards-equipped', handler)
+  }, [fetchRoster])
+
+  // Fetch card collection so PlayerPicker can show card details, plus
+  // the user's currently-equipped card player IDs so the picker can offer
+  // an "Equipped only" filter on matches.
+  const fetchCardsAndEquipped = useCallback(async () => {
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      const [collRes, eqRes] = await Promise.all([
+        fetch(`${API_BASE}/cards/collection?activeOnly=true`, {
           headers: { Authorization: `Bearer ${tok}` },
-        })
-        if (!res.ok) return
-        const json = await res.json()
+        }),
+        fetch(`${API_BASE}/cards/equipped`, {
+          headers: { Authorization: `Bearer ${tok}` },
+        }),
+      ])
+      if (collRes.ok) {
+        const json = await collRes.json()
         const cards: { playerId: number; edition: string; effectConfig: any }[] = json.data?.cards ?? []
         const map = new Map<number, PlayerCardInfo[]>()
         for (const c of cards) {
@@ -842,12 +858,25 @@ export const FantasyRoster: React.FC = () => {
           else map.set(c.playerId, [info])
         }
         setPlayerCards(map)
-      } catch {
-        // silent
       }
+      if (eqRes.ok) {
+        const json = await eqRes.json()
+        const equipped: { playerId: number }[] = json.data?.equippedCards ?? []
+        setEquippedPlayerIds(new Set(equipped.map(e => e.playerId).filter(Boolean)))
+      }
+    } catch {
+      // silent
     }
-    fetchCards()
   }, [getToken])
+  useEffect(() => { fetchCardsAndEquipped() }, [fetchCardsAndEquipped])
+
+  // Refresh equipped IDs when the user equips/unequips a card so the
+  // picker's "Equipped only" filter stays accurate without a page reload.
+  useEffect(() => {
+    const handler = () => { fetchCardsAndEquipped() }
+    window.addEventListener('cards-equipped', handler)
+    return () => window.removeEventListener('cards-equipped', handler)
+  }, [fetchCardsAndEquipped])
 
   // Re-fetch roster on week transitions (lock/unlock changes)
   useEffect(() => {
@@ -857,18 +886,22 @@ export const FantasyRoster: React.FC = () => {
         fetchRoster()
       }
       refetchRoster()
+      // Powerups (FLEX, income boost, etc.) tick down with the week —
+      // refresh so the "X weeks remaining" indicator stays current.
+      fetchActivePowerups()
     }
-  }, [wsEvent, fetchRoster, refetchRoster])
+  }, [wsEvent, fetchRoster, refetchRoster, fetchActivePowerups])
 
   // Re-fetch on WS reconnect (covers missed events while tab was backgrounded)
   useEffect(() => {
     if (wsConnected) {
       if (wsWasConnected.current) {
         fetchRoster()
+        fetchActivePowerups()
       }
       wsWasConnected.current = true
     }
-  }, [wsConnected, fetchRoster])
+  }, [wsConnected, fetchRoster, fetchActivePowerups])
 
   const handlePlayerSelect = (slotKey: string, player: any) => {
     const rp: FantasyRosterPlayer = {
@@ -1581,6 +1614,7 @@ export const FantasyRoster: React.FC = () => {
         position={pickerPosition}
         excludeIds={excludeIds}
         playerCards={playerCards}
+        equippedPlayerIds={equippedPlayerIds}
       />
     </div>
   )

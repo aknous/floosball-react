@@ -580,6 +580,126 @@ export default function TeamPage() {
             <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {ROSTER_SLOTS.map(([slot, posLabel]) => {
                 const player = team.roster?.[slot]
+
+                const positionCell = (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: '70px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8' }}>{posLabel}</span>
+                    <span style={{
+                      fontSize: '10px', fontWeight: '600',
+                      color: player?.defensivePosition ? '#94a3b8' : 'transparent',
+                      backgroundColor: player?.defensivePosition ? '#1e293b' : 'transparent',
+                      padding: '1px 6px', borderRadius: '3px', minWidth: '32px',
+                      textAlign: 'center', letterSpacing: '0.04em',
+                    }}>
+                      {player?.defensivePosition || ''}
+                    </span>
+                  </div>
+                )
+
+                if (!player) {
+                  return (
+                    <div key={slot} style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '7px 10px', borderRadius: '4px', backgroundColor: '#0f172a',
+                    }}>
+                      {positionCell}
+                      <span style={{ fontSize: '13px', color: '#475569' }}>—</span>
+                    </div>
+                  )
+                }
+
+                // Fatigue is reported on a 0-100 scale but accumulates
+                // slowly (~0.25%/week). Realistic late-season range is
+                // 0-10% — thresholds calibrated to that.
+                const fatigue = player.fatigue ?? 0
+                let statusLabel = 'Fresh'
+                let statusColor = '#22c55e'
+                if (fatigue > 7) { statusLabel = 'Worn'; statusColor = '#ef4444' }
+                else if (fatigue > 4) { statusLabel = 'Worked'; statusColor = '#f59e0b' }
+                else if (fatigue > 2) { statusLabel = 'Active'; statusColor = '#94a3b8' }
+                // Service time → short rookie/veteran label + accent.
+                const svc = player.serviceTime || ''
+                let svcLabel = ''
+                let svcColor = '#64748b'
+                if (svc === 'Rookie') { svcLabel = 'Rookie'; svcColor = '#22c55e' }
+                else if (svc === 'Established') { svcLabel = 'Estab.'; svcColor = '#94a3b8' }
+                else if (svc === 'Veteran') { svcLabel = 'Veteran'; svcColor = '#94a3b8' }
+                else if (svc === 'Grizzled Veteran') { svcLabel = 'Grizzled'; svcColor = '#f59e0b' }
+                else if (svc === 'Ancient Veteran') { svcLabel = 'Ancient'; svcColor = '#ef4444' }
+
+                const nameLink = (
+                  <PlayerHoverCard playerId={player.id} playerName={player.name}>
+                    <Link
+                      to={`/players/${player.id}`}
+                      style={{
+                        fontSize: isMobile ? '14px' : '13px', color: '#e2e8f0', fontWeight: '600',
+                        textDecoration: 'none', overflow: 'hidden',
+                        textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                      }}
+                    >
+                      {player.name}
+                    </Link>
+                  </PlayerHoverCard>
+                )
+                const statusPill = (
+                  <span style={{
+                    fontSize: '10px', fontWeight: 600,
+                    color: statusColor,
+                    backgroundColor: `${statusColor}1a`,
+                    border: `1px solid ${statusColor}55`,
+                    padding: '1px 7px', borderRadius: '3px',
+                    letterSpacing: '0.03em', whiteSpace: 'nowrap',
+                    textAlign: 'center',
+                  }}>
+                    {statusLabel}
+                  </span>
+                )
+                const contractText = player.termRemaining != null ? (
+                  <span style={{
+                    fontSize: '11px',
+                    color: player.termRemaining === 1 ? '#f59e0b' : '#94a3b8',
+                    fontVariantNumeric: 'tabular-nums',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {player.termRemaining}yr left
+                  </span>
+                ) : null
+                const svcChip = svcLabel ? (
+                  <span style={{
+                    fontSize: '10px', fontWeight: 600,
+                    color: svcColor, letterSpacing: '0.04em',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {svcLabel}
+                  </span>
+                ) : null
+                const retirementBadge = retirementWatch[player.id]
+                  ? <RetirementBadge risk={retirementWatch[player.id].risk} />
+                  : null
+
+                if (isMobile) {
+                  return (
+                    <div key={slot} style={{
+                      display: 'flex', flexDirection: 'column', gap: '6px',
+                      padding: '8px 10px', borderRadius: '4px', backgroundColor: '#0f172a',
+                    }}>
+                      {/* Top row: position | name | retirement */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        {positionCell}
+                        <div style={{ flex: 1, minWidth: 0 }}>{nameLink}</div>
+                        {retirementBadge}
+                      </div>
+                      {/* Bottom row: stars + status + contract + service (wraps) */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', paddingLeft: '2px' }}>
+                        <Stars stars={player.ratingStars} size={11} />
+                        {statusPill}
+                        {contractText}
+                        {svcChip}
+                      </div>
+                    </div>
+                  )
+                }
+
                 return (
                   <div key={slot} style={{
                     display: 'grid',
@@ -590,109 +710,19 @@ export default function TeamPage() {
                     borderRadius: '4px',
                     backgroundColor: '#0f172a',
                   }}>
-                    {/* Position labels — offensive + defensive grouped */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: '70px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8' }}>{posLabel}</span>
-                      <span style={{
-                        fontSize: '10px', fontWeight: '600',
-                        color: player?.defensivePosition ? '#94a3b8' : 'transparent',
-                        backgroundColor: player?.defensivePosition ? '#1e293b' : 'transparent',
-                        padding: '1px 6px', borderRadius: '3px', minWidth: '32px',
-                        textAlign: 'center', letterSpacing: '0.04em',
-                      }}>
-                        {player?.defensivePosition || ''}
-                      </span>
+                    {positionCell}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                      {nameLink}
+                      <Stars stars={player.ratingStars} size={11} />
                     </div>
-                    {player ? (() => {
-                      // Fatigue is reported on a 0-100 scale but accumulates
-                      // slowly (~0.25%/week). Realistic late-season range is
-                      // 0-10% — thresholds calibrated to that.
-                      const fatigue = player.fatigue ?? 0
-                      let statusLabel = 'Fresh'
-                      let statusColor = '#22c55e'  // green
-                      if (fatigue > 7) {
-                        statusLabel = 'Worn'
-                        statusColor = '#ef4444'   // red
-                      } else if (fatigue > 4) {
-                        statusLabel = 'Worked'
-                        statusColor = '#f59e0b'   // amber
-                      } else if (fatigue > 2) {
-                        statusLabel = 'Active'
-                        statusColor = '#94a3b8'   // slate
-                      }
-                      // Service time → short rookie/veteran label + accent.
-                      // Backend values: 'Rookie' | 'Established' | 'Veteran' | 'Grizzled Veteran' | 'Ancient Veteran'
-                      const svc = player.serviceTime || ''
-                      let svcLabel = ''
-                      let svcColor = '#64748b'
-                      if (svc === 'Rookie') { svcLabel = 'Rookie'; svcColor = '#22c55e' }
-                      else if (svc === 'Established') { svcLabel = 'Estab.'; svcColor = '#94a3b8' }
-                      else if (svc === 'Veteran') { svcLabel = 'Veteran'; svcColor = '#94a3b8' }
-                      else if (svc === 'Grizzled Veteran') { svcLabel = 'Grizzled'; svcColor = '#f59e0b' }
-                      else if (svc === 'Ancient Veteran') { svcLabel = 'Ancient'; svcColor = '#ef4444' }
-                      return (
-                        <>
-                          {/* Name + stars stacked in the main column */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                            <PlayerHoverCard playerId={player.id} playerName={player.name}>
-                              <Link
-                                to={`/players/${player.id}`}
-                                style={{
-                                  fontSize: '13px', color: '#e2e8f0', fontWeight: '600',
-                                  textDecoration: 'none', overflow: 'hidden',
-                                  textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
-                                }}
-                              >
-                                {player.name}
-                              </Link>
-                            </PlayerHoverCard>
-                            <Stars stars={player.ratingStars} size={11} />
-                          </div>
-                          {/* Play-time status pill */}
-                          <span style={{
-                            fontSize: '10px', fontWeight: 600,
-                            color: statusColor,
-                            backgroundColor: `${statusColor}1a`,
-                            border: `1px solid ${statusColor}55`,
-                            padding: '1px 7px', borderRadius: '3px',
-                            letterSpacing: '0.03em', whiteSpace: 'nowrap',
-                            minWidth: '52px', textAlign: 'center',
-                          }}>
-                            {statusLabel}
-                          </span>
-                          {/* Contract: term remaining + service time stacked */}
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', minWidth: '74px' }}>
-                            <span style={{
-                              fontSize: '11px',
-                              color: player.termRemaining === 1 ? '#f59e0b' : '#94a3b8',
-                              fontVariantNumeric: 'tabular-nums',
-                              whiteSpace: 'nowrap',
-                            }}>
-                              {player.termRemaining != null
-                                ? `${player.termRemaining}yr left`
-                                : ''}
-                            </span>
-                            {svcLabel && (
-                              <span style={{
-                                fontSize: '10px', fontWeight: 600,
-                                color: svcColor, letterSpacing: '0.04em',
-                                whiteSpace: 'nowrap',
-                              }}>
-                                {svcLabel}
-                              </span>
-                            )}
-                          </div>
-                          {/* Retirement risk badge */}
-                          <span style={{ minWidth: '56px', display: 'flex', justifyContent: 'flex-end' }}>
-                            {retirementWatch[player.id]
-                              ? <RetirementBadge risk={retirementWatch[player.id].risk} />
-                              : null}
-                          </span>
-                        </>
-                      )
-                    })() : (
-                      <span style={{ fontSize: '13px', color: '#475569', gridColumn: 'span 4' }}>—</span>
-                    )}
+                    <span style={{ minWidth: '52px' }}>{statusPill}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', minWidth: '74px' }}>
+                      {contractText}
+                      {svcChip}
+                    </div>
+                    <span style={{ minWidth: '56px', display: 'flex', justifyContent: 'flex-end' }}>
+                      {retirementBadge}
+                    </span>
                   </div>
                 )
               })}
@@ -723,6 +753,68 @@ export default function TeamPage() {
                     const windowLabel = p.seasonsRemaining <= 1
                       ? 'final season'
                       : `${p.seasonsRemaining} seasons`
+                    const posCell = (
+                      <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', minWidth: '32px' }}>{p.position}</span>
+                    )
+                    const nameLink = (
+                      <Link
+                        to={`/players/${p.playerId}`}
+                        style={{
+                          fontSize: isMobile ? '13px' : '12px', color: '#e2e8f0', fontWeight: '600',
+                          textDecoration: 'none', overflow: 'hidden',
+                          textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                        }}
+                      >
+                        {p.name}
+                      </Link>
+                    )
+                    const draftChip = (
+                      <span style={{
+                        fontSize: p.isUndrafted ? '9px' : '11px',
+                        fontWeight: p.isUndrafted ? 700 : 500,
+                        color: '#64748b',
+                        backgroundColor: p.isUndrafted ? '#1e293b' : 'transparent',
+                        padding: p.isUndrafted ? '1px 5px' : 0,
+                        borderRadius: '3px',
+                        letterSpacing: p.isUndrafted ? '0.04em' : 'normal',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {p.isUndrafted
+                          ? 'UNDRAFTED'
+                          : p.draftSeason != null
+                            ? `drafted S${p.draftSeason}`
+                            : ''}
+                      </span>
+                    )
+                    const faText = (
+                      <span style={{
+                        fontSize: '11px',
+                        color: p.seasonsRemaining <= 1 ? '#f59e0b' : '#94a3b8',
+                        whiteSpace: 'nowrap', fontWeight: 600,
+                      }}>
+                        {windowLabel} until FA
+                      </span>
+                    )
+
+                    if (isMobile) {
+                      return (
+                        <div key={p.playerId} style={{
+                          display: 'flex', flexDirection: 'column', gap: '4px',
+                          padding: '8px 10px', borderRadius: '4px', backgroundColor: '#0f172a',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                            {posCell}
+                            <div style={{ flex: 1, minWidth: 0 }}>{nameLink}</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', paddingLeft: '2px' }}>
+                            <Stars stars={calcStars(p.rating)} size={11} />
+                            {draftChip}
+                            {faText}
+                          </div>
+                        </div>
+                      )
+                    }
+
                     return (
                       <div key={p.playerId} style={{
                         display: 'grid',
@@ -733,48 +825,13 @@ export default function TeamPage() {
                         borderRadius: '4px',
                         backgroundColor: '#0f172a',
                       }}>
-                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8' }}>{p.position}</span>
-                        {/* Name + Stars stacked */}
+                        {posCell}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                          <Link
-                            to={`/players/${p.playerId}`}
-                            style={{
-                              fontSize: '12px', color: '#e2e8f0', fontWeight: '600',
-                              textDecoration: 'none', overflow: 'hidden',
-                              textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
-                            }}
-                          >
-                            {p.name}
-                          </Link>
+                          {nameLink}
                           <Stars stars={calcStars(p.rating)} size={11} />
                         </div>
-                        {/* Draft origin — undrafted chip OR drafted-season label */}
-                        <span style={{
-                          fontSize: p.isUndrafted ? '9px' : '11px',
-                          fontWeight: p.isUndrafted ? 700 : 500,
-                          color: '#64748b',
-                          backgroundColor: p.isUndrafted ? '#1e293b' : 'transparent',
-                          padding: p.isUndrafted ? '1px 5px' : 0,
-                          borderRadius: '3px',
-                          letterSpacing: p.isUndrafted ? '0.04em' : 'normal',
-                          whiteSpace: 'nowrap',
-                          minWidth: '70px', textAlign: 'right',
-                        }}>
-                          {p.isUndrafted
-                            ? 'UNDRAFTED'
-                            : p.draftSeason != null
-                              ? `drafted S${p.draftSeason}`
-                              : ''}
-                        </span>
-                        {/* FA timeline */}
-                        <span style={{
-                          fontSize: '11px',
-                          color: p.seasonsRemaining <= 1 ? '#f59e0b' : '#94a3b8',
-                          whiteSpace: 'nowrap', fontWeight: 600,
-                          minWidth: '110px', textAlign: 'right',
-                        }}>
-                          {windowLabel} until FA
-                        </span>
+                        <span style={{ minWidth: '70px', textAlign: 'right' }}>{draftChip}</span>
+                        <span style={{ minWidth: '110px', textAlign: 'right' }}>{faText}</span>
                       </div>
                     )
                   })}

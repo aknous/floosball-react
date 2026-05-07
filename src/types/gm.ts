@@ -12,8 +12,18 @@ export const GM_VOTE_COST: Record<string, number> = {
 }
 
 export const GM_VOTES_PER_SEASON = 20
-export const GM_VOTES_PER_TYPE = 8
-export const GM_VOTES_PER_TARGET = 5
+// Per-type cap: coach votes cap at 4 (only one coach to deal with), player
+// votes cap at 8 (multiple cut/resign candidates worth spreading across).
+// Mirrors GM_VOTES_PER_TYPE / GM_VOTES_PER_TYPE_DEFAULT in floosball/constants.py.
+export const GM_VOTES_PER_TYPE: Record<string, number> = {
+  fire_coach:    4,
+  hire_coach:    4,
+  resign_player: 8,
+  cut_player:    8,
+  sign_fa:       8,
+}
+export const GM_VOTES_PER_TYPE_DEFAULT = 4
+export const GM_VOTES_PER_TARGET = 4
 export const GM_FA_BALLOT_COST = 15
 export const GM_FA_BALLOT_MAX_RANKINGS = 18
 

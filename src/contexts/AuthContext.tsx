@@ -141,6 +141,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     refetchRoster()
   }, [isSignedIn, isLoaded, refetchUser, refetchRoster])
 
+  // Refresh roster on card equip/unequip — All-Pro cards add/remove a swap
+  // and Champion cards toggle FLEX availability, both of which affect the
+  // roster state surfaced through this context. Listening here keeps every
+  // consumer (FantasyPage page-header swap count, FantasyRoster panel,
+  // anywhere else that reads fantasyRoster) in sync without each having to
+  // wire its own listener.
+  useEffect(() => {
+    if (!isSignedIn) return
+    const handler = () => { refetchRoster() }
+    window.addEventListener('cards-equipped', handler)
+    return () => window.removeEventListener('cards-equipped', handler)
+  }, [isSignedIn, refetchRoster])
+
   const logout = useCallback(() => {
     signOut()
     setAppUser(null)

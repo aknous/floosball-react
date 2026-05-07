@@ -14,7 +14,11 @@ import FaBallotModal, { ScoutingPlayer, OpenSlot, StatLine } from './FaBallotMod
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 import { Stars, calcStars } from '@/Components/Stars'
 import PlayerLink from '@/Components/PlayerLink'
-import { GM_VOTE_COST, GM_VOTES_PER_SEASON, GM_VOTES_PER_TARGET, GM_VOTES_PER_TYPE } from '@/types/gm'
+import { GM_VOTE_COST, GM_VOTES_PER_SEASON, GM_VOTES_PER_TARGET, GM_VOTES_PER_TYPE, GM_VOTES_PER_TYPE_DEFAULT } from '@/types/gm'
+
+// Per-type vote cap helper. Coach votes cap at 4, player votes at 8.
+const perTypeCap = (voteType: string): number =>
+  GM_VOTES_PER_TYPE[voteType] ?? GM_VOTES_PER_TYPE_DEFAULT
 
 const GM_ACTIVE_WEEK = 22
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -237,12 +241,22 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   }, [getToken, updateFloobits, refetchUser])
 
   // Compute disabled vote targets based on user's vote counts
+  // Helper: per-target tally already meets/exceeds threshold (directive
+  // is guaranteed to pass, so further votes are wasteful and the backend
+  // rejects them).
+  const targetThresholdMet = (voteType: string, targetId: number): boolean => {
+    const tally = gm.summary?.tallies.find(
+      t => t.voteType === voteType && t.targetPlayerId === targetId
+    )
+    return !!tally && tally.threshold > 0 && tally.votes >= tally.threshold
+  }
+
   const disabledCutIds = useMemo(() => {
     const ids = new Set<number>()
     if (!gm.myVotes) return ids
     const { perType, perTarget } = gm.myVotes.counts
     // Global type limit
-    if ((perType['cut_player'] ?? 0) >= GM_VOTES_PER_TYPE) {
+    if ((perType['cut_player'] ?? 0) >= perTypeCap('cut_player')) {
       gm.eligible?.rosteredPlayers.forEach(p => ids.add(p.id))
       return ids
     }
@@ -253,14 +267,18 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
         if (!isNaN(pid)) ids.add(pid)
       }
     }
+    // Threshold already met — directive will pass without more votes
+    gm.eligible?.rosteredPlayers.forEach(p => {
+      if (targetThresholdMet('cut_player', p.id)) ids.add(p.id)
+    })
     return ids
-  }, [gm.myVotes, gm.eligible])
+  }, [gm.myVotes, gm.eligible, gm.summary])
 
   const disabledResignIds = useMemo(() => {
     const ids = new Set<number>()
     if (!gm.myVotes) return ids
     const { perType, perTarget } = gm.myVotes.counts
-    if ((perType['resign_player'] ?? 0) >= GM_VOTES_PER_TYPE) {
+    if ((perType['resign_player'] ?? 0) >= perTypeCap('resign_player')) {
       gm.eligible?.expiringPlayers.forEach(p => ids.add(p.id))
       return ids
     }
@@ -270,20 +288,30 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
         if (!isNaN(pid)) ids.add(pid)
       }
     }
+    gm.eligible?.expiringPlayers.forEach(p => {
+      if (targetThresholdMet('resign_player', p.id)) ids.add(p.id)
+    })
     return ids
-  }, [gm.myVotes, gm.eligible])
+  }, [gm.myVotes, gm.eligible, gm.summary])
 
   const fireCoachDisabled = useMemo(() => {
     if (!gm.myVotes) return false
     const { perType } = gm.myVotes.counts
-    return (perType['fire_coach'] ?? 0) >= GM_VOTES_PER_TYPE
-  }, [gm.myVotes])
+    if ((perType['fire_coach'] ?? 0) >= perTypeCap('fire_coach')) return true
+    // Fire votes are aggregated against a single target=null, so check the
+    // tally directly instead of going through targetThresholdMet.
+    const fireTally = gm.summary?.tallies.find(t => t.voteType === 'fire_coach')
+    if (fireTally && fireTally.threshold > 0 && fireTally.votes >= fireTally.threshold) {
+      return true
+    }
+    return false
+  }, [gm.myVotes, gm.summary])
 
   const disabledHireCoachIds = useMemo(() => {
     const ids = new Set<number>()
     if (!gm.myVotes) return ids
     const { perType, perTarget } = gm.myVotes.counts
-    if ((perType['hire_coach'] ?? 0) >= GM_VOTES_PER_TYPE) {
+    if ((perType['hire_coach'] ?? 0) >= perTypeCap('hire_coach')) {
       gm.eligible?.availableCoaches.forEach(c => { if (c.id !== null) ids.add(c.id) })
       return ids
     }
@@ -307,10 +335,10 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   // Remaining votes per directive type
   const votesUsed = gm.myVotes?.counts.perType ?? {}
   const remainingByType = {
-    fire_coach: GM_VOTES_PER_TYPE - (votesUsed['fire_coach'] ?? 0),
-    hire_coach: GM_VOTES_PER_TYPE - (votesUsed['hire_coach'] ?? 0),
-    cut_player: GM_VOTES_PER_TYPE - (votesUsed['cut_player'] ?? 0),
-    resign_player: GM_VOTES_PER_TYPE - (votesUsed['resign_player'] ?? 0),
+    fire_coach:    perTypeCap('fire_coach')    - (votesUsed['fire_coach']    ?? 0),
+    hire_coach:    perTypeCap('hire_coach')    - (votesUsed['hire_coach']    ?? 0),
+    cut_player:    perTypeCap('cut_player')    - (votesUsed['cut_player']    ?? 0),
+    resign_player: perTypeCap('resign_player') - (votesUsed['resign_player'] ?? 0),
   }
 
   // Escalating cost: base * 2^(votes already cast for this specific target)
@@ -944,29 +972,27 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
         <GuideSection title="Directives">
           As a board member, you may issue directives to influence your team's decisions.
           Each directive costs Floobits, with the cost doubling for each subsequent directive
-          of the same category. You may file up to {GM_VOTES_PER_TYPE} directives per
-          category and {GM_VOTES_PER_TARGET} per individual target, with a seasonal
-          allowance of {GM_VOTES_PER_SEASON} total.
+          of the same category. Coach directives cap at {perTypeCap('fire_coach')} per
+          season, and player directives cap at {perTypeCap('cut_player')} per category, with
+          {GM_VOTES_PER_TARGET} per individual target and a seasonal allowance of {GM_VOTES_PER_SEASON} total.
         </GuideSection>
         <GuideSection title="Quorum & Ratification">
-          Each motion requires a minimum number of directives (the quorum) before it
-          can be considered for ratification. The quorum scales with the number of
-          active board members — fans of this team who have issued at least one directive
-          this season. Once quorum is met, there is a base 45% likelihood of ratification,
-          climbing to a guaranteed ratification once directives reach double the quorum.
+          Coach hires are decided by simple plurality: whichever candidate receives the most
+          votes is hired. Other directives (fire coach, re-sign, cut) need vote totals that
+          meet or exceed the team's active fan count to ratify. The active fan count freezes
+          when the Front Office opens in Week {GM_ACTIVE_WEEK}, so late-arriving fans don't
+          shift the bar mid-vote.
         </GuideSection>
         <GuideSection title="Resolution">
           All motions are resolved at the end of the season during the offseason proceedings.
-          Outcomes are: <span style={{ color: '#22c55e' }}>RATIFIED</span> (motion passes),{' '}
-          <span style={{ color: '#f59e0b' }}>MOTION DENIED</span> (quorum met but ratification
-          failed), or <span style={{ color: '#94a3b8' }}>INSUFFICIENT QUORUM</span> (not
-          enough directives filed).
+          Threshold votes (fire / re-sign / cut) pass when their tally meets or exceeds the
+          team's active fan count, otherwise the motion is denied. Hire votes go to whichever
+          candidate received the most votes.
         </GuideSection>
         <GuideSection title="Coaching Appointments">
           If a grievance against the head coach is ratified, the board may also nominate a
           preferred replacement from the available coaching pool. The nominee with the most
-          votes (meeting quorum) is appointed. If no nominee achieves quorum, a coach is
-          appointed at random.
+          votes is appointed. If nobody nominates anyone, a coach is appointed at random.
         </GuideSection>
         <GuideSection title="Free Agent Requisitions">
           Rank up to 5 replacements for projected roster openings — walk-year players, cut-vote

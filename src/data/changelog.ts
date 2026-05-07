@@ -12,6 +12,62 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.13.6',
+    date: '2026-05-06',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Front Office] Equipped All-Pro cards now show a green dot on the AP badge when their roster swap is still available, and a dim gray dot when it has been used. Hover the badge for the current state.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Front Office] Hire Coach is now a simple plurality vote. Whoever gets the most votes is hired. Ties show TIED on each candidate; the leader gets a LEADING badge in the team color.',
+          '[Front Office] Fire / Re-sign / Cut directives now resolve deterministically. The directive passes when its vote total meets or exceeds the team\'s active fan count. No more probability roll, no more "70% chance" feel.',
+          '[Front Office] Active fan count is snapshotted at the moment the Front Office opens (Week 22). Fans logging in for the first time after that point don\'t shift the threshold mid-vote.',
+          '[Front Office] Per-season vote caps adjusted: coach votes (fire / hire) cap at 4 per fan, player votes (re-sign / cut) cap at 8 per fan. Per-target cap is 4 across the board.',
+          '[Front Office] Champion classification no longer secretly bumps the weekly swap-refill cap. Its only perk is now what the tooltip says: it unlocks the FLEX roster slot.',
+          '[Front Office] Vote buttons disable automatically once a directive\'s threshold is met. No more spending floobits on a vote that\'s already guaranteed to pass.',
+          '[Cards] All-Pro card swap grants refresh once per game day instead of once per season — equipped AP cards now grant a fresh swap every 7 weeks.',
+          '[UI/UX] Powerup countdowns (FLEX slot, Accession, Endowment, Patronage) now refresh on week transitions instead of waiting for a manual page reload.',
+          '[UI/UX] Front Office help copy refreshed to describe plurality hire, threshold-based directives, the Week 22 fan-count snapshot, and the new vote caps.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Front Office] Fixed coach hire votes silently failing to register results when SQLite\'s write lock was contended between sessions. Hire / fire DB updates and the GM vote-result records now share one connection.',
+          '[Front Office] Fixed the unassigned coach pool getting wiped on every app boot, which orphaned outstanding hire-coach votes. Pool now tops up rather than wipes, so an in-flight vote keeps its target through restarts.',
+          '[Front Office] Fixed All-Pro swap grants being lost across week boundaries. The carry-forward in both the equip endpoint and the season manager now preserves the swap-bonus flag, so an unused grant stays available across week transitions.',
+          '[Front Office] Fixed the AP swap exploit where users could equip, use a swap, unequip, and re-equip the same card to receive another grant. Using a swap now correctly marks the card\'s grant as consumed.',
+          '[Front Office] Fixed the All-Pro swap retroactive grant on roster lock. Equipping an AP card before locking the roster used to silently skip the grant; it now fires correctly when the roster locks (manual or auto).',
+          '[Front Office] Fixed the weekly swap-refill cap inflating with carry-forward rows from earlier weeks. Cap now considers only this week\'s active AP grants.',
+          '[Front Office] Fixed FLEX rosterPlayers being deleted at week rollover when the user had a Champion card equipped. The defensive sweep now checks the user\'s most recent equipped loadout instead of the new (empty) week\'s rows.',
+          '[Front Office] Fixed FLEX powerup expiration leaving the slot visible in the UI even after it expired. The GET roster endpoint no longer fakes hasFlexSlot based on a stale FLEX rosterPlayer.',
+          '[Front Office] Fixed Accession (6th card slot) and other duration powerups deferring to next week when bought before games actually started. Activation now correctly fires for purchases made during the pre-game window.',
+          '[Front Office] Fixed admin-curated player/coach names getting wiped on fresh-start deploys. The unused_names table is now preserved, and config additions are merged in on every boot.',
+          '[Cards] Card templates are no longer generated for prospects or upcoming rookies — only rostered players get cards.',
+        ],
+      },
+    ],
+  },
+  {
+    version: 'v0.13.5',
+    date: '2026-05-04',
+    changes: [],
+    sections: [
+      {
+        label: 'Fixes',
+        items: [
+          '[UI/UX] Mobile roster rows on the team page and front office now stack vertically so player names use the full row width instead of getting truncated.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.13.4',
     date: '2026-05-04',
     changes: [],
