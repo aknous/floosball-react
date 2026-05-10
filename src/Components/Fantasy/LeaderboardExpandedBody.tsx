@@ -260,7 +260,7 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
 
   return (
     <div style={{
-      padding: isMobile ? '6px 8px 10px 32px' : '6px 16px 14px 58px',
+      padding: isMobile ? '6px 8px 10px 16px' : '6px 16px 14px 16px',
       display: 'flex', flexDirection: isMobile ? 'column' : 'row',
       gap: isMobile ? '12px' : '24px', alignItems: 'flex-start',
     }}>
