@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
-import TradingCard, { CardData } from '@/Components/Cards/TradingCard'
+import type { CardData } from '@/Components/Cards/TradingCard'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -28,6 +28,26 @@ interface Props {
 }
 
 const cardCache = new Map<string, EquippedCardEntry[]>()
+
+const EDITION_SHORT: Record<string, string> = {
+  base: 'BASE',
+  holographic: 'HOLO',
+  prismatic: 'PRSM',
+  diamond: 'DMND',
+}
+
+const EDITION_COLORS: Record<string, string> = {
+  base: '#94a3b8',
+  holographic: '#c4b5fd',
+  prismatic: '#f472b6',
+  diamond: '#67e8f9',
+}
+
+const TYPE_COLORS: Record<string, string> = {
+  flat_fp: '#4ade80',
+  multiplier: '#f472b6',
+  floobits: '#eab308',
+}
 
 const playerRowStyleFn = (mobile: boolean): React.CSSProperties => ({
   display: 'flex', alignItems: 'center', gap: '8px',
@@ -98,32 +118,61 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
     </div>
   )
 
+  const sortedCards = cards ? [...cards].sort((a, b) => a.slotNumber - b.slotNumber) : []
+
   const cardsColumn = (
-    <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+    <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
       <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
         Equipped Cards
       </div>
       {loading && <div style={{ fontSize: '11px', color: '#64748b' }}>Loading…</div>}
-      {!loading && (cards?.length ?? 0) === 0 && (
+      {!loading && sortedCards.length === 0 && (
         <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic' }}>None equipped</div>
       )}
-      {!loading && cards && cards.length > 0 && (
-        <div style={{
-          display: 'flex', flexWrap: 'wrap', gap: '6px',
-          maxWidth: isMobile ? '100%' : `${(cards.length * 111) - 6}px`,
-        }}>
-          {[...cards].sort((a, b) => a.slotNumber - b.slotNumber).map(c => (
-            <TradingCard
-              key={c.slotNumber}
-              card={c.card}
-              size="xs"
-              glowColor={c.isMatch ? 'rgba(34,197,94,0.5)' : undefined}
-              staticGlow
-              noHoverLift
-            />
-          ))}
-        </div>
-      )}
+      {!loading && sortedCards.map(({ card, isMatch }, i) => {
+        const edTag = EDITION_SHORT[card.edition] ?? card.edition
+        const edColor = EDITION_COLORS[card.edition] ?? '#94a3b8'
+        const effectColor = TYPE_COLORS[card.outputType ?? ''] ?? '#cbd5e1'
+        const effectLabel = card.displayName || card.effectName || ''
+        return (
+          <div
+            key={card.id ?? i}
+            title={card.detail || card.tooltip || ''}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '3px 0', fontSize: isMobile ? '11px' : '12px',
+            }}
+          >
+            <span style={{
+              color: edColor, fontWeight: '700',
+              fontSize: '10px', flexShrink: 0, minWidth: 32,
+            }}>
+              {edTag}
+            </span>
+            <span style={{
+              color: '#f1f5f9', whiteSpace: 'nowrap',
+              overflow: 'hidden', textOverflow: 'ellipsis',
+              minWidth: 0, flex: '1 1 0',
+            }}>
+              {card.playerName}
+            </span>
+            <span style={{
+              color: effectColor, fontSize: '11px', flexShrink: 0,
+              fontWeight: isMatch ? '700' : '400',
+            }}>
+              {effectLabel}
+            </span>
+            {isMatch && (
+              <span style={{
+                color: '#60a5fa', fontSize: '9px', fontWeight: '700',
+                letterSpacing: '0.04em', flexShrink: 0,
+              }}>
+                MATCH
+              </span>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 
@@ -131,7 +180,7 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
     <div style={{
       padding: isMobile ? '6px 8px 10px 32px' : '6px 16px 14px 58px',
       display: 'flex', flexDirection: isMobile ? 'column' : 'row',
-      gap: isMobile ? '12px' : '20px', alignItems: isMobile ? 'stretch' : 'flex-start',
+      gap: isMobile ? '12px' : '24px', alignItems: 'flex-start',
     }}>
       {rosterColumn}
       {cardsColumn}
