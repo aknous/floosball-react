@@ -348,7 +348,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                         {idx + 1}.
                       </span>
                       <PositionChip position={player.position} />
-                      <Stars stars={calcStars(player.rating)} size={14} />
+                      <Stars stars={calcStars(player.rating)} size={18} />
                       <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {player.name}
                       </span>
@@ -569,7 +569,7 @@ const PlayerRow: React.FC<{
     {/* Row 1: Position + Stars + Name + Performance/type indicator */}
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
       <PositionChip position={p.position} />
-      <Stars stars={calcStars(p.rating)} size={13} />
+      <Stars stars={calcStars(p.rating)} size={18} />
       <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0', fontWeight: '600' }}>{p.name}</span>
       {p.isProspect ? (
         <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
