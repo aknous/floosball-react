@@ -234,7 +234,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
           position: 'relative',
           width: '100%',
           maxWidth: '880px',
-          maxHeight: '85vh',
+          height: '85vh',
           backgroundColor: '#0f172a',
           border: '1px solid #334155',
           borderRadius: '12px',
