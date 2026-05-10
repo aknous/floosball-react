@@ -3,8 +3,6 @@ import ReactDOM from 'react-dom'
 import { Stars, calcStars } from '@/Components/Stars'
 import { GM_FA_BALLOT_MAX_RANKINGS, GM_FA_BALLOT_COST } from '@/types/gm'
 
-const MAX_PICKS_PER_POSITION = 3
-
 export interface PlayerStats {
   gamesPlayed: number
   fantasyPoints: number
@@ -32,22 +30,14 @@ export interface ScoutingPlayer {
   stats: PlayerStats | null
   isRookie?: boolean
   isProspect?: boolean
-  // True when the candidate is a rostered player who will likely hit FA —
-  // either in their walk year with no resign-vote consensus, OR cut-voted
-  // by the board regardless of contract.
   isProjected?: boolean
-  // 'walk_year' = contract expiring | 'cut_vote' = board pushing to cut
   projectedReason?: 'walk_year' | 'cut_vote'
-  currentTeam?: string  // Set on projected candidates — the team they're leaving from
+  currentTeam?: string
 }
 
 export interface OpenSlot {
   slot: string
   position: string
-  // True when this slot is projected to open at season end:
-  //   - 'vacant' — actually empty right now
-  //   - 'walk_year' — incumbent's contract is expiring, no strong resign vote
-  //   - 'cut_vote_likely' — board pushing to cut incumbent regardless of contract
   projected?: boolean
   reason?: 'vacant' | 'walk_year' | 'cut_vote_likely'
   incumbent?: {
@@ -69,6 +59,29 @@ interface FaBallotModalProps {
   existingBallot?: number[] | null
 }
 
+const POS_CHIP_COLORS: Record<string, { bg: string; fg: string }> = {
+  QB: { bg: 'rgba(59,130,246,0.18)', fg: '#60a5fa' },
+  RB: { bg: 'rgba(34,197,94,0.18)', fg: '#4ade80' },
+  WR: { bg: 'rgba(245,158,11,0.18)', fg: '#fbbf24' },
+  TE: { bg: 'rgba(168,85,247,0.18)', fg: '#c084fc' },
+  K: { bg: 'rgba(148,163,184,0.18)', fg: '#cbd5e1' },
+}
+
+const PositionChip: React.FC<{ position: string }> = ({ position }) => {
+  const c = POS_CHIP_COLORS[position] || { bg: '#1e293b', fg: '#94a3b8' }
+  return (
+    <span style={{
+      fontSize: '10px', fontWeight: 700,
+      color: c.fg, backgroundColor: c.bg,
+      padding: '2px 6px', borderRadius: '4px',
+      letterSpacing: '0.04em',
+      minWidth: 28, textAlign: 'center' as const,
+    }}>
+      {position}
+    </span>
+  )
+}
+
 const FaBallotModal: React.FC<FaBallotModalProps> = ({
   visible,
   onClose,
@@ -79,37 +92,39 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
   submitting,
   existingBallot,
 }) => {
-  // Map: slot key -> ordered array of player IDs (ranked 1st, 2nd, 3rd)
-  const [slotRankings, setSlotRankings] = useState<Record<string, number[]>>({})
-  const [activeSlot, setActiveSlot] = useState<string | null>(null)
+  const [ranking, setRanking] = useState<number[]>([])
+  const [posFilter, setPosFilter] = useState<'ALL' | string>('ALL')
   const [timeLeft, setTimeLeft] = useState('')
 
-  // Initialize from existing ballot + auto-select first slot
+  // Set of positions that have at least one open slot.
+  const openPositionSet = useMemo(() => {
+    const s = new Set<string>()
+    for (const slot of openSlots) s.add(slot.position)
+    return s
+  }, [openSlots])
+
+  // Slot count per position so the header can show "QB ×1 · WR ×2".
+  const slotCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const slot of openSlots) {
+      counts[slot.position] = (counts[slot.position] || 0) + 1
+    }
+    return counts
+  }, [openSlots])
+
+  // Initialize ranking from existing ballot, filtered to currently-open positions.
   useEffect(() => {
     if (!visible) return
     if (existingBallot && existingBallot.length > 0) {
-      // Restore: distribute existing ballot IDs to slots by matching position
-      const rankings: Record<string, number[]> = {}
-      for (const slot of openSlots) rankings[slot.slot] = []
-      const usedIds = new Set<number>()
-      for (const slot of openSlots) {
-        for (const id of existingBallot) {
-          if (usedIds.has(id)) continue
-          const p = scoutingPlayers.find(sp => sp.id === id)
-          if (p && p.position === slot.position && rankings[slot.slot].length < MAX_PICKS_PER_POSITION) {
-            rankings[slot.slot].push(id)
-            usedIds.add(id)
-          }
-        }
-      }
-      setSlotRankings(rankings)
+      const valid = existingBallot.filter(id => {
+        const p = scoutingPlayers.find(sp => sp.id === id)
+        return p && openPositionSet.has(p.position)
+      })
+      setRanking(valid)
     } else {
-      const empty: Record<string, number[]> = {}
-      for (const slot of openSlots) empty[slot.slot] = []
-      setSlotRankings(empty)
+      setRanking([])
     }
-    if (openSlots.length > 0) setActiveSlot(openSlots[0].slot)
-  }, [visible, existingBallot, openSlots, scoutingPlayers])
+  }, [visible, existingBallot, scoutingPlayers, openPositionSet])
 
   // Countdown timer
   useEffect(() => {
@@ -134,36 +149,18 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
     return () => window.removeEventListener('keydown', handler)
   }, [visible, onClose])
 
-  const activePosition = useMemo(() => {
-    if (!activeSlot) return null
-    return openSlots.find(s => s.slot === activeSlot)?.position ?? null
-  }, [activeSlot, openSlots])
+  const rankedSet = useMemo(() => new Set(ranking), [ranking])
 
-  // All player IDs selected across all slots
-  const allSelectedIds = useMemo(() => {
-    const ids = new Set<number>()
-    for (const arr of Object.values(slotRankings)) {
-      for (const id of arr) ids.add(id)
-    }
-    return ids
-  }, [slotRankings])
-
-  // Available players for the active position (exclude already-selected anywhere).
-  // Dedupe by ID defensively — if the backend ever emits a player in multiple
-  // categories (FA pool + projected FA, or prospect + FA), the first entry
-  // wins. Without this dedupe a stale/inconsistent backend state could result
-  // in duplicate rows visible in the ballot picker.
-  // Prospects are split into their own group so they surface at the top of
-  // the ballot picker — promoting a prospect is different in kind from signing
-  // a free agent and should read that way.
+  // Available candidates: open positions only, not already ranked, optional
+  // user-applied position filter. Prospects up top, FAs below.
   const { prospects, others } = useMemo(() => {
-    if (!activePosition) return { prospects: [] as ScoutingPlayer[], others: [] as ScoutingPlayer[] }
     const seen = new Set<number>()
     const prospectList: ScoutingPlayer[] = []
     const otherList: ScoutingPlayer[] = []
     for (const p of scoutingPlayers) {
-      if (p.position !== activePosition) continue
-      if (allSelectedIds.has(p.id)) continue
+      if (!openPositionSet.has(p.position)) continue
+      if (rankedSet.has(p.id)) continue
+      if (posFilter !== 'ALL' && p.position !== posFilter) continue
       if (seen.has(p.id)) continue
       seen.add(p.id)
       if (p.isProspect) prospectList.push(p)
@@ -172,52 +169,49 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
     prospectList.sort((a, b) => b.rating - a.rating)
     otherList.sort((a, b) => b.rating - a.rating)
     return { prospects: prospectList, others: otherList }
-  }, [scoutingPlayers, activePosition, allSelectedIds])
+  }, [scoutingPlayers, openPositionSet, rankedSet, posFilter])
 
-  const availablePlayerCount = prospects.length + others.length
-
-  const activeRankings = activeSlot ? (slotRankings[activeSlot] || []) : []
-  const canAddMore = activeRankings.length < MAX_PICKS_PER_POSITION
+  const canAddMore = ranking.length < GM_FA_BALLOT_MAX_RANKINGS
 
   const addPlayer = useCallback((playerId: number) => {
-    if (!activeSlot) return
-    setSlotRankings(prev => {
-      const current = prev[activeSlot] || []
-      if (current.length >= MAX_PICKS_PER_POSITION) return prev
-      return { ...prev, [activeSlot]: [...current, playerId] }
+    setRanking(prev => {
+      if (prev.includes(playerId)) return prev
+      if (prev.length >= GM_FA_BALLOT_MAX_RANKINGS) return prev
+      return [...prev, playerId]
     })
-  }, [activeSlot])
-
-  const removePlayer = useCallback((slot: string, playerId: number) => {
-    setSlotRankings(prev => ({
-      ...prev,
-      [slot]: (prev[slot] || []).filter(id => id !== playerId),
-    }))
   }, [])
 
-  const clearSlot = useCallback((slot: string) => {
-    setSlotRankings(prev => ({ ...prev, [slot]: [] }))
-    setActiveSlot(slot)
+  const removePlayer = useCallback((playerId: number) => {
+    setRanking(prev => prev.filter(id => id !== playerId))
   }, [])
+
+  const movePlayer = useCallback((playerId: number, direction: -1 | 1) => {
+    setRanking(prev => {
+      const idx = prev.indexOf(playerId)
+      if (idx < 0) return prev
+      const swapIdx = idx + direction
+      if (swapIdx < 0 || swapIdx >= prev.length) return prev
+      const next = prev.slice()
+      next[idx] = prev[swapIdx]
+      next[swapIdx] = prev[idx]
+      return next
+    })
+  }, [])
+
+  const clearAll = useCallback(() => setRanking([]), [])
 
   const handleSubmit = async () => {
-    // Build flat rankings: concatenate per-slot rankings in slot order
-    const rankings: number[] = []
-    for (const slot of openSlots) {
-      for (const id of (slotRankings[slot.slot] || [])) {
-        rankings.push(id)
-      }
-    }
-    if (rankings.length === 0) return
-    await onSubmit(rankings)
+    if (ranking.length === 0) return
+    await onSubmit(ranking)
   }
 
-  const totalPicks = Object.values(slotRankings).reduce((sum, arr) => sum + arr.length, 0)
-  const filledSlots = Object.values(slotRankings).filter(arr => arr.length > 0).length
   const isUpdate = existingBallot && existingBallot.length > 0
   const cost = isUpdate ? 0 : GM_FA_BALLOT_COST
 
   if (!visible) return null
+
+  // Position filter chips: ALL + every distinct open position.
+  const posFilterOptions: string[] = ['ALL', ...Array.from(openPositionSet).sort()]
 
   return ReactDOM.createPortal(
     <div
@@ -263,9 +257,23 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
               Free Agent Requisition
             </div>
             <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>
-              Rank up to {MAX_PICKS_PER_POSITION} candidates per position — free agents and your team's prospects all go on the same ballot.
+              Build a single priority list — top of your list is who the front office pursues first.
               {isUpdate ? ' Revisions: complimentary.' : ` First filing: ${GM_FA_BALLOT_COST} Floobits.`}
             </div>
+            {openSlots.length > 0 && (
+              <div style={{
+                fontSize: '12px', color: '#cbd5e1', marginTop: '8px',
+                display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center',
+              }}>
+                <span style={{ color: '#94a3b8' }}>Open slots:</span>
+                {Object.entries(slotCounts).map(([pos, n]) => (
+                  <span key={pos} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <PositionChip position={pos} />
+                    {n > 1 && <span style={{ color: '#94a3b8' }}>×{n}</span>}
+                  </span>
+                ))}
+              </div>
+            )}
             <div style={{
               fontSize: '12px', color: '#cbd5e1', marginTop: '10px',
               padding: '8px 10px', backgroundColor: 'rgba(59,130,246,0.08)',
@@ -273,16 +281,12 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
               lineHeight: 1.5,
             }}>
               <div style={{ marginBottom: '4px' }}>
-                <span style={{ color: '#60a5fa', fontWeight: 700 }}>Prospect #1:</span>{' '}
-                promoted immediately at the start of the offseason.
-              </div>
-              <div style={{ marginBottom: '4px' }}>
-                <span style={{ color: '#60a5fa', fontWeight: 700 }}>FA #1:</span>{' '}
-                the front office pursues them in the FA draft. If they sign elsewhere first, the ballot drops to your next pick.
+                Order matters across positions — fans whose top picks all stack on one spot
+                effectively vote "we need a {Array.from(openPositionSet)[0] || 'QB'} more than anything else."
               </div>
               <div>
                 <span style={{ color: '#60a5fa', fontWeight: 700 }}>No ballot:</span>{' '}
-                the team signs the best available FA, or promotes a qualifying prospect if one exists.
+                the team signs the best available FA at any open slot.
               </div>
             </div>
           </div>
@@ -301,135 +305,149 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
         {/* Body */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '240px 1fr',
+          gridTemplateColumns: '300px 1fr',
           flex: 1,
           overflow: 'hidden',
           minHeight: 0,
         }}>
-          {/* Left: Open position slots with ranked picks */}
-          <div style={{ borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e293b' }}>
+          {/* Left: Ranked list */}
+          <div style={{ borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
               <span style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Open Positions
+                Your Priority
+              </span>
+              <span style={{ fontSize: '12px', color: canAddMore ? '#94a3b8' : '#f59e0b' }}>
+                {ranking.length}/{GM_FA_BALLOT_MAX_RANKINGS}
               </span>
             </div>
-            <div style={{ padding: '8px' }}>
-              {openSlots.length === 0 ? (
-                <div style={{ fontSize: '13px', color: '#94a3b8', padding: '14px', textAlign: 'center' }}>
-                  No open positions
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+              {ranking.length === 0 ? (
+                <div style={{ fontSize: '12px', color: '#64748b', padding: '20px', textAlign: 'center', fontStyle: 'italic' }}>
+                  Tap candidates on the right to add them. Reorder with the arrows.
                 </div>
-              ) : openSlots.map(slot => {
-                const picks = slotRankings[slot.slot] || []
-                const isActive = activeSlot === slot.slot
-                return (
-                  <div
-                    key={slot.slot}
-                    onClick={() => setActiveSlot(slot.slot)}
-                    style={{
-                      padding: '12px 14px',
+              ) : (
+                ranking.map((id, idx) => {
+                  const player = scoutingPlayers.find(p => p.id === id)
+                  if (!player) return null
+                  return (
+                    <div key={id} style={{
+                      padding: '8px 10px',
                       borderRadius: '6px',
-                      cursor: 'pointer',
                       marginBottom: '4px',
-                      backgroundColor: isActive ? '#1e293b' : 'transparent',
-                      border: isActive ? '1px solid #3b82f6' : '1px solid transparent',
-                      transition: 'all 0.15s',
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #334155',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}>
+                      <span style={{
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        color: idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#cd7f32' : '#64748b',
+                        minWidth: '20px',
+                      }}>
+                        {idx + 1}.
+                      </span>
+                      <PositionChip position={player.position} />
+                      <Stars stars={calcStars(player.rating)} size={11} />
+                      <span style={{ fontSize: '12px', color: '#cbd5e1', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {player.name}
+                      </span>
+                      <button
+                        onClick={() => movePlayer(id, -1)}
+                        disabled={idx === 0}
+                        title="Move up"
+                        style={{
+                          background: 'none', border: 'none', fontFamily: 'inherit',
+                          color: idx === 0 ? '#334155' : '#94a3b8',
+                          cursor: idx === 0 ? 'not-allowed' : 'pointer',
+                          fontSize: '12px', padding: '0 4px',
+                        }}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        onClick={() => movePlayer(id, 1)}
+                        disabled={idx === ranking.length - 1}
+                        title="Move down"
+                        style={{
+                          background: 'none', border: 'none', fontFamily: 'inherit',
+                          color: idx === ranking.length - 1 ? '#334155' : '#94a3b8',
+                          cursor: idx === ranking.length - 1 ? 'not-allowed' : 'pointer',
+                          fontSize: '12px', padding: '0 4px',
+                        }}
+                      >
+                        ↓
+                      </button>
+                      <button
+                        onClick={() => removePlayer(id)}
+                        title="Remove"
+                        style={{
+                          background: 'none', border: 'none', fontFamily: 'inherit',
+                          color: '#64748b', cursor: 'pointer',
+                          fontSize: '14px', padding: '0 4px',
+                        }}
+                      >
+                        &#215;
+                      </button>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+            {ranking.length > 0 && (
+              <div style={{ padding: '8px 12px', borderTop: '1px solid #1e293b', flexShrink: 0 }}>
+                <button
+                  onClick={clearAll}
+                  style={{
+                    background: 'none', border: 'none', color: '#ef4444',
+                    fontFamily: 'inherit', fontSize: '11px', cursor: 'pointer',
+                    padding: '4px 0',
+                  }}
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Available candidates */}
+          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{
+              padding: '10px 14px', borderBottom: '1px solid #1e293b',
+              display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
+              flexWrap: 'wrap',
+            }}>
+              <span style={{ fontSize: '12px', color: '#64748b', marginRight: '4px' }}>Filter:</span>
+              {posFilterOptions.map(opt => {
+                const active = posFilter === opt
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => setPosFilter(opt as any)}
+                    style={{
+                      fontSize: '11px', fontWeight: '600',
+                      padding: '3px 8px', borderRadius: '4px',
+                      backgroundColor: active ? 'rgba(59,130,246,0.18)' : 'transparent',
+                      color: active ? '#60a5fa' : '#94a3b8',
+                      border: '1px solid ' + (active ? 'rgba(59,130,246,0.4)' : '#334155'),
+                      fontFamily: 'inherit',
+                      cursor: 'pointer',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{
-                        fontSize: '14px',
-                        fontWeight: '700',
-                        color: picks.length > 0 ? '#22c55e' : (isActive ? '#3b82f6' : '#94a3b8'),
-                      }}>
-                        {slot.position}
-                        {slot.slot.includes('2') && <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '4px' }}>2</span>}
-                      </span>
-                      {picks.length > 0 && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); clearSlot(slot.slot) }}
-                          style={{
-                            background: 'none', border: 'none', fontFamily: 'inherit',
-                            color: '#ef4444', cursor: 'pointer', fontSize: '14px', padding: '0 4px',
-                          }}
-                        >
-                          &#215;
-                        </button>
-                      )}
-                    </div>
-                    {picks.length > 0 ? (
-                      <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                        {picks.map((id, idx) => {
-                          const player = scoutingPlayers.find(p => p.id === id)
-                          if (!player) return null
-                          return (
-                            <div key={id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{
-                                fontSize: '12px',
-                                fontWeight: '700',
-                                color: idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : '#64748b',
-                                minWidth: '18px',
-                              }}>
-                                {idx + 1}.
-                              </span>
-                              <Stars stars={calcStars(player.rating)} size={11} />
-                              <span style={{ fontSize: '12px', color: '#cbd5e1', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {player.name}
-                              </span>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); removePlayer(slot.slot, id) }}
-                                style={{
-                                  background: 'none', border: 'none', fontFamily: 'inherit',
-                                  color: '#64748b', cursor: 'pointer', fontSize: '12px', padding: '0 4px',
-                                }}
-                              >
-                                &#215;
-                              </button>
-                            </div>
-                          )
-                        })}
-                        {picks.length < MAX_PICKS_PER_POSITION && (
-                          <div style={{ fontSize: '11px', color: '#475569', fontStyle: 'italic', paddingLeft: '24px' }}>
-                            {MAX_PICKS_PER_POSITION - picks.length} more slot{picks.length < MAX_PICKS_PER_POSITION - 1 ? 's' : ''}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div style={{ fontSize: '12px', color: '#475569', marginTop: '6px', fontStyle: 'italic' }}>
-                        No candidates ranked
-                      </div>
-                    )}
-                  </div>
+                    {opt}
+                  </button>
                 )
               })}
             </div>
-          </div>
-
-          {/* Right: Available players for active position */}
-          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-              <span style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {activePosition ? `Available ${activePosition}s` : 'Select a position'}
-              </span>
-              {activePosition && (
-                <span style={{ fontSize: '13px', color: canAddMore ? '#94a3b8' : '#f59e0b' }}>
-                  {canAddMore
-                    ? `${activeRankings.length}/${MAX_PICKS_PER_POSITION} ranked`
-                    : 'Ballot full'}
-                </span>
-              )}
-            </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '4px 10px' }}>
-              {!activePosition ? (
+              {openSlots.length === 0 ? (
                 <div style={{ fontSize: '13px', color: '#94a3b8', padding: '24px', textAlign: 'center' }}>
-                  Select an open position on the left
+                  No open positions to vote on
                 </div>
-              ) : availablePlayerCount === 0 && !canAddMore ? (
+              ) : prospects.length + others.length === 0 ? (
                 <div style={{ fontSize: '13px', color: '#94a3b8', padding: '24px', textAlign: 'center' }}>
-                  Ballot full for {activePosition} — {MAX_PICKS_PER_POSITION} candidates ranked
-                </div>
-              ) : availablePlayerCount === 0 ? (
-                <div style={{ fontSize: '13px', color: '#94a3b8', padding: '24px', textAlign: 'center' }}>
-                  No available players at {activePosition}
+                  {canAddMore ? 'No more candidates available' : 'Ballot full'}
                 </div>
               ) : (
                 <>
@@ -444,17 +462,21 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                           onClick={() => canAddMore && addPlayer(p.id)}
                         />
                       ))}
-                      <SectionDivider label="Free Agents" count={others.length} color="#22c55e" />
                     </>
                   )}
-                  {others.map(p => (
-                    <PlayerRow
-                      key={p.id}
-                      player={p}
-                      canAddMore={canAddMore}
-                      onClick={() => canAddMore && addPlayer(p.id)}
-                    />
-                  ))}
+                  {others.length > 0 && (
+                    <>
+                      <SectionDivider label="Free Agents" count={others.length} color="#22c55e" />
+                      {others.map(p => (
+                        <PlayerRow
+                          key={p.id}
+                          player={p}
+                          canAddMore={canAddMore}
+                          onClick={() => canAddMore && addPlayer(p.id)}
+                        />
+                      ))}
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -471,21 +493,21 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
           flexShrink: 0,
         }}>
           <span style={{ fontSize: '13px', color: '#94a3b8' }}>
-            {filledSlots}/{openSlots.length} positions filled — {totalPicks} total ranked
+            {ranking.length} ranked
           </span>
           <button
             onClick={handleSubmit}
-            disabled={totalPicks === 0 || submitting}
+            disabled={ranking.length === 0 || submitting}
             style={{
               padding: '12px 28px',
-              backgroundColor: totalPicks === 0 ? '#1e293b' : '#f59e0b',
-              color: totalPicks === 0 ? '#475569' : '#0f172a',
+              backgroundColor: ranking.length === 0 ? '#1e293b' : '#f59e0b',
+              color: ranking.length === 0 ? '#475569' : '#0f172a',
               border: 'none',
               borderRadius: '6px',
               fontFamily: 'inherit',
               fontSize: '13px',
               fontWeight: '700',
-              cursor: totalPicks === 0 ? 'not-allowed' : 'pointer',
+              cursor: ranking.length === 0 ? 'not-allowed' : 'pointer',
               opacity: submitting ? 0.6 : 1,
             }}
           >
@@ -535,7 +557,7 @@ const PlayerRow: React.FC<{
   <div
     onClick={onClick}
     style={{
-      padding: '12px 14px',
+      padding: '10px 12px',
       borderRadius: '6px',
       cursor: canAddMore ? 'pointer' : 'not-allowed',
       marginBottom: '2px',
@@ -545,41 +567,40 @@ const PlayerRow: React.FC<{
     onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
   >
-    {/* Row 1: Stars + Name + Performance/type indicator */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-      <Stars stars={calcStars(p.rating)} size={14} />
-      <span style={{ flex: 1, fontSize: '14px', color: '#e2e8f0', fontWeight: '600' }}>{p.name}</span>
+    {/* Row 1: Position + Stars + Name + Performance/type indicator */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <PositionChip position={p.position} />
+      <Stars stars={calcStars(p.rating)} size={13} />
+      <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0', fontWeight: '600' }}>{p.name}</span>
       {p.isProspect ? (
-        <span style={{ fontSize: '12px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Prospect
         </span>
       ) : p.isRookie ? (
-        <span style={{ fontSize: '12px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '11px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Rookie
         </span>
       ) : p.isProjected ? (
-        <span style={{ fontSize: '12px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           {p.projectedReason === 'cut_vote' ? 'Cut Vote' : 'Walk Year'}
         </span>
       ) : p.stats ? (
         <PerformanceBadge delta={p.ratingDelta} />
       ) : null}
     </div>
-    {/* Row 2: Stat line, prospect note, rookie label, or walk-year context.
-        Projected FAs (walk year / cut vote) still show their current-season
-        stats — context note sits above so fans can spot good value at a glance. */}
+    {/* Row 2: Stat line, prospect note, rookie label, or walk-year context. */}
     {p.isProspect ? (
-      <div style={{ marginTop: '6px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
+      <div style={{ marginTop: '5px', fontSize: '11px', color: '#a78bfa', fontStyle: 'italic' }}>
         Pipeline prospect — rank to promote instead of sign a FA
       </div>
     ) : p.isRookie ? (
-      <div style={{ marginTop: '6px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
+      <div style={{ marginTop: '5px', fontSize: '11px', color: '#38bdf8', fontStyle: 'italic' }}>
         No professional record
       </div>
     ) : (
       <>
         {p.isProjected && (
-          <div style={{ marginTop: '6px', fontSize: '12px', color: '#fbbf24', fontStyle: 'italic' }}>
+          <div style={{ marginTop: '5px', fontSize: '11px', color: '#fbbf24', fontStyle: 'italic' }}>
             {p.currentTeam ? `Currently on ${p.currentTeam} — ` : ''}
             {p.projectedReason === 'cut_vote'
               ? 'board pushing to cut'
@@ -587,11 +608,11 @@ const PlayerRow: React.FC<{
           </div>
         )}
         {p.stats ? (
-          <div style={{ marginTop: '6px', fontSize: '12px', color: '#94a3b8', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ marginTop: '5px', fontSize: '11px', color: '#94a3b8', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <StatLine position={p.position} stats={p.stats} />
           </div>
         ) : (
-          <div style={{ marginTop: '6px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+          <div style={{ marginTop: '5px', fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
             No stats this season
           </div>
         )}
@@ -603,8 +624,8 @@ const PlayerRow: React.FC<{
 const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
   if (delta > 5) {
     return (
-      <span style={{ fontSize: '13px', fontWeight: '700', color: '#22c55e' }} title={`+${delta} over expected`}>
-        <svg width="12" height="12" viewBox="0 0 10 10" style={{ verticalAlign: 'middle', marginRight: '3px' }}>
+      <span style={{ fontSize: '12px', fontWeight: '700', color: '#22c55e' }} title={`+${delta} over expected`}>
+        <svg width="11" height="11" viewBox="0 0 10 10" style={{ verticalAlign: 'middle', marginRight: '3px' }}>
           <path d="M5 1 L9 7 L1 7 Z" fill="#22c55e" />
         </svg>
         +{delta}
@@ -613,8 +634,8 @@ const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
   }
   if (delta < -5) {
     return (
-      <span style={{ fontSize: '13px', fontWeight: '700', color: '#ef4444' }} title={`${delta} under expected`}>
-        <svg width="12" height="12" viewBox="0 0 10 10" style={{ verticalAlign: 'middle', marginRight: '3px' }}>
+      <span style={{ fontSize: '12px', fontWeight: '700', color: '#ef4444' }} title={`${delta} under expected`}>
+        <svg width="11" height="11" viewBox="0 0 10 10" style={{ verticalAlign: 'middle', marginRight: '3px' }}>
           <path d="M5 9 L9 3 L1 3 Z" fill="#ef4444" />
         </svg>
         {delta}
@@ -622,7 +643,7 @@ const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
     )
   }
   return (
-    <span style={{ fontSize: '13px', color: '#94a3b8' }} title="Performed as expected">
+    <span style={{ fontSize: '12px', color: '#94a3b8' }} title="Performed as expected">
       --
     </span>
   )
