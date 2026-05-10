@@ -257,8 +257,8 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
               Free Agent Requisition
             </div>
             <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>
-              Build a single priority list — top of your list is who the front office pursues first.
-              {isUpdate ? ' Revisions: complimentary.' : ` First filing: ${GM_FA_BALLOT_COST} Floobits.`}
+              Rank the players you want signed. Front office goes after #1 first, works down the list.
+              {isUpdate ? ' Revisions are free.' : ` First ballot costs ${GM_FA_BALLOT_COST} Floobits.`}
             </div>
             {openSlots.length > 0 && (
               <div style={{
@@ -281,12 +281,11 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
               lineHeight: 1.5,
             }}>
               <div style={{ marginBottom: '4px' }}>
-                Order matters across positions — fans whose top picks all stack on one spot
-                effectively vote "we need a {Array.from(openPositionSet)[0] || 'QB'} more than anything else."
+                Stacking your top picks at one position tells the team that's the bigger need.
               </div>
               <div>
                 <span style={{ color: '#60a5fa', fontWeight: 700 }}>No ballot:</span>{' '}
-                the team signs the best available FA at any open slot.
+                the team signs the best available player at any open slot.
               </div>
             </div>
           </div>
@@ -323,7 +322,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
             <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
               {ranking.length === 0 ? (
                 <div style={{ fontSize: '12px', color: '#64748b', padding: '20px', textAlign: 'center', fontStyle: 'italic' }}>
-                  Tap candidates on the right to add them. Reorder with the arrows.
+                  Pick players from the right to start your list. Use the arrows to reorder.
                 </div>
               ) : (
                 ranking.map((id, idx) => {
@@ -591,7 +590,7 @@ const PlayerRow: React.FC<{
     {/* Row 2: Stat line, prospect note, rookie label, or walk-year context. */}
     {p.isProspect ? (
       <div style={{ marginTop: '5px', fontSize: '11px', color: '#a78bfa', fontStyle: 'italic' }}>
-        Pipeline prospect — rank to promote instead of sign a FA
+        Pipeline prospect. Rank to promote instead of signing a FA.
       </div>
     ) : p.isRookie ? (
       <div style={{ marginTop: '5px', fontSize: '11px', color: '#38bdf8', fontStyle: 'italic' }}>
@@ -601,10 +600,10 @@ const PlayerRow: React.FC<{
       <>
         {p.isProjected && (
           <div style={{ marginTop: '5px', fontSize: '11px', color: '#fbbf24', fontStyle: 'italic' }}>
-            {p.currentTeam ? `Currently on ${p.currentTeam} — ` : ''}
+            {p.currentTeam ? `Currently on ${p.currentTeam}. ` : ''}
             {p.projectedReason === 'cut_vote'
-              ? 'board pushing to cut'
-              : 'contract expires at season end'}
+              ? 'Board pushing to cut.'
+              : 'Contract expires at season end.'}
           </div>
         )}
         {p.stats ? (
