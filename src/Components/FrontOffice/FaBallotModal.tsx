@@ -304,13 +304,13 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
         {/* Body */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
           flex: 1,
           overflow: 'hidden',
           minHeight: 0,
         }}>
           {/* Left: Ranked list */}
-          <div style={{ borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
               <span style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Your Priority
@@ -411,7 +411,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
           </div>
 
           {/* Right: Available candidates */}
-          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
             <div style={{
               padding: '10px 14px', borderBottom: '1px solid #1e293b',
               display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
