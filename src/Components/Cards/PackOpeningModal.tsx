@@ -211,12 +211,13 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
   const isSelectionMode =
     pendingId != null && cardsKept != null && cardsKept < cards.length
 
-  // Fetch projections for the revealed cards so the user can compare
-  // expected weekly output before picking. Only fires in selection mode
-  // (free packs / starter packs auto-keep everything, no need to compare).
+  // Fetch projections for every revealed card. Shown under each card
+  // whether the user is picking N of M (selection mode) or auto-keeping
+  // everything (starter / free packs) — projections are useful info
+  // either way, not just for comparison.
   const templateIds = useMemo(
-    () => (isSelectionMode ? cards.map(c => c.templateId).filter(Boolean) : []),
-    [isSelectionMode, cards],
+    () => cards.map(c => c.templateId).filter(Boolean),
+    [cards],
   )
   const { byTemplateId: projByTemplateId } = useTemplateProjections(templateIds)
 
@@ -424,7 +425,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                         // click — we don't want both behaviors stacked.
                         onClick={selectable ? () => toggleSelect(i) : undefined}
                       />
-                      {selectable && projByTemplateId.get(card.templateId) && (
+                      {projByTemplateId.get(card.templateId) && (
                         <ProjectionPillInline proj={projByTemplateId.get(card.templateId)!} />
                       )}
                     </div>
