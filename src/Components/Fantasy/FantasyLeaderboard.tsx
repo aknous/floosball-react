@@ -5,6 +5,7 @@ import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { PlayerLeaders } from '@/Components/PlayerLeaders'
+import { LeaderboardExpandedBody } from './LeaderboardExpandedBody'
 import type { SnapshotEntry } from '@/hooks/useFantasySnapshot'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -267,36 +268,18 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                         </div>
                         <div style={chevronStyle(isExpanded)}>▼</div>
                       </button>
-                      {isExpanded && (
-                        <div style={{ padding: isMobile ? '6px 8px 10px 32px' : '6px 16px 14px 58px' }}>
-                          {entry.players
-                            .filter(p => p.slot !== 'PREV')
-                            .sort((a, b) => b.earnedPoints - a.earnedPoints)
-                            .map(p => (
-                            <div key={p.slot} style={playerRowStyleFn(isMobile)}>
-                              <span style={slotStyleFn(isMobile)}>{p.slot}</span>
-                              <span style={playerNameStyle}>{p.playerName}</span>
-                              <span style={teamAbbrStyle}>{p.teamAbbr}</span>
-                              <span style={playerPointsStyleFn(isMobile)}>+{p.earnedPoints.toFixed(0)}</span>
-                            </div>
-                          ))}
-                          {entry.players.filter(p => p.slot === 'PREV').map(p => (
-                            <div key="prev" style={playerRowStyleFn(isMobile)}>
-                              <span style={{ ...slotStyleFn(isMobile), color: '#64748b' }}>PREV</span>
-                              <span style={{ ...playerNameStyle, color: '#64748b', fontStyle: 'italic' }}>{p.playerName}</span>
-                              <span style={teamAbbrStyle}></span>
-                              <span style={{ ...playerPointsStyleFn(isMobile), color: '#64748b' }}>+{p.earnedPoints.toFixed(0)}</span>
-                            </div>
-                          ))}
-                          {entry.seasonCardBonus > 0 && (
-                            <div key="card-bonus" style={playerRowStyleFn(isMobile)}>
-                              <span style={{ ...slotStyleFn(isMobile), color: '#a78bfa' }}>CARD</span>
-                              <span style={{ ...playerNameStyle, color: '#a78bfa' }}>Card Bonus</span>
-                              <span style={teamAbbrStyle}></span>
-                              <span style={{ ...playerPointsStyleFn(isMobile), color: '#a78bfa' }}>+{entry.seasonCardBonus.toFixed(0)}</span>
-                            </div>
-                          )}
-                        </div>
+                      {isExpanded && season != null && week != null && (
+                        <LeaderboardExpandedBody
+                          userId={entry.userId}
+                          season={season}
+                          week={week}
+                          players={entry.players.map(p => ({
+                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr,
+                            points: p.earnedPoints, isPrev: p.slot === 'PREV',
+                          }))}
+                          cardBonus={entry.seasonCardBonus}
+                          isMobile={isMobile}
+                        />
                       )}
                     </div>
                   )
@@ -334,36 +317,18 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                         </div>
                         <div style={chevronStyle(isExpanded)}>▼</div>
                       </button>
-                      {isExpanded && (
-                        <div style={{ padding: isMobile ? '6px 8px 10px 32px' : '6px 16px 14px 58px' }}>
-                          {meEntry.players
-                            .filter(p => p.slot !== 'PREV')
-                            .sort((a, b) => b.earnedPoints - a.earnedPoints)
-                            .map(p => (
-                            <div key={p.slot} style={playerRowStyleFn(isMobile)}>
-                              <span style={slotStyleFn(isMobile)}>{p.slot}</span>
-                              <span style={playerNameStyle}>{p.playerName}</span>
-                              <span style={teamAbbrStyle}>{p.teamAbbr}</span>
-                              <span style={playerPointsStyleFn(isMobile)}>+{p.earnedPoints.toFixed(0)}</span>
-                            </div>
-                          ))}
-                          {meEntry.players.filter(p => p.slot === 'PREV').map(p => (
-                            <div key="prev" style={playerRowStyleFn(isMobile)}>
-                              <span style={{ ...slotStyleFn(isMobile), color: '#64748b' }}>PREV</span>
-                              <span style={{ ...playerNameStyle, color: '#64748b', fontStyle: 'italic' }}>{p.playerName}</span>
-                              <span style={teamAbbrStyle}></span>
-                              <span style={{ ...playerPointsStyleFn(isMobile), color: '#64748b' }}>+{p.earnedPoints.toFixed(0)}</span>
-                            </div>
-                          ))}
-                          {meEntry.seasonCardBonus > 0 && (
-                            <div key="card-bonus" style={playerRowStyleFn(isMobile)}>
-                              <span style={{ ...slotStyleFn(isMobile), color: '#a78bfa' }}>CARD</span>
-                              <span style={{ ...playerNameStyle, color: '#a78bfa' }}>Card Bonus</span>
-                              <span style={teamAbbrStyle}></span>
-                              <span style={{ ...playerPointsStyleFn(isMobile), color: '#a78bfa' }}>+{meEntry.seasonCardBonus.toFixed(0)}</span>
-                            </div>
-                          )}
-                        </div>
+                      {isExpanded && season != null && week != null && (
+                        <LeaderboardExpandedBody
+                          userId={meEntry.userId}
+                          season={season}
+                          week={week}
+                          players={meEntry.players.map(p => ({
+                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr,
+                            points: p.earnedPoints, isPrev: p.slot === 'PREV',
+                          }))}
+                          cardBonus={meEntry.seasonCardBonus}
+                          isMobile={isMobile}
+                        />
                       )}
                     </div>
                   </>
@@ -423,27 +388,18 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                         </div>
                         <div style={chevronStyle(isExpanded)}>▼</div>
                       </button>
-                      {isExpanded && (
-                        <div style={{ padding: isMobile ? '6px 8px 10px 32px' : '6px 16px 14px 58px' }}>
-                          {entry.players
-                            .sort((a, b) => b.weekPoints - a.weekPoints)
-                            .map(p => (
-                            <div key={p.slot} style={playerRowStyleFn(isMobile)}>
-                              <span style={slotStyleFn(isMobile)}>{p.slot}</span>
-                              <span style={playerNameStyle}>{p.playerName}</span>
-                              <span style={teamAbbrStyle}>{p.teamAbbr}</span>
-                              <span style={playerPointsStyleFn(isMobile)}>+{p.weekPoints.toFixed(0)}</span>
-                            </div>
-                          ))}
-                          {(entry.cardBonusPoints ?? 0) > 0 && (
-                            <div key="card-bonus" style={playerRowStyleFn(isMobile)}>
-                              <span style={{ ...slotStyleFn(isMobile), color: '#a78bfa' }}>CARD</span>
-                              <span style={{ ...playerNameStyle, color: '#a78bfa' }}>Card Bonus</span>
-                              <span style={teamAbbrStyle}></span>
-                              <span style={{ ...playerPointsStyleFn(isMobile), color: '#a78bfa' }}>+{entry.cardBonusPoints.toFixed(0)}</span>
-                            </div>
-                          )}
-                        </div>
+                      {isExpanded && season != null && currentWeekData && (
+                        <LeaderboardExpandedBody
+                          userId={entry.userId}
+                          season={season}
+                          week={currentWeekData.week}
+                          players={entry.players.map(p => ({
+                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr,
+                            points: p.weekPoints,
+                          }))}
+                          cardBonus={entry.cardBonusPoints ?? 0}
+                          isMobile={isMobile}
+                        />
                       )}
                     </div>
                   )
@@ -481,27 +437,18 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                         </div>
                         <div style={chevronStyle(isExpanded)}>▼</div>
                       </button>
-                      {isExpanded && (
-                        <div style={{ padding: isMobile ? '6px 8px 10px 32px' : '6px 16px 14px 58px' }}>
-                          {meEntry.players
-                            .sort((a, b) => b.weekPoints - a.weekPoints)
-                            .map(p => (
-                            <div key={p.slot} style={playerRowStyleFn(isMobile)}>
-                              <span style={slotStyleFn(isMobile)}>{p.slot}</span>
-                              <span style={playerNameStyle}>{p.playerName}</span>
-                              <span style={teamAbbrStyle}>{p.teamAbbr}</span>
-                              <span style={playerPointsStyleFn(isMobile)}>+{p.weekPoints.toFixed(0)}</span>
-                            </div>
-                          ))}
-                          {(meEntry.cardBonusPoints ?? 0) > 0 && (
-                            <div key="card-bonus" style={playerRowStyleFn(isMobile)}>
-                              <span style={{ ...slotStyleFn(isMobile), color: '#a78bfa' }}>CARD</span>
-                              <span style={{ ...playerNameStyle, color: '#a78bfa' }}>Card Bonus</span>
-                              <span style={teamAbbrStyle}></span>
-                              <span style={{ ...playerPointsStyleFn(isMobile), color: '#a78bfa' }}>+{meEntry.cardBonusPoints.toFixed(0)}</span>
-                            </div>
-                          )}
-                        </div>
+                      {isExpanded && season != null && currentWeekData && (
+                        <LeaderboardExpandedBody
+                          userId={meEntry.userId}
+                          season={season}
+                          week={currentWeekData.week}
+                          players={meEntry.players.map(p => ({
+                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr,
+                            points: p.weekPoints,
+                          }))}
+                          cardBonus={meEntry.cardBonusPoints ?? 0}
+                          isMobile={isMobile}
+                        />
                       )}
                     </div>
                   </>
@@ -558,12 +505,3 @@ const chevronStyle = (isExpanded: boolean): React.CSSProperties => ({
   transition: 'transform 0.2s',
 })
 
-const playerRowStyleFn = (mobile: boolean): React.CSSProperties => ({
-  display: 'flex', alignItems: 'center', gap: mobile ? '6px' : '10px',
-  padding: '5px 0', fontSize: mobile ? '11px' : '12px',
-})
-
-const slotStyleFn = (mobile: boolean): React.CSSProperties => ({ width: mobile ? '24px' : '32px', color: '#64748b', fontWeight: '700' })
-const playerNameStyle: React.CSSProperties = { flex: 1, color: '#cbd5e1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
-const teamAbbrStyle: React.CSSProperties = { color: '#64748b', flexShrink: 0 }
-const playerPointsStyleFn = (mobile: boolean): React.CSSProperties => ({ color: '#4ade80', fontWeight: '700', flexShrink: 0, width: mobile ? '48px' : '56px', textAlign: 'right' })
