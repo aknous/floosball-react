@@ -9,6 +9,7 @@ interface ExpandedPlayer {
   slot: string
   playerName: string
   teamAbbr?: string
+  teamId?: number | null
   points: number
   isPrev?: boolean
 }
@@ -76,11 +77,18 @@ const slotStyleFn = (mobile: boolean): React.CSSProperties => ({
   fontSize: mobile ? '10px' : '11px',
 })
 const playerNameStyle: React.CSSProperties = { flex: 1, color: '#cbd5e1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
-const teamAbbrStyle: React.CSSProperties = { color: '#94a3b8', fontSize: '10px', minWidth: 28, textAlign: 'right' }
 const playerPointsStyleFn = (mobile: boolean): React.CSSProperties => ({
   color: '#e2e8f0', fontWeight: '600', minWidth: mobile ? 32 : 40, textAlign: 'right',
   fontSize: mobile ? '11px' : '12px',
 })
+const teamAvatarSize = 16
+const teamAvatarStyle: React.CSSProperties = {
+  width: teamAvatarSize, height: teamAvatarSize, flexShrink: 0,
+  borderRadius: '3px',
+}
+const teamAvatarPlaceholderStyle: React.CSSProperties = {
+  width: teamAvatarSize, height: teamAvatarSize, flexShrink: 0,
+}
 
 function formatBreakdownOutput(b: CardBreakdown): { str: string; color: string } | null {
   const fp = b.primaryFP ?? 0
@@ -129,24 +137,26 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
       {sortedPlayers.map(p => (
         <div key={p.slot} style={playerRowStyleFn(isMobile)}>
           <span style={slotStyleFn(isMobile)}>{p.slot}</span>
+          {p.teamId != null
+            ? <img src={`/avatars/${p.teamId}.png`} alt={p.teamAbbr || ''} style={teamAvatarStyle} />
+            : <span style={teamAvatarPlaceholderStyle} />}
           <span style={playerNameStyle}>{p.playerName}</span>
-          <span style={teamAbbrStyle}>{p.teamAbbr || ''}</span>
           <span style={playerPointsStyleFn(isMobile)}>+{p.points.toFixed(0)}</span>
         </div>
       ))}
       {prevPlayers.map(p => (
         <div key="prev" style={playerRowStyleFn(isMobile)}>
           <span style={{ ...slotStyleFn(isMobile), color: '#64748b' }}>PREV</span>
+          <span style={teamAvatarPlaceholderStyle} />
           <span style={{ ...playerNameStyle, color: '#64748b', fontStyle: 'italic' }}>{p.playerName}</span>
-          <span style={teamAbbrStyle}></span>
           <span style={{ ...playerPointsStyleFn(isMobile), color: '#64748b' }}>+{p.points.toFixed(0)}</span>
         </div>
       ))}
       {cardBonus > 0 && (
         <div style={playerRowStyleFn(isMobile)}>
           <span style={{ ...slotStyleFn(isMobile), color: '#a78bfa' }}>CARD</span>
+          <span style={teamAvatarPlaceholderStyle} />
           <span style={{ ...playerNameStyle, color: '#a78bfa' }}>Card Bonus</span>
-          <span style={teamAbbrStyle}></span>
           <span style={{ ...playerPointsStyleFn(isMobile), color: '#a78bfa' }}>+{cardBonus.toFixed(0)}</span>
         </div>
       )}

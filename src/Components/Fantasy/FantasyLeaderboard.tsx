@@ -25,6 +25,7 @@ interface WeeklyPlayer {
   slot: string
   playerName: string
   teamAbbr: string
+  teamId?: number | null
   weekPoints: number
 }
 
@@ -96,6 +97,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
         slot: p.slot,
         playerName: p.playerName,
         teamAbbr: p.teamAbbr,
+        teamId: p.teamId ?? null,
         weekPoints: p.weekFP ?? 0,
       })),
       cardBreakdowns: e.cardBreakdowns,
@@ -276,7 +278,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                           season={season}
                           week={week}
                           players={entry.players.map(p => ({
-                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr,
+                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr, teamId: (p as any).teamId ?? null,
                             points: p.earnedPoints, isPrev: p.slot === 'PREV',
                           }))}
                           cardBonus={entry.seasonCardBonus}
@@ -326,7 +328,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                           season={season}
                           week={week}
                           players={meEntry.players.map(p => ({
-                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr,
+                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr, teamId: (p as any).teamId ?? null,
                             points: p.earnedPoints, isPrev: p.slot === 'PREV',
                           }))}
                           cardBonus={meEntry.seasonCardBonus}
@@ -398,7 +400,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                           season={season}
                           week={currentWeekData.week}
                           players={entry.players.map(p => ({
-                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr,
+                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr, teamId: (p as any).teamId ?? null,
                             points: p.weekPoints,
                           }))}
                           cardBonus={entry.cardBonusPoints ?? 0}
@@ -448,7 +450,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                           season={season}
                           week={currentWeekData.week}
                           players={meEntry.players.map(p => ({
-                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr,
+                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr, teamId: (p as any).teamId ?? null,
                             points: p.weekPoints,
                           }))}
                           cardBonus={meEntry.cardBonusPoints ?? 0}
