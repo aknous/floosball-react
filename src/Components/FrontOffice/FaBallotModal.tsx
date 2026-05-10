@@ -281,7 +281,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
               lineHeight: 1.5,
             }}>
               <div style={{ marginBottom: '4px' }}>
-                Stacking your top picks at one position tells the team that's the bigger need.
+                The team works your list top-down. Once a position fills up, anyone else you ranked there gets skipped.
               </div>
               <div>
                 <span style={{ color: '#60a5fa', fontWeight: 700 }}>No ballot:</span>{' '}
