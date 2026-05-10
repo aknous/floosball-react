@@ -18,12 +18,28 @@ interface EquippedCardEntry {
   isMatch: boolean
 }
 
+// Subset of CardBreakdownEntry fields we render in this view.
+interface CardBreakdown {
+  edition: string
+  effectName?: string
+  displayName?: string
+  detail?: string
+  outputType?: string
+  primaryFP?: number
+  primaryMult?: number
+  primaryFloobits?: number
+  floobitsEarned?: number
+  matchMultiplied?: boolean
+  equation?: string
+}
+
 interface Props {
   userId: number
   season: number
   week: number
   players: ExpandedPlayer[]
   cardBonus: number
+  breakdowns?: CardBreakdown[]
   isMobile: boolean
 }
 
@@ -65,12 +81,30 @@ const playerPointsStyleFn = (mobile: boolean): React.CSSProperties => ({
   fontSize: mobile ? '11px' : '12px',
 })
 
-export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week, players, cardBonus, isMobile }) => {
+function formatBreakdownOutput(b: CardBreakdown): { str: string; color: string } | null {
+  const fp = b.primaryFP ?? 0
+  const mult = b.primaryMult ?? 1
+  const floobits = b.floobitsEarned ?? b.primaryFloobits ?? 0
+  if (mult > 1) return { str: `×${mult.toFixed(2)}`, color: TYPE_COLORS.multiplier }
+  if (fp > 0.05) return { str: `+${fp.toFixed(1)} FP`, color: TYPE_COLORS.flat_fp }
+  if (floobits > 0) return { str: `+${Math.round(floobits)}F`, color: TYPE_COLORS.floobits }
+  return null
+}
+
+export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week, players, cardBonus, breakdowns, isMobile }) => {
+  // Only fetch the public equipped-cards endpoint when no breakdowns were
+  // provided (e.g. an old historical week without saved breakdowns).
+  // Breakdowns include the runtime output values, which the static card
+  // payload doesn't.
   const cacheKey = `${userId}:${season}:${week}`
-  const [cards, setCards] = useState<EquippedCardEntry[] | null>(cardCache.get(cacheKey) ?? null)
+  const hasBreakdowns = (breakdowns?.length ?? 0) > 0
+  const [cards, setCards] = useState<EquippedCardEntry[] | null>(
+    hasBreakdowns ? null : (cardCache.get(cacheKey) ?? null),
+  )
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
+    if (hasBreakdowns) return
     if (cards != null) return
     let cancelled = false
     setLoading(true)
@@ -84,7 +118,7 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
       .catch(() => { if (!cancelled) setCards([]) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [cacheKey, cards, userId, season, week])
+  }, [cacheKey, cards, userId, season, week, hasBreakdowns])
 
   const sortedPlayers = [...players].filter(p => !p.isPrev).sort((a, b) => b.points - a.points)
   const prevPlayers = players.filter(p => p.isPrev)
@@ -118,56 +152,106 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
     </div>
   )
 
+  // Two render paths: prefer breakdowns (with output values); fall back to
+  // static equipped-cards when breakdowns aren't available.
+  const renderBreakdownRow = (b: CardBreakdown, key: number) => {
+    const edTag = EDITION_SHORT[b.edition] ?? b.edition
+    const edColor = EDITION_COLORS[b.edition] ?? '#94a3b8'
+    const effectColor = TYPE_COLORS[b.outputType ?? ''] ?? '#cbd5e1'
+    const effectLabel = b.displayName || b.effectName || ''
+    const output = formatBreakdownOutput(b)
+    return (
+      <div
+        key={key}
+        title={b.detail || ''}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          padding: '3px 0', fontSize: isMobile ? '11px' : '12px',
+        }}
+      >
+        <span style={{
+          color: edColor, fontWeight: '700',
+          fontSize: '10px', flexShrink: 0, minWidth: 32,
+        }}>
+          {edTag}
+        </span>
+        <span style={{
+          color: effectColor,
+          fontWeight: b.matchMultiplied ? '700' : '400',
+          minWidth: 0, flex: '1 1 0',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {effectLabel}
+        </span>
+        {output ? (
+          <span style={{
+            color: output.color, fontWeight: '700',
+            fontSize: isMobile ? '11px' : '12px', flexShrink: 0,
+            fontVariantNumeric: 'tabular-nums' as const,
+          }}>
+            {output.str}
+          </span>
+        ) : (
+          <span style={{
+            color: '#64748b', fontSize: '10px', flexShrink: 0,
+            fontVariantNumeric: 'tabular-nums' as const,
+          }}>
+            —
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  const renderCardRow = ({ card, isMatch }: EquippedCardEntry, key: number) => {
+    const edTag = EDITION_SHORT[card.edition] ?? card.edition
+    const edColor = EDITION_COLORS[card.edition] ?? '#94a3b8'
+    const effectColor = TYPE_COLORS[card.outputType ?? ''] ?? '#cbd5e1'
+    const effectLabel = card.displayName || card.effectName || ''
+    return (
+      <div
+        key={key}
+        title={card.detail || card.tooltip || ''}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '8px',
+          padding: '3px 0', fontSize: isMobile ? '11px' : '12px',
+        }}
+      >
+        <span style={{
+          color: edColor, fontWeight: '700',
+          fontSize: '10px', flexShrink: 0, minWidth: 32,
+        }}>
+          {edTag}
+        </span>
+        <span style={{
+          color: effectColor,
+          fontWeight: isMatch ? '700' : '400',
+          minWidth: 0, flex: '1 1 0',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>
+          {effectLabel}
+        </span>
+      </div>
+    )
+  }
+
   const sortedCards = cards ? [...cards].sort((a, b) => a.slotNumber - b.slotNumber) : []
+  const breakdownsToRender = breakdowns ?? []
 
   const cardsColumn = (
     <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
       <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
         Equipped Cards
       </div>
-      {loading && <div style={{ fontSize: '11px', color: '#64748b' }}>Loading…</div>}
-      {!loading && sortedCards.length === 0 && (
-        <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic' }}>None equipped</div>
-      )}
-      {!loading && sortedCards.map(({ card, isMatch }, i) => {
-        const edTag = EDITION_SHORT[card.edition] ?? card.edition
-        const edColor = EDITION_COLORS[card.edition] ?? '#94a3b8'
-        const effectColor = TYPE_COLORS[card.outputType ?? ''] ?? '#cbd5e1'
-        const effectLabel = card.displayName || card.effectName || ''
-        return (
-          <div
-            key={card.id ?? i}
-            title={card.detail || card.tooltip || ''}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '3px 0', fontSize: isMobile ? '11px' : '12px',
-            }}
-          >
-            <span style={{
-              color: edColor, fontWeight: '700',
-              fontSize: '10px', flexShrink: 0, minWidth: 32,
-            }}>
-              {edTag}
-            </span>
-            <span style={{
-              color: effectColor,
-              fontWeight: isMatch ? '700' : '400',
-              minWidth: 0, flex: '1 1 0',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {effectLabel}
-            </span>
-            {isMatch && (
-              <span style={{
-                color: '#60a5fa', fontSize: '9px', fontWeight: '700',
-                letterSpacing: '0.04em', flexShrink: 0,
-              }}>
-                MATCH
-              </span>
+      {hasBreakdowns
+        ? breakdownsToRender.map(renderBreakdownRow)
+        : <>
+            {loading && <div style={{ fontSize: '11px', color: '#64748b' }}>Loading…</div>}
+            {!loading && sortedCards.length === 0 && (
+              <div style={{ fontSize: '11px', color: '#64748b', fontStyle: 'italic' }}>None equipped</div>
             )}
-          </div>
-        )
-      })}
+            {!loading && sortedCards.map(renderCardRow)}
+          </>}
     </div>
   )
 

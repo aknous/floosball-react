@@ -36,6 +36,7 @@ interface WeeklyEntry {
   weekPoints: number
   cardBonusPoints: number
   players: WeeklyPlayer[]
+  cardBreakdowns?: any[]
 }
 
 interface WeekData {
@@ -97,6 +98,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
         teamAbbr: p.teamAbbr,
         weekPoints: p.weekFP ?? 0,
       })),
+      cardBreakdowns: e.cardBreakdowns,
     }))
     .sort((a, b) => b.weekPoints - a.weekPoints)
   liveWeekEntries.forEach((e, i) => { e.rank = i + 1 })
@@ -278,6 +280,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             points: p.earnedPoints, isPrev: p.slot === 'PREV',
                           }))}
                           cardBonus={entry.seasonCardBonus}
+                          breakdowns={entry.cardBreakdowns}
                           isMobile={isMobile}
                         />
                       )}
@@ -327,6 +330,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             points: p.earnedPoints, isPrev: p.slot === 'PREV',
                           }))}
                           cardBonus={meEntry.seasonCardBonus}
+                          breakdowns={meEntry.cardBreakdowns}
                           isMobile={isMobile}
                         />
                       )}
@@ -398,6 +402,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             points: p.weekPoints,
                           }))}
                           cardBonus={entry.cardBonusPoints ?? 0}
+                          breakdowns={entry.cardBreakdowns}
                           isMobile={isMobile}
                         />
                       )}
@@ -447,6 +452,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             points: p.weekPoints,
                           }))}
                           cardBonus={meEntry.cardBonusPoints ?? 0}
+                          breakdowns={meEntry.cardBreakdowns}
                           isMobile={isMobile}
                         />
                       )}
