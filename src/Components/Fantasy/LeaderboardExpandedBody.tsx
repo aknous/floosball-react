@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import axios from 'axios'
+import HoverTooltip from '@/Components/HoverTooltip'
 import type { CardData } from '@/Components/Cards/TradingCard'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -163,7 +164,6 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
     return (
       <div
         key={key}
-        title={b.detail || ''}
         style={{
           display: 'flex', alignItems: 'center', gap: '8px',
           padding: '3px 0', fontSize: isMobile ? '11px' : '12px',
@@ -181,7 +181,9 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
           minWidth: 0, flex: '1 1 0',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
-          {effectLabel}
+          <HoverTooltip text={b.detail || ''} color={effectColor}>
+            <span>{effectLabel}</span>
+          </HoverTooltip>
         </span>
         {output ? (
           <span style={{
@@ -211,7 +213,6 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
     return (
       <div
         key={key}
-        title={card.detail || card.tooltip || ''}
         style={{
           display: 'flex', alignItems: 'center', gap: '8px',
           padding: '3px 0', fontSize: isMobile ? '11px' : '12px',
@@ -229,7 +230,9 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
           minWidth: 0, flex: '1 1 0',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
-          {effectLabel}
+          <HoverTooltip text={card.detail || card.tooltip || ''} color={effectColor}>
+            <span>{effectLabel}</span>
+          </HoverTooltip>
         </span>
       </div>
     )
