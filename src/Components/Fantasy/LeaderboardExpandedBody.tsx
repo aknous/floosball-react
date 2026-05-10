@@ -139,7 +139,7 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
             key={card.id ?? i}
             title={card.detail || card.tooltip || ''}
             style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
+              display: 'flex', alignItems: 'center', gap: '8px',
               padding: '3px 0', fontSize: isMobile ? '11px' : '12px',
             }}
           >
@@ -150,15 +150,10 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
               {edTag}
             </span>
             <span style={{
-              color: '#f1f5f9', whiteSpace: 'nowrap',
-              overflow: 'hidden', textOverflow: 'ellipsis',
-              minWidth: 0, flex: '1 1 0',
-            }}>
-              {card.playerName}
-            </span>
-            <span style={{
-              color: effectColor, fontSize: '11px', flexShrink: 0,
+              color: effectColor,
               fontWeight: isMatch ? '700' : '400',
+              minWidth: 0, flex: '1 1 0',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
               {effectLabel}
             </span>
