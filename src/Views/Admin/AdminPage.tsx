@@ -64,7 +64,7 @@ interface AnalyticsData {
     earningsBreakdown: Record<string, number>; spendingBreakdown: Record<string, number>
     seasonEarnings: number; seasonSpending: number
     avgBalance?: number; medianBalance?: number
-    capHitRate?: number; capHitters?: number; capHitWeek?: number | null
+    avgWeeklyPayout?: number; maxWeeklyPayout?: number; weeklyPayoutRecipients?: number; lastPayoutWeek?: number | null
     richestUsers?: { username: string; balance: number }[]
   }
   cards: {
@@ -1312,11 +1312,11 @@ const AdminContent: React.FC<{
                     <div style={statValue}>{economy.medianBalance?.toLocaleString()}</div>
                   </div>
                   <div style={statBox}>
-                    <div style={statLabel}>FP Cap Hit Rate</div>
-                    <div style={statValue}>{economy.capHitRate ?? 0}%</div>
+                    <div style={statLabel}>Last Weekly Payout</div>
+                    <div style={statValue}>avg {economy.avgWeeklyPayout ?? 0}F</div>
                     <div style={smallStat}>
-                      {economy.capHitters ?? 0}/{economy.capHitRate != null ? Math.round((economy.capHitters ?? 0) / ((economy.capHitRate ?? 0) / 100 || 1)) : 0} users
-                      {economy.capHitWeek ? ` (wk ${economy.capHitWeek})` : ''}
+                      max {economy.maxWeeklyPayout ?? 0}F · {economy.weeklyPayoutRecipients ?? 0} users
+                      {economy.lastPayoutWeek ? ` (wk ${economy.lastPayoutWeek})` : ''}
                     </div>
                   </div>
                 </div>
