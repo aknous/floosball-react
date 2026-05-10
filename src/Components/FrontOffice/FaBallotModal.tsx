@@ -233,7 +233,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: '880px',
+          maxWidth: '1040px',
           height: '85vh',
           backgroundColor: '#0f172a',
           border: '1px solid #334155',
@@ -304,7 +304,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
         {/* Body */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '300px 1fr',
+          gridTemplateColumns: '1fr 1fr',
           flex: 1,
           overflow: 'hidden',
           minHeight: 0,
@@ -330,26 +330,26 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                   if (!player) return null
                   return (
                     <div key={id} style={{
-                      padding: '8px 10px',
+                      padding: '10px 12px',
                       borderRadius: '6px',
-                      marginBottom: '4px',
+                      marginBottom: '5px',
                       backgroundColor: '#1e293b',
                       border: '1px solid #334155',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: '8px',
                     }}>
                       <span style={{
-                        fontSize: '12px',
+                        fontSize: '14px',
                         fontWeight: '700',
                         color: idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#cd7f32' : '#64748b',
-                        minWidth: '20px',
+                        minWidth: '24px',
                       }}>
                         {idx + 1}.
                       </span>
                       <PositionChip position={player.position} />
-                      <Stars stars={calcStars(player.rating)} size={11} />
-                      <span style={{ fontSize: '12px', color: '#cbd5e1', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <Stars stars={calcStars(player.rating)} size={14} />
+                      <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {player.name}
                       </span>
                       <button
@@ -358,9 +358,9 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                         title="Move up"
                         style={{
                           background: 'none', border: 'none', fontFamily: 'inherit',
-                          color: idx === 0 ? '#334155' : '#94a3b8',
+                          color: idx === 0 ? '#334155' : '#cbd5e1',
                           cursor: idx === 0 ? 'not-allowed' : 'pointer',
-                          fontSize: '12px', padding: '0 4px',
+                          fontSize: '18px', padding: '2px 6px', lineHeight: 1,
                         }}
                       >
                         ↑
@@ -371,9 +371,9 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                         title="Move down"
                         style={{
                           background: 'none', border: 'none', fontFamily: 'inherit',
-                          color: idx === ranking.length - 1 ? '#334155' : '#94a3b8',
+                          color: idx === ranking.length - 1 ? '#334155' : '#cbd5e1',
                           cursor: idx === ranking.length - 1 ? 'not-allowed' : 'pointer',
-                          fontSize: '12px', padding: '0 4px',
+                          fontSize: '18px', padding: '2px 6px', lineHeight: 1,
                         }}
                       >
                         ↓
@@ -383,8 +383,8 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                         title="Remove"
                         style={{
                           background: 'none', border: 'none', fontFamily: 'inherit',
-                          color: '#64748b', cursor: 'pointer',
-                          fontSize: '14px', padding: '0 4px',
+                          color: '#94a3b8', cursor: 'pointer',
+                          fontSize: '18px', padding: '2px 6px', lineHeight: 1,
                         }}
                       >
                         &#215;
