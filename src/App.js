@@ -35,6 +35,7 @@ import { SeasonWebSocketProvider } from './contexts/SeasonWebSocketContext'
 import { GamesProvider } from './contexts/GamesContext'
 import { AchievementsProvider } from './contexts/AchievementsContext'
 import AchievementUnlockedToast from './Components/AchievementUnlockedToast'
+import FloobitsReceivedToast from './Components/FloobitsReceivedToast'
 import { ChakraProvider } from '@chakra-ui/react'
 
 function AppLayout() {
@@ -261,6 +262,7 @@ function App() {
                   <SidebarProvider>
                     <AuthGate />
                     <AchievementUnlockedToast />
+                    <FloobitsReceivedToast />
                   </SidebarProvider>
                 </AchievementsProvider>
               </GamesProvider>
