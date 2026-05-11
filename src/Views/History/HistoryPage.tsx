@@ -380,7 +380,20 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                 <span>{label}</span>
               </div>
               <div>
-                {entries.slice(0, 10).map((e, idx) => (
+                {(() => {
+                  // Tied players share a rank (golf-style). The next distinct
+                  // value skips ahead by however many tied players preceded.
+                  const top = entries.slice(0, 10)
+                  let prevValue: number | null = null
+                  let displayRank = 0
+                  const rows = top.map((e, idx) => {
+                    if (prevValue === null || e.value !== prevValue) {
+                      displayRank = idx + 1
+                    }
+                    prevValue = e.value
+                    return { e, idx, rank: displayRank }
+                  })
+                  return rows.map(({ e, idx, rank }) => (
                   <div
                     key={`${e.playerId}-${idx}`}
                     style={{
@@ -391,9 +404,9 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                   >
                     <span style={{
                       width: '18px', textAlign: 'right',
-                      fontWeight: 700, color: idx === 0 ? '#f59e0b' : '#64748b',
+                      fontWeight: 700, color: rank === 1 ? '#f59e0b' : '#64748b',
                     }}>
-                      {idx + 1}
+                      {rank}
                     </span>
                     <Link
                       to={`/players/${e.playerId}`}
@@ -418,7 +431,8 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                       </span>
                     )}
                   </div>
-                ))}
+                  ))
+                })()}
               </div>
             </div>
           )
