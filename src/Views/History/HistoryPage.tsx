@@ -28,6 +28,7 @@ interface StandingsTeam {
   pointsFor: number
   pointsAgainst: number
   winPct: number
+  elo: number | null
 }
 
 interface RecordEntry {
@@ -264,6 +265,7 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                   <th style={{ padding: '8px 10px', textAlign: 'right' }}>W</th>
                   <th style={{ padding: '8px 10px', textAlign: 'right' }}>L</th>
                   <th style={{ padding: '8px 10px', textAlign: 'right' }}>Pct</th>
+                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>ELO</th>
                 </tr>
               </thead>
               <tbody>
@@ -284,6 +286,9 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                     <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#e2e8f0', fontSize: '13px' }}>{t.wins}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#e2e8f0', fontSize: '13px' }}>{t.losses}</td>
                     <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#cbd5e1', fontSize: '13px' }}>{t.winPct.toFixed(3)}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: t.elo != null ? '#cbd5e1' : '#475569', fontSize: '13px' }}>
+                      {t.elo != null ? t.elo : '—'}
+                    </td>
                   </tr>
                 ))}
               </tbody>
