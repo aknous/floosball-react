@@ -242,6 +242,7 @@ const AchievementsPage: React.FC = () => {
         {pendingRewards.length > 0 && (
           <PendingRewardsSection
             rewards={pendingRewards}
+            achievements={achievements}
             currentSeason={currentSeason}
             onClaim={claimReward}
             onDefer={deferReward}
@@ -777,6 +778,7 @@ const RewardLabel: React.FC = () => (
 
 const PendingRewardsSection: React.FC<{
   rewards: PendingReward[]
+  achievements: Achievement[]
   currentSeason: number
   onClaim: (id: number) => Promise<{
     kind: string
@@ -796,7 +798,7 @@ const PendingRewardsSection: React.FC<{
     pendingId?: number
     cardsKept?: number
   }) => void
-}> = ({ rewards, currentSeason, onClaim, onDefer, onPackOpened }) => {
+}> = ({ rewards, achievements, currentSeason, onClaim, onDefer, onPackOpened }) => {
   const [busyId, setBusyId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -873,9 +875,12 @@ const PendingRewardsSection: React.FC<{
           // disabled even after the target season rolled over.
           const lockedByDefer = deferred && currentSeason > 0 && currentSeason < (r.deferUntilSeason as number)
           const label = r.kind === 'pack' ? packLabel(r.slug) : powerupLabel(r.slug)
-          const sourceText = r.source.startsWith('achievement:')
-            ? `Earned from ${r.source.replace('achievement:', '').replace(/_/g, ' ')}`
-            : r.source
+          const sourceText = (() => {
+            if (!r.source.startsWith('achievement:')) return r.source
+            const key = r.source.replace('achievement:', '')
+            const ach = achievements.find(a => a.key === key)
+            return `Earned from ${ach?.name ?? key.replace(/_/g, ' ')}`
+          })()
           return (
             <div key={r.id} style={{
               display: 'flex', alignItems: 'center', gap: '12px',
