@@ -243,7 +243,14 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
     if (!onConfirmSelection || selected.size !== (cardsKept || 0)) return
     setConfirming(true)
     try {
-      await onConfirmSelection(Array.from(selected).sort((a, b) => a - b))
+      // `selected` holds indices into the sorted-for-reveal view, but the
+      // backend's revealed_template_ids is in original draw order. Translate
+      // by object identity (sortedCards shares refs with cards) before sending.
+      const originalIndices = Array.from(selected)
+        .map(si => cards.indexOf(sortedCards[si]))
+        .filter(i => i >= 0)
+        .sort((a, b) => a - b)
+      await onConfirmSelection(originalIndices)
     } finally {
       setConfirming(false)
     }
