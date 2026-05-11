@@ -106,6 +106,7 @@ export default function FrontOfficePage() {
   const [loadingTeam, setLoadingTeam] = useState(true)
   const [contributeBusy, setContributeBusy] = useState(false)
   const [contributeFlash, setContributeFlash] = useState<string | null>(null)
+  const [customAmount, setCustomAmount] = useState<string>('')
   const [activeSection, setActiveSection] = useState<SectionId>('overview')
 
   // Retirement watch + prospects — fetched alongside team data so Overview
@@ -403,6 +404,57 @@ export default function FrontOfficePage() {
                   {amt}F
                 </button>
               ))}
+              {(() => {
+                const parsed = parseInt(customAmount, 10)
+                const validAmount = Number.isFinite(parsed) && parsed > 0
+                const canAfford = validAmount && (user.floobits ?? 0) >= parsed
+                const disabled = contributeBusy || !canAfford
+                return (
+                  <>
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="Custom"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !disabled) {
+                          contribute(parsed)
+                          setCustomAmount('')
+                        }
+                      }}
+                      style={{
+                        width: '80px',
+                        padding: '8px 10px',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        borderRadius: '4px',
+                        border: '1px solid #334155',
+                        backgroundColor: '#0f172a',
+                        color: '#e2e8f0',
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                    <button
+                      onClick={() => { contribute(parsed); setCustomAmount('') }}
+                      disabled={disabled}
+                      style={{
+                        padding: '8px 16px',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        borderRadius: '4px',
+                        border: `1px solid ${disabled ? '#1e293b' : tierColor}`,
+                        backgroundColor: disabled ? 'transparent' : `${tierColor}20`,
+                        color: disabled ? '#475569' : tierColor,
+                        cursor: disabled ? 'not-allowed' : 'pointer',
+                        opacity: disabled ? 0.5 : 1,
+                      }}
+                    >
+                      Contribute
+                    </button>
+                  </>
+                )
+              })()}
               <span style={{ fontSize: '14px', color: '#94a3b8' }}>Balance: {user.floobits ?? 0}F</span>
               {contributeFlash && (
                 <span style={{ fontSize: '14px', color: '#22c55e', marginLeft: '8px' }}>{contributeFlash}</span>

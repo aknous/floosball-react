@@ -18,6 +18,7 @@ export interface AuthUser {
   teamFundingPct: number
   isAdmin: boolean
   autoPickMode: 'off' | 'favorites' | 'underdogs' | 'random'
+  followedPlayerIds: number[]
 }
 
 export interface FantasyRosterPlayer {
@@ -55,12 +56,15 @@ interface AuthContextType {
   loading: boolean
   betaBlocked: boolean
   fantasyPlayerIds: Set<number>
+  followedPlayerIds: Set<number>
   fantasyRoster: FantasyRosterData | null
   logout: () => void
   setFavoriteTeam: (teamId: number) => Promise<void>
   refetchRoster: () => Promise<void>
   refetchUser: () => Promise<void>
   updateFloobits: (balance: number) => void
+  followPlayer: (playerId: number) => Promise<void>
+  unfollowPlayer: (playerId: number) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -164,6 +168,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAppUser(prev => prev ? { ...prev, floobits: balance } : prev)
   }, [])
 
+  const followedPlayerIds = React.useMemo(() => {
+    return new Set<number>(appUser?.followedPlayerIds ?? [])
+  }, [appUser?.followedPlayerIds])
+
+  const followPlayer = useCallback(async (playerId: number) => {
+    const tok = await getTokenRef.current()
+    if (!tok) return
+    const res = await fetch(`${API_BASE}/players/${playerId}/follow`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tok}` },
+    })
+    if (res.ok) {
+      setAppUser(prev => prev ? {
+        ...prev,
+        followedPlayerIds: prev.followedPlayerIds.includes(playerId)
+          ? prev.followedPlayerIds
+          : [...prev.followedPlayerIds, playerId],
+      } : prev)
+    }
+  }, [])
+
+  const unfollowPlayer = useCallback(async (playerId: number) => {
+    const tok = await getTokenRef.current()
+    if (!tok) return
+    const res = await fetch(`${API_BASE}/players/${playerId}/follow`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${tok}` },
+    })
+    if (res.ok) {
+      setAppUser(prev => prev ? {
+        ...prev,
+        followedPlayerIds: prev.followedPlayerIds.filter(id => id !== playerId),
+      } : prev)
+    }
+  }, [])
+
   const setFavoriteTeam = useCallback(async (teamId: number) => {
     const tok = await getToken()
     if (!tok) return
@@ -193,7 +233,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return (
     <AuthContext.Provider value={{
       user: appUser, getToken: getFreshToken, loading, betaBlocked, fantasyPlayerIds,
+      followedPlayerIds,
       fantasyRoster, logout, setFavoriteTeam, refetchRoster, refetchUser, updateFloobits,
+      followPlayer, unfollowPlayer,
     }}>
       {children}
     </AuthContext.Provider>

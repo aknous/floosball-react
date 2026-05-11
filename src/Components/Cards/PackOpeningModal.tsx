@@ -1,11 +1,23 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import ReactDOM from 'react-dom'
 import TradingCard, { CardData } from './TradingCard'
+import { useTemplateProjections, projectionPillStyle, TemplateProjection } from '@/hooks/useCardProjection'
 
 interface PackOpeningModalProps {
   packName: string
   cards: CardData[]
   onClose: () => void
+
+  // ── Selection mode (pack revamp) ──
+  // When pendingId is supplied, the modal switches into reveal-then-select
+  // mode: after the reveal animation, the user clicks N cards to keep
+  // (cardsKept) and the rest are discarded.  onConfirmSelection commits
+  // the choice via the API; the parent closes the modal afterwards.
+  // When pendingId is omitted (starter packs / legacy free grants), all
+  // revealed cards are kept and the modal behaves as before.
+  pendingId?: number
+  cardsKept?: number
+  onConfirmSelection?: (keptIndices: number[]) => Promise<void> | void
 }
 
 const EDITION_COLORS: Record<string, string> = {
@@ -147,19 +159,95 @@ const ScreenFlash: React.FC<{ active: boolean }> = ({ active }) => {
   )
 }
 
+// ─── Projection Pill (inline, kept self-contained for the modal) ──────────
+
+const ProjectionPillInline: React.FC<{ proj: TemplateProjection }> = ({ proj }) => {
+  const style = projectionPillStyle(proj)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+      <span
+        style={{
+          display: 'inline-flex', alignItems: 'center',
+          fontSize: '12px', fontWeight: 700,
+          color: style.color, backgroundColor: style.bg,
+          padding: '4px 10px', borderRadius: '5px',
+          border: `1px solid ${style.color}55`,
+          fontVariantNumeric: 'tabular-nums' as const,
+          whiteSpace: 'nowrap' as const,
+        }}
+      >
+        {style.label}
+      </span>
+      {style.ceiling && (
+        <span style={{
+          fontSize: '10px', color: style.color, opacity: 0.8,
+          fontVariantNumeric: 'tabular-nums' as const,
+          whiteSpace: 'nowrap' as const,
+        }}>
+          {style.ceiling}
+        </span>
+      )}
+    </div>
+  )
+}
+
+
 // ─── Main Modal ────────────────────────────────────────────────────────────
 
-const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ packName, cards, onClose }) => {
+const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
+  packName, cards, onClose,
+  pendingId, cardsKept, onConfirmSelection,
+}) => {
   const [revealedCount, setRevealedCount] = useState(0)
   const [allRevealed, setAllRevealed] = useState(false)
   const [glowStates, setGlowStates] = useState<Map<number, boolean>>(new Map())
   const [diamondFlash, setDiamondFlash] = useState(false)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [confirming, setConfirming] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout>>()
+
+  // Selection mode: pendingId set + cardsKept < cards.length means the user
+  // must pick which to keep before the modal closes.
+  const isSelectionMode =
+    pendingId != null && cardsKept != null && cardsKept < cards.length
+
+  // Fetch projections for every revealed card. Shown under each card
+  // whether the user is picking N of M (selection mode) or auto-keeping
+  // everything (starter / free packs) — projections are useful info
+  // either way, not just for comparison.
+  const templateIds = useMemo(
+    () => cards.map(c => c.templateId).filter(Boolean),
+    [cards],
+  )
+  const { byTemplateId: projByTemplateId } = useTemplateProjections(templateIds)
 
   // Sort cards: base first, diamond last (rarest revealed last for drama)
   const sortedCards = [...cards].sort(
     (a, b) => (EDITION_RANK[a.edition] ?? 0) - (EDITION_RANK[b.edition] ?? 0)
   )
+
+  const toggleSelect = (idx: number) => {
+    if (!isSelectionMode || !allRevealed || confirming) return
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(idx)) {
+        next.delete(idx)
+      } else if (next.size < (cardsKept || 0)) {
+        next.add(idx)
+      }
+      return next
+    })
+  }
+
+  const handleConfirm = async () => {
+    if (!onConfirmSelection || selected.size !== (cardsKept || 0)) return
+    setConfirming(true)
+    try {
+      await onConfirmSelection(Array.from(selected).sort((a, b) => a - b))
+    } finally {
+      setConfirming(false)
+    }
+  }
 
   const triggerGlow = useCallback((index: number) => {
     setGlowStates(prev => new Map(prev).set(index, true))
@@ -202,28 +290,55 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ packName, cards, on
     setAllRevealed(true)
   }
 
+  // Backdrop click behavior depends on mode:
+  //  - reveal animating: skip ahead to all-revealed
+  //  - selection mode: ignore (require Confirm)
+  //  - free/legacy mode: close
+  const handleBackdropClick = () => {
+    if (!allRevealed) {
+      revealAll()
+      return
+    }
+    if (isSelectionMode) return
+    onClose()
+  }
+
+  const keepCount = cardsKept || 0
+  const canConfirm = isSelectionMode && allRevealed && selected.size === keepCount && !confirming
+
   return ReactDOM.createPortal(
     <>
       <ScreenFlash active={diamondFlash} />
       <div
-        onClick={allRevealed ? onClose : revealAll}
+        onClick={handleBackdropClick}
         style={{
           position: 'fixed', inset: 0, zIndex: 9999,
           backgroundColor: 'rgba(0,0,0,0.85)',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'pressStart', cursor: 'pointer',
+          fontFamily: 'pressStart',
+          cursor: !allRevealed || (allRevealed && !isSelectionMode) ? 'pointer' : 'default',
         }}
       >
         {/* Prevent clicks on cards from closing */}
         <div onClick={e => e.stopPropagation()} style={{ cursor: 'default' }}>
-          {/* Pack name */}
+          {/* Pack name + (selection counter when applicable) */}
           <div style={{
             fontSize: '18px', fontWeight: '700', color: '#e2e8f0',
-            textAlign: 'center', marginBottom: '24px',
+            textAlign: 'center', marginBottom: isSelectionMode && allRevealed ? '8px' : '24px',
           }}>
             {packName}
           </div>
+          {isSelectionMode && allRevealed && (
+            <div style={{
+              fontSize: '12px', color: '#94a3b8', textAlign: 'center', marginBottom: '20px',
+            }}>
+              Pick {keepCount} of {cards.length} to keep ·{' '}
+              <span style={{ color: selected.size === keepCount ? '#22c55e' : '#eab308', fontWeight: 700 }}>
+                {selected.size}/{keepCount} selected
+              </span>
+            </div>
+          )}
 
           {/* Cards row */}
           <div style={{
@@ -235,17 +350,26 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ packName, cards, on
               const edition = card.edition
               const glow = EDITION_GLOW[edition] ?? EDITION_GLOW.base
               const isGlowing = glowStates.get(i) ?? false
+              const isSelected = selected.has(i)
+              const selectable = isSelectionMode && allRevealed
+              const canStillSelect = !isSelected && selected.size < keepCount
 
               return (
                 <div
-                  key={card.id}
+                  key={card.id ?? `card_${i}`}
                   style={{
                     position: 'relative',
-                    transition: 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s',
+                    transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s, filter 0.2s',
                     transform: isRevealed
-                      ? (isGlowing && edition !== 'base' ? 'scale(1.06)' : 'scale(1)')
+                      ? (isGlowing && edition !== 'base'
+                          ? 'scale(1.06)'
+                          : isSelected ? 'translateY(-8px) scale(1.02)' : 'scale(1)')
                       : 'rotateY(90deg) scale(0.8)',
-                    opacity: isRevealed ? 1 : 0,
+                    opacity: isRevealed
+                      ? (selectable && !isSelected && !canStillSelect ? 0.45 : 1)
+                      : 0,
+                    cursor: selectable ? (isSelected || canStillSelect ? 'pointer' : 'not-allowed') : 'default',
+                    filter: selectable && !isSelected && !canStillSelect ? 'grayscale(0.4)' : 'none',
                   }}
                 >
                   {/* Glow burst behind card */}
@@ -264,8 +388,47 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ packName, cards, on
                   {/* Particle burst */}
                   <ParticleBurst edition={edition} active={isGlowing} />
 
+                  {/* Selection ring */}
+                  {selectable && isSelected && (
+                    <div style={{
+                      position: 'absolute', inset: '-8px',
+                      borderRadius: '14px',
+                      border: '3px solid #22c55e',
+                      boxShadow: '0 0 20px rgba(34,197,94,0.5)',
+                      pointerEvents: 'none',
+                      zIndex: 2,
+                    }} />
+                  )}
+                  {selectable && isSelected && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '-12px', right: '-12px',
+                      width: 28, height: 28, borderRadius: '50%',
+                      backgroundColor: '#22c55e',
+                      color: '#0f172a',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '14px', fontWeight: 700,
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                      zIndex: 3,
+                    }}>
+                      ✓
+                    </div>
+                  )}
+
                   {isRevealed ? (
-                    <TradingCard card={card} size="md" />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                      <TradingCard
+                        card={card}
+                        size="md"
+                        // In selection mode, hijack the card's click to toggle
+                        // the keep selection. TradingCard otherwise flips on
+                        // click — we don't want both behaviors stacked.
+                        onClick={selectable ? () => toggleSelect(i) : undefined}
+                      />
+                      {projByTemplateId.get(card.templateId) && (
+                        <ProjectionPillInline proj={projByTemplateId.get(card.templateId)!} />
+                      )}
+                    </div>
                   ) : (
                     <div style={{
                       width: 180, height: 260, borderRadius: '10px',
@@ -281,7 +444,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ packName, cards, on
           </div>
 
           {/* Rarity summary */}
-          {allRevealed && (
+          {allRevealed && !isSelectionMode && (
             <div style={{
               marginTop: '20px', textAlign: 'center',
               display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap',
@@ -298,13 +461,41 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({ packName, cards, on
             </div>
           )}
 
-          {/* Dismiss hint */}
-          <div style={{
-            marginTop: '24px', fontSize: '11px', color: '#64748b',
-            textAlign: 'center',
-          }}>
-            {allRevealed ? 'Click anywhere to close' : 'Click to reveal all'}
-          </div>
+          {/* Bottom bar: confirm button (selection mode) or dismiss hint */}
+          {isSelectionMode && allRevealed ? (
+            <div style={{
+              marginTop: '28px', display: 'flex', justifyContent: 'center', gap: '12px',
+            }}>
+              <button
+                onClick={handleConfirm}
+                disabled={!canConfirm}
+                style={{
+                  padding: '10px 28px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: canConfirm ? '#22c55e' : '#1e293b',
+                  color: canConfirm ? '#0f172a' : '#64748b',
+                  fontSize: '13px', fontWeight: 700,
+                  cursor: canConfirm ? 'pointer' : 'not-allowed',
+                  fontFamily: 'pressStart',
+                  transition: 'background-color 0.15s, color 0.15s',
+                }}
+              >
+                {confirming
+                  ? 'Confirming...'
+                  : selected.size < keepCount
+                    ? `Pick ${keepCount - selected.size} more`
+                    : 'Confirm Selection'}
+              </button>
+            </div>
+          ) : (
+            <div style={{
+              marginTop: '24px', fontSize: '11px', color: '#64748b',
+              textAlign: 'center',
+            }}>
+              {allRevealed ? 'Click anywhere to close' : 'Click to reveal all'}
+            </div>
+          )}
         </div>
       </div>
     </>,

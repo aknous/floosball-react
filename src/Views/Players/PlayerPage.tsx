@@ -4,6 +4,7 @@ import { Stars, SwordIcon, ShieldIcon, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { GiLaurelsTrophy, GiStarMedal } from 'react-icons/gi'
 import { personalityAccent } from '@/utils/personality'
+import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -461,6 +462,9 @@ export default function PlayerPage() {
   const [statsView, setStatsView] = useState<'offense' | 'defense'>('offense')
   const [detailTab, setDetailTab] = useState<'attributes' | 'progression' | 'profile' | 'moments' | 'awards'>('attributes')
   const isMobile = useIsMobile()
+  const { user, followedPlayerIds, followPlayer, unfollowPlayer } = useAuth()
+  const playerId = id ? parseInt(id, 10) : null
+  const isFollowing = playerId != null && followedPlayerIds.has(playerId)
 
   useEffect(() => {
     if (!id) return
@@ -609,6 +613,27 @@ export default function PlayerPage() {
                   <span style={{ fontSize: '14px', color: '#64748b' }}>Free Agent</span>
                 )}
               </div>
+              {user && playerId != null && (
+                <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                  <button
+                    onClick={() => isFollowing ? unfollowPlayer(playerId) : followPlayer(playerId)}
+                    style={{
+                      fontSize: '11px', fontWeight: 700, letterSpacing: '0.04em',
+                      padding: '5px 12px', borderRadius: '5px',
+                      backgroundColor: isFollowing ? 'rgba(59,130,246,0.18)' : 'transparent',
+                      color: isFollowing ? '#60a5fa' : '#94a3b8',
+                      border: '1px solid ' + (isFollowing ? 'rgba(59,130,246,0.4)' : '#334155'),
+                      cursor: 'pointer', transition: 'all 0.15s',
+                      fontFamily: 'inherit',
+                    }}
+                    title={isFollowing
+                      ? "Unfollow — stop seeing this player's off-day lines in the highlight feed"
+                      : "Follow — show this player's off-day lines in the highlight feed"}
+                  >
+                    {isFollowing ? '★ Following' : '☆ Follow'}
+                  </button>
+                </div>
+              )}
               {att?.personality?.archetypeLabel && (
                 <div style={{ marginTop: '10px', fontSize: '12px', color: '#e2e8f0', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                   {att.personality.archetypeLabel}

@@ -11,6 +11,7 @@ export interface SnapshotPlayer {
   playerName: string
   position: string
   teamAbbr: string
+  teamId?: number | null
   earnedPoints: number
   weekFP: number
 }
@@ -289,6 +290,7 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
               playerName: p.playerName,
               position: p.position,
               teamAbbr: p.teamAbbr,
+              teamId: p.teamId ?? null,
               earnedPoints: p.earnedPoints ?? 0,
               weekFP: p.weekFP ?? 0,
             })),

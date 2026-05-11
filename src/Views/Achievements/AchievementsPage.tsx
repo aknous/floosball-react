@@ -6,6 +6,8 @@ import type { Achievement, PendingReward } from '@/types/achievements'
 import PackOpeningModal from '@/Components/Cards/PackOpeningModal'
 import type { CardData } from '@/Components/Cards/TradingCard'
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+
 type OnboardingAction =
   | { kind: 'route'; path: string; afterEvent?: string; afterScrollTo?: string }
   | { kind: 'event'; name: string }
@@ -169,9 +171,16 @@ const AchievementsPage: React.FC = () => {
     achievements, pendingRewards, currentSeason, currentWeek,
     loading, claimReward, deferReward,
   } = useAchievements()
-  const { user } = useAuth()
+  const { user, getToken } = useAuth()
   const navigate = useNavigate()
-  const [openedPack, setOpenedPack] = useState<{ packName: string; cards: CardData[] } | null>(null)
+  // Achievement-claimed packs go through the same reveal+select flow as
+  // purchased packs (pendingId set means user must pick which to keep).
+  const [openedPack, setOpenedPack] = useState<{
+    packName: string
+    cards: CardData[]
+    pendingId?: number
+    cardsKept?: number
+  } | null>(null)
 
   const runAction = (action: OnboardingAction) => {
     if (action.kind === 'event') {
@@ -233,6 +242,7 @@ const AchievementsPage: React.FC = () => {
         {pendingRewards.length > 0 && (
           <PendingRewardsSection
             rewards={pendingRewards}
+            achievements={achievements}
             currentSeason={currentSeason}
             onClaim={claimReward}
             onDefer={deferReward}
@@ -244,6 +254,28 @@ const AchievementsPage: React.FC = () => {
           <PackOpeningModal
             packName={openedPack.packName}
             cards={openedPack.cards}
+            pendingId={openedPack.pendingId}
+            cardsKept={openedPack.cardsKept}
+            onConfirmSelection={openedPack.pendingId ? async (keptIndices) => {
+              const tok = await getToken()
+              if (!tok) return
+              try {
+                const res = await fetch(`${API_BASE}/packs/select`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+                  body: JSON.stringify({ pendingId: openedPack.pendingId, keptIndices }),
+                })
+                if (!res.ok) {
+                  const err = await res.json().catch(() => ({ detail: 'Failed to confirm selection' }))
+                  alert(err.detail || 'Failed to confirm selection')
+                  return
+                }
+              } catch {
+                alert('Failed to confirm selection')
+                return
+              }
+              setOpenedPack(null)
+            } : undefined}
             onClose={() => setOpenedPack(null)}
           />
         )}
@@ -746,11 +778,27 @@ const RewardLabel: React.FC = () => (
 
 const PendingRewardsSection: React.FC<{
   rewards: PendingReward[]
+  achievements: Achievement[]
   currentSeason: number
-  onClaim: (id: number) => Promise<{ kind: string; packName?: string; cards?: any[] } | null>
+  onClaim: (id: number) => Promise<{
+    kind: string
+    packName?: string
+    // Legacy free-grant path (no longer used for achievements but supported for compat)
+    cards?: any[]
+    // Reveal+select flow (new): pendingId means user must select keeps
+    pendingId?: number
+    revealed?: any[]
+    cardsKept?: number
+    cardsPerPack?: number
+  } | null>
   onDefer: (id: number) => Promise<void>
-  onPackOpened: (pack: { packName: string; cards: CardData[] }) => void
-}> = ({ rewards, currentSeason, onClaim, onDefer, onPackOpened }) => {
+  onPackOpened: (pack: {
+    packName: string
+    cards: CardData[]
+    pendingId?: number
+    cardsKept?: number
+  }) => void
+}> = ({ rewards, achievements, currentSeason, onClaim, onDefer, onPackOpened }) => {
   const [busyId, setBusyId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -759,7 +807,19 @@ const PendingRewardsSection: React.FC<{
     setError(null)
     try {
       const result = await onClaim(r.id)
-      if (result && result.kind === 'pack' && result.cards && result.cards.length > 0) {
+      if (!result || result.kind !== 'pack') return
+      // Reveal+select shape (achievement-granted packs use this now)
+      if (result.pendingId && result.revealed && result.revealed.length > 0) {
+        onPackOpened({
+          packName: result.packName || packLabel(r.slug),
+          cards: result.revealed as CardData[],
+          pendingId: result.pendingId,
+          cardsKept: result.cardsKept,
+        })
+        return
+      }
+      // Legacy free-grant shape (compatibility)
+      if (result.cards && result.cards.length > 0) {
         onPackOpened({
           packName: result.packName || packLabel(r.slug),
           cards: result.cards as CardData[],
@@ -815,9 +875,12 @@ const PendingRewardsSection: React.FC<{
           // disabled even after the target season rolled over.
           const lockedByDefer = deferred && currentSeason > 0 && currentSeason < (r.deferUntilSeason as number)
           const label = r.kind === 'pack' ? packLabel(r.slug) : powerupLabel(r.slug)
-          const sourceText = r.source.startsWith('achievement:')
-            ? `Earned from ${r.source.replace('achievement:', '').replace(/_/g, ' ')}`
-            : r.source
+          const sourceText = (() => {
+            if (!r.source.startsWith('achievement:')) return r.source
+            const key = r.source.replace('achievement:', '')
+            const ach = achievements.find(a => a.key === key)
+            return `Earned from ${ach?.name ?? key.replace(/_/g, ' ')}`
+          })()
           return (
             <div key={r.id} style={{
               display: 'flex', alignItems: 'center', gap: '12px',

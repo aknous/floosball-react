@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import TradingCard, { CardData } from '../Cards/TradingCard'
 import PackOpeningModal from '../Cards/PackOpeningModal'
 import { useAuth } from '@/contexts/AuthContext'
+import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useTemplateProjections, projectionPillStyle, TemplateProjection } from '@/hooks/useCardProjection'
 import {
   GiCardDraw, GiCrownCoin, GiGemChain, GiCrystalShine,
   GiSwapBag, GiMagicSwirl, GiFlexibleStar, GiCardPlay, GiPerspectiveDiceSixFacesRandom,
@@ -19,10 +21,22 @@ interface PackType {
   displayName: string
   cost: number
   cardsPerPack: number
-  guaranteedRarity: string | null
+  cardsKept: number | null
   description: string
   dailyLimit: number | null
   remainingToday: number | null
+}
+
+interface StarterPack extends PackType {
+  claimedThisSeason: boolean
+}
+
+interface PendingReveal {
+  pendingId: number
+  packName: string
+  cardsPerPack: number
+  cardsKept: number | null
+  cards: CardData[]
 }
 
 interface FeaturedCard extends CardData {
@@ -60,15 +74,15 @@ const POWERUP_STYLES: Record<string, { accent: string }> = {
 }
 
 const PACK_COLORS: Record<string, { border: string; bg: string; accent: string }> = {
+  starter: { border: '#22c55e', bg: 'linear-gradient(135deg, #14532d 0%, #166534 100%)', accent: '#86efac' },
   humble: { border: '#475569', bg: '#1e293b', accent: '#94a3b8' },
-  proper: { border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%)', accent: '#c4b5fd' },
   grand: { border: '#db2777', bg: 'linear-gradient(135deg, #2e1065 0%, #701a3e 100%)', accent: '#f472b6' },
   exquisite: { border: '#a5f3fc', bg: 'linear-gradient(135deg, #0c4a6e 0%, #155e75 50%, #164e63 100%)', accent: '#67e8f9' },
 }
 
 const PACK_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
+  starter: GiCardDraw,
   humble: GiCardDraw,
-  proper: GiCrownCoin,
   grand: GiGemChain,
   exquisite: GiCrystalShine,
 }
@@ -82,20 +96,63 @@ const POWERUP_ICONS: Record<string, React.ComponentType<{ size?: number; color?:
   income_boost: GiCrownCoin,
 }
 
+// ─── Projection pill for shop cards (compact, sm-card-friendly) ─────────
+
+const ShopProjectionPill: React.FC<{ proj: TemplateProjection }> = ({ proj }) => {
+  const style = projectionPillStyle(proj)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+      <span
+        style={{
+          display: 'inline-flex', alignItems: 'center',
+          fontSize: '10px', fontWeight: 700,
+          color: style.color, backgroundColor: style.bg,
+          padding: '2px 8px', borderRadius: '4px',
+          border: `1px solid ${style.color}55`,
+          fontVariantNumeric: 'tabular-nums' as const,
+          whiteSpace: 'nowrap' as const,
+        }}
+      >
+        {style.label}
+      </span>
+      {style.ceiling && (
+        <span style={{
+          fontSize: '9px', color: style.color, opacity: 0.8,
+          fontVariantNumeric: 'tabular-nums' as const,
+          whiteSpace: 'nowrap' as const,
+        }}>
+          {style.ceiling}
+        </span>
+      )}
+    </div>
+  )
+}
+
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
   const { user, getToken, updateFloobits, refetchRoster } = useAuth()
+  const { seasonState } = useFloosball()
   const isMobile = useIsMobile()
   const contentRef = useRef<HTMLDivElement>(null)
 
   const [packs, setPacks] = useState<PackType[]>([])
+  const [starter, setStarter] = useState<StarterPack | null>(null)
   const [featured, setFeatured] = useState<FeaturedCard[]>([])
+
+  // Project featured-card weekly output against the current user's roster
+  // so the shop pill shows expected FP/FPx/Floobits before the user buys.
+  const featuredTemplateIds = useMemo(() => featured.map(f => f.templateId), [featured])
+  const { byTemplateId: featuredProjections } = useTemplateProjections(featuredTemplateIds)
   const [powerups, setPowerups] = useState<PowerupItem[]>([])
   const [balance, setBalance] = useState(user?.floobits ?? 0)
   const [loading, setLoading] = useState(true)
   const [buying, setBuying] = useState<string | null>(null)
+  // openedCards used for starter / legacy free-grant packs (no selection)
   const [openedCards, setOpenedCards] = useState<{ packName: string; cards: CardData[] } | null>(null)
+  // pendingReveal used for the new reveal+select flow on purchases
+  const [pendingReveal, setPendingReveal] = useState<PendingReveal | null>(null)
 
   const [rerollCost, setRerollCost] = useState<number>(10)
   const [rerolling, setRerolling] = useState(false)
@@ -113,7 +170,9 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       if (tok) headers.Authorization = `Bearer ${tok}`
 
       const [packsRes, featuredRes, balRes, powerupRes, rerollRes] = await Promise.all([
-        fetch(`${API_BASE}/packs/types`),
+        // /packs/types is user-specific (starter.claimedThisSeason +
+        // per-pack remainingToday counters) — must pass the token.
+        fetch(`${API_BASE}/packs/types`, { headers }),
         tok ? fetch(`${API_BASE}/shop/featured`, { headers }) : Promise.resolve(null),
         tok ? fetch(`${API_BASE}/currency/balance`, { headers }) : Promise.resolve(null),
         tok ? fetch(`${API_BASE}/shop/powerups`, { headers }) : Promise.resolve(null),
@@ -123,6 +182,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       if (packsRes.ok) {
         const j = await packsRes.json()
         setPacks(j.data?.packs ?? [])
+        setStarter(j.data?.starter ?? null)
         if (j.data?.shopOpen !== undefined) setShopOpen(j.data.shopOpen)
       }
       if (featuredRes?.ok) {
@@ -154,6 +214,15 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       fetchAll()
     }
   }, [isOpen, fetchAll])
+
+  // Re-fetch silently whenever the in-game week ticks while the modal is
+  // open. In fast / non-scheduled timing modes, weeks advance rapidly —
+  // without this, the rotation, daily limits, and starter-claim status
+  // stay stale (e.g. shop says "day 1" even when the sim is at week 15).
+  useEffect(() => {
+    if (isOpen && !loading) fetchAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seasonState.currentWeek])
 
   // Close on escape
   useEffect(() => {
@@ -208,7 +277,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
     if (!tok) return
     setBuying(`pack_${packTypeId}`)
     try {
-      const res = await fetch(`${API_BASE}/packs/open`, {
+      const res = await fetch(`${API_BASE}/packs/reveal`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
         body: JSON.stringify({ packTypeId }),
@@ -220,25 +289,75 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       }
       const json = await res.json()
       const data = json.data ?? json
-      setOpenedCards({ packName: data.packName, cards: data.cards })
-      // Refresh balance and pack remaining counts
-      const authHeaders = { Authorization: `Bearer ${tok}` }
-      const [balRes, packsRefresh] = await Promise.all([
-        fetch(`${API_BASE}/currency/balance`, { headers: authHeaders }),
-        fetch(`${API_BASE}/packs/types`, { headers: authHeaders }),
-      ])
+      setPendingReveal({
+        pendingId: data.pendingId,
+        packName: data.packName,
+        cardsPerPack: data.cardsPerPack,
+        cardsKept: data.cardsKept ?? null,
+        cards: data.revealed ?? [],
+      })
+      // Balance was debited by /reveal — update immediately so the user sees
+      // the cost reflected during the selection step.
+      const balRes = await fetch(`${API_BASE}/currency/balance`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      })
       if (balRes.ok) {
         const bj = await balRes.json()
         const bal = bj.data?.balance ?? 0
         setBalance(bal)
         updateFloobits(bal)
       }
-      if (packsRefresh.ok) {
-        const pj = await packsRefresh.json()
-        setPacks(pj.data?.packs ?? [])
-      }
     } catch {
       alert('Failed to open pack')
+    } finally {
+      setBuying(null)
+    }
+  }
+
+  const handleConfirmSelection = useCallback(async (keptIndices: number[]) => {
+    if (!pendingReveal) return
+    const tok = await getToken()
+    if (!tok) return
+    try {
+      const res = await fetch(`${API_BASE}/packs/select`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+        body: JSON.stringify({ pendingId: pendingReveal.pendingId, keptIndices }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Failed to confirm selection' }))
+        alert(err.detail || 'Failed to confirm selection')
+        return
+      }
+      // Selection confirmed — refresh shop state (rotation, daily limit, balance)
+      setPendingReveal(null)
+      fetchAll()
+    } catch {
+      alert('Failed to confirm selection')
+    }
+  }, [pendingReveal, getToken, fetchAll])
+
+  const handleClaimStarter = async () => {
+    const tok = await getToken()
+    if (!tok) return
+    setBuying('starter')
+    try {
+      const res = await fetch(`${API_BASE}/packs/starter`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tok}` },
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Failed to claim starter pack' }))
+        alert(err.detail || 'Failed to claim starter pack')
+        return
+      }
+      const json = await res.json()
+      const data = json.data ?? json
+      // Starter pack: no selection, immediate reveal of all 5 cards
+      setOpenedCards({ packName: data.packName, cards: data.cards })
+      fetchAll()
+    } catch {
+      alert('Failed to claim starter pack')
     } finally {
       setBuying(null)
     }
@@ -408,6 +527,9 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                 card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
                                 size="sm"
                               />
+                              {featuredProjections.get(card.templateId) && (
+                                <ShopProjectionPill proj={featuredProjections.get(card.templateId)!} />
+                              )}
                               <button
                                 onClick={() => handleBuyCard(card.templateId)}
                                 disabled={!canAfford || isBuying3 || !user || !shopOpen}
@@ -457,10 +579,12 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                 </div>
               )}
 
-              {/* ── Card Packs ── */}
+              {/* ── Daily Card Packs (rotation by shop day) ── */}
+              {/* Starter pack is interleaved into the same grid when unclaimed
+                  this season — it disappears the moment the user claims it. */}
               <div style={{ marginBottom: '28px' }}>
                 <SectionHeader
-                  title="Card Packs"
+                  title="Daily Packs"
                   collapsed={!!collapsed.packs}
                   onToggle={() => toggleSection('packs')}
                 />
@@ -471,6 +595,51 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                     flexWrap: 'wrap',
                     justifyContent: 'center',
                   }}>
+                    {/* Unclaimed starter renders inline as a free tile */}
+                    {starter && !starter.claimedThisSeason && (() => {
+                      const colors = PACK_COLORS.starter
+                      const isBuying2 = buying === 'starter'
+                      const canBuy = !isBuying2 && !!user && shopOpen
+                      return (
+                        <div key="starter" style={{
+                          width: isMobile ? '100%' : '195px',
+                          borderRadius: '8px',
+                          background: colors.bg,
+                          borderBottom: `2px solid ${colors.border}`,
+                          padding: '14px',
+                          display: 'flex', flexDirection: 'column', gap: '8px',
+                        }}>
+                          <div style={{ fontSize: '14px', fontWeight: '700', color: colors.accent, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <GiCardDraw size={28} color={colors.accent} />
+                            {starter.displayName}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5, flex: 1 }}>
+                            {starter.description}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                            5 cards · once per season
+                          </div>
+                          <button
+                            onClick={handleClaimStarter}
+                            disabled={!canBuy}
+                            style={{
+                              width: '100%', padding: '8px',
+                              borderRadius: '5px',
+                              border: 'none',
+                              backgroundColor: canBuy ? `${colors.accent}20` : 'rgba(51,65,85,0.3)',
+                              color: canBuy ? colors.accent : '#94a3b8',
+                              fontSize: '12px', fontWeight: '700',
+                              cursor: canBuy ? 'pointer' : 'not-allowed',
+                              fontFamily: 'pressStart',
+                              opacity: isBuying2 ? 0.6 : 1,
+                              transition: 'opacity 0.15s',
+                            }}
+                          >
+                            {isBuying2 ? 'Claiming...' : 'Free'}
+                          </button>
+                        </div>
+                      )
+                    })()}
                     {packs.map(pack => {
                       const colors = PACK_COLORS[pack.name] || PACK_COLORS.humble
                       const canAfford = balance >= pack.cost
@@ -495,9 +664,9 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             {pack.description}
                           </div>
                           <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                            {pack.cardsPerPack} cards
-                            {pack.guaranteedRarity && (
-                              <span style={{ color: colors.accent }}> &middot; 1+ {pack.guaranteedRarity}</span>
+                            Reveal {pack.cardsPerPack}
+                            {pack.cardsKept != null && pack.cardsKept < pack.cardsPerPack && (
+                              <span> · keep {pack.cardsKept}</span>
                             )}
                           </div>
                           {pack.dailyLimit != null && (
@@ -628,7 +797,21 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
           )}
         </div>
 
-        {/* Pack opening modal */}
+        {/* Pending reveal: reveal animation → user picks which to keep */}
+        {pendingReveal && (
+          <PackOpeningModal
+            packName={pendingReveal.packName}
+            cards={pendingReveal.cards}
+            pendingId={pendingReveal.pendingId}
+            cardsKept={pendingReveal.cardsKept ?? undefined}
+            onConfirmSelection={async (keptIndices) => {
+              await handleConfirmSelection(keptIndices)
+            }}
+            onClose={() => { setPendingReveal(null); fetchAll() }}
+          />
+        )}
+
+        {/* Free-grant modal (starter pack, etc) — no selection */}
         {openedCards && (
           <PackOpeningModal
             packName={openedCards.packName}

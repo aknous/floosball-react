@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -64,7 +64,7 @@ interface AnalyticsData {
     earningsBreakdown: Record<string, number>; spendingBreakdown: Record<string, number>
     seasonEarnings: number; seasonSpending: number
     avgBalance?: number; medianBalance?: number
-    capHitRate?: number; capHitters?: number; capHitWeek?: number | null
+    avgWeeklyPayout?: number; maxWeeklyPayout?: number; weeklyPayoutRecipients?: number; lastPayoutWeek?: number | null
     richestUsers?: { username: string; balance: number }[]
   }
   cards: {
@@ -302,10 +302,21 @@ const CATEGORY_FOR_POSITION: Record<string, string> = {
   QB: 'multiplier', RB: 'floobits', WR: 'flat_fp', TE: 'conditional', K: 'streak',
 }
 
-const AdminContent: React.FC<{ password: string | null; token: string | null }> = ({ password, token }) => {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (token) headers['Authorization'] = `Bearer ${token}`
-  if (password) headers['X-Admin-Password'] = password
+const AdminContent: React.FC<{
+  password: string | null
+  getToken: (() => Promise<string | null>) | null
+}> = ({ password, getToken }) => {
+  const buildHeaders = useCallback(async (): Promise<Record<string, string>> => {
+    const h: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (getToken) {
+      try {
+        const t = await getToken()
+        if (t) h['Authorization'] = `Bearer ${t}`
+      } catch { /* fall through */ }
+    }
+    if (password) h['X-Admin-Password'] = password
+    return h
+  }, [getToken, password])
 
   // Access mode toggle (request vs waitlist)
   const [accessMode, setAccessMode] = useState<'request' | 'waitlist'>('request')
@@ -313,7 +324,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
 
   const fetchAccessMode = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/admin/beta/access-mode`, { headers })
+      const res = await fetch(`${API_BASE}/admin/beta/access-mode`, { headers: await buildHeaders() })
       if (res.ok) {
         const data = await res.json()
         setAccessMode(data.mode || 'request')
@@ -328,7 +339,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setAccessModeLoading(true)
     try {
       const res = await fetch(`${API_BASE}/admin/beta/access-mode`, {
-        method: 'POST', headers, body: JSON.stringify({ mode: newMode }),
+        method: 'POST', headers: await buildHeaders(), body: JSON.stringify({ mode: newMode }),
       })
       if (res.ok) setAccessMode(newMode)
     } catch { /* silent */ }
@@ -343,7 +354,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
   const fetchRequests = useCallback(async () => {
     setRequestsLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/admin/beta/requests`, { headers })
+      const res = await fetch(`${API_BASE}/admin/beta/requests`, { headers: await buildHeaders() })
       if (res.ok) {
         const data = await res.json()
         setBetaRequests(data.requests || [])
@@ -358,7 +369,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setActioningId(id)
     try {
       const res = await fetch(`${API_BASE}/admin/beta/requests/${id}/approve`, {
-        method: 'POST', headers,
+        method: 'POST', headers: await buildHeaders(),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
       setBetaRequests(prev => prev.filter(r => r.id !== id))
@@ -372,7 +383,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setActioningId(id)
     try {
       const res = await fetch(`${API_BASE}/admin/beta/requests/${id}/deny`, {
-        method: 'POST', headers,
+        method: 'POST', headers: await buildHeaders(),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
       setBetaRequests(prev => prev.filter(r => r.id !== id))
@@ -390,7 +401,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
   const fetchAllowlist = useCallback(async () => {
     setAllowlistLoading(true)
     try {
-      const res = await fetch(`${API_BASE}/admin/beta/allowlist`, { headers })
+      const res = await fetch(`${API_BASE}/admin/beta/allowlist`, { headers: await buildHeaders() })
       if (res.ok) {
         const data = await res.json()
         setAllowlist(data.emails || [])
@@ -408,7 +419,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setAllowlistSuccess(null)
     try {
       const res = await fetch(`${API_BASE}/admin/beta/allowlist`, {
-        method: 'POST', headers, body: JSON.stringify({ emails }),
+        method: 'POST', headers: await buildHeaders(), body: JSON.stringify({ emails }),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
       const data = await res.json()
@@ -426,7 +437,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setAllowlistSuccess(null)
     try {
       const res = await fetch(`${API_BASE}/admin/beta/allowlist/${encodeURIComponent(email)}`, {
-        method: 'DELETE', headers,
+        method: 'DELETE', headers: await buildHeaders(),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
       setAllowlist(prev => prev.filter(e => e.email !== email))
@@ -449,7 +460,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setNamesResult(null)
     try {
       const res = await fetch(`${API_BASE}/admin/names`, {
-        method: 'POST', headers, body: JSON.stringify({ names }),
+        method: 'POST', headers: await buildHeaders(), body: JSON.stringify({ names }),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
       setNamesResult(await res.json())
@@ -500,7 +511,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
       if (filter && filter !== 'all') params.set('filter', filter)
       const qs = params.toString()
       const res = await fetch(`${API_BASE}/admin/users${qs ? `?${qs}` : ''}`, {
-        headers,
+        headers: await buildHeaders(),
       })
       if (res.ok) {
         const data = await res.json()
@@ -522,7 +533,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setTogglingAdminId(userId)
     try {
       const res = await fetch(`${API_BASE}/admin/users/${userId}/toggle-admin`, {
-        method: 'POST', headers,
+        method: 'POST', headers: await buildHeaders(),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
       const data = await res.json()
@@ -542,7 +553,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setDeletingUserId(user.id)
     try {
       const res = await fetch(`${API_BASE}/admin/users/${user.id}`, {
-        method: 'DELETE', headers,
+        method: 'DELETE', headers: await buildHeaders(),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
       setAdminUsers(prev => prev.filter(u => u.id !== user.id))
@@ -557,7 +568,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setRerollingUserId(userId)
     try {
       const res = await fetch(`${API_BASE}/admin/users/${userId}/reroll-username`, {
-        method: 'POST', headers,
+        method: 'POST', headers: await buildHeaders(),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
       const data = await res.json()
@@ -577,7 +588,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setReminderResult(null)
     try {
       const res = await fetch(`${API_BASE}/admin/users/send-onboarding-reminders`, {
-        method: 'POST', headers,
+        method: 'POST', headers: await buildHeaders(),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
       const data = await res.json()
@@ -602,7 +613,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     const fetchOptions = async () => {
       try {
         const res = await fetch(`${API_BASE}/admin/card-options`, {
-          headers,
+          headers: await buildHeaders(),
         })
         if (res.ok) {
           const data = await res.json()
@@ -622,7 +633,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
       try {
         const res = await fetch(
           `${API_BASE}/admin/players/search?q=${encodeURIComponent(cardPlayerSearch)}`,
-          { headers },
+          { headers: await buildHeaders() },
         )
         if (res.ok) {
           const data = await res.json()
@@ -649,7 +660,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
       if (cardEffect) body.effectName = cardEffect
       if (cardClassification) body.classification = cardClassification
       const res = await fetch(`${API_BASE}/admin/grant-card`, {
-        method: 'POST', headers, body: JSON.stringify(body),
+        method: 'POST', headers: await buildHeaders(), body: JSON.stringify(body),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
       const data = await res.json()
@@ -670,7 +681,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setFloobitsResult(null)
     try {
       const res = await fetch(`${API_BASE}/admin/grant-floobits`, {
-        method: 'POST', headers,
+        method: 'POST', headers: await buildHeaders(),
         body: JSON.stringify({ email: floobitsUser.email, amount: floobitsAmount }),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
@@ -706,7 +717,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setCreateError(null)
     try {
       const res = await fetch(`${API_BASE}/admin/players`, {
-        method: 'POST', headers, body: JSON.stringify({ position, tier, count }),
+        method: 'POST', headers: await buildHeaders(), body: JSON.stringify({ position, tier, count }),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
       const data = await res.json()
@@ -753,7 +764,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setMonitorLoading(true)
     setMonitorError(null)
     try {
-      const res = await fetch(`${API_BASE}/admin/monitor`, { headers })
+      const res = await fetch(`${API_BASE}/admin/monitor`, { headers: await buildHeaders() })
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
       const json = await res.json()
       setMonitorData(json.data)
@@ -786,7 +797,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setAnalyticsLoading(true)
     setAnalyticsError(null)
     try {
-      const res = await fetch(`${API_BASE}/admin/analytics`, { headers })
+      const res = await fetch(`${API_BASE}/admin/analytics`, { headers: await buildHeaders() })
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
       const json = await res.json()
       setAnalyticsData(json.data)
@@ -810,7 +821,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     setAchLoading(true)
     setAchError(null)
     try {
-      const res = await fetch(`${API_BASE}/admin/achievements`, { headers })
+      const res = await fetch(`${API_BASE}/admin/achievements`, { headers: await buildHeaders() })
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
       const json = await res.json()
       setAchMetrics(json.data)
@@ -865,7 +876,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     try {
       const res = await fetch(`${API_BASE}/admin/app-settings`, {
         method: 'PUT',
-        headers,
+        headers: await buildHeaders(),
         body: JSON.stringify(settingsForm),
       })
       if (!res.ok) {
@@ -896,7 +907,7 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
     try {
       const res = await fetch(`${API_BASE}/admin/personality/reload`, {
         method: 'POST',
-        headers,
+        headers: await buildHeaders(),
       })
       if (!res.ok) {
         const detail = await res.text()
@@ -1301,11 +1312,11 @@ const AdminContent: React.FC<{ password: string | null; token: string | null }> 
                     <div style={statValue}>{economy.medianBalance?.toLocaleString()}</div>
                   </div>
                   <div style={statBox}>
-                    <div style={statLabel}>FP Cap Hit Rate</div>
-                    <div style={statValue}>{economy.capHitRate ?? 0}%</div>
+                    <div style={statLabel}>Last Weekly Payout</div>
+                    <div style={statValue}>avg {economy.avgWeeklyPayout ?? 0}F</div>
                     <div style={smallStat}>
-                      {economy.capHitters ?? 0}/{economy.capHitRate != null ? Math.round((economy.capHitters ?? 0) / ((economy.capHitRate ?? 0) / 100 || 1)) : 0} users
-                      {economy.capHitWeek ? ` (wk ${economy.capHitWeek})` : ''}
+                      max {economy.maxWeeklyPayout ?? 0}F · {economy.weeklyPayoutRecipients ?? 0} users
+                      {economy.lastPayoutWeek ? ` (wk ${economy.lastPayoutWeek})` : ''}
                     </div>
                   </div>
                 </div>
@@ -2416,27 +2427,17 @@ const AdminPage: React.FC = () => {
   const { user, getToken } = useAuth()
   const stored = sessionStorage.getItem(SESSION_KEY)
   const [password, setPassword] = useState<string | null>(stored)
-  const [token, setToken] = useState<string | null>(null)
-  const fetchedRef = useRef(false)
 
-  // If user is admin, fetch a token for API calls
-  useEffect(() => {
-    if (user?.isAdmin && !fetchedRef.current) {
-      fetchedRef.current = true
-      getToken().then(t => setToken(t))
-    }
-  }, [user?.isAdmin, getToken])
-
-  // Admin user with token: skip password gate
-  if (user?.isAdmin && token) {
-    return <AdminContent password={null} token={token} />
+  // Admin user: skip password gate, pass getToken so headers are built fresh per-request
+  if (user?.isAdmin) {
+    return <AdminContent password={null} getToken={getToken} />
   }
 
   // Fallback: password gate
   if (!password) {
     return <PasswordGate onAuth={setPassword} />
   }
-  return <AdminContent password={password} token={null} />
+  return <AdminContent password={password} getToken={null} />
 }
 
 export default AdminPage

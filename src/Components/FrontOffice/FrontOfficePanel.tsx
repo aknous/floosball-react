@@ -23,6 +23,29 @@ const perTypeCap = (voteType: string): number =>
 const GM_ACTIVE_WEEK = 22
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+const POS_CHIP_COLORS: Record<string, { bg: string; fg: string }> = {
+  QB: { bg: 'rgba(59,130,246,0.18)', fg: '#60a5fa' },
+  RB: { bg: 'rgba(34,197,94,0.18)', fg: '#4ade80' },
+  WR: { bg: 'rgba(245,158,11,0.18)', fg: '#fbbf24' },
+  TE: { bg: 'rgba(168,85,247,0.18)', fg: '#c084fc' },
+  K: { bg: 'rgba(148,163,184,0.18)', fg: '#cbd5e1' },
+}
+
+const PositionChip: React.FC<{ position: string }> = ({ position }) => {
+  const c = POS_CHIP_COLORS[position] || { bg: '#1e293b', fg: '#94a3b8' }
+  return (
+    <span style={{
+      fontSize: '10px', fontWeight: 700,
+      color: c.fg, backgroundColor: c.bg,
+      padding: '2px 6px', borderRadius: '4px',
+      letterSpacing: '0.04em',
+      minWidth: 28, textAlign: 'center' as const,
+    }}>
+      {position}
+    </span>
+  )
+}
+
 interface FrontOfficePanelProps {
   teamId: number
   teamAbbr: string
@@ -63,11 +86,12 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   const [faWindowEnd, setFaWindowEnd] = useState<number | null>(null)
   const [poolPreviewOpen, setPoolPreviewOpen] = useState(false)
   const [poolPositionFilter, setPoolPositionFilter] = useState<'ALL' | 'QB' | 'RB' | 'WR' | 'TE' | 'K'>('ALL')
-  // Per-position fan vote tallies for THIS team (keyed by position name).
+  // Flat fan vote tally for THIS team — single overall priority list.
   // Two sources: live (raw ballot tallies during voting window) and resolved
-  // (post-IRV rankings once the offseason ballot resolves).
-  const [teamFaVotes, setTeamFaVotes] = useState<Record<string, FanVoteEntry[]>>({})
-  const [liveBallotTally, setLiveBallotTally] = useState<Record<string, (FanVoteEntry & { votes: number; firstChoice: number })[]>>({})
+  // (post-IRV rankings once the offseason ballot resolves). Each entry
+  // carries its own position so the UI can render position chips.
+  const [teamFaVotes, setTeamFaVotes] = useState<FanVoteEntry[]>([])
+  const [liveBallotTally, setLiveBallotTally] = useState<(FanVoteEntry & { votes: number; firstChoice: number })[]>([])
   const [totalBallots, setTotalBallots] = useState<number>(0)
   const [fanVotesOpen, setFanVotesOpen] = useState(true)
   // Bumped whenever a WS event signals that the ballot state may have
@@ -139,7 +163,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
         if (!cancelled && scoutJson?.success && scoutJson.data) {
           setFaScoutingPlayers(scoutJson.data.players || [])
           setFaOpenSlots(scoutJson.data.openSlots || [])
-          setLiveBallotTally(scoutJson.data.ballotTally || {})
+          setLiveBallotTally(Array.isArray(scoutJson.data.ballotTally) ? scoutJson.data.ballotTally : [])
           setTotalBallots(scoutJson.data.totalBallots || 0)
         }
         const ofsJson = await ofsRes.json().catch(() => null)
@@ -147,8 +171,8 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           if (ofsJson.existingBallot) setExistingFaBallot(ofsJson.existingBallot)
           if (ofsJson.faWindowEnd) setFaWindowEnd(ofsJson.faWindowEnd * 1000)
           const results = ofsJson.faVoteResults?.[teamAbbr]
-          if (results) setTeamFaVotes(results)
-          else setTeamFaVotes({})
+          if (Array.isArray(results)) setTeamFaVotes(results)
+          else setTeamFaVotes([])
 
           // Team-wide rookie ballot tally (parallel to FA tallies)
           const rookieTally = ofsJson.rookieBallotResults?.[teamAbbr]
@@ -379,7 +403,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   // a record of decisions: GM votes, signings, rookies drafted, cuts.
   if (isOffseason) {
     const hasResults = gm.results && gm.results.results.length > 0
-    const hasResolvedTallies = Object.keys(teamFaVotes).length > 0
+    const hasResolvedTallies = teamFaVotes.length > 0
     const moves = offseasonMoves
     const movesEmpty =
       moves.coach.length === 0 &&
@@ -591,51 +615,41 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                 Free Agent Vote Tallies
               </span>
               <span style={{ fontSize: '12px', color: '#94a3b8' }}>
-                Resolved rankings for each open slot
+                Resolved overall priority — top of list goes first
               </span>
             </button>
             {fanVotesOpen && (
               <div style={{ padding: '4px 14px 14px' }}>
-                {Object.entries(teamFaVotes).map(([posName, ranked]) => (
-                  <div key={posName} style={{ marginTop: '10px' }}>
-                    <div style={{
-                      fontSize: '11px', fontWeight: 700, color: '#94a3b8',
-                      textTransform: 'uppercase' as const, letterSpacing: '0.06em',
-                      marginBottom: '6px',
+                {teamFaVotes.map((p, idx) => (
+                  <div key={`${p.id}-${idx}`} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '4px 0', fontSize: '13px',
+                    borderBottom: idx < teamFaVotes.length - 1 ? '1px solid #1e293b' : 'none',
+                  }}>
+                    <span style={{
+                      fontSize: '12px', fontWeight: 700,
+                      color: idx === 0 ? '#f59e0b' : '#94a3b8',
+                      minWidth: '22px',
                     }}>
-                      {posName}
-                    </div>
-                    {ranked.map((p, idx) => (
-                      <div key={`${p.id}-${idx}`} style={{
-                        display: 'flex', alignItems: 'center', gap: '8px',
-                        padding: '4px 0', fontSize: '13px',
-                        borderBottom: idx < ranked.length - 1 ? '1px solid #1e293b' : 'none',
-                      }}>
+                      {idx + 1}.
+                    </span>
+                    <PositionChip position={p.position} />
+                    <Stars stars={calcStars(p.rating)} size={11} />
+                    <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0' }}>
+                      <PlayerLink
+                        playerId={p.id}
+                        playerName={p.name}
+                        style={{ color: '#e2e8f0' }}
+                      />
+                      {p.isProspect && (
                         <span style={{
-                          fontSize: '12px', fontWeight: 700,
-                          color: idx === 0 ? '#f59e0b' : '#94a3b8',
-                          minWidth: '22px',
+                          fontSize: '10px', fontWeight: 700, color: '#f59e0b',
+                          letterSpacing: '0.04em',
                         }}>
-                          {idx + 1}.
+                          PROSPECT
                         </span>
-                        <Stars stars={calcStars(p.rating)} size={11} />
-                        <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0' }}>
-                          <PlayerLink
-                            playerId={p.id}
-                            playerName={p.name}
-                            style={{ color: '#e2e8f0' }}
-                          />
-                          {p.isProspect && (
-                            <span style={{
-                              fontSize: '10px', fontWeight: 700, color: '#f59e0b',
-                              letterSpacing: '0.04em',
-                            }}>
-                              PROSPECT
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                    ))}
+                      )}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -729,13 +743,16 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
         onPositionFilter={setPoolPositionFilter}
       />
 
-      {/* Fan Vote Tallies — live raw tallies during the voting window; once
-          the offseason ballot resolves, show the post-IRV rankings instead. */}
+      {/* Fan Vote Tallies — single overall priority list. Live during the
+          voting window; once the offseason ballot resolves, the post-IRV
+          ranking takes over. Position chip on every entry since the list
+          is no longer grouped by position. */}
       {(() => {
-        const resolved = Object.keys(teamFaVotes).length > 0
-        const live = Object.keys(liveBallotTally).length > 0
+        const resolved = teamFaVotes.length > 0
+        const live = liveBallotTally.length > 0
         if (!resolved && !live) return null
-        const data = resolved ? teamFaVotes : liveBallotTally
+        const data: Array<FanVoteEntry & { votes?: number; firstChoice?: number }> =
+          resolved ? teamFaVotes : liveBallotTally
         return (
           <div style={{ borderBottom: '1px solid #334155' }}>
             <button
@@ -756,65 +773,55 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
               </span>
               <span style={{ fontSize: '12px', color: '#94a3b8' }}>
                 {resolved
-                  ? 'Resolved rankings for each open slot'
+                  ? 'Resolved overall priority — top of list goes first'
                   : `Live tally — ${totalBallots} ballot${totalBallots === 1 ? '' : 's'} in so far`}
               </span>
             </button>
             {fanVotesOpen && (
               <div style={{ padding: '4px 14px 14px' }}>
-                {Object.entries(data).map(([posName, ranked]) => (
-                  <div key={posName} style={{ marginTop: '10px' }}>
-                    <div style={{
-                      fontSize: '11px', fontWeight: 700, color: '#94a3b8',
-                      textTransform: 'uppercase' as const, letterSpacing: '0.06em',
-                      marginBottom: '6px',
+                {data.map((p, idx) => {
+                  const votes = p.votes
+                  return (
+                    <div key={`${p.id}-${idx}`} style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '4px 0', fontSize: '13px',
+                      borderBottom: idx < data.length - 1 ? '1px solid #1e293b' : 'none',
                     }}>
-                      {posName}
-                    </div>
-                    {ranked.map((p, idx) => {
-                      const votes = (p as { votes?: number }).votes
-                      return (
-                        <div key={`${p.id}-${idx}`} style={{
-                          display: 'flex', alignItems: 'center', gap: '8px',
-                          padding: '4px 0', fontSize: '13px',
-                          borderBottom: idx < ranked.length - 1 ? '1px solid #1e293b' : 'none',
-                        }}>
+                      <span style={{
+                        fontSize: '12px', fontWeight: 700,
+                        color: idx === 0 ? '#f59e0b' : '#94a3b8',
+                        minWidth: '22px',
+                      }}>
+                        {idx + 1}.
+                      </span>
+                      <PositionChip position={p.position} />
+                      <Stars stars={calcStars(p.rating)} size={11} />
+                      <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0' }}>
+                        <PlayerLink
+                          playerId={p.id}
+                          playerName={p.name}
+                          style={{ color: '#e2e8f0' }}
+                        />
+                        {p.isProspect && (
                           <span style={{
-                            fontSize: '12px', fontWeight: 700,
-                            color: idx === 0 ? '#f59e0b' : '#94a3b8',
-                            minWidth: '22px',
+                            fontSize: '10px', fontWeight: 700, color: '#f59e0b',
+                            letterSpacing: '0.04em',
                           }}>
-                            {idx + 1}.
+                            PROSPECT
                           </span>
-                          <Stars stars={calcStars(p.rating)} size={11} />
-                          <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', color: '#e2e8f0' }}>
-                            <PlayerLink
-                              playerId={p.id}
-                              playerName={p.name}
-                              style={{ color: '#e2e8f0' }}
-                            />
-                            {p.isProspect && (
-                              <span style={{
-                                fontSize: '10px', fontWeight: 700, color: '#f59e0b',
-                                letterSpacing: '0.04em',
-                              }}>
-                                PROSPECT
-                              </span>
-                            )}
-                          </span>
-                          {!resolved && votes != null && (
-                            <span style={{
-                              fontSize: '12px', fontWeight: 700, color: '#60a5fa',
-                              fontVariantNumeric: 'tabular-nums',
-                            }}>
-                              {votes} vote{votes === 1 ? '' : 's'}
-                            </span>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                ))}
+                        )}
+                      </span>
+                      {!resolved && votes != null && (
+                        <span style={{
+                          fontSize: '12px', fontWeight: 700, color: '#60a5fa',
+                          fontVariantNumeric: 'tabular-nums',
+                        }}>
+                          {votes} vote{votes === 1 ? '' : 's'}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>

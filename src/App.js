@@ -9,6 +9,7 @@ import Team from './Views/Teams/TeamPage'
 import Player from './Views/Players/PlayerPage'
 import Stats from './Views/Stats/Stats'
 import Players from './Views/Players/PlayersPage'
+import HistoryPage from './Views/History/HistoryPage'
 import Results from './Views/Results/Results.js'
 import AdminPage from './Views/Admin/AdminPage'
 import FantasyPage from './Views/Fantasy/FantasyPage'
@@ -35,6 +36,7 @@ import { SeasonWebSocketProvider } from './contexts/SeasonWebSocketContext'
 import { GamesProvider } from './contexts/GamesContext'
 import { AchievementsProvider } from './contexts/AchievementsContext'
 import AchievementUnlockedToast from './Components/AchievementUnlockedToast'
+import FloobitsReceivedToast from './Components/FloobitsReceivedToast'
 import { ChakraProvider } from '@chakra-ui/react'
 
 function AppLayout() {
@@ -73,6 +75,7 @@ function AppLayout() {
           <Route exact path='/cards' element={<CardsPage />} />
           <Route exact path='/achievements' element={<AchievementsPage />} />
           <Route exact path='/front-office' element={<FrontOfficePage />} />
+          <Route exact path='/history' element={<HistoryPage />} />
           <Route exact path='/about' element={<AboutPage />} />
           <Route exact path='/admin' element={<AdminPage />} />
         </Routes>
@@ -261,6 +264,7 @@ function App() {
                   <SidebarProvider>
                     <AuthGate />
                     <AchievementUnlockedToast />
+                    <FloobitsReceivedToast />
                   </SidebarProvider>
                 </AchievementsProvider>
               </GamesProvider>

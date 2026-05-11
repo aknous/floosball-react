@@ -2,19 +2,21 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { Stars } from '@/Components/Stars'
+import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 const POSITIONS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'] as const
 type PositionFilter = typeof POSITIONS[number]
 
-type StatusFilter = 'active' | 'prospects' | 'fa' | 'retired' | 'hof'
+type StatusFilter = 'active' | 'prospects' | 'fa' | 'retired' | 'hof' | 'followed'
 const STATUS_TABS: { key: StatusFilter; label: string }[] = [
   { key: 'active',    label: 'Active' },
   { key: 'prospects', label: 'Prospects' },
   { key: 'fa',        label: 'Free Agents' },
   { key: 'retired',   label: 'Retired' },
   { key: 'hof',       label: 'Hall of Fame' },
+  { key: 'followed',  label: 'Followed' },
 ]
 
 interface CurrentStats {
@@ -111,6 +113,7 @@ const COLS: Record<PositionFilter, ColDef[]> = {
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function PlayersPage() {
+  const { getToken, followedPlayerIds } = useAuth()
   const [players, setPlayers]   = useState<PlayerListItem[]>([])
   const [status, setStatus]     = useState<StatusFilter>('active')
   const [position, setPosition] = useState<PositionFilter>('ALL')
@@ -120,14 +123,31 @@ export default function PlayersPage() {
 
   useEffect(() => {
     setLoading(true)
-    const params = new URLSearchParams({ status })
-    if (position !== 'ALL') params.set('position', position)
-    fetch(`${API_BASE}/players?${params}`)
-      .then(r => r.json())
-      .then(json => { if (json.success && json.data) setPlayers(json.data) })
-      .catch(err => console.error('Failed to fetch players:', err))
-      .finally(() => setLoading(false))
-  }, [status, position])
+    let cancelled = false
+    const run = async () => {
+      const params = new URLSearchParams({ status })
+      if (position !== 'ALL') params.set('position', position)
+      const headers: Record<string, string> = {}
+      if (status === 'followed') {
+        const tok = await getToken()
+        if (tok) headers.Authorization = `Bearer ${tok}`
+      }
+      try {
+        const r = await fetch(`${API_BASE}/players?${params}`, { headers })
+        const json = await r.json()
+        if (cancelled) return
+        if (json.success && json.data) setPlayers(json.data)
+      } catch (err) {
+        console.error('Failed to fetch players:', err)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+    // followedPlayerIds.size triggers a refetch when the user follows/unfollows
+    // while sitting on the Followed tab.
+  }, [status, position, getToken, followedPlayerIds.size])
 
   // Reset sort to fantasy points when position changes
   const handlePositionChange = (pos: PositionFilter) => {
