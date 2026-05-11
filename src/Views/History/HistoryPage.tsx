@@ -264,8 +264,7 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                   <th style={{ padding: '8px 10px', textAlign: 'right' }}>W</th>
                   <th style={{ padding: '8px 10px', textAlign: 'right' }}>L</th>
                   <th style={{ padding: '8px 10px', textAlign: 'right' }}>T</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>PF</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>PA</th>
+                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>Pct</th>
                 </tr>
               </thead>
               <tbody>
@@ -283,11 +282,10 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                         {t.teamName}
                       </Link>
                     </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{t.wins}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{t.losses}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: t.ties ? '#cbd5e1' : '#475569' }}>{t.ties}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{t.pointsFor}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#94a3b8' }}>{t.pointsAgainst}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#e2e8f0', fontSize: '13px' }}>{t.wins}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#e2e8f0', fontSize: '13px' }}>{t.losses}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: t.ties ? '#cbd5e1' : '#475569', fontSize: '13px' }}>{t.ties}</td>
+                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#cbd5e1', fontSize: '13px' }}>{t.winPct.toFixed(3)}</td>
                   </tr>
                 ))}
               </tbody>
