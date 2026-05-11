@@ -20,6 +20,7 @@ interface SeasonSummary {
 interface StandingsTeam {
   teamId: number
   teamName: string
+  teamCity?: string | null
   teamAbbr: string
   teamColor: string | null
   wins: number
@@ -280,7 +281,12 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                         }}
                       >
                         <img src={`/avatars/${t.teamId}.png`} alt="" style={{ width: 18, height: 18, borderRadius: '3px' }} />
-                        {t.teamName}
+                        {t.teamCity ? (
+                          <>
+                            <span style={{ color: '#94a3b8' }}>{t.teamCity}</span>{' '}
+                            <span>{t.teamName}</span>
+                          </>
+                        ) : t.teamName}
                       </Link>
                     </td>
                     <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#e2e8f0', fontSize: '13px' }}>{t.wins}</td>
