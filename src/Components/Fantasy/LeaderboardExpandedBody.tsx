@@ -40,7 +40,6 @@ interface Props {
   season: number
   week: number
   players: ExpandedPlayer[]
-  cardBonus: number
   breakdowns?: CardBreakdown[]
   isMobile: boolean
 }
@@ -100,7 +99,7 @@ function formatBreakdownOutput(b: CardBreakdown): { str: string; color: string }
   return null
 }
 
-export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week, players, cardBonus, breakdowns, isMobile }) => {
+export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week, players, breakdowns, isMobile }) => {
   // Only fetch the public equipped-cards endpoint when no breakdowns were
   // provided (e.g. an old historical week without saved breakdowns).
   // Breakdowns include the runtime output values, which the static card
@@ -152,14 +151,6 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
           <span style={{ ...playerPointsStyleFn(isMobile), color: '#64748b' }}>+{p.points.toFixed(0)}</span>
         </div>
       ))}
-      {cardBonus > 0 && (
-        <div style={playerRowStyleFn(isMobile)}>
-          <span style={{ ...slotStyleFn(isMobile), color: '#a78bfa' }}>CARD</span>
-          <span style={teamAvatarPlaceholderStyle} />
-          <span style={{ ...playerNameStyle, color: '#a78bfa' }}>Card Bonus</span>
-          <span style={{ ...playerPointsStyleFn(isMobile), color: '#a78bfa' }}>+{cardBonus.toFixed(0)}</span>
-        </div>
-      )}
     </div>
   )
 

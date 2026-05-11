@@ -281,7 +281,6 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr, teamId: (p as any).teamId ?? null,
                             points: p.earnedPoints, isPrev: p.slot === 'PREV',
                           }))}
-                          cardBonus={entry.seasonCardBonus}
                           breakdowns={entry.cardBreakdowns}
                           isMobile={isMobile}
                         />
@@ -331,7 +330,6 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr, teamId: (p as any).teamId ?? null,
                             points: p.earnedPoints, isPrev: p.slot === 'PREV',
                           }))}
-                          cardBonus={meEntry.seasonCardBonus}
                           breakdowns={meEntry.cardBreakdowns}
                           isMobile={isMobile}
                         />
@@ -403,7 +401,6 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr, teamId: (p as any).teamId ?? null,
                             points: p.weekPoints,
                           }))}
-                          cardBonus={entry.cardBonusPoints ?? 0}
                           breakdowns={entry.cardBreakdowns}
                           isMobile={isMobile}
                         />
@@ -453,7 +450,6 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr, teamId: (p as any).teamId ?? null,
                             points: p.weekPoints,
                           }))}
-                          cardBonus={meEntry.cardBonusPoints ?? 0}
                           breakdowns={meEntry.cardBreakdowns}
                           isMobile={isMobile}
                         />
