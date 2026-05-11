@@ -12,6 +12,57 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.14.0',
+    date: '2026-05-10',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Cards] Pack opening is now a reveal-and-pick flow. Humble shows 2 cards and you keep 1. Proper shows 3 and you keep 2. Grand and Exquisite both show 5 and you keep 3 (Exquisite has better drop rates). Achievement and starter pack rewards use the same flow.',
+          '[Cards] Shop runs a daily rotation in the Daily Packs section instead of always listing every tier. A free Starter Pack tile shows once per season for new users until claimed.',
+          '[UI/UX] New History page (sidebar > History). Tabs for Seasons (champion and MVP per year), Record Book (game, season, and career bests across the major stat categories), and Fantasy Records (best weekly and best season FP across all users).',
+          '[Cards] Three new prognostication-driven cards. Nose Picker rewards weeks where you submit picks manually instead of riding auto-picks, scaling with streak length. Medium scales output to your weekly pick accuracy. Parlay outputs FPx based on the prognostication points your picks earned that week.',
+          '[Front Office] Follow players. Tap the star on a player profile to follow them. A new Followed filter appears on the Players page, and the highlights feed surfaces off-day quotes from anyone you follow.',
+          '[Team Funding] Custom contribute amount on the Markets / Fund panel. Type any Floobit amount instead of using the preset buttons.',
+          '[Cards] Projected output pill on every card during pack reveal and on featured shop cards, based on the player you have rostered at that position.',
+          '[Fantasy] Equipped cards now appear inline when you expand a row on the fantasy leaderboard.',
+          '[Pick-em] AUTO badge next to users on the weekly leaderboard when every one of their picks was an auto-pick.',
+          '[UI/UX] Floobits-received toast. Passive grants (card payouts, team contributions, weekly conversions) now flash a brief on-screen toast in addition to updating your balance.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Fantasy] Weekly FP-to-Floobits conversion now uses a smooth growth curve instead of a flat 15% with a hard cap. Smaller weeks pay more proportionally. Big weeks still earn the most. The Endowment powerup uses a flatter curve for higher tops.',
+          '[Front Office] Free agency ballot is now a single overall priority list. Drag-rank every free agent you want; the team works your list top-down and skips anyone whose position has already filled.',
+          '[Cards] Exquisite packs now pick 3 cards (was 4). Grand and Exquisite differ only by drop rates.',
+          '[Cards] Juggernaut and Cornucopia rebalanced. Both still scale on streaks and touchdowns, but growth flattens at the high end so they no longer run away in extreme weeks.',
+          '[Cards] Rookie Hype now counts any player at the Rookie service tier, not only first-year players.',
+          '[Achievements] Tycoon (lifetime Floobits earned) is now a tiered family. Tiers I through IV unlock at 750, 2,500, 5,500, and 10,000 earned, mirroring Magnate. Reward pool bumped accordingly.',
+          '[Achievements] Pending rewards can now be deferred for powerups (was packs only) and during the offseason.',
+          '[Front Office] Coach pool expanded from 5 to 12 candidates for more variety in hire votes.',
+          '[Front Office] Coach hire help text now mentions that other teams hire from the same pool, so your top pick may sign elsewhere. Spread votes across backups.',
+          '[UI/UX] FA ballot modal: single drag-rank column, equal column widths, larger stars and arrows, fixed modal height regardless of how the position filter narrows the list.',
+          '[UI/UX] Highlight feed off-day filter. Only shows quotes from your favorite team, your fantasy roster, and players you follow. Cuts the league-wide chatter during long idle windows.',
+          '[UI/UX] Sidebar gains a History entry (book icon). Achievements icon refreshed to a trophy.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Cards] Card templates no longer generated for prospects, drafting-team players, or free agents. Pack draws, featured shop, and admin grants all filter them out.',
+          '[Cards] Medium and Parlay projected output no longer reads 0. Falls back to your historical pick accuracy and points when the current week has no data yet.',
+          '[Cards] Nose Picker lights up its streak as soon as your manual picks land, instead of waiting for game results.',
+          '[Cards] During active games, Medium and Parlay now show "waiting for results" instead of incorrectly reading "no submission this week".',
+          '[Cards] Sleeper no longer errors on certain projection and scoring paths.',
+          '[Achievements] Tycoon now displays its proper name in the pending-rewards panel (was showing the raw lowercase key).',
+          '[Fantasy] Fantasy leaderboard score breakdown drops the duplicate Card Bonus summary row. The per-card breakdown already covers it.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.13.6',
     date: '2026-05-06',
     changes: [],
