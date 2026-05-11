@@ -73,10 +73,15 @@ const getBadge = (play: any): { label: string; color: string } | null => {
   return null
 }
 
+// How often the personalized off-day endpoint is polled when no games are
+// live. Keep this above the per-quote duration to avoid stacking faster
+// than users read them.
+const OFF_DAY_POLL_MS = 60_000
+
 export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () => {} }) => {
   const { games } = useGames()
   const { event } = useSeasonWebSocket()
-  const { user, fantasyPlayerIds, followedPlayerIds } = useAuth()
+  const { user, fantasyPlayerIds, followedPlayerIds, getToken } = useAuth()
   const favoriteTeamId = user?.favoriteTeamId ?? null
   const [newsItems, setNewsItems] = useState<LeagueNewsHighlight[]>([])
   const [offDayItems, setOffDayItems] = useState<OffDayHighlight[]>([])
@@ -139,6 +144,58 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
       })
       .catch(() => {})
   }, [])
+
+  // Are any games currently live? If so, don't poll for off-day quotes —
+  // the highlights feed is already busy with real plays. Watch the games
+  // map so the poll pauses/resumes on game-window transitions.
+  const anyGameActive = useMemo(() => {
+    for (const game of games.values()) {
+      if (game.status === 'Active') return true
+    }
+    return false
+  }, [games])
+
+  // Poll the personalized /quotes/offday endpoint between rounds so the
+  // user sees a steady drip of quotes from players they actually care
+  // about (favorite team, fantasy roster, followed players). Replaces
+  // the global WS broadcast as the primary source.
+  useEffect(() => {
+    if (anyGameActive || !user) return
+    let cancelled = false
+    const tick = async () => {
+      try {
+        const tok = await getToken()
+        if (!tok || cancelled) return
+        const res = await fetch(`${API_BASE}/quotes/offday?count=1`, {
+          headers: { Authorization: `Bearer ${tok}` },
+        })
+        const j = await res.json()
+        if (cancelled) return
+        if (!j?.success || !Array.isArray(j.data) || j.data.length === 0) return
+        const pulled: OffDayHighlight[] = j.data.map((e: any, i: number) => ({
+          type: 'off_day' as const,
+          id: `offday-pull-${Date.now()}-${i}-${Math.random()}`,
+          sortKey: e.timestamp ? new Date(e.timestamp).getTime() : Date.now(),
+          playerId: e.playerId,
+          playerName: e.playerName,
+          teamId: e.teamId ?? null,
+          teamAbbr: e.teamAbbr ?? null,
+          personality: e.personality,
+          text: e.text,
+        }))
+        setOffDayItems(prev => [...pulled, ...prev].slice(0, 12))
+      } catch {
+        /* silent — flavor isn't worth alerting the user about */
+      }
+    }
+    // Fire once immediately on entering the idle window, then on interval.
+    tick()
+    const id = window.setInterval(tick, OFF_DAY_POLL_MS)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [anyGameActive, user, getToken])
 
   const highlights = useMemo<HighlightItem[]>(() => {
     const items: HighlightItem[] = []
