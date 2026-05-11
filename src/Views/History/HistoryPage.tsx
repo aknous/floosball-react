@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import AnalyticsView from './AnalyticsView'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type ViewMode = 'seasons' | 'records' | 'user-records' | 'analytics'
+type ViewMode = 'seasons' | 'records' | 'user-records'
 
 interface SeasonSummary {
   seasonNumber: number
@@ -72,7 +71,7 @@ const HistoryPage: React.FC = () => {
         backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px',
         width: 'fit-content',
       }}>
-        {(['seasons', 'records', 'user-records', 'analytics'] as ViewMode[]).map(m => (
+        {(['seasons', 'records', 'user-records'] as ViewMode[]).map(m => (
           <button
             key={m}
             onClick={() => setMode(m)}
@@ -86,8 +85,7 @@ const HistoryPage: React.FC = () => {
           >
             {m === 'seasons' ? 'Seasons'
               : m === 'records' ? 'Record Book'
-              : m === 'user-records' ? 'Fantasy Records'
-              : 'Analytics'}
+              : 'Fantasy Records'}
           </button>
         ))}
       </div>
@@ -95,7 +93,6 @@ const HistoryPage: React.FC = () => {
       {mode === 'seasons' && <SeasonsView isMobile={isMobile} />}
       {mode === 'records' && <RecordsView isMobile={isMobile} />}
       {mode === 'user-records' && <UserRecordsView isMobile={isMobile} />}
-      {mode === 'analytics' && <AnalyticsView isMobile={isMobile} />}
     </div>
   )
 }
