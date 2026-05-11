@@ -75,7 +75,7 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
         </span>
       </div>
       <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '8px' }}>
-        Should the grievance succeed, nominate a preferred replacement. Whoever has the most votes is hired.
+        Should the grievance succeed, nominate a preferred replacement. Whoever has the most votes is hired. Other teams hire from the same pool, so your top pick may sign elsewhere. Spread votes across backups so you're not stuck with the auto-pick.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {(() => {

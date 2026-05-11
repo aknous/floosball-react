@@ -158,6 +158,76 @@ export function projectionPillStyle(proj: CardProjection): PillStyle {
 }
 
 
+// ─── Template projections (not-yet-owned cards: pack reveals, shop) ───
+
+export interface TemplateProjection extends CardProjection {
+  templateId: number
+}
+
+interface UseTemplateProjectionsResult {
+  byTemplateId: Map<number, TemplateProjection>
+  loading: boolean
+  refetch: () => void
+}
+
+/**
+ * Fetches expected weekly output for a set of CardTemplates the user
+ * does not yet own (pack reveal-then-select flow, shop preview).
+ * Returns a Map<templateId, projection> for fast lookup. Calls the
+ * batch endpoint POST /api/cards/template-projection so N cards = 1
+ * request.
+ */
+export function useTemplateProjections(
+  templateIds: number[],
+): UseTemplateProjectionsResult {
+  const { getToken } = useAuth()
+  const [byTemplateId, setByTemplateId] = useState<Map<number, TemplateProjection>>(new Map())
+  const [loading, setLoading] = useState(false)
+  const [tick, setTick] = useState(0)
+
+  const refetch = useCallback(() => setTick(t => t + 1), [])
+  // Stable key so the effect doesn't refetch on identity-only changes
+  const key = templateIds.length === 0 ? '' : [...templateIds].sort((a, b) => a - b).join(',')
+
+  useEffect(() => {
+    let cancelled = false
+    if (!key) {
+      setByTemplateId(new Map())
+      setLoading(false)
+      return
+    }
+    const ids = key.split(',').map(s => parseInt(s, 10)).filter(n => !isNaN(n))
+    const load = async () => {
+      try {
+        setLoading(true)
+        const tok = await getToken()
+        if (!tok) { setLoading(false); return }
+        const res = await fetch(`${API_BASE}/cards/template-projection`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${tok}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ templateIds: ids }),
+        })
+        const json = await res.json().catch(() => null)
+        if (cancelled) return
+        if (json?.success && Array.isArray(json.data?.projections)) {
+          const map = new Map<number, TemplateProjection>()
+          for (const p of json.data.projections) {
+            if (p && typeof p.templateId === 'number') map.set(p.templateId, p)
+          }
+          setByTemplateId(map)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [getToken, key, tick])
+
+  return { byTemplateId, loading, refetch }
+}
+
+
 function formatOutput(proj: CardProjection): { primary: string; ceiling?: string } {
   if (proj.outputType === 'mult') {
     const m = proj.projectedMult > 0 ? proj.projectedMult : 1

@@ -47,8 +47,10 @@ interface ActivePowerup {
   expiring?: boolean
   overrideModifier?: string
   count?: number
-  boostedCap?: number
-  standardCap?: number
+  scale?: number
+  exponent?: number
+  boostedScale?: number
+  boostedExponent?: number
 }
 
 const BASE_SLOTS = [
@@ -1184,13 +1186,10 @@ export const FantasyRoster: React.FC = () => {
         )
       })()}
 
-      {/* Active Endowment (income_boost) indicator — raised weekly FP floobit cap */}
+      {/* Active Endowment (income_boost) indicator — flatter FP→F curve */}
       {(() => {
         const boostPU = activePowerups.find(p => p.slug === 'income_boost')
         if (!boostPU) return null
-        const capText = boostPU.boostedCap && boostPU.standardCap
-          ? ` · cap ${boostPU.standardCap}F \u2192 ${boostPU.boostedCap}F`
-          : ''
         return (
           <div style={{
             fontSize: isMobile ? '12px' : '13px', color: '#fbbf24', lineHeight: '1.5',
@@ -1200,7 +1199,7 @@ export const FantasyRoster: React.FC = () => {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             <span style={{ fontWeight: '700' }}>
-              Endowment Active<span style={{ color: '#eab308', fontWeight: 400, fontSize: '11px' }}>{capText}</span>
+              Endowment Active<span style={{ color: '#eab308', fontWeight: 400, fontSize: '11px' }}> · flatter F curve</span>
             </span>
             <span style={{
               fontSize: '10px',

@@ -57,6 +57,7 @@ export interface PickEmLeaderboardEntry {
   totalPoints: number
   accuracy: number
   clairvoyantWeeks?: number
+  allAuto?: boolean
 }
 
 export interface PickEmLeaderboardResponse {

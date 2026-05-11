@@ -77,8 +77,20 @@ const NAV_ITEMS = [
     label: 'Achievements',
     path: '/achievements',
     icon: (
+      // Trophy with cup + handles + base
       <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
-        <path d="M10 2a1 1 0 011 1v1h3a1 1 0 011 1v2a4 4 0 01-3.528 3.971A4.002 4.002 0 0111 14.874V16h2a1 1 0 110 2H7a1 1 0 110-2h2v-1.126A4.002 4.002 0 015.528 10.97 4 4 0 012 7V5a1 1 0 011-1h3V3a1 1 0 011-1h3zM4 6v1a2 2 0 001.26 1.857A6 6 0 016 7V6H4zm12 0h-2v1c0 .3.022.593.06.878A2 2 0 0016 7V6z" />
+        <path d="M7 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v2a3 3 0 003 3h.34A4.5 4.5 0 009 13v2H7v2h6v-2h-2v-2a4.5 4.5 0 003.66-2H15a3 3 0 003-3V6a2 2 0 00-2-2h-2V3a1 1 0 00-1-1H7zM4 6h2v3H5a1 1 0 01-1-1V6zm12 0v2a1 1 0 01-1 1h-1V6h2z" />
+      </svg>
+    ),
+  },
+  {
+    key: 'history',
+    label: 'History',
+    path: '/history',
+    icon: (
+      // Hardcover book — closed, slight bookmark/page indicator at bottom
+      <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M4 3a2 2 0 012-2h9a2 2 0 012 2v13a1 1 0 01-1.5.87L10 14.74l-5.5 2.13A1 1 0 013 16V3zm2 0v11.34l4-1.55 4 1.55V3H6z" />
       </svg>
     ),
   },

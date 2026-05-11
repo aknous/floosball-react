@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useGames } from '@/contexts/GamesContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
+import { useAuth } from '@/contexts/AuthContext'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { personalityAccent } from '@/utils/personality'
 
@@ -75,6 +76,8 @@ const getBadge = (play: any): { label: string; color: string } | null => {
 export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () => {} }) => {
   const { games } = useGames()
   const { event } = useSeasonWebSocket()
+  const { user, fantasyPlayerIds, followedPlayerIds } = useAuth()
+  const favoriteTeamId = user?.favoriteTeamId ?? null
   const [newsItems, setNewsItems] = useState<LeagueNewsHighlight[]>([])
   const [offDayItems, setOffDayItems] = useState<OffDayHighlight[]>([])
 
@@ -212,8 +215,20 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
       })
     })
 
-    return [...items, ...newsItems, ...offDayItems].sort((a, b) => b.sortKey - a.sortKey)
-  }, [games, newsItems, offDayItems])
+    // Off-day chatter is filtered to players the user actually cares about:
+    // favorite team's roster + fantasy lineup + explicit follows. New users
+    // with none of these set up see no off-day items until they pick a team,
+    // draft a roster, or follow someone — the feed shouldn't be filled with
+    // strangers' moods.
+    const relevantOffDay = offDayItems.filter(item => {
+      if (favoriteTeamId != null && item.teamId === favoriteTeamId) return true
+      if (item.playerId != null && fantasyPlayerIds.has(item.playerId)) return true
+      if (item.playerId != null && followedPlayerIds.has(item.playerId)) return true
+      return false
+    })
+
+    return [...items, ...newsItems, ...relevantOffDay].sort((a, b) => b.sortKey - a.sortKey)
+  }, [games, newsItems, offDayItems, favoriteTeamId, fantasyPlayerIds, followedPlayerIds])
 
   if (highlights.length === 0) {
     return (

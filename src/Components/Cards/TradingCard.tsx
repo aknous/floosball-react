@@ -772,13 +772,62 @@ const TradingCard: React.FC<TradingCardProps> = ({
     flexShrink: 0,
   }
 
+  // When an onClick prop is provided (e.g. pack-selection flow), reserve
+  // the rightmost 25% of the card as a flip-only zone so the user can still
+  // inspect the back without losing access to whatever the parent wired up.
+  // No onClick prop ⇒ legacy behavior: click anywhere flips.
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!onClick) {
+      setFlipped(f => !f)
+      return
+    }
+    const rect = e.currentTarget.getBoundingClientRect()
+    const relX = (e.clientX - rect.left) / rect.width
+    if (relX >= 0.75) {
+      setFlipped(f => !f)
+    } else {
+      onClick()
+    }
+  }
+
   return (
     <div
       style={containerStyle}
-      onClick={() => { if (onClick) { onClick(); return; } setFlipped(f => !f); }}
+      onClick={handleCardClick}
       onMouseEnter={() => { setHovered(true); onHoverChange?.(true) }}
       onMouseLeave={() => { setHovered(false); onHoverChange?.(false) }}
     >
+      {/* Flip-zone affordance — only when an external onClick is wired up.
+          Subtle vertical strip on the right edge with a flip glyph so users
+          discover the zone without ugly visual noise. */}
+      {onClick && (
+        <div style={{
+          position: 'absolute',
+          top: 0, right: 0, bottom: 0,
+          width: '25%',
+          pointerEvents: 'none',
+          zIndex: 4,
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'flex-end',
+          padding: '6px',
+          opacity: hovered ? 0.8 : 0.4,
+          transition: 'opacity 0.15s',
+        }}>
+          <div title="Click here to flip" style={{
+            fontSize: '11px',
+            color: '#94a3b8',
+            background: 'rgba(15,23,42,0.7)',
+            border: '1px solid rgba(148,163,184,0.3)',
+            borderRadius: '4px',
+            padding: '2px 5px',
+            lineHeight: 1,
+          }}>
+            ↻
+          </div>
+        </div>
+      )}
+
       {/* Edition FX overlays */}
       {edition === 'holographic' && <ShimmerOverlay edition={edition} />}
       {edition === 'prismatic' && <><HoloBackgroundOverlay /><HoloEdgeShimmer /></>}
