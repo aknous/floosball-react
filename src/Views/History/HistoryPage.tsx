@@ -414,9 +414,6 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                     {tab === 'season' && e.season != null && (
                       <span style={{ fontSize: '10px', color: '#64748b' }}>S{e.season}</span>
                     )}
-                    {tab === 'career' && e.seasons != null && (
-                      <span style={{ fontSize: '10px', color: '#64748b' }}>{e.seasons}yr</span>
-                    )}
                   </div>
                 ))}
               </div>
