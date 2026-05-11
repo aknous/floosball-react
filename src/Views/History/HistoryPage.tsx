@@ -15,6 +15,8 @@ interface SeasonSummary {
   mvpPlayerId: number | null
   mvpPlayerName: string | null
   mvpPosition: string | null
+  mvpTeamId: number | null
+  mvpTeamAbbr: string | null
 }
 
 interface StandingsTeam {
@@ -224,13 +226,21 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                 <Link
                   to={`/players/${selected.mvpPlayerId}`}
                   style={{
-                    display: 'inline-flex', gap: '6px', marginTop: '4px',
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    marginTop: '4px',
                     textDecoration: 'none', color: '#e2e8f0',
                   }}
                 >
+                  {selected.mvpTeamId != null && (
+                    <img
+                      src={`/avatars/${selected.mvpTeamId}.png`}
+                      alt={selected.mvpTeamAbbr ?? ''}
+                      style={{ width: 24, height: 24, borderRadius: '4px' }}
+                    />
+                  )}
                   <span style={{ fontSize: '15px', fontWeight: 600 }}>{selected.mvpPlayerName}</span>
                   {selected.mvpPosition && (
-                    <span style={{ fontSize: '12px', color: '#94a3b8', alignSelf: 'flex-end', marginBottom: '2px' }}>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
                       {selected.mvpPosition}
                     </span>
                   )}
