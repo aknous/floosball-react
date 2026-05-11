@@ -402,17 +402,20 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                       {e.playerName}
                     </Link>
                     <span style={{
+                      width: '60px', textAlign: 'right',
                       fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums',
                     }}>
                       {e.value.toLocaleString()}
                     </span>
-                    {tab === 'game' && e.season != null && e.week != null && (
-                      <span style={{ fontSize: '10px', color: '#64748b' }}>
-                        S{e.season} W{e.week}
+                    {tab !== 'career' && (
+                      <span style={{
+                        width: '54px', textAlign: 'right',
+                        fontSize: '10px', color: '#64748b',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>
+                        {tab === 'game' && e.season != null && e.week != null && `S${e.season} W${e.week}`}
+                        {tab === 'season' && e.season != null && `S${e.season}`}
                       </span>
-                    )}
-                    {tab === 'season' && e.season != null && (
-                      <span style={{ fontSize: '10px', color: '#64748b' }}>S{e.season}</span>
                     )}
                   </div>
                 ))}
