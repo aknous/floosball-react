@@ -83,6 +83,17 @@ const NAV_ITEMS = [
     ),
   },
   {
+    key: 'history',
+    label: 'History',
+    path: '/history',
+    icon: (
+      // Open book — past seasons + record book
+      <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M3 4a1 1 0 011-1h5v13H4a1 1 0 01-1-1V4zm8-1h5a1 1 0 011 1v11a1 1 0 01-1 1h-5V3z" />
+      </svg>
+    ),
+  },
+  {
     key: 'guide',
     label: 'Guide',
     path: '/about',
