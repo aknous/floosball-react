@@ -563,6 +563,21 @@ const LeaderboardRow: React.FC<{
         </div>
       </div>
 
+      {/* Auto-pick badge — weekly view only, when every pick this week was auto */}
+      {!isSeason && entry.allAuto && (
+        <span
+          title="All picks this week were auto-picked"
+          style={{
+            fontSize: '9px', fontWeight: '700',
+            color: '#94a3b8', backgroundColor: 'rgba(148,163,184,0.15)',
+            padding: '2px 5px', borderRadius: '3px',
+            letterSpacing: '0.04em', flexShrink: 0,
+          }}
+        >
+          AUTO
+        </span>
+      )}
+
       {/* Points */}
       <div style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', whiteSpace: 'nowrap' }}>
         {entry.totalPoints} pts
