@@ -4,7 +4,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type ViewMode = 'seasons' | 'records'
+type ViewMode = 'seasons' | 'records' | 'user-records'
 
 interface SeasonSummary {
   seasonNumber: number
@@ -71,7 +71,7 @@ const HistoryPage: React.FC = () => {
         backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px',
         width: 'fit-content',
       }}>
-        {(['seasons', 'records'] as ViewMode[]).map(m => (
+        {(['seasons', 'records', 'user-records'] as ViewMode[]).map(m => (
           <button
             key={m}
             onClick={() => setMode(m)}
@@ -83,12 +83,14 @@ const HistoryPage: React.FC = () => {
               fontFamily: 'inherit',
             }}
           >
-            {m === 'seasons' ? 'Seasons' : 'Record Book'}
+            {m === 'seasons' ? 'Seasons' : m === 'records' ? 'Record Book' : 'Fantasy Records'}
           </button>
         ))}
       </div>
 
-      {mode === 'seasons' ? <SeasonsView isMobile={isMobile} /> : <RecordsView isMobile={isMobile} />}
+      {mode === 'seasons' && <SeasonsView isMobile={isMobile} />}
+      {mode === 'records' && <RecordsView isMobile={isMobile} />}
+      {mode === 'user-records' && <UserRecordsView isMobile={isMobile} />}
     </div>
   )
 }
@@ -448,6 +450,122 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// ─── User records view ─────────────────────────────────────────────────────
+
+interface UserRecordEntry {
+  userId: number
+  username: string
+  value: number
+  season: number
+  week?: number
+}
+
+interface UserRecordsResponse {
+  weeklyFP: UserRecordEntry[]
+  seasonFP: UserRecordEntry[]
+}
+
+const UserRecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
+  const [data, setData] = useState<UserRecordsResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`${API_BASE}/history/user-records`)
+      .then(r => r.json())
+      .then(j => setData(j?.data || j))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <div style={{ color: '#94a3b8', padding: '20px' }}>Loading…</div>
+  if (!data) return <div style={{ color: '#94a3b8', padding: '20px' }}>No records yet.</div>
+
+  const cards: { label: string; entries: UserRecordEntry[]; showWeek: boolean }[] = [
+    { label: 'Best Weekly FP', entries: data.weeklyFP, showWeek: true },
+    { label: 'Best Season FP', entries: data.seasonFP, showWeek: false },
+  ]
+
+  return (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))',
+      gap: '14px',
+    }}>
+      {cards.map(card => {
+        // Tied ranks
+        let prevValue: number | null = null
+        let rank = 0
+        const rows = card.entries.slice(0, 10).map((e, idx) => {
+          if (prevValue === null || e.value !== prevValue) rank = idx + 1
+          prevValue = e.value
+          return { e, idx, rank }
+        })
+        return (
+          <div
+            key={card.label}
+            style={{
+              backgroundColor: '#1e293b', borderRadius: '8px',
+              border: '1px solid #334155', overflow: 'hidden',
+            }}
+          >
+            <div style={{
+              padding: '8px 12px', fontSize: '11px', fontWeight: 700,
+              color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.06em',
+              borderBottom: '1px solid #334155',
+            }}>
+              {card.label}
+            </div>
+            <div>
+              {rows.length === 0 ? (
+                <div style={{ padding: '12px', fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
+                  No records yet.
+                </div>
+              ) : rows.map(({ e, idx, rank }) => (
+                <div
+                  key={`${e.userId}-${idx}`}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '5px 12px', fontSize: '12px',
+                    borderTop: idx > 0 ? '1px solid #2a3a4e' : 'none',
+                  }}
+                >
+                  <span style={{
+                    width: '18px', textAlign: 'right',
+                    fontWeight: 700, color: rank === 1 ? '#f59e0b' : '#64748b',
+                  }}>
+                    {rank}
+                  </span>
+                  <span style={{
+                    flex: 1, minWidth: 0, color: '#e2e8f0',
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {e.username}
+                  </span>
+                  <span style={{
+                    width: '60px', textAlign: 'right',
+                    fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    {e.value.toLocaleString()}
+                  </span>
+                  <span style={{
+                    width: '54px', textAlign: 'right',
+                    fontSize: '10px', color: '#64748b',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>
+                    {card.showWeek && e.week != null
+                      ? `S${e.season} W${e.week}`
+                      : `S${e.season}`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
