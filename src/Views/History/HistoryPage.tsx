@@ -223,7 +223,10 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
               )}
             </div>
             {selected.mvpPlayerId && (
-              <div style={{ borderLeft: '1px solid #334155', paddingLeft: '16px' }}>
+              <div style={{
+                borderLeft: isMobile ? 'none' : '1px solid #334155',
+                paddingLeft: isMobile ? 0 : '16px',
+              }}>
                 <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   MVP
                 </div>
@@ -273,46 +276,48 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
               No standings data for this season.
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  <th style={{ padding: '8px 10px', textAlign: 'left' }}>Team</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>W</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>L</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>Pct</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>ELO</th>
-                </tr>
-              </thead>
-              <tbody>
-                {standings.map(t => (
-                  <tr key={t.teamId} style={{ borderTop: '1px solid #2a3a4e' }}>
-                    <td style={{ padding: '8px 10px', fontSize: '13px' }}>
-                      <Link
-                        to={`/team/${t.teamId}`}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '8px',
-                          color: '#e2e8f0', textDecoration: 'none',
-                        }}
-                      >
-                        <img src={`/avatars/${t.teamId}.png`} alt="" style={{ width: 18, height: 18, borderRadius: '3px' }} />
-                        {t.teamCity ? (
-                          <>
-                            <span style={{ color: '#94a3b8' }}>{t.teamCity}</span>{' '}
-                            <span>{t.teamName}</span>
-                          </>
-                        ) : t.teamName}
-                      </Link>
-                    </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#e2e8f0', fontSize: '13px' }}>{t.wins}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#e2e8f0', fontSize: '13px' }}>{t.losses}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#cbd5e1', fontSize: '13px' }}>{t.winPct.toFixed(3)}</td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: t.elo != null ? '#cbd5e1' : '#475569', fontSize: '13px' }}>
-                      {t.elo != null ? t.elo : '—'}
-                    </td>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? '420px' : 'auto' }}>
+                <thead>
+                  <tr style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    <th style={{ padding: '8px 10px', textAlign: 'left' }}>Team</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right' }}>W</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right' }}>L</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right' }}>Pct</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'right' }}>ELO</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {standings.map(t => (
+                    <tr key={t.teamId} style={{ borderTop: '1px solid #2a3a4e' }}>
+                      <td style={{ padding: '8px 10px', fontSize: '13px' }}>
+                        <Link
+                          to={`/team/${t.teamId}`}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '8px',
+                            color: '#e2e8f0', textDecoration: 'none',
+                          }}
+                        >
+                          <img src={`/avatars/${t.teamId}.png`} alt="" style={{ width: 18, height: 18, borderRadius: '3px' }} />
+                          {t.teamCity && !isMobile ? (
+                            <>
+                              <span style={{ color: '#94a3b8' }}>{t.teamCity}</span>{' '}
+                              <span>{t.teamName}</span>
+                            </>
+                          ) : t.teamName}
+                        </Link>
+                      </td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#e2e8f0', fontSize: '13px' }}>{t.wins}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#e2e8f0', fontSize: '13px' }}>{t.losses}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: '#cbd5e1', fontSize: '13px' }}>{t.winPct.toFixed(3)}</td>
+                      <td style={{ padding: '8px 10px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: t.elo != null ? '#cbd5e1' : '#475569', fontSize: '13px' }}>
+                        {t.elo != null ? t.elo : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

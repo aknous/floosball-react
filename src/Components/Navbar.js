@@ -650,6 +650,7 @@ export default function Navbar() {
                 ['Cards', '/cards'],
                 ['Team Management', '/front-office'],
                 ['Achievements', '/achievements'],
+                ['History', '/history'],
                 ['Guide', '/about'],
               ].map(([label, path]) => (
                 <NavLink key={label} to={path} onClick={() => setMenuOpen(false)}
