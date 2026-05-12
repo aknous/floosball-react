@@ -273,6 +273,25 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
 
         if (!(play.isTouchdown || play.isTurnover || play.scoreChange)) return
 
+        // Care-set filter: only show plays involving players or teams
+        // the user cares about. Globals (game start, game end, league
+        // news, Cores dialogue) bypass this — they're handled outside
+        // this loop. New users with no fav team / roster / follows
+        // still see globals so the feed isn't empty.
+        const onFavTeam = favoriteTeamId != null && (
+          homeTeam.id === favoriteTeamId || awayTeam.id === favoriteTeamId
+        )
+        const cared = (id: number | null | undefined) =>
+          id != null && (fantasyPlayerIds.has(id) || followedPlayerIds.has(id))
+        const involvesCaredPlayer = (
+          cared(play.passerId) || cared(play.receiverId) ||
+          cared(play.runnerId) || cared(play.kickerId) ||
+          cared(play.tacklerId) || cared(play.sackerId) ||
+          cared(play.interceptorId) || cared(play.forcedFumblerId) ||
+          cared(play.glitchPlayerId)
+        )
+        if (!onFavTeam && !involvesCaredPlayer) return
+
         // For turnovers (without TD), feature the defensive team — they benefited
         const isTurnoverOnly = play.isTurnover && !play.isTouchdown
         const featuredAbbr = isTurnoverOnly ? play.defensiveTeam : play.offensiveTeam
@@ -305,7 +324,24 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
       return false
     })
 
-    return [...items, ...newsItems, ...relevantOffDay].sort((a, b) => b.sortKey - a.sortKey)
+    // News-entry filter:
+    //   - Cores dialogue (category === 'cores') always shows — league-wide voice
+    //   - Anomaly transitions ('anomaly_transition') filter to care-set players
+    //   - Everything else (clinches, eliminations, MVP, etc.) always shows
+    const relevantNews = newsItems.filter(item => {
+      if (item.category === 'anomaly_transition') {
+        if (item.playerId != null && fantasyPlayerIds.has(item.playerId)) return true
+        if (item.playerId != null && followedPlayerIds.has(item.playerId)) return true
+        // No team check — transition events aren't team-scoped, only
+        // player-scoped. Fav-team-only users still get Cores dialogue
+        // and clinches; they don't get every random player crossing
+        // the ladder.
+        return false
+      }
+      return true
+    })
+
+    return [...items, ...relevantNews, ...relevantOffDay].sort((a, b) => b.sortKey - a.sortKey)
   }, [games, newsItems, offDayItems, favoriteTeamId, fantasyPlayerIds, followedPlayerIds])
 
   if (highlights.length === 0) {
