@@ -321,14 +321,37 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
         style={{
           position: 'fixed', inset: 0, zIndex: 9999,
           backgroundColor: 'rgba(0,0,0,0.85)',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
+          // Scroll container. Content (5 revealed cards stacked + the
+          // counter + the confirm button) can be taller than a phone
+          // viewport. Without scroll, users on mobile never see the
+          // bottom cards or the confirm button — they effectively
+          // burn a pack they can't open. `flex` with `justifyContent:
+          // 'center'` would prevent scrolling to the top of overflowing
+          // content, so use a simple block + padding instead and let
+          // the content stack from the top.
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          padding: '24px 12px 32px',
           fontFamily: 'pressStart',
           cursor: !allRevealed || (allRevealed && !isSelectionMode) ? 'pointer' : 'default',
         }}
       >
         {/* Prevent clicks on cards from closing */}
-        <div onClick={e => e.stopPropagation()} style={{ cursor: 'default' }}>
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            cursor: 'default',
+            // Center the content column horizontally. minHeight pads the
+            // short-content case (mid-reveal) so the modal still feels
+            // like a centered overlay rather than a top-stuck panel.
+            display: 'flex',
+            flexDirection: 'column' as const,
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: 'calc(100vh - 56px)',
+            width: '100%',
+          }}
+        >
           {/* Pack name + (selection counter when applicable) */}
           <div style={{
             fontSize: '18px', fontWeight: '700', color: '#e2e8f0',
