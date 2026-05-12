@@ -32,6 +32,56 @@ const QUIRK_TIER_COLORS: Record<string, string> = {
   unique:   '#a5f3fc',  // cyan
 }
 
+// Anomaly state ladder — labels and colors per state. Stable / null is
+// rendered as nothing. Higher states get more saturation and a sharper
+// border to telegraph "something is happening here" without explaining.
+const ANOMALY_STATE_STYLES: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  stirring:  { label: 'Stirring',  color: '#cbd5e1', bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.30)' },
+  erratic:   { label: 'Erratic',   color: '#fbbf24', bg: 'rgba(251,191,36,0.12)',  border: 'rgba(251,191,36,0.40)' },
+  rampant:   { label: 'Rampant',   color: '#fb7185', bg: 'rgba(251,113,133,0.14)', border: 'rgba(251,113,133,0.50)' },
+  awakened:  { label: 'Awakened',  color: '#a78bfa', bg: 'rgba(167,139,250,0.18)', border: 'rgba(167,139,250,0.65)' },
+  cleansed:  { label: 'Cleansed',  color: '#64748b', bg: 'rgba(100,116,139,0.10)', border: 'rgba(100,116,139,0.30)' },
+}
+
+interface AnomalyInfo {
+  state: string
+  ability?: string | null
+  abilityTier?: string | null
+  awakenedAtWeek?: number | null
+  seasonsCarried?: number
+}
+
+const AnomalyBadge: React.FC<{ anomaly: AnomalyInfo }> = ({ anomaly }) => {
+  const style = ANOMALY_STATE_STYLES[anomaly.state]
+  if (!style) return null
+  return (
+    <span
+      title={anomaly.state === 'awakened'
+        ? 'Something has changed about this player.'
+        : anomaly.state === 'cleansed'
+        ? 'Restored to baseline.'
+        : 'Anomalous.'
+      }
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '3px 9px',
+        borderRadius: '12px',
+        fontSize: '11px',
+        fontWeight: 700,
+        color: style.color,
+        backgroundColor: style.bg,
+        border: `1px solid ${style.border}`,
+        textTransform: 'uppercase' as const,
+        letterSpacing: '0.05em',
+      }}
+    >
+      {style.label}
+    </span>
+  )
+}
+
 interface PersonalityBlock {
   archetype?: string
   archetypeLabel?: string
@@ -458,6 +508,7 @@ export default function PlayerPage() {
   const [player, setPlayer] = useState<PlayerData | null>(null)
   const [ratingHistory, setRatingHistory] = useState<RatingPoint[]>([])
   const [quotes, setQuotes] = useState<Array<{ text: string; event?: string; personality?: string; timestamp?: string }>>([])
+  const [anomaly, setAnomaly] = useState<AnomalyInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [statsView, setStatsView] = useState<'offense' | 'defense'>('offense')
   const [detailTab, setDetailTab] = useState<'attributes' | 'progression' | 'profile' | 'moments' | 'awards'>('attributes')
@@ -473,10 +524,12 @@ export default function PlayerPage() {
       fetch(`${API_BASE}/players/${id}`).then(r => r.json()).catch(() => null),
       fetch(`${API_BASE}/players/${id}/rating-history`).then(r => r.json()).catch(() => null),
       fetch(`${API_BASE}/players/${id}/quotes`).then(r => r.json()).catch(() => null),
-    ]).then(([playerRes, historyRes, quotesRes]) => {
+      fetch(`${API_BASE}/players/${id}/anomaly`).then(r => r.json()).catch(() => null),
+    ]).then(([playerRes, historyRes, quotesRes, anomalyRes]) => {
       if (playerRes?.success && playerRes.data) setPlayer(playerRes.data)
       if (historyRes?.success && historyRes.data?.history) setRatingHistory(historyRes.data.history)
       if (quotesRes?.success && Array.isArray(quotesRes.data)) setQuotes(quotesRes.data)
+      if (anomalyRes?.success && anomalyRes.data) setAnomaly(anomalyRes.data)
     }).finally(() => setLoading(false))
   }, [id])
 
@@ -576,7 +629,7 @@ export default function PlayerPage() {
                 {POSITION_FULL[player.position] ?? player.position}
               </div>
               <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{player.name}</div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '6px', flexWrap: 'wrap' as const }}>
                 <Stars stars={player.ratingStars} size={16} />
                 {(player.isProspect || player.rank) && (
                   <>
@@ -586,7 +639,24 @@ export default function PlayerPage() {
                     </span>
                   </>
                 )}
+                {anomaly && (
+                  <>
+                    <span style={{ fontSize: '13px', color: '#475569' }}>·</span>
+                    <AnomalyBadge anomaly={anomaly} />
+                  </>
+                )}
               </div>
+              {anomaly?.state === 'awakened' && (
+                <div style={{
+                  marginTop: '8px',
+                  fontSize: '12px',
+                  color: '#a78bfa',
+                  fontStyle: 'italic' as const,
+                  textAlign: 'center' as const,
+                }}>
+                  Something has changed about this player.
+                </div>
+              )}
               <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
                 {player.teamId ? (
                   <Link to={`/team/${player.teamId}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
