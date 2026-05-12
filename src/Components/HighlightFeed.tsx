@@ -92,6 +92,13 @@ const getBadge = (play: any): { label: string; color: string } | null => {
 // than users read them.
 const OFF_DAY_POLL_MS = 60_000
 
+// Max news entries to retain. Older items roll off as new ones arrive
+// so the feed doesn't accumulate every Cores warning + state transition
+// from the entire season. The cap is intentionally generous — a typical
+// week produces 3-6 newsworthy entries, so 30 covers ~5 weeks of
+// rolling history without feeling stale.
+const NEWS_ITEM_LIMIT = 30
+
 export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () => {} }) => {
   const { games } = useGames()
   const { event } = useSeasonWebSocket()
@@ -115,7 +122,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
       anomalyState: e.anomalyState,
       playerId: e.playerId,
       playerName: e.playerName,
-    }, ...prev])
+    }, ...prev].slice(0, NEWS_ITEM_LIMIT))
   }, [event])
 
   useEffect(() => {
