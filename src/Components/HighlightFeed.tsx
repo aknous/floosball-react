@@ -51,10 +51,16 @@ interface LeagueNewsHighlight {
   // attributed to a named Core (Conservator, Pyre, Aris, Halverson,
   // Stenographer) and renders with a distinct accent + attribution
   // chip instead of the generic ELIMINATED / CLINCHED label flow.
+  // When category === 'anomaly_transition', it's a player-state crossing
+  // (stirring / erratic / rampant / awakened) — ominous, no-context
+  // single line keyed by anomalyState.
   category?: string
   core?: string
   coreDisplayName?: string
   eventType?: string
+  anomalyState?: string
+  playerId?: number
+  playerName?: string
 }
 
 interface OffDayHighlight {
@@ -106,6 +112,9 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
       core: e.core,
       coreDisplayName: e.coreDisplayName,
       eventType: e.eventType,
+      anomalyState: e.anomalyState,
+      playerId: e.playerId,
+      playerName: e.playerName,
     }, ...prev])
   }, [event])
 
@@ -358,6 +367,42 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
         }
 
         if (item.type === 'league_news') {
+          // Anomaly state-transition entries — ominous one-liner about
+          // a specific player crossing the ladder. No label, dim italic,
+          // accent color matches the new state.
+          if (item.category === 'anomaly_transition') {
+            const stateAccent: Record<string, string> = {
+              stirring: '#94a3b8',
+              erratic:  '#fbbf24',
+              rampant:  '#fb7185',
+              awakened: '#a78bfa',
+            }
+            const accent = stateAccent[item.anomalyState ?? 'stirring'] || '#94a3b8'
+            return (
+              <React.Fragment key={item.id}>
+                {separator}
+                <div
+                  style={{
+                    padding: '8px 12px',
+                    borderLeft: `2px solid ${accent}`,
+                    backgroundColor: `${accent}10`,
+                    borderRadius: '4px',
+                  }}
+                >
+                  <p style={{
+                    fontSize: '13px',
+                    color: '#cbd5e1',
+                    margin: 0,
+                    lineHeight: '1.5',
+                    fontStyle: 'italic' as const,
+                  }}>
+                    {item.text}
+                  </p>
+                </div>
+              </React.Fragment>
+            )
+          }
+
           // Cores news entries get their own treatment — Core attribution
           // chip in the dim slate of in-fiction bureaucracy. No "ELIMINATED"
           // label, since the entry is not about a team's playoff fate.
