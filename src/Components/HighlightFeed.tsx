@@ -47,6 +47,14 @@ interface LeagueNewsHighlight {
   id: string
   sortKey: number
   text: string
+  // Cores-specific metadata. When category === 'cores', the entry is
+  // attributed to a named Core (Conservator, Pyre, Aris, Halverson,
+  // Stenographer) and renders with a distinct accent + attribution
+  // chip instead of the generic ELIMINATED / CLINCHED label flow.
+  category?: string
+  core?: string
+  coreDisplayName?: string
+  eventType?: string
 }
 
 interface OffDayHighlight {
@@ -88,12 +96,16 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
 
   useEffect(() => {
     if (!event || event.event !== 'league_news') return
-    const text = (event as any).text as string
+    const e = event as any
     setNewsItems(prev => [{
       type: 'league_news',
       id: `news-${Date.now()}-${Math.random()}`,
       sortKey: Date.now(),
-      text,
+      text: e.text,
+      category: e.category,
+      core: e.core,
+      coreDisplayName: e.coreDisplayName,
+      eventType: e.eventType,
     }, ...prev])
   }, [event])
 
@@ -346,6 +358,42 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
         }
 
         if (item.type === 'league_news') {
+          // Cores news entries get their own treatment — Core attribution
+          // chip in the dim slate of in-fiction bureaucracy. No "ELIMINATED"
+          // label, since the entry is not about a team's playoff fate.
+          if (item.category === 'cores') {
+            // Subtle color per event type. thinning + reset get a deeper
+            // tint so the Boundary-thinning narrative reads as heavier
+            // than a casual warning.
+            const isHeavy = item.eventType === 'thinning' || item.eventType === 'reset'
+            const accent = isHeavy ? '#a78bfa' : '#64748b'
+            return (
+              <React.Fragment key={item.id}>
+                {separator}
+                <div
+                  style={{
+                    backgroundColor: isHeavy ? 'rgba(167,139,250,0.10)' : 'rgba(100,116,139,0.08)',
+                    borderRadius: '6px',
+                    padding: '10px 12px',
+                    borderLeft: `2px solid ${accent}`,
+                  }}
+                >
+                  {item.coreDisplayName && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                      <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: accent, flexShrink: 0 }} />
+                      <span style={{ fontSize: '10px', fontWeight: '700', color: accent, letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>
+                        {item.coreDisplayName}
+                      </span>
+                    </div>
+                  )}
+                  <p style={{ fontSize: '13px', color: '#cbd5e1', margin: 0, lineHeight: '1.5', fontStyle: 'italic' as const }}>
+                    {item.text}
+                  </p>
+                </div>
+              </React.Fragment>
+            )
+          }
+
           const isChamp = item.text.includes('champions!')
           const isTopSeed = item.text.includes('top seed') || item.text.includes('#1 seed')
           const isClinch = item.text.includes('clinched')
