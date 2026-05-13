@@ -75,6 +75,13 @@ export interface EquationSummary {
   totalBonusFP: number
   multFactors: number[]
   handSynergies?: HandSynergies
+  // Cracking — when a Cracking is active, the controlling Core's
+  // signature equation replaces the baseline `(R + ΣF) × ΣM` formula.
+  // crackingEquation has values substituted; crackingEquationTemplate
+  // is the symbolic shape for pill display.
+  crackingCore?: string | null
+  crackingEquation?: string | null
+  crackingEquationTemplate?: string | null
 }
 
 export interface ModifierInfo {

@@ -492,44 +492,93 @@ const PointsBreakdownPanel: React.FC<{
 
       {/* Formula box */}
       {hasEquation && (() => {
-        const baseFP = eq!.weekRawFP + eq!.totalBonusFP
         const factors = eq!.multFactors ?? []
-        const multProduct = factors.length > 0 ? factors.reduce((a, b) => a * b, 1) : 1
         const hasMult = factors.length > 0
+        const crackingCore = eq!.crackingCore
+        const crackingTemplate = eq!.crackingEquationTemplate
+        const crackingFormatted = eq!.crackingEquation
+        // When a Cracking is active, the math is the Core's signature
+        // equation — not the standard bonus-additive aggregation.
+        // Swap the formula display to surface the equation and Core
+        // attribution; otherwise render the baseline shape.
+        const inCracking = Boolean(crackingCore && crackingFormatted)
+        const accentColor = inCracking ? '#a78bfa' : '#818cf8'
+        const accentBg = inCracking ? 'rgba(167,139,250,0.10)' : 'rgba(99,102,241,0.10)'
+        const accentBorder = inCracking ? 'rgba(167,139,250,0.5)' : 'rgba(99,102,241,0.5)'
+        const accentDivider = inCracking ? 'rgba(167,139,250,0.18)' : 'rgba(99,102,241,0.15)'
+        // Capitalise the core key for the attribution chip (the API
+        // gives us a lower-case roster key; coreDisplayName isn't on
+        // EquationSummary because the Cores roster lives backend-side).
+        const coreDisplayName = crackingCore
+          ? crackingCore.charAt(0).toUpperCase() + crackingCore.slice(1)
+          : null
         return (
           <>
-          {collapsibleHeader('formula', 'Week Score Total', `${(weekPlayerFP + weekCardBonus).toFixed(1)} pts`, '#818cf8')}
+          {collapsibleHeader('formula', 'Week Score Total', `${(weekPlayerFP + weekCardBonus).toFixed(1)} pts`, accentColor)}
           {expanded['formula'] && (
           <div style={{
             marginTop: '4px', padding: '10px 12px',
-            backgroundColor: 'rgba(99,102,241,0.10)', borderRadius: '8px',
-            borderBottom: '2px solid rgba(99,102,241,0.5)',
+            backgroundColor: accentBg, borderRadius: '8px',
+            borderBottom: `2px solid ${accentBorder}`,
           }}>
-            <div style={{ fontSize: '13px', color: '#e2e8f0', fontFamily: 'monospace', lineHeight: '1.8' }}>
-              <span style={{ color: '#cbd5e1' }}>(</span>
-              <span style={{ color: '#22c55e' }}>{eq!.weekRawFP.toFixed(1)}</span>
-              <span style={{ color: '#cbd5e1' }}> roster</span>
-              {eq!.totalBonusFP > 0 && (
-                <>
-                  <span style={{ color: '#cbd5e1' }}> + </span>
-                  <span style={{ color: TYPE_COLORS.fp }}>{eq!.totalBonusFP.toFixed(1)}</span>
-                  <span style={{ color: '#cbd5e1' }}> FP</span>
-                </>
-              )}
-              <span style={{ color: '#cbd5e1' }}>)</span>
-              {hasMult && factors.map((f, i) => (
-                <React.Fragment key={i}>
-                  <span style={{ color: '#cbd5e1' }}> {'\u00d7'} </span>
-                  <span style={{ color: TYPE_COLORS.mult, textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}>{f.toFixed(2)}</span>
-                  <span style={{ color: '#cbd5e1', textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}> FPx</span>
-                </React.Fragment>
-              ))}
-            </div>
+            {inCracking ? (
+              <>
+                {/* Cracking attribution chip — matches HighlightFeed
+                    Cores treatment so the breakdown reads as part of
+                    the same in-fiction event. */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                  <span style={{
+                    width: '5px', height: '5px', borderRadius: '50%',
+                    backgroundColor: accentColor, flexShrink: 0,
+                  }} />
+                  <span style={{
+                    fontSize: '10px', fontWeight: '700', color: accentColor,
+                    letterSpacing: '0.08em', textTransform: 'uppercase' as const,
+                  }}>
+                    Cracking · {coreDisplayName}
+                  </span>
+                </div>
+                {/* Symbolic template — the Core's signature shape */}
+                {crackingTemplate && (
+                  <div style={{
+                    fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace',
+                    marginBottom: '6px', letterSpacing: '0.02em',
+                  }}>
+                    {crackingTemplate}
+                  </div>
+                )}
+                {/* Filled equation with values substituted */}
+                <div style={{ fontSize: '13px', color: '#e2e8f0', fontFamily: 'monospace', lineHeight: '1.6' }}>
+                  {crackingFormatted}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: '13px', color: '#e2e8f0', fontFamily: 'monospace', lineHeight: '1.8' }}>
+                <span style={{ color: '#cbd5e1' }}>(</span>
+                <span style={{ color: '#22c55e' }}>{eq!.weekRawFP.toFixed(1)}</span>
+                <span style={{ color: '#cbd5e1' }}> roster</span>
+                {eq!.totalBonusFP > 0 && (
+                  <>
+                    <span style={{ color: '#cbd5e1' }}> + </span>
+                    <span style={{ color: TYPE_COLORS.fp }}>{eq!.totalBonusFP.toFixed(1)}</span>
+                    <span style={{ color: '#cbd5e1' }}> FP</span>
+                  </>
+                )}
+                <span style={{ color: '#cbd5e1' }}>)</span>
+                {hasMult && factors.map((f, i) => (
+                  <React.Fragment key={i}>
+                    <span style={{ color: '#cbd5e1' }}> {'\u00d7'} </span>
+                    <span style={{ color: TYPE_COLORS.mult, textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}>{f.toFixed(2)}</span>
+                    <span style={{ color: '#cbd5e1', textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}> FPx</span>
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
 
             {/* Total */}
             <div style={{
               textAlign: 'right', marginTop: '6px',
-              paddingTop: '6px', borderTop: '1px solid rgba(99,102,241,0.15)',
+              paddingTop: '6px', borderTop: `1px solid ${accentDivider}`,
             }}>
               <span style={{
                 fontSize: '20px', fontWeight: '800', color: '#22c55e',
