@@ -552,9 +552,12 @@ const PointsBreakdownPanel: React.FC<{
                   const NEUTRAL = '#cbd5e1'
                   const span = (color: string, content: React.ReactNode, key?: React.Key) =>
                     <span key={key} style={{ color }}>{content}</span>
-                  const Rsym = span(ROSTER, 'R', 'Rs')
-                  const Fsym = span(FP, 'ΣF', 'Fs')
-                  const Msym = span(MULT, 'ΣM', 'Ms')
+                  // Use the game-side labels (FP / Card FP / FPx) in the
+                  // symbolic row instead of math notation (R / ΣF / ΣM)
+                  // so the equation reads as Floosball, not algebra.
+                  const Rsym = span(ROSTER, 'FP', 'Rs')
+                  const Fsym = span(FP, 'Card FP', 'Fs')
+                  const Msym = span(MULT, 'FPx', 'Ms')
                   const Mval = span(MULT, M.toFixed(2), 'Mv')
                   const Rval = span(ROSTER, R.toFixed(0), 'Rv')
                   const Fval = span(FP, F.toFixed(0), 'Fv')
@@ -594,13 +597,14 @@ const PointsBreakdownPanel: React.FC<{
                     <>
                       {templateRow && (
                         <div style={{
-                          fontSize: '11px', fontFamily: 'monospace',
-                          marginBottom: '6px', letterSpacing: '0.02em',
+                          fontSize: '14px', fontFamily: 'monospace',
+                          marginBottom: '8px', letterSpacing: '0.02em',
+                          fontWeight: 600,
                         }}>
                           {templateRow}
                         </div>
                       )}
-                      <div style={{ fontSize: '13px', fontFamily: 'monospace', lineHeight: '1.6' }}>
+                      <div style={{ fontSize: '16px', fontFamily: 'monospace', lineHeight: '1.6' }}>
                         {valueRow}
                       </div>
                     </>
@@ -636,7 +640,7 @@ const PointsBreakdownPanel: React.FC<{
               paddingTop: '6px', borderTop: `1px solid ${accentDivider}`,
             }}>
               <span style={{
-                fontSize: '20px', fontWeight: '800', color: '#22c55e',
+                fontSize: inCracking ? '24px' : '20px', fontWeight: '800', color: '#22c55e',
                 fontFamily: 'monospace',
               }}>= {(weekPlayerFP + weekCardBonus).toFixed(1)}</span>
             </div>
