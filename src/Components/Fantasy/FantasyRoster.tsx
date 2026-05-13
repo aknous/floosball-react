@@ -609,6 +609,22 @@ const PointsBreakdownPanel: React.FC<{
                   const Mval = span(MULT, M.toFixed(2), 'Mv')
                   const Rval = span(ROSTER, R.toFixed(0), 'Rv')
                   const Fval = span(FP, F.toFixed(0), 'Fv')
+                  // Per-Core arcane sigil for the linear coefficient. The
+                  // actual numeric value stays implicit — the Core's
+                  // "signature constant" reads as a glyph rather than a
+                  // plain number. Same character appears in both the
+                  // template and substituted rows so the user learns to
+                  // recognise each Core's sigil over time.
+                  const sigil = (ch: string, key?: React.Key) => (
+                    <span key={key} style={{
+                      color: accentColor,
+                      fontStyle: 'italic',
+                      fontWeight: 700,
+                      fontSize: '1.1em',
+                      padding: '0 1px',
+                      textShadow: crackingTextShadow,
+                    }}>{ch}</span>
+                  )
                   // Per-Core symbolic + substituted rows.
                   let templateRow: React.ReactNode = null
                   let valueRow: React.ReactNode = null
@@ -627,18 +643,22 @@ const PointsBreakdownPanel: React.FC<{
                       {span(NEUTRAL, '(')}{Rval}{span(NEUTRAL, ' + ')}{Fval}{span(NEUTRAL, ') × ')}{span(MULT, `e^${M.toFixed(2)}`)}
                     </>
                   } else if (crackingCore === 'aris') {
+                    // Aris's signature sigil — Φ stands in for the
+                    // floor coefficient (4 in the math, hidden from view).
                     templateRow = <>
-                      {span(NEUTRAL, '(')}{Rsym}{span(NEUTRAL, ' + ')}{Fsym}{span(NEUTRAL, ') × Γ(')}{Msym}{span(NEUTRAL, ' + 1) + 4×')}{Rsym}
+                      {span(NEUTRAL, '(')}{Rsym}{span(NEUTRAL, ' + ')}{Fsym}{span(NEUTRAL, ') × Γ(')}{Msym}{span(NEUTRAL, ' + 1) + ')}{sigil('Φ', 'aris-sigil-t')}{span(NEUTRAL, '×')}{Rsym}
                     </>
                     valueRow = <>
-                      {span(NEUTRAL, '(')}{Rval}{span(NEUTRAL, ' + ')}{Fval}{span(NEUTRAL, ') × ')}{span(MULT, `Γ(${(M + 1).toFixed(2)})`)}{span(NEUTRAL, ' + 4×')}{Rval}
+                      {span(NEUTRAL, '(')}{Rval}{span(NEUTRAL, ' + ')}{Fval}{span(NEUTRAL, ') × ')}{span(MULT, `Γ(${(M + 1).toFixed(2)})`)}{span(NEUTRAL, ' + ')}{sigil('Φ', 'aris-sigil-v')}{span(NEUTRAL, '×')}{Rval}
                     </>
                   } else if (crackingCore === 'halverson') {
+                    // Halverson's signature sigil — Λ stands in for the
+                    // floor coefficient (6 in the math, hidden from view).
                     templateRow = <>
-                      {span(NEUTRAL, '(')}{Rsym}{span(NEUTRAL, ' + ')}{Fsym}{span(NEUTRAL, ') × ')}{Msym}{span(NEUTRAL, '² + 6×')}{Rsym}
+                      {span(NEUTRAL, '(')}{Rsym}{span(NEUTRAL, ' + ')}{Fsym}{span(NEUTRAL, ') × ')}{Msym}{span(NEUTRAL, '² + ')}{sigil('Λ', 'halv-sigil-t')}{span(NEUTRAL, '×')}{Rsym}
                     </>
                     valueRow = <>
-                      {span(NEUTRAL, '(')}{Rval}{span(NEUTRAL, ' + ')}{Fval}{span(NEUTRAL, ') × ')}{span(MULT, (M * M).toFixed(2))}{span(NEUTRAL, ' + 6×')}{Rval}
+                      {span(NEUTRAL, '(')}{Rval}{span(NEUTRAL, ' + ')}{Fval}{span(NEUTRAL, ') × ')}{span(MULT, (M * M).toFixed(2))}{span(NEUTRAL, ' + ')}{sigil('Λ', 'halv-sigil-v')}{span(NEUTRAL, '×')}{Rval}
                     </>
                   }
                   return (
