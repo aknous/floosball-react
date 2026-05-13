@@ -512,28 +512,76 @@ const PointsBreakdownPanel: React.FC<{
         const coreDisplayName = crackingCore
           ? crackingCore.charAt(0).toUpperCase() + crackingCore.slice(1)
           : null
+        // Glitch styling — applied to the equation card during a Cracking.
+        // Scanlines via repeating gradient, faint inset glow, jitter
+        // animation on the border. Chromatic-aberration text-shadow is
+        // applied separately to the value rows for a per-glyph RGB split.
+        const crackingTextShadow = inCracking
+          ? '0.5px 0 0 rgba(255,80,140,0.55), -0.5px 0 0 rgba(80,210,255,0.55)'
+          : undefined
+        const equationBoxStyle: React.CSSProperties = inCracking ? {
+          position: 'relative',
+          marginTop: '4px', padding: '12px 14px',
+          backgroundColor: accentBg,
+          borderRadius: '8px',
+          border: '1px solid rgba(167,139,250,0.35)',
+          borderBottom: '2px solid rgba(167,139,250,0.6)',
+          backgroundImage: 'repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 1px, transparent 1px, transparent 3px)',
+          boxShadow: 'inset 0 0 24px rgba(167,139,250,0.10), 0 0 12px rgba(167,139,250,0.18)',
+          overflow: 'hidden',
+          animation: 'crackingFlicker 4.7s ease-in-out infinite',
+        } : {
+          marginTop: '4px', padding: '10px 12px',
+          backgroundColor: accentBg,
+          borderRadius: '8px',
+          borderBottom: `2px solid ${accentBorder}`,
+        }
         return (
           <>
+          {/* Glitch keyframes — defined here so we don't depend on a
+              global stylesheet. Re-renders cheap; same animation name
+              works across mounts. */}
+          {inCracking && (
+            <style>{`
+              @keyframes crackingFlicker {
+                0%, 100% { opacity: 1; border-color: rgba(167,139,250,0.35); }
+                7%       { opacity: 0.88; border-color: rgba(255,80,140,0.4); }
+                14%      { opacity: 1; border-color: rgba(167,139,250,0.35); }
+                52%      { opacity: 0.92; border-color: rgba(80,210,255,0.35); }
+                57%      { opacity: 1; border-color: rgba(167,139,250,0.35); }
+              }
+              @keyframes crackingChip {
+                0%, 100% { transform: translateX(0); }
+                48%      { transform: translateX(-1px); }
+                51%      { transform: translateX(1px); }
+                54%      { transform: translateX(0); }
+              }
+            `}</style>
+          )}
           {collapsibleHeader('formula', 'Week Score Total', `${(weekPlayerFP + weekCardBonus).toFixed(1)} pts`, accentColor)}
           {expanded['formula'] && (
-          <div style={{
-            marginTop: '4px', padding: '10px 12px',
-            backgroundColor: accentBg, borderRadius: '8px',
-            borderBottom: `2px solid ${accentBorder}`,
-          }}>
+          <div style={equationBoxStyle}>
             {inCracking ? (
               <>
                 {/* Cracking attribution chip — matches HighlightFeed
                     Cores treatment so the breakdown reads as part of
-                    the same in-fiction event. */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                    the same in-fiction event. The horizontal jitter
+                    animation reinforces the "the simulation isn't
+                    holding still" vibe. */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  marginBottom: '10px',
+                  animation: 'crackingChip 5.3s ease-in-out infinite',
+                }}>
                   <span style={{
                     width: '5px', height: '5px', borderRadius: '50%',
                     backgroundColor: accentColor, flexShrink: 0,
+                    boxShadow: `0 0 6px ${accentColor}`,
                   }} />
                   <span style={{
                     fontSize: '10px', fontWeight: '700', color: accentColor,
-                    letterSpacing: '0.08em', textTransform: 'uppercase' as const,
+                    letterSpacing: '0.12em', textTransform: 'uppercase' as const,
+                    textShadow: crackingTextShadow,
                   }}>
                     Cracking · {coreDisplayName}
                   </span>
@@ -600,11 +648,15 @@ const PointsBreakdownPanel: React.FC<{
                           fontSize: '14px', fontFamily: 'monospace',
                           marginBottom: '8px', letterSpacing: '0.02em',
                           fontWeight: 600,
+                          textShadow: crackingTextShadow,
                         }}>
                           {templateRow}
                         </div>
                       )}
-                      <div style={{ fontSize: '16px', fontFamily: 'monospace', lineHeight: '1.6' }}>
+                      <div style={{
+                        fontSize: '16px', fontFamily: 'monospace', lineHeight: '1.6',
+                        textShadow: crackingTextShadow,
+                      }}>
                         {valueRow}
                       </div>
                     </>
@@ -642,6 +694,7 @@ const PointsBreakdownPanel: React.FC<{
               <span style={{
                 fontSize: inCracking ? '24px' : '20px', fontWeight: '800', color: '#22c55e',
                 fontFamily: 'monospace',
+                textShadow: crackingTextShadow,
               }}>= {(weekPlayerFP + weekCardBonus).toFixed(1)}</span>
             </div>
           </div>
