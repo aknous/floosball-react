@@ -538,19 +538,74 @@ const PointsBreakdownPanel: React.FC<{
                     Cracking · {coreDisplayName}
                   </span>
                 </div>
-                {/* Symbolic template — the Core's signature shape */}
-                {crackingTemplate && (
-                  <div style={{
-                    fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace',
-                    marginBottom: '6px', letterSpacing: '0.02em',
-                  }}>
-                    {crackingTemplate}
-                  </div>
-                )}
-                {/* Filled equation with values substituted */}
-                <div style={{ fontSize: '13px', color: '#e2e8f0', fontFamily: 'monospace', lineHeight: '1.6' }}>
-                  {crackingFormatted}
-                </div>
+                {(() => {
+                  // Build colored equation client-side from the raw inputs
+                  // we already have. Backend's plain-string equation reads
+                  // as a wall of numbers — colored variables make it
+                  // obvious which value came from roster, flat FP, or FPx.
+                  const R = eq!.weekRawFP
+                  const F = eq!.totalBonusFP
+                  const M = 1 + factors.reduce((s, f) => s + Math.max(0, f - 1), 0)
+                  const ROSTER = '#22c55e'
+                  const FP = TYPE_COLORS.fp
+                  const MULT = TYPE_COLORS.mult
+                  const NEUTRAL = '#cbd5e1'
+                  const span = (color: string, content: React.ReactNode, key?: React.Key) =>
+                    <span key={key} style={{ color }}>{content}</span>
+                  const Rsym = span(ROSTER, 'R', 'Rs')
+                  const Fsym = span(FP, 'ΣF', 'Fs')
+                  const Msym = span(MULT, 'ΣM', 'Ms')
+                  const Mval = span(MULT, M.toFixed(2), 'Mv')
+                  const Rval = span(ROSTER, R.toFixed(0), 'Rv')
+                  const Fval = span(FP, F.toFixed(0), 'Fv')
+                  // Per-Core symbolic + substituted rows.
+                  let templateRow: React.ReactNode = null
+                  let valueRow: React.ReactNode = null
+                  if (crackingCore === 'cassian') {
+                    templateRow = <>
+                      {span(NEUTRAL, '(')}{Rsym}{span(NEUTRAL, ' + ')}{Fsym}{span(NEUTRAL, ') × ')}{Msym}{span(NEUTRAL, ' × (')}{Msym}{span(NEUTRAL, ' + 1)')}
+                    </>
+                    valueRow = <>
+                      {span(NEUTRAL, '(')}{Rval}{span(NEUTRAL, ' + ')}{Fval}{span(NEUTRAL, ') × ')}{Mval}{span(NEUTRAL, ' × ')}{span(MULT, (M + 1).toFixed(2))}
+                    </>
+                  } else if (crackingCore === 'pyre') {
+                    templateRow = <>
+                      {span(NEUTRAL, '(')}{Rsym}{span(NEUTRAL, ' + ')}{Fsym}{span(NEUTRAL, ') × e^')}{Msym}
+                    </>
+                    valueRow = <>
+                      {span(NEUTRAL, '(')}{Rval}{span(NEUTRAL, ' + ')}{Fval}{span(NEUTRAL, ') × ')}{span(MULT, `e^${M.toFixed(2)}`)}
+                    </>
+                  } else if (crackingCore === 'aris') {
+                    templateRow = <>
+                      {span(NEUTRAL, '(')}{Rsym}{span(NEUTRAL, ' + ')}{Fsym}{span(NEUTRAL, ') × Γ(')}{Msym}{span(NEUTRAL, ' + 1) + 4×')}{Rsym}
+                    </>
+                    valueRow = <>
+                      {span(NEUTRAL, '(')}{Rval}{span(NEUTRAL, ' + ')}{Fval}{span(NEUTRAL, ') × ')}{span(MULT, `Γ(${(M + 1).toFixed(2)})`)}{span(NEUTRAL, ' + 4×')}{Rval}
+                    </>
+                  } else if (crackingCore === 'halverson') {
+                    templateRow = <>
+                      {span(NEUTRAL, '(')}{Rsym}{span(NEUTRAL, ' + ')}{Fsym}{span(NEUTRAL, ') × ')}{Msym}{span(NEUTRAL, '² + 6×')}{Rsym}
+                    </>
+                    valueRow = <>
+                      {span(NEUTRAL, '(')}{Rval}{span(NEUTRAL, ' + ')}{Fval}{span(NEUTRAL, ') × ')}{span(MULT, (M * M).toFixed(2))}{span(NEUTRAL, ' + 6×')}{Rval}
+                    </>
+                  }
+                  return (
+                    <>
+                      {templateRow && (
+                        <div style={{
+                          fontSize: '11px', fontFamily: 'monospace',
+                          marginBottom: '6px', letterSpacing: '0.02em',
+                        }}>
+                          {templateRow}
+                        </div>
+                      )}
+                      <div style={{ fontSize: '13px', fontFamily: 'monospace', lineHeight: '1.6' }}>
+                        {valueRow}
+                      </div>
+                    </>
+                  )
+                })()}
               </>
             ) : (
               <div style={{ fontSize: '13px', color: '#e2e8f0', fontFamily: 'monospace', lineHeight: '1.8' }}>
