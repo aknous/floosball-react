@@ -183,10 +183,16 @@ const PointsBreakdownPanel: React.FC<{
   const eq = equationSummary
   const hasEquation = eq && (eq.totalBonusFP > 0 || (eq.multFactors?.length ?? 0) > 0)
 
-  // Build per-card value chips: each card shows all its outputs inline
+  // Build per-card value chips: each card shows all its outputs inline.
+  // FPx cards also surface their bonus-additive delta — the amount that
+  // gets added to the aggregate (1 + Σ deltas) multiplier — so the
+  // `×1.30` on the chip ties visually to the `+0.30` in the equation.
   const formatValue = (val: number, type: 'fp' | 'mult' | 'floobits'): { str: string; color: string } => {
     if (type === 'fp') return { str: `+${val.toFixed(1)} FP`, color: TYPE_COLORS.fp }
-    if (type === 'mult') return { str: `${val.toFixed(2)}x FPx`, color: TYPE_COLORS.mult }
+    if (type === 'mult') {
+      const delta = Math.max(0, val - 1)
+      return { str: `${val.toFixed(2)}x FPx (+${delta.toFixed(2)})`, color: TYPE_COLORS.mult }
+    }
     return { str: `+${val}F`, color: TYPE_COLORS.floobits }
   }
 
