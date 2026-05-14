@@ -517,13 +517,27 @@ const PointsBreakdownPanel: React.FC<{
                 </>
               )}
               <span style={{ color: '#cbd5e1' }}>)</span>
-              {hasMult && factors.map((f, i) => (
-                <React.Fragment key={i}>
-                  <span style={{ color: '#cbd5e1' }}> {'\u00d7'} </span>
-                  <span style={{ color: TYPE_COLORS.mult, textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}>{f.toFixed(2)}</span>
-                  <span style={{ color: '#cbd5e1', textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}> FPx</span>
-                </React.Fragment>
-              ))}
+              {hasMult && (
+                <>
+                  {/* Bonus-additive FPx aggregation: multiplier is
+                      `1 + Σ(M − 1)`. Each card's contribution is its
+                      delta above 1.0, shown explicitly so users see
+                      what every FPx card brought to the table. */}
+                  <span style={{ color: '#cbd5e1' }}> {'\u00d7'} (</span>
+                  <span style={{ color: '#cbd5e1', textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}>1</span>
+                  {factors.map((f, i) => {
+                    const delta = Math.max(0, f - 1)
+                    return (
+                      <React.Fragment key={i}>
+                        <span style={{ color: '#cbd5e1', textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}> + </span>
+                        <span style={{ color: TYPE_COLORS.mult, textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}>{delta.toFixed(2)}</span>
+                      </React.Fragment>
+                    )
+                  })}
+                  <span style={{ color: '#cbd5e1' }}>) </span>
+                  <span style={{ color: '#cbd5e1', fontSize: '11px', opacity: 0.7 }}>FPx</span>
+                </>
+              )}
             </div>
 
             {/* Total */}
