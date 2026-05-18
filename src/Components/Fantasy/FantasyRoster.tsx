@@ -184,14 +184,16 @@ const PointsBreakdownPanel: React.FC<{
   const hasEquation = eq && (eq.totalBonusFP > 0 || (eq.multFactors?.length ?? 0) > 0)
 
   // Build per-card value chips: each card shows all its outputs inline.
-  // FPx cards also surface their bonus-additive delta — the amount that
-  // gets added to the aggregate (1 + Σ deltas) multiplier — so the
-  // `×1.30` on the chip ties visually to the `+0.30` in the equation.
+  // FPx cards surface the bonus-additive delta directly — the amount each
+  // card contributes to the aggregate (1 + Σ deltas) multiplier — so the
+  // chip ties one-to-one with the `+0.30` in the equation. Previously
+  // showed `1.30x FPx (+0.30)` with the literal multiplier, which read
+  // as the wrong number because the aggregator doesn't multiply 1.30 in.
   const formatValue = (val: number, type: 'fp' | 'mult' | 'floobits'): { str: string; color: string } => {
     if (type === 'fp') return { str: `+${val.toFixed(1)} FP`, color: TYPE_COLORS.fp }
     if (type === 'mult') {
       const delta = Math.max(0, val - 1)
-      return { str: `${val.toFixed(2)}x FPx (+${delta.toFixed(2)})`, color: TYPE_COLORS.mult }
+      return { str: `+${delta.toFixed(2)} FPx`, color: TYPE_COLORS.mult }
     }
     return { str: `+${val}F`, color: TYPE_COLORS.floobits }
   }
@@ -300,9 +302,17 @@ const PointsBreakdownPanel: React.FC<{
               eqNegated = isGrounded
               if (b.equation) eqSegments.push({text: b.equation, color: c})
               else if (b.matchMultiplied) {
-                const preMult = 1 + (b.primaryMult - 1) / mm
-                eqSegments.push({text: `${preMult.toFixed(2)}x`, color: c})
+                // No compute equation — show the pre-match delta directly
+                // so it lines up with the chip's delta result. Old display
+                // showed the full multiplier (e.g., "1.32x") which then
+                // looked smaller than the result delta and confused users.
+                const preBonus = (b.preMatchMult ?? 1) - 1
+                eqSegments.push({text: `+${preBonus.toFixed(2)} FPx`, color: c})
               }
+              // Match bonus on FPx uses bonus-additive scaling: only the
+              // bonus portion gets multiplied by the match factor. With
+              // compute equations now using delta notation (+X FPx), the
+              // multiplication chain reads correctly: +1.5 × 1.5 = +2.25.
               if (b.matchMultiplied) eqSegments.push({text: ` × ${mm}x match`, color: matchColor})
               if (multModTag) eqSegments.push({text: ` ${multModTag.trim()}`, color: c})
               eqResult = formatValue(b.primaryMult, 'mult')

@@ -1438,8 +1438,9 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>Participation Reward</p>
             <p style={textStyle}>
-              At the end of each week, 15% of your weekly FP is converted to Floobits (rounded down),
-              capped at 20 per week. Everyone who plays earns something.
+              At the end of each week, your weekly FP is converted to Floobits along a tapering
+              curve — big weeks always pay more than small weeks, but with diminishing returns
+              so payouts can't run away. Everyone who plays earns something.
             </p>
           </Section>
 
@@ -1742,7 +1743,7 @@ const AboutPage: React.FC = () => {
                 { name: 'Conscription', price: 200, color: '#a78bfa', desc: 'Adds a FLEX roster slot (any position) for 4 weeks. Limit 2/season.' },
                 { name: 'Accession', price: 200, color: '#67e8f9', desc: 'Adds a 6th card equipment slot for 4 weeks. Limit 2/season.' },
                 { name: 'Patronage', price: 125, color: '#f472b6', desc: 'Boosts all chance card trigger rates by 10% for 3 weeks. Limit 2/season.' },
-                { name: 'Endowment', price: 100, color: '#fbbf24', desc: 'Raises your weekly FP earnings cap to 40 Floobits for 4 weeks. Limit 2/season.' },
+                { name: 'Endowment', price: 100, color: '#fbbf24', desc: 'Increases Floobits received from weekly FP score. Limit 2/season.' },
               ].map(pu => (
                 <div key={pu.name} style={{
                   padding: '8px 12px',

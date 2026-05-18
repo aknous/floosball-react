@@ -12,6 +12,41 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.15.0',
+    date: '2026-05-16',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Cards] Themed packs in the shop. Position packs guarantee a card at one position (QB, RB, WR, TE, K). Output packs only contain cards of one payout type (FP, FPx, or Floobits). Champion and All-Pro packs only pull from last season\'s champion roster or All-Pro team.',
+          '[Cards] Themed pack reroll. Pay an escalating Floobit cost to refresh today\'s themed pack selection.',
+          '[Front Office] Coach hiring now runs per team. Every team without a coach gets a slate of 3 candidates at GM week. Each team\'s vote winner signs with that team, so other teams can\'t take your top pick.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Cards] Card FPx output is now shown as a delta (+0.32 FPx) instead of a full multiplier (1.32x). Matches how the equation totals work and makes match bonuses easier to read.',
+          '[Cards] FPx cards now combine by adding their deltas together, not by multiplying them. Keeps scaling in check when you stack multiple FPx cards in one hand.',
+          '[Cards] Card baseline rebalance to compensate for the new FPx math. Flat-FP and roster-trait cards pay about 2.25x more. FPx delta payouts trim by about 30%. Hands that mix FP and FPx now outperform stacking only FPx.',
+          '[Cards] Bizarro tier values trimmed. Top tier with the match bonus stacked was paying out at about 4x; new cap is 2.5x base.',
+          '[Achievements] Banner Week, Dynamo, Compound, and Zenith all bumped to harder thresholds. Card power crept up across the rebalance and the old targets were too easy to clear.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Cards] Achievement-reward and purchased packs are no longer lost if you refresh the page before picking your cards. The reveal modal now re-opens on the next page load until you complete your selection.',
+          '[Cards] Closer (q4-only FP card) now reads fourth-quarter fantasy points at week-end instead of zeroing out.',
+          '[Cards] Card projections fixed for several newer effects (Patient, Wanderer, Castaway, Rookie Hype, Anthem, Sandbagger, Quiet Storm, Drought, Nose Picker, Medium, Parlay).',
+          '[Front Office] Extra Swap powerup no longer shows as already-purchased in the shop after claiming an Extra Swap as an achievement reward. Free grants no longer count against the daily limit.',
+          '[Front Office] Powerups defer their start when the week\'s games have ended but the week hasn\'t rolled over yet, instead of starting and immediately wasting a week.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.14.0',
     date: '2026-05-10',
     changes: [],

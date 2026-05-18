@@ -56,7 +56,9 @@ export interface GmPlayerInfo {
 export interface GmEligibleTargets {
   teamId: number
   coach: GmCoachInfo | null
-  availableCoaches: GmCoachInfo[]
+  // Per-team candidate slate. Replaces the shared availableCoaches pool —
+  // each team now has its own 3 candidates, only one of which they hire.
+  coachCandidates: GmCoachInfo[]
   rosteredPlayers: GmPlayerInfo[]
   expiringPlayers: GmPlayerInfo[]
   retiringPlayers?: GmPlayerInfo[]
