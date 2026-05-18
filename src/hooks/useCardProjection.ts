@@ -230,10 +230,19 @@ export function useTemplateProjections(
 
 function formatOutput(proj: CardProjection): { primary: string; ceiling?: string } {
   if (proj.outputType === 'mult') {
+    // Show FPx as a delta (+0.32 FPx) to match the per-card chips and
+    // equation text. The mult value comes through as a full multiplier
+    // (e.g., 1.32) so we subtract 1 to get the additive contribution.
     const m = proj.projectedMult > 0 ? proj.projectedMult : 1
     const ceil = proj.bestCaseMult > 0 ? proj.bestCaseMult : m
-    const out: { primary: string; ceiling?: string } = { primary: `×${m.toFixed(2)}` }
-    if (ceil - m >= 0.05) out.ceiling = `up to ×${ceil.toFixed(2)}`
+    const delta = Math.max(0, m - 1)
+    const ceilDelta = Math.max(0, ceil - 1)
+    const out: { primary: string; ceiling?: string } = {
+      primary: `+${delta.toFixed(2)} FPx`,
+    }
+    if (ceilDelta - delta >= 0.05) {
+      out.ceiling = `up to +${ceilDelta.toFixed(2)} FPx`
+    }
     return out
   }
   if (proj.outputType === 'floobits') {

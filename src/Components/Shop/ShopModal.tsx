@@ -25,6 +25,9 @@ interface PackType {
   description: string
   dailyLimit: number | null
   remainingToday: number | null
+  guaranteedRarity?: string | null
+  themeType?: 'position' | 'team' | 'output' | 'champion' | 'allpro' | null
+  themeValue?: string | null
 }
 
 interface StarterPack extends PackType {
@@ -78,6 +81,32 @@ const PACK_COLORS: Record<string, { border: string; bg: string; accent: string }
   humble: { border: '#475569', bg: '#1e293b', accent: '#94a3b8' },
   grand: { border: '#db2777', bg: 'linear-gradient(135deg, #2e1065 0%, #701a3e 100%)', accent: '#f472b6' },
   exquisite: { border: '#a5f3fc', bg: 'linear-gradient(135deg, #0c4a6e 0%, #155e75 50%, #164e63 100%)', accent: '#67e8f9' },
+}
+
+// Themed packs get their accent from the theme dimension so the shop reads
+// at-a-glance. Position uses indigo; output type packs key off the currency
+// they pay; team packs reuse the neutral slate palette since their identity
+// is the team name itself. Champion + All-Pro are the prestige once-per-
+// season packs and get distinct flashy palettes (gold + emerald).
+const THEMED_PACK_COLORS: Record<string, { border: string; bg: string; accent: string }> = {
+  position: { border: '#6366f1', bg: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', accent: '#a5b4fc' },
+  team:     { border: '#475569', bg: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', accent: '#cbd5e1' },
+  output_fp:       { border: '#3b82f6', bg: 'linear-gradient(135deg, #172554 0%, #1e3a8a 100%)', accent: '#93c5fd' },
+  output_fpx:      { border: '#db2777', bg: 'linear-gradient(135deg, #500724 0%, #831843 100%)', accent: '#f472b6' },
+  output_floobits: { border: '#eab308', bg: 'linear-gradient(135deg, #422006 0%, #713f12 100%)', accent: '#facc15' },
+  champion: { border: '#f59e0b', bg: 'linear-gradient(135deg, #451a03 0%, #78350f 50%, #92400e 100%)', accent: '#fcd34d' },
+  allpro:   { border: '#10b981', bg: 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%)', accent: '#6ee7b7' },
+}
+
+const themedPackColors = (p: PackType) => {
+  if (p.themeType === 'output' && p.themeValue) {
+    const key = `output_${p.themeValue}`
+    return THEMED_PACK_COLORS[key] || THEMED_PACK_COLORS.position
+  }
+  if (p.themeType === 'team') return THEMED_PACK_COLORS.team
+  if (p.themeType === 'champion') return THEMED_PACK_COLORS.champion
+  if (p.themeType === 'allpro') return THEMED_PACK_COLORS.allpro
+  return THEMED_PACK_COLORS.position
 }
 
 const PACK_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
@@ -138,6 +167,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
   const contentRef = useRef<HTMLDivElement>(null)
 
   const [packs, setPacks] = useState<PackType[]>([])
+  const [themedPacks, setThemedPacks] = useState<PackType[]>([])
   const [starter, setStarter] = useState<StarterPack | null>(null)
   const [featured, setFeatured] = useState<FeaturedCard[]>([])
 
@@ -156,6 +186,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
 
   const [rerollCost, setRerollCost] = useState<number>(10)
   const [rerolling, setRerolling] = useState(false)
+  const [themedRerollCost, setThemedRerollCost] = useState<number>(30)
+  const [themedRerolling, setThemedRerolling] = useState(false)
   const [shopOpen, setShopOpen] = useState(true)
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
@@ -169,7 +201,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       const headers: Record<string, string> = {}
       if (tok) headers.Authorization = `Bearer ${tok}`
 
-      const [packsRes, featuredRes, balRes, powerupRes, rerollRes] = await Promise.all([
+      const [packsRes, featuredRes, balRes, powerupRes, rerollRes, themedRerollRes] = await Promise.all([
         // /packs/types is user-specific (starter.claimedThisSeason +
         // per-pack remainingToday counters) — must pass the token.
         fetch(`${API_BASE}/packs/types`, { headers }),
@@ -177,11 +209,13 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         tok ? fetch(`${API_BASE}/currency/balance`, { headers }) : Promise.resolve(null),
         tok ? fetch(`${API_BASE}/shop/powerups`, { headers }) : Promise.resolve(null),
         tok ? fetch(`${API_BASE}/shop/reroll-cost`, { headers }) : Promise.resolve(null),
+        tok ? fetch(`${API_BASE}/shop/themed-pack-reroll-cost`, { headers }) : Promise.resolve(null),
       ])
 
       if (packsRes.ok) {
         const j = await packsRes.json()
         setPacks(j.data?.packs ?? [])
+        setThemedPacks(j.data?.themedPacks ?? [])
         setStarter(j.data?.starter ?? null)
         if (j.data?.shopOpen !== undefined) setShopOpen(j.data.shopOpen)
       }
@@ -202,6 +236,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       if (rerollRes?.ok) {
         const rj = await rerollRes.json()
         setRerollCost(rj.data?.cost ?? 10)
+      }
+      if (themedRerollRes?.ok) {
+        const tj = await themedRerollRes.json()
+        setThemedRerollCost(tj.data?.cost ?? 30)
       }
     } catch { /* silent */ } finally {
       setLoading(false)
@@ -416,6 +454,36 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
     }
   }
 
+  const handleRerollThemed = async () => {
+    const tok = await getToken()
+    if (!tok) return
+    setThemedRerolling(true)
+    try {
+      const res = await fetch(`${API_BASE}/shop/reroll-themed-packs`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${tok}` },
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Reroll failed' }))
+        alert(err.detail || 'Reroll failed')
+        return
+      }
+      const j = await res.json()
+      if (j.data?.themedPacks) setThemedPacks(j.data.themedPacks)
+      if (typeof j.data?.newBalance === 'number') {
+        setBalance(j.data.newBalance)
+        updateFloobits(j.data.newBalance)
+      }
+      if (typeof j.data?.nextRerollCost === 'number') {
+        setThemedRerollCost(j.data.nextRerollCost)
+      }
+    } catch {
+      alert('Reroll failed')
+    } finally {
+      setThemedRerolling(false)
+    }
+  }
+
   if (!isOpen) return null
 
   return (
@@ -579,12 +647,14 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                 </div>
               )}
 
-              {/* ── Daily Card Packs (rotation by shop day) ── */}
-              {/* Starter pack is interleaved into the same grid when unclaimed
-                  this season — it disappears the moment the user claims it. */}
+              {/* ── Card Packs — unified section ──
+                  Always-visible:    starter (until claimed) + humble
+                  Rerollable slots:  3 themed/grand/exquisite picks from a
+                                     weighted category pool. Grand and
+                                     Exquisite only appear via this rotation. */}
               <div style={{ marginBottom: '28px' }}>
                 <SectionHeader
-                  title="Daily Packs"
+                  title="Card Packs"
                   collapsed={!!collapsed.packs}
                   onToggle={() => toggleSection('packs')}
                 />
@@ -595,23 +665,37 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                     flexWrap: 'wrap',
                     justifyContent: 'center',
                   }}>
-                    {/* Unclaimed starter renders inline as a free tile */}
+                    {/* Unclaimed starter renders inline as a free tile.
+                        Always available until claimed — not gated by
+                        shopOpen so new users can claim during playoffs/offseason. */}
                     {starter && !starter.claimedThisSeason && (() => {
                       const colors = PACK_COLORS.starter
                       const isBuying2 = buying === 'starter'
-                      const canBuy = !isBuying2 && !!user && shopOpen
+                      const canBuy = !isBuying2 && !!user
                       return (
                         <div key="starter" style={{
                           width: isMobile ? '100%' : '195px',
+                          minHeight: '215px',
                           borderRadius: '8px',
                           background: colors.bg,
                           borderBottom: `2px solid ${colors.border}`,
                           padding: '14px',
                           display: 'flex', flexDirection: 'column', gap: '8px',
                         }}>
-                          <div style={{ fontSize: '14px', fontWeight: '700', color: colors.accent, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <GiCardDraw size={28} color={colors.accent} />
-                            {starter.displayName}
+                          <div style={{
+                            fontSize: '14px',
+                            fontWeight: '700',
+                            color: colors.accent,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            minHeight: '38px',
+                            lineHeight: 1.25,
+                          }}>
+                            <div style={{ flexShrink: 0, display: 'flex' }}>
+                              <GiCardDraw size={28} color={colors.accent} />
+                            </div>
+                            <span>{starter.displayName}</span>
                           </div>
                           <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5, flex: 1 }}>
                             {starter.description}
@@ -640,25 +724,69 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                         </div>
                       )
                     })()}
-                    {packs.map(pack => {
-                      const colors = PACK_COLORS[pack.name] || PACK_COLORS.humble
+                    {[...packs, ...themedPacks].map(pack => {
+                      // Standard tier names hit PACK_COLORS; everything else
+                      // (themed packs) goes through the theme-color resolver.
+                      const colors = PACK_COLORS[pack.name] || themedPackColors(pack)
+                      const Icon = PACK_ICONS[pack.name] || GiCardDraw
                       const canAfford = balance >= pack.cost
                       const isBuying2 = buying === `pack_${pack.id}`
-                      const soldOut = pack.remainingToday !== null && pack.remainingToday <= 0
-                      const canBuy = canAfford && !isBuying2 && !soldOut && !!user && shopOpen
+                      const canBuy = canAfford && !isBuying2 && !!user && shopOpen
+
+                      const themeBadge = pack.themeType === 'position'
+                        ? pack.themeValue
+                        : pack.themeType === 'output'
+                          ? (pack.themeValue === 'fpx' ? 'FPx' : pack.themeValue === 'fp' ? 'FP' : 'Floobits')
+                          : pack.themeType === 'team'
+                            ? 'Team'
+                            : pack.themeType === 'champion'
+                              ? 'Champ'
+                              : pack.themeType === 'allpro'
+                                ? 'All-Pro'
+                                : null
 
                       return (
                         <div key={pack.id} style={{
                           width: isMobile ? '100%' : '195px',
+                          minHeight: '215px',
                           borderRadius: '8px',
                           background: colors.bg,
                           borderBottom: `2px solid ${colors.border}`,
                           padding: '14px',
                           display: 'flex', flexDirection: 'column', gap: '8px',
+                          position: 'relative',
                         }}>
-                          <div style={{ fontSize: '14px', fontWeight: '700', color: colors.accent, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {(() => { const Icon = PACK_ICONS[pack.name]; return Icon ? <Icon size={28} color={colors.accent} /> : null })()}
-                            {pack.displayName}
+                          {themeBadge && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '8px', right: '8px',
+                              fontSize: '9px',
+                              fontFamily: 'pressStart',
+                              color: colors.accent,
+                              background: `${colors.border}30`,
+                              border: `1px solid ${colors.border}`,
+                              borderRadius: '4px',
+                              padding: '3px 6px',
+                              letterSpacing: '0.5px',
+                            }}>
+                              {themeBadge}
+                            </div>
+                          )}
+                          <div style={{
+                            fontSize: '14px',
+                            fontWeight: '700',
+                            color: colors.accent,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            paddingRight: themeBadge ? '50px' : 0,
+                            minHeight: '38px',
+                            lineHeight: 1.25,
+                          }}>
+                            <div style={{ flexShrink: 0, display: 'flex' }}>
+                              <Icon size={28} color={colors.accent} />
+                            </div>
+                            <span>{pack.displayName}</span>
                           </div>
                           <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5, flex: 1 }}>
                             {pack.description}
@@ -669,15 +797,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               <span> · keep {pack.cardsKept}</span>
                             )}
                           </div>
-                          {pack.dailyLimit != null && (
-                            <div style={{ fontSize: '11px', color: soldOut ? '#ef4444' : '#94a3b8' }}>
-                              {soldOut
-                                ? 'Sold out today'
-                                : pack.remainingToday != null
-                                  ? `${pack.remainingToday} of ${pack.dailyLimit} remaining today`
-                                  : `Limit ${pack.dailyLimit} per day`}
-                            </div>
-                          )}
                           <button
                             onClick={() => handleOpenPack(pack.id)}
                             disabled={!canBuy}
@@ -694,11 +813,38 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               transition: 'opacity 0.15s',
                             }}
                           >
-                            {isBuying2 ? 'Opening...' : soldOut ? 'Sold Out' : `${pack.cost} Floobits`}
+                            {isBuying2 ? 'Opening...' : `${pack.cost} Floobits`}
                           </button>
                         </div>
                       )
                     })}
+                  </div>
+                )}
+                {!collapsed.packs && !!user && (
+                  <div style={{
+                    display: 'flex', justifyContent: 'center', marginTop: '14px',
+                  }}>
+                    <button
+                      onClick={handleRerollThemed}
+                      disabled={themedRerolling || balance < themedRerollCost || !shopOpen}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '5px',
+                        border: `1px solid ${balance >= themedRerollCost && shopOpen ? '#6366f1' : '#334155'}`,
+                        backgroundColor: balance >= themedRerollCost && shopOpen ? 'rgba(99,102,241,0.12)' : 'rgba(51,65,85,0.3)',
+                        color: balance >= themedRerollCost && shopOpen ? '#a5b4fc' : '#94a3b8',
+                        fontSize: '11px', fontWeight: '700',
+                        cursor: !themedRerolling && balance >= themedRerollCost && shopOpen ? 'pointer' : 'not-allowed',
+                        fontFamily: 'pressStart',
+                        opacity: themedRerolling ? 0.6 : 1,
+                        transition: 'opacity 0.15s',
+                        display: 'inline-flex', alignItems: 'center', gap: '6px',
+                      }}
+                      title="Reroll the rotating slots. Cost rises with each reroll this cycle."
+                    >
+                      <GiPerspectiveDiceSixFacesRandom size={14} />
+                      {themedRerolling ? 'Rerolling...' : `Reroll \u00b7 ${themedRerollCost}`}
+                    </button>
                   </div>
                 )}
               </div>

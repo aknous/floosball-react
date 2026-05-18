@@ -336,7 +336,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
     if (!gm.myVotes) return ids
     const { perType, perTarget } = gm.myVotes.counts
     if ((perType['hire_coach'] ?? 0) >= perTypeCap('hire_coach')) {
-      gm.eligible?.availableCoaches.forEach(c => { if (c.id !== null) ids.add(c.id) })
+      gm.eligible?.coachCandidates.forEach(c => { if (c.id !== null) ids.add(c.id) })
       return ids
     }
     for (const [key, count] of Object.entries(perTarget)) {
@@ -841,7 +841,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
             {gm.eligible.coach && (
               <FireCoachCard
                 coach={gm.eligible.coach}
-                availableCoaches={gm.eligible.availableCoaches}
+                availableCoaches={gm.eligible.coachCandidates}
                 tally={coachTally}
                 teamColor={teamColor}
                 voting={gm.voting === 'fire_coach'}
@@ -853,9 +853,9 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
               />
             )}
 
-            {gm.eligible.availableCoaches.length > 0 && coachTally && coachTally.votes >= coachTally.threshold && (
+            {gm.eligible.coachCandidates.length > 0 && (
               <HireCoachCard
-                availableCoaches={gm.eligible.availableCoaches}
+                availableCoaches={gm.eligible.coachCandidates}
                 tallies={gm.summary?.tallies ?? []}
                 teamColor={teamColor}
                 voting={gm.voting}
