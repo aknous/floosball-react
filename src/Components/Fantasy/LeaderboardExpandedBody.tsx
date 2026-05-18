@@ -93,7 +93,9 @@ function formatBreakdownOutput(b: CardBreakdown): { str: string; color: string }
   const fp = b.primaryFP ?? 0
   const mult = b.primaryMult ?? 1
   const floobits = b.floobitsEarned ?? b.primaryFloobits ?? 0
-  if (mult > 1) return { str: `×${mult.toFixed(2)}`, color: TYPE_COLORS.multiplier }
+  // FPx as a delta (+0.32 FPx) to match the per-card chip + equation. The
+  // mult value here is the full multiplier (1.32) so subtract 1.
+  if (mult > 1) return { str: `+${(mult - 1).toFixed(2)} FPx`, color: TYPE_COLORS.multiplier }
   if (fp > 0.05) return { str: `+${fp.toFixed(1)} FP`, color: TYPE_COLORS.flat_fp }
   if (floobits > 0) return { str: `+${Math.round(floobits)}F`, color: TYPE_COLORS.floobits }
   return null
