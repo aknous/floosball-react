@@ -18,9 +18,11 @@ import type { FantasyRosterPlayer } from '@/contexts/AuthContext'
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 interface SwapHistoryEntry {
+  // null fields denote remove / fresh-fill rows — backend returns null
+  // when no player occupied that side of the swap.
   slot: string
-  oldPlayerName: string
-  newPlayerName: string
+  oldPlayerName: string | null
+  newPlayerName: string | null
   swapWeek: number
   bankedFP: number
 }
@@ -329,7 +331,7 @@ const PointsBreakdownPanel: React.FC<{
                 const c = TYPE_COLORS.mult
                 eqSegments.push({text: b.equation, color: c})
                 eqSegments.push({text: ' (grounded)', color: '#ef4444'})
-                eqResult = { str: `${b.preMatchMult.toFixed(2)}x FPx`, color: '#64748b' }
+                eqResult = { str: `+${(b.preMatchMult - 1).toFixed(2)} FPx`, color: '#64748b' }
                 eqNegated = true
               } else {
                 eqSegments.push({text: b.equation, color: '#94a3b8'})
@@ -358,7 +360,7 @@ const PointsBreakdownPanel: React.FC<{
               // When grounded, use pre-modifier values to show what the card WOULD produce
               const realMult = negateChip ? (b.preMatchMult || b.primaryMult || 1) : (b.primaryMult || 1)
               zeroChip = t === 'mult'
-                ? { str: `${realMult.toFixed(2)}x FPx`, color: '#64748b', negated: negateChip }
+                ? { str: `+${Math.max(0, realMult - 1).toFixed(2)} FPx`, color: '#64748b', negated: negateChip }
                 : t === 'floobits'
                 ? { str: '+0F', color: '#64748b' }
                 : { str: '+0.0 FP', color: '#64748b' }
@@ -735,6 +737,7 @@ export const FantasyRoster: React.FC = () => {
   const [swapping, setSwapping] = useState(false)
   const [swapSlot, setSwapSlot] = useState<string | null>(null)
   const [pendingSwap, setPendingSwap] = useState<{ slot: string; player: any } | null>(null)
+  const [pendingRemove, setPendingRemove] = useState<{ slot: string; player: FantasyRosterPlayer } | null>(null)
   const [gamesActive, setGamesActive] = useState(false)
   const [gamesInProgress, setGamesInProgress] = useState(false)
   const [hasFlexSlot, setHasFlexSlot] = useState(false)
@@ -1011,6 +1014,25 @@ export const FantasyRoster: React.FC = () => {
     }
   }
 
+  const performRemove = async (slot: string) => {
+    const tok = await getToken()
+    if (!tok) return
+    setSwapping(true)
+    setMessage(null)
+    try {
+      const headers = { Authorization: `Bearer ${tok}` }
+      const res = await axios.post(`${API_BASE}/fantasy/roster/remove`, { slot }, { headers })
+      const msg = res.data?.data?.message || 'Player removed.'
+      setMessage(msg)
+      await fetchRoster(true)
+      refetchRoster()
+    } catch (err: any) {
+      setMessage(err.response?.data?.detail || 'Failed to remove player')
+    } finally {
+      setSwapping(false)
+    }
+  }
+
   if (!user) {
     return (
       <div style={cardStyleFn(isMobile)}>
@@ -1035,8 +1057,16 @@ export const FantasyRoster: React.FC = () => {
   const swapsAvailable = organicSwaps + purchasedSwaps
   const swapHistory = roster?.swapHistory ?? []
   const canSwap = isLocked && swapsAvailable > 0 && !gamesInProgress && !swapping
+  // Remove is always free, so it's gated only by the swap window being open —
+  // not by whether you have a swap available. Adding back will require a swap.
+  // Floor: can't drop below ROSTER_MIN_PLAYERS. Backend enforces, UI hides
+  // the X when it would be a no-op so the user isn't confused by a 409.
+  const ROSTER_MIN_PLAYERS = 3
+  const filledCount = roster?.players?.length ?? 0
+  const canRemove = isLocked && !gamesInProgress && !swapping && filledCount > ROSTER_MIN_PLAYERS
   const SLOTS = hasFlexSlot ? [...BASE_SLOTS, FLEX_SLOT] : BASE_SLOTS
   const allSlotsFilled = SLOTS.every(s => draftPlayers.has(s.key))
+  const draftMeetsMin = draftPlayers.size >= ROSTER_MIN_PLAYERS
   const excludeIds = Array.from(draftPlayers.values()).map(p => p.playerId)
   const activePickerSlot = swapSlot ?? pickerSlot
   const pickerPosition = SLOTS.find(s => s.key === activePickerSlot)?.position || 'QB'
@@ -1180,12 +1210,14 @@ export const FantasyRoster: React.FC = () => {
         }}>
           {draftPlayers.size === 0 ? (
             <>Fill each slot by selecting a player. Your roster will auto-lock and start earning points when the next week's games begin.</>
-          ) : !allSlotsFilled ? (
-            <>Fill your remaining slots, then <span style={{ color: '#3b82f6', fontWeight: '600' }}>save</span> your roster.</>
+          ) : !draftMeetsMin ? (
+            <>Add at least <strong>{ROSTER_MIN_PLAYERS} players</strong> for your roster to lock when games begin. Empty slots are allowed above the minimum.</>
           ) : dirty ? (
             <><span style={{ color: '#3b82f6', fontWeight: '600' }}>Save</span> your roster to finalize your picks.</>
           ) : gamesActive ? (
             <>Your roster is saved! Points will start accumulating next week.</>
+          ) : !allSlotsFilled ? (
+            <>Your roster is saved with {draftPlayers.size} of {SLOTS.length} slots filled. It will auto-lock when games begin. Empty slots score 0 FP.</>
           ) : (
             <>Your roster is saved! It will auto-lock and start earning points when games begin.</>
           )}
@@ -1336,6 +1368,34 @@ export const FantasyRoster: React.FC = () => {
                         Change
                       </button>
                     )}
+                    {!isLocked && player && draftPlayers.size > ROSTER_MIN_PLAYERS && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDraftPlayers(prev => {
+                            const next = new Map(prev)
+                            next.delete(slot.key)
+                            return next
+                          })
+                          setDirty(true)
+                        }}
+                        title="Remove from roster"
+                        aria-label="Remove from roster"
+                        style={{
+                          background: 'none', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '6px',
+                          color: '#ef4444', cursor: 'pointer', padding: 0,
+                          width: 26, height: 26,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    )}
                     {canSwap && (() => {
                       const slotCost = roster?.swapCosts?.[slot.key] ?? 15
                       return (
@@ -1351,19 +1411,60 @@ export const FantasyRoster: React.FC = () => {
                         </button>
                       )
                     })()}
+                    {canRemove && player && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setPendingRemove({ slot: slot.key, player }) }}
+                        title="Remove player. Adding a new player to this slot will cost a swap."
+                        aria-label="Remove player"
+                        style={{
+                          background: 'none', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '6px',
+                          color: '#ef4444', cursor: 'pointer', padding: 0,
+                          width: 26, height: 26,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    )}
                   </>
-                ) : (
+                ) : (() => {
+                  const slotCost = roster?.swapCosts?.[slot.key] ?? 15
+                  // Free first fill only on a fresh temp_flex FLEX (slotCost
+                  // is reported as 0 in that case). Otherwise filling an
+                  // empty slot requires an available swap + the slot fee.
+                  const freeFill = slotCost === 0
+                  const canFill = !isLocked || freeFill || canSwap
+                  const handleClick = () => {
+                    if (!canFill) return
+                    isLocked ? setSwapSlot(slot.key) : setPickerSlot(slot.key)
+                  }
+                  return (
                   <button
-                    onClick={() => isLocked ? setSwapSlot(slot.key) : setPickerSlot(slot.key)}
+                    onClick={handleClick}
+                    disabled={!canFill}
                     style={{
                       flex: 1, background: 'none', border: '1px dashed #475569', borderRadius: '8px',
-                      color: '#94a3b8', cursor: 'pointer', fontSize: '12px', padding: '10px',
+                      color: canFill ? '#94a3b8' : '#475569',
+                      cursor: canFill ? 'pointer' : 'not-allowed',
+                      fontSize: '12px', padding: '10px',
                       fontFamily: 'inherit', textAlign: 'center',
                     }}
                   >
-                    {isLocked ? `Add ${slot.label}` : `Select ${slot.label}`}
+                    {!isLocked
+                      ? `Select ${slot.label}`
+                      : !canFill
+                        ? `Add ${slot.label} (no swap)`
+                        : freeFill
+                          ? `Add ${slot.label}`
+                          : `Add ${slot.label} (${slotCost}F)`}
                   </button>
-                )}
+                  )
+                })()}
               </div>
               {/* Expanded stats panel */}
               {isExpanded && player && (
@@ -1549,9 +1650,13 @@ export const FantasyRoster: React.FC = () => {
                   <div>
                     <span style={{ color: '#64748b', fontSize: '10px', marginRight: '8px' }}>W{s.swapWeek}</span>
                     <span style={{ color: '#94a3b8', fontWeight: '600' }}>{s.slot}</span>
-                    <span style={{ color: '#64748b', margin: '0 6px' }}>{s.oldPlayerName}</span>
+                    <span style={{ color: '#64748b', margin: '0 6px' }}>
+                      {s.oldPlayerName ?? <em style={{ color: '#475569' }}>empty</em>}
+                    </span>
                     <span style={{ color: '#475569' }}>{'\u2192'}</span>
-                    <span style={{ color: '#e2e8f0', marginLeft: '6px' }}>{s.newPlayerName}</span>
+                    <span style={{ color: '#e2e8f0', marginLeft: '6px' }}>
+                      {s.newPlayerName ?? <span style={{ color: '#ef4444' }}>removed</span>}
+                    </span>
                   </div>
                   {s.bankedFP > 0 && (
                     <span style={{ color: '#4ade80', fontSize: '11px', flexShrink: 0 }}>
@@ -1562,6 +1667,61 @@ export const FantasyRoster: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Remove confirmation dialog */}
+      {pendingRemove && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backgroundColor: 'rgba(0,0,0,0.6)',
+        }} onClick={() => setPendingRemove(null)}>
+          <div style={{
+            backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '12px',
+            padding: '24px', maxWidth: '340px', width: '90%',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginBottom: '12px' }}>
+              Remove from {pendingRemove.slot}?
+            </div>
+            <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.6, marginBottom: '12px' }}>
+              <span style={{ color: '#e2e8f0', fontWeight: '600' }}>{pendingRemove.player.playerName}</span>
+              {' will be removed from your roster. Any FP they have already earned this season stays banked.'}
+            </div>
+            <div style={{
+              fontSize: '11px', color: '#fbbf24', lineHeight: 1.5, marginBottom: '16px',
+              padding: '8px 10px', borderRadius: '6px',
+              backgroundColor: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)',
+            }}>
+              Filling this slot again will cost a roster swap and the slot&rsquo;s usual Floobit fee.
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setPendingRemove(null)}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                  border: '1px solid #334155', backgroundColor: 'transparent', color: '#94a3b8',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const slot = pendingRemove.slot
+                  setPendingRemove(null)
+                  performRemove(slot)
+                }}
+                style={{
+                  flex: 1, padding: '10px', borderRadius: '6px', fontSize: '12px', fontWeight: '700',
+                  border: '1px solid rgba(239,68,68,0.4)', backgroundColor: 'rgba(239,68,68,0.12)',
+                  color: '#ef4444', cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1590,15 +1750,20 @@ export const FantasyRoster: React.FC = () => {
                 <span style={{ color: '#e2e8f0' }}>{pendingSwap.player.name}</span>
                 <span style={{ color: '#64748b' }}> ({pendingSwap.slot})</span>
               </div>
-              {!isEmptySlot && (() => {
+              {(() => {
                 const slotCost = roster?.swapCosts?.[pendingSwap.slot] ?? 15
+                // Cost is 0 for a fresh temp_flex first fill — show "Free"
+                // so the user isn't confused why an empty FLEX has no charge.
+                const label = slotCost > 0 ? `${slotCost} Floobits` : 'Free'
                 return (
                   <div style={{
-                    fontSize: '13px', fontWeight: '700', color: '#eab308', marginBottom: '16px',
-                    textAlign: 'center', padding: '8px', borderRadius: '6px',
-                    backgroundColor: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)',
+                    fontSize: '13px', fontWeight: '700',
+                    color: slotCost > 0 ? '#eab308' : '#4ade80',
+                    marginBottom: '16px', textAlign: 'center', padding: '8px', borderRadius: '6px',
+                    backgroundColor: slotCost > 0 ? 'rgba(234,179,8,0.08)' : 'rgba(74,222,128,0.08)',
+                    border: slotCost > 0 ? '1px solid rgba(234,179,8,0.2)' : '1px solid rgba(74,222,128,0.2)',
                   }}>
-                    {slotCost} Floobits
+                    {label}
                   </div>
                 )
               })()}
