@@ -331,7 +331,7 @@ const PointsBreakdownPanel: React.FC<{
                 const c = TYPE_COLORS.mult
                 eqSegments.push({text: b.equation, color: c})
                 eqSegments.push({text: ' (grounded)', color: '#ef4444'})
-                eqResult = { str: `${b.preMatchMult.toFixed(2)}x FPx`, color: '#64748b' }
+                eqResult = { str: `+${(b.preMatchMult - 1).toFixed(2)} FPx`, color: '#64748b' }
                 eqNegated = true
               } else {
                 eqSegments.push({text: b.equation, color: '#94a3b8'})
@@ -360,7 +360,7 @@ const PointsBreakdownPanel: React.FC<{
               // When grounded, use pre-modifier values to show what the card WOULD produce
               const realMult = negateChip ? (b.preMatchMult || b.primaryMult || 1) : (b.primaryMult || 1)
               zeroChip = t === 'mult'
-                ? { str: `${realMult.toFixed(2)}x FPx`, color: '#64748b', negated: negateChip }
+                ? { str: `+${Math.max(0, realMult - 1).toFixed(2)} FPx`, color: '#64748b', negated: negateChip }
                 : t === 'floobits'
                 ? { str: '+0F', color: '#64748b' }
                 : { str: '+0.0 FP', color: '#64748b' }
@@ -1059,9 +1059,14 @@ export const FantasyRoster: React.FC = () => {
   const canSwap = isLocked && swapsAvailable > 0 && !gamesInProgress && !swapping
   // Remove is always free, so it's gated only by the swap window being open —
   // not by whether you have a swap available. Adding back will require a swap.
-  const canRemove = isLocked && !gamesInProgress && !swapping
+  // Floor: can't drop below ROSTER_MIN_PLAYERS. Backend enforces, UI hides
+  // the X when it would be a no-op so the user isn't confused by a 409.
+  const ROSTER_MIN_PLAYERS = 3
+  const filledCount = roster?.players?.length ?? 0
+  const canRemove = isLocked && !gamesInProgress && !swapping && filledCount > ROSTER_MIN_PLAYERS
   const SLOTS = hasFlexSlot ? [...BASE_SLOTS, FLEX_SLOT] : BASE_SLOTS
   const allSlotsFilled = SLOTS.every(s => draftPlayers.has(s.key))
+  const draftMeetsMin = draftPlayers.size >= ROSTER_MIN_PLAYERS
   const excludeIds = Array.from(draftPlayers.values()).map(p => p.playerId)
   const activePickerSlot = swapSlot ?? pickerSlot
   const pickerPosition = SLOTS.find(s => s.key === activePickerSlot)?.position || 'QB'
@@ -1205,12 +1210,14 @@ export const FantasyRoster: React.FC = () => {
         }}>
           {draftPlayers.size === 0 ? (
             <>Fill each slot by selecting a player. Your roster will auto-lock and start earning points when the next week's games begin.</>
-          ) : !allSlotsFilled ? (
-            <>Fill your remaining slots, then <span style={{ color: '#3b82f6', fontWeight: '600' }}>save</span> your roster.</>
+          ) : !draftMeetsMin ? (
+            <>Add at least <strong>{ROSTER_MIN_PLAYERS} players</strong> for your roster to lock when games begin. Empty slots are allowed above the minimum.</>
           ) : dirty ? (
             <><span style={{ color: '#3b82f6', fontWeight: '600' }}>Save</span> your roster to finalize your picks.</>
           ) : gamesActive ? (
             <>Your roster is saved! Points will start accumulating next week.</>
+          ) : !allSlotsFilled ? (
+            <>Your roster is saved with {draftPlayers.size} of {SLOTS.length} slots filled. It will auto-lock when games begin. Empty slots score 0 FP.</>
           ) : (
             <>Your roster is saved! It will auto-lock and start earning points when games begin.</>
           )}
@@ -1361,7 +1368,7 @@ export const FantasyRoster: React.FC = () => {
                         Change
                       </button>
                     )}
-                    {!isLocked && player && (
+                    {!isLocked && player && draftPlayers.size > ROSTER_MIN_PLAYERS && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
