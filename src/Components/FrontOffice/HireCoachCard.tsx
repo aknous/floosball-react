@@ -44,13 +44,13 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
           letterSpacing: '0.06em',
           marginBottom: '10px',
         }}>
-          <span>Coaching Appointments</span>
+          <span>Coaching Candidates</span>
           <span style={{ fontWeight: '600', color: votesRemaining > 0 ? '#94a3b8' : '#ef4444', textTransform: 'none' }}>
             {votesRemaining} remaining
           </span>
         </div>
         <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
-          No candidates in the coaching pool.
+          Candidates appear once the current coach is fired or retires.
         </div>
       </div>
     )
@@ -69,13 +69,13 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
         letterSpacing: '0.06em',
         marginBottom: '10px',
       }}>
-        <span>Coaching Appointments</span>
+        <span>Coaching Candidates</span>
         <span style={{ fontWeight: '600', color: votesRemaining > 0 ? '#94a3b8' : '#ef4444', textTransform: 'none' }}>
           {votesRemaining} remaining
         </span>
       </div>
       <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '8px' }}>
-        Should the grievance succeed, nominate a preferred replacement. Whoever has the most votes is hired. Other teams hire from the same pool, so your top pick may sign elsewhere. Spread votes across backups so you're not stuck with the auto-pick.
+        Pick from your team&apos;s 3 candidates. Whoever gets the most votes is hired &mdash; no contention with other teams, no fallback. If no one votes, the highest-rated candidate wins by default.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {(() => {

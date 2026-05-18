@@ -491,7 +491,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
             </div>
           )}
 
-          {/* Bottom bar: confirm button (selection mode) or dismiss hint */}
+          {/* Bottom bar: confirm button (selection mode) or close button (free packs) */}
           {isSelectionMode && allRevealed ? (
             <div style={{
               marginTop: '28px', display: 'flex', justifyContent: 'center', gap: '12px',
@@ -518,12 +518,37 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                     : 'Confirm Selection'}
               </button>
             </div>
+          ) : allRevealed ? (
+            // Explicit Close button for free-grant / starter flows. The
+            // inner content stops click propagation (so card clicks don't
+            // close the modal during selection mode), which also blocked
+            // the old "click anywhere to close" backdrop dismiss — cards
+            // filled the screen and users had no way out.
+            <div style={{
+              marginTop: '28px', display: 'flex', justifyContent: 'center',
+            }}>
+              <button
+                onClick={onClose}
+                style={{
+                  padding: '10px 28px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: '#22c55e',
+                  color: '#0f172a',
+                  fontSize: '13px', fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'pressStart',
+                }}
+              >
+                Close
+              </button>
+            </div>
           ) : (
             <div style={{
               marginTop: '24px', fontSize: '11px', color: '#64748b',
               textAlign: 'center',
             }}>
-              {allRevealed ? 'Click anywhere to close' : 'Click to reveal all'}
+              Click to reveal all
             </div>
           )}
         </div>

@@ -183,10 +183,18 @@ const PointsBreakdownPanel: React.FC<{
   const eq = equationSummary
   const hasEquation = eq && (eq.totalBonusFP > 0 || (eq.multFactors?.length ?? 0) > 0)
 
-  // Build per-card value chips: each card shows all its outputs inline
+  // Build per-card value chips: each card shows all its outputs inline.
+  // FPx cards surface the bonus-additive delta directly — the amount each
+  // card contributes to the aggregate (1 + Σ deltas) multiplier — so the
+  // chip ties one-to-one with the `+0.30` in the equation. Previously
+  // showed `1.30x FPx (+0.30)` with the literal multiplier, which read
+  // as the wrong number because the aggregator doesn't multiply 1.30 in.
   const formatValue = (val: number, type: 'fp' | 'mult' | 'floobits'): { str: string; color: string } => {
     if (type === 'fp') return { str: `+${val.toFixed(1)} FP`, color: TYPE_COLORS.fp }
-    if (type === 'mult') return { str: `${val.toFixed(2)}x FPx`, color: TYPE_COLORS.mult }
+    if (type === 'mult') {
+      const delta = Math.max(0, val - 1)
+      return { str: `+${delta.toFixed(2)} FPx`, color: TYPE_COLORS.mult }
+    }
     return { str: `+${val}F`, color: TYPE_COLORS.floobits }
   }
 
@@ -294,9 +302,17 @@ const PointsBreakdownPanel: React.FC<{
               eqNegated = isGrounded
               if (b.equation) eqSegments.push({text: b.equation, color: c})
               else if (b.matchMultiplied) {
-                const preMult = 1 + (b.primaryMult - 1) / mm
-                eqSegments.push({text: `${preMult.toFixed(2)}x`, color: c})
+                // No compute equation — show the pre-match delta directly
+                // so it lines up with the chip's delta result. Old display
+                // showed the full multiplier (e.g., "1.32x") which then
+                // looked smaller than the result delta and confused users.
+                const preBonus = (b.preMatchMult ?? 1) - 1
+                eqSegments.push({text: `+${preBonus.toFixed(2)} FPx`, color: c})
               }
+              // Match bonus on FPx uses bonus-additive scaling: only the
+              // bonus portion gets multiplied by the match factor. With
+              // compute equations now using delta notation (+X FPx), the
+              // multiplication chain reads correctly: +1.5 × 1.5 = +2.25.
               if (b.matchMultiplied) eqSegments.push({text: ` × ${mm}x match`, color: matchColor})
               if (multModTag) eqSegments.push({text: ` ${multModTag.trim()}`, color: c})
               eqResult = formatValue(b.primaryMult, 'mult')
@@ -517,13 +533,27 @@ const PointsBreakdownPanel: React.FC<{
                 </>
               )}
               <span style={{ color: '#cbd5e1' }}>)</span>
-              {hasMult && factors.map((f, i) => (
-                <React.Fragment key={i}>
-                  <span style={{ color: '#cbd5e1' }}> {'\u00d7'} </span>
-                  <span style={{ color: TYPE_COLORS.mult, textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}>{f.toFixed(2)}</span>
-                  <span style={{ color: '#cbd5e1', textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}> FPx</span>
-                </React.Fragment>
-              ))}
+              {hasMult && (
+                <>
+                  {/* Bonus-additive FPx aggregation: multiplier is
+                      `1 + Σ(M − 1)`. Each card's contribution is its
+                      delta above 1.0, shown explicitly so users see
+                      what every FPx card brought to the table. */}
+                  <span style={{ color: '#cbd5e1' }}> {'\u00d7'} (</span>
+                  <span style={{ color: '#cbd5e1', textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}>1</span>
+                  {factors.map((f, i) => {
+                    const delta = Math.max(0, f - 1)
+                    return (
+                      <React.Fragment key={i}>
+                        <span style={{ color: '#cbd5e1', textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}> + </span>
+                        <span style={{ color: TYPE_COLORS.mult, textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}>{delta.toFixed(2)}</span>
+                      </React.Fragment>
+                    )
+                  })}
+                  <span style={{ color: '#cbd5e1' }}>) </span>
+                  <span style={{ color: '#cbd5e1', fontSize: '11px', opacity: 0.7 }}>FPx</span>
+                </>
+              )}
             </div>
 
             {/* Total */}

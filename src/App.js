@@ -37,6 +37,7 @@ import { GamesProvider } from './contexts/GamesContext'
 import { AchievementsProvider } from './contexts/AchievementsContext'
 import AchievementUnlockedToast from './Components/AchievementUnlockedToast'
 import FloobitsReceivedToast from './Components/FloobitsReceivedToast'
+import PendingPackResumer from './Components/Cards/PendingPackResumer'
 import { ChakraProvider } from '@chakra-ui/react'
 
 function AppLayout() {
@@ -265,6 +266,7 @@ function App() {
                     <AuthGate />
                     <AchievementUnlockedToast />
                     <FloobitsReceivedToast />
+                    <PendingPackResumer />
                   </SidebarProvider>
                 </AchievementsProvider>
               </GamesProvider>
