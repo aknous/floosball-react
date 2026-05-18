@@ -1062,7 +1062,8 @@ export const FantasyRoster: React.FC = () => {
   // Floor: can't drop below ROSTER_MIN_PLAYERS. Backend enforces, UI hides
   // the X when it would be a no-op so the user isn't confused by a 409.
   // Keep in sync with constants.ROSTER_MIN_PLAYERS on the backend.
-  const ROSTER_MIN_PLAYERS = 2
+  // Next-season raises this to 3 alongside the no-duplicate-effects rule.
+  const ROSTER_MIN_PLAYERS = 3
   const filledCount = roster?.players?.length ?? 0
   const canRemove = isLocked && !gamesInProgress && !swapping && filledCount > ROSTER_MIN_PLAYERS
   const SLOTS = hasFlexSlot ? [...BASE_SLOTS, FLEX_SLOT] : BASE_SLOTS
