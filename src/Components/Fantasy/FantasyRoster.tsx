@@ -1361,6 +1361,34 @@ export const FantasyRoster: React.FC = () => {
                         Change
                       </button>
                     )}
+                    {!isLocked && player && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setDraftPlayers(prev => {
+                            const next = new Map(prev)
+                            next.delete(slot.key)
+                            return next
+                          })
+                          setDirty(true)
+                        }}
+                        title="Remove from roster"
+                        aria-label="Remove from roster"
+                        style={{
+                          background: 'none', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '6px',
+                          color: '#ef4444', cursor: 'pointer', padding: 0,
+                          width: 26, height: 26,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    )}
                     {canSwap && (() => {
                       const slotCost = roster?.swapCosts?.[slot.key] ?? 15
                       return (
