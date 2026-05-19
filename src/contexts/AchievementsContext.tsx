@@ -29,6 +29,11 @@ interface AchievementsContextValue {
     cardsPerPack?: number
   } | null>
   deferReward: (rewardId: number) => Promise<void>
+  convertReward: (rewardId: number) => Promise<{
+    kind: 'floobits'
+    floobits: number
+    packName: string
+  } | null>
   // Unlock toast queue
   latestUnlock: AchievementUnlockedEvent | null
   dismissUnlock: () => void
@@ -152,6 +157,23 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     await refetch()
   }, [authHeaders, refetch])
 
+  const convertReward = useCallback(async (rewardId: number) => {
+    const auth = await authHeaders()
+    if (!auth.Authorization) throw new Error('Not signed in')
+    const headers: Record<string, string> = { ...auth, 'Content-Type': 'application/json' }
+    const resp = await fetch(`${API_BASE}/achievements/reward/${rewardId}/convert`, {
+      method: 'POST',
+      headers,
+    })
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => null)
+      throw new Error(err?.detail || 'Failed to convert reward')
+    }
+    const json = await resp.json()
+    await refetch()
+    return (json.data ?? json) || null
+  }, [authHeaders, refetch])
+
   const latestUnlock = unlockQueue[0] ?? null
   const dismissUnlock = useCallback(() => {
     setUnlockQueue(q => q.slice(1))
@@ -160,7 +182,7 @@ export const AchievementsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   return (
     <AchievementsContext.Provider value={{
       achievements, pendingRewards, unclaimedCount, currentSeason, currentWeek,
-      loading, refetch, claimReward, deferReward,
+      loading, refetch, claimReward, deferReward, convertReward,
       latestUnlock, dismissUnlock,
     }}>
       {children}
