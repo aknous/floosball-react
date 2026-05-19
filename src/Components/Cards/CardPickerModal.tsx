@@ -44,8 +44,6 @@ const PickerCard: React.FC<{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
         transition: 'transform 0.15s',
         transform: hovered && !disabled ? 'translateY(-4px)' : 'none',
-        opacity: disabled ? 0.45 : 1,
-        filter: disabled ? 'grayscale(0.5)' : 'none',
       }}
     >
       <div style={{
@@ -53,12 +51,20 @@ const PickerCard: React.FC<{
         borderRadius: '14px',
         boxShadow: isMatch && !disabled ? '0 0 0 2px #60a5fa, 0 0 12px rgba(96,165,250,0.3)' : 'none',
       }}>
-        <TradingCard
-          card={card}
-          size="sm"
-          noHoverLift
-          onHoverChange={disabled ? () => {} : setHovered}
-        />
+        {/* Apply the disabled wash to JUST the card art so the
+            EQUIPPED ELSEWHERE badge stays fully vivid on top. */}
+        <div style={{
+          opacity: disabled ? 0.4 : 1,
+          filter: disabled ? 'grayscale(0.7)' : 'none',
+          transition: 'opacity 0.15s, filter 0.15s',
+        }}>
+          <TradingCard
+            card={card}
+            size="sm"
+            noHoverLift
+            onHoverChange={disabled ? () => {} : setHovered}
+          />
+        </div>
         {isMatch && !disabled && (
           <div style={{
             position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
@@ -73,14 +79,19 @@ const PickerCard: React.FC<{
         )}
         {disabled && (
           <div style={{
-            position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
-            fontSize: '9px', color: '#fbbf24', fontWeight: '700',
-            backgroundColor: 'rgba(251,191,36,0.15)',
-            padding: '2px 6px', borderRadius: '4px',
-            border: '1px solid rgba(251,191,36,0.35)',
-            zIndex: 1, whiteSpace: 'nowrap' as const,
+            position: 'absolute', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%) rotate(-8deg)',
+            fontSize: '12px', color: '#0f172a', fontWeight: '800',
+            backgroundColor: '#fbbf24',
+            padding: '6px 12px', borderRadius: '6px',
+            border: '2px solid #f59e0b',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.5), 0 0 0 4px rgba(251,191,36,0.25)',
+            zIndex: 2, whiteSpace: 'nowrap' as const,
+            letterSpacing: '0.5px',
+            textTransform: 'uppercase' as const,
+            pointerEvents: 'none' as const,
           }}>
-            EQUIPPED ELSEWHERE
+            Equipped Elsewhere
           </div>
         )}
       </div>
