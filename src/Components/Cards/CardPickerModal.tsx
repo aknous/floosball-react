@@ -80,7 +80,7 @@ const PickerCard: React.FC<{
         {disabled && (
           <div style={{
             position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%) rotate(-8deg)',
+            transform: 'translate(-50%, -50%)',
             fontSize: '12px', color: '#0f172a', fontWeight: '800',
             backgroundColor: '#fbbf24',
             padding: '6px 12px', borderRadius: '6px',
