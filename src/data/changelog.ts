@@ -12,6 +12,47 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.15.1',
+    date: '2026-05-19',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Cards] Remove (red X) button on locked roster slots. Drop a player without using a swap. Adding a new player to that slot later still costs a swap and the slot fee.',
+          '[Cards] Convert to Floobits option on stashed pack rewards. When you already have a pack waiting to be opened and earn another one, the new pack now shows a Convert button (alongside Open) so you can trade it for Floobits at the pack\'s shop price instead of stockpiling.',
+          '[Cards] Card picker Output filter. Filter the picker list down to FP, FPx, or Floobits cards alongside the existing Position and Edition filters.',
+          '[Cards] No-duplicate-effects rule. Only one card of each effect can be equipped at a time. The picker dims and badges any card whose effect is already equipped in another slot.',
+          '[Cards] Empty roster slots that have never been filled now fill for free. Save a partial roster, play through, and fill the open slots later without burning swaps. Slots that have been swapped or removed still cost a swap.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Cards] Drought, Sandbagger, Quiet Storm, and Hedge require 5+ rostered players to pay out. These cards are meant for a full roster of underperformers, not a gutted-roster exploit.',
+          '[Cards] Roster minimum dropped to 2 players for lock (was a full 6). You can lock and play with a partial roster; empty slots score 0 for the week.',
+          '[Cards] Bonsai FP values roughly doubled. Was opening too far below other Prismatic flat-FP cards.',
+          '[Cards] Grand and Exquisite pack non-guaranteed slots tuned to the themed-pack rate table. You pay for the guaranteed Prismatic or Diamond; the rest are at elevated-but-not-inflated odds.',
+          '[Cards] Duplicate-effect equipped sets auto-resolve at week start. If you somehow had two of the same effect equipped, the lower-rarity copy unequips back into your collection at the next week boundary. No Floobit refund; the card is yours to sell, combine, or equip elsewhere.',
+          '[UI/UX] FPx equation text cleaned up. Dropped the "log-taper" jargon on Cornucopia and Juggernaut. Stripped the parenthetical caption from the full-roster gate so it reads cleanly as "Requires 5+ rostered players."',
+          '[Cards] Card descriptions updated. Drought / Sandbagger / Quiet Storm / Hedge now mention the 5+ filled slots requirement directly. All In and Stacked Deck tooltips switched to delta notation.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Cards] Home Alone now counts an empty FLEX slot. The FPx-per-empty-slot bonus was missing your open FLEX previously.',
+          '[Cards] Alchemy + Cornucopia synergy works regardless of slot order. Alchemy\'s "FGs count as TDs" bump now applies before other cards compute, so Cornucopia (and Touchdown Piñata, Avalanche, etc.) see the boosted count even if they sit in a lower slot.',
+          '[Cards] Lemons no longer multiplies FPx cards. Was wrongly amplifying the match-conditional FP on FPx cards when they were the lowest non-zero card in the hand.',
+          '[Cards] Leaderboard FPx output, breakdown zero-state chip, and grounded modifier chip all now show FPx as a delta (+0.32 FPx) instead of a full multiplier (1.32x).',
+          '[Cards] Pre-lock roster editor: Remove (X) button on each filled slot, so you can drop a player from your draft without first picking a replacement.',
+          '[Simulation] Crash dump on game-sim errors. If a game crashes mid-simulation the engine now writes a full state dump (traceback, score, OT period, possession state, recent feed) to the persistent volume so we can post-mortem after the next restart instead of losing the trail with log rotation.',
+          '[Simulation] Hard cap on overtime periods (5) to prevent a theoretically-deadlocked tied game from simulating forever. Beyond five OTs the game is accepted as a tie. Each tied finalize also logs the OT state.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.15.0',
     date: '2026-05-16',
     changes: [],
