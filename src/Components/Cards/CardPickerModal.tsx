@@ -13,16 +13,8 @@ const POSITION_LABELS: Record<number, string> = {
 }
 type PositionFilter = 'all' | 1 | 2 | 3 | 4 | 5
 type EditionFilter = 'all' | 'base' | 'holographic' | 'prismatic' | 'diamond'
-type SortMode = 'match' | 'rating' | 'edition' | 'output'
-
-// Output-type sort order. FP (flat) → FPx (multiplier) → Floobits
-// (currency) groups cards by what they actually pay out so users
-// building a themed hand can find the right pieces in one block.
-const OUTPUT_TYPE_ORDER: Record<string, number> = {
-  fp: 0,
-  mult: 1,
-  floobits: 2,
-}
+type OutputFilter = 'all' | 'fp' | 'mult' | 'floobits'
+type SortMode = 'match' | 'rating' | 'edition'
 
 const EDITION_ORDER: Record<string, number> = {
   diamond: 0, prismatic: 1, holographic: 2, base: 3,
@@ -188,6 +180,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
   const [query, setQuery] = useState('')
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all')
   const [editionFilter, setEditionFilter] = useState<EditionFilter>('all')
+  const [outputFilter, setOutputFilter] = useState<OutputFilter>('all')
   const [sortMode, setSortMode] = useState<SortMode>('match')
   const [matchOnly, setMatchOnly] = useState(false)
 
@@ -197,6 +190,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
       setQuery('')
       setPositionFilter('all')
       setEditionFilter('all')
+      setOutputFilter('all')
       setSortMode('match')
       setMatchOnly(false)
     }
@@ -251,6 +245,9 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
     if (editionFilter !== 'all') {
       filtered = filtered.filter(c => c.edition === editionFilter)
     }
+    if (outputFilter !== 'all') {
+      filtered = filtered.filter(c => c.outputType === outputFilter)
+    }
     if (matchOnly) {
       filtered = filtered.filter(c => rosterPlayerIds.has(c.playerId))
     }
@@ -261,18 +258,6 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
         break
       case 'edition':
         sorted.sort((a, b) => {
-          const ea = EDITION_ORDER[a.edition] ?? 99
-          const eb = EDITION_ORDER[b.edition] ?? 99
-          if (ea !== eb) return ea - eb
-          return b.playerRating - a.playerRating
-        })
-        break
-      case 'output':
-        sorted.sort((a, b) => {
-          const oa = OUTPUT_TYPE_ORDER[a.outputType ?? ''] ?? 99
-          const ob = OUTPUT_TYPE_ORDER[b.outputType ?? ''] ?? 99
-          if (oa !== ob) return oa - ob
-          // Within a type bucket: rarest first, then highest rated.
           const ea = EDITION_ORDER[a.edition] ?? 99
           const eb = EDITION_ORDER[b.edition] ?? 99
           if (ea !== eb) return ea - eb
@@ -292,7 +277,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
         })
     }
     return sorted
-  }, [cards, query, positionFilter, editionFilter, sortMode, matchOnly, rosterPlayerIds])
+  }, [cards, query, positionFilter, editionFilter, outputFilter, sortMode, matchOnly, rosterPlayerIds])
 
   if (!visible) return null
 
@@ -384,6 +369,18 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
             value={editionFilter}
             onChange={(v) => setEditionFilter(v as EditionFilter)}
           />
+          <div style={{ height: '6px' }} />
+          <FilterRow
+            label="Output"
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'fp', label: 'FP' },
+              { value: 'mult', label: 'FPx' },
+              { value: 'floobits', label: 'Floobits' },
+            ]}
+            value={outputFilter}
+            onChange={(v) => setOutputFilter(v as OutputFilter)}
+          />
 
           {/* Sort + match toggle row */}
           <div style={{
@@ -412,7 +409,6 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
                 <option value="match">Match first</option>
                 <option value="rating">Highest rated</option>
                 <option value="edition">Rarest first</option>
-                <option value="output">Output type</option>
               </select>
             </div>
             <label style={{
