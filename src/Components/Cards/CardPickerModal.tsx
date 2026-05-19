@@ -13,7 +13,16 @@ const POSITION_LABELS: Record<number, string> = {
 }
 type PositionFilter = 'all' | 1 | 2 | 3 | 4 | 5
 type EditionFilter = 'all' | 'base' | 'holographic' | 'prismatic' | 'diamond'
-type SortMode = 'match' | 'rating' | 'edition'
+type SortMode = 'match' | 'rating' | 'edition' | 'output'
+
+// Output-type sort order. FP (flat) → FPx (multiplier) → Floobits
+// (currency) groups cards by what they actually pay out so users
+// building a themed hand can find the right pieces in one block.
+const OUTPUT_TYPE_ORDER: Record<string, number> = {
+  fp: 0,
+  mult: 1,
+  floobits: 2,
+}
 
 const EDITION_ORDER: Record<string, number> = {
   diamond: 0, prismatic: 1, holographic: 2, base: 3,
@@ -258,6 +267,18 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
           return b.playerRating - a.playerRating
         })
         break
+      case 'output':
+        sorted.sort((a, b) => {
+          const oa = OUTPUT_TYPE_ORDER[a.outputType ?? ''] ?? 99
+          const ob = OUTPUT_TYPE_ORDER[b.outputType ?? ''] ?? 99
+          if (oa !== ob) return oa - ob
+          // Within a type bucket: rarest first, then highest rated.
+          const ea = EDITION_ORDER[a.edition] ?? 99
+          const eb = EDITION_ORDER[b.edition] ?? 99
+          if (ea !== eb) return ea - eb
+          return b.playerRating - a.playerRating
+        })
+        break
       case 'match':
       default:
         sorted.sort((a, b) => {
@@ -391,6 +412,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
                 <option value="match">Match first</option>
                 <option value="rating">Highest rated</option>
                 <option value="edition">Rarest first</option>
+                <option value="output">Output type</option>
               </select>
             </div>
             <label style={{
