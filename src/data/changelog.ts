@@ -29,11 +29,11 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         label: 'Changes',
         items: [
-          '[Cards] Drought, Sandbagger, Quiet Storm, and Hedge require 5+ rostered players to pay out. These cards are meant for a full roster of underperformers, not a gutted-roster exploit.',
-          '[Cards] Roster minimum dropped to 2 players for lock (was a full 6). You can lock and play with a partial roster; empty slots score 0 for the week.',
+          '[Cards] Drought, Sandbagger, Quiet Storm, and Hedge require 5+ rostered players to pay out. These cards are meant for a full roster of underperformers.',
+          '[Cards] Roster minimum dropped to 2 players for lock (was a full 6). You can lock and play with a partial roster.',
           '[Cards] Bonsai FP values roughly doubled. Was opening too far below other Prismatic flat-FP cards.',
           '[Cards] Grand and Exquisite pack non-guaranteed slots tuned to the themed-pack rate table. You pay for the guaranteed Prismatic or Diamond; the rest are at elevated-but-not-inflated odds.',
-          '[Cards] Duplicate-effect equipped sets auto-resolve at week start. If you somehow had two of the same effect equipped, the lower-rarity copy unequips back into your collection at the next week boundary. No Floobit refund; the card is yours to sell, combine, or equip elsewhere.',
+          '[Cards] Duplicate-effect equipped sets auto-resolve at week start. If you had two of the same effect equipped, the loser unequips back into your collection at the next week boundary. Keeper rule: rarer edition wins; if both are the same edition, the higher-rated depicted player wins. No Floobit refund; the unequipped card is yours to sell, combine, or equip elsewhere.',
           '[UI/UX] FPx equation text cleaned up. Dropped the "log-taper" jargon on Cornucopia and Juggernaut. Stripped the parenthetical caption from the full-roster gate so it reads cleanly as "Requires 5+ rostered players."',
           '[Cards] Card descriptions updated. Drought / Sandbagger / Quiet Storm / Hedge now mention the 5+ filled slots requirement directly. All In and Stacked Deck tooltips switched to delta notation.',
         ],
