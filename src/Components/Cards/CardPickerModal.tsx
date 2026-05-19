@@ -13,6 +13,7 @@ const POSITION_LABELS: Record<number, string> = {
 }
 type PositionFilter = 'all' | 1 | 2 | 3 | 4 | 5
 type EditionFilter = 'all' | 'base' | 'holographic' | 'prismatic' | 'diamond'
+type OutputFilter = 'all' | 'fp' | 'mult' | 'floobits'
 type SortMode = 'match' | 'rating' | 'edition'
 
 const EDITION_ORDER: Record<string, number> = {
@@ -29,31 +30,43 @@ const EDITION_LABELS: Record<EditionFilter, string> = {
 const PickerCard: React.FC<{
   card: CardData
   isMatch: boolean
+  // Effect is already equipped in another slot — only one of each effect
+  // can be equipped at a time, so this card can't be picked.
+  isDuplicateEffect?: boolean
   onSelect: (card: CardData) => void
   projection?: CandidateProjection
-}> = ({ card, isMatch, onSelect, projection }) => {
+}> = ({ card, isMatch, isDuplicateEffect, onSelect, projection }) => {
   const [hovered, setHovered] = useState(false)
   const style = projection ? projectionPillStyle(projection) : null
+  const disabled = !!isDuplicateEffect
   return (
     <div
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
         transition: 'transform 0.15s',
-        transform: hovered ? 'translateY(-4px)' : 'none',
+        transform: hovered && !disabled ? 'translateY(-4px)' : 'none',
       }}
     >
       <div style={{
         position: 'relative',
         borderRadius: '14px',
-        boxShadow: isMatch ? '0 0 0 2px #60a5fa, 0 0 12px rgba(96,165,250,0.3)' : 'none',
+        boxShadow: isMatch && !disabled ? '0 0 0 2px #60a5fa, 0 0 12px rgba(96,165,250,0.3)' : 'none',
       }}>
-        <TradingCard
-          card={card}
-          size="sm"
-          noHoverLift
-          onHoverChange={setHovered}
-        />
-        {isMatch && (
+        {/* Apply the disabled wash to JUST the card art so the
+            EQUIPPED ELSEWHERE badge stays fully vivid on top. */}
+        <div style={{
+          opacity: disabled ? 0.4 : 1,
+          filter: disabled ? 'grayscale(0.7)' : 'none',
+          transition: 'opacity 0.15s, filter 0.15s',
+        }}>
+          <TradingCard
+            card={card}
+            size="sm"
+            noHoverLift
+            onHoverChange={disabled ? () => {} : setHovered}
+          />
+        </div>
+        {isMatch && !disabled && (
           <div style={{
             position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
             fontSize: '9px', color: '#60a5fa', fontWeight: '700',
@@ -63,6 +76,23 @@ const PickerCard: React.FC<{
             zIndex: 1,
           }}>
             MATCH
+          </div>
+        )}
+        {disabled && (
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            fontSize: '12px', color: '#0f172a', fontWeight: '800',
+            backgroundColor: '#fbbf24',
+            padding: '6px 12px', borderRadius: '6px',
+            border: '2px solid #f59e0b',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.5), 0 0 0 4px rgba(251,191,36,0.25)',
+            zIndex: 2, whiteSpace: 'nowrap' as const,
+            letterSpacing: '0.5px',
+            textTransform: 'uppercase' as const,
+            pointerEvents: 'none' as const,
+          }}>
+            Equipped Elsewhere
           </div>
         )}
       </div>
@@ -95,19 +125,22 @@ const PickerCard: React.FC<{
         </div>
       )}
       <button
-        onClick={() => onSelect(card)}
+        onClick={() => !disabled && onSelect(card)}
+        disabled={disabled}
+        title={disabled ? "This effect is already equipped in another slot" : undefined}
         style={{
-          backgroundColor: 'rgba(59,130,246,0.85)',
-          border: '1px solid rgba(96,165,250,0.5)',
+          backgroundColor: disabled ? '#1e293b' : 'rgba(59,130,246,0.85)',
+          border: `1px solid ${disabled ? '#334155' : 'rgba(96,165,250,0.5)'}`,
           borderRadius: '6px',
-          color: '#fff', fontSize: '10px', fontWeight: '700',
+          color: disabled ? '#64748b' : '#fff',
+          fontSize: '10px', fontWeight: '700',
           fontFamily: 'pressStart',
           padding: '5px 14px',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
           transition: 'background-color 0.15s',
         }}
       >
-        Equip
+        {disabled ? 'In use' : 'Equip'}
       </button>
     </div>
   )
@@ -118,6 +151,11 @@ interface CardPickerModalProps {
   onClose: () => void
   onSelect: (card: CardData) => void
   excludeCardIds: number[]  // user_card IDs already equipped in other slots
+  // effectNames already equipped in OTHER slots. Cards with these
+  // effectNames stay visible in the picker but render as "EQUIPPED
+  // ELSEWHERE" + disabled Equip button, so the no-duplicate rule is
+  // visible at choose-time instead of via a 400 on save.
+  excludeEffectNames?: string[]
   rosterPlayerIds: Set<number>
   // Slot the picker is scoped to. Candidate projections are computed
   // as if each card replaced whatever currently occupies this slot —
@@ -127,8 +165,12 @@ interface CardPickerModalProps {
 }
 
 const CardPickerModal: React.FC<CardPickerModalProps> = ({
-  visible, onClose, onSelect, excludeCardIds, rosterPlayerIds, targetSlot,
+  visible, onClose, onSelect, excludeCardIds, excludeEffectNames, rosterPlayerIds, targetSlot,
 }) => {
+  const excludedEffectSet = useMemo(
+    () => new Set(excludeEffectNames ?? []),
+    [excludeEffectNames],
+  )
   const { getToken } = useAuth()
   // Only fetch candidate projections while the modal is actually open.
   const { candidatesByUserCardId } = useCardProjection(visible, visible ? (targetSlot ?? null) : null)
@@ -138,6 +180,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
   const [query, setQuery] = useState('')
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all')
   const [editionFilter, setEditionFilter] = useState<EditionFilter>('all')
+  const [outputFilter, setOutputFilter] = useState<OutputFilter>('all')
   const [sortMode, setSortMode] = useState<SortMode>('match')
   const [matchOnly, setMatchOnly] = useState(false)
 
@@ -147,6 +190,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
       setQuery('')
       setPositionFilter('all')
       setEditionFilter('all')
+      setOutputFilter('all')
       setSortMode('match')
       setMatchOnly(false)
     }
@@ -201,6 +245,9 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
     if (editionFilter !== 'all') {
       filtered = filtered.filter(c => c.edition === editionFilter)
     }
+    if (outputFilter !== 'all') {
+      filtered = filtered.filter(c => c.outputType === outputFilter)
+    }
     if (matchOnly) {
       filtered = filtered.filter(c => rosterPlayerIds.has(c.playerId))
     }
@@ -230,7 +277,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
         })
     }
     return sorted
-  }, [cards, query, positionFilter, editionFilter, sortMode, matchOnly, rosterPlayerIds])
+  }, [cards, query, positionFilter, editionFilter, outputFilter, sortMode, matchOnly, rosterPlayerIds])
 
   if (!visible) return null
 
@@ -322,6 +369,18 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
             value={editionFilter}
             onChange={(v) => setEditionFilter(v as EditionFilter)}
           />
+          <div style={{ height: '6px' }} />
+          <FilterRow
+            label="Output"
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'fp', label: 'FP' },
+              { value: 'mult', label: 'FPx' },
+              { value: 'floobits', label: 'Floobits' },
+            ]}
+            value={outputFilter}
+            onChange={(v) => setOutputFilter(v as OutputFilter)}
+          />
 
           {/* Sort + match toggle row */}
           <div style={{
@@ -386,8 +445,14 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
             }}>
               {displayed.map(card => {
                 const isMatch = rosterPlayerIds.has(card.playerId)
+                const isDuplicateEffect = !!card.effectName && excludedEffectSet.has(card.effectName)
                 return (
-                  <PickerCard key={card.id} card={card} isMatch={isMatch} onSelect={onSelect} projection={candidatesByUserCardId.get(card.id)} />
+                  <PickerCard
+                    key={card.id} card={card} isMatch={isMatch}
+                    isDuplicateEffect={isDuplicateEffect}
+                    onSelect={onSelect}
+                    projection={candidatesByUserCardId.get(card.id)}
+                  />
                 )
               })}
             </div>

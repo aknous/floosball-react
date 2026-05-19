@@ -442,6 +442,13 @@ const CardEquipment: React.FC = () => {
   }, [expanded, getToken])
 
   const equippedCardIds = displaySlots.filter(Boolean).map(s => s!.card.id)
+  // Effect names equipped in slots OTHER than the one the picker is
+  // opening. Used to disable duplicate-effect picks before submit so
+  // the user sees the rule at choose-time, not via a 400 on save.
+  const equippedEffectNamesExcludingPicker = displaySlots
+    .filter((s, i) => s != null && (i + 1) !== pickerSlot)
+    .map(s => s!.card.effectName || '')
+    .filter(Boolean)
   const canEdit = !isLocked && !saving
 
   // Deck cards: exclude equipped, sort by match > edition > rating
@@ -834,6 +841,7 @@ const CardEquipment: React.FC = () => {
         onClose={() => setPickerSlot(null)}
         onSelect={(card) => pickerSlot && handleEquip(card, pickerSlot)}
         excludeCardIds={equippedCardIds}
+        excludeEffectNames={equippedEffectNamesExcludingPicker}
         rosterPlayerIds={fantasyPlayerIds}
         targetSlot={pickerSlot}
       />

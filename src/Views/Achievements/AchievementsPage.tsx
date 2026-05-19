@@ -169,7 +169,7 @@ const powerupLabel = (slug: string) =>
 const AchievementsPage: React.FC = () => {
   const {
     achievements, pendingRewards, currentSeason, currentWeek,
-    loading, claimReward, deferReward,
+    loading, claimReward, deferReward, convertReward,
   } = useAchievements()
   const { user, getToken } = useAuth()
   const navigate = useNavigate()
@@ -246,6 +246,7 @@ const AchievementsPage: React.FC = () => {
             currentSeason={currentSeason}
             onClaim={claimReward}
             onDefer={deferReward}
+            onConvert={convertReward}
             onPackOpened={setOpenedPack}
           />
         )}
@@ -792,13 +793,27 @@ const PendingRewardsSection: React.FC<{
     cardsPerPack?: number
   } | null>
   onDefer: (id: number) => Promise<void>
+  onConvert: (id: number) => Promise<{
+    kind: 'floobits'
+    floobits: number
+    packName: string
+  } | null>
   onPackOpened: (pack: {
     packName: string
     cards: CardData[]
     pendingId?: number
     cardsKept?: number
   }) => void
-}> = ({ rewards, achievements, currentSeason, onClaim, onDefer, onPackOpened }) => {
+}> = ({ rewards, achievements, currentSeason, onClaim, onDefer, onConvert, onPackOpened }) => {
+  // Soft stash cap surfaced on the UI. Backend allows packs to queue
+  // beyond this — the Convert button appears on every pending pack
+  // row once the user is at or above this count so they can choose
+  // to trade a stashed pack for Floobits instead of opening it.
+  const STASH_LIMIT = 1
+  // PendingReward rows are unclaimed by definition — the API filters out
+  // claimed_at != null. Count the pack rows directly.
+  const pendingPackCount = rewards.filter(r => r.kind === 'pack').length
+  const stashFull = pendingPackCount > STASH_LIMIT
   const [busyId, setBusyId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -839,6 +854,18 @@ const PendingRewardsSection: React.FC<{
       await onDefer(r.id)
     } catch (e: any) {
       setError(e.message || 'Failed to defer')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const handleConvert = async (r: PendingReward) => {
+    setBusyId(r.id)
+    setError(null)
+    try {
+      await onConvert(r.id)
+    } catch (e: any) {
+      setError(e.message || 'Failed to convert')
     } finally {
       setBusyId(null)
     }
@@ -902,7 +929,7 @@ const PendingRewardsSection: React.FC<{
                   )}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                 {r.canDefer && !deferred && (
                   <button
                     onClick={() => handleDefer(r)}
@@ -918,6 +945,23 @@ const PendingRewardsSection: React.FC<{
                     Save for Next Season
                   </button>
                 )}
+                {r.kind === 'pack' && stashFull && !deferred && (
+                  <button
+                    onClick={() => handleConvert(r)}
+                    disabled={busy || lockedByDefer}
+                    title="Convert this pack to Floobits instead of opening it"
+                    style={{
+                      fontSize: '12px', fontWeight: 600,
+                      color: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.10)',
+                      border: '1px solid rgba(251,191,36,0.45)', borderRadius: '4px',
+                      padding: '5px 10px',
+                      cursor: busy || lockedByDefer ? 'not-allowed' : 'pointer',
+                      opacity: busy || lockedByDefer ? 0.5 : 1,
+                    }}
+                  >
+                    Convert to Floobits <span style={{ opacity: 0.7, fontWeight: 400 }}>(stash full)</span>
+                  </button>
+                )}
                 <button
                   onClick={() => handleClaim(r)}
                   disabled={busy || lockedByDefer}
@@ -931,7 +975,7 @@ const PendingRewardsSection: React.FC<{
                     opacity: busy || lockedByDefer ? 0.5 : 1,
                   }}
                 >
-                  {busy ? 'Claiming...' : 'Claim'}
+                  {busy ? 'Claiming...' : (r.kind === 'pack' && stashFull ? 'Open' : 'Claim')}
                 </button>
               </div>
             </div>
