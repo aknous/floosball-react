@@ -930,7 +930,7 @@ const PendingRewardsSection: React.FC<{
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                {r.canDefer && !deferred && (
+                {r.canDefer && !deferred && !(r.kind === 'pack' && stashFull) && (
                   <button
                     onClick={() => handleDefer(r)}
                     disabled={busy}
