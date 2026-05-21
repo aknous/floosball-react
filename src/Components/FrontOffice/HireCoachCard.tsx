@@ -75,7 +75,7 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
         </span>
       </div>
       <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '8px' }}>
-        Pick from your team&apos;s 3 candidates. Whoever gets the most votes is hired &mdash; no contention with other teams, no fallback. If no one votes, the highest-rated candidate wins by default.
+        Three candidates, one job. Most votes hires. If no one votes, the highest-rated one signs.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {(() => {
