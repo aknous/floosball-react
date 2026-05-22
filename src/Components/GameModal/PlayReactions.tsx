@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { FaFire, FaHeart, FaSurprise, FaLaughSquint, FaSadTear, FaAngry } from 'react-icons/fa'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
+import HoverTooltip from '../HoverTooltip'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -48,7 +49,6 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
   const { subscribe } = useSeasonWebSocket()
   const [reactions, setReactions] = useState<ReactionAggregate>(initial ?? {})
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [hoveredUsers, setHoveredUsers] = useState<{ type: ReactionType; users: ReactorUser[] } | null>(null)
   const [busy, setBusy] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
@@ -130,63 +130,67 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
       }}
     >
       {/* Existing reactions — clicking an icon you already used removes it;
-          clicking a different one swaps. */}
+          clicking a different one swaps. Hover shows reactor usernames via
+          the shared HoverTooltip portal. */}
       {presentTypes.map(type => {
         const def = ICON_BY_TYPE[type]
         const bucket = reactions[type]!
         const isOwn = ownReaction === type
         return (
-          <button
+          <HoverTooltip
             key={type}
-            disabled={busy || !user}
-            onClick={() => handleReact(type)}
-            onMouseEnter={() => setHoveredUsers({ type, users: bucket.users })}
-            onMouseLeave={() => setHoveredUsers(null)}
-            title={bucket.users.map(u => u.username).join(', ')}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '2px 8px',
-              borderRadius: '12px',
-              border: `1px solid ${isOwn ? def.color : '#334155'}`,
-              backgroundColor: isOwn ? `${def.color}1f` : 'transparent',
-              color: '#cbd5e1',
-              fontSize: '11px',
-              fontWeight: 600,
-              cursor: !user || busy ? 'default' : 'pointer',
-            }}
+            text={bucket.users.map(u => u.username).join(', ')}
+            color={def.color}
           >
-            <def.Icon size={11} color={def.color} />
-            <span>{bucket.count}</span>
-          </button>
+            <button
+              disabled={busy || !user}
+              onClick={() => handleReact(type)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                border: `1px solid ${isOwn ? def.color : '#334155'}`,
+                backgroundColor: isOwn ? `${def.color}1f` : 'transparent',
+                color: '#cbd5e1',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: !user || busy ? 'default' : 'pointer',
+              }}
+            >
+              <def.Icon size={11} color={def.color} />
+              <span>{bucket.count}</span>
+            </button>
+          </HoverTooltip>
         )
       })}
 
       {/* Add reaction trigger — opens the picker */}
       {user && (
-        <button
-          disabled={busy}
-          onClick={() => setPickerOpen(p => !p)}
-          title="React"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '24px',
-            height: '20px',
-            borderRadius: '10px',
-            border: '1px dashed #334155',
-            backgroundColor: 'transparent',
-            color: '#94a3b8',
-            fontSize: '14px',
-            lineHeight: 1,
-            cursor: busy ? 'default' : 'pointer',
-            padding: 0,
-          }}
-        >
-          +
-        </button>
+        <HoverTooltip text="React">
+          <button
+            disabled={busy}
+            onClick={() => setPickerOpen(p => !p)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '24px',
+              height: '20px',
+              borderRadius: '10px',
+              border: '1px dashed #334155',
+              backgroundColor: 'transparent',
+              color: '#94a3b8',
+              fontSize: '14px',
+              lineHeight: 1,
+              cursor: busy ? 'default' : 'pointer',
+              padding: 0,
+            }}
+          >
+            +
+          </button>
+        </HoverTooltip>
       )}
 
       {/* Picker popover — six icons in a row */}
@@ -206,52 +210,28 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
           boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
         }}>
           {REACTIONS.map(({ type, Icon, color, label }) => (
-            <button
-              key={type}
-              onClick={() => handleReact(type)}
-              title={label}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '28px',
-                height: '28px',
-                borderRadius: '14px',
-                border: 'none',
-                backgroundColor: ownReaction === type ? `${color}33` : 'transparent',
-                cursor: 'pointer',
-                transition: 'background-color 0.1s',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${color}40`)}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = ownReaction === type ? `${color}33` : 'transparent')}
-            >
-              <Icon size={16} color={color} />
-            </button>
+            <HoverTooltip key={type} text={label} color={color}>
+              <button
+                onClick={() => handleReact(type)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '14px',
+                  border: 'none',
+                  backgroundColor: ownReaction === type ? `${color}33` : 'transparent',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.1s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${color}40`)}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = ownReaction === type ? `${color}33` : 'transparent')}
+              >
+                <Icon size={16} color={color} />
+              </button>
+            </HoverTooltip>
           ))}
-        </div>
-      )}
-
-      {/* Username tooltip on hover — shows who reacted with a given type */}
-      {hoveredUsers && hoveredUsers.users.length > 0 && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          marginTop: '4px',
-          padding: '4px 8px',
-          backgroundColor: '#0f172a',
-          border: '1px solid #2a3a4e',
-          borderRadius: '4px',
-          fontSize: '10px',
-          color: '#cbd5e1',
-          whiteSpace: 'nowrap',
-          maxWidth: '240px',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          zIndex: 6,
-          pointerEvents: 'none',
-        }}>
-          {hoveredUsers.users.map(u => u.username).join(', ')}
         </div>
       )}
     </div>
