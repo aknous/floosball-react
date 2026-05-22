@@ -9,6 +9,7 @@ import { Stars } from './Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { PlayInsightsPanel } from './PlayInsightsPanel'
 import { personalityAccent } from '@/utils/personality'
+import { PlayReactions, ReactionAggregate } from './GameModal/PlayReactions'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -434,25 +435,49 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             )}
             {play.personalityEvent && (() => {
               const accent = personalityAccent(play.personalityEvent.personality)
+              const sidelineReactions: ReactionAggregate | undefined =
+                play.playNumber != null
+                  ? (gameData as any).reactions?.[String(play.playNumber)]?.sideline_quote
+                  : undefined
               return (
-                <p style={{
-                  fontSize: '13px',
-                  color: '#e2e8f0',
-                  fontStyle: 'italic',
-                  margin: '4px 0 0',
-                  backgroundColor: `${accent}10`,
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  borderLeft: `2px solid ${accent}`,
-                }}>
-                  {play.personalityEvent.text}
-                </p>
+                <div style={{ margin: '4px 0 0' }}>
+                  <p style={{
+                    fontSize: '13px',
+                    color: '#e2e8f0',
+                    fontStyle: 'italic',
+                    margin: 0,
+                    backgroundColor: `${accent}10`,
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    borderLeft: `2px solid ${accent}`,
+                  }}>
+                    {play.personalityEvent.text}
+                  </p>
+                  {play.playNumber != null && (
+                    <PlayReactions
+                      gameId={gameId}
+                      playNumber={play.playNumber}
+                      targetType="sideline_quote"
+                      initial={sidelineReactions}
+                    />
+                  )}
+                </div>
               )
             })()}
             {play.scoreChange && play.homeTeamScore != null && (
               <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                 {gameData.homeTeam.abbr} {play.homeTeamScore} – {play.awayTeamScore} {gameData.awayTeam.abbr}
               </div>
+            )}
+            {/* Reactions for the play itself — only on plays with a stable
+                playNumber. Drive separators and event-only rows are skipped. */}
+            {play.playNumber != null && !play._type && (
+              <PlayReactions
+                gameId={gameId}
+                playNumber={play.playNumber}
+                targetType="play"
+                initial={(gameData as any).reactions?.[String(play.playNumber)]?.play}
+              />
             )}
           </div>
         </div>
