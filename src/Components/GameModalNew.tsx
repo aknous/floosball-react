@@ -317,13 +317,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               : isClutchPlay ? 'inset 3px 0 0 #06b6d4'
               : isChokePlay ? 'inset 3px 0 0 #ef4444'
               : isMomentumShift ? 'inset 3px 0 0 #f97316'
-              : hasGlitch ? `inset 3px 0 0 #c084fc`
+              : hasGlitch ? `inset 3px 0 0 #39ff14`
               : 'none',
             backgroundColor: isBigPlay ? '#1a1300'
               : isClutchPlay ? '#001a1f'
               : isChokePlay ? '#1a0500'
               : isMomentumShift ? '#1a0f00'
-              : hasGlitch ? (isGlitchL2 ? '#170a1f' : '#120817')
+              : hasGlitch ? (isGlitchL2 ? '#0a1f0d' : '#08170a')
               : 'transparent',
             borderRadius: hasAccent ? '4px' : '0',
             display: 'flex',
@@ -383,7 +383,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 )}
                 {hasGlitch && (
                   <span className="anomaly-label" style={{
-                    color: '#c084fc',
+                    color: '#39ff14',
                     fontWeight: 700,
                     fontSize: '10px',
                     letterSpacing: '1px',
@@ -501,15 +501,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 className={glitchTextClass}
                 style={{
                   fontSize: '12px',
-                  color: isGlitchL2 ? '#f3e8ff' : '#e9d5ff',
+                  color: isGlitchL2 ? '#86efac' : '#bbf7d0',
                   fontStyle: 'italic',
                   fontFamily: 'monospace',
                   letterSpacing: '0.2px',
                   margin: '6px 0 0',
-                  backgroundColor: isGlitchL2 ? 'rgba(192,132,252,0.12)' : 'rgba(192,132,252,0.07)',
+                  backgroundColor: isGlitchL2 ? 'rgba(57,255,20,0.10)' : 'rgba(57,255,20,0.06)',
                   padding: '5px 9px',
                   borderRadius: '4px',
-                  borderLeft: '2px solid #c084fc',
+                  borderLeft: '2px solid #39ff14',
                 }}>
                 <GlitchedText text={(play as any).glitchText} intensity={isGlitchL2 ? 'high' : 'low'} />
               </p>
