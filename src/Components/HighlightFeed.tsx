@@ -183,6 +183,12 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
       // idle window so the feed is fresh for the upcoming games.
       setOffDayItems([])
     }
+    if (evtName === 'week_start') {
+      // Anomaly state transitions and Cores messages are scoped to the
+      // current week — flush them on the rollover so users don't see
+      // last week's lore lines lingering once a new week begins.
+      setNewsItems([])
+    }
   }, [event])
 
   // Backfill the off-day feed on mount from the backend ring buffer so the
