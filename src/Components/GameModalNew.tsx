@@ -10,6 +10,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { PlayInsightsPanel } from './PlayInsightsPanel'
 import { personalityAccent } from '@/utils/personality'
 import { PlayReactions } from './GameModal/PlayReactions'
+import { GlitchedText } from './GlitchedText'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -279,11 +280,25 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const isClutchPlay = !!play.isClutchPlay
     const isChokePlay = !!play.isChokePlay
     const isMomentumShift = !!play.isMomentumShift
+    const hasGlitch = !!(play as any).glitchText
+    const glitchLayer = (play as any).glitchLayer as ('micro' | 'personality' | undefined)
+    const isGlitchL2 = glitchLayer === 'personality'
+    // Pick a deterministic glitch variant (a/b/c) per play so the same
+    // play always looks the same on re-render, but different anomaly
+    // plays don't all use the identical effect.
+    const glitchVariant = (() => {
+      if (!hasGlitch) return ''
+      const seed = (play.playNumber ?? 0) + ((play as any).glitchPlayerId ?? 0)
+      return ['a', 'b', 'c'][Math.abs(seed) % 3]
+    })()
+    const glitchTextClass = hasGlitch
+      ? (isGlitchL2 ? `glitch-text-l2-${glitchVariant}` : `glitch-text-l1-${glitchVariant}`)
+      : ''
     const homeGained = (play.homeWpa ?? 0) > 0
     const bigPlayTeamAbbr = homeGained ? gameData.homeTeam.abbr : gameData.awayTeam.abbr
     const bigPlayTeamColor = homeGained ? gameData.homeTeam.color : gameData.awayTeam.color
     const wpaValue = homeGained ? (play.homeWpa ?? 0) : (play.awayWpa ?? 0)
-    const hasAccent = isBigPlay || isClutchPlay || isChokePlay || isMomentumShift
+    const hasAccent = isBigPlay || isClutchPlay || isChokePlay || isMomentumShift || hasGlitch
     const playKey = play.playNumber != null ? `pn-${play.playNumber}` : `${keyPrefix}-${index}`
     const hasInsights = play.insights && Object.keys(play.insights).length > 0
     const isExpanded = expandedPlayKey === playKey
@@ -292,6 +307,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       <div key={playKey} style={{ borderBottom: '1px solid #334155' }}>
         <div
           onClick={hasInsights ? () => setExpandedPlayKey(isExpanded ? null : playKey) : undefined}
+          className={hasGlitch ? (isGlitchL2 ? 'anomaly-row-l2' : 'anomaly-row-l1') : undefined}
           style={{
             paddingBottom: '12px',
             paddingTop: '6px',
@@ -301,11 +317,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               : isClutchPlay ? 'inset 3px 0 0 #06b6d4'
               : isChokePlay ? 'inset 3px 0 0 #ef4444'
               : isMomentumShift ? 'inset 3px 0 0 #f97316'
+              : hasGlitch ? `inset 3px 0 0 #39ff14`
               : 'none',
             backgroundColor: isBigPlay ? '#1a1300'
               : isClutchPlay ? '#001a1f'
               : isChokePlay ? '#1a0500'
               : isMomentumShift ? '#1a0f00'
+              : hasGlitch ? (isGlitchL2 ? '#0a1f0d' : '#08170a')
               : 'transparent',
             borderRadius: hasAccent ? '4px' : '0',
             display: 'flex',
@@ -363,6 +381,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     MOMENTUM SHIFT
                   </span>
                 )}
+                {hasGlitch && (
+                  <span className="anomaly-label" style={{
+                    color: '#39ff14',
+                    fontWeight: 700,
+                    fontSize: '10px',
+                    letterSpacing: '1px',
+                    fontFamily: 'monospace',
+                  }}>
+                    {isGlitchL2 ? '◆ data corrupted' : '◇ aberration detected'}
+                  </span>
+                )}
               </div>
               {/* Right: result label + expand indicator */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -409,16 +438,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             </div>
             <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) || play.reaction || play.personalityEvent || (play as any).glitchText ? '4px' : '0' }}>
               {(() => {
-                // Backend appends glitchText to playText for non-modal feeds
-                // that read playText alone. The modal renders glitchText in
-                // a dedicated styled block below, so strip it from the body
-                // here to avoid showing the same line twice.
                 const gt = (play as any).glitchText
                 const desc = play.description ?? ''
-                if (gt && desc.includes(gt)) {
-                  return desc.replace(`\n${gt}`, '').replace(gt, '').trim()
+                const cleaned = gt && desc.includes(gt)
+                  ? desc.replace(`\n${gt}`, '').replace(gt, '').trim()
+                  : desc
+                // On an anomaly play, route the description through GlitchedText
+                // so individual characters periodically swap to glitch glyphs.
+                // L1 is light, L2 is heavier.
+                if (hasGlitch) {
+                  return <GlitchedText text={cleaned} intensity={isGlitchL2 ? 'high' : 'low'} />
                 }
-                return desc
+                return cleaned
               })()}
             </p>
             {/* Clutch / choke attribution. Replaces the old badge with a
@@ -465,29 +496,24 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 </div>
               )
             })()}
-            {(play as any).glitchText && (() => {
-              // Anomaly glitch line — Layer 1 is subtle, Layer 2 louder.
-              // Lore-violet matches the AWAKENED/etc. tags in the highlight
-              // feed so users associate the two surfaces.
-              const layer = (play as any).glitchLayer as ('micro' | 'personality' | undefined)
-              const isL2 = layer === 'personality'
-              const color = '#c084fc'
-              return (
-                <p style={{
-                  fontSize: '13px',
-                  color: isL2 ? '#e2e8f0' : '#cbd5e1',
+            {hasGlitch && (
+              <p
+                className={glitchTextClass}
+                style={{
+                  fontSize: '12px',
+                  color: isGlitchL2 ? '#86efac' : '#bbf7d0',
                   fontStyle: 'italic',
-                  margin: '4px 0 0',
-                  backgroundColor: `${color}${isL2 ? '18' : '10'}`,
-                  padding: '4px 8px',
+                  fontFamily: 'monospace',
+                  letterSpacing: '0.2px',
+                  margin: '6px 0 0',
+                  backgroundColor: isGlitchL2 ? 'rgba(57,255,20,0.10)' : 'rgba(57,255,20,0.06)',
+                  padding: '5px 9px',
                   borderRadius: '4px',
-                  borderLeft: `2px solid ${color}`,
-                  opacity: isL2 ? 1 : 0.92,
+                  borderLeft: '2px solid #39ff14',
                 }}>
-                  {(play as any).glitchText}
-                </p>
-              )
-            })()}
+                <GlitchedText text={(play as any).glitchText} intensity={isGlitchL2 ? 'high' : 'low'} />
+              </p>
+            )}
             {play.scoreChange && play.homeTeamScore != null && (
               <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                 {gameData.homeTeam.abbr} {play.homeTeamScore} – {play.awayTeamScore} {gameData.awayTeam.abbr}

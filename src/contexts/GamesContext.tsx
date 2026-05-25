@@ -207,13 +207,24 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               : null
             const curGame = updated.get(gameId)!
             let existingPlays = curGame.plays || []
-            if (finalPlayData?.description) {
-              const alreadyHave = existingPlays.some(
-                (p: any) => p.description === finalPlayData.description && p.playResult === finalPlayData.playResult
-              )
-              if (!alreadyHave) {
-                existingPlays = [finalPlayData, ...existingPlays]
+
+            // Identity check for plays. Primary key: playNumber (set by backend
+            // and unique per play). Fall back to description+playResult for
+            // entries that don't carry a numeric playNumber (event messages,
+            // cutaways with fractional playNumbers).
+            const sameAsExisting = (cand: any) => {
+              if (!cand) return false
+              if (cand.playNumber != null && Number.isInteger(cand.playNumber)) {
+                if (existingPlays.some((p: any) => p.playNumber === cand.playNumber && !(p as any).isSidelineCutaway)) return true
               }
+              if (cand.description) {
+                if (existingPlays.some((p: any) => p.description === cand.description && p.playResult === cand.playResult)) return true
+              }
+              return false
+            }
+
+            if (finalPlayData && !sameAsExisting(finalPlayData)) {
+              existingPlays = [finalPlayData, ...existingPlays]
             }
 
             // Sideline cutaway — render as a flavor entry in the feed (between
@@ -255,7 +266,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               gameStats: gsEvt.gameStats ?? curGame.gameStats,
               plays: (() => {
                 let next = existingPlays
-                if (lastPlayData) next = [lastPlayData, ...next]
+                if (lastPlayData && !sameAsExisting(lastPlayData)) next = [lastPlayData, ...next]
                 if (cutawayEntry) next = [cutawayEntry, ...next]
                 return next
               })(),
@@ -278,13 +289,18 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const pcEvt = evt as any
             const curGame = updated.get(gameId)!
             const stampedPlay = { ...pcEvt.play, _receivedAt: Date.now() }
+            const existing = curGame.plays || []
+            const dup = existing.some((p: any) => (
+              (stampedPlay.playNumber != null && Number.isInteger(stampedPlay.playNumber) && p.playNumber === stampedPlay.playNumber && !p.isSidelineCutaway)
+              || (stampedPlay.description && p.description === stampedPlay.description && p.playResult === stampedPlay.playResult)
+            ))
             updated.set(gameId, {
               ...curGame,
               quarter: pcEvt.play.quarter ?? curGame.quarter,
               timeRemaining: pcEvt.play.timeRemaining ?? curGame.timeRemaining,
               homeWinProbability: pcEvt.play.homeWinProbability ?? curGame.homeWinProbability,
               awayWinProbability: pcEvt.play.awayWinProbability ?? curGame.awayWinProbability,
-              plays: [stampedPlay, ...(curGame.plays || [])]
+              plays: dup ? existing : [stampedPlay, ...existing]
             })
             break
           }
