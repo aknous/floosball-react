@@ -102,6 +102,19 @@ export interface PlayInsightsDefense {
   runDefMult: number
   passDefMult: number
   passRushMult: number
+  coverageType?: string | null
+  blitzPackage?: string | null
+  readResult?: 'correct' | 'neutral' | 'wrong'
+  readPCorrect?: number
+  readTendencyUsed?: boolean
+  readDefMind?: number
+  readCaptainInstinct?: number
+  defenseAbbr?: string
+  keyDown?: boolean
+  defenseResolve?: number
+  startYardsToGo?: number
+  startYardsToEndzone?: number
+  startDown?: number
 }
 
 export interface PlayInsightsTarget {
@@ -127,7 +140,13 @@ export interface PlayInsightsRun {
   blockerName: string | null
   blockingVsDefense: number
   effectiveRunDef: number
-  offenseVsDefense: number
+  // Three-gate run model: lineMatchup is the power differential at the
+  // front; the three gate chances are the probability of advancing past
+  // the line, the second-level box, and into the open field respectively.
+  lineMatchup?: number
+  gate1Chance?: number
+  gate2Chance?: number
+  gate3Chance?: number
   stage1Yards: number
   fumbleRisk: number
   isFumble: boolean

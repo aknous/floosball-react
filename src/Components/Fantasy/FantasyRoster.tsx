@@ -292,9 +292,18 @@ const PointsBreakdownPanel: React.FC<{
             const fModTag = mod === 'payday' ? ' × 3x payday'
               : isLongshot ? ' × 2x longshot' : ''
 
+            // Multi-output cards (e.g. Believe, Comeback Kid, Domination,
+            // Walk Off) join their equation parts with " | " — primary
+            // payout first, then trigger bonuses. Split here so the
+            // trigger bonus renders as its own sub-line (matching the
+            // visual treatment of match/edition bonuses) instead of
+            // crowding the primary equation line.
+            const eqSplit = (b.equation || '').split(' | ')
+            const eqPrimary = eqSplit[0] || ''
+            const eqExtras = eqSplit.slice(1)
             if (b.primaryFP > 0 || fpMatched) {
               const c = TYPE_COLORS.fp
-              if (b.equation) eqSegments.push({text: b.equation, color: c})
+              if (eqPrimary) eqSegments.push({text: eqPrimary, color: c})
               else if (fpMatched) eqSegments.push({text: b.preMatchFP.toFixed(1), color: c})
               if (fpMatched) eqSegments.push({text: ` × ${mm}x match`, color: matchColor})
               if (fpModTag) eqSegments.push({text: ` ${fpModTag.trim()}`, color: c})
@@ -302,7 +311,7 @@ const PointsBreakdownPanel: React.FC<{
             } else if (b.primaryMult > 1) {
               const c = TYPE_COLORS.mult
               eqNegated = isGrounded
-              if (b.equation) eqSegments.push({text: b.equation, color: c})
+              if (eqPrimary) eqSegments.push({text: eqPrimary, color: c})
               else if (b.matchMultiplied) {
                 // No compute equation — show the pre-match delta directly
                 // so it lines up with the chip's delta result. Old display
@@ -320,7 +329,7 @@ const PointsBreakdownPanel: React.FC<{
               eqResult = formatValue(b.primaryMult, 'mult')
             } else if (primaryF > 0) {
               const c = TYPE_COLORS.floobits
-              if (b.equation) eqSegments.push({text: b.equation, color: c})
+              if (eqPrimary) eqSegments.push({text: eqPrimary, color: c})
               else if (fMatched) eqSegments.push({text: `${b.preMatchFloobits}F`, color: c})
               if (fMatched && b.preMatchFloobits !== primaryF) eqSegments.push({text: ` × ${mm}x match`, color: matchColor})
               if (fModTag) eqSegments.push({text: ` ${fModTag.trim()}`, color: c})
@@ -340,6 +349,27 @@ const PointsBreakdownPanel: React.FC<{
 
             // Sub-lines: conditional, edition bonuses (with negation tracking)
             const subLines: { label: React.ReactNode; chip: { str: string; color: string }; negated?: boolean }[] = []
+            // Multi-output trigger bonuses split off the primary equation
+            // (e.g. Believe's "+15F (fav team won this week)"). Each
+            // extra " | "-separated piece renders as its own sub-line
+            // with the floobits chip — matches the visual weight of a
+            // match bonus. The chip value comes from primaryFloobits when
+            // the trigger fired; if multiple extras exist they share that
+            // total (rare — currently every multi-output card has at most
+            // one trigger bonus).
+            if (eqExtras.length > 0 && (b.primaryFloobits ?? 0) > 0) {
+              const triggerFloobits = b.primaryFloobits ?? 0
+              for (let xi = 0; xi < eqExtras.length; xi++) {
+                const part = eqExtras[xi]
+                // Strip a leading "+NF " if present so the label reads as
+                // pure context — the chip already shows the value.
+                const labelText = part.replace(/^\+?\d+F\s*/, '').trim() || part
+                subLines.push({
+                  label: <span style={{ color: TYPE_COLORS.floobits }}>{labelText}</span>,
+                  chip: formatValue(xi === 0 ? triggerFloobits : 0, 'floobits'),
+                })
+              }
+            }
             // Conditional bonus (match bonus — only triggers when card player is on roster)
             if ((b.conditionalBonus ?? 0) > 0) {
               const condLabel = <><span style={{ color: matchColor, fontWeight: '700' }}>Match</span> {b.conditionalLabel || 'Conditional bonus'}</>
@@ -1062,7 +1092,8 @@ export const FantasyRoster: React.FC = () => {
   // Floor: can't drop below ROSTER_MIN_PLAYERS. Backend enforces, UI hides
   // the X when it would be a no-op so the user isn't confused by a 409.
   // Keep in sync with constants.ROSTER_MIN_PLAYERS on the backend.
-  const ROSTER_MIN_PLAYERS = 2
+  // Next-season raises this to 3 alongside the no-duplicate-effects rule.
+  const ROSTER_MIN_PLAYERS = 3
   const filledCount = roster?.players?.length ?? 0
   const canRemove = isLocked && !gamesInProgress && !swapping && filledCount > ROSTER_MIN_PLAYERS
   const SLOTS = hasFlexSlot ? [...BASE_SLOTS, FLEX_SLOT] : BASE_SLOTS

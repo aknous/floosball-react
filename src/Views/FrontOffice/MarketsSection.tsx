@@ -25,6 +25,10 @@ interface MarketTeam {
   effectiveFunding: number
   baselineFunding: number
   fanContributions: number
+  // Funding value the current locked tier was computed from. At season start
+  // this is baseline + carried; at offseason recompute it's effective_funding
+  // at that moment. Falls back to effectiveFunding if backend omits it.
+  tierLockedFunding?: number
   fanCount: number
   totalFans: number
   topPatrons: Patron[]
@@ -101,12 +105,15 @@ function FundingSnapshotChart({
   const LARGE_RATIO = 1.15
   const MEGA_RATIO = 2.0
 
-  // Filled dot = this season's LOCKED position, frozen at season start.
-  // season_start_funding = baseline + carried_funding = effective - fan_contribs.
-  // This doesn't change mid-season, so the filled dot stays put even as fans
-  // contribute (their contributions only affect projection, not current tier).
-  const seasonStartFunding = (t: MarketTeam) => t.effectiveFunding - t.fanContributions
-  const totalSeasonStart = sorted.reduce((acc, t) => acc + seasonStartFunding(t), 0)
+  // Filled dot = the funding value the current tier was LOCKED against —
+  // exposed by the backend as tierLockedFunding. During the regular season
+  // that's baseline + carried (season-start). After the offseason recompute
+  // it's the effective_funding snapshot at that moment, so the dot always
+  // sits inside the tier band the badge displays. Falls back to effective -
+  // contributions for compatibility with older backends.
+  const tierLockedFunding = (t: MarketTeam) =>
+    t.tierLockedFunding ?? (t.effectiveFunding - t.fanContributions)
+  const totalSeasonStart = sorted.reduce((acc, t) => acc + tierLockedFunding(t), 0)
   const startFairShare = sorted.length > 0 ? totalSeasonStart / sorted.length : 1
 
   // Arrow = next season's projected position, recomputed live as
@@ -115,7 +122,7 @@ function FundingSnapshotChart({
   const totalProj = sorted.reduce((acc, t) => acc + (t.projectedFunding || t.effectiveFunding), 0)
   const projFairShare = sorted.length > 0 ? totalProj / sorted.length : 1
 
-  const currentRatio = (t: MarketTeam) => seasonStartFunding(t) / Math.max(1, startFairShare)
+  const currentRatio = (t: MarketTeam) => tierLockedFunding(t) / Math.max(1, startFairShare)
   const projRatio = (t: MarketTeam) =>
     (t.projectedFunding || t.effectiveFunding) / Math.max(1, projFairShare)
 
@@ -217,7 +224,7 @@ function FundingSnapshotChart({
           const projectedColor = TIER_COLORS[team.projectedTier]
           const tierDelta = TIER_RANK[team.tier] - TIER_RANK[team.projectedTier]
           const isFav = team.id === favoriteTeamId
-          const seasonStart = seasonStartFunding(team)
+          const seasonStart = tierLockedFunding(team)
           const projFundingVal = team.projectedFunding || team.effectiveFunding
           const fundingDelta = projFundingVal - seasonStart
 
@@ -233,7 +240,7 @@ function FundingSnapshotChart({
                   {TIER_LABELS[team.tier]}
                 </strong>
               </div>
-              <div>Season-start funding: <strong>{seasonStart.toLocaleString()}F</strong></div>
+              <div>Tier locked at: <strong>{seasonStart.toLocaleString()}F</strong></div>
               <div>Fan contributions: <strong style={{ color: '#fbbf24' }}>{team.fanContributions.toLocaleString()}F</strong></div>
               <div>Effective now: <strong>{team.effectiveFunding.toLocaleString()}F</strong></div>
             </div>

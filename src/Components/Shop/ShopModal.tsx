@@ -189,6 +189,12 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
   const [themedRerollCost, setThemedRerollCost] = useState<number>(30)
   const [themedRerolling, setThemedRerolling] = useState(false)
   const [shopOpen, setShopOpen] = useState(true)
+  // Shop-cycle pack cap — surfaced so the UI can show "X of Y packs this cycle"
+  // and gray out buy buttons when the user is at the cap.
+  const [cycleLimit, setCycleLimit] = useState<number>(0)
+  const [cyclePacksOpened, setCyclePacksOpened] = useState<number>(0)
+  const cycleRemaining = Math.max(0, cycleLimit - cyclePacksOpened)
+  const cycleCapped = cycleLimit > 0 && cycleRemaining <= 0
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const toggleSection = (key: string) =>
@@ -218,6 +224,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         setThemedPacks(j.data?.themedPacks ?? [])
         setStarter(j.data?.starter ?? null)
         if (j.data?.shopOpen !== undefined) setShopOpen(j.data.shopOpen)
+        if (typeof j.data?.cycleLimit === 'number') setCycleLimit(j.data.cycleLimit)
+        if (typeof j.data?.cyclePacksOpened === 'number') setCyclePacksOpened(j.data.cyclePacksOpened)
       }
       if (featuredRes?.ok) {
         const j = await featuredRes.json()
@@ -658,6 +666,18 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   collapsed={!!collapsed.packs}
                   onToggle={() => toggleSection('packs')}
                 />
+                {!collapsed.packs && cycleLimit > 0 && (
+                  <div style={{
+                    fontSize: '11px',
+                    color: cycleCapped ? '#ef4444' : '#94a3b8',
+                    textAlign: 'center',
+                    marginBottom: '10px',
+                  }}>
+                    {cycleCapped
+                      ? `Cycle limit reached (${cyclePacksOpened} of ${cycleLimit}). Refreshes next cycle.`
+                      : `${cyclePacksOpened} of ${cycleLimit} packs opened this cycle`}
+                  </div>
+                )}
                 {!collapsed.packs && (
                   <div style={{
                     display: 'flex',
@@ -731,7 +751,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                       const Icon = PACK_ICONS[pack.name] || GiCardDraw
                       const canAfford = balance >= pack.cost
                       const isBuying2 = buying === `pack_${pack.id}`
-                      const canBuy = canAfford && !isBuying2 && !!user && shopOpen
+                      const canBuy = canAfford && !isBuying2 && !!user && shopOpen && !cycleCapped
 
                       const themeBadge = pack.themeType === 'position'
                         ? pack.themeValue
@@ -813,7 +833,11 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               transition: 'opacity 0.15s',
                             }}
                           >
-                            {isBuying2 ? 'Opening...' : `${pack.cost} Floobits`}
+                            {isBuying2
+                              ? 'Opening...'
+                              : cycleCapped
+                                ? 'Cycle full'
+                                : `${pack.cost} Floobits`}
                           </button>
                         </div>
                       )

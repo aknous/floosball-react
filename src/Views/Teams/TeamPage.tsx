@@ -166,7 +166,7 @@ const ROSTER_SLOTS: [string, string][] = [
   ['qb', 'QB'], ['rb', 'RB'], ['wr1', 'WR1'], ['wr2', 'WR2'], ['te', 'TE'], ['k', 'K']
 ]
 
-type RetirementRisk = 'safe' | 'possible' | 'likely' | 'very_likely' | 'forced'
+type RetirementRisk = 'safe' | 'possible' | 'likely' | 'very_likely' | 'retiring'
 interface RetirementRiskEntry {
   playerId: number
   risk: RetirementRisk
@@ -192,7 +192,7 @@ const RISK_STYLES: Record<RetirementRisk, { label: string; color: string; bg: st
   possible:     { label: 'AGING',           color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
   likely:       { label: 'RETIRING?',       color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
   very_likely:  { label: 'FAREWELL TOUR',   color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-  forced:       { label: 'FORCED EXIT',     color: '#ef4444', bg: 'rgba(239,68,68,0.2)' },
+  retiring:     { label: 'RETIRING',        color: '#f97316', bg: 'rgba(249,115,22,0.18)' },
 }
 
 function RetirementBadge({ risk }: { risk: RetirementRisk }) {

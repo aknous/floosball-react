@@ -229,10 +229,11 @@ export function useTemplateProjections(
 
 
 function formatOutput(proj: CardProjection): { primary: string; ceiling?: string } {
+  // Multi-output cards (e.g. Believe outputs FP per fav-team win + floobits
+  // on a fav-team win this week). Show both numbers concatenated so the
+  // user sees the full payout, not just whichever outputType wins the
+  // single-value branch. Primary outputType still drives the pill color.
   if (proj.outputType === 'mult') {
-    // Show FPx as a delta (+0.32 FPx) to match the per-card chips and
-    // equation text. The mult value comes through as a full multiplier
-    // (e.g., 1.32) so we subtract 1 to get the additive contribution.
     const m = proj.projectedMult > 0 ? proj.projectedMult : 1
     const ceil = proj.bestCaseMult > 0 ? proj.bestCaseMult : m
     const delta = Math.max(0, m - 1)
@@ -252,11 +253,19 @@ function formatOutput(proj: CardProjection): { primary: string; ceiling?: string
     if (ceil - v >= 1) out.ceiling = `up to +${ceil}F`
     return out
   }
-  const v = proj.projectedFP
-  const ceil = Math.max(v, proj.bestCaseFP)
-  const out: { primary: string; ceiling?: string } = {
-    primary: `${v > 0 ? '+' : ''}${v.toFixed(1)} FP`,
-  }
-  if (ceil - v >= 0.5) out.ceiling = `up to +${ceil.toFixed(1)} FP`
+  // Primary is FP. Always show the FP portion; append +XF if the card also
+  // pays out floobits so multi-output cards (like Believe) read accurately.
+  const fp = proj.projectedFP
+  const fpCeil = Math.max(fp, proj.bestCaseFP)
+  const fpStr = `${fp > 0 ? '+' : ''}${fp.toFixed(1)} FP`
+  const fb = Math.max(0, proj.projectedFloobits)
+  const fbCeil = Math.max(fb, proj.bestCaseFloobits)
+  let primary = fpStr
+  if (fb > 0) primary = `${primary} +${fb}F`
+  const out: { primary: string; ceiling?: string } = { primary }
+  const ceilParts: string[] = []
+  if (fpCeil - fp >= 0.5) ceilParts.push(`+${fpCeil.toFixed(1)} FP`)
+  if (fbCeil - fb >= 1) ceilParts.push(`+${fbCeil}F`)
+  if (ceilParts.length > 0) out.ceiling = `up to ${ceilParts.join(' ')}`
   return out
 }

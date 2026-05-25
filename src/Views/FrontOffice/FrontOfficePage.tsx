@@ -111,7 +111,7 @@ export default function FrontOfficePage() {
 
   // Retirement watch + prospects — fetched alongside team data so Overview
   // tab can display the same surfaces as the /team/{id} page
-  type RetirementRisk = 'safe' | 'possible' | 'likely' | 'very_likely' | 'forced'
+  type RetirementRisk = 'safe' | 'possible' | 'likely' | 'very_likely' | 'retiring'
   interface RetirementEntry { playerId: number; risk: RetirementRisk }
   interface ProspectEntry {
     playerId: number; name: string; position: string; rating: number
@@ -663,14 +663,14 @@ const RISK_STYLES: Record<string, { label: string; color: string; bg: string }> 
   possible:    { label: 'AGING',          color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
   likely:      { label: 'RETIRING?',      color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
   very_likely: { label: 'FAREWELL TOUR',  color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-  forced:      { label: 'FORCED EXIT',    color: '#ef4444', bg: 'rgba(239,68,68,0.2)' },
+  retiring:    { label: 'RETIRING',       color: '#f97316', bg: 'rgba(249,115,22,0.18)' },
 }
 
 function OverviewTab({
   team, retirementWatch, prospects,
 }: {
   team: TeamSummary
-  retirementWatch: Record<number, 'safe' | 'possible' | 'likely' | 'very_likely' | 'forced'>
+  retirementWatch: Record<number, 'safe' | 'possible' | 'likely' | 'very_likely' | 'retiring'>
   prospects: any[]
 }) {
   const isMobile = useIsMobile()

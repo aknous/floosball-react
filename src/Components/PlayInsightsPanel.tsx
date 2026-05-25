@@ -197,7 +197,7 @@ function coachMindLabel(v: number | null): string {
   return 'Limited'
 }
 
-const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCall?: string; tempo?: PlayInsights['tempo'] }> = ({ data, playCall, tempo }) => {
+const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCall?: string; tempo?: PlayInsights['tempo']; defense?: PlayInsights['defense'] }> = ({ data, playCall, tempo, defense }) => {
   const callLabels: Record<string, string> = { run: 'Run', short: 'Short Pass', medium: 'Medium Pass', long: 'Long Pass' }
   const tempoLabels: Record<string, string> = { hurryUp: 'Hurry-up', burnClock: 'Burn clock', neutral: 'Normal' }
   const tempoColors: Record<string, string> = { hurryUp: '#f59e0b', burnClock: '#06b6d4', neutral: '#94a3b8' }
@@ -256,6 +256,9 @@ const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCal
             <Row label="Blitz Rate" value={`${Math.round(def.blitzFrequency * 100)}%`} />
             <Row label="Defensive Mind" value={coachMindLabel(def.coachDefMind)} color={def.coachDefMind != null ? attrColor(def.coachDefMind) : '#94a3b8'} />
             <Row label="Adaptability" value={coachMindLabel(def.coachAdapt)} color={def.coachAdapt != null ? attrColor(def.coachAdapt) : '#94a3b8'} />
+            {defense?.coverageType && (
+              <Row label="Coverage" value={coverageLabels[defense.coverageType] ?? defense.coverageType} />
+            )}
           </div>
         )
       })()}
@@ -328,13 +331,15 @@ const RunSection: React.FC<{ data: NonNullable<PlayInsights['run']> }> = ({ data
           )
         })}
       </div>
-      <Row label="Off vs Def" value={
-        <DiffBar value={data.offenseVsDefense} label={
-          data.offenseVsDefense > 15 ? 'Dominant' : data.offenseVsDefense > 5 ? 'Favorable'
-          : data.offenseVsDefense >= -5 ? 'Even'
-          : data.offenseVsDefense >= -15 ? 'Outmatched' : 'Overwhelmed'
+      {data.lineMatchup != null && (
+        <Row label="Line Matchup" value={
+          <DiffBar value={data.lineMatchup} label={
+            data.lineMatchup > 15 ? 'Dominant' : data.lineMatchup > 5 ? 'Favorable'
+            : data.lineMatchup >= -5 ? 'Even'
+            : data.lineMatchup >= -15 ? 'Outmatched' : 'Overwhelmed'
+          } />
         } />
-      } />
+      )}
       {data.fumbleRisk > 0 && (
         <Row label="Fumble Risk" value={
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -512,6 +517,14 @@ const FgSection: React.FC<{ data: NonNullable<PlayInsights['fg']> }> = ({ data }
   </div>
 )
 
+// Coverage labels used inside the CoachSection's defensive subsection.
+// Keys match the backend CoverageType enum values (lowercase).
+const coverageLabels: Record<string, string> = {
+  man: 'Man',
+  zone: 'Zone',
+  match: 'Hybrid',
+}
+
 /**
  * Derive a mental state descriptor from combined drift.
  * Drift is the in-game movement from pre-game baseline (typically ±0.01 to ±0.30).
@@ -590,7 +603,7 @@ export const PlayInsightsPanel: React.FC<PlayInsightsPanelProps> = ({ insights }
   const rightSections: React.ReactNode[] = []
 
   if (insights.situation) leftSections.push(<SituationSection key="sit" data={insights.situation} />)
-  if (insights.coach) leftSections.push(<CoachSection key="coach" data={insights.coach} playCall={insights.playCall} tempo={insights.tempo} />)
+  if (insights.coach) leftSections.push(<CoachSection key="coach" data={insights.coach} playCall={insights.playCall} tempo={insights.tempo} defense={insights.defense} />)
   if (insights.fourthDown) leftSections.push(<FourthDownSection key="4th" data={insights.fourthDown} />)
   if (insights.clockMgmt) leftSections.push(<ClockMgmtSection key="clk" data={insights.clockMgmt} />)
 
