@@ -12,6 +12,44 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.16.0',
+    date: '2026-05-25',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[UI/UX] Play reactions on the in-game play feed. React to any play with hype, love, wow, laugh, cry, or mad.',
+          '[Cards] Roster-trait cards. Synergy, Vanguard, Range, Loyalty, Charmed, and Cornerstone pay out based on how your roster is constructed.',
+          '[Cards] Three Diamond stat amplifiers. Doubler, Surveyor, and Sharpshooter mutate the QB, RB, or WR\'s relevant stat before other cards read it.',
+          '[Front Office] "Retiring" status shows in the front office once a player has locked in their retirement decision.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Cards] Card balance pass. Comeback Kid, Domination, Walk Off, Believe, Showoff, Eminence, Homer, Honor Roll, Hedge, Drought, Sandbagger, Quiet Storm, Momentum, Anthem, and Loyalty reworked or retuned.',
+          '[Cards] No duplicate card effects can be equipped in the same week. Starter packs also deduplicate.',
+          '[Cards] Pack purchase limit. Max 5 packs per 7-week cycle.',
+          '[Cards] Pack rates tightened. Diamond cards are noticeably rarer. Prismatic rates trimmed.',
+          '[Achievements] Banner Week, Dynamo, and Compound thresholds bumped.',
+          '[Front Office] Retirement only fires for players whose contract expires this offseason.',
+          '[Front Office] Star ratings and contract tiers are now aligned. No more 4-star players signing 1-year deals.',
+          '[Team Funding] Markets chart keeps each team\'s tier dot inside the correct band after the offseason recompute.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Simulation] Onside kick recovery no longer desyncs possession.',
+          '[Front Office] Fired coaches stay fired. They no longer silently re-attach to their old team on the next reload.',
+          '[Front Office] A coach can only be assigned to one team at a time.',
+          '[Cards] Range card pays out when your kicker hits multiple field goals. It used to pay zero.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.15.0',
     date: '2026-05-16',
     changes: [],

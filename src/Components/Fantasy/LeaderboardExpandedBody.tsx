@@ -89,16 +89,26 @@ const teamAvatarPlaceholderStyle: React.CSSProperties = {
   width: teamAvatarSize, height: teamAvatarSize, flexShrink: 0,
 }
 
-function formatBreakdownOutput(b: CardBreakdown): { str: string; color: string } | null {
+interface BreakdownOutputPart { str: string; color: string }
+
+function formatBreakdownOutput(b: CardBreakdown): BreakdownOutputPart[] {
   const fp = b.primaryFP ?? 0
   const mult = b.primaryMult ?? 1
   const floobits = b.floobitsEarned ?? b.primaryFloobits ?? 0
-  // FPx as a delta (+0.32 FPx) to match the per-card chip + equation. The
-  // mult value here is the full multiplier (1.32) so subtract 1.
-  if (mult > 1) return { str: `+${(mult - 1).toFixed(2)} FPx`, color: TYPE_COLORS.multiplier }
-  if (fp > 0.05) return { str: `+${fp.toFixed(1)} FP`, color: TYPE_COLORS.flat_fp }
-  if (floobits > 0) return { str: `+${Math.round(floobits)}F`, color: TYPE_COLORS.floobits }
-  return null
+  // Multi-output cards (e.g. Believe pays FP per fav-team win AND floobits on
+  // a fav-team win) need both numbers visible. Returns an array so the row
+  // can render each part in its own color.
+  const parts: BreakdownOutputPart[] = []
+  if (mult > 1) {
+    parts.push({ str: `+${(mult - 1).toFixed(2)} FPx`, color: TYPE_COLORS.multiplier })
+  }
+  if (fp > 0.05) {
+    parts.push({ str: `+${fp.toFixed(1)} FP`, color: TYPE_COLORS.flat_fp })
+  }
+  if (floobits > 0) {
+    parts.push({ str: `+${Math.round(floobits)}F`, color: TYPE_COLORS.floobits })
+  }
+  return parts
 }
 
 export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week, players, breakdowns, isMobile }) => {
@@ -163,7 +173,7 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
     const edColor = EDITION_COLORS[b.edition] ?? '#94a3b8'
     const effectColor = TYPE_COLORS[b.outputType ?? ''] ?? '#cbd5e1'
     const effectLabel = b.displayName || b.effectName || ''
-    const output = formatBreakdownOutput(b)
+    const outputParts = formatBreakdownOutput(b)
     return (
       <div
         key={key}
@@ -188,13 +198,16 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
             <span>{effectLabel}</span>
           </HoverTooltip>
         </span>
-        {output ? (
+        {outputParts.length > 0 ? (
           <span style={{
-            color: output.color, fontWeight: '700',
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            fontWeight: '700',
             fontSize: isMobile ? '11px' : '12px', flexShrink: 0,
             fontVariantNumeric: 'tabular-nums' as const,
           }}>
-            {output.str}
+            {outputParts.map((p, i) => (
+              <span key={i} style={{ color: p.color }}>{p.str}</span>
+            ))}
           </span>
         ) : (
           <span style={{

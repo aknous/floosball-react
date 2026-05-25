@@ -12,6 +12,13 @@ interface GamesContextValue {
   getGame: (gameId: number) => CurrentGame | undefined
   refetch: () => Promise<void>
   fetchGamePlays: (gameId: number) => Promise<void>
+  // Merge a fresh reactions aggregate into the central game cache so a
+  // close/reopen of the modal shows updated reactions without waiting on
+  // the refetch effect. Called by PlayReactions on POST success and on WS
+  // play_reaction_update events.
+  updateGameReactions: (
+    gameId: number, playNumber: number, targetType: string, aggregate: any
+  ) => void
 }
 
 const GamesContext = createContext<GamesContextValue | undefined>(undefined)
@@ -64,7 +71,16 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               : { ...merged, _receivedAt: restBaseMs - (1000 - (p.playNumber || 0)) * 1000 }
           })
 
-          updated.set(gameId, { ...game, plays: mergedPlays, gameStats: gameData.gameStats ?? game.gameStats, matchupPreview: gameData.matchupPreview ?? game.matchupPreview })
+          updated.set(gameId, {
+            ...game,
+            plays: mergedPlays,
+            gameStats: gameData.gameStats ?? game.gameStats,
+            matchupPreview: gameData.matchupPreview ?? game.matchupPreview,
+            // Persist the reactions aggregate so reopening the modal shows
+            // existing reactions instead of an empty bucket. WS updates
+            // continue to merge in over this baseline.
+            reactions: gameData.reactions ?? (game as any).reactions,
+          } as any)
         }
         return updated
       })
@@ -324,13 +340,40 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const getGame = (gameId: number) => games.get(gameId)
 
+  const updateGameReactions = useCallback((
+    gameId: number, playNumber: number, targetType: string, aggregate: any
+  ) => {
+    setGames(prev => {
+      const game = prev.get(gameId)
+      if (!game) return prev
+      const next = new Map(prev)
+      const existing = (game as any).reactions || {}
+      const playKey = String(playNumber)
+      const playBucket = { ...(existing[playKey] || {}) }
+      if (aggregate && Object.keys(aggregate).length > 0) {
+        playBucket[targetType] = aggregate
+      } else {
+        delete playBucket[targetType]
+      }
+      const nextReactions = { ...existing }
+      if (Object.keys(playBucket).length > 0) {
+        nextReactions[playKey] = playBucket
+      } else {
+        delete nextReactions[playKey]
+      }
+      next.set(gameId, { ...game, reactions: nextReactions } as any)
+      return next
+    })
+  }, [])
+
   const value: GamesContextValue = {
     games,
     loading,
     error,
     getGame,
     refetch: fetchGames,
-    fetchGamePlays
+    fetchGamePlays,
+    updateGameReactions,
   }
 
   return <GamesContext.Provider value={value}>{children}</GamesContext.Provider>

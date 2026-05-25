@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { FaFire, FaHeart, FaSurprise, FaLaughSquint, FaSadTear, FaAngry } from 'react-icons/fa'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
+import { useGames } from '@/contexts/GamesContext'
 import HoverTooltip from '../HoverTooltip'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -47,10 +48,19 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
 }) => {
   const { user, getToken } = useAuth()
   const { subscribe } = useSeasonWebSocket()
+  const { updateGameReactions } = useGames()
   const [reactions, setReactions] = useState<ReactionAggregate>(initial ?? {})
   const [pickerOpen, setPickerOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
+
+  // Sync local state when the parent passes a fresh `initial` aggregate.
+  // useState only captures the initial value on first mount, so without
+  // this the cached central-store value wins forever. Triggered when the
+  // modal re-fetches game data and PlayReactions receives a new prop.
+  useEffect(() => {
+    if (initial) setReactions(initial)
+  }, [initial])
 
   // The user's own reaction for this target — determined by scanning the
   // aggregate for their username. Used to highlight the picker icon.
@@ -64,16 +74,20 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
   })()
 
   // Live updates from the WS broadcaster — replaces the whole aggregate
-  // when a matching event arrives.
+  // when a matching event arrives. Also push into the central store so a
+  // close/reopen of the modal shows the latest state without waiting on
+  // a refetch.
   useEffect(() => {
     return subscribe((msg: any) => {
       if (msg?.event !== 'play_reaction_update') return
       if (msg.gameId !== gameId) return
       if (msg.playNumber !== playNumber) return
       if (msg.targetType !== targetType) return
-      setReactions(msg.reactions ?? {})
+      const next = msg.reactions ?? {}
+      setReactions(next)
+      updateGameReactions(gameId, playNumber, targetType, next)
     })
-  }, [subscribe, gameId, playNumber, targetType])
+  }, [subscribe, gameId, playNumber, targetType, updateGameReactions])
 
   // Close picker on outside click
   useEffect(() => {
@@ -104,14 +118,20 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
       if (resp.ok) {
         const j = await resp.json()
         const next = (j.data?.reactions ?? j.reactions) as ReactionAggregate | undefined
-        if (next) setReactions(next)
+        if (next) {
+          setReactions(next)
+          // Push into the central game cache so closing + reopening the
+          // modal immediately shows the new reaction instead of waiting on
+          // the next refetch or WS broadcast to land.
+          updateGameReactions(gameId, playNumber, targetType, next)
+        }
       }
     } catch {
       // silent — WS broadcast will reconcile if request succeeded server-side
     } finally {
       setBusy(false)
     }
-  }, [busy, user, getToken, gameId, playNumber, targetType])
+  }, [busy, user, getToken, gameId, playNumber, targetType, updateGameReactions])
 
   const presentTypes = (Object.keys(reactions) as ReactionType[])
     .filter(t => (reactions[t]?.count ?? 0) > 0)
@@ -136,10 +156,17 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
         const def = ICON_BY_TYPE[type]
         const bucket = reactions[type]!
         const isOwn = ownReaction === type
+        // Cap tooltip to the first N usernames + " and M more" so big
+        // reaction counts don't produce a comma-separated wall of text.
+        const MAX_NAMES = 3
+        const names = bucket.users.map(u => u.username)
+        const tooltipText = names.length <= MAX_NAMES
+          ? names.join(', ')
+          : `${names.slice(0, MAX_NAMES).join(', ')} and ${names.length - MAX_NAMES} more`
         return (
           <HoverTooltip
             key={type}
-            text={bucket.users.map(u => u.username).join(', ')}
+            text={tooltipText}
             color={def.color}
           >
             <button
@@ -148,18 +175,18 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '4px',
-                padding: '2px 8px',
-                borderRadius: '12px',
+                gap: '5px',
+                padding: '3px 9px',
+                borderRadius: '14px',
                 border: `1px solid ${isOwn ? def.color : '#334155'}`,
                 backgroundColor: isOwn ? `${def.color}1f` : 'transparent',
                 color: '#cbd5e1',
-                fontSize: '11px',
+                fontSize: '12px',
                 fontWeight: 600,
                 cursor: !user || busy ? 'default' : 'pointer',
               }}
             >
-              <def.Icon size={11} color={def.color} />
+              <def.Icon size={14} color={def.color} />
               <span>{bucket.count}</span>
             </button>
           </HoverTooltip>
@@ -176,13 +203,13 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '24px',
-              height: '20px',
-              borderRadius: '10px',
+              width: '28px',
+              height: '24px',
+              borderRadius: '12px',
               border: '1px dashed #334155',
               backgroundColor: 'transparent',
               color: '#94a3b8',
-              fontSize: '14px',
+              fontSize: '16px',
               lineHeight: 1,
               cursor: busy ? 'default' : 'pointer',
               padding: 0,
@@ -217,9 +244,9 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '14px',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '16px',
                   border: 'none',
                   backgroundColor: ownReaction === type ? `${color}33` : 'transparent',
                   cursor: 'pointer',
@@ -228,7 +255,7 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${color}40`)}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = ownReaction === type ? `${color}33` : 'transparent')}
               >
-                <Icon size={16} color={color} />
+                <Icon size={20} color={color} />
               </button>
             </HoverTooltip>
           ))}

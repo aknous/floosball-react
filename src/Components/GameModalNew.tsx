@@ -9,7 +9,7 @@ import { Stars } from './Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { PlayInsightsPanel } from './PlayInsightsPanel'
 import { personalityAccent } from '@/utils/personality'
-import { PlayReactions, ReactionAggregate } from './GameModal/PlayReactions'
+import { PlayReactions } from './GameModal/PlayReactions'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -407,7 +407,20 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 )}
               </div>
             </div>
-            <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) || play.reaction || play.personalityEvent ? '4px' : '0' }}>{play.description}</p>
+            <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) || play.reaction || play.personalityEvent || (play as any).glitchText ? '4px' : '0' }}>
+              {(() => {
+                // Backend appends glitchText to playText for non-modal feeds
+                // that read playText alone. The modal renders glitchText in
+                // a dedicated styled block below, so strip it from the body
+                // here to avoid showing the same line twice.
+                const gt = (play as any).glitchText
+                const desc = play.description ?? ''
+                if (gt && desc.includes(gt)) {
+                  return desc.replace(`\n${gt}`, '').replace(gt, '').trim()
+                }
+                return desc
+              })()}
+            </p>
             {/* Clutch / choke attribution. Replaces the old badge with a
                 short line below the play text naming the player(s) who
                 actually rose to or buckled under the pressure. */}
@@ -435,10 +448,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             )}
             {play.personalityEvent && (() => {
               const accent = personalityAccent(play.personalityEvent.personality)
-              const sidelineReactions: ReactionAggregate | undefined =
-                play.playNumber != null
-                  ? (gameData as any).reactions?.[String(play.playNumber)]?.sideline_quote
-                  : undefined
               return (
                 <div style={{ margin: '4px 0 0' }}>
                   <p style={{
@@ -453,15 +462,30 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   }}>
                     {play.personalityEvent.text}
                   </p>
-                  {play.playNumber != null && (
-                    <PlayReactions
-                      gameId={gameId}
-                      playNumber={play.playNumber}
-                      targetType="sideline_quote"
-                      initial={sidelineReactions}
-                    />
-                  )}
                 </div>
+              )
+            })()}
+            {(play as any).glitchText && (() => {
+              // Anomaly glitch line — Layer 1 is subtle, Layer 2 louder.
+              // Lore-violet matches the AWAKENED/etc. tags in the highlight
+              // feed so users associate the two surfaces.
+              const layer = (play as any).glitchLayer as ('micro' | 'personality' | undefined)
+              const isL2 = layer === 'personality'
+              const color = '#c084fc'
+              return (
+                <p style={{
+                  fontSize: '13px',
+                  color: isL2 ? '#e2e8f0' : '#cbd5e1',
+                  fontStyle: 'italic',
+                  margin: '4px 0 0',
+                  backgroundColor: `${color}${isL2 ? '18' : '10'}`,
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  borderLeft: `2px solid ${color}`,
+                  opacity: isL2 ? 1 : 0.92,
+                }}>
+                  {(play as any).glitchText}
+                </p>
               )
             })()}
             {play.scoreChange && play.homeTeamScore != null && (
@@ -470,8 +494,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               </div>
             )}
             {/* Reactions for the play itself — only on plays with a stable
-                playNumber. Drive separators and event-only rows are skipped. */}
-            {play.playNumber != null && !play._type && (
+                INTEGER playNumber. Drive separators, event-only rows, and
+                sideline cutaways (which use fractional playNumbers X.5/X.9
+                to sort between real plays) are skipped — the DB column is
+                Integer and truncates fractional values, which would map
+                cutaway reactions onto the wrong adjacent play. */}
+            {play.playNumber != null
+              && Number.isInteger(play.playNumber)
+              && !play._type
+              && !(play as any).isSidelineCutaway && (
               <PlayReactions
                 gameId={gameId}
                 playNumber={play.playNumber}
@@ -831,8 +862,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 : null
               const firstDownX = fdAbsYfl != null ? toX(fdAbsYfl) : null
 
-              // Build play path + style
+              // Build play path + style. For passes, playPath = arc through
+              // the air, yacPath = straight line after the catch.
               let playPath: string | null = null
+              let yacPath: string | null = null
               let playStroke = '#60a5fa'
               let playDash = 'none'
               let playEndX: number | null = null
@@ -861,11 +894,30 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   playStroke = '#a78bfa'
                   playDash = '8,4'
                 } else {
-                  // PASS / default
-                  const peakY = midY - arcH
-                  playPath = `M${startX},${midY} Q${midPX},${peakY} ${ballX},${midY}`
+                  // PASS / default — arc through the air from the QB drop
+                  // to the catch point, then a straight line for YAC.
+                  const passInsights = (lastPlay as any)?.insights?.pass
+                  const airYards = Number(passInsights?.airYards) || 0
+                  const yacYards = Number(passInsights?.yac) || 0
                   playStroke = isTurnover ? '#f87171' : '#60a5fa'
                   playDash = '7,3'
+                  if (startAbsYfl != null && airYards > 0) {
+                    // Catch point in field coords
+                    const catchAbsYfl = startAbsYfl + airYards * lastPlayDir
+                    const catchX = toX(catchAbsYfl)
+                    const airArcSpan = Math.abs(catchX - startX)
+                    const airMidX = (startX + catchX) / 2
+                    const airPeakY = midY - Math.min(airArcSpan * 0.35, 45)
+                    playPath = `M${startX},${midY} Q${airMidX},${airPeakY} ${catchX},${midY}`
+                    if (yacYards !== 0 && Math.abs(ballX - catchX) >= 1) {
+                      yacPath = `M${catchX},${midY} L${ballX},${midY}`
+                    }
+                  } else {
+                    // Incomplete / sack / unknown air yards — fall back to a
+                    // single arc covering the whole play span.
+                    const peakY = midY - arcH
+                    playPath = `M${startX},${midY} Q${midPX},${peakY} ${ballX},${midY}`
+                  }
                 }
                 if (isTD) playStroke = '#fbbf24'
               }
@@ -945,11 +997,20 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         stroke="#FFD700" strokeWidth={1.5} opacity={0.7} strokeDasharray="3,2" />
                     )}
 
-                    {/* Last play path */}
+                    {/* Last play path (passes: arc = air yards) */}
                     {playPath && (
                       <path d={playPath} fill="none"
                         stroke={playStroke} strokeWidth={2.5}
                         strokeDasharray={playDash}
+                        strokeLinecap="round"
+                        opacity={0.8}
+                      />
+                    )}
+
+                    {/* YAC segment on passes — straight line after the catch */}
+                    {yacPath && (
+                      <path d={yacPath} fill="none"
+                        stroke={playStroke} strokeWidth={2.5}
                         strokeLinecap="round"
                         opacity={0.8}
                       />
