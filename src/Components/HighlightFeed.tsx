@@ -1,5 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  GiCyberEye, GiCircuitry, GiRam, GiCpu, GiSpoutnik, GiProcessor,
+} from 'react-icons/gi'
 import { useGames } from '@/contexts/GamesContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -47,6 +50,10 @@ interface LeagueNewsHighlight {
   id: string
   sortKey: number
   text: string
+  category?: string          // 'anomaly_transition' | 'cores' tags lore-flavor lines
+  anomalyState?: string      // 'stirring' | 'erratic' | 'rampant' | 'awakened' | 'cleansed'
+  core?: string              // Core key — 'cassian' / 'pyre' / 'aris' / 'halverson' / 'vera'
+  coreDisplayName?: string   // Pretty display name (e.g. "Halverson")
 }
 
 interface OffDayHighlight {
@@ -78,6 +85,28 @@ const getBadge = (play: any): { label: string; color: string } | null => {
 // than users read them.
 const OFF_DAY_POLL_MS = 60_000
 
+
+// Per-Core lore icons drawn from Game Icons (gi). Each Core's icon evokes
+// its system-level role inside the simulation:
+//   Cassian   (auditor / record-keeper)   → RAM module (storage, recall)
+//   Pyre      (counter / rulebook)         → CPU (deterministic compute)
+//   Aris      (curious experimenter)        → Sputnik (orbital, exploring)
+//   Halverson (chronicler / empath)         → circuitry (sees the network)
+//   Vera      (silent observer)             → cyber eye (watches everything)
+// Unknown core falls back to a generic processor mark so we never break.
+const CORE_ICON_MAP: Record<string, React.ComponentType<{ size?: number; color?: string; style?: React.CSSProperties }>> = {
+  cassian:   GiRam,
+  pyre:      GiCpu,
+  aris:      GiSpoutnik,
+  halverson: GiCircuitry,
+  vera:      GiCyberEye,
+}
+
+const CoreIcon: React.FC<{ core?: string; color: string }> = ({ core, color }) => {
+  const Icon = CORE_ICON_MAP[(core ?? '').toLowerCase()] ?? GiProcessor
+  return <Icon size={14} color={color} style={{ flexShrink: 0 }} />
+}
+
 export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () => {} }) => {
   const { games } = useGames()
   const { event } = useSeasonWebSocket()
@@ -88,12 +117,16 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
 
   useEffect(() => {
     if (!event || event.event !== 'league_news') return
-    const text = (event as any).text as string
+    const e = event as any
     setNewsItems(prev => [{
       type: 'league_news',
       id: `news-${Date.now()}-${Math.random()}`,
       sortKey: Date.now(),
-      text,
+      text: e.text as string,
+      category: e.category,
+      anomalyState: e.anomalyState,
+      core: e.core,
+      coreDisplayName: e.coreDisplayName,
     }, ...prev])
   }, [event])
 
@@ -346,13 +379,42 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
         }
 
         if (item.type === 'league_news') {
-          const isChamp = item.text.includes('champions!')
-          const isTopSeed = item.text.includes('top seed') || item.text.includes('#1 seed')
-          const isClinch = item.text.includes('clinched')
-          const isMvp = item.text.includes('MVP:')
-          const isAllPro = item.text.includes('All-Pro')
-          const borderColor = isChamp ? '#f59e0b' : isMvp ? '#f59e0b' : isAllPro ? '#a78bfa' : isTopSeed ? '#a78bfa' : isClinch ? '#22c55e' : '#ef4444'
-          const label = isChamp ? 'CHAMPION' : isMvp ? 'MVP' : isAllPro ? 'ALL-PRO' : isTopSeed ? 'TOP SEED' : isClinch ? 'CLINCHED' : 'ELIMINATED'
+          // Lore-flavor lines (anomaly transitions + Cores news) carry an
+          // explicit category so they don't fall through to the ELIMINATED
+          // default. Different palettes set them apart from each other and
+          // from the standard news (champion / MVP / etc).
+          const isAnomaly = item.category === 'anomaly_transition'
+          const isCores = item.category === 'cores'
+          const isLore = isAnomaly || isCores
+          const anomalyLabelMap: Record<string, string> = {
+            stirring:  'STIRRING',
+            erratic:   'ERRATIC',
+            rampant:   'RAMPANT',
+            awakened:  'AWAKENED',
+            cleansed:  'CLEANSED',
+          }
+          const isChamp = !isLore && item.text.includes('champions!')
+          const isTopSeed = !isLore && (item.text.includes('top seed') || item.text.includes('#1 seed'))
+          const isClinch = !isLore && item.text.includes('clinched')
+          const isMvp = !isLore && item.text.includes('MVP:')
+          const isAllPro = !isLore && item.text.includes('All-Pro')
+          const borderColor = isAnomaly ? '#c084fc'
+                              : isCores ? '#fbbf24'
+                              : isChamp ? '#f59e0b'
+                              : isMvp ? '#f59e0b'
+                              : isAllPro ? '#a78bfa'
+                              : isTopSeed ? '#a78bfa'
+                              : isClinch ? '#22c55e'
+                              : '#ef4444'
+          const coresLabel = (item.coreDisplayName ?? item.core ?? 'cores').toUpperCase()
+          const label = isAnomaly ? (anomalyLabelMap[item.anomalyState ?? ''] ?? 'ANOMALY')
+                        : isCores ? coresLabel
+                        : isChamp ? 'CHAMPION'
+                        : isMvp ? 'MVP'
+                        : isAllPro ? 'ALL-PRO'
+                        : isTopSeed ? 'TOP SEED'
+                        : isClinch ? 'CLINCHED'
+                        : 'ELIMINATED'
           const labelColor = borderColor
           return (
             <React.Fragment key={item.id}>
@@ -365,7 +427,11 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: labelColor, flexShrink: 0 }} />
+                  {isCores ? (
+                    <CoreIcon core={item.core} color={labelColor} />
+                  ) : (
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: labelColor, flexShrink: 0 }} />
+                  )}
                   <span style={{ fontSize: '11px', fontWeight: '700', color: labelColor, letterSpacing: '0.08em' }}>
                     {label}
                   </span>

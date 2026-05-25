@@ -1604,20 +1604,19 @@ const AboutPage: React.FC = () => {
           {/* ── Card Packs ── */}
           <Section id="card-packs" title="Card Packs">
             <p style={{ ...textStyle, marginBottom: '14px' }}>
-              Packs are the main way to get new cards. Four tiers are available in
-              the <Link to="/dashboard" style={linkStyle}>Shop</Link>, each with different card counts,
-              guaranteed editions, and daily purchase limits.
+              Packs are the main way to get new cards. Three tiers are available in
+              the <Link to="/dashboard" style={linkStyle}>Shop</Link>, plus rotating themed packs.
+              Every pack uses the same rarity odds. Higher tiers just give more cards at the same rates.
             </p>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr',
               gap: '8px',
             }}>
               {[
-                { name: 'Humble', price: 100, cards: 3, guaranteed: null, limit: 3, border: '#475569', bg: '#283548', accent: '#94a3b8' },
-                { name: 'Proper', price: 300, cards: 5, guaranteed: 'Holographic+', limit: 2, border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%)', accent: '#c4b5fd' },
-                { name: 'Grand', price: 900, cards: 5, guaranteed: 'Prismatic+', limit: 1, border: '#db2777', bg: 'linear-gradient(135deg, #2e1065 0%, #701a3e 100%)', accent: '#f472b6' },
-                { name: 'Exquisite', price: 2500, cards: 5, guaranteed: 'Diamond', limit: 1, border: '#67e8f9', bg: 'linear-gradient(135deg, #0c4a6e 0%, #155e75 100%)', accent: '#a5f3fc' },
+                { name: 'Humble', price: 50, cards: 3, kept: 2, border: '#475569', bg: '#283548', accent: '#94a3b8' },
+                { name: 'Grand', price: 100, cards: 5, kept: 3, border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%)', accent: '#c4b5fd' },
+                { name: 'Exquisite', price: 150, cards: 7, kept: 4, border: '#67e8f9', bg: 'linear-gradient(135deg, #0c4a6e 0%, #155e75 100%)', accent: '#a5f3fc' },
               ].map(p => (
                 <div key={p.name} style={{
                   padding: '12px 14px',
@@ -1629,17 +1628,15 @@ const AboutPage: React.FC = () => {
                     {p.name}
                   </div>
                   <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: 1.6 }}>
-                    {p.cards} cards &middot; {p.price} Floobits
-                    {p.guaranteed && (
-                      <span style={{ color: p.accent }}> &middot; 1+ {p.guaranteed}</span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>
-                    Limit {p.limit} per day
+                    Reveal {p.cards}, keep {p.kept} &middot; {p.price} Floobits
                   </div>
                 </div>
               ))}
             </div>
+            <p style={{ ...textStyle, marginTop: '14px', fontSize: '12px', color: '#94a3b8' }}>
+              Themed packs (rotating in the Shop) cost 150 Floobits, reveal 3 and keep 2, with the same odds.
+              Their value is the filter: only players at a specific position, or cards that pay a specific output type.
+            </p>
           </Section>
 
           {/* ── The Combine ── */}
