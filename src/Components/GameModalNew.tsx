@@ -375,7 +375,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     fontSize: '11px',
                     letterSpacing: '1.5px',
                     fontFamily: 'monospace',
-                    textShadow: '1px 0 0 rgba(239,68,68,0.55), -1px 0 0 rgba(6,182,212,0.55)',
                   }}>
                     {isGlitchL2 ? '◊ ANOMALY' : '◇ anomaly'}
                   </span>
@@ -483,21 +482,20 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               )
             })()}
             {hasGlitch && (
-              <p style={{
-                fontSize: '13px',
-                color: isGlitchL2 ? '#f3e8ff' : '#e9d5ff',
-                fontStyle: 'italic',
-                fontFamily: 'monospace',
-                letterSpacing: '0.3px',
-                margin: '6px 0 0',
-                backgroundColor: isGlitchL2 ? 'rgba(192,132,252,0.12)' : 'rgba(192,132,252,0.07)',
-                padding: '6px 10px',
-                borderRadius: '4px',
-                borderLeft: '2px solid #c084fc',
-                textShadow: isGlitchL2
-                  ? '1.5px 0 0 rgba(239,68,68,0.5), -1.5px 0 0 rgba(6,182,212,0.5)'
-                  : '1px 0 0 rgba(239,68,68,0.35), -1px 0 0 rgba(6,182,212,0.35)',
-              }}>
+              <p
+                className={isGlitchL2 ? 'glitch-text-l2' : 'glitch-text-l1'}
+                style={{
+                  fontSize: '13px',
+                  color: isGlitchL2 ? '#f3e8ff' : '#e9d5ff',
+                  fontStyle: 'italic',
+                  fontFamily: 'monospace',
+                  letterSpacing: '0.3px',
+                  margin: '6px 0 0',
+                  backgroundColor: isGlitchL2 ? 'rgba(192,132,252,0.12)' : 'rgba(192,132,252,0.07)',
+                  padding: '6px 10px',
+                  borderRadius: '4px',
+                  borderLeft: '2px solid #c084fc',
+                }}>
                 {(play as any).glitchText}
               </p>
             )}
