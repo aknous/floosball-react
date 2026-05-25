@@ -224,10 +224,38 @@
   }
 }
 
-.anomaly-row-l1 {
+/* Apply the shimmer to every text-bearing descendant via descendant
+   selectors — inheritance of animated text-shadow values isn't reliable
+   across browsers, so we run the animation per element. The inner
+   .glitch-text-l1 / .glitch-text-l2 and .anomaly-label elements have
+   their own (stronger) animations; the :not() excludes them so they
+   keep their identity. */
+.anomaly-row-l1,
+.anomaly-row-l1 p,
+.anomaly-row-l1 span:not(.anomaly-label),
+.anomaly-row-l1 div {
   animation: anomaly-row-shimmer-l1 7s steps(1) infinite;
 }
+.anomaly-row-l1 .glitch-text-l1,
+.anomaly-row-l1 .glitch-text-l2,
+.anomaly-row-l1 .anomaly-label {
+  animation: unset;
+}
+.anomaly-row-l1 .glitch-text-l1 { animation: glitch-chroma-l1 6s steps(1) infinite; }
+.anomaly-row-l1 .glitch-text-l2 { animation: glitch-chroma-l2 4.5s steps(1) infinite; }
+.anomaly-row-l1 .anomaly-label  { animation: anomaly-label-pulse 5s steps(1) infinite; }
 
-.anomaly-row-l2 {
+.anomaly-row-l2,
+.anomaly-row-l2 p,
+.anomaly-row-l2 span:not(.anomaly-label),
+.anomaly-row-l2 div {
   animation: anomaly-row-shimmer-l2 5.5s steps(1) infinite;
 }
+.anomaly-row-l2 .glitch-text-l1,
+.anomaly-row-l2 .glitch-text-l2,
+.anomaly-row-l2 .anomaly-label {
+  animation: unset;
+}
+.anomaly-row-l2 .glitch-text-l1 { animation: glitch-chroma-l1 6s steps(1) infinite; }
+.anomaly-row-l2 .glitch-text-l2 { animation: glitch-chroma-l2 4.5s steps(1) infinite; }
+.anomaly-row-l2 .anomaly-label  { animation: anomaly-label-pulse 5s steps(1) infinite; }
