@@ -377,7 +377,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     letterSpacing: '1.5px',
                     fontFamily: 'monospace',
                   }}>
-                    {isGlitchL2 ? '◊ ANOMALY' : '◇ anomaly'}
+                    {isGlitchL2 ? '◊ aberration' : '◇ flicker'}
                   </span>
                 )}
               </div>
