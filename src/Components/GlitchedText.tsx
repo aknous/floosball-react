@@ -23,9 +23,9 @@ export const GlitchedText: React.FC<Props> = ({ text, intensity = 'low' }) => {
     if (!text) return
 
     const high = intensity === 'high'
-    const intervalMs = high ? 130 : 350
-    const holdMs = high ? 80 : 45
-    const maxSwaps = high ? 3 : 1
+    const intervalMs = high ? 400 : 900
+    const holdMs = high ? 280 : 200
+    const maxSwaps = high ? 2 : 1
 
     const tick = () => {
       const chars = text.split('')
