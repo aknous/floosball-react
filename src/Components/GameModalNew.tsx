@@ -10,6 +10,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { PlayInsightsPanel } from './PlayInsightsPanel'
 import { personalityAccent } from '@/utils/personality'
 import { PlayReactions } from './GameModal/PlayReactions'
+import { GlitchedText } from './GlitchedText'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -437,16 +438,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             </div>
             <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) || play.reaction || play.personalityEvent || (play as any).glitchText ? '4px' : '0' }}>
               {(() => {
-                // Backend appends glitchText to playText for non-modal feeds
-                // that read playText alone. The modal renders glitchText in
-                // a dedicated styled block below, so strip it from the body
-                // here to avoid showing the same line twice.
                 const gt = (play as any).glitchText
                 const desc = play.description ?? ''
-                if (gt && desc.includes(gt)) {
-                  return desc.replace(`\n${gt}`, '').replace(gt, '').trim()
+                const cleaned = gt && desc.includes(gt)
+                  ? desc.replace(`\n${gt}`, '').replace(gt, '').trim()
+                  : desc
+                // On an anomaly play, route the description through GlitchedText
+                // so individual characters periodically swap to glitch glyphs.
+                // L1 is light, L2 is heavier.
+                if (hasGlitch) {
+                  return <GlitchedText text={cleaned} intensity={isGlitchL2 ? 'high' : 'low'} />
                 }
-                return desc
+                return cleaned
               })()}
             </p>
             {/* Clutch / choke attribution. Replaces the old badge with a
@@ -508,7 +511,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   borderRadius: '4px',
                   borderLeft: '2px solid #c084fc',
                 }}>
-                {(play as any).glitchText}
+                <GlitchedText text={(play as any).glitchText} intensity={isGlitchL2 ? 'high' : 'low'} />
               </p>
             )}
             {play.scoreChange && play.homeTeamScore != null && (
