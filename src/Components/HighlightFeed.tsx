@@ -130,6 +130,38 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
     }, ...prev])
   }, [event])
 
+  // Fetch persisted league-news items on mount so anomaly-state transitions
+  // and Cores voice lines show up even for users who weren't connected when
+  // they fired. WS-arrived items continue to prepend over this baseline.
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${API_BASE}/league-news/recent?limit=40`)
+      .then(r => r.ok ? r.json() : [])
+      .then((rows: any[]) => {
+        if (cancelled || !Array.isArray(rows) || rows.length === 0) return
+        const baseTs = Date.now() - 60 * 60 * 1000
+        const restored: LeagueNewsHighlight[] = rows.map((r, i) => ({
+          type: 'league_news',
+          id: `news-rest-${r.id}`,
+          sortKey: r.createdAt ? Date.parse(r.createdAt) : (baseTs - i * 1000),
+          text: r.text,
+          category: r.category,
+          anomalyState: r.anomalyState ?? undefined,
+          core: r.core ?? undefined,
+          coreDisplayName: r.coreDisplayName ?? undefined,
+        }))
+        setNewsItems(prev => {
+          // Dedupe on id — live WS items use a different id format so this
+          // won't clobber anything that's already arrived.
+          const existingIds = new Set(prev.map(p => p.id))
+          const fresh = restored.filter(r => !existingIds.has(r.id))
+          return [...prev, ...fresh]
+        })
+      })
+      .catch(() => { /* silent — feed degrades to live-only */ })
+    return () => { cancelled = true }
+  }, [])
+
   useEffect(() => {
     if (!event) return
     const evtName = (event as any).event
