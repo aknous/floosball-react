@@ -385,8 +385,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   <span className="anomaly-label" style={{
                     color: '#c084fc',
                     fontWeight: 700,
-                    fontSize: '11px',
-                    letterSpacing: '1.5px',
+                    fontSize: '10px',
+                    letterSpacing: '1px',
                     fontFamily: 'monospace',
                   }}>
                     {isGlitchL2 ? '◆ corruption' : '◇ aberration'}
@@ -500,14 +500,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               <p
                 className={glitchTextClass}
                 style={{
-                  fontSize: '13px',
+                  fontSize: '12px',
                   color: isGlitchL2 ? '#f3e8ff' : '#e9d5ff',
                   fontStyle: 'italic',
                   fontFamily: 'monospace',
-                  letterSpacing: '0.3px',
+                  letterSpacing: '0.2px',
                   margin: '6px 0 0',
                   backgroundColor: isGlitchL2 ? 'rgba(192,132,252,0.12)' : 'rgba(192,132,252,0.07)',
-                  padding: '6px 10px',
+                  padding: '5px 9px',
                   borderRadius: '4px',
                   borderLeft: '2px solid #c084fc',
                 }}>
