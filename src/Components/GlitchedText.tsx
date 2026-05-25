@@ -23,8 +23,8 @@ export const GlitchedText: React.FC<Props> = ({ text, intensity = 'low' }) => {
     if (!text) return
 
     const high = intensity === 'high'
-    const intervalMs = high ? 400 : 900
-    const holdMs = high ? 280 : 200
+    const intervalMs = high ? 400 : 1800
+    const holdMs = high ? 280 : 500
     const maxSwaps = high ? 2 : 1
 
     const tick = () => {
