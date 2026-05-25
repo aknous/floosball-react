@@ -217,12 +217,177 @@
   }
 }
 
-.glitch-text-l1 {
+.glitch-text-l1,
+.glitch-text-l1-a {
   animation: glitch-chroma-l1 6s steps(1) infinite;
 }
 
-.glitch-text-l2 {
+.glitch-text-l2,
+.glitch-text-l2-a {
   animation: glitch-chroma-l2 4.5s steps(1) infinite;
+}
+
+/* L1-B — vertical sway. Subtle but reads differently from -A. */
+@keyframes glitch-vsway-l1 {
+  0%, 100% {
+    text-shadow:
+      0 -1.5px 0 rgba(239, 68, 68, 0.6),
+      0 1.5px 0 rgba(6, 182, 212, 0.6);
+  }
+  25% {
+    text-shadow:
+      0 -2.5px 0 rgba(239, 68, 68, 0.75),
+      1px 2.5px 0 rgba(6, 182, 212, 0.75);
+    transform: translateY(-0.5px);
+  }
+  28% {
+    text-shadow:
+      0 -1.5px 0 rgba(239, 68, 68, 0.6),
+      0 1.5px 0 rgba(6, 182, 212, 0.6);
+    transform: translateY(0);
+  }
+  72% {
+    text-shadow:
+      1px -2.5px 0 rgba(239, 68, 68, 0.75),
+      -1px 2.5px 0 rgba(6, 182, 212, 0.75);
+    transform: translateY(0.5px);
+  }
+  75% {
+    text-shadow:
+      0 -1.5px 0 rgba(239, 68, 68, 0.6),
+      0 1.5px 0 rgba(6, 182, 212, 0.6);
+    transform: translateY(0);
+  }
+}
+
+/* L1-C — diagonal drift. Reads as a slow lean rather than a snap. */
+@keyframes glitch-drift-l1 {
+  0%, 100% {
+    text-shadow:
+      1.2px -0.5px 0 rgba(239, 68, 68, 0.55),
+      -1.2px 0.5px 0 rgba(6, 182, 212, 0.55);
+    letter-spacing: 0.3px;
+  }
+  45% {
+    text-shadow:
+      2px -1px 0 rgba(239, 68, 68, 0.7),
+      -2px 1px 0 rgba(6, 182, 212, 0.7);
+    letter-spacing: 0.8px;
+  }
+  48% {
+    text-shadow:
+      1.2px -0.5px 0 rgba(239, 68, 68, 0.55),
+      -1.2px 0.5px 0 rgba(6, 182, 212, 0.55);
+    letter-spacing: 0.3px;
+  }
+}
+
+.glitch-text-l1-b {
+  animation: glitch-vsway-l1 6.5s steps(1) infinite;
+}
+.glitch-text-l1-c {
+  animation: glitch-drift-l1 7s steps(1) infinite;
+}
+
+/* L2-B — horizontal slam. Bigger translate, more violent. */
+@keyframes glitch-slam-l2 {
+  0%, 100% {
+    text-shadow:
+      3px 0 0 rgba(239, 68, 68, 0.9),
+      -3px 0 0 rgba(6, 182, 212, 0.9);
+  }
+  12% {
+    text-shadow:
+      8px 0 0 rgba(239, 68, 68, 1),
+      -8px 0 0 rgba(6, 182, 212, 1);
+    transform: translateX(4px) skewX(-4deg);
+  }
+  16% {
+    text-shadow:
+      3px 0 0 rgba(239, 68, 68, 0.9),
+      -3px 0 0 rgba(6, 182, 212, 0.9);
+    transform: translateX(0) skewX(0);
+  }
+  44% {
+    text-shadow:
+      -8px 1px 0 rgba(239, 68, 68, 1),
+      6px -1px 0 rgba(6, 182, 212, 1);
+    transform: translateX(-5px) skewX(3deg);
+  }
+  48% {
+    text-shadow:
+      3px 0 0 rgba(239, 68, 68, 0.9),
+      -3px 0 0 rgba(6, 182, 212, 0.9);
+    transform: translateX(0) skewX(0);
+  }
+  76% {
+    text-shadow:
+      7px 1px 0 rgba(239, 68, 68, 1),
+      -7px -1px 0 rgba(6, 182, 212, 1);
+    transform: translateX(3.5px) skewX(-3deg);
+  }
+  80% {
+    text-shadow:
+      3px 0 0 rgba(239, 68, 68, 0.9),
+      -3px 0 0 rgba(6, 182, 212, 0.9);
+    transform: translateX(0) skewX(0);
+  }
+}
+
+/* L2-C — strobe. Periodic brightness flash plus chromatic shift. */
+@keyframes glitch-strobe-l2 {
+  0%, 100% {
+    text-shadow:
+      2.5px 0 0 rgba(239, 68, 68, 0.85),
+      -2.5px 0 0 rgba(6, 182, 212, 0.85);
+    color: inherit;
+    filter: brightness(1);
+  }
+  18% {
+    text-shadow:
+      5px -1px 0 rgba(239, 68, 68, 1),
+      -5px 1px 0 rgba(6, 182, 212, 1);
+    filter: brightness(1.5) saturate(1.5);
+  }
+  20% {
+    text-shadow:
+      2.5px 0 0 rgba(239, 68, 68, 0.85),
+      -2.5px 0 0 rgba(6, 182, 212, 0.85);
+    filter: brightness(1);
+  }
+  42% {
+    text-shadow:
+      -4px 1px 0 rgba(239, 68, 68, 0.95),
+      5px -1px 0 rgba(6, 182, 212, 1);
+    filter: brightness(0.6);
+  }
+  45% {
+    text-shadow:
+      2.5px 0 0 rgba(239, 68, 68, 0.85),
+      -2.5px 0 0 rgba(6, 182, 212, 0.85);
+    filter: brightness(1);
+  }
+  70% {
+    text-shadow:
+      6px 0 0 rgba(239, 68, 68, 1),
+      -6px 0 0 rgba(6, 182, 212, 1);
+    filter: brightness(1.6) saturate(1.5);
+    transform: translateX(1px);
+  }
+  73% {
+    text-shadow:
+      2.5px 0 0 rgba(239, 68, 68, 0.85),
+      -2.5px 0 0 rgba(6, 182, 212, 0.85);
+    filter: brightness(1);
+    transform: translateX(0);
+  }
+}
+
+.glitch-text-l2-b {
+  animation: glitch-slam-l2 4s steps(1) infinite;
+}
+.glitch-text-l2-c {
+  animation: glitch-strobe-l2 5s steps(1) infinite;
 }
 
 .anomaly-label {
@@ -330,13 +495,16 @@
 .anomaly-row-l1 div {
   animation: anomaly-row-shimmer-l1 7s steps(1) infinite;
 }
-.anomaly-row-l1 .glitch-text-l1,
-.anomaly-row-l1 .glitch-text-l2,
+.anomaly-row-l1 [class*="glitch-text-"],
 .anomaly-row-l1 .anomaly-label {
   animation: unset;
 }
-.anomaly-row-l1 .glitch-text-l1 { animation: glitch-chroma-l1 6s steps(1) infinite; }
-.anomaly-row-l1 .glitch-text-l2 { animation: glitch-chroma-l2 4.5s steps(1) infinite; }
+.anomaly-row-l1 .glitch-text-l1-a { animation: glitch-chroma-l1 6s steps(1) infinite; }
+.anomaly-row-l1 .glitch-text-l1-b { animation: glitch-vsway-l1 6.5s steps(1) infinite; }
+.anomaly-row-l1 .glitch-text-l1-c { animation: glitch-drift-l1 7s steps(1) infinite; }
+.anomaly-row-l1 .glitch-text-l2-a { animation: glitch-chroma-l2 4.5s steps(1) infinite; }
+.anomaly-row-l1 .glitch-text-l2-b { animation: glitch-slam-l2 4s steps(1) infinite; }
+.anomaly-row-l1 .glitch-text-l2-c { animation: glitch-strobe-l2 5s steps(1) infinite; }
 .anomaly-row-l1 .anomaly-label  { animation: anomaly-label-pulse 5s steps(1) infinite; }
 
 .anomaly-row-l2,
@@ -345,11 +513,14 @@
 .anomaly-row-l2 div {
   animation: anomaly-row-shimmer-l2 5.5s steps(1) infinite;
 }
-.anomaly-row-l2 .glitch-text-l1,
-.anomaly-row-l2 .glitch-text-l2,
+.anomaly-row-l2 [class*="glitch-text-"],
 .anomaly-row-l2 .anomaly-label {
   animation: unset;
 }
-.anomaly-row-l2 .glitch-text-l1 { animation: glitch-chroma-l1 6s steps(1) infinite; }
-.anomaly-row-l2 .glitch-text-l2 { animation: glitch-chroma-l2 4.5s steps(1) infinite; }
+.anomaly-row-l2 .glitch-text-l1-a { animation: glitch-chroma-l1 6s steps(1) infinite; }
+.anomaly-row-l2 .glitch-text-l1-b { animation: glitch-vsway-l1 6.5s steps(1) infinite; }
+.anomaly-row-l2 .glitch-text-l1-c { animation: glitch-drift-l1 7s steps(1) infinite; }
+.anomaly-row-l2 .glitch-text-l2-a { animation: glitch-chroma-l2 4.5s steps(1) infinite; }
+.anomaly-row-l2 .glitch-text-l2-b { animation: glitch-slam-l2 4s steps(1) infinite; }
+.anomaly-row-l2 .glitch-text-l2-c { animation: glitch-strobe-l2 5s steps(1) infinite; }
 .anomaly-row-l2 .anomaly-label  { animation: anomaly-label-pulse 5s steps(1) infinite; }

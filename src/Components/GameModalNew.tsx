@@ -282,6 +282,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const hasGlitch = !!(play as any).glitchText
     const glitchLayer = (play as any).glitchLayer as ('micro' | 'personality' | undefined)
     const isGlitchL2 = glitchLayer === 'personality'
+    // Pick a deterministic glitch variant (a/b/c) per play so the same
+    // play always looks the same on re-render, but different anomaly
+    // plays don't all use the identical effect.
+    const glitchVariant = (() => {
+      if (!hasGlitch) return ''
+      const seed = (play.playNumber ?? 0) + ((play as any).glitchPlayerId ?? 0)
+      return ['a', 'b', 'c'][Math.abs(seed) % 3]
+    })()
+    const glitchTextClass = hasGlitch
+      ? (isGlitchL2 ? `glitch-text-l2-${glitchVariant}` : `glitch-text-l1-${glitchVariant}`)
+      : ''
     const homeGained = (play.homeWpa ?? 0) > 0
     const bigPlayTeamAbbr = homeGained ? gameData.homeTeam.abbr : gameData.awayTeam.abbr
     const bigPlayTeamColor = homeGained ? gameData.homeTeam.color : gameData.awayTeam.color
@@ -484,7 +495,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             })()}
             {hasGlitch && (
               <p
-                className={isGlitchL2 ? 'glitch-text-l2' : 'glitch-text-l1'}
+                className={glitchTextClass}
                 style={{
                   fontSize: '13px',
                   color: isGlitchL2 ? '#f3e8ff' : '#e9d5ff',
