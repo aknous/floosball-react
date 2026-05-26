@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  GiCyberEye, GiCircuitry, GiRam, GiCpu, GiSpoutnik, GiProcessor,
+  GiCyberEye, GiCircuitry, GiBrain, GiCpu, GiSpoutnik, GiProcessor,
 } from 'react-icons/gi'
 import { useGames } from '@/contexts/GamesContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
@@ -88,14 +88,14 @@ const OFF_DAY_POLL_MS = 60_000
 
 // Per-Core lore icons drawn from Game Icons (gi). Each Core's icon evokes
 // its system-level role inside the simulation:
-//   Cassian   (auditor / record-keeper)   → RAM module (storage, recall)
+//   Cassian   (auditor / record-keeper)   → brain (analytical, holds the rules)
 //   Pyre      (counter / rulebook)         → CPU (deterministic compute)
 //   Aris      (curious experimenter)        → Sputnik (orbital, exploring)
 //   Halverson (chronicler / empath)         → circuitry (sees the network)
 //   Vera      (silent observer)             → cyber eye (watches everything)
 // Unknown core falls back to a generic processor mark so we never break.
 const CORE_ICON_MAP: Record<string, React.ComponentType<{ size?: number; color?: string; style?: React.CSSProperties }>> = {
-  cassian:   GiRam,
+  cassian:   GiBrain,
   pyre:      GiCpu,
   aris:      GiSpoutnik,
   halverson: GiCircuitry,
