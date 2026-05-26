@@ -298,7 +298,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const bigPlayTeamAbbr = homeGained ? gameData.homeTeam.abbr : gameData.awayTeam.abbr
     const bigPlayTeamColor = homeGained ? gameData.homeTeam.color : gameData.awayTeam.color
     const wpaValue = homeGained ? (play.homeWpa ?? 0) : (play.awayWpa ?? 0)
-    const hasAccent = isBigPlay || isClutchPlay || isChokePlay || isMomentumShift || hasGlitch
+    const hasAccent = isBigPlay || isClutchPlay || isChokePlay || isMomentumShift
     const playKey = play.playNumber != null ? `pn-${play.playNumber}` : `${keyPrefix}-${index}`
     const hasInsights = play.insights && Object.keys(play.insights).length > 0
     const isExpanded = expandedPlayKey === playKey
@@ -307,7 +307,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       <div key={playKey} style={{ borderBottom: '1px solid #334155' }}>
         <div
           onClick={hasInsights ? () => setExpandedPlayKey(isExpanded ? null : playKey) : undefined}
-          className={hasGlitch ? (isGlitchL2 ? 'anomaly-row-l2' : 'anomaly-row-l1') : undefined}
           style={{
             paddingBottom: '12px',
             paddingTop: '6px',
@@ -317,13 +316,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               : isClutchPlay ? 'inset 3px 0 0 #06b6d4'
               : isChokePlay ? 'inset 3px 0 0 #ef4444'
               : isMomentumShift ? 'inset 3px 0 0 #f97316'
-              : hasGlitch ? `inset 3px 0 0 #39ff14`
               : 'none',
             backgroundColor: isBigPlay ? '#1a1300'
               : isClutchPlay ? '#001a1f'
               : isChokePlay ? '#1a0500'
               : isMomentumShift ? '#1a0f00'
-              : hasGlitch ? (isGlitchL2 ? '#0a1f0d' : '#08170a')
               : 'transparent',
             borderRadius: hasAccent ? '4px' : '0',
             display: 'flex',
@@ -438,18 +435,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             </div>
             <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) || play.reaction || play.personalityEvent || (play as any).glitchText ? '4px' : '0' }}>
               {(() => {
+                // Backend appends glitchText to playText for non-modal feeds
+                // that read playText alone. The modal renders glitchText in
+                // a dedicated styled block below, so strip it from the body
+                // here to avoid showing the same line twice.
                 const gt = (play as any).glitchText
                 const desc = play.description ?? ''
-                const cleaned = gt && desc.includes(gt)
-                  ? desc.replace(`\n${gt}`, '').replace(gt, '').trim()
-                  : desc
-                // On an anomaly play, route the description through GlitchedText
-                // so individual characters periodically swap to glitch glyphs.
-                // L1 is light, L2 is heavier.
-                if (hasGlitch) {
-                  return <GlitchedText text={cleaned} intensity={isGlitchL2 ? 'high' : 'low'} />
+                if (gt && desc.includes(gt)) {
+                  return desc.replace(`\n${gt}`, '').replace(gt, '').trim()
                 }
-                return cleaned
+                return desc
               })()}
             </p>
             {/* Clutch / choke attribution. Replaces the old badge with a
