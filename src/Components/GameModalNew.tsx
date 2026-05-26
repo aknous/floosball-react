@@ -307,6 +307,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       <div key={playKey} style={{ borderBottom: '1px solid #334155' }}>
         <div
           onClick={hasInsights ? () => setExpandedPlayKey(isExpanded ? null : playKey) : undefined}
+          className={hasGlitch ? (isGlitchL2 ? 'anomaly-row-l2' : 'anomaly-row-l1') : undefined}
           style={{
             paddingBottom: '12px',
             paddingTop: '6px',
@@ -435,16 +436,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             </div>
             <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) || play.reaction || play.personalityEvent || (play as any).glitchText ? '4px' : '0' }}>
               {(() => {
-                // Backend appends glitchText to playText for non-modal feeds
-                // that read playText alone. The modal renders glitchText in
-                // a dedicated styled block below, so strip it from the body
-                // here to avoid showing the same line twice.
                 const gt = (play as any).glitchText
                 const desc = play.description ?? ''
-                if (gt && desc.includes(gt)) {
-                  return desc.replace(`\n${gt}`, '').replace(gt, '').trim()
+                const cleaned = gt && desc.includes(gt)
+                  ? desc.replace(`\n${gt}`, '').replace(gt, '').trim()
+                  : desc
+                // On an anomaly play, route the description through GlitchedText
+                // so characters periodically swap to glitch glyphs. The row-level
+                // class above also applies a chromatic shimmer to every text
+                // descendant via CSS animation.
+                if (hasGlitch) {
+                  return <GlitchedText text={cleaned} intensity={isGlitchL2 ? 'high' : 'low'} />
                 }
-                return desc
+                return cleaned
               })()}
             </p>
             {/* Clutch / choke attribution. Replaces the old badge with a
