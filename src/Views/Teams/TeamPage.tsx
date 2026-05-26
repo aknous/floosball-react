@@ -750,13 +750,6 @@ export default function TeamPage() {
                         <span style={{ color: moodColor, fontWeight: 600 }}>{player.mood}</span>
                       </div>
                     )}
-                    {/* Personality */}
-                    {player.personality && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
-                        <span style={{ color: '#cbd5e1' }}>Personality</span>
-                        <span style={{ color: '#94a3b8' }}>{player.personality}</span>
-                      </div>
-                    )}
                     {/* Attitude */}
                     {player.attitude != null && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>

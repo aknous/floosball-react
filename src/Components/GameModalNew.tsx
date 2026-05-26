@@ -1673,14 +1673,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         </PlayerHoverCard>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {p.ratingStars != null && <Stars stars={p.ratingStars} size={11} />}
-                          {mb && mb.totalDelta !== 0 && (
+                          {mb && (
                             <HoverTooltip content={renderBreakdownTooltip()}>
                               <span style={{
                                 fontSize: '10px',
                                 fontWeight: 700,
                                 fontVariantNumeric: 'tabular-nums',
-                                color: mb.totalDelta > 0 ? '#86efac' : '#fca5a5',
-                                backgroundColor: mb.totalDelta > 0 ? 'rgba(34,197,94,0.10)' : 'rgba(239,68,68,0.10)',
+                                color: mb.totalDelta > 0 ? '#86efac'
+                                  : mb.totalDelta < 0 ? '#fca5a5'
+                                  : '#94a3b8',
+                                backgroundColor: mb.totalDelta > 0 ? 'rgba(34,197,94,0.10)'
+                                  : mb.totalDelta < 0 ? 'rgba(239,68,68,0.10)'
+                                  : 'rgba(148,163,184,0.10)',
                                 padding: '1px 5px',
                                 borderRadius: '3px',
                                 cursor: 'help',
