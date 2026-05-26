@@ -28,6 +28,10 @@ interface RosterPlayer {
   serviceTime?: string
   fatigue?: number
   resilience?: number
+  mood?: string
+  moodTier?: string
+  personality?: string
+  attitude?: number
   ratingHistory?: { season: number; rating: number }[]
 }
 
@@ -227,6 +231,7 @@ export default function TeamPage() {
   const [retirementWatch, setRetirementWatch] = useState<Record<number, RetirementRiskEntry>>({})
   const [prospects, setProspects] = useState<ProspectEntry[]>([])
   const [prospectsMeta, setProspectsMeta] = useState<{ slotCapPerPosition: number, developmentWindow: number, promotionThreshold: number } | null>(null)
+  const [expandedRosterSlot, setExpandedRosterSlot] = useState<string | null>(null)
   const isMobile = useIsMobile()
   const isFavTeam = !!team && user?.favoriteTeamId === team.id
 
@@ -677,52 +682,156 @@ export default function TeamPage() {
                   ? <RetirementBadge risk={retirementWatch[player.id].risk} />
                   : null
 
+                const isExpanded = expandedRosterSlot === slot
+                const toggleExpand = () => setExpandedRosterSlot(isExpanded ? null : slot)
+                const chevron = (
+                  <span style={{ color: '#64748b', fontSize: '10px', transition: 'transform 0.15s',
+                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    display: 'inline-block',
+                  }}>▾</span>
+                )
+
+                // Maps a team form state into a short reason + color so the
+                // dropdown can explain why a roster might be playing under
+                // their rating this week.
+                const formNote: { label: string; note: string; color: string } | null = (() => {
+                  switch (team.formState) {
+                    case 'COMPLACENT': return { label: 'COMPLACENT', note: 'Trap-game risk dragging ratings down', color: '#ef4444' }
+                    case 'SPIRALING':  return { label: 'SPIRALING',  note: 'Confidence is broken; ratings sagging', color: '#ef4444' }
+                    case 'COOLING_OFF':return { label: 'COOLING OFF',note: 'Active fade — small rating drag',       color: '#f59e0b' }
+                    case 'SHAKY':      return { label: 'SHAKY',      note: 'Slight slip in performance',            color: '#f59e0b' }
+                    case 'RESOLUTE':   return { label: 'RESOLUTE',   note: 'Cinderella backbone — rating lift',     color: '#22c55e' }
+                    case 'HOT_STREAK': return { label: 'HOT STREAK', note: 'Rolling. No extra modifier this week.', color: '#22c55e' }
+                    case 'GETTING_HOT':return { label: 'GETTING HOT',note: 'Trending up. No modifier yet.',         color: '#22c55e' }
+                    case 'STEADY':     return { label: 'STEADY',     note: 'Even-keel. No form modifier.',          color: '#94a3b8' }
+                    default:           return null
+                  }
+                })()
+
+                const moodColor = (() => {
+                  switch (player.moodTier) {
+                    case 'positive': return '#22c55e'
+                    case 'negative': return '#ef4444'
+                    case 'mixed':    return '#f59e0b'
+                    default:         return '#94a3b8'
+                  }
+                })()
+
+                const insightsPanel = isExpanded ? (
+                  <div style={{
+                    marginTop: '4px', padding: '10px 12px', borderRadius: '4px',
+                    backgroundColor: '#0b1424', border: '1px solid #1e293b',
+                    display: 'flex', flexDirection: 'column', gap: '8px',
+                  }}>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.04em' }}>
+                      WHAT'S GOING ON
+                    </div>
+                    {/* Fatigue */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
+                      <span style={{ color: '#cbd5e1' }}>Fatigue</span>
+                      <span style={{ color: statusColor, fontVariantNumeric: 'tabular-nums' }}>
+                        {statusLabel} ({fatigue.toFixed(1)}%)
+                      </span>
+                    </div>
+                    {/* Team form state */}
+                    {formNote && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
+                          <span style={{ color: '#cbd5e1' }}>Team form</span>
+                          <span style={{ color: formNote.color, fontWeight: 600 }}>{formNote.label}</span>
+                        </div>
+                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>{formNote.note}</span>
+                      </div>
+                    )}
+                    {/* Mood */}
+                    {player.mood && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
+                        <span style={{ color: '#cbd5e1' }}>Mood</span>
+                        <span style={{ color: moodColor, fontWeight: 600 }}>{player.mood}</span>
+                      </div>
+                    )}
+                    {/* Personality */}
+                    {player.personality && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
+                        <span style={{ color: '#cbd5e1' }}>Personality</span>
+                        <span style={{ color: '#94a3b8' }}>{player.personality}</span>
+                      </div>
+                    )}
+                    {/* Attitude */}
+                    {player.attitude != null && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
+                        <span style={{ color: '#cbd5e1' }}>Locker-room presence</span>
+                        <span style={{
+                          color: player.attitude >= 90 ? '#22c55e'
+                            : player.attitude >= 80 ? '#86efac'
+                            : player.attitude >= 65 ? '#94a3b8'
+                            : player.attitude >= 50 ? '#f59e0b'
+                            : '#ef4444',
+                          fontVariantNumeric: 'tabular-nums',
+                        }}>
+                          {player.attitude}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : null
+
                 if (isMobile) {
                   return (
-                    <div key={slot} style={{
-                      display: 'flex', flexDirection: 'column', gap: '6px',
-                      padding: '8px 10px', borderRadius: '4px', backgroundColor: '#0f172a',
-                    }}>
-                      {/* Top row: position | name | retirement */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                        {positionCell}
-                        <div style={{ flex: 1, minWidth: 0 }}>{nameLink}</div>
-                        {retirementBadge}
+                    <div key={slot}>
+                      <div onClick={toggleExpand} style={{
+                        display: 'flex', flexDirection: 'column', gap: '6px',
+                        padding: '8px 10px', borderRadius: '4px', backgroundColor: '#0f172a',
+                        cursor: 'pointer',
+                      }}>
+                        {/* Top row: position | name | retirement | chevron */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                          {positionCell}
+                          <div style={{ flex: 1, minWidth: 0 }}>{nameLink}</div>
+                          {retirementBadge}
+                          {chevron}
+                        </div>
+                        {/* Bottom row: stars + status + contract + service (wraps) */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', paddingLeft: '2px' }}>
+                          <Stars stars={player.ratingStars} size={11} />
+                          {statusPill}
+                          {contractText}
+                          {svcChip}
+                        </div>
                       </div>
-                      {/* Bottom row: stars + status + contract + service (wraps) */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', paddingLeft: '2px' }}>
-                        <Stars stars={player.ratingStars} size={11} />
-                        {statusPill}
-                        {contractText}
-                        {svcChip}
-                      </div>
+                      {insightsPanel}
                     </div>
                   )
                 }
 
                 return (
-                  <div key={slot} style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'auto minmax(0, 1fr) auto auto auto',
-                    columnGap: '10px',
-                    alignItems: 'center',
-                    padding: '7px 10px',
-                    borderRadius: '4px',
-                    backgroundColor: '#0f172a',
-                  }}>
-                    {positionCell}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                      {nameLink}
-                      <Stars stars={player.ratingStars} size={11} />
+                  <div key={slot}>
+                    <div onClick={toggleExpand} style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'auto minmax(0, 1fr) auto auto auto auto',
+                      columnGap: '10px',
+                      alignItems: 'center',
+                      padding: '7px 10px',
+                      borderRadius: '4px',
+                      backgroundColor: '#0f172a',
+                      cursor: 'pointer',
+                    }}>
+                      {positionCell}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                        {nameLink}
+                        <Stars stars={player.ratingStars} size={11} />
+                      </div>
+                      <span style={{ minWidth: '52px' }}>{statusPill}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', minWidth: '74px' }}>
+                        {contractText}
+                        {svcChip}
+                      </div>
+                      <span style={{ minWidth: '56px', display: 'flex', justifyContent: 'flex-end' }}>
+                        {retirementBadge}
+                      </span>
+                      {chevron}
                     </div>
-                    <span style={{ minWidth: '52px' }}>{statusPill}</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', minWidth: '74px' }}>
-                      {contractText}
-                      {svcChip}
-                    </div>
-                    <span style={{ minWidth: '56px', display: 'flex', justifyContent: 'flex-end' }}>
-                      {retirementBadge}
-                    </span>
+                    {insightsPanel}
                   </div>
                 )
               })}
