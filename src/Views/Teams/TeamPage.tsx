@@ -750,22 +750,33 @@ export default function TeamPage() {
                         <span style={{ color: moodColor, fontWeight: 600 }}>{player.mood}</span>
                       </div>
                     )}
-                    {/* Attitude */}
-                    {player.attitude != null && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
-                        <span style={{ color: '#cbd5e1' }}>Locker-room presence</span>
-                        <span style={{
-                          color: player.attitude >= 90 ? '#22c55e'
-                            : player.attitude >= 80 ? '#86efac'
-                            : player.attitude >= 65 ? '#94a3b8'
-                            : player.attitude >= 50 ? '#f59e0b'
-                            : '#ef4444',
-                          fontVariantNumeric: 'tabular-nums',
-                        }}>
-                          {player.attitude}
-                        </span>
-                      </div>
-                    )}
+                    {/* Attitude — rendered as a descriptive badge, not a raw
+                        number. Tiers mirror the player-page mapping. */}
+                    {player.attitude != null && (() => {
+                      const att = player.attitude
+                      let label = 'Steady'
+                      let color = '#94a3b8'
+                      if (att >= 90)      { label = 'Leader';   color = '#22c55e' }
+                      else if (att >= 80) { label = 'Positive'; color = '#86efac' }
+                      else if (att >= 65) { label = 'Steady';   color = '#94a3b8' }
+                      else if (att >= 50) { label = 'Sour';     color = '#f59e0b' }
+                      else                { label = 'Toxic';    color = '#ef4444' }
+                      return (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
+                          <span style={{ color: '#cbd5e1' }}>Locker-room presence</span>
+                          <span style={{
+                            fontSize: '10px', fontWeight: 600,
+                            color,
+                            backgroundColor: `${color}1a`,
+                            border: `1px solid ${color}55`,
+                            padding: '1px 7px', borderRadius: '3px',
+                            letterSpacing: '0.03em',
+                          }}>
+                            {label}
+                          </span>
+                        </div>
+                      )
+                    })()}
                   </div>
                 ) : null
 
