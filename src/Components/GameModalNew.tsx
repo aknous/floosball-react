@@ -1605,8 +1605,61 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 const ap = gs.away.players
 
                 // Renders a player name cell with position badge + star rating
-                const playerNameCell = (p: { id: number; name: string; position?: string | null; defensivePosition?: string | null; ratingStars?: number }, useDefPos?: boolean) => {
+                // + an effective-rating delta indicator when pre-game mental
+                // modifiers (fatigue / form / context / cap) moved the player
+                // off their baseline. Hover surfaces the full breakdown.
+                const playerNameCell = (
+                  p: {
+                    id: number; name: string;
+                    position?: string | null; defensivePosition?: string | null;
+                    ratingStars?: number; playerRating?: number;
+                    mentalBreakdown?: {
+                      baseline: number; final: number; totalDelta: number;
+                      fatigue: number; form: number; context: number; cap: number;
+                    };
+                  },
+                  useDefPos?: boolean,
+                ) => {
                   const posLabel = useDefPos && p.defensivePosition ? p.defensivePosition : p.position
+                  const mb = p.mentalBreakdown
+                  const renderBreakdownTooltip = () => {
+                    if (!mb) return null
+                    const row = (label: string, value: number) => {
+                      if (value === 0) return null
+                      const color = value > 0 ? '#86efac' : '#fca5a5'
+                      const sign = value > 0 ? '+' : ''
+                      return (
+                        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '11px' }}>
+                          <span style={{ color: '#94a3b8' }}>{label}</span>
+                          <span style={{ color, fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{sign}{value}</span>
+                        </div>
+                      )
+                    }
+                    return (
+                      <div style={{ minWidth: '180px', padding: '4px 2px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#e2e8f0', marginBottom: '4px' }}>
+                          Effective rating
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '11px' }}>
+                          <span style={{ color: '#94a3b8' }}>Baseline</span>
+                          <span style={{ color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{mb.baseline}</span>
+                        </div>
+                        {row('Fatigue', mb.fatigue)}
+                        {row('Form state', mb.form)}
+                        {row('Matchup context', mb.context)}
+                        {row('Soft cap', mb.cap)}
+                        <div style={{
+                          display: 'flex', justifyContent: 'space-between', gap: '12px',
+                          fontSize: '11px', fontWeight: 700,
+                          marginTop: '4px', paddingTop: '4px',
+                          borderTop: '1px solid #334155',
+                        }}>
+                          <span style={{ color: '#e2e8f0' }}>Effective</span>
+                          <span style={{ color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{mb.final}</span>
+                        </div>
+                      </div>
+                    )
+                  }
                   return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                       {posLabel && (
@@ -1618,7 +1671,25 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         <PlayerHoverCard playerId={p.id} playerName={p.name}>
                           <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{p.name}</span>
                         </PlayerHoverCard>
-                        {p.ratingStars != null && <Stars stars={p.ratingStars} size={11} />}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {p.ratingStars != null && <Stars stars={p.ratingStars} size={11} />}
+                          {mb && mb.totalDelta !== 0 && (
+                            <HoverTooltip content={renderBreakdownTooltip()}>
+                              <span style={{
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                fontVariantNumeric: 'tabular-nums',
+                                color: mb.totalDelta > 0 ? '#86efac' : '#fca5a5',
+                                backgroundColor: mb.totalDelta > 0 ? 'rgba(34,197,94,0.10)' : 'rgba(239,68,68,0.10)',
+                                padding: '1px 5px',
+                                borderRadius: '3px',
+                                cursor: 'help',
+                              }}>
+                                {mb.totalDelta > 0 ? '+' : ''}{mb.totalDelta}
+                              </span>
+                            </HoverTooltip>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )
