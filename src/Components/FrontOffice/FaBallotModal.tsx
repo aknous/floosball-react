@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { Stars, calcStars } from '@/Components/Stars'
 import { GM_FA_BALLOT_MAX_RANKINGS, GM_FA_BALLOT_COST } from '@/types/gm'
+import { attitudeTier, resilienceTier, pressureHandlingTier } from '@/utils/mentalProfile'
 
 export interface PlayerStats {
   gamesPlayed: number
@@ -33,6 +34,14 @@ export interface ScoutingPlayer {
   isProjected?: boolean
   projectedReason?: 'walk_year' | 'cut_vote'
   currentTeam?: string
+  // Mental snapshot — surfaced as badges so fans can spot toxic personalities
+  // before ranking them. Optional: legacy ballot rows from older API versions
+  // can omit these without breaking the row layout.
+  attitude?: number
+  mood?: string
+  moodTier?: string
+  resilience?: number
+  pressureHandling?: number
 }
 
 export interface OpenSlot {
@@ -548,6 +557,98 @@ const SectionDivider: React.FC<{ label: string; count: number; color: string }> 
   </div>
 )
 
+// Mood tier → color. Mirrors the palette used on the player hover card so
+// "frustrated" lines up across surfaces.
+const MOOD_COLORS: Record<string, string> = {
+  electric:   '#22c55e',
+  confident:  '#4ade80',
+  steady:     '#94a3b8',
+  frustrated: '#f97316',
+  miserable:  '#ef4444',
+}
+
+const MentalPill: React.FC<{ label: string; color: string; title?: string }> = ({ label, color, title }) => (
+  <span
+    title={title}
+    style={{
+      fontSize: '10px',
+      fontWeight: 700,
+      color,
+      backgroundColor: `${color}1f`,
+      padding: '1px 6px',
+      borderRadius: '4px',
+      letterSpacing: '0.04em',
+      textTransform: 'uppercase',
+      whiteSpace: 'nowrap',
+    }}
+  >
+    {label}
+  </span>
+)
+
+const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
+  // Skip the row entirely when the backend didn't ship any mental data —
+  // older API versions, or generated rows that lack a personality.
+  const hasAny = p.attitude != null || p.mood || p.resilience != null || p.pressureHandling != null
+  if (!hasAny) return null
+
+  const pills: React.ReactNode[] = []
+  if (p.attitude != null) {
+    const t = attitudeTier(p.attitude)
+    pills.push(
+      <MentalPill
+        key="attitude"
+        label={`Presence: ${t.label}`}
+        color={t.color}
+        title="Locker-room presence. Toxic players drag the room, Leaders lift it."
+      />
+    )
+  }
+  if (p.mood && p.moodTier) {
+    const color = MOOD_COLORS[p.moodTier] || '#94a3b8'
+    pills.push(
+      <MentalPill
+        key="mood"
+        label={`Mood: ${p.mood}`}
+        color={color}
+        title="How they're feeling this week. Mood swings game to game; presence is who they are."
+      />
+    )
+  }
+  if (p.resilience != null) {
+    const t = resilienceTier(p.resilience)
+    // Only surface resilience when it's at the extremes — the middle tiers
+    // ('Steady') are the norm and add noise to the row.
+    if (p.resilience >= 80 || p.resilience < 65) {
+      pills.push(
+        <MentalPill
+          key="resilience"
+          label={t.label}
+          color={t.color}
+          title="Resilience — how well they shake off bad games."
+        />
+      )
+    }
+  }
+  if (p.pressureHandling != null && (p.pressureHandling >= 2 || p.pressureHandling < -1)) {
+    const t = pressureHandlingTier(p.pressureHandling)
+    pills.push(
+      <MentalPill
+        key="pressure"
+        label={t.label}
+        color={t.color}
+        title="Pressure handling — clutch vs. choke under late-game stress."
+      />
+    )
+  }
+
+  return (
+    <div style={{ marginTop: '5px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+      {pills}
+    </div>
+  )
+}
+
 const PlayerRow: React.FC<{
   player: ScoutingPlayer
   canAddMore: boolean
@@ -587,7 +688,11 @@ const PlayerRow: React.FC<{
         <PerformanceBadge delta={p.ratingDelta} />
       ) : null}
     </div>
-    {/* Row 2: Stat line, prospect note, rookie label, or walk-year context. */}
+    {/* Row 2: Mental snapshot — presence (attitude), mood, plus optional
+        resilience/pressure highlights. Lets fans spot toxic personalities
+        before ranking them. Hidden when the backend ships no mental data. */}
+    <MentalBadges player={p} />
+    {/* Row 3: Stat line, prospect note, rookie label, or walk-year context. */}
     {p.isProspect ? (
       <div style={{ marginTop: '5px', fontSize: '11px', color: '#a78bfa', fontStyle: 'italic' }}>
         Pipeline prospect. Rank to promote instead of signing a FA.
