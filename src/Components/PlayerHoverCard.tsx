@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
-import { Link } from 'react-router-dom'
 import { Stars, SwordIcon, ShieldIcon } from './Stars'
-import { personalityAccent, personalityTier } from '@/utils/personality'
+import { personalityAccent } from '@/utils/personality'
+import { attitudeTier } from '@/utils/mentalProfile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -30,6 +30,7 @@ interface PlayerDetail {
     fatigue?: number
     mood?: string         // mood name like "Composed" / "Studying"
     moodTier?: string     // tier name like "steady" / "electric"
+    attitude?: number     // raw 30-100 — used to derive the badge tier
     attitudeLabel?: string  // "Leader" / "Positive" / "Steady" / "Sour" / "Toxic"
     attitudeTier?: string   // tier key for color mapping
     personality?: string  // personality key like "stoic" / "alien"
@@ -63,12 +64,8 @@ const MOOD_COLORS: Record<string, string> = {
   miserable: '#ef4444',
 }
 
-// Display labels: "stoic" → "Stoic", "trash_talker" → "Trash Talker"
-const formatLabel = (key: string): string =>
-  key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-
 const CARD_WIDTH = 260
-const CARD_HEIGHT_EST = 260
+const CARD_HEIGHT_EST = 300
 const OFFSET = 16
 
 const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
@@ -77,16 +74,33 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
     ? mouseX - CARD_WIDTH - OFFSET
     : mouseX + OFFSET
 
-  // Place below cursor; flip up if not enough room
-  let top = mouseY + OFFSET
-  if (top + CARD_HEIGHT_EST > window.innerHeight - 8) top = mouseY - CARD_HEIGHT_EST - OFFSET
-  top = Math.max(8, top)
+  // Place below cursor; flip up if not enough room. Re-measure after
+  // mount in case the actual height exceeds the estimate.
+  const initialTop = (() => {
+    let t = mouseY + OFFSET
+    if (t + CARD_HEIGHT_EST > window.innerHeight - 8) {
+      t = mouseY - CARD_HEIGHT_EST - OFFSET
+    }
+    return Math.max(8, t)
+  })()
+  const [top, setTop] = useState(initialTop)
+  const cardRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    const h = el.offsetHeight
+    let t = mouseY + OFFSET
+    if (t + h > window.innerHeight - 8) {
+      t = mouseY - h - OFFSET
+    }
+    setTop(Math.max(8, t))
+  }, [mouseY, data])
 
   const { attributes: att } = data
   const color = data.teamColor || '#64748b'
 
   return ReactDOM.createPortal(
-    <div style={{
+    <div ref={cardRef} style={{
       position: 'fixed', top, left,
       width: CARD_WIDTH,
       fontFamily: 'pressStart',
@@ -127,33 +141,44 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
           <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '12px' }}>Free Agent</div>
         )}
 
-        {/* Mood badge — catchall mental state (confidence + determination + locker-room attitude).
-            Color uses the green→red mood-tier spectrum so toxicity reads red, leadership reads green. */}
-        {att?.mood && (() => {
-          const moodColors: Record<string, string> = {
-            electric:   '#22c55e',
-            confident:  '#4ade80',
-            steady:     '#94a3b8',
-            frustrated: '#f97316',
-            miserable:  '#ef4444',
-          }
-          const accent = moodColors[att.moodTier || 'steady'] || '#94a3b8'
-          return (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
-              <span style={{
-                fontSize: '11px',
-                color: accent,
-                backgroundColor: `${accent}1a`,
-                border: `1px solid ${accent}66`,
-                padding: '3px 8px',
-                borderRadius: '4px',
-                fontWeight: '600',
-              }}>
-                Mood: <span style={{ fontWeight: '700' }}>{att.mood}</span>
-              </span>
-            </div>
-          )
-        })()}
+        {/* Mood + Attitude badges — current mental state + locker-room
+            presence. Wrap so longer-named teams don't push these off. */}
+        {(att?.mood || att?.attitude != null) && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+            {att?.mood && (() => {
+              const accent = MOOD_COLORS[att.moodTier || 'steady'] || '#94a3b8'
+              return (
+                <span style={{
+                  fontSize: '11px',
+                  color: accent,
+                  backgroundColor: `${accent}1a`,
+                  border: `1px solid ${accent}66`,
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  fontWeight: '600',
+                }}>
+                  Mood: <span style={{ fontWeight: '700' }}>{att.mood}</span>
+                </span>
+              )
+            })()}
+            {att?.attitude != null && (() => {
+              const { label, color: tierColor } = attitudeTier(att.attitude)
+              return (
+                <span style={{
+                  fontSize: '11px',
+                  color: tierColor,
+                  backgroundColor: `${tierColor}1a`,
+                  border: `1px solid ${tierColor}66`,
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  fontWeight: '600',
+                }}>
+                  Presence: <span style={{ fontWeight: '700' }}>{label}</span>
+                </span>
+              )
+            })()}
+          </div>
+        )}
 
         {/* Rating bar */}
         <div style={{ marginBottom: '10px' }}>

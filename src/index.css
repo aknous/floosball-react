@@ -29,6 +29,27 @@
   animation: scoreFlash 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Rally button — flash on a successful cheer. */
+@keyframes rally-flash {
+  0%   { transform: scale(1.12); }
+  60%  { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+/* Expandable rows (game-modal stats + team-page roster) — hover
+   signals interactivity before the user clicks, so the chevron isn't
+   the only affordance. */
+.stat-row-expandable,
+.roster-row-expandable {
+  transition: background-color 0.12s;
+}
+.stat-row-expandable:hover {
+  background-color: #16263d !important;
+}
+.roster-row-expandable:hover {
+  background-color: #16263d !important;
+}
+
 @font-face {
     font-family: 'pressStart';
     src: url('./fonts/Inconsolata-ExtraLight.ttf');

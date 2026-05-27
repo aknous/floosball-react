@@ -4,6 +4,11 @@ import { Stars, SwordIcon, ShieldIcon, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { GiLaurelsTrophy, GiStarMedal } from 'react-icons/gi'
 import { personalityAccent } from '@/utils/personality'
+import {
+  attitudeTier as attTier, resilienceTier, selfBeliefTier,
+  disciplineTier, focusTier, instinctTier, creativityTier,
+  pressureHandlingTier, MentalTier,
+} from '@/utils/mentalProfile'
 import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -61,6 +66,14 @@ interface PlayerAttributes {
   attitudeValue?: number
   attitudeLabel?: string
   attitudeTier?: string
+  attitude?: number
+  resilience?: number
+  selfBelief?: number
+  pressureHandling?: number
+  discipline?: number
+  focus?: number
+  instinct?: number
+  creativity?: number
   demeanor?: string
   demeanorDrift?: DemeanorDrift
   personality?: PersonalityBlock
@@ -503,7 +516,11 @@ export default function PlayerPage() {
 
   const attrRow = (label: string, _stars: number, value: number, isOverall = false, icon?: React.ReactNode) => {
     const barColor = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
-    const pct = ((value - 60) / 40) * 100
+    // 0-100 mapping so the bar reads naturally against the displayed
+    // number: an 80 fills ~80%, a 50 fills 50%, etc. The old formula
+    // normalized to a 60-100 range, which left any defensive attr
+    // below 60 (common for non-primary defenders) as an empty bar.
+    const pct = Math.max(0, Math.min(100, value))
     return (
       <div key={label} style={{ marginBottom: isOverall ? '16px' : '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '3px' }}>
@@ -639,6 +656,10 @@ export default function PlayerPage() {
                   {att.personality.archetypeLabel}
                 </div>
               )}
+              {/* Mood badge — current mental state. The rest of the
+                  mental profile (Attitude, Pressure, etc.) lives in the
+                  Attributes panel; mood headlines here so it's visible
+                  alongside the player's identity. */}
               {att?.mood && (() => {
                 const accent = MOOD_COLORS[att.moodTier || 'steady'] || '#94a3b8'
                 return (
@@ -695,12 +716,11 @@ export default function PlayerPage() {
               Tabs whose source data is empty are hidden. ── */}
           {(() => {
             const hasProgression = ratingHistory.length > 0
-            const hasAwards = (player.mvpAwards?.length ?? 0) > 0 || (player.championships?.length ?? 0) > 0
-
+            // Awards moved to a dedicated Trophy Case panel below
+            // Recent Moments in the right column.
             const tabs: Array<{ key: typeof detailTab; label: string; show: boolean }> = [
               { key: 'attributes',  label: 'Attributes',  show: true },
               { key: 'progression', label: 'Progression', show: hasProgression },
-              { key: 'awards',      label: 'Awards',      show: hasAwards },
             ]
             const visibleTabs = tabs.filter(t => t.show)
             // If somehow the active tab got hidden, fall back to attributes
@@ -746,65 +766,169 @@ export default function PlayerPage() {
                     panel sizes to the active tab's content. Tab switch will
                     resize, accepted tradeoff to avoid persistent empty space. */}
                 <div style={{ padding: '14px 16px' }}>
-                  {/* Attributes panel */}
-                  {activeTab === 'attributes' && (
-                  <div>
-                    {/* Overall + Performance on top */}
-                    {attrRow('Overall', player.ratingStars, player.playerRating, true)}
-                    {att?.seasonPerformanceRating != null && att.seasonPerformanceRating > 0 &&
-                      attrRow('Performance', att.seasonPerformanceRatingStars ?? 1, att.seasonPerformanceRating)}
-
-                    {/* Offense / Defense columns side by side */}
-                    {hasDefense ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '0' : '16px', marginTop: '8px' }}>
-                        {/* Offense column */}
+                  {/* Attributes panel — Skills on the left, Mental Profile
+                      on the right. Two halves of the same "what is this
+                      player" picture; sitting them side-by-side instead of
+                      stacked keeps the page from getting pushed taller. */}
+                  {activeTab === 'attributes' && (() => {
+                    const mentalRows: { label: string; tier: MentalTier }[] = []
+                    if (att?.attitude != null) mentalRows.push({ label: 'Presence', tier: attTier(att.attitude) })
+                    if (att?.pressureHandling != null) mentalRows.push({ label: 'Pressure', tier: pressureHandlingTier(att.pressureHandling) })
+                    if (att?.resilience != null) mentalRows.push({ label: 'Resilience', tier: resilienceTier(att.resilience) })
+                    if (att?.selfBelief != null) mentalRows.push({ label: 'Self-belief', tier: selfBeliefTier(att.selfBelief) })
+                    if (att?.discipline != null) mentalRows.push({ label: 'Discipline', tier: disciplineTier(att.discipline) })
+                    if (att?.focus != null) mentalRows.push({ label: 'Focus', tier: focusTier(att.focus) })
+                    if (att?.instinct != null) mentalRows.push({ label: 'Instinct', tier: instinctTier(att.instinct) })
+                    if (att?.creativity != null) mentalRows.push({ label: 'Creativity', tier: creativityTier(att.creativity) })
+                    const hasMental = mentalRows.length > 0
+                    return (
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: isMobile || !hasMental ? '1fr' : '1fr 1fr',
+                        gap: isMobile ? '16px' : '20px',
+                      }}>
+                        {/* Left: Skills (overall + perf + off/def side-by-side + fatigue) */}
                         <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #334155' }}>
-                            <SwordIcon size={13} color="#94a3b8" />
-                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Offense</span>
-                            {player.offensiveRating != null && (
-                              <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.offensiveRating}</span>
-                            )}
-                          </div>
-                          {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
-                        </div>
-                        {/* Defense column */}
-                        <div style={isMobile ? { marginTop: '12px' } : {}}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #334155' }}>
-                            <ShieldIcon size={13} color="#94a3b8" />
-                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Defense ({player.defensivePosition})</span>
-                            {player.defensiveRating != null && (
-                              <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.defensiveRating}</span>
-                            )}
-                          </div>
-                          {defAttrs.map(a => attrRow(a.label, a.stars, a.value))}
-                        </div>
-                      </div>
-                    ) : (
-                      /* Kickers: no defense column, just show offense attrs */
-                      <div style={{ marginTop: '4px' }}>
-                        {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
-                      </div>
-                    )}
+                          <div style={{
+                            fontSize: '11px', fontWeight: 700, color: '#94a3b8',
+                            letterSpacing: '0.08em', marginBottom: '10px',
+                            textAlign: 'center',
+                          }}>SKILLS</div>
+                          {attrRow('Overall', player.ratingStars, player.playerRating, true)}
+                          {att?.seasonPerformanceRating != null && att.seasonPerformanceRating > 0 &&
+                            attrRow('Performance', att.seasonPerformanceRatingStars ?? 1, att.seasonPerformanceRating)}
 
-                    {/* Fatigue */}
-                    {att?.fatigue != null && att.fatigue > 0 && (() => {
-                      const f = att.fatigue
-                      const fColor = f < 5 ? '#4ade80' : f < 10 ? '#eab308' : f < 15 ? '#f97316' : '#ef4444'
-                      return (
-                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #334155' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '13px', color: '#94a3b8' }}>Fatigue</span>
-                            <span style={{ fontSize: '13px', color: fColor, fontWeight: '600' }}>{f.toFixed(1)}%</span>
-                          </div>
-                          <div style={{ height: '6px', backgroundColor: '#0f172a', borderRadius: '3px' }}>
-                            <div style={{ width: `${Math.min(f / 20 * 100, 100)}%`, height: '100%', backgroundColor: fColor, borderRadius: '3px' }} />
-                          </div>
+                          {/* Offense / Defense — side-by-side keeps the Skills
+                              column from stretching the panel taller than Mental.
+                              Each header has a labelled gauge so the column's
+                              overall rating reads visually, not just as a number. */}
+                          {(() => {
+                            const headerColor = (v: number | undefined) => !v ? '#475569'
+                              : v >= 85 ? '#22c55e' : v >= 72 ? '#f59e0b' : '#ef4444'
+                            const headerGauge = (v: number | undefined) => {
+                              if (v == null) return null
+                              const c = headerColor(v)
+                              return (
+                                <div style={{ height: '4px', backgroundColor: '#334155', borderRadius: '2px', overflow: 'hidden', marginBottom: '8px' }}>
+                                  <div style={{ width: `${Math.max(0, Math.min(100, v))}%`, height: '100%', backgroundColor: c, borderRadius: '2px' }} />
+                                </div>
+                              )
+                            }
+                            if (hasDefense) {
+                              return (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '10px' }}>
+                                  <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px', paddingBottom: '4px', borderBottom: '1px solid #334155' }}>
+                                      <SwordIcon size={12} color="#94a3b8" />
+                                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Off</span>
+                                      {player.offensiveRating != null && (
+                                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.offensiveRating}</span>
+                                      )}
+                                    </div>
+                                    {headerGauge(player.offensiveRating)}
+                                    {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                                  </div>
+                                  <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px', paddingBottom: '4px', borderBottom: '1px solid #334155' }}>
+                                      <ShieldIcon size={12} color="#94a3b8" />
+                                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Def</span>
+                                      {player.defensiveRating != null && (
+                                        <span style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.defensiveRating}</span>
+                                      )}
+                                    </div>
+                                    {headerGauge(player.defensiveRating)}
+                                    {defAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                                  </div>
+                                </div>
+                              )
+                            }
+                            return (
+                              <div style={{ marginTop: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px', paddingBottom: '4px', borderBottom: '1px solid #334155' }}>
+                                  <SwordIcon size={13} color="#94a3b8" />
+                                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Offense</span>
+                                  {player.offensiveRating != null && (
+                                    <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', marginLeft: 'auto' }}>{player.offensiveRating}</span>
+                                  )}
+                                </div>
+                                {headerGauge(player.offensiveRating)}
+                                {offAttrs.map(a => attrRow(a.label, a.stars, a.value))}
+                              </div>
+                            )
+                          })()}
+
+                          {/* Fatigue */}
+                          {att?.fatigue != null && att.fatigue > 0 && (() => {
+                            const f = att.fatigue
+                            const fColor = f < 5 ? '#4ade80' : f < 10 ? '#eab308' : f < 15 ? '#f97316' : '#ef4444'
+                            return (
+                              <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #334155' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                  <span style={{ fontSize: '13px', color: '#94a3b8' }}>Fatigue</span>
+                                  <span style={{ fontSize: '13px', color: fColor, fontWeight: '600' }}>{f.toFixed(1)}%</span>
+                                </div>
+                                <div style={{ height: '6px', backgroundColor: '#0f172a', borderRadius: '3px' }}>
+                                  <div style={{ width: `${Math.min(f / 20 * 100, 100)}%`, height: '100%', backgroundColor: fColor, borderRadius: '3px' }} />
+                                </div>
+                              </div>
+                            )
+                          })()}
                         </div>
-                      )
-                    })()}
-                  </div>
-                  )}
+
+                        {/* Right: Mental Profile (tier-badge list). Mood
+                            moved to the hero column; this column is the
+                            full mental profile breakdown. Rows are sized
+                            to fill the column proportional to Skills on
+                            the left so neither side feels empty. */}
+                        {hasMental && (
+                          <div style={{
+                            paddingLeft: isMobile ? 0 : '16px',
+                            borderLeft: isMobile ? undefined : '1px solid #334155',
+                          }}>
+                            <div style={{
+                              fontSize: '11px', fontWeight: 700, color: '#94a3b8',
+                              letterSpacing: '0.08em', marginBottom: '12px',
+                              textAlign: 'center',
+                            }}>MENTAL</div>
+                            {mentalRows.length > 0 && (
+                              <div style={{
+                                display: 'flex',
+                                flexDirection: 'column' as const,
+                                gap: '10px',
+                              }}>
+                                {mentalRows.map(r => (
+                                  <div key={r.label} style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '12px',
+                                    padding: '4px 0',
+                                  }}>
+                                    <span style={{
+                                      fontSize: '13px',
+                                      color: '#cbd5e1',
+                                      letterSpacing: '0.02em',
+                                    }}>{r.label}</span>
+                                    <span style={{
+                                      fontSize: '12px',
+                                      fontWeight: 700,
+                                      color: r.tier.color,
+                                      backgroundColor: `${r.tier.color}1a`,
+                                      border: `1px solid ${r.tier.color}55`,
+                                      padding: '3px 10px',
+                                      borderRadius: '4px',
+                                      letterSpacing: '0.03em',
+                                      whiteSpace: 'nowrap',
+                                    }}>{r.tier.label}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
 
                   {/* Progression panel — capped height so the chart scales
                       down to fit instead of pushing the attributes panel
@@ -820,74 +944,84 @@ export default function PlayerPage() {
                     </div>
                   )}
 
-                  {/* Awards panel */}
-                  {activeTab === 'awards' && hasAwards && (
-                    <div style={{
-                      display: 'flex',
-                      flexWrap: 'wrap' as const,
-                      gap: '16px',
-                      alignContent: 'flex-start',
-                    }}>
-                      {(player.mvpAwards ?? []).map((a: any, i: number) => (
-                        <div key={`mvp-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <GiStarMedal style={{ fontSize: '28px', color: '#fbbf24' }} />
-                          <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: '600', marginTop: '2px' }}>MVP</div>
-                          <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
-                          <div style={{ fontSize: '11px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
-                        </div>
-                      ))}
-                      {(player.championships ?? []).map((c: any, i: number) => (
-                        <div key={`champ-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <GiLaurelsTrophy style={{ fontSize: '28px', color: '#f59e0b' }} />
-                          <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', marginTop: '2px' }}>S{c.Season}</div>
-                          <div style={{ fontSize: '11px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {/* Awards moved out — see the Trophy Case panel
+                      below Recent Moments in the right column. */}
                 </div>
               </div>
             )
           })()}
 
-          {/* ── Right column: Recent Moments — quotes streaming next to attrs.
-              Capped at a reasonable height so long quote lists don't push
-              the column way past the attributes panel. ── */}
-          {!isMobile && (quotes.length > 0 ? (
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', minWidth: 0, display: 'flex', flexDirection: 'column' as const, maxHeight: '320px' }}>
-              {sectionHeader('Recent Moments')}
-              <div style={{ padding: '10px', display: 'flex', flexDirection: 'column' as const, gap: '6px', overflowY: 'auto' }}>
-                {quotes.slice(0, 4).map((q, i) => {
-                  const accent = q.personality ? personalityAccent(q.personality) : '#64748b'
-                  return (
-                    <div
-                      key={`${q.timestamp || i}`}
-                      style={{
-                        backgroundColor: `${accent}10`,
-                        borderLeft: `2px solid ${accent}`,
-                        borderRadius: '4px',
-                        padding: '6px 8px',
-                      }}
-                    >
-                      <p style={{
-                        fontSize: '12px',
-                        color: '#cbd5e1',
-                        fontStyle: 'italic' as const,
-                        margin: 0,
-                        lineHeight: 1.4,
-                        overflowWrap: 'break-word' as const,
-                      }}>
-                        {q.text}
-                      </p>
+          {/* ── Right column: Recent Moments + Trophy Case stacked.
+              Moments stay capped at 320px so trophies always have room. ── */}
+          {!isMobile && (() => {
+            const hasMoments = quotes.length > 0
+            const hasAwards = (player.mvpAwards?.length ?? 0) > 0 || (player.championships?.length ?? 0) > 0
+            if (!hasMoments && !hasAwards) return <div />  // spacer keeps 3-col grid aligned
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '16px', minWidth: 0 }}>
+                {hasMoments && (
+                  <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', display: 'flex', flexDirection: 'column' as const, maxHeight: '320px' }}>
+                    {sectionHeader('Recent Moments')}
+                    <div style={{ padding: '10px', display: 'flex', flexDirection: 'column' as const, gap: '6px', overflowY: 'auto' }}>
+                      {quotes.slice(0, 4).map((q, i) => {
+                        const accent = q.personality ? personalityAccent(q.personality) : '#64748b'
+                        return (
+                          <div
+                            key={`${q.timestamp || i}`}
+                            style={{
+                              backgroundColor: `${accent}10`,
+                              borderLeft: `2px solid ${accent}`,
+                              borderRadius: '4px',
+                              padding: '6px 8px',
+                            }}
+                          >
+                            <p style={{
+                              fontSize: '12px',
+                              color: '#cbd5e1',
+                              fontStyle: 'italic' as const,
+                              margin: 0,
+                              lineHeight: 1.4,
+                              overflowWrap: 'break-word' as const,
+                            }}>
+                              {q.text}
+                            </p>
+                          </div>
+                        )
+                      })}
                     </div>
-                  )
-                })}
+                  </div>
+                )}
+                {hasAwards && (
+                  <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', display: 'flex', flexDirection: 'column' as const }}>
+                    {sectionHeader('Trophy Case')}
+                    <div style={{
+                      padding: '14px 12px',
+                      display: 'flex',
+                      flexWrap: 'wrap' as const,
+                      gap: '14px',
+                      alignContent: 'flex-start',
+                    }}>
+                      {(player.mvpAwards ?? []).map((a: any, i: number) => (
+                        <div key={`mvp-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+                          <GiStarMedal style={{ fontSize: '32px', color: '#fbbf24' }} />
+                          <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>MVP</div>
+                          <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
+                          <div style={{ fontSize: '10px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
+                        </div>
+                      ))}
+                      {(player.championships ?? []).map((c: any, i: number) => (
+                        <div key={`champ-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+                          <GiLaurelsTrophy style={{ fontSize: '32px', color: '#f59e0b' }} />
+                          <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600', marginTop: '3px' }}>S{c.Season}</div>
+                          <div style={{ fontSize: '10px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ) : (
-            /* Spacer keeps the 3-col grid aligned when no quotes yet */
-            <div />
-          ))}
+            )
+          })()}
 
         </div>
         {/* /Hero + Attributes + Moments 3-col row */}
@@ -955,6 +1089,36 @@ export default function PlayerPage() {
                   </div>
                 )
               })}
+            </div>
+          </div>
+        )}
+        {/* Mobile-only Trophy Case — desktop has its own slot below
+            Recent Moments in the right column. */}
+        {isMobile && ((player.mvpAwards?.length ?? 0) > 0 || (player.championships?.length ?? 0) > 0) && (
+          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' }}>
+            {sectionHeader('Trophy Case')}
+            <div style={{
+              padding: '14px 12px',
+              display: 'flex',
+              flexWrap: 'wrap' as const,
+              gap: '14px',
+              alignContent: 'flex-start',
+            }}>
+              {(player.mvpAwards ?? []).map((a: any, i: number) => (
+                <div key={`mvp-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+                  <GiStarMedal style={{ fontSize: '32px', color: '#fbbf24' }} />
+                  <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>MVP</div>
+                  <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
+                  <div style={{ fontSize: '10px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
+                </div>
+              ))}
+              {(player.championships ?? []).map((c: any, i: number) => (
+                <div key={`champ-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+                  <GiLaurelsTrophy style={{ fontSize: '32px', color: '#f59e0b' }} />
+                  <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600', marginTop: '3px' }}>S{c.Season}</div>
+                  <div style={{ fontSize: '10px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
+                </div>
+              ))}
             </div>
           </div>
         )}

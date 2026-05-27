@@ -12,6 +12,43 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.16.1',
+    date: '2026-05-27',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[UI/UX] Cheer your team mid-game. A megaphone button on every live scoreboard sends a confidence boost to the rostered players. Free, with a 20-second cooldown per team. When enough fans cheer for the same team in a short window, a rally line drops into the play feed.',
+          '[UI/UX] Player Mental Profile panel on the player hover card and player page. Mood, Attitude, Pressure handling, Resilience, Self-belief, Discipline, Focus, Instinct, and Creativity all show as tiered status badges.',
+          '[UI/UX] Per-player breakdown in the game modal. Click any player row in the Stats tab to see pre-game rating modifiers (Fatigue, Team Disposition, Soft cap), live confidence + determination drift, and pressure exposure for that game.',
+          '[UI/UX] Trophy Case panel on the player page. MVP and championship medals moved out of the tabbed panel into their own slot below Recent Moments on the right column.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Simulation] Team and player balance pass. League competitiveness, market tier effects, and fatigue all tuned.',
+          '[Simulation] Form state and matchup context consolidated into a single Team Disposition with one narrative label (Hot Streak, Trap-Game Risk, Cinderella Push, Coasting, Playoff Push, etc.).',
+          '[Simulation] Play-calling rebalanced.',
+          '[Simulation] Momentum system polish. Big plays count sooner, close games build the most momentum, and late-game swings carry real weight. Trailing teams keep their comeback momentum at full value in blowouts; the leading team is the one whose piling-on gets dampened.',
+          '[Simulation] Teams stuck in a rough patch are no longer dragged down as hard. The downhill spiral is less self-reinforcing and the underdog still has a fighting chance.',
+          '[Fantasy] Floobit payouts bumped across the board. Weekly fantasy income and pick-em prize pools both raised so mid-tier rosters can keep up with pack prices.',
+          '[UI/UX] Game modal stats clean-up. Stat columns line up across positions, expand chevrons are more visible, rows highlight on hover, and the layout condenses on landscape phones.',
+          '[UI/UX] Player page reorg. Skills and Mental sit side-by-side in the attributes panel, with the Offense and Defense column headers now showing their own rating gauge.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[UI/UX] Punts and other plays no longer drop out of the play feed.',
+          '[UI/UX] Down and distance now display correctly on every play.',
+          '[UI/UX] Ball position lands in the endzone on touchdown plays in the field graphic.',
+        ],
+      }
+    ],
+  },
+  {
     version: 'v0.16.0',
     date: '2026-05-25',
     changes: [],

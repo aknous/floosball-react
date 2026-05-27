@@ -28,6 +28,10 @@ interface RosterPlayer {
   serviceTime?: string
   fatigue?: number
   resilience?: number
+  mood?: string
+  moodTier?: string
+  personality?: string
+  attitude?: number
   ratingHistory?: { season: number; rating: number }[]
 }
 
@@ -227,6 +231,7 @@ export default function TeamPage() {
   const [retirementWatch, setRetirementWatch] = useState<Record<number, RetirementRiskEntry>>({})
   const [prospects, setProspects] = useState<ProspectEntry[]>([])
   const [prospectsMeta, setProspectsMeta] = useState<{ slotCapPerPosition: number, developmentWindow: number, promotionThreshold: number } | null>(null)
+  const [expandedRosterSlot, setExpandedRosterSlot] = useState<string | null>(null)
   const isMobile = useIsMobile()
   const isFavTeam = !!team && user?.favoriteTeamId === team.id
 
@@ -677,52 +682,213 @@ export default function TeamPage() {
                   ? <RetirementBadge risk={retirementWatch[player.id].risk} />
                   : null
 
+                const isExpanded = expandedRosterSlot === slot
+                const toggleExpand = () => setExpandedRosterSlot(isExpanded ? null : slot)
+                const chevron = (
+                  <span style={{
+                    color: '#94a3b8',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    transition: 'transform 0.15s, color 0.15s',
+                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: 1,
+                    flexShrink: 0,
+                    minWidth: '18px',
+                  }}>▾</span>
+                )
+
+                // Maps a team form state into a short reason + multiplier so
+                // we can show users the *concrete* expected rating impact for
+                // each rostered player this week. Multipliers mirror the
+                // backend's FORM_STATE_RATING_MULT.
+                const formInfo: { label: string; mult: number; color: string } | null = (() => {
+                  switch (team.formState) {
+                    case 'COMPLACENT': return { label: 'COMPLACENT', mult: 0.93,  color: '#ef4444' }
+                    case 'SPIRALING':  return { label: 'SPIRALING',  mult: 0.95,  color: '#ef4444' }
+                    case 'COOLING_OFF':return { label: 'COOLING OFF',mult: 0.97,  color: '#f59e0b' }
+                    case 'SHAKY':      return { label: 'SHAKY',      mult: 0.985, color: '#f59e0b' }
+                    case 'RESOLUTE':   return { label: 'RESOLUTE',   mult: 1.03,  color: '#22c55e' }
+                    case 'HOT_STREAK': return { label: 'HOT STREAK', mult: 1.00,  color: '#22c55e' }
+                    case 'GETTING_HOT':return { label: 'GETTING HOT',mult: 1.00,  color: '#22c55e' }
+                    case 'STEADY':     return { label: 'STEADY',     mult: 1.00,  color: '#94a3b8' }
+                    default:           return null
+                  }
+                })()
+
+                // Approximate rating impact previews. These mirror the backend
+                // math but compute on the frontend so users see live numbers
+                // without waiting for a game to run.
+                const fatiguePct = player.fatigue ?? 0          // 0-100 (percent)
+                // Fatigue applies fully to physical attrs; physical attrs are
+                // the dominant input to overallRating, so the rating impact
+                // is roughly fatiguePct% of baseline. Floor to 0 while the
+                // status is "Fresh" — a sub-2% drag rounds to -1 on stars
+                // but reads as wrong next to a "Fresh" badge.
+                const rawFatigueImpact = Math.round(-(player.rating * (fatiguePct / 100)))
+                const fatigueImpact = statusLabel === 'Fresh' ? 0 : rawFatigueImpact
+                const formImpact = formInfo
+                  ? Math.round(player.rating * (formInfo.mult - 1.0))
+                  : 0
+                const previewRating = Math.max(0, player.rating + fatigueImpact + formImpact)
+
+                const totalDelta = previewRating - player.rating
+                const totalDeltaColor = totalDelta > 0 ? '#22c55e' : totalDelta < 0 ? '#ef4444' : '#94a3b8'
+                const fmtDelta = (n: number) => (n > 0 ? `+${n}` : n === 0 ? '±0' : `${n}`)
+                const deltaColor = (n: number) => (n > 0 ? '#22c55e' : n < 0 ? '#ef4444' : '#94a3b8')
+
+                const insightsPanel = isExpanded ? (
+                  <div style={{
+                    marginTop: '4px', padding: '10px 12px', borderRadius: '4px',
+                    backgroundColor: '#0b1424', border: '1px solid #1e293b',
+                    display: 'flex', flexDirection: 'column', gap: '8px',
+                  }}>
+                    {/* Rating preview — baseline → effective with total delta */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      gap: '12px', padding: '6px 8px', borderRadius: '3px',
+                      backgroundColor: '#0f172a', border: '1px solid #1e293b',
+                    }}>
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>Effective rating</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontVariantNumeric: 'tabular-nums' }}>
+                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>{player.rating}</span>
+                        <span style={{ fontSize: '11px', color: '#475569' }}>→</span>
+                        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 700 }}>{previewRating}</span>
+                        <span style={{
+                          fontSize: '10px', fontWeight: 700,
+                          color: totalDeltaColor,
+                          backgroundColor: `${totalDeltaColor}1a`,
+                          border: `1px solid ${totalDeltaColor}55`,
+                          padding: '1px 6px', borderRadius: '3px',
+                        }}>
+                          {fmtDelta(totalDelta)}
+                        </span>
+                      </span>
+                    </div>
+
+                    {/* Fatigue */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
+                      <span style={{ color: '#cbd5e1' }}>
+                        Fatigue
+                        <span style={{ color: statusColor, marginLeft: '6px', fontSize: '11px' }}>
+                          {statusLabel} ({fatigue.toFixed(1)}%)
+                        </span>
+                      </span>
+                      <span style={{
+                        color: deltaColor(fatigueImpact), fontWeight: 600,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>
+                        {fmtDelta(fatigueImpact)}
+                      </span>
+                    </div>
+
+                    {/* Team disposition (matches the game-modal label —
+                        same concept, same name everywhere). */}
+                    {formInfo && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
+                        <span style={{ color: '#cbd5e1' }}>
+                          Team disposition
+                          <span style={{ color: formInfo.color, marginLeft: '6px', fontWeight: 600 }}>
+                            {formInfo.label}
+                          </span>
+                        </span>
+                        <span style={{
+                          color: deltaColor(formImpact), fontWeight: 600,
+                          fontVariantNumeric: 'tabular-nums',
+                        }}>
+                          {fmtDelta(formImpact)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Attitude — rendered as a descriptive badge, not a raw
+                        number. Tiers mirror the player-page mapping. */}
+                    {player.attitude != null && (() => {
+                      const att = player.attitude
+                      let label = 'Steady'
+                      let color = '#94a3b8'
+                      if (att >= 90)      { label = 'Leader';   color = '#22c55e' }
+                      else if (att >= 80) { label = 'Positive'; color = '#86efac' }
+                      else if (att >= 65) { label = 'Neutral';  color = '#94a3b8' }
+                      else if (att >= 50) { label = 'Sour';     color = '#f59e0b' }
+                      else                { label = 'Toxic';    color = '#ef4444' }
+                      return (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
+                          <span style={{ color: '#cbd5e1' }}>Locker-room presence</span>
+                          <span style={{
+                            fontSize: '10px', fontWeight: 600,
+                            color,
+                            backgroundColor: `${color}1a`,
+                            border: `1px solid ${color}55`,
+                            padding: '1px 7px', borderRadius: '3px',
+                            letterSpacing: '0.03em',
+                          }}>
+                            {label}
+                          </span>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                ) : null
+
                 if (isMobile) {
                   return (
-                    <div key={slot} style={{
-                      display: 'flex', flexDirection: 'column', gap: '6px',
-                      padding: '8px 10px', borderRadius: '4px', backgroundColor: '#0f172a',
-                    }}>
-                      {/* Top row: position | name | retirement */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                        {positionCell}
-                        <div style={{ flex: 1, minWidth: 0 }}>{nameLink}</div>
-                        {retirementBadge}
+                    <div key={slot}>
+                      <div onClick={toggleExpand} className="roster-row-expandable" style={{
+                        display: 'flex', flexDirection: 'column', gap: '6px',
+                        padding: '8px 10px', borderRadius: '4px', backgroundColor: '#0f172a',
+                        cursor: 'pointer',
+                      }}>
+                        {/* Top row: position | name | retirement | chevron */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                          {positionCell}
+                          <div style={{ flex: 1, minWidth: 0 }}>{nameLink}</div>
+                          {retirementBadge}
+                          {chevron}
+                        </div>
+                        {/* Bottom row: stars + status + contract + service (wraps) */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', paddingLeft: '2px' }}>
+                          <Stars stars={player.ratingStars} size={11} />
+                          {statusPill}
+                          {contractText}
+                          {svcChip}
+                        </div>
                       </div>
-                      {/* Bottom row: stars + status + contract + service (wraps) */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', paddingLeft: '2px' }}>
-                        <Stars stars={player.ratingStars} size={11} />
-                        {statusPill}
-                        {contractText}
-                        {svcChip}
-                      </div>
+                      {insightsPanel}
                     </div>
                   )
                 }
 
                 return (
-                  <div key={slot} style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'auto minmax(0, 1fr) auto auto auto',
-                    columnGap: '10px',
-                    alignItems: 'center',
-                    padding: '7px 10px',
-                    borderRadius: '4px',
-                    backgroundColor: '#0f172a',
-                  }}>
-                    {positionCell}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                      {nameLink}
-                      <Stars stars={player.ratingStars} size={11} />
+                  <div key={slot}>
+                    <div onClick={toggleExpand} className="roster-row-expandable" style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'auto minmax(0, 1fr) auto auto auto auto',
+                      columnGap: '10px',
+                      alignItems: 'center',
+                      padding: '7px 10px',
+                      borderRadius: '4px',
+                      backgroundColor: '#0f172a',
+                      cursor: 'pointer',
+                    }}>
+                      {positionCell}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
+                        {nameLink}
+                        <Stars stars={player.ratingStars} size={11} />
+                      </div>
+                      <span style={{ minWidth: '52px' }}>{statusPill}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', minWidth: '74px' }}>
+                        {contractText}
+                        {svcChip}
+                      </div>
+                      <span style={{ minWidth: '56px', display: 'flex', justifyContent: 'flex-end' }}>
+                        {retirementBadge}
+                      </span>
+                      {chevron}
                     </div>
-                    <span style={{ minWidth: '52px' }}>{statusPill}</span>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', minWidth: '74px' }}>
-                      {contractText}
-                      {svcChip}
-                    </div>
-                    <span style={{ minWidth: '56px', display: 'flex', justifyContent: 'flex-end' }}>
-                      {retirementBadge}
-                    </span>
+                    {insightsPanel}
                   </div>
                 )
               })}

@@ -63,6 +63,12 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           // Stamp _receivedAt for plays that came from REST without one — back-
           // dated by one hour so they always sort below anything fired live.
           const restBaseMs = Date.now() - 60 * 60 * 1000
+          const restPlayNumbers = new Set<number>()
+          const restPlayDescs = new Set<string>()
+          gameData.plays.forEach((p: any) => {
+            if (p.playNumber != null && Number.isInteger(p.playNumber)) restPlayNumbers.add(p.playNumber)
+            if (p.description && p.playResult) restPlayDescs.add(`${p.description}|${p.playResult}`)
+          })
           const mergedPlays = gameData.plays.map((p: any) => {
             const enrich = enrichByPlayNumber.get(p.playNumber)
             const merged = enrich ? { ...p, ...enrich } : p
@@ -70,6 +76,27 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               ? merged
               : { ...merged, _receivedAt: restBaseMs - (1000 - (p.playNumber || 0)) * 1000 }
           })
+          // Preserve WS-only plays the REST snapshot missed (race: snapshot taken
+          // before the play was inserted into gameFeed but WS already fired).
+          // Without this guard, a fresh /api/games/{id} fetch silently wipes
+          // recently-broadcast plays from the modal feed.
+          const missingWsPlays: any[] = []
+          ;(game.plays || []).forEach((p: any) => {
+            if (!p || p._type || p.isSidelineCutaway) return
+            const pn = p.playNumber
+            const descKey = p.description && p.playResult ? `${p.description}|${p.playResult}` : null
+            // REST is the source of truth for event-only entries (kickoffs,
+            // quarter starts, halftime, timeouts). Only carry forward true
+            // plays — those with an integer playNumber or description+playResult.
+            if ((pn == null || !Number.isInteger(pn)) && descKey == null) return
+            const inRestByNum = pn != null && Number.isInteger(pn) && restPlayNumbers.has(pn)
+            const inRestByDesc = descKey != null && restPlayDescs.has(descKey)
+            if (inRestByNum || inRestByDesc) return
+            missingWsPlays.push(p)
+          })
+          if (missingWsPlays.length > 0) {
+            mergedPlays.unshift(...missingWsPlays)
+          }
 
           updated.set(gameId, {
             ...game,
@@ -208,16 +235,26 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const curGame = updated.get(gameId)!
             let existingPlays = curGame.plays || []
 
-            // Identity check for plays. Primary key: playNumber (set by backend
-            // and unique per play). Fall back to description+playResult for
-            // entries that don't carry a numeric playNumber (event messages,
-            // cutaways with fractional playNumbers).
+            // Identity check for plays. A duplicate must match on BOTH
+            // playNumber AND description+playResult — playNumber alone has
+            // false-positived on punts and other plays whose number happens
+            // to collide with an existing entry (e.g. when the previous
+            // play was rebroadcast with an updated playResult). The
+            // kneel-twice case this dedup was added to defend against has
+            // matching values on both axes, so requiring both is still safe.
+            // Fall back to description+playResult-only for entries that
+            // don't carry an integer playNumber (event messages, cutaways).
             const sameAsExisting = (cand: any) => {
               if (!cand) return false
-              if (cand.playNumber != null && Number.isInteger(cand.playNumber)) {
-                if (existingPlays.some((p: any) => p.playNumber === cand.playNumber && !(p as any).isSidelineCutaway)) return true
-              }
-              if (cand.description) {
+              const hasInt = cand.playNumber != null && Number.isInteger(cand.playNumber)
+              if (hasInt && cand.description) {
+                if (existingPlays.some((p: any) => (
+                  p.playNumber === cand.playNumber
+                  && p.description === cand.description
+                  && p.playResult === cand.playResult
+                  && !(p as any).isSidelineCutaway
+                ))) return true
+              } else if (cand.description) {
                 if (existingPlays.some((p: any) => p.description === cand.description && p.playResult === cand.playResult)) return true
               }
               return false
@@ -339,6 +376,45 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               _endedAt: Date.now(),
             } as any)
             hasGameEnd = true
+            break
+          }
+
+          // Live in-game fan rally — update the team's rally pool totals
+          // and stash the most recent rally event for transient UI flash.
+          case 'game_rally': {
+            const rEvt = evt as any
+            const curGame = updated.get(gameId)
+            if (!curGame) break
+            const teamIdKey = String(rEvt.teamId)
+            const prevRally = curGame.rally || { teamTotals: {} }
+            // Only prepend a play-feed entry when the backend crossed
+            // the surge threshold and emitted a feedMessage. Most
+            // individual cheers don't generate a feed line — only
+            // collective surges do.
+            const existingPlays = curGame.plays || []
+            const nextPlays = rEvt.feedMessage
+              ? [{ event: { text: rEvt.feedMessage, _type: 'rally' }, _ts: Date.now() }, ...existingPlays]
+              : existingPlays
+            updated.set(gameId, {
+              ...curGame,
+              plays: nextPlays,
+              rally: {
+                teamTotals: {
+                  ...prevRally.teamTotals,
+                  [teamIdKey]: rEvt.teamTotals,
+                },
+                lastRally: {
+                  teamId: rEvt.teamId,
+                  userId: rEvt.userId,
+                  username: rEvt.username,
+                  tier: rEvt.tier,
+                  costPaid: rEvt.costPaid,
+                  confidenceDelta: rEvt.confidenceDelta,
+                  determinationDelta: rEvt.determinationDelta,
+                  ts: Date.now(),
+                },
+              },
+            })
             break
           }
         }
