@@ -884,8 +884,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               // x coord: yards from left (0–120) → SVG x (0–FW)
               const toX = (yfl: number) => (yfl / 120) * FW
 
-              // Last real play
-              const lastPlay = gameData.plays?.find((p: any) => !p.event && p.playResult != null)
+              // Last real play. XP kicks broadcast as their own play right
+              // after a TD — left as-is, they'd snap the ball to the 15-yard
+              // line and wipe the TD trajectory before the user can see it.
+              // Walk past XP kicks so the field stays on the TD play (the
+              // dramatic moment) until the next real possession starts.
+              // 2-Pt tries are kept — they're real run/pass plays worth
+              // seeing.
+              const realPlays = (gameData.plays || []).filter((p: any) =>
+                !p.event && p.playResult != null && !p.isSidelineCutaway
+              )
+              const isXpKick = (p: any) => String(p?.playType || '').toUpperCase() === 'EXTRAPOINT'
+              const lastPlay = realPlays.find((p: any) => !isXpKick(p)) ?? realPlays[0]
               const yardsGained = lastPlay?.yardsGained ?? 0
               // playType = play category: Run, Pass, FieldGoal, Punt, Kneel, Spike
               const playType = (lastPlay?.playType ?? '').toUpperCase()
