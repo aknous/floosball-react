@@ -69,4 +69,28 @@ export interface CurrentGame {
     home: Record<string, number>
     away: Record<string, number>
   }
+  // Live in-game rally state — per-team cumulative pool, updated on each
+  // `game_rally` WS event. Keyed by team.id (string to match teams).
+  rally?: {
+    teamTotals: Record<string, RallyTeamTotals>
+    lastRally?: RallyEvent
+  }
+}
+
+export interface RallyTeamTotals {
+  rallies: number
+  confidence: number
+  determination: number
+  floobitsSpent: number
+}
+
+export interface RallyEvent {
+  teamId: number
+  userId: number
+  username: string
+  tier: 'small' | 'medium' | 'large'
+  costPaid: number
+  confidenceDelta: number
+  determinationDelta: number
+  ts: number  // client-side receive timestamp for animation
 }

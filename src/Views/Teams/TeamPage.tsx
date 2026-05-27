@@ -685,37 +685,59 @@ export default function TeamPage() {
                 const isExpanded = expandedRosterSlot === slot
                 const toggleExpand = () => setExpandedRosterSlot(isExpanded ? null : slot)
                 const chevron = (
-                  <span style={{ color: '#64748b', fontSize: '10px', transition: 'transform 0.15s',
+                  <span style={{
+                    color: '#94a3b8',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    transition: 'transform 0.15s, color 0.15s',
                     transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    display: 'inline-block',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    lineHeight: 1,
+                    flexShrink: 0,
+                    minWidth: '18px',
                   }}>▾</span>
                 )
 
-                // Maps a team form state into a short reason + color so the
-                // dropdown can explain why a roster might be playing under
-                // their rating this week.
-                const formNote: { label: string; note: string; color: string } | null = (() => {
+                // Maps a team form state into a short reason + multiplier so
+                // we can show users the *concrete* expected rating impact for
+                // each rostered player this week. Multipliers mirror the
+                // backend's FORM_STATE_RATING_MULT.
+                const formInfo: { label: string; mult: number; color: string } | null = (() => {
                   switch (team.formState) {
-                    case 'COMPLACENT': return { label: 'COMPLACENT', note: 'Trap-game risk dragging ratings down', color: '#ef4444' }
-                    case 'SPIRALING':  return { label: 'SPIRALING',  note: 'Confidence is broken; ratings sagging', color: '#ef4444' }
-                    case 'COOLING_OFF':return { label: 'COOLING OFF',note: 'Active fade — small rating drag',       color: '#f59e0b' }
-                    case 'SHAKY':      return { label: 'SHAKY',      note: 'Slight slip in performance',            color: '#f59e0b' }
-                    case 'RESOLUTE':   return { label: 'RESOLUTE',   note: 'Cinderella backbone — rating lift',     color: '#22c55e' }
-                    case 'HOT_STREAK': return { label: 'HOT STREAK', note: 'Rolling. No extra modifier this week.', color: '#22c55e' }
-                    case 'GETTING_HOT':return { label: 'GETTING HOT',note: 'Trending up. No modifier yet.',         color: '#22c55e' }
-                    case 'STEADY':     return { label: 'STEADY',     note: 'Even-keel. No form modifier.',          color: '#94a3b8' }
+                    case 'COMPLACENT': return { label: 'COMPLACENT', mult: 0.93,  color: '#ef4444' }
+                    case 'SPIRALING':  return { label: 'SPIRALING',  mult: 0.95,  color: '#ef4444' }
+                    case 'COOLING_OFF':return { label: 'COOLING OFF',mult: 0.97,  color: '#f59e0b' }
+                    case 'SHAKY':      return { label: 'SHAKY',      mult: 0.985, color: '#f59e0b' }
+                    case 'RESOLUTE':   return { label: 'RESOLUTE',   mult: 1.03,  color: '#22c55e' }
+                    case 'HOT_STREAK': return { label: 'HOT STREAK', mult: 1.00,  color: '#22c55e' }
+                    case 'GETTING_HOT':return { label: 'GETTING HOT',mult: 1.00,  color: '#22c55e' }
+                    case 'STEADY':     return { label: 'STEADY',     mult: 1.00,  color: '#94a3b8' }
                     default:           return null
                   }
                 })()
 
-                const moodColor = (() => {
-                  switch (player.moodTier) {
-                    case 'positive': return '#22c55e'
-                    case 'negative': return '#ef4444'
-                    case 'mixed':    return '#f59e0b'
-                    default:         return '#94a3b8'
-                  }
-                })()
+                // Approximate rating impact previews. These mirror the backend
+                // math but compute on the frontend so users see live numbers
+                // without waiting for a game to run.
+                const fatiguePct = player.fatigue ?? 0          // 0-100 (percent)
+                // Fatigue applies fully to physical attrs; physical attrs are
+                // the dominant input to overallRating, so the rating impact
+                // is roughly fatiguePct% of baseline. Floor to 0 while the
+                // status is "Fresh" — a sub-2% drag rounds to -1 on stars
+                // but reads as wrong next to a "Fresh" badge.
+                const rawFatigueImpact = Math.round(-(player.rating * (fatiguePct / 100)))
+                const fatigueImpact = statusLabel === 'Fresh' ? 0 : rawFatigueImpact
+                const formImpact = formInfo
+                  ? Math.round(player.rating * (formInfo.mult - 1.0))
+                  : 0
+                const previewRating = Math.max(0, player.rating + fatigueImpact + formImpact)
+
+                const totalDelta = previewRating - player.rating
+                const totalDeltaColor = totalDelta > 0 ? '#22c55e' : totalDelta < 0 ? '#ef4444' : '#94a3b8'
+                const fmtDelta = (n: number) => (n > 0 ? `+${n}` : n === 0 ? '±0' : `${n}`)
+                const deltaColor = (n: number) => (n > 0 ? '#22c55e' : n < 0 ? '#ef4444' : '#94a3b8')
 
                 const insightsPanel = isExpanded ? (
                   <div style={{
@@ -723,33 +745,64 @@ export default function TeamPage() {
                     backgroundColor: '#0b1424', border: '1px solid #1e293b',
                     display: 'flex', flexDirection: 'column', gap: '8px',
                   }}>
-                    <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.04em' }}>
-                      WHAT'S GOING ON
-                    </div>
-                    {/* Fatigue */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
-                      <span style={{ color: '#cbd5e1' }}>Fatigue</span>
-                      <span style={{ color: statusColor, fontVariantNumeric: 'tabular-nums' }}>
-                        {statusLabel} ({fatigue.toFixed(1)}%)
+                    {/* Rating preview — baseline → effective with total delta */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      gap: '12px', padding: '6px 8px', borderRadius: '3px',
+                      backgroundColor: '#0f172a', border: '1px solid #1e293b',
+                    }}>
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>Effective rating</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontVariantNumeric: 'tabular-nums' }}>
+                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>{player.rating}</span>
+                        <span style={{ fontSize: '11px', color: '#475569' }}>→</span>
+                        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 700 }}>{previewRating}</span>
+                        <span style={{
+                          fontSize: '10px', fontWeight: 700,
+                          color: totalDeltaColor,
+                          backgroundColor: `${totalDeltaColor}1a`,
+                          border: `1px solid ${totalDeltaColor}55`,
+                          padding: '1px 6px', borderRadius: '3px',
+                        }}>
+                          {fmtDelta(totalDelta)}
+                        </span>
                       </span>
                     </div>
-                    {/* Team form state */}
-                    {formNote && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
-                          <span style={{ color: '#cbd5e1' }}>Team form</span>
-                          <span style={{ color: formNote.color, fontWeight: 600 }}>{formNote.label}</span>
-                        </div>
-                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>{formNote.note}</span>
+
+                    {/* Fatigue */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
+                      <span style={{ color: '#cbd5e1' }}>
+                        Fatigue
+                        <span style={{ color: statusColor, marginLeft: '6px', fontSize: '11px' }}>
+                          {statusLabel} ({fatigue.toFixed(1)}%)
+                        </span>
+                      </span>
+                      <span style={{
+                        color: deltaColor(fatigueImpact), fontWeight: 600,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>
+                        {fmtDelta(fatigueImpact)}
+                      </span>
+                    </div>
+
+                    {/* Team disposition (matches the game-modal label —
+                        same concept, same name everywhere). */}
+                    {formInfo && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
+                        <span style={{ color: '#cbd5e1' }}>
+                          Team disposition
+                          <span style={{ color: formInfo.color, marginLeft: '6px', fontWeight: 600 }}>
+                            {formInfo.label}
+                          </span>
+                        </span>
+                        <span style={{
+                          color: deltaColor(formImpact), fontWeight: 600,
+                          fontVariantNumeric: 'tabular-nums',
+                        }}>
+                          {fmtDelta(formImpact)}
+                        </span>
                       </div>
                     )}
-                    {/* Mood */}
-                    {player.mood && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
-                        <span style={{ color: '#cbd5e1' }}>Mood</span>
-                        <span style={{ color: moodColor, fontWeight: 600 }}>{player.mood}</span>
-                      </div>
-                    )}
+
                     {/* Attitude — rendered as a descriptive badge, not a raw
                         number. Tiers mirror the player-page mapping. */}
                     {player.attitude != null && (() => {
@@ -758,7 +811,7 @@ export default function TeamPage() {
                       let color = '#94a3b8'
                       if (att >= 90)      { label = 'Leader';   color = '#22c55e' }
                       else if (att >= 80) { label = 'Positive'; color = '#86efac' }
-                      else if (att >= 65) { label = 'Steady';   color = '#94a3b8' }
+                      else if (att >= 65) { label = 'Neutral';  color = '#94a3b8' }
                       else if (att >= 50) { label = 'Sour';     color = '#f59e0b' }
                       else                { label = 'Toxic';    color = '#ef4444' }
                       return (
@@ -783,7 +836,7 @@ export default function TeamPage() {
                 if (isMobile) {
                   return (
                     <div key={slot}>
-                      <div onClick={toggleExpand} style={{
+                      <div onClick={toggleExpand} className="roster-row-expandable" style={{
                         display: 'flex', flexDirection: 'column', gap: '6px',
                         padding: '8px 10px', borderRadius: '4px', backgroundColor: '#0f172a',
                         cursor: 'pointer',
@@ -810,7 +863,7 @@ export default function TeamPage() {
 
                 return (
                   <div key={slot}>
-                    <div onClick={toggleExpand} style={{
+                    <div onClick={toggleExpand} className="roster-row-expandable" style={{
                       display: 'grid',
                       gridTemplateColumns: 'auto minmax(0, 1fr) auto auto auto auto',
                       columnGap: '10px',
