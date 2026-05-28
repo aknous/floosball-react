@@ -724,13 +724,15 @@ const PlayerRow: React.FC<{
 
 const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
   // Treat the |delta| <= 5 band as "as expected" — within normal variance.
-  // Beyond that, render a filled chip with a directional arrow so over/under-
-  // performers jump off the row at a glance.
+  // Beyond that, render a filled chip with a directional arrow + plain-
+  // language label. Raw "+5" reads as opaque to fans, so the chip now
+  // spells out OVERPERFORMING / UNDERPERFORMING and the magnitude lives
+  // in the tooltip alongside the unit (rating points).
   const isOver = delta > 5
   const isUnder = delta < -5
   if (!isOver && !isUnder) {
     return (
-      <HoverTooltip text="Performed as expected">
+      <HoverTooltip text="Playing in line with their listed rating this season.">
         <span style={{
           fontSize: '12px',
           fontWeight: 700,
@@ -746,17 +748,19 @@ const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
     )
   }
   const color = isOver ? '#22c55e' : '#ef4444'
-  const sign = isOver ? '+' : ''
-  const word = isOver ? 'OVER' : 'UNDER'
+  const word = isOver ? 'OVERPERFORMING' : 'UNDERPERFORMING'
   const path = isOver ? 'M5 1 L9 7 L1 7 Z' : 'M5 9 L9 3 L1 3 Z'
-  const tooltip = isOver ? `+${delta} over expected` : `${delta} under expected`
+  const magnitude = Math.abs(delta)
+  const tooltip = isOver
+    ? `Playing ${magnitude} rating points above their listed rating this season.`
+    : `Playing ${magnitude} rating points below their listed rating this season.`
   return (
     <HoverTooltip text={tooltip} color={color}>
       <span style={{
         display: 'inline-flex',
         alignItems: 'center',
         gap: '5px',
-        fontSize: '13px',
+        fontSize: '12px',
         fontWeight: 700,
         color,
         backgroundColor: `${color}22`,
@@ -768,7 +772,7 @@ const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
         <svg width="11" height="11" viewBox="0 0 10 10">
           <path d={path} fill={color} />
         </svg>
-        {sign}{delta} {word}
+        {word}
       </span>
     </HoverTooltip>
   )
