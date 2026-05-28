@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import { Stars, calcStars } from '@/Components/Stars'
 import { GM_FA_BALLOT_MAX_RANKINGS, GM_FA_BALLOT_COST } from '@/types/gm'
 import { attitudeTier, resilienceTier, pressureHandlingTier } from '@/utils/mentalProfile'
+import HoverTooltip from '@/Components/HoverTooltip'
 
 export interface PlayerStats {
   gamesPlayed: number
@@ -361,43 +362,49 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                       <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {player.name}
                       </span>
-                      <button
-                        onClick={() => movePlayer(id, -1)}
-                        disabled={idx === 0}
-                        title="Move up"
-                        style={{
-                          background: 'none', border: 'none', fontFamily: 'inherit',
-                          color: idx === 0 ? '#334155' : '#cbd5e1',
-                          cursor: idx === 0 ? 'not-allowed' : 'pointer',
-                          fontSize: '18px', padding: '2px 6px', lineHeight: 1,
-                        }}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={() => movePlayer(id, 1)}
-                        disabled={idx === ranking.length - 1}
-                        title="Move down"
-                        style={{
-                          background: 'none', border: 'none', fontFamily: 'inherit',
-                          color: idx === ranking.length - 1 ? '#334155' : '#cbd5e1',
-                          cursor: idx === ranking.length - 1 ? 'not-allowed' : 'pointer',
-                          fontSize: '18px', padding: '2px 6px', lineHeight: 1,
-                        }}
-                      >
-                        ↓
-                      </button>
-                      <button
-                        onClick={() => removePlayer(id)}
-                        title="Remove"
-                        style={{
-                          background: 'none', border: 'none', fontFamily: 'inherit',
-                          color: '#94a3b8', cursor: 'pointer',
-                          fontSize: '18px', padding: '2px 6px', lineHeight: 1,
-                        }}
-                      >
-                        &#215;
-                      </button>
+                      <HoverTooltip text="Move up">
+                        <button
+                          onClick={() => movePlayer(id, -1)}
+                          disabled={idx === 0}
+                          aria-label="Move up"
+                          style={{
+                            background: 'none', border: 'none', fontFamily: 'inherit',
+                            color: idx === 0 ? '#334155' : '#cbd5e1',
+                            cursor: idx === 0 ? 'not-allowed' : 'pointer',
+                            fontSize: '18px', padding: '2px 6px', lineHeight: 1,
+                          }}
+                        >
+                          ↑
+                        </button>
+                      </HoverTooltip>
+                      <HoverTooltip text="Move down">
+                        <button
+                          onClick={() => movePlayer(id, 1)}
+                          disabled={idx === ranking.length - 1}
+                          aria-label="Move down"
+                          style={{
+                            background: 'none', border: 'none', fontFamily: 'inherit',
+                            color: idx === ranking.length - 1 ? '#334155' : '#cbd5e1',
+                            cursor: idx === ranking.length - 1 ? 'not-allowed' : 'pointer',
+                            fontSize: '18px', padding: '2px 6px', lineHeight: 1,
+                          }}
+                        >
+                          ↓
+                        </button>
+                      </HoverTooltip>
+                      <HoverTooltip text="Remove">
+                        <button
+                          onClick={() => removePlayer(id)}
+                          aria-label="Remove"
+                          style={{
+                            background: 'none', border: 'none', fontFamily: 'inherit',
+                            color: '#94a3b8', cursor: 'pointer',
+                            fontSize: '18px', padding: '2px 6px', lineHeight: 1,
+                          }}
+                        >
+                          &#215;
+                        </button>
+                      </HoverTooltip>
                     </div>
                   )
                 })
@@ -557,24 +564,28 @@ const SectionDivider: React.FC<{ label: string; count: number; color: string }> 
   </div>
 )
 
-const MentalPill: React.FC<{ label: string; color: string; title?: string }> = ({ label, color, title }) => (
-  <span
-    title={title}
-    style={{
-      fontSize: '10px',
-      fontWeight: 700,
-      color,
-      backgroundColor: `${color}1f`,
-      padding: '1px 6px',
-      borderRadius: '4px',
-      letterSpacing: '0.04em',
-      textTransform: 'uppercase',
-      whiteSpace: 'nowrap',
-    }}
-  >
-    {label}
-  </span>
-)
+const MentalPill: React.FC<{ label: string; color: string; tip?: string }> = ({ label, color, tip }) => {
+  const pill = (
+    <span
+      style={{
+        display: 'inline-block',
+        fontSize: '10px',
+        fontWeight: 700,
+        color,
+        backgroundColor: `${color}1f`,
+        padding: '1px 6px',
+        borderRadius: '4px',
+        letterSpacing: '0.04em',
+        textTransform: 'uppercase',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </span>
+  )
+  if (!tip) return pill
+  return <HoverTooltip text={tip} color={color}>{pill}</HoverTooltip>
+}
 
 const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
   // Skip the row entirely when the backend didn't ship any mental data —
@@ -590,7 +601,7 @@ const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
         key="attitude"
         label={`Presence: ${t.label}`}
         color={t.color}
-        title="Locker-room presence. Toxic players drag the room, Leaders lift it."
+        tip="Locker-room presence. Toxic players drag the room, Leaders lift it."
       />
     )
   }
@@ -604,7 +615,7 @@ const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
           key="resilience"
           label={t.label}
           color={t.color}
-          title="Resilience — how well they shake off bad games."
+          tip="Resilience — how well they shake off bad games."
         />
       )
     }
@@ -616,7 +627,7 @@ const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
         key="pressure"
         label={t.label}
         color={t.color}
-        title="Pressure handling — clutch vs. choke under late-game stress."
+        tip="Pressure handling — clutch vs. choke under late-game stress."
       />
     )
   }
@@ -714,28 +725,32 @@ const PlayerRow: React.FC<{
 const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
   if (delta > 5) {
     return (
-      <span style={{ fontSize: '12px', fontWeight: '700', color: '#22c55e' }} title={`+${delta} over expected`}>
-        <svg width="11" height="11" viewBox="0 0 10 10" style={{ verticalAlign: 'middle', marginRight: '3px' }}>
-          <path d="M5 1 L9 7 L1 7 Z" fill="#22c55e" />
-        </svg>
-        +{delta}
-      </span>
+      <HoverTooltip text={`+${delta} over expected`} color="#22c55e">
+        <span style={{ fontSize: '12px', fontWeight: '700', color: '#22c55e' }}>
+          <svg width="11" height="11" viewBox="0 0 10 10" style={{ verticalAlign: 'middle', marginRight: '3px' }}>
+            <path d="M5 1 L9 7 L1 7 Z" fill="#22c55e" />
+          </svg>
+          +{delta}
+        </span>
+      </HoverTooltip>
     )
   }
   if (delta < -5) {
     return (
-      <span style={{ fontSize: '12px', fontWeight: '700', color: '#ef4444' }} title={`${delta} under expected`}>
-        <svg width="11" height="11" viewBox="0 0 10 10" style={{ verticalAlign: 'middle', marginRight: '3px' }}>
-          <path d="M5 9 L9 3 L1 3 Z" fill="#ef4444" />
-        </svg>
-        {delta}
-      </span>
+      <HoverTooltip text={`${delta} under expected`} color="#ef4444">
+        <span style={{ fontSize: '12px', fontWeight: '700', color: '#ef4444' }}>
+          <svg width="11" height="11" viewBox="0 0 10 10" style={{ verticalAlign: 'middle', marginRight: '3px' }}>
+            <path d="M5 9 L9 3 L1 3 Z" fill="#ef4444" />
+          </svg>
+          {delta}
+        </span>
+      </HoverTooltip>
     )
   }
   return (
-    <span style={{ fontSize: '12px', color: '#94a3b8' }} title="Performed as expected">
-      --
-    </span>
+    <HoverTooltip text="Performed as expected">
+      <span style={{ fontSize: '12px', color: '#94a3b8' }}>--</span>
+    </HoverTooltip>
   )
 }
 
