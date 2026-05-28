@@ -564,27 +564,19 @@ const SectionDivider: React.FC<{ label: string; count: number; color: string }> 
   </div>
 )
 
-const MentalPill: React.FC<{ label: string; color: string; tip?: string }> = ({ label, color, tip }) => {
-  const pill = (
-    <span
-      style={{
-        display: 'inline-block',
-        fontSize: '10px',
-        fontWeight: 700,
-        color,
-        backgroundColor: `${color}1f`,
-        padding: '1px 6px',
-        borderRadius: '4px',
-        letterSpacing: '0.04em',
-        textTransform: 'uppercase',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {label}
+// Mental signals render as quiet inline labels with a colored value —
+// "Presence Toxic" rather than a bordered uppercase chip. Keeps them
+// from competing with the headline perf badge for visual weight on a
+// dense row.
+const MentalLabel: React.FC<{ name: string; value: string; color: string; tip?: string }> = ({ name, value, color, tip }) => {
+  const inner = (
+    <span style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+      <span style={{ color: '#64748b' }}>{name} </span>
+      <span style={{ color, fontWeight: 600 }}>{value}</span>
     </span>
   )
-  if (!tip) return pill
-  return <HoverTooltip text={tip} color={color}>{pill}</HoverTooltip>
+  if (!tip) return inner
+  return <HoverTooltip text={tip} color={color}>{inner}</HoverTooltip>
 }
 
 const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
@@ -593,13 +585,14 @@ const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
   const hasAny = p.attitude != null || p.resilience != null || p.pressureHandling != null
   if (!hasAny) return null
 
-  const pills: React.ReactNode[] = []
+  const items: React.ReactNode[] = []
   if (p.attitude != null) {
     const t = attitudeTier(p.attitude)
-    pills.push(
-      <MentalPill
+    items.push(
+      <MentalLabel
         key="attitude"
-        label={`Presence: ${t.label}`}
+        name="Presence"
+        value={t.label}
         color={t.color}
         tip="Locker-room presence. Toxic players drag the room, Leaders lift it."
       />
@@ -607,10 +600,11 @@ const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
   }
   if (p.resilience != null) {
     const t = resilienceTier(p.resilience)
-    pills.push(
-      <MentalPill
+    items.push(
+      <MentalLabel
         key="resilience"
-        label={`Resilience: ${t.label}`}
+        name="Resilience"
+        value={t.label}
         color={t.color}
         tip="Resilience — how well they shake off bad games."
       />
@@ -618,10 +612,11 @@ const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
   }
   if (p.pressureHandling != null) {
     const t = pressureHandlingTier(p.pressureHandling)
-    pills.push(
-      <MentalPill
+    items.push(
+      <MentalLabel
         key="pressure"
-        label={`Pressure: ${t.label}`}
+        name="Pressure"
+        value={t.label}
         color={t.color}
         tip="Pressure handling — clutch vs. choke under late-game stress."
       />
@@ -629,8 +624,13 @@ const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
   }
 
   return (
-    <div style={{ marginTop: '5px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-      {pills}
+    <div style={{ marginTop: '4px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+      {items.map((item, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <span style={{ color: '#334155', fontSize: '11px' }}>·</span>}
+          {item}
+        </React.Fragment>
+      ))}
     </div>
   )
 }
@@ -688,32 +688,32 @@ const PlayerRow: React.FC<{
     <MentalBadges player={p} />
     {/* Row 3: Stat line, prospect note, rookie label, or walk-year context. */}
     {p.isProspect ? (
-      <div style={{ marginTop: '5px', fontSize: '11px', color: '#a78bfa', fontStyle: 'italic' }}>
+      <div style={{ marginTop: '5px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
         Pipeline prospect. Rank to promote instead of signing a FA.
       </div>
     ) : p.isRookie ? (
-      <div style={{ marginTop: '5px', fontSize: '11px', color: '#38bdf8', fontStyle: 'italic' }}>
+      <div style={{ marginTop: '5px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
         No professional record
       </div>
     ) : (
       <>
         {p.isProjected && p.projectedReason === 'cut_vote' && (
-          <div style={{ marginTop: '5px', fontSize: '11px', color: '#fbbf24', fontStyle: 'italic' }}>
+          <div style={{ marginTop: '5px', fontSize: '12px', color: '#fbbf24', fontStyle: 'italic' }}>
             {p.currentTeam ? `Currently on ${p.currentTeam}. ` : ''}
             Board pushing to cut.
           </div>
         )}
         {p.isProjected && p.projectedReason !== 'cut_vote' && p.currentTeam && (
-          <div style={{ marginTop: '5px', fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
+          <div style={{ marginTop: '5px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
             Currently on {p.currentTeam}.
           </div>
         )}
         {p.stats ? (
-          <div style={{ marginTop: '5px', fontSize: '11px', color: '#94a3b8', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ marginTop: '5px', fontSize: '13px', color: '#cbd5e1', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <StatLine position={p.position} stats={p.stats} />
           </div>
         ) : (
-          <div style={{ marginTop: '5px', fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
+          <div style={{ marginTop: '5px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
             No stats this season
           </div>
         )}
