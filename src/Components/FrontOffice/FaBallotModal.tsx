@@ -607,25 +607,21 @@ const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
   }
   if (p.resilience != null) {
     const t = resilienceTier(p.resilience)
-    // Only surface resilience when it's at the extremes — the middle tiers
-    // ('Steady') are the norm and add noise to the row.
-    if (p.resilience >= 80 || p.resilience < 65) {
-      pills.push(
-        <MentalPill
-          key="resilience"
-          label={t.label}
-          color={t.color}
-          tip="Resilience — how well they shake off bad games."
-        />
-      )
-    }
+    pills.push(
+      <MentalPill
+        key="resilience"
+        label={`Resilience: ${t.label}`}
+        color={t.color}
+        tip="Resilience — how well they shake off bad games."
+      />
+    )
   }
-  if (p.pressureHandling != null && (p.pressureHandling >= 2 || p.pressureHandling < -1)) {
+  if (p.pressureHandling != null) {
     const t = pressureHandlingTier(p.pressureHandling)
     pills.push(
       <MentalPill
         key="pressure"
-        label={t.label}
+        label={`Pressure: ${t.label}`}
         color={t.color}
         tip="Pressure handling — clutch vs. choke under late-game stress."
       />
@@ -670,14 +666,15 @@ const PlayerRow: React.FC<{
         <span style={{ fontSize: '11px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Rookie
         </span>
-      ) : p.isProjected ? (
-        // Projected FAs (walk-year / cut-vote rostered players on other
-        // teams) are still playing this season — show both the status
-        // tag AND their performance delta so fans can read "starter on
-        // a contending team, over-performing his rating" at a glance.
+      ) : p.isProjected && p.projectedReason === 'cut_vote' ? (
+        // Cut-vote projected FAs get a distinct tag — the board is
+        // actively pushing them out, which is a stronger signal than a
+        // routine walk-year contract expiry. Walk-year players are
+        // rendered as plain FAs since their status is the default for
+        // any expiring contract.
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {p.projectedReason === 'cut_vote' ? 'Cut Vote' : 'Walk Year'}
+            Cut Vote
           </span>
           {p.stats && <PerformanceBadge delta={p.ratingDelta} />}
         </span>
@@ -700,12 +697,15 @@ const PlayerRow: React.FC<{
       </div>
     ) : (
       <>
-        {p.isProjected && (
+        {p.isProjected && p.projectedReason === 'cut_vote' && (
           <div style={{ marginTop: '5px', fontSize: '11px', color: '#fbbf24', fontStyle: 'italic' }}>
             {p.currentTeam ? `Currently on ${p.currentTeam}. ` : ''}
-            {p.projectedReason === 'cut_vote'
-              ? 'Board pushing to cut.'
-              : 'Contract expires at season end.'}
+            Board pushing to cut.
+          </div>
+        )}
+        {p.isProjected && p.projectedReason !== 'cut_vote' && p.currentTeam && (
+          <div style={{ marginTop: '5px', fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
+            Currently on {p.currentTeam}.
           </div>
         )}
         {p.stats ? (
@@ -723,33 +723,53 @@ const PlayerRow: React.FC<{
 )
 
 const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
-  if (delta > 5) {
+  // Treat the |delta| <= 5 band as "as expected" — within normal variance.
+  // Beyond that, render a filled chip with a directional arrow so over/under-
+  // performers jump off the row at a glance.
+  const isOver = delta > 5
+  const isUnder = delta < -5
+  if (!isOver && !isUnder) {
     return (
-      <HoverTooltip text={`+${delta} over expected`} color="#22c55e">
-        <span style={{ fontSize: '12px', fontWeight: '700', color: '#22c55e' }}>
-          <svg width="11" height="11" viewBox="0 0 10 10" style={{ verticalAlign: 'middle', marginRight: '3px' }}>
-            <path d="M5 1 L9 7 L1 7 Z" fill="#22c55e" />
-          </svg>
-          +{delta}
+      <HoverTooltip text="Performed as expected">
+        <span style={{
+          fontSize: '12px',
+          fontWeight: 700,
+          color: '#94a3b8',
+          backgroundColor: 'rgba(148,163,184,0.12)',
+          padding: '2px 8px',
+          borderRadius: '4px',
+          letterSpacing: '0.04em',
+        }}>
+          AS EXPECTED
         </span>
       </HoverTooltip>
     )
   }
-  if (delta < -5) {
-    return (
-      <HoverTooltip text={`${delta} under expected`} color="#ef4444">
-        <span style={{ fontSize: '12px', fontWeight: '700', color: '#ef4444' }}>
-          <svg width="11" height="11" viewBox="0 0 10 10" style={{ verticalAlign: 'middle', marginRight: '3px' }}>
-            <path d="M5 9 L9 3 L1 3 Z" fill="#ef4444" />
-          </svg>
-          {delta}
-        </span>
-      </HoverTooltip>
-    )
-  }
+  const color = isOver ? '#22c55e' : '#ef4444'
+  const sign = isOver ? '+' : ''
+  const word = isOver ? 'OVER' : 'UNDER'
+  const path = isOver ? 'M5 1 L9 7 L1 7 Z' : 'M5 9 L9 3 L1 3 Z'
+  const tooltip = isOver ? `+${delta} over expected` : `${delta} under expected`
   return (
-    <HoverTooltip text="Performed as expected">
-      <span style={{ fontSize: '12px', color: '#94a3b8' }}>--</span>
+    <HoverTooltip text={tooltip} color={color}>
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        fontSize: '13px',
+        fontWeight: 700,
+        color,
+        backgroundColor: `${color}22`,
+        border: `1px solid ${color}55`,
+        padding: '2px 9px',
+        borderRadius: '4px',
+        letterSpacing: '0.04em',
+      }}>
+        <svg width="11" height="11" viewBox="0 0 10 10">
+          <path d={path} fill={color} />
+        </svg>
+        {sign}{delta} {word}
+      </span>
     </HoverTooltip>
   )
 }
