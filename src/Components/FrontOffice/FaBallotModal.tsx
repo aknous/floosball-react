@@ -665,10 +665,10 @@ const PlayerRow: React.FC<{
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
       <PositionChip position={p.position} />
       <Stars stars={calcStars(p.rating)} size={18} />
-      <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0', fontWeight: '600', minWidth: 0 }}>
+      <span style={{ flex: 1, fontSize: '15px', color: '#e2e8f0', fontWeight: '700', minWidth: 0 }}>
         {p.name}
         {p.isProjected && p.currentTeam && (
-          <span style={{ marginLeft: '6px', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
+          <span style={{ marginLeft: '8px', fontSize: '12px', color: '#64748b', fontWeight: '500', letterSpacing: '0.02em' }}>
             · {p.currentTeam}
           </span>
         )}
