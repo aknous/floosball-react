@@ -783,7 +783,6 @@ export const StatLine: React.FC<{ position: string; stats: PlayerStats }> = ({ s
     if (stats.fgPct !== undefined && stats.fgPct > 0) parts.push(`${stats.fgPct}%`)
   }
   if (stats.fantasyPoints) parts.push(`${stats.fantasyPoints} FP`)
-  if (stats.gamesPlayed) parts.push(`${stats.gamesPlayed} GP`)
 
   return <>{parts.join(' / ')}</>
 }
