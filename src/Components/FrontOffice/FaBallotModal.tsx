@@ -736,42 +736,48 @@ const PlayerRow: React.FC<{
     onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
   >
-    {/* Row 1: Position + name + stars + status/perf. Stars sit right after
-        the name so they read as the name's rating (eye flow: who they are →
-        how good they are → status). */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    {/* Row 1: Position + name + stars + status/perf. Row wraps when
+        narrow (long name + 5 stars + a 'OVERPERFORMING' chip can exceed
+        a phone width) — the perf chip drops below and right-aligns
+        rather than squeezing the name to ellipsis. Name itself wraps to
+        a second line for the truly long ones rather than truncating. */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', rowGap: '4px' }}>
       <PositionChip position={p.position} />
-      <span style={{ fontSize: '15px', color: '#e2e8f0', fontWeight: '700', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: '15px', color: '#e2e8f0', fontWeight: '700', wordBreak: 'break-word' }}>
         {p.name}
       </span>
       {/* The ★ glyph sits visually low in its line-height box because the
           star shape extends below the baseline. Nudge it up 2px so it
           reads centered against the name. */}
-      <span style={{ display: 'inline-flex', alignItems: 'center', position: 'relative', top: '-2px' }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', position: 'relative', top: '-2px', flexShrink: 0 }}>
         <Stars stars={calcStars(p.rating)} size={22} />
       </span>
-      <span style={{ flex: 1 }} />
-      {p.isProspect ? (
-        <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Prospect
-        </span>
-      ) : p.isRookie ? (
-        <span style={{ fontSize: '11px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Rookie
-        </span>
-      ) : p.isProjected && p.projectedReason === 'cut_vote' ? (
-        // Cut-vote players get a distinct tag — the board is actively
-        // pushing them out, which is a stronger signal than a routine
-        // walk-year contract expiry. Walk-year FAs render as plain FAs.
-        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Cut Vote
+      {/* Spacer pushes the status block to the far right. marginLeft:auto
+          on the status itself is the wrap-friendly equivalent — when the
+          row wraps, the status hits a new line and still right-aligns. */}
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        {p.isProspect ? (
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Prospect
           </span>
-          {p.stats && <PerformanceBadge delta={p.ratingDelta} />}
-        </span>
-      ) : p.stats ? (
-        <PerformanceBadge delta={p.ratingDelta} />
-      ) : null}
+        ) : p.isRookie ? (
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Rookie
+          </span>
+        ) : p.isProjected && p.projectedReason === 'cut_vote' ? (
+          // Cut-vote players get a distinct tag — the board is actively
+          // pushing them out, which is a stronger signal than a routine
+          // walk-year contract expiry. Walk-year FAs render as plain FAs.
+          <>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Cut Vote
+            </span>
+            {p.stats && <PerformanceBadge delta={p.ratingDelta} />}
+          </>
+        ) : p.stats ? (
+          <PerformanceBadge delta={p.ratingDelta} />
+        ) : null}
+      </div>
     </div>
     {/* Row 2: stats / context note. Prospects + rookies get a single
         italic note; FAs with stats get the stat line; FAs without
