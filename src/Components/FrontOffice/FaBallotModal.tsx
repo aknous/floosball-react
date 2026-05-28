@@ -4,6 +4,7 @@ import { Stars, calcStars } from '@/Components/Stars'
 import { GM_FA_BALLOT_MAX_RANKINGS, GM_FA_BALLOT_COST } from '@/types/gm'
 import { attitudeTier, resilienceTier, pressureHandlingTier } from '@/utils/mentalProfile'
 import HoverTooltip from '@/Components/HoverTooltip'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 export interface PlayerStats {
   gamesPlayed: number
@@ -105,6 +106,11 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
   const [ranking, setRanking] = useState<number[]>([])
   const [posFilter, setPosFilter] = useState<'ALL' | string>('ALL')
   const [timeLeft, setTimeLeft] = useState('')
+  // Below 768px the side-by-side ranked/available grid is unusable —
+  // each column shrinks to ~180px and player rows can't render. Swap
+  // to a tabbed layout that swaps between "Available" and "Your List".
+  const isMobile = useIsMobile(768)
+  const [mobileView, setMobileView] = useState<'available' | 'ranked'>('available')
 
   // Set of positions that have at least one open slot.
   const openPositionSet = useMemo(() => {
@@ -232,9 +238,9 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
         zIndex: 10002,
         backgroundColor: 'rgba(0,0,0,0.8)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: isMobile ? 'stretch' : 'center',
         justifyContent: 'center',
-        padding: '20px',
+        padding: isMobile ? '0' : '20px',
         fontFamily: 'pressStart',
       }}
     >
@@ -244,10 +250,10 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
           position: 'relative',
           width: '100%',
           maxWidth: '1040px',
-          height: '85vh',
+          height: isMobile ? '100vh' : '85vh',
           backgroundColor: '#0f172a',
-          border: '1px solid #334155',
-          borderRadius: '12px',
+          border: isMobile ? 'none' : '1px solid #334155',
+          borderRadius: isMobile ? 0 : '12px',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -255,18 +261,19 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
       >
         {/* Header */}
         <div style={{
-          padding: '18px 20px',
+          padding: isMobile ? '12px 14px' : '18px 20px',
           borderBottom: '1px solid #334155',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+          gap: '12px',
           flexShrink: 0,
         }}>
-          <div>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: '700', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Free Agent Requisition
             </div>
-            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>
+            <div style={{ fontSize: isMobile ? '12px' : '13px', color: '#94a3b8', marginTop: '6px' }}>
               Rank the players you want signed. Front office goes after #1 first, works down the list.
               {isUpdate ? ' Revisions are free.' : ` First ballot costs ${GM_FA_BALLOT_COST} Floobits.`}
             </div>
@@ -284,43 +291,103 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                 ))}
               </div>
             )}
-            <div style={{
-              fontSize: '12px', color: '#cbd5e1', marginTop: '10px',
-              padding: '8px 10px', backgroundColor: 'rgba(59,130,246,0.08)',
-              border: '1px solid rgba(59,130,246,0.25)', borderRadius: '6px',
-              lineHeight: 1.5,
-            }}>
-              <div style={{ marginBottom: '4px' }}>
-                The team works your list top-down. Once a position fills up, anyone else you ranked there gets skipped.
+            {!isMobile && (
+              <div style={{
+                fontSize: '12px', color: '#cbd5e1', marginTop: '10px',
+                padding: '8px 10px', backgroundColor: 'rgba(59,130,246,0.08)',
+                border: '1px solid rgba(59,130,246,0.25)', borderRadius: '6px',
+                lineHeight: 1.5,
+              }}>
+                <div style={{ marginBottom: '4px' }}>
+                  The team works your list top-down. Once a position fills up, anyone else you ranked there gets skipped.
+                </div>
+                <div>
+                  <span style={{ color: '#60a5fa', fontWeight: 700 }}>No ballot:</span>{' '}
+                  the team signs the best available player at any open slot.
+                </div>
               </div>
-              <div>
-                <span style={{ color: '#60a5fa', fontWeight: 700 }}>No ballot:</span>{' '}
-                the team signs the best available player at any open slot.
-              </div>
-            </div>
+            )}
           </div>
-          {faWindowEnd && (
-            <div style={{
-              fontSize: '16px',
-              fontWeight: '700',
-              color: timeLeft.startsWith('0:') ? '#ef4444' : '#f59e0b',
-              fontVariantNumeric: 'tabular-nums',
-            }}>
-              {timeLeft}
-            </div>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+            {faWindowEnd && (
+              <div style={{
+                fontSize: isMobile ? '14px' : '16px',
+                fontWeight: '700',
+                color: timeLeft.startsWith('0:') ? '#ef4444' : '#f59e0b',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                {timeLeft}
+              </div>
+            )}
+            {isMobile && (
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                style={{
+                  background: 'none', border: 'none', fontFamily: 'inherit',
+                  color: '#94a3b8', cursor: 'pointer',
+                  fontSize: '24px', padding: '0 4px', lineHeight: 1,
+                }}
+              >
+                &#215;
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Mobile tab bar — swaps between Available and Your List since the
+            side-by-side grid below collapses to ~180px columns on phones. */}
+        {isMobile && (
+          <div style={{
+            display: 'flex',
+            borderBottom: '1px solid #334155',
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={() => setMobileView('available')}
+              style={{
+                flex: 1, padding: '12px 8px',
+                background: mobileView === 'available' ? 'rgba(59,130,246,0.12)' : 'transparent',
+                border: 'none', borderBottom: '2px solid ' + (mobileView === 'available' ? '#60a5fa' : 'transparent'),
+                fontFamily: 'inherit', cursor: 'pointer',
+                fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+                color: mobileView === 'available' ? '#60a5fa' : '#94a3b8',
+              }}
+            >
+              Available ({prospects.length + others.length})
+            </button>
+            <button
+              onClick={() => setMobileView('ranked')}
+              style={{
+                flex: 1, padding: '12px 8px',
+                background: mobileView === 'ranked' ? 'rgba(59,130,246,0.12)' : 'transparent',
+                border: 'none', borderBottom: '2px solid ' + (mobileView === 'ranked' ? '#60a5fa' : 'transparent'),
+                fontFamily: 'inherit', cursor: 'pointer',
+                fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+                color: mobileView === 'ranked' ? '#60a5fa' : '#94a3b8',
+              }}
+            >
+              Your List ({ranking.length}/{GM_FA_BALLOT_MAX_RANKINGS})
+            </button>
+          </div>
+        )}
 
         {/* Body */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+          display: isMobile ? 'flex' : 'grid',
+          flexDirection: isMobile ? 'column' : undefined,
+          gridTemplateColumns: isMobile ? undefined : 'minmax(0, 1fr) minmax(0, 1fr)',
           flex: 1,
           overflow: 'hidden',
           minHeight: 0,
         }}>
-          {/* Left: Ranked list */}
-          <div style={{ borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          {/* Left: Ranked list — hidden on mobile when 'available' tab is active */}
+          <div style={{
+            borderRight: isMobile ? 'none' : '1px solid #1e293b',
+            display: isMobile && mobileView !== 'ranked' ? 'none' : 'flex',
+            flexDirection: 'column', overflow: 'hidden', minWidth: 0,
+            flex: isMobile ? 1 : undefined,
+          }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
               <span style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Your Priority
@@ -332,7 +399,9 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
             <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
               {ranking.length === 0 ? (
                 <div style={{ fontSize: '12px', color: '#64748b', padding: '20px', textAlign: 'center', fontStyle: 'italic' }}>
-                  Pick players from the right to start your list. Use the arrows to reorder.
+                  {isMobile
+                    ? 'Pick players from the Available tab to start your list. Use the arrows to reorder.'
+                    : 'Pick players from the right to start your list. Use the arrows to reorder.'}
                 </div>
               ) : (
                 ranking.map((id, idx) => {
@@ -426,8 +495,12 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
             )}
           </div>
 
-          {/* Right: Available candidates */}
-          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          {/* Right: Available candidates — hidden on mobile when 'ranked' tab is active */}
+          <div style={{
+            display: isMobile && mobileView !== 'available' ? 'none' : 'flex',
+            flexDirection: 'column', overflow: 'hidden', minWidth: 0,
+            flex: isMobile ? 1 : undefined,
+          }}>
             <div style={{
               padding: '10px 14px', borderBottom: '1px solid #1e293b',
               display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
@@ -500,21 +573,22 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
 
         {/* Footer: Submit */}
         <div style={{
-          padding: '16px 20px',
+          padding: isMobile ? '12px 14px' : '16px 20px',
           borderTop: '1px solid #334155',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: '12px',
           flexShrink: 0,
         }}>
-          <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+          <span style={{ fontSize: isMobile ? '12px' : '13px', color: '#94a3b8' }}>
             {ranking.length} ranked
           </span>
           <button
             onClick={handleSubmit}
             disabled={ranking.length === 0 || submitting}
             style={{
-              padding: '12px 28px',
+              padding: isMobile ? '14px 24px' : '12px 28px',
               backgroundColor: ranking.length === 0 ? '#1e293b' : '#f59e0b',
               color: ranking.length === 0 ? '#475569' : '#0f172a',
               border: 'none',
@@ -524,6 +598,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
               fontWeight: '700',
               cursor: ranking.length === 0 ? 'not-allowed' : 'pointer',
               opacity: submitting ? 0.6 : 1,
+              minWidth: isMobile ? '140px' : undefined,
             }}
           >
             {submitting
