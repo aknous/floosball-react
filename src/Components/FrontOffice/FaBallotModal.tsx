@@ -669,7 +669,12 @@ const PlayerRow: React.FC<{
       <span style={{ fontSize: '15px', color: '#e2e8f0', fontWeight: '700', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {p.name}
       </span>
-      <Stars stars={calcStars(p.rating)} size={22} />
+      {/* The ★ glyph sits visually low in its line-height box because the
+          star shape extends below the baseline. Nudge it up 2px so it
+          reads centered against the name. */}
+      <span style={{ display: 'inline-flex', alignItems: 'center', position: 'relative', top: '-2px' }}>
+        <Stars stars={calcStars(p.rating)} size={22} />
+      </span>
       <span style={{ flex: 1 }} />
       {p.isProspect ? (
         <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
