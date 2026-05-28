@@ -661,20 +661,15 @@ const PlayerRow: React.FC<{
     onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
   >
-    {/* Row 1: Position + name (+ current team inline) + stars + status/perf
-        Stars sit right after the name so they read as the name's rating
-        (eye flow: who they are → how good they are → status). */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    {/* Row 1: Position + name + stars + status/perf. Stars sit right after
+        the name so they read as the name's rating (eye flow: who they are →
+        how good they are → status). */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
       <PositionChip position={p.position} />
       <span style={{ fontSize: '15px', color: '#e2e8f0', fontWeight: '700', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {p.name}
-        {p.isProjected && p.currentTeam && (
-          <span style={{ marginLeft: '8px', fontSize: '12px', color: '#64748b', fontWeight: '500', letterSpacing: '0.02em' }}>
-            · {p.currentTeam}
-          </span>
-        )}
       </span>
-      <Stars stars={calcStars(p.rating)} size={18} />
+      <Stars stars={calcStars(p.rating)} size={22} />
       <span style={{ flex: 1 }} />
       {p.isProspect ? (
         <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
