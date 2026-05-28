@@ -557,16 +557,6 @@ const SectionDivider: React.FC<{ label: string; count: number; color: string }> 
   </div>
 )
 
-// Mood tier → color. Mirrors the palette used on the player hover card so
-// "frustrated" lines up across surfaces.
-const MOOD_COLORS: Record<string, string> = {
-  electric:   '#22c55e',
-  confident:  '#4ade80',
-  steady:     '#94a3b8',
-  frustrated: '#f97316',
-  miserable:  '#ef4444',
-}
-
 const MentalPill: React.FC<{ label: string; color: string; title?: string }> = ({ label, color, title }) => (
   <span
     title={title}
@@ -589,7 +579,7 @@ const MentalPill: React.FC<{ label: string; color: string; title?: string }> = (
 const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
   // Skip the row entirely when the backend didn't ship any mental data —
   // older API versions, or generated rows that lack a personality.
-  const hasAny = p.attitude != null || p.mood || p.resilience != null || p.pressureHandling != null
+  const hasAny = p.attitude != null || p.resilience != null || p.pressureHandling != null
   if (!hasAny) return null
 
   const pills: React.ReactNode[] = []
@@ -601,17 +591,6 @@ const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
         label={`Presence: ${t.label}`}
         color={t.color}
         title="Locker-room presence. Toxic players drag the room, Leaders lift it."
-      />
-    )
-  }
-  if (p.mood && p.moodTier) {
-    const color = MOOD_COLORS[p.moodTier] || '#94a3b8'
-    pills.push(
-      <MentalPill
-        key="mood"
-        label={`Mood: ${p.mood}`}
-        color={color}
-        title="How they're feeling this week. Mood swings game to game; presence is who they are."
       />
     )
   }
@@ -681,8 +660,15 @@ const PlayerRow: React.FC<{
           Rookie
         </span>
       ) : p.isProjected ? (
-        <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          {p.projectedReason === 'cut_vote' ? 'Cut Vote' : 'Walk Year'}
+        // Projected FAs (walk-year / cut-vote rostered players on other
+        // teams) are still playing this season — show both the status
+        // tag AND their performance delta so fans can read "starter on
+        // a contending team, over-performing his rating" at a glance.
+        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {p.projectedReason === 'cut_vote' ? 'Cut Vote' : 'Walk Year'}
+          </span>
+          {p.stats && <PerformanceBadge delta={p.ratingDelta} />}
         </span>
       ) : p.stats ? (
         <PerformanceBadge delta={p.ratingDelta} />
