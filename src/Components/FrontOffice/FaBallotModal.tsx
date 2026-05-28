@@ -579,50 +579,58 @@ const MentalLabel: React.FC<{ name: string; value: string; color: string; tip?: 
   return <HoverTooltip text={tip} color={color}>{inner}</HoverTooltip>
 }
 
-const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
-  // Skip the row entirely when the backend didn't ship any mental data —
-  // older API versions, or generated rows that lack a personality.
-  const hasAny = p.attitude != null || p.resilience != null || p.pressureHandling != null
-  if (!hasAny) return null
+// Middle-tier labels — render nothing when a player is at these tiers
+// since "Presence Neutral · Resilience Steady · Pressure Even" on every
+// row carries no actionable signal and just clutters the layout. Only
+// surface mental data when it's meaningfully above or below average.
+const MENTAL_NEUTRAL_LABELS = new Set(['Neutral', 'Steady', 'Even'])
 
+const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
   const items: React.ReactNode[] = []
   if (p.attitude != null) {
     const t = attitudeTier(p.attitude)
-    items.push(
-      <MentalLabel
-        key="attitude"
-        name="Presence"
-        value={t.label}
-        color={t.color}
-        tip="Locker-room presence. Toxic players drag the room, Leaders lift it."
-      />
-    )
+    if (!MENTAL_NEUTRAL_LABELS.has(t.label)) {
+      items.push(
+        <MentalLabel
+          key="attitude"
+          name="Presence"
+          value={t.label}
+          color={t.color}
+          tip="Locker-room presence. Toxic players drag the room, Leaders lift it."
+        />
+      )
+    }
   }
   if (p.resilience != null) {
     const t = resilienceTier(p.resilience)
-    items.push(
-      <MentalLabel
-        key="resilience"
-        name="Resilience"
-        value={t.label}
-        color={t.color}
-        tip="Resilience — how well they shake off bad games."
-      />
-    )
+    if (!MENTAL_NEUTRAL_LABELS.has(t.label)) {
+      items.push(
+        <MentalLabel
+          key="resilience"
+          name="Resilience"
+          value={t.label}
+          color={t.color}
+          tip="Resilience — how well they shake off bad games."
+        />
+      )
+    }
   }
   if (p.pressureHandling != null) {
     const t = pressureHandlingTier(p.pressureHandling)
-    items.push(
-      <MentalLabel
-        key="pressure"
-        name="Pressure"
-        value={t.label}
-        color={t.color}
-        tip="Pressure handling — clutch vs. choke under late-game stress."
-      />
-    )
+    if (!MENTAL_NEUTRAL_LABELS.has(t.label)) {
+      items.push(
+        <MentalLabel
+          key="pressure"
+          name="Pressure"
+          value={t.label}
+          color={t.color}
+          tip="Pressure handling — clutch vs. choke under late-game stress."
+        />
+      )
+    }
   }
 
+  if (items.length === 0) return null
   return (
     <div style={{ marginTop: '4px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
       {items.map((item, i) => (
@@ -653,11 +661,18 @@ const PlayerRow: React.FC<{
     onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
   >
-    {/* Row 1: Position + Stars + Name + Performance/type indicator */}
+    {/* Row 1: Position + stars + name (+ current team inline) + status/perf */}
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
       <PositionChip position={p.position} />
       <Stars stars={calcStars(p.rating)} size={18} />
-      <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0', fontWeight: '600' }}>{p.name}</span>
+      <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0', fontWeight: '600', minWidth: 0 }}>
+        {p.name}
+        {p.isProjected && p.currentTeam && (
+          <span style={{ marginLeft: '6px', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>
+            · {p.currentTeam}
+          </span>
+        )}
+      </span>
       {p.isProspect ? (
         <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Prospect
@@ -667,11 +682,9 @@ const PlayerRow: React.FC<{
           Rookie
         </span>
       ) : p.isProjected && p.projectedReason === 'cut_vote' ? (
-        // Cut-vote projected FAs get a distinct tag — the board is
-        // actively pushing them out, which is a stronger signal than a
-        // routine walk-year contract expiry. Walk-year players are
-        // rendered as plain FAs since their status is the default for
-        // any expiring contract.
+        // Cut-vote players get a distinct tag — the board is actively
+        // pushing them out, which is a stronger signal than a routine
+        // walk-year contract expiry. Walk-year FAs render as plain FAs.
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Cut Vote
@@ -682,11 +695,9 @@ const PlayerRow: React.FC<{
         <PerformanceBadge delta={p.ratingDelta} />
       ) : null}
     </div>
-    {/* Row 2: Mental snapshot — presence (attitude), mood, plus optional
-        resilience/pressure highlights. Lets fans spot toxic personalities
-        before ranking them. Hidden when the backend ships no mental data. */}
-    <MentalBadges player={p} />
-    {/* Row 3: Stat line, prospect note, rookie label, or walk-year context. */}
+    {/* Row 2: stats / context note. Prospects + rookies get a single
+        italic note; FAs with stats get the stat line; FAs without
+        stats get a quiet "no stats" placeholder. */}
     {p.isProspect ? (
       <div style={{ marginTop: '5px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
         Pipeline prospect. Rank to promote instead of signing a FA.
@@ -695,30 +706,19 @@ const PlayerRow: React.FC<{
       <div style={{ marginTop: '5px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
         No professional record
       </div>
+    ) : p.stats ? (
+      <div style={{ marginTop: '5px', fontSize: '13px', color: '#cbd5e1', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <StatLine position={p.position} stats={p.stats} />
+      </div>
     ) : (
-      <>
-        {p.isProjected && p.projectedReason === 'cut_vote' && (
-          <div style={{ marginTop: '5px', fontSize: '12px', color: '#fbbf24', fontStyle: 'italic' }}>
-            {p.currentTeam ? `Currently on ${p.currentTeam}. ` : ''}
-            Board pushing to cut.
-          </div>
-        )}
-        {p.isProjected && p.projectedReason !== 'cut_vote' && p.currentTeam && (
-          <div style={{ marginTop: '5px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
-            Currently on {p.currentTeam}.
-          </div>
-        )}
-        {p.stats ? (
-          <div style={{ marginTop: '5px', fontSize: '13px', color: '#cbd5e1', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <StatLine position={p.position} stats={p.stats} />
-          </div>
-        ) : (
-          <div style={{ marginTop: '5px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
-            No stats this season
-          </div>
-        )}
-      </>
+      <div style={{ marginTop: '5px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+        No stats this season
+      </div>
     )}
+    {/* Row 3: Mental flags — only renders when something's notable
+        (Toxic, Leader, Fragile, Ironclad, Choker, Ice, etc). Boring
+        middle-tier players don't get a row at all. */}
+    <MentalBadges player={p} />
   </div>
 )
 
