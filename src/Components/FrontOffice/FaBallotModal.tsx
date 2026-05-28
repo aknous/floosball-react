@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom'
 import { Stars, calcStars } from '@/Components/Stars'
 import { GM_FA_BALLOT_MAX_RANKINGS, GM_FA_BALLOT_COST } from '@/types/gm'
 import { attitudeTier, resilienceTier, pressureHandlingTier } from '@/utils/mentalProfile'
+import HoverTooltip from '@/Components/HoverTooltip'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 export interface PlayerStats {
   gamesPlayed: number
@@ -104,6 +106,11 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
   const [ranking, setRanking] = useState<number[]>([])
   const [posFilter, setPosFilter] = useState<'ALL' | string>('ALL')
   const [timeLeft, setTimeLeft] = useState('')
+  // Below 768px the side-by-side ranked/available grid is unusable —
+  // each column shrinks to ~180px and player rows can't render. Swap
+  // to a tabbed layout that swaps between "Available" and "Your List".
+  const isMobile = useIsMobile(768)
+  const [mobileView, setMobileView] = useState<'available' | 'ranked'>('available')
 
   // Set of positions that have at least one open slot.
   const openPositionSet = useMemo(() => {
@@ -231,9 +238,9 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
         zIndex: 10002,
         backgroundColor: 'rgba(0,0,0,0.8)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: isMobile ? 'stretch' : 'center',
         justifyContent: 'center',
-        padding: '20px',
+        padding: isMobile ? '0' : '20px',
         fontFamily: 'pressStart',
       }}
     >
@@ -243,10 +250,10 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
           position: 'relative',
           width: '100%',
           maxWidth: '1040px',
-          height: '85vh',
+          height: isMobile ? '100vh' : '85vh',
           backgroundColor: '#0f172a',
-          border: '1px solid #334155',
-          borderRadius: '12px',
+          border: isMobile ? 'none' : '1px solid #334155',
+          borderRadius: isMobile ? 0 : '12px',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -254,18 +261,19 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
       >
         {/* Header */}
         <div style={{
-          padding: '18px 20px',
+          padding: isMobile ? '12px 14px' : '18px 20px',
           borderBottom: '1px solid #334155',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
+          gap: '12px',
           flexShrink: 0,
         }}>
-          <div>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: '700', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Free Agent Requisition
             </div>
-            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px' }}>
+            <div style={{ fontSize: isMobile ? '12px' : '13px', color: '#94a3b8', marginTop: '6px' }}>
               Rank the players you want signed. Front office goes after #1 first, works down the list.
               {isUpdate ? ' Revisions are free.' : ` First ballot costs ${GM_FA_BALLOT_COST} Floobits.`}
             </div>
@@ -283,43 +291,103 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                 ))}
               </div>
             )}
-            <div style={{
-              fontSize: '12px', color: '#cbd5e1', marginTop: '10px',
-              padding: '8px 10px', backgroundColor: 'rgba(59,130,246,0.08)',
-              border: '1px solid rgba(59,130,246,0.25)', borderRadius: '6px',
-              lineHeight: 1.5,
-            }}>
-              <div style={{ marginBottom: '4px' }}>
-                The team works your list top-down. Once a position fills up, anyone else you ranked there gets skipped.
+            {!isMobile && (
+              <div style={{
+                fontSize: '12px', color: '#cbd5e1', marginTop: '10px',
+                padding: '8px 10px', backgroundColor: 'rgba(59,130,246,0.08)',
+                border: '1px solid rgba(59,130,246,0.25)', borderRadius: '6px',
+                lineHeight: 1.5,
+              }}>
+                <div style={{ marginBottom: '4px' }}>
+                  The team works your list top-down. Once a position fills up, anyone else you ranked there gets skipped.
+                </div>
+                <div>
+                  <span style={{ color: '#60a5fa', fontWeight: 700 }}>No ballot:</span>{' '}
+                  the team signs the best available player at any open slot.
+                </div>
               </div>
-              <div>
-                <span style={{ color: '#60a5fa', fontWeight: 700 }}>No ballot:</span>{' '}
-                the team signs the best available player at any open slot.
-              </div>
-            </div>
+            )}
           </div>
-          {faWindowEnd && (
-            <div style={{
-              fontSize: '16px',
-              fontWeight: '700',
-              color: timeLeft.startsWith('0:') ? '#ef4444' : '#f59e0b',
-              fontVariantNumeric: 'tabular-nums',
-            }}>
-              {timeLeft}
-            </div>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+            {faWindowEnd && (
+              <div style={{
+                fontSize: isMobile ? '14px' : '16px',
+                fontWeight: '700',
+                color: timeLeft.startsWith('0:') ? '#ef4444' : '#f59e0b',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                {timeLeft}
+              </div>
+            )}
+            {isMobile && (
+              <button
+                onClick={onClose}
+                aria-label="Close"
+                style={{
+                  background: 'none', border: 'none', fontFamily: 'inherit',
+                  color: '#94a3b8', cursor: 'pointer',
+                  fontSize: '24px', padding: '0 4px', lineHeight: 1,
+                }}
+              >
+                &#215;
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Mobile tab bar — swaps between Available and Your List since the
+            side-by-side grid below collapses to ~180px columns on phones. */}
+        {isMobile && (
+          <div style={{
+            display: 'flex',
+            borderBottom: '1px solid #334155',
+            flexShrink: 0,
+          }}>
+            <button
+              onClick={() => setMobileView('available')}
+              style={{
+                flex: 1, padding: '12px 8px',
+                background: mobileView === 'available' ? 'rgba(59,130,246,0.12)' : 'transparent',
+                border: 'none', borderBottom: '2px solid ' + (mobileView === 'available' ? '#60a5fa' : 'transparent'),
+                fontFamily: 'inherit', cursor: 'pointer',
+                fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+                color: mobileView === 'available' ? '#60a5fa' : '#94a3b8',
+              }}
+            >
+              Available ({prospects.length + others.length})
+            </button>
+            <button
+              onClick={() => setMobileView('ranked')}
+              style={{
+                flex: 1, padding: '12px 8px',
+                background: mobileView === 'ranked' ? 'rgba(59,130,246,0.12)' : 'transparent',
+                border: 'none', borderBottom: '2px solid ' + (mobileView === 'ranked' ? '#60a5fa' : 'transparent'),
+                fontFamily: 'inherit', cursor: 'pointer',
+                fontSize: '12px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+                color: mobileView === 'ranked' ? '#60a5fa' : '#94a3b8',
+              }}
+            >
+              Your List ({ranking.length}/{GM_FA_BALLOT_MAX_RANKINGS})
+            </button>
+          </div>
+        )}
 
         {/* Body */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+          display: isMobile ? 'flex' : 'grid',
+          flexDirection: isMobile ? 'column' : undefined,
+          gridTemplateColumns: isMobile ? undefined : 'minmax(0, 1fr) minmax(0, 1fr)',
           flex: 1,
           overflow: 'hidden',
           minHeight: 0,
         }}>
-          {/* Left: Ranked list */}
-          <div style={{ borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          {/* Left: Ranked list — hidden on mobile when 'available' tab is active */}
+          <div style={{
+            borderRight: isMobile ? 'none' : '1px solid #1e293b',
+            display: isMobile && mobileView !== 'ranked' ? 'none' : 'flex',
+            flexDirection: 'column', overflow: 'hidden', minWidth: 0,
+            flex: isMobile ? 1 : undefined,
+          }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
               <span style={{ fontSize: '13px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Your Priority
@@ -331,7 +399,9 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
             <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
               {ranking.length === 0 ? (
                 <div style={{ fontSize: '12px', color: '#64748b', padding: '20px', textAlign: 'center', fontStyle: 'italic' }}>
-                  Pick players from the right to start your list. Use the arrows to reorder.
+                  {isMobile
+                    ? 'Pick players from the Available tab to start your list. Use the arrows to reorder.'
+                    : 'Pick players from the right to start your list. Use the arrows to reorder.'}
                 </div>
               ) : (
                 ranking.map((id, idx) => {
@@ -361,43 +431,49 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                       <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {player.name}
                       </span>
-                      <button
-                        onClick={() => movePlayer(id, -1)}
-                        disabled={idx === 0}
-                        title="Move up"
-                        style={{
-                          background: 'none', border: 'none', fontFamily: 'inherit',
-                          color: idx === 0 ? '#334155' : '#cbd5e1',
-                          cursor: idx === 0 ? 'not-allowed' : 'pointer',
-                          fontSize: '18px', padding: '2px 6px', lineHeight: 1,
-                        }}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={() => movePlayer(id, 1)}
-                        disabled={idx === ranking.length - 1}
-                        title="Move down"
-                        style={{
-                          background: 'none', border: 'none', fontFamily: 'inherit',
-                          color: idx === ranking.length - 1 ? '#334155' : '#cbd5e1',
-                          cursor: idx === ranking.length - 1 ? 'not-allowed' : 'pointer',
-                          fontSize: '18px', padding: '2px 6px', lineHeight: 1,
-                        }}
-                      >
-                        ↓
-                      </button>
-                      <button
-                        onClick={() => removePlayer(id)}
-                        title="Remove"
-                        style={{
-                          background: 'none', border: 'none', fontFamily: 'inherit',
-                          color: '#94a3b8', cursor: 'pointer',
-                          fontSize: '18px', padding: '2px 6px', lineHeight: 1,
-                        }}
-                      >
-                        &#215;
-                      </button>
+                      <HoverTooltip text="Move up">
+                        <button
+                          onClick={() => movePlayer(id, -1)}
+                          disabled={idx === 0}
+                          aria-label="Move up"
+                          style={{
+                            background: 'none', border: 'none', fontFamily: 'inherit',
+                            color: idx === 0 ? '#334155' : '#cbd5e1',
+                            cursor: idx === 0 ? 'not-allowed' : 'pointer',
+                            fontSize: '18px', padding: '2px 6px', lineHeight: 1,
+                          }}
+                        >
+                          ↑
+                        </button>
+                      </HoverTooltip>
+                      <HoverTooltip text="Move down">
+                        <button
+                          onClick={() => movePlayer(id, 1)}
+                          disabled={idx === ranking.length - 1}
+                          aria-label="Move down"
+                          style={{
+                            background: 'none', border: 'none', fontFamily: 'inherit',
+                            color: idx === ranking.length - 1 ? '#334155' : '#cbd5e1',
+                            cursor: idx === ranking.length - 1 ? 'not-allowed' : 'pointer',
+                            fontSize: '18px', padding: '2px 6px', lineHeight: 1,
+                          }}
+                        >
+                          ↓
+                        </button>
+                      </HoverTooltip>
+                      <HoverTooltip text="Remove">
+                        <button
+                          onClick={() => removePlayer(id)}
+                          aria-label="Remove"
+                          style={{
+                            background: 'none', border: 'none', fontFamily: 'inherit',
+                            color: '#94a3b8', cursor: 'pointer',
+                            fontSize: '18px', padding: '2px 6px', lineHeight: 1,
+                          }}
+                        >
+                          &#215;
+                        </button>
+                      </HoverTooltip>
                     </div>
                   )
                 })
@@ -419,8 +495,12 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
             )}
           </div>
 
-          {/* Right: Available candidates */}
-          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          {/* Right: Available candidates — hidden on mobile when 'ranked' tab is active */}
+          <div style={{
+            display: isMobile && mobileView !== 'available' ? 'none' : 'flex',
+            flexDirection: 'column', overflow: 'hidden', minWidth: 0,
+            flex: isMobile ? 1 : undefined,
+          }}>
             <div style={{
               padding: '10px 14px', borderBottom: '1px solid #1e293b',
               display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
@@ -493,21 +573,22 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
 
         {/* Footer: Submit */}
         <div style={{
-          padding: '16px 20px',
+          padding: isMobile ? '12px 14px' : '16px 20px',
           borderTop: '1px solid #334155',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: '12px',
           flexShrink: 0,
         }}>
-          <span style={{ fontSize: '13px', color: '#94a3b8' }}>
+          <span style={{ fontSize: isMobile ? '12px' : '13px', color: '#94a3b8' }}>
             {ranking.length} ranked
           </span>
           <button
             onClick={handleSubmit}
             disabled={ranking.length === 0 || submitting}
             style={{
-              padding: '12px 28px',
+              padding: isMobile ? '14px 24px' : '12px 28px',
               backgroundColor: ranking.length === 0 ? '#1e293b' : '#f59e0b',
               color: ranking.length === 0 ? '#475569' : '#0f172a',
               border: 'none',
@@ -517,6 +598,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
               fontWeight: '700',
               cursor: ranking.length === 0 ? 'not-allowed' : 'pointer',
               opacity: submitting ? 0.6 : 1,
+              minWidth: isMobile ? '140px' : undefined,
             }}
           >
             {submitting
@@ -557,73 +639,81 @@ const SectionDivider: React.FC<{ label: string; count: number; color: string }> 
   </div>
 )
 
-const MentalPill: React.FC<{ label: string; color: string; title?: string }> = ({ label, color, title }) => (
-  <span
-    title={title}
-    style={{
-      fontSize: '10px',
-      fontWeight: 700,
-      color,
-      backgroundColor: `${color}1f`,
-      padding: '1px 6px',
-      borderRadius: '4px',
-      letterSpacing: '0.04em',
-      textTransform: 'uppercase',
-      whiteSpace: 'nowrap',
-    }}
-  >
-    {label}
-  </span>
-)
+// Mental signals render as quiet inline labels with a colored value —
+// "Presence Toxic" rather than a bordered uppercase chip. Keeps them
+// from competing with the headline perf badge for visual weight on a
+// dense row.
+const MentalLabel: React.FC<{ name: string; value: string; color: string; tip?: string }> = ({ name, value, color, tip }) => {
+  const inner = (
+    <span style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+      <span style={{ color: '#64748b' }}>{name} </span>
+      <span style={{ color, fontWeight: 600 }}>{value}</span>
+    </span>
+  )
+  if (!tip) return inner
+  return <HoverTooltip text={tip} color={color}>{inner}</HoverTooltip>
+}
+
+// Middle-tier labels — render nothing when a player is at these tiers
+// since "Presence Neutral · Resilience Steady · Pressure Even" on every
+// row carries no actionable signal and just clutters the layout. Only
+// surface mental data when it's meaningfully above or below average.
+const MENTAL_NEUTRAL_LABELS = new Set(['Neutral', 'Steady', 'Even'])
 
 const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
-  // Skip the row entirely when the backend didn't ship any mental data —
-  // older API versions, or generated rows that lack a personality.
-  const hasAny = p.attitude != null || p.resilience != null || p.pressureHandling != null
-  if (!hasAny) return null
-
-  const pills: React.ReactNode[] = []
+  const items: React.ReactNode[] = []
   if (p.attitude != null) {
     const t = attitudeTier(p.attitude)
-    pills.push(
-      <MentalPill
-        key="attitude"
-        label={`Presence: ${t.label}`}
-        color={t.color}
-        title="Locker-room presence. Toxic players drag the room, Leaders lift it."
-      />
-    )
-  }
-  if (p.resilience != null) {
-    const t = resilienceTier(p.resilience)
-    // Only surface resilience when it's at the extremes — the middle tiers
-    // ('Steady') are the norm and add noise to the row.
-    if (p.resilience >= 80 || p.resilience < 65) {
-      pills.push(
-        <MentalPill
-          key="resilience"
-          label={t.label}
+    if (!MENTAL_NEUTRAL_LABELS.has(t.label)) {
+      items.push(
+        <MentalLabel
+          key="attitude"
+          name="Presence"
+          value={t.label}
           color={t.color}
-          title="Resilience — how well they shake off bad games."
+          tip="Locker-room presence. Toxic players drag the room, Leaders lift it."
         />
       )
     }
   }
-  if (p.pressureHandling != null && (p.pressureHandling >= 2 || p.pressureHandling < -1)) {
+  if (p.resilience != null) {
+    const t = resilienceTier(p.resilience)
+    if (!MENTAL_NEUTRAL_LABELS.has(t.label)) {
+      items.push(
+        <MentalLabel
+          key="resilience"
+          name="Resilience"
+          value={t.label}
+          color={t.color}
+          tip="Resilience — how well they shake off bad games."
+        />
+      )
+    }
+  }
+  if (p.pressureHandling != null) {
     const t = pressureHandlingTier(p.pressureHandling)
-    pills.push(
-      <MentalPill
-        key="pressure"
-        label={t.label}
-        color={t.color}
-        title="Pressure handling — clutch vs. choke under late-game stress."
-      />
-    )
+    if (!MENTAL_NEUTRAL_LABELS.has(t.label)) {
+      items.push(
+        <MentalLabel
+          key="pressure"
+          name="Pressure"
+          value={t.label}
+          color={t.color}
+          tip="Pressure handling — clutch vs. choke under late-game stress."
+        />
+      )
+    }
   }
 
+  if (items.length === 0) return null
   return (
-    <div style={{ marginTop: '5px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-      {pills}
+    <div style={{ marginTop: '4px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+      {items.map((item, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <span style={{ color: '#334155', fontSize: '11px' }}>·</span>}
+          {item}
+        </React.Fragment>
+      ))}
     </div>
   )
 }
@@ -646,96 +736,116 @@ const PlayerRow: React.FC<{
     onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
   >
-    {/* Row 1: Position + Stars + Name + Performance/type indicator */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+    {/* Row 1: Position + name + stars + status/perf. Row wraps when
+        narrow (long name + 5 stars + a 'OVERPERFORMING' chip can exceed
+        a phone width) — the perf chip drops below and right-aligns
+        rather than squeezing the name to ellipsis. Name itself wraps to
+        a second line for the truly long ones rather than truncating. */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', rowGap: '4px' }}>
       <PositionChip position={p.position} />
-      <Stars stars={calcStars(p.rating)} size={18} />
-      <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0', fontWeight: '600' }}>{p.name}</span>
-      {p.isProspect ? (
-        <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Prospect
-        </span>
-      ) : p.isRookie ? (
-        <span style={{ fontSize: '11px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Rookie
-        </span>
-      ) : p.isProjected ? (
-        // Projected FAs (walk-year / cut-vote rostered players on other
-        // teams) are still playing this season — show both the status
-        // tag AND their performance delta so fans can read "starter on
-        // a contending team, over-performing his rating" at a glance.
-        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {p.projectedReason === 'cut_vote' ? 'Cut Vote' : 'Walk Year'}
+      <span style={{ fontSize: '15px', color: '#e2e8f0', fontWeight: '700', wordBreak: 'break-word' }}>
+        {p.name}
+      </span>
+      {/* The ★ glyph sits visually low in its line-height box because the
+          star shape extends below the baseline. Nudge it up 2px so it
+          reads centered against the name. */}
+      <span style={{ display: 'inline-flex', alignItems: 'center', position: 'relative', top: '-2px', flexShrink: 0 }}>
+        <Stars stars={calcStars(p.rating)} size={22} />
+      </span>
+      {/* Spacer pushes the status block to the far right. marginLeft:auto
+          on the status itself is the wrap-friendly equivalent — when the
+          row wraps, the status hits a new line and still right-aligns. */}
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        {p.isProspect ? (
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Prospect
           </span>
-          {p.stats && <PerformanceBadge delta={p.ratingDelta} />}
-        </span>
-      ) : p.stats ? (
-        <PerformanceBadge delta={p.ratingDelta} />
-      ) : null}
+        ) : p.isRookie ? (
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Rookie
+          </span>
+        ) : p.isProjected && p.projectedReason === 'cut_vote' ? (
+          // Cut-vote players get a distinct tag — the board is actively
+          // pushing them out, which is a stronger signal than a routine
+          // walk-year contract expiry. Walk-year FAs render as plain FAs.
+          <>
+            <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Cut Vote
+            </span>
+            {p.stats && <PerformanceBadge delta={p.ratingDelta} />}
+          </>
+        ) : p.stats ? (
+          <PerformanceBadge delta={p.ratingDelta} />
+        ) : null}
+      </div>
     </div>
-    {/* Row 2: Mental snapshot — presence (attitude), mood, plus optional
-        resilience/pressure highlights. Lets fans spot toxic personalities
-        before ranking them. Hidden when the backend ships no mental data. */}
-    <MentalBadges player={p} />
-    {/* Row 3: Stat line, prospect note, rookie label, or walk-year context. */}
+    {/* Row 2: stats / context note. Prospects + rookies get a single
+        italic note; FAs with stats get the stat line; FAs without
+        stats get a quiet "no stats" placeholder. */}
     {p.isProspect ? (
-      <div style={{ marginTop: '5px', fontSize: '11px', color: '#a78bfa', fontStyle: 'italic' }}>
+      <div style={{ marginTop: '5px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
         Pipeline prospect. Rank to promote instead of signing a FA.
       </div>
     ) : p.isRookie ? (
-      <div style={{ marginTop: '5px', fontSize: '11px', color: '#38bdf8', fontStyle: 'italic' }}>
+      <div style={{ marginTop: '5px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
         No professional record
       </div>
+    ) : p.stats ? (
+      <div style={{ marginTop: '5px', fontSize: '13px', color: '#cbd5e1', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <StatLine position={p.position} stats={p.stats} />
+      </div>
     ) : (
-      <>
-        {p.isProjected && (
-          <div style={{ marginTop: '5px', fontSize: '11px', color: '#fbbf24', fontStyle: 'italic' }}>
-            {p.currentTeam ? `Currently on ${p.currentTeam}. ` : ''}
-            {p.projectedReason === 'cut_vote'
-              ? 'Board pushing to cut.'
-              : 'Contract expires at season end.'}
-          </div>
-        )}
-        {p.stats ? (
-          <div style={{ marginTop: '5px', fontSize: '11px', color: '#94a3b8', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <StatLine position={p.position} stats={p.stats} />
-          </div>
-        ) : (
-          <div style={{ marginTop: '5px', fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>
-            No stats this season
-          </div>
-        )}
-      </>
+      <div style={{ marginTop: '5px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+        No stats this season
+      </div>
     )}
+    {/* Row 3: Mental flags — only renders when something's notable
+        (Toxic, Leader, Fragile, Ironclad, Choker, Ice, etc). Boring
+        middle-tier players don't get a row at all. */}
+    <MentalBadges player={p} />
   </div>
 )
 
 const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
-  if (delta > 5) {
-    return (
-      <span style={{ fontSize: '12px', fontWeight: '700', color: '#22c55e' }} title={`+${delta} over expected`}>
-        <svg width="11" height="11" viewBox="0 0 10 10" style={{ verticalAlign: 'middle', marginRight: '3px' }}>
-          <path d="M5 1 L9 7 L1 7 Z" fill="#22c55e" />
-        </svg>
-        +{delta}
-      </span>
-    )
-  }
-  if (delta < -5) {
-    return (
-      <span style={{ fontSize: '12px', fontWeight: '700', color: '#ef4444' }} title={`${delta} under expected`}>
-        <svg width="11" height="11" viewBox="0 0 10 10" style={{ verticalAlign: 'middle', marginRight: '3px' }}>
-          <path d="M5 9 L9 3 L1 3 Z" fill="#ef4444" />
-        </svg>
-        {delta}
-      </span>
-    )
-  }
+  // Mirror the +++ / ++ / + / - / -- / --- convention from the player
+  // hover card so fans see the same signal in both places. Hover card
+  // renders it as plain text; the ballot uses chip styling for visual
+  // weight against the dense row, but the symbol + label + color tiers
+  // are identical.
+  let symbols = ''
+  let label = ''
+  let color = ''
+  if (delta >= 20)        { symbols = '+++'; label = 'Overperforming';  color = '#22c55e' }
+  else if (delta >= 12)   { symbols = '++';  label = 'Overperforming';  color = '#22c55e' }
+  else if (delta >= 5)    { symbols = '+';   label = 'Overperforming';  color = '#4ade80' }
+  else if (delta <= -20)  { symbols = '---'; label = 'Underperforming'; color = '#ef4444' }
+  else if (delta <= -12)  { symbols = '--';  label = 'Underperforming'; color = '#ef4444' }
+  else if (delta <= -5)   { symbols = '-';   label = 'Underperforming'; color = '#f87171' }
+  else return null  // within normal variance — nothing to flag
+
+  const magnitude = Math.abs(delta)
+  const tooltip = delta > 0
+    ? `Playing ${magnitude} rating points above their listed rating this season.`
+    : `Playing ${magnitude} rating points below their listed rating this season.`
   return (
-    <span style={{ fontSize: '12px', color: '#94a3b8' }} title="Performed as expected">
-      --
-    </span>
+    <HoverTooltip text={tooltip} color={color}>
+      <span style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '5px',
+        fontSize: '12px',
+        fontWeight: 700,
+        color,
+        backgroundColor: `${color}22`,
+        border: `1px solid ${color}55`,
+        padding: '2px 9px',
+        borderRadius: '4px',
+        letterSpacing: '0.04em',
+      }}>
+        <span style={{ fontFamily: 'monospace', letterSpacing: '0.5px' }}>{symbols}</span>
+        {label}
+      </span>
+    </HoverTooltip>
   )
 }
 
@@ -757,7 +867,6 @@ export const StatLine: React.FC<{ position: string; stats: PlayerStats }> = ({ s
     if (stats.fgPct !== undefined && stats.fgPct > 0) parts.push(`${stats.fgPct}%`)
   }
   if (stats.fantasyPoints) parts.push(`${stats.fantasyPoints} FP`)
-  if (stats.gamesPlayed) parts.push(`${stats.gamesPlayed} GP`)
 
   return <>{parts.join(' / ')}</>
 }
