@@ -723,35 +723,24 @@ const PlayerRow: React.FC<{
 )
 
 const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
-  // Treat the |delta| <= 5 band as "as expected" — within normal variance.
-  // Beyond that, render a filled chip with a directional arrow + plain-
-  // language label. Raw "+5" reads as opaque to fans, so the chip now
-  // spells out OVERPERFORMING / UNDERPERFORMING and the magnitude lives
-  // in the tooltip alongside the unit (rating points).
-  const isOver = delta > 5
-  const isUnder = delta < -5
-  if (!isOver && !isUnder) {
-    return (
-      <HoverTooltip text="Playing in line with their listed rating this season.">
-        <span style={{
-          fontSize: '12px',
-          fontWeight: 700,
-          color: '#94a3b8',
-          backgroundColor: 'rgba(148,163,184,0.12)',
-          padding: '2px 8px',
-          borderRadius: '4px',
-          letterSpacing: '0.04em',
-        }}>
-          AS EXPECTED
-        </span>
-      </HoverTooltip>
-    )
-  }
-  const color = isOver ? '#22c55e' : '#ef4444'
-  const word = isOver ? 'OVERPERFORMING' : 'UNDERPERFORMING'
-  const path = isOver ? 'M5 1 L9 7 L1 7 Z' : 'M5 9 L9 3 L1 3 Z'
+  // Mirror the +++ / ++ / + / - / -- / --- convention from the player
+  // hover card so fans see the same signal in both places. Hover card
+  // renders it as plain text; the ballot uses chip styling for visual
+  // weight against the dense row, but the symbol + label + color tiers
+  // are identical.
+  let symbols = ''
+  let label = ''
+  let color = ''
+  if (delta >= 20)        { symbols = '+++'; label = 'Overperforming';  color = '#22c55e' }
+  else if (delta >= 12)   { symbols = '++';  label = 'Overperforming';  color = '#22c55e' }
+  else if (delta >= 5)    { symbols = '+';   label = 'Overperforming';  color = '#4ade80' }
+  else if (delta <= -20)  { symbols = '---'; label = 'Underperforming'; color = '#ef4444' }
+  else if (delta <= -12)  { symbols = '--';  label = 'Underperforming'; color = '#ef4444' }
+  else if (delta <= -5)   { symbols = '-';   label = 'Underperforming'; color = '#f87171' }
+  else return null  // within normal variance — nothing to flag
+
   const magnitude = Math.abs(delta)
-  const tooltip = isOver
+  const tooltip = delta > 0
     ? `Playing ${magnitude} rating points above their listed rating this season.`
     : `Playing ${magnitude} rating points below their listed rating this season.`
   return (
@@ -769,10 +758,8 @@ const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
         borderRadius: '4px',
         letterSpacing: '0.04em',
       }}>
-        <svg width="11" height="11" viewBox="0 0 10 10">
-          <path d={path} fill={color} />
-        </svg>
-        {word}
+        <span style={{ fontFamily: 'monospace', letterSpacing: '0.5px' }}>{symbols}</span>
+        {label}
       </span>
     </HoverTooltip>
   )
