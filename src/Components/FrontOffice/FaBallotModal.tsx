@@ -632,7 +632,7 @@ const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
 
   if (items.length === 0) return null
   return (
-    <div style={{ marginTop: '4px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+    <div style={{ marginTop: '3px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
       {items.map((item, i) => (
         <React.Fragment key={i}>
           {i > 0 && <span style={{ color: '#334155', fontSize: '11px' }}>·</span>}
@@ -651,20 +651,22 @@ const PlayerRow: React.FC<{
   <div
     onClick={onClick}
     style={{
-      padding: '10px 12px',
+      padding: '7px 12px',
       borderRadius: '6px',
       cursor: canAddMore ? 'pointer' : 'not-allowed',
-      marginBottom: '2px',
+      marginBottom: '1px',
       borderBottom: '1px solid #1a2640',
       opacity: canAddMore ? 1 : 0.5,
     }}
     onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
   >
-    {/* Row 1: Position + name + stars + status/perf. Stars sit right after
-        the name so they read as the name's rating (eye flow: who they are →
-        how good they are → status). */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    {/* Row 1: Position + name + stars + (inline stats) + status/perf.
+        Stats are inlined here for FAs with real season data so most
+        rows collapse to a single line — that's the density win for a
+        ballot with 80+ players. flex-wrap lets the stats drop below
+        on narrow modals/screens. */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', rowGap: '4px' }}>
       <PositionChip position={p.position} />
       <span style={{ fontSize: '15px', color: '#e2e8f0', fontWeight: '700', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {p.name}
@@ -675,7 +677,12 @@ const PlayerRow: React.FC<{
       <span style={{ display: 'inline-flex', alignItems: 'center', position: 'relative', top: '-2px' }}>
         <Stars stars={calcStars(p.rating)} size={22} />
       </span>
-      <span style={{ flex: 1 }} />
+      {!p.isProspect && !p.isRookie && p.stats && (
+        <span style={{ fontSize: '13px', color: '#cbd5e1', whiteSpace: 'nowrap' }}>
+          <StatLine position={p.position} stats={p.stats} />
+        </span>
+      )}
+      <span style={{ flex: 1, minWidth: '4px' }} />
       {p.isProspect ? (
         <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Prospect
@@ -698,29 +705,24 @@ const PlayerRow: React.FC<{
         <PerformanceBadge delta={p.ratingDelta} />
       ) : null}
     </div>
-    {/* Row 2: stats / context note. Prospects + rookies get a single
-        italic note; FAs with stats get the stat line; FAs without
-        stats get a quiet "no stats" placeholder. */}
-    {p.isProspect ? (
-      <div style={{ marginTop: '5px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
+    {/* Optional row 2: italic note for prospects/rookies/no-stats FAs
+        and the mental flags when something's notable. Most veteran FAs
+        won't render any of these — the row collapses to a single line. */}
+    {p.isProspect && (
+      <div style={{ marginTop: '3px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
         Pipeline prospect. Rank to promote instead of signing a FA.
       </div>
-    ) : p.isRookie ? (
-      <div style={{ marginTop: '5px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
+    )}
+    {p.isRookie && (
+      <div style={{ marginTop: '3px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
         No professional record
       </div>
-    ) : p.stats ? (
-      <div style={{ marginTop: '5px', fontSize: '13px', color: '#cbd5e1', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <StatLine position={p.position} stats={p.stats} />
-      </div>
-    ) : (
-      <div style={{ marginTop: '5px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+    )}
+    {!p.isProspect && !p.isRookie && !p.stats && (
+      <div style={{ marginTop: '3px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
         No stats this season
       </div>
     )}
-    {/* Row 3: Mental flags — only renders when something's notable
-        (Toxic, Leader, Fragile, Ironclad, Choker, Ice, etc). Boring
-        middle-tier players don't get a row at all. */}
     <MentalBadges player={p} />
   </div>
 )
