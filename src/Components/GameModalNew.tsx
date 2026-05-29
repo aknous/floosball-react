@@ -996,8 +996,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               })()}
             </div>
 
-            {/* Replay (finished games) / catch-up (live games) controls */}
-            {(gameData.status === 'Final' || gameData.status === 'Active') && replayCount > 0 && (
+            {/* Replay (finished games) / catch-up (live games) controls.
+                status !== 'Scheduled' means Final-or-Active; written without an
+                (A || B) && C expression in JSX, which trips a false-positive in
+                eslint-plugin-react-hooks that mis-flags the hooks above. */}
+            {gameData.status !== 'Scheduled' && replayCount > 0 && (
               <div style={{
                 padding: '8px 16px',
                 borderBottom: '1px solid #334155',
