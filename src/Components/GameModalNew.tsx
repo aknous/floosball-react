@@ -1401,19 +1401,22 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       </g>
                     )}
 
-                    {/* Big-play reaction: full-field color flash (TD/turnover) + banner */}
-                    {bigReaction && (bigReaction.kind === 'td' || bigReaction.kind === 'turnover') && (
-                      <rect key={`flash-${reactionKey}`} className="fieldReactionFlash"
+                    {/* Big-play reaction. Every kind gets a full-field color
+                        flash; TD/turnover also get a text banner. Big gains are
+                        flash-only (a double pulse) — no text. */}
+                    {bigReaction && (
+                      <rect key={`flash-${reactionKey}`}
+                        className={bigReaction.kind === 'big' ? 'fieldReactionFlash--pulse' : 'fieldReactionFlash'}
                         x={0} y={0} width={FW} height={FH} fill={bigReaction.color} pointerEvents="none" />
                     )}
-                    {bigReaction && (
+                    {bigReaction && bigReaction.kind !== 'big' && (
                       <g key={`banner-${reactionKey}`}
                         className={`fieldReactionBanner${bigReaction.kind === 'turnover' ? ' fieldReactionBanner--shake' : ''}`}
                         pointerEvents="none">
-                        <text x={FW / 2} y={midY + 9} textAnchor="middle"
-                          fontSize={bigReaction.kind === 'big' ? 28 : 34} fontWeight={900}
-                          fill={bigReaction.color} stroke="rgba(0,0,0,0.7)" strokeWidth={1.1}
-                          paintOrder="stroke" fontFamily="sans-serif" letterSpacing="1">
+                        <text x={FW / 2} y={midY + 7} textAnchor="middle"
+                          fontSize={20}
+                          fill={bigReaction.color} stroke="rgba(0,0,0,0.7)" strokeWidth={1}
+                          paintOrder="stroke" fontFamily="pressStart, monospace">
                           {bigReaction.label}
                         </text>
                       </g>
