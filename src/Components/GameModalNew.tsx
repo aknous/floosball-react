@@ -158,6 +158,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   const dClock = replayActive && replayCursor ? replayCursor.timeRemaining : gameData?.timeRemaining
   const dPossession = replayActive && replayCursor ? replayCursor.offensiveTeam : gameData?.possession
   const dYardsToEndzone = replayActive && replayCursor ? deriveYardsToEndzone(replayCursor) : gameData?.yardsToEndzone
+  // Ball position for the field graphic is where the play ENDED. Live state
+  // already reflects the post-play spot; in replay the cursor's yardLine is
+  // the line of scrimmage, so advance it by the yards gained. (The trajectory
+  // code walks back from here by yardsGained to draw the start.)
+  const dBallYardsToEndzone = (() => {
+    if (!(replayActive && replayCursor)) return gameData?.yardsToEndzone
+    const pre = deriveYardsToEndzone(replayCursor)
+    if (pre == null) return null
+    const gained = replayCursor.yardsGained ?? 0
+    return Math.max(0, Math.min(100, pre - gained))
+  })()
   const dDown = replayActive && replayCursor ? replayCursor.down : gameData?.down
   const dYardLine = replayActive && replayCursor ? replayCursor.yardLine : gameData?.yardLine
   const dDistance = replayActive && replayCursor ? replayCursor.distance : gameData?.yardsToFirstDown
@@ -1102,8 +1113,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               if (isTD && lastPlay) {
                 ballAbsYfl = lastPlayDir === 1 ? 110 : 10
               } else {
-                ballAbsYfl = dYardsToEndzone != null
-                  ? (isHomePoss ? 110 - dYardsToEndzone : 10 + dYardsToEndzone)
+                ballAbsYfl = dBallYardsToEndzone != null
+                  ? (isHomePoss ? 110 - dBallYardsToEndzone : 10 + dBallYardsToEndzone)
                   : null
               }
               const ballX = ballAbsYfl != null ? toX(ballAbsYfl) : null
