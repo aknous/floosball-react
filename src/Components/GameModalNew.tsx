@@ -1220,6 +1220,26 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 playStroke = '#a78bfa'
                 playDash = '8,4'
                 playEndX = puntEndX
+              } else if (playType === 'FIELDGOAL' && lastPlay) {
+                // A kick gains no yards, so it never hits the yardage branch
+                // below. Anchor on the kick's own line of scrimmage (from its
+                // yardLine, since live game state has already advanced past it)
+                // and arc high toward the goal posts on the defending end line —
+                // green if good, gray if missed.
+                const fgGood = lastPlay.playResult === 'Field Goal is Good'
+                const losYte = deriveYardsToEndzone(lastPlay)
+                const losAbs = losYte != null
+                  ? (lastPlayDir === 1 ? 110 - losYte : 10 + losYte)
+                  : ballAbsYfl
+                const fgStartX = losAbs != null ? toX(losAbs) : ballX
+                const fgEndX = lastPlayDir === 1 ? FW - 4 : 4
+                if (fgStartX != null) {
+                  const midPX = (fgStartX + fgEndX) / 2
+                  playPath = `M${fgStartX},${midY} Q${midPX},${midY - 75} ${fgEndX},${midY}`
+                  playStroke = fgGood ? '#4ade80' : '#94a3b8'
+                  playDash = '5,4'
+                  playEndX = fgEndX
+                }
               } else if (ballX != null && startX != null && Math.abs(yardsGained) >= 1) {
                 const midPX = (startX + ballX) / 2
                 const arcH = Math.min(Math.abs(ballX - startX) * 0.35, 45)
@@ -1228,11 +1248,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 if (playType === 'RUN' || playType === 'KNEEL' || playType === 'SPIKE') {
                   playPath = `M${startX},${midY} L${ballX},${midY}`
                   playStroke = isTurnover ? '#f87171' : '#4ade80'
-                } else if (playType === 'FIELDGOAL') {
-                  const peakY = midY - Math.min(arcH * 1.6, 60)
-                  playPath = `M${startX},${midY} Q${midPX},${peakY} ${ballX},${midY}`
-                  playStroke = '#a78bfa'
-                  playDash = '8,4'
                 } else {
                   // PASS / default — arc through the air from the QB drop
                   // to the catch point, then a straight line for YAC.
@@ -1262,7 +1277,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 if (isTD) playStroke = '#fbbf24'
               }
 
-              if (!sameTeamHasBall) playPath = null
+              // The possession-change guard suppresses a stale run/pass
+              // trajectory, but a kick's arc is the play itself and stays
+              // meaningful even though possession flips after it.
+              if (!sameTeamHasBall && playType !== 'PUNT' && playType !== 'FIELDGOAL') playPath = null
 
               // Arrowhead points toward the end of the play
               const arrowDir = playEndX != null && ballX != null ? (playEndX >= ballX ? 1 : -1) : lastPlayDir
