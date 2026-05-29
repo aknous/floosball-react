@@ -1,9 +1,13 @@
-import React from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import CoachHoverCard from '@/Components/CoachHoverCard'
 import { Stars, calcStars } from '@/Components/Stars'
 import ProbabilityMeter from './ProbabilityMeter'
+import HoverTooltip from '@/Components/HoverTooltip'
 import { getContrastTextColor } from '@/utils/colors'
 import type { GmCoachInfo, GmVoteTally } from '@/types/gm'
+
+const CONFIRM_WINDOW_MS = 3000
+const CONFIRM_COLOR = '#f59e0b'
 
 interface FireCoachCardProps {
   coach: GmCoachInfo
@@ -12,6 +16,10 @@ interface FireCoachCardProps {
   teamColor: string
   voting: boolean
   onVote: () => void
+  undoing: boolean
+  onUndo: () => void
+  myVoteCount: number
+  lastCost: number
   disabled: boolean
   votesRemaining: number
   nextCost: number
@@ -25,12 +33,33 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
   teamColor,
   voting,
   onVote,
+  undoing,
+  onUndo,
+  myVoteCount,
+  lastCost,
   disabled,
   votesRemaining,
   nextCost,
   thresholdMet,
 }) => {
   const cost = nextCost
+
+  // Two-tap confirm — mirror VoteControls.VoteButton for the full-width button.
+  const [armed, setArmed] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null } }
+  useEffect(() => clearTimer, [])
+  useEffect(() => { if (disabled && armed) { setArmed(false); clearTimer() } }, [disabled, armed])
+
+  const handleVoteClick = () => {
+    if (disabled || voting) return
+    if (armed) { clearTimer(); setArmed(false); onVote() }
+    else { setArmed(true); clearTimer(); timerRef.current = setTimeout(() => setArmed(false), CONFIRM_WINDOW_MS) }
+  }
+
+  const btnBg = disabled ? '#1e293b' : armed ? CONFIRM_COLOR : teamColor
+  const btnFg = disabled ? '#475569' : armed ? getContrastTextColor(CONFIRM_COLOR) : getContrastTextColor(teamColor)
+  const btnText = voting ? 'Filing...' : armed ? `Confirm — ${cost} F` : `File Grievance — ${cost} F`
 
   return (
     <div style={{ flex: 1, minWidth: '240px' }}>
@@ -73,25 +102,55 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
         </div>
       )}
 
-      <button
-        onClick={onVote}
-        disabled={disabled || voting}
-        style={{
-          width: '100%',
-          padding: '8px 12px',
-          backgroundColor: disabled ? '#1e293b' : teamColor,
-          color: disabled ? '#475569' : getContrastTextColor(teamColor),
-          border: 'none',
-          borderRadius: '6px',
-          fontSize: '12px',
-          fontWeight: '700',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          opacity: voting ? 0.6 : 1,
-          transition: 'opacity 0.2s',
-        }}
-      >
-        {voting ? 'Filing...' : `File Grievance \u2014 ${cost} F`}
-      </button>
+      <div style={{ display: 'flex', gap: '6px' }}>
+        <button
+          onClick={handleVoteClick}
+          onMouseLeave={() => { if (armed) { setArmed(false); clearTimer() } }}
+          disabled={disabled || voting}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            backgroundColor: btnBg,
+            color: btnFg,
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: '700',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            opacity: voting ? 0.6 : 1,
+            transition: 'background-color 0.12s ease, opacity 0.2s',
+          }}
+        >
+          {btnText}
+        </button>
+
+        {myVoteCount > 0 && (
+          <HoverTooltip text={
+            myVoteCount > 1
+              ? `Undo your last grievance (${myVoteCount} filed) \u2014 refunds ${lastCost} F`
+              : `Undo your grievance \u2014 refunds ${lastCost} F`
+          }>
+            <button
+              onClick={() => { if (!undoing) onUndo() }}
+              disabled={undoing}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: '#1e293b',
+                color: '#cbd5e1',
+                border: '1px solid #334155',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '700',
+                cursor: undoing ? 'wait' : 'pointer',
+                opacity: undoing ? 0.6 : 1,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {undoing ? '...' : `Undo${myVoteCount > 1 ? ` (${myVoteCount})` : ''}`}
+            </button>
+          </HoverTooltip>
+        )}
+      </div>
 
       {!thresholdMet && availableCoaches.length > 0 && (
         <div style={{ marginTop: '12px' }}>

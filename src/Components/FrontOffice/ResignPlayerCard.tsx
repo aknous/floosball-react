@@ -2,6 +2,7 @@ import React from 'react'
 import { Stars, calcStars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import ProbabilityMeter from './ProbabilityMeter'
+import { VoteButton, UndoButton } from './VoteControls'
 import type { GmPlayerInfo, GmVoteTally } from '@/types/gm'
 
 interface ResignPlayerCardProps {
@@ -10,11 +11,15 @@ interface ResignPlayerCardProps {
   teamColor: string
   voting: string | null
   onVote: (playerId: number) => void
+  undoing: string | null
+  onUndo: (playerId: number) => void
+  myVoteCount: (playerId: number) => number
   disabledIds: Set<number>
   globalDisabled: boolean
   balance: number
   votesRemaining: number
   getCost: (playerId: number) => number
+  lastCost: (playerId: number) => number
 }
 
 const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
@@ -23,11 +28,15 @@ const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
   teamColor,
   voting,
   onVote,
+  undoing,
+  onUndo,
+  myVoteCount,
   disabledIds,
   globalDisabled,
   balance,
   votesRemaining,
   getCost,
+  lastCost,
 }) => {
 
   const getTally = (playerId: number): GmVoteTally | undefined =>
@@ -61,7 +70,9 @@ const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
           {players.map(p => {
             const tally = getTally(p.id)
             const isVoting = voting === `resign_player:${p.id}`
+            const isUndoing = undoing === `resign_player:${p.id}`
             const cost = getCost(p.id)
+            const myVotes = myVoteCount(p.id)
             const isDisabled = globalDisabled || disabledIds.has(p.id) || balance < cost
 
             return (
@@ -101,24 +112,22 @@ const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
                   </div>
                 )}
 
-                <button
-                  onClick={() => onVote(p.id)}
-                  disabled={isDisabled || isVoting}
-                  style={{
-                    padding: '4px 8px',
-                    backgroundColor: isDisabled ? '#1e293b' : '#22c55e',
-                    color: isDisabled ? '#475569' : '#fff',
-                    border: 'none',
-                    borderRadius: '4px',
-                    fontSize: '11px',
-                    fontWeight: '700',
-                    cursor: isDisabled ? 'not-allowed' : 'pointer',
-                    opacity: isVoting ? 0.6 : 1,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {isVoting ? '...' : `${cost} F`}
-                </button>
+                {myVotes > 0 && (
+                  <UndoButton
+                    onUndo={() => onUndo(p.id)}
+                    undoing={isUndoing}
+                    voteCount={myVotes}
+                    refundAmount={lastCost(p.id)}
+                  />
+                )}
+
+                <VoteButton
+                  cost={cost}
+                  disabled={isDisabled}
+                  voting={isVoting}
+                  onConfirm={() => onVote(p.id)}
+                  teamColor="#22c55e"
+                />
               </div>
             )
           })}

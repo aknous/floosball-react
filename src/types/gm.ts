@@ -89,6 +89,16 @@ export interface GmCastVoteResponse {
   remainingBalance: number
 }
 
+export interface GmUndoVoteResponse {
+  voteType: string
+  targetPlayerId: number | null
+  refunded: number
+  currentVotes: number
+  threshold: number
+  probability: number
+  remainingBalance: number
+}
+
 export interface GmUserVote {
   id: number
   voteType: string

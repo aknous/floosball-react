@@ -7,6 +7,7 @@ import type {
   GmUserVotes,
   GmTeamResults,
   GmCastVoteResponse,
+  GmUndoVoteResponse,
   GmFaBallotResponse,
 } from '@/types/gm'
 import type {
@@ -30,8 +31,10 @@ export interface GmData {
   // Loading
   loading: boolean
   voting: string | null // key of in-flight vote button
+  undoing: string | null // key of in-flight undo button
   // Actions
   castVote: (voteType: string, targetPlayerId?: number | null) => Promise<GmCastVoteResponse | null>
+  undoVote: (voteType: string, targetPlayerId?: number | null) => Promise<GmUndoVoteResponse | null>
   submitBallot: (rankings: number[]) => Promise<GmFaBallotResponse | null>
   refetch: () => void
 }
@@ -52,6 +55,7 @@ export function useGmData(teamId: number | null): GmData {
 
   const [loading, setLoading] = useState(false)
   const [voting, setVoting] = useState<string | null>(null)
+  const [undoing, setUndoing] = useState<string | null>(null)
 
   const teamIdRef = useRef(teamId)
   teamIdRef.current = teamId
@@ -150,6 +154,36 @@ export function useGmData(teamId: number | null): GmData {
     }
   }, [getToken, updateFloobits, refetch])
 
+  // ── Undo a vote (pops the most-recent vote on a target, refunds its cost) ──
+  const undoVote = useCallback(async (voteType: string, targetPlayerId?: number | null): Promise<GmUndoVoteResponse | null> => {
+    const tok = await getToken()
+    if (!tok) return null
+    const key = targetPlayerId != null ? `${voteType}:${targetPlayerId}` : voteType
+    setUndoing(key)
+    try {
+      const res = await fetch(`${API_BASE}/gm/vote/undo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+        body: JSON.stringify({ voteType, targetPlayerId: targetPlayerId ?? null }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: 'Undo failed' }))
+        alert(err.detail || 'Undo failed')
+        return null
+      }
+      const json = await res.json()
+      const data: GmUndoVoteResponse = json.data ?? json
+      updateFloobits(data.remainingBalance)
+      await refetch()
+      return data
+    } catch {
+      alert('Undo failed')
+      return null
+    } finally {
+      setUndoing(null)
+    }
+  }, [getToken, updateFloobits, refetch])
+
   // ── Submit FA ballot ──
   const submitBallot = useCallback(async (rankings: number[]): Promise<GmFaBallotResponse | null> => {
     const tok = await getToken()
@@ -219,7 +253,9 @@ export function useGmData(teamId: number | null): GmData {
     resolvedEvents,
     loading,
     voting,
+    undoing,
     castVote,
+    undoVote,
     submitBallot,
     refetch,
   }

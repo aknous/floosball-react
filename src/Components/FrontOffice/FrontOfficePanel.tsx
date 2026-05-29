@@ -374,6 +374,19 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
     const used = targetVotesUsed[targetKey] ?? 0
     return base * Math.pow(2, used)
   }
+  // How many votes the current user has on a specific target (drives the undo
+  // button's visibility + count badge).
+  const myVotesOnTarget = (type: string, targetId?: number) => {
+    const targetKey = `${type}:${targetId ?? 'none'}`
+    return targetVotesUsed[targetKey] ?? 0
+  }
+  // What the user paid for their most-recent vote on a target = the cost tier
+  // one below the next one. This is exactly what undo refunds.
+  const lastTargetCost = (type: string, targetId?: number) => {
+    const base = GM_VOTE_COST[type] ?? 10
+    const used = myVotesOnTarget(type, targetId)
+    return used > 0 ? base * Math.pow(2, used - 1) : 0
+  }
   // For single-target directives (fire_coach), use the target cost directly
   const nextCostByType = {
     fire_coach: nextTargetCost('fire_coach'),
@@ -846,6 +859,10 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                 teamColor={teamColor}
                 voting={gm.voting === 'fire_coach'}
                 onVote={() => gm.castVote('fire_coach')}
+                undoing={gm.undoing === 'fire_coach'}
+                onUndo={() => gm.undoVote('fire_coach')}
+                myVoteCount={myVotesOnTarget('fire_coach')}
+                lastCost={lastTargetCost('fire_coach')}
                 disabled={globalDisabled || fireCoachDisabled || balance < nextCostByType.fire_coach}
                 votesRemaining={remainingByType.fire_coach}
                 nextCost={nextCostByType.fire_coach}
@@ -860,11 +877,15 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                 teamColor={teamColor}
                 voting={gm.voting}
                 onVote={(coachId) => gm.castVote('hire_coach', coachId)}
+                undoing={gm.undoing}
+                onUndo={(coachId) => gm.undoVote('hire_coach', coachId)}
+                myVoteCount={(coachId) => myVotesOnTarget('hire_coach', coachId)}
                 disabledIds={disabledHireCoachIds}
                 globalDisabled={globalDisabled}
                 balance={balance}
                 votesRemaining={remainingByType.hire_coach}
                 getCost={(coachId) => nextTargetCost('hire_coach', coachId)}
+                lastCost={(coachId) => lastTargetCost('hire_coach', coachId)}
               />
             )}
           </div>
@@ -919,11 +940,15 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
               teamColor={teamColor}
               voting={gm.voting}
               onVote={(playerId) => gm.castVote('resign_player', playerId)}
+              undoing={gm.undoing}
+              onUndo={(playerId) => gm.undoVote('resign_player', playerId)}
+              myVoteCount={(playerId) => myVotesOnTarget('resign_player', playerId)}
               disabledIds={disabledResignIds}
               globalDisabled={globalDisabled}
               balance={balance}
               votesRemaining={remainingByType.resign_player}
               getCost={(playerId) => nextTargetCost('resign_player', playerId)}
+              lastCost={(playerId) => lastTargetCost('resign_player', playerId)}
             />
 
             <CutPlayerCard
@@ -932,11 +957,15 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
               teamColor={teamColor}
               voting={gm.voting}
               onVote={(playerId) => gm.castVote('cut_player', playerId)}
+              undoing={gm.undoing}
+              onUndo={(playerId) => gm.undoVote('cut_player', playerId)}
+              myVoteCount={(playerId) => myVotesOnTarget('cut_player', playerId)}
               disabledIds={disabledCutIds}
               globalDisabled={globalDisabled}
               balance={balance}
               votesRemaining={remainingByType.cut_player}
               getCost={(playerId) => nextTargetCost('cut_player', playerId)}
+              lastCost={(playerId) => lastTargetCost('cut_player', playerId)}
             />
           </div>
         </div>
