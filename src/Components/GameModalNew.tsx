@@ -21,6 +21,104 @@ interface GameModalNewProps {
   gameId: number
 }
 
+interface ReplayControlBarProps {
+  active: boolean
+  playing: boolean
+  index: number
+  count: number
+  speed: number
+  isLive: boolean
+  accentColor: string
+  onStart: (speed?: number) => void
+  onExit: () => void
+  onStep: (delta: number) => void
+  onScrub: (i: number) => void
+  onToggle: () => void
+  onCycleSpeed: () => void
+}
+
+/** Replay / catch-up transport, rendered on the "Field Position" header line so
+ *  it never adds a row of its own. Idle = label + a compact button; active =
+ *  the full transport replaces the label. */
+const ReplayControlBar: React.FC<ReplayControlBarProps> = ({
+  active, playing, index, count, speed, isLive, accentColor,
+  onStart, onExit, onStep, onScrub, onToggle, onCycleSpeed,
+}) => {
+  const iconBtn: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: '28px', height: '26px', backgroundColor: '#1e293b',
+    border: '1px solid #334155', borderRadius: '5px',
+    color: '#e2e8f0', cursor: 'pointer', flexShrink: 0,
+  }
+  const atEnd = index >= count - 1
+
+  if (!active) {
+    return (
+      <>
+        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Field Position
+        </span>
+        <span style={{ flex: 1 }} />
+        {count > 0 && (
+          <button
+            onClick={() => onStart(isLive ? 4 : 1)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '4px 11px', backgroundColor: '#1e293b',
+              border: '1px solid #334155', borderRadius: '6px',
+              color: '#e2e8f0', fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l11 6-11 6z" /></svg>
+            {isLive ? 'Catch Up' : 'Replay'}
+          </button>
+        )}
+      </>
+    )
+  }
+
+  return (
+    <>
+      <button onClick={() => onStep(-1)} disabled={index <= 0}
+        style={{ ...iconBtn, opacity: index <= 0 ? 0.4 : 1 }} aria-label="Previous play">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M5 2v12H3V2zm9 0v12L6 8z" /></svg>
+      </button>
+      <button onClick={onToggle} style={iconBtn} aria-label={playing ? 'Pause' : 'Play'}>
+        {playing ? (
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2h4v12H3zm6 0h4v12H9z" /></svg>
+        ) : (
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l11 6-11 6z" /></svg>
+        )}
+      </button>
+      <button onClick={() => onStep(1)} disabled={atEnd}
+        style={{ ...iconBtn, opacity: atEnd ? 0.4 : 1 }} aria-label="Next play">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M11 2v12h2V2zM2 2v12l8-6z" /></svg>
+      </button>
+      <input
+        type="range" min={0} max={count - 1} value={index}
+        onChange={e => onScrub(Number(e.target.value))}
+        style={{ flex: 1, minWidth: '70px', accentColor, cursor: 'pointer' }}
+      />
+      <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums', minWidth: '48px', textAlign: 'center' }}>
+        {index + 1}/{count}
+      </span>
+      <button onClick={onCycleSpeed} style={{ ...iconBtn, width: '32px', fontSize: '11px', fontWeight: 700 }} aria-label="Playback speed">
+        {speed}×
+      </button>
+      <button onClick={onExit} style={{
+        padding: '4px 10px',
+        backgroundColor: isLive ? '#166534' : 'transparent',
+        border: isLive ? '1px solid #22c55e' : '1px solid #334155',
+        borderRadius: '5px',
+        color: isLive ? '#dcfce7' : '#94a3b8',
+        fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+      }}>
+        {isLive ? 'Go Live' : 'Exit'}
+      </button>
+    </>
+  )
+}
+
 /** Tiny icon + tooltip shown wherever we surface clock state. Used both in
     the per-play feed row and next to the main game clock. */
 const ClockStateIcon: React.FC<{ stopped: boolean }> = ({ stopped }) => {
@@ -996,89 +1094,28 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               })()}
             </div>
 
-            {/* Replay (finished games) / catch-up (live games) controls.
-                status !== 'Scheduled' means Final-or-Active; written without an
-                (A || B) && C expression in JSX, which trips a false-positive in
-                eslint-plugin-react-hooks that mis-flags the hooks above. */}
-            {gameData.status !== 'Scheduled' && replayCount > 0 && (
-              <div style={{
-                padding: '8px 16px',
-                borderBottom: '1px solid #334155',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                flexWrap: 'wrap',
-              }}>
-                {!replayActive ? (
-                  <button
-                    onClick={() => startReplay(gameData.status === 'Active' ? 4 : 1)}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '7px',
-                      padding: '6px 14px', backgroundColor: '#1e293b',
-                      border: '1px solid #334155', borderRadius: '6px',
-                      color: '#e2e8f0', fontSize: '12px', fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l11 6-11 6z" /></svg>
-                    {gameData.status === 'Active' ? 'Catch Up' : 'Replay Game'}
-                  </button>
-                ) : (() => {
-                  const iconBtn: React.CSSProperties = {
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: '30px', height: '28px', backgroundColor: '#1e293b',
-                    border: '1px solid #334155', borderRadius: '5px',
-                    color: '#e2e8f0', cursor: 'pointer', flexShrink: 0,
-                  }
-                  const atEnd = replayIndex >= replayCount - 1
-                  return (
-                    <>
-                      <button onClick={() => replayStep(-1)} disabled={replayIndex <= 0}
-                        style={{ ...iconBtn, opacity: replayIndex <= 0 ? 0.4 : 1 }} aria-label="Previous play">
-                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M5 2v12H3V2zm9 0v12L6 8z" /></svg>
-                      </button>
-                      <button onClick={toggleReplayPlay} style={iconBtn} aria-label={replayPlaying ? 'Pause' : 'Play'}>
-                        {replayPlaying ? (
-                          <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2h4v12H3zm6 0h4v12H9z" /></svg>
-                        ) : (
-                          <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l11 6-11 6z" /></svg>
-                        )}
-                      </button>
-                      <button onClick={() => replayStep(1)} disabled={atEnd}
-                        style={{ ...iconBtn, opacity: atEnd ? 0.4 : 1 }} aria-label="Next play">
-                        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M11 2v12h2V2zM2 2v12l8-6z" /></svg>
-                      </button>
-
-                      <input
-                        type="range"
-                        min={0}
-                        max={replayCount - 1}
-                        value={replayIndex}
-                        onChange={e => replayScrub(Number(e.target.value))}
-                        style={{ flex: 1, minWidth: '90px', accentColor: gameData.homeTeam.color, cursor: 'pointer' }}
-                      />
-
-                      <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums', minWidth: '54px', textAlign: 'center' }}>
-                        {replayIndex + 1} / {replayCount}
-                      </span>
-
-                      <button onClick={cycleReplaySpeed} style={{ ...iconBtn, width: '34px', fontSize: '11px', fontWeight: 700 }} aria-label="Playback speed">
-                        {replaySpeed}×
-                      </button>
-
-                      <button onClick={exitReplay} style={{
-                        padding: '5px 12px',
-                        backgroundColor: gameData.status === 'Active' ? '#166534' : 'transparent',
-                        border: gameData.status === 'Active' ? '1px solid #22c55e' : '1px solid #334155',
-                        borderRadius: '5px',
-                        color: gameData.status === 'Active' ? '#dcfce7' : '#94a3b8',
-                        fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0,
-                      }}>
-                        {gameData.status === 'Active' ? 'Go Live' : 'Exit'}
-                      </button>
-                    </>
-                  )
-                })()}
+            {/* "Field Position" header + replay/catch-up controls on one line,
+                so the transport never adds a row of its own. Kept here (not in
+                the field-viz IIFE) and gated with a single condition — moving it
+                or using (A || B) && (...) trips an eslint-plugin-react-hooks
+                false-positive in this file. */}
+            {gameData.status !== 'Scheduled' && (
+              <div style={{ padding: '2px 16px 6px', display: 'flex', alignItems: 'center', gap: '8px', minHeight: '26px' }}>
+                <ReplayControlBar
+                  active={replayActive}
+                  playing={replayPlaying}
+                  index={replayIndex}
+                  count={replayCount}
+                  speed={replaySpeed}
+                  isLive={gameData.status === 'Active'}
+                  accentColor={gameData.homeTeam.color}
+                  onStart={startReplay}
+                  onExit={exitReplay}
+                  onStep={replayStep}
+                  onScrub={replayScrub}
+                  onToggle={toggleReplayPlay}
+                  onCycleSpeed={cycleReplaySpeed}
+                />
               </div>
             )}
 
@@ -1255,9 +1292,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
               return (
                 <div style={{ padding: '0 16px 16px' }}>
-                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '7px', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>
-                    Field Position
-                  </div>
+                  {/* "Field Position" label + replay controls live on the row
+                      above (consolidated), so no header here. */}
                   <svg viewBox={`0 0 ${FW} ${FH}`} style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '4px' }}>
                     {/* Home end zone (LEFT) */}
                     <rect x={0} y={0} width={EZW} height={FH} fill={homeTeam.color} opacity={0.4} />
