@@ -1310,13 +1310,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               // precedence; otherwise a "big" flash fires on a 20+ yard run/pass
               // OR any play the feed flags as a big WPA swing (isBigPlay).
               const isBigGain = (playType === 'RUN' || playType === 'PASS') && yardsGained >= 20
+              const isMadeFg = playType === 'FIELDGOAL' && lastPlay?.playResult === 'Field Goal is Good'
               const bigReaction = isTD
                 ? { label: 'TOUCHDOWN', color: '#fbbf24', kind: 'td' }
                 : isTurnover
                   ? { label: 'TURNOVER', color: '#ef4444', kind: 'turnover' }
-                  : (isBigGain || lastPlay?.isBigPlay)
-                    ? { label: '', color: '#38bdf8', kind: 'big' }
-                    : null
+                  : isMadeFg
+                    ? { label: 'FIELD GOAL', color: '#4ade80', kind: 'fg' }
+                    : (isBigGain || lastPlay?.isBigPlay)
+                      ? { label: '', color: '#38bdf8', kind: 'big' }
+                      : null
               const reactionKey = `${lastPlay?.playNumber ?? 0}-${bigReaction?.kind ?? 'none'}`
 
               return (
