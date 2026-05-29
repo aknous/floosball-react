@@ -119,16 +119,24 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   const replayCount = replaySequence.length
   const replayCursor = replayActive ? replaySequence[replayIndex] : undefined
 
-  // Drive playback: one step per (1000 / speed) ms; stop at the final play.
+  // Drive playback: one step per (1000 / speed) ms. On the last available
+  // play, a finished game just stops; a live game rejoins the live feed —
+  // the catch-up has reached the current play, so hand back to live. As live
+  // plays keep arriving, replayCount grows and playback chases the edge until
+  // it catches up.
   useEffect(() => {
     if (!replayActive || !replayPlaying) return
-    if (replayIndex >= replayCount - 1) { setReplayPlaying(false); return }
+    if (replayIndex >= replayCount - 1) {
+      if (gameData?.status === 'Active') setReplayActive(false)
+      setReplayPlaying(false)
+      return
+    }
     const id = setTimeout(
       () => setReplayIndex(i => Math.min(i + 1, replayCount - 1)),
       1000 / replaySpeed,
     )
     return () => clearTimeout(id)
-  }, [replayActive, replayPlaying, replayIndex, replaySpeed, replayCount])
+  }, [replayActive, replayPlaying, replayIndex, replaySpeed, replayCount, gameData?.status])
 
   // Ball spot isn't stored per play; derive it from the play's yardLine
   // ("TEAM YD") + which side has the ball — the same parse the API uses.
@@ -199,7 +207,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     }
   }, [replayActive, replayCursor, replaySequence, replayIndex, gameData?.quarterScores])
 
-  const startReplay = () => { setReplayIndex(0); setReplayActive(true); setReplayPlaying(true); setActiveTab('plays') }
+  const startReplay = (speed = 1) => { setReplayIndex(0); setReplaySpeed(speed); setReplayActive(true); setReplayPlaying(true); setActiveTab('plays') }
   const exitReplay = () => { setReplayActive(false); setReplayPlaying(false) }
   const replayStep = (delta: number) => {
     setReplayPlaying(false)
@@ -988,8 +996,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               })()}
             </div>
 
-            {/* Replay controls — finished games only */}
-            {gameData.status === 'Final' && replayCount > 0 && (
+            {/* Replay (finished games) / catch-up (live games) controls */}
+            {(gameData.status === 'Final' || gameData.status === 'Active') && replayCount > 0 && (
               <div style={{
                 padding: '8px 16px',
                 borderBottom: '1px solid #334155',
@@ -1000,7 +1008,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               }}>
                 {!replayActive ? (
                   <button
-                    onClick={startReplay}
+                    onClick={() => startReplay(gameData.status === 'Active' ? 4 : 1)}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: '7px',
                       padding: '6px 14px', backgroundColor: '#1e293b',
@@ -1010,7 +1018,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     }}
                   >
                     <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l11 6-11 6z" /></svg>
-                    Replay Game
+                    {gameData.status === 'Active' ? 'Catch Up' : 'Replay Game'}
                   </button>
                 ) : (() => {
                   const iconBtn: React.CSSProperties = {
@@ -1056,11 +1064,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       </button>
 
                       <button onClick={exitReplay} style={{
-                        padding: '5px 12px', backgroundColor: 'transparent',
-                        border: '1px solid #334155', borderRadius: '5px',
-                        color: '#94a3b8', fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+                        padding: '5px 12px',
+                        backgroundColor: gameData.status === 'Active' ? '#166534' : 'transparent',
+                        border: gameData.status === 'Active' ? '1px solid #22c55e' : '1px solid #334155',
+                        borderRadius: '5px',
+                        color: gameData.status === 'Active' ? '#dcfce7' : '#94a3b8',
+                        fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0,
                       }}>
-                        Exit
+                        {gameData.status === 'Active' ? 'Go Live' : 'Exit'}
                       </button>
                     </>
                   )
