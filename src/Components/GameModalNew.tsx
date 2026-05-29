@@ -1149,10 +1149,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 : null
               const startX = startAbsYfl != null ? toX(startAbsYfl) : null
 
-              // First down marker: forward from ball in possession team's direction
+              // First down marker: the line to gain, measured from the line of
+              // scrimmage (NOT the post-play ball spot). Anchoring on the LOS
+              // (dYardsToEndzone) keeps the marker fixed across a series instead
+              // of drifting with the ball each play — in replay the ball anchor
+              // is the play's end spot, so using it here moved the line every
+              // play. dYardsToEndzone + dDistance are the live values when not
+              // replaying, so this is identical to before for live games.
               const fdDir = isHomePoss ? 1 : -1
-              const fdAbsYfl = ballAbsYfl != null && gameData.yardsToFirstDown != null
-                ? ballAbsYfl + gameData.yardsToFirstDown * fdDir
+              const losAbsYfl = dYardsToEndzone != null
+                ? (isHomePoss ? 110 - dYardsToEndzone : 10 + dYardsToEndzone)
+                : null
+              const fdAbsYfl = losAbsYfl != null && dDistance != null
+                ? losAbsYfl + dDistance * fdDir
                 : null
               const firstDownX = fdAbsYfl != null ? toX(fdAbsYfl) : null
 
@@ -1319,14 +1328,29 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       />
                     )}
 
-                    {/* Ball marker */}
+                    {/* Ball marker + possession indicator */}
                     {ballX != null && (
                       <g>
-                        <circle cx={ballX} cy={midY} r={10} fill={possTeam.color} opacity={0.2} />
+                        <circle cx={ballX} cy={midY} r={11} fill={possTeam.color} opacity={0.3} />
                         <ellipse cx={ballX} cy={midY} rx={8} ry={5}
                           fill="#7B4F2E" stroke="rgba(255,255,255,0.9)" strokeWidth={1.5} />
                         <line x1={ballX - 3} y1={midY} x2={ballX + 3} y2={midY}
                           stroke="rgba(255,255,255,0.6)" strokeWidth={1} />
+                        {/* Who has the ball: team abbr above, arrow toward their endzone */}
+                        {dPossession && (
+                          <>
+                            <text x={ballX} y={midY - 14} textAnchor="middle" fontSize={11} fontWeight={700}
+                              fill={possTeam.color} fontFamily="sans-serif"
+                              stroke="rgba(0,0,0,0.6)" strokeWidth={0.6} paintOrder="stroke">
+                              {possTeam.abbr}
+                            </text>
+                            <polygon
+                              points={fdDir === 1
+                                ? `${ballX + 13},${midY} ${ballX + 6},${midY - 4.5} ${ballX + 6},${midY + 4.5}`
+                                : `${ballX - 13},${midY} ${ballX - 6},${midY - 4.5} ${ballX - 6},${midY + 4.5}`}
+                              fill={possTeam.color} opacity={0.95} />
+                          </>
+                        )}
                       </g>
                     )}
                   </svg>
