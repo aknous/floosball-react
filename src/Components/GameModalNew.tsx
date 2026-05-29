@@ -1241,6 +1241,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               const playResult = lastPlay?.playResult ?? null
               const playDescription = lastPlay?.description ?? lastPlay?.text ?? null
 
+              // Big-play reaction overlay. Keyed by play so the CSS animation
+              // re-fires each time a new qualifying play lands (live) or the
+              // cursor steps onto one (replay).
+              const bigReaction = isTD
+                ? { label: 'TOUCHDOWN', color: '#fbbf24', kind: 'td' }
+                : isTurnover
+                  ? { label: 'TURNOVER', color: '#ef4444', kind: 'turnover' }
+                  : ((playType === 'RUN' || playType === 'PASS') && yardsGained >= 20)
+                    ? { label: `BIG PLAY  +${yardsGained}`, color: '#38bdf8', kind: 'big' }
+                    : null
+              const reactionKey = `${lastPlay?.playNumber ?? 0}-${bigReaction?.kind ?? 'none'}`
+
               return (
                 <div style={{ padding: '0 16px 16px' }}>
                   <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '7px', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>
@@ -1336,21 +1348,38 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                           fill="#7B4F2E" stroke="rgba(255,255,255,0.9)" strokeWidth={1.5} />
                         <line x1={ballX - 3} y1={midY} x2={ballX + 3} y2={midY}
                           stroke="rgba(255,255,255,0.6)" strokeWidth={1} />
-                        {/* Who has the ball: team abbr above, arrow toward their endzone */}
+                        {/* Who has the ball: team logo above, white arrow toward their endzone */}
                         {dPossession && (
                           <>
-                            <text x={ballX} y={midY - 14} textAnchor="middle" fontSize={11} fontWeight={700}
-                              fill={possTeam.color} fontFamily="sans-serif"
-                              stroke="rgba(0,0,0,0.6)" strokeWidth={0.6} paintOrder="stroke">
-                              {possTeam.abbr}
-                            </text>
+                            <circle cx={ballX} cy={midY - 22} r={11} fill="#0f172a" opacity={0.85}
+                              stroke={possTeam.color} strokeWidth={1.5} />
+                            <image href={`/avatars/${possTeam.id}.png`}
+                              x={ballX - 9} y={midY - 31} width={18} height={18} />
                             <polygon
                               points={fdDir === 1
-                                ? `${ballX + 13},${midY} ${ballX + 6},${midY - 4.5} ${ballX + 6},${midY + 4.5}`
-                                : `${ballX - 13},${midY} ${ballX - 6},${midY - 4.5} ${ballX - 6},${midY + 4.5}`}
-                              fill={possTeam.color} opacity={0.95} />
+                                ? `${ballX + 14},${midY} ${ballX + 7},${midY - 5} ${ballX + 7},${midY + 5}`
+                                : `${ballX - 14},${midY} ${ballX - 7},${midY - 5} ${ballX - 7},${midY + 5}`}
+                              fill="#f8fafc" stroke="rgba(0,0,0,0.55)" strokeWidth={0.5} opacity={0.95} />
                           </>
                         )}
+                      </g>
+                    )}
+
+                    {/* Big-play reaction: full-field color flash (TD/turnover) + banner */}
+                    {bigReaction && (bigReaction.kind === 'td' || bigReaction.kind === 'turnover') && (
+                      <rect key={`flash-${reactionKey}`} className="fieldReactionFlash"
+                        x={0} y={0} width={FW} height={FH} fill={bigReaction.color} pointerEvents="none" />
+                    )}
+                    {bigReaction && (
+                      <g key={`banner-${reactionKey}`}
+                        className={`fieldReactionBanner${bigReaction.kind === 'turnover' ? ' fieldReactionBanner--shake' : ''}`}
+                        pointerEvents="none">
+                        <text x={FW / 2} y={midY + 9} textAnchor="middle"
+                          fontSize={bigReaction.kind === 'big' ? 28 : 34} fontWeight={900}
+                          fill={bigReaction.color} stroke="rgba(0,0,0,0.7)" strokeWidth={1.1}
+                          paintOrder="stroke" fontFamily="sans-serif" letterSpacing="1">
+                          {bigReaction.label}
+                        </text>
                       </g>
                     )}
                   </svg>

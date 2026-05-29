@@ -534,3 +534,40 @@
 .anomaly-row-l2 .glitch-text-l2-b { animation: glitch-slam-l2 4s steps(1) infinite; }
 .anomaly-row-l2 .glitch-text-l2-c { animation: glitch-strobe-l2 5s steps(1) infinite; }
 .anomaly-row-l2 .anomaly-label  { animation: anomaly-label-pulse 5s steps(1) infinite; }
+
+/* ── Field-graphic big-play reactions ─────────────────────────────────────
+   Banner pops in and fades; keyed by play in GameModalNew so it re-fires on
+   each new TD / turnover / big gain. transform-box keeps SVG scaling centered
+   on the element. */
+@keyframes fieldReactionPop {
+  0%   { opacity: 0; transform: scale(0.5); }
+  18%  { opacity: 1; transform: scale(1.2); }
+  32%  { transform: scale(1); }
+  72%  { opacity: 0.95; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+@keyframes fieldReactionShake {
+  0%   { opacity: 0; transform: translateX(0) scale(0.6); }
+  15%  { opacity: 1; transform: translateX(-7px) scale(1.12); }
+  28%  { transform: translateX(7px) scale(1); }
+  42%  { transform: translateX(-5px); }
+  56%  { transform: translateX(5px); }
+  70%  { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; }
+}
+@keyframes fieldReactionFlash {
+  0%   { opacity: 0; }
+  12%  { opacity: 0.38; }
+  100% { opacity: 0; }
+}
+.fieldReactionBanner {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fieldReactionPop 1.6s ease-out forwards;
+}
+.fieldReactionBanner--shake {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: fieldReactionShake 1.6s ease-out forwards;
+}
+.fieldReactionFlash { animation: fieldReactionFlash 1.6s ease-out forwards; }
