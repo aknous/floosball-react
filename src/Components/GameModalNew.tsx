@@ -1280,13 +1280,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
               // Big-play reaction overlay. Keyed by play so the CSS animation
               // re-fires each time a new qualifying play lands (live) or the
-              // cursor steps onto one (replay).
+              // cursor steps onto one (replay). Scores and turnovers take
+              // precedence; otherwise a "big" flash fires on a 20+ yard run/pass
+              // OR any play the feed flags as a big WPA swing (isBigPlay).
+              const isBigGain = (playType === 'RUN' || playType === 'PASS') && yardsGained >= 20
               const bigReaction = isTD
                 ? { label: 'TOUCHDOWN', color: '#fbbf24', kind: 'td' }
                 : isTurnover
                   ? { label: 'TURNOVER', color: '#ef4444', kind: 'turnover' }
-                  : ((playType === 'RUN' || playType === 'PASS') && yardsGained >= 20)
-                    ? { label: `BIG PLAY  +${yardsGained}`, color: '#38bdf8', kind: 'big' }
+                  : (isBigGain || lastPlay?.isBigPlay)
+                    ? { label: '', color: '#38bdf8', kind: 'big' }
                     : null
               const reactionKey = `${lastPlay?.playNumber ?? 0}-${bigReaction?.kind ?? 'none'}`
 
