@@ -158,14 +158,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   const dClock = replayActive && replayCursor ? replayCursor.timeRemaining : gameData?.timeRemaining
   const dPossession = replayActive && replayCursor ? replayCursor.offensiveTeam : gameData?.possession
   const dYardsToEndzone = replayActive && replayCursor ? deriveYardsToEndzone(replayCursor) : gameData?.yardsToEndzone
-  // Ball position for the field graphic is where the play ENDED. Live state
-  // already reflects the post-play spot; in replay the cursor's yardLine is
-  // the line of scrimmage, so advance it by the yards gained. (The trajectory
-  // code walks back from here by yardsGained to draw the start.)
+  // Ball anchor for the field graphic. Runs/passes anchor on the END spot and
+  // the trajectory walks back by yardsGained, so in replay we advance the
+  // cursor's line of scrimmage by the yards gained. Punts/kicks are the
+  // opposite — they anchor on the LOS and draw the arc forward to the landing
+  // spot — so those keep the pre-snap position. Live state already reflects
+  // the right spot, so this only adjusts replay.
   const dBallYardsToEndzone = (() => {
     if (!(replayActive && replayCursor)) return gameData?.yardsToEndzone
     const pre = deriveYardsToEndzone(replayCursor)
     if (pre == null) return null
+    const pt = String(replayCursor.playType || '').toUpperCase()
+    if (pt === 'PUNT' || pt === 'FIELDGOAL' || pt === 'EXTRAPOINT') return pre
     const gained = replayCursor.yardsGained ?? 0
     return Math.max(0, Math.min(100, pre - gained))
   })()
