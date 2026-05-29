@@ -1236,7 +1236,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 if (fgStartX != null) {
                   const midPX = (fgStartX + fgEndX) / 2
                   playPath = `M${fgStartX},${midY} Q${midPX},${midY - 75} ${fgEndX},${midY}`
-                  playStroke = fgGood ? '#4ade80' : '#94a3b8'
+                  playStroke = fgGood ? '#4ade80' : '#ef4444'  // miss = turnover
                   playDash = '5,4'
                   playEndX = fgEndX
                 }
