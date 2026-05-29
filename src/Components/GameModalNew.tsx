@@ -1276,7 +1276,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               ]
 
               const playResult = lastPlay?.playResult ?? null
-              const playDescription = lastPlay?.description ?? lastPlay?.text ?? null
+              // The backend appends anomaly glitch line(s) to the play text;
+              // strip them here so the under-field blurb shows only the play
+              // itself. Glitch lines stay exclusive to the play feed (which
+              // renders them with their own styling).
+              const rawDescription = lastPlay?.description ?? lastPlay?.text ?? null
+              const lastGlitch = (lastPlay as any)?.glitchText
+              const playDescription = rawDescription && lastGlitch && rawDescription.includes(lastGlitch)
+                ? rawDescription.replace(`\n${lastGlitch}`, '').replace(lastGlitch, '').trim()
+                : rawDescription
 
               // Big-play reaction overlay. Keyed by play so the CSS animation
               // re-fires each time a new qualifying play lands (live) or the
