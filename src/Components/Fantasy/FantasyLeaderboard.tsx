@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import axios from 'axios'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
@@ -83,27 +83,32 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
     }
   }, [wsEvent, fetchWeekly])
 
-  // Build live weekly view from snapshot entries
-  const liveWeekEntries: WeeklyEntry[] = snapshotEntries
-    .filter(e => (e.weekPlayerFP ?? 0) > 0 || (e.weekCardBonus ?? 0) > 0)
-    .map(e => ({
-      rank: 0,
-      userId: e.userId,
-      username: e.username,
-      favoriteTeamId: e.favoriteTeamData?.teamId ?? null,
-      weekPoints: Math.round((e.weekPlayerFP + e.weekCardBonus) * 10) / 10,
-      cardBonusPoints: e.weekCardBonus,
-      players: e.players.filter(p => p.slot !== 'PREV').map(p => ({
-        slot: p.slot,
-        playerName: p.playerName,
-        teamAbbr: p.teamAbbr,
-        teamId: p.teamId ?? null,
-        weekPoints: p.weekFP ?? 0,
-      })),
-      cardBreakdowns: e.cardBreakdowns,
-    }))
-    .sort((a, b) => b.weekPoints - a.weekPoints)
-  liveWeekEntries.forEach((e, i) => { e.rank = i + 1 })
+  // Build live weekly view from snapshot entries. Memoized on snapshotEntries
+  // so the filter/map/sort over 100+ users only runs when the snapshot actually
+  // changes (~every 10s), not on every re-render the live-game context triggers.
+  const liveWeekEntries: WeeklyEntry[] = useMemo(() => {
+    const entries = snapshotEntries
+      .filter(e => (e.weekPlayerFP ?? 0) > 0 || (e.weekCardBonus ?? 0) > 0)
+      .map(e => ({
+        rank: 0,
+        userId: e.userId,
+        username: e.username,
+        favoriteTeamId: e.favoriteTeamData?.teamId ?? null,
+        weekPoints: Math.round((e.weekPlayerFP + e.weekCardBonus) * 10) / 10,
+        cardBonusPoints: e.weekCardBonus,
+        players: e.players.filter(p => p.slot !== 'PREV').map(p => ({
+          slot: p.slot,
+          playerName: p.playerName,
+          teamAbbr: p.teamAbbr,
+          teamId: p.teamId ?? null,
+          weekPoints: p.weekFP ?? 0,
+        })),
+        cardBreakdowns: e.cardBreakdowns,
+      }))
+      .sort((a, b) => b.weekPoints - a.weekPoints)
+    entries.forEach((e, i) => { e.rank = i + 1 })
+    return entries
+  }, [snapshotEntries])
 
   // Use live weekly data if available, otherwise fall back to historical
   const weeklyIsLive = liveWeekEntries.length > 0
