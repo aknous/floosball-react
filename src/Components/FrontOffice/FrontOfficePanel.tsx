@@ -380,6 +380,15 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
     const targetKey = `${type}:${targetId ?? 'none'}`
     return targetVotesUsed[targetKey] ?? 0
   }
+  // The user's current stance on a target ('yea'/'nay'), or null. All of a
+  // user's votes on one target are single-direction (enforced server-side), so
+  // the first matching vote's direction is the stance.
+  const myStanceOnTarget = (type: string, targetId?: number): 'yea' | 'nay' | null => {
+    const v = gm.myVotes?.votes.find(
+      x => x.voteType === type && (x.targetPlayerId ?? null) === (targetId ?? null)
+    )
+    return v ? ((v.direction as 'yea' | 'nay') ?? 'yea') : null
+  }
   // What the user paid for their most-recent vote on a target = the cost tier
   // one below the next one. This is exactly what undo refunds.
   const lastTargetCost = (type: string, targetId?: number) => {
@@ -858,7 +867,8 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                 tally={coachTally}
                 teamColor={teamColor}
                 voting={gm.voting === 'fire_coach'}
-                onVote={() => gm.castVote('fire_coach')}
+                onVote={(dir) => gm.castVote('fire_coach', undefined, dir)}
+                myStance={myStanceOnTarget('fire_coach')}
                 undoing={gm.undoing === 'fire_coach'}
                 onUndo={() => gm.undoVote('fire_coach')}
                 myVoteCount={myVotesOnTarget('fire_coach')}
@@ -939,10 +949,11 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
               tallies={gm.summary?.tallies ?? []}
               teamColor={teamColor}
               voting={gm.voting}
-              onVote={(playerId) => gm.castVote('resign_player', playerId)}
+              onVote={(playerId, dir) => gm.castVote('resign_player', playerId, dir)}
               undoing={gm.undoing}
               onUndo={(playerId) => gm.undoVote('resign_player', playerId)}
               myVoteCount={(playerId) => myVotesOnTarget('resign_player', playerId)}
+              myStance={(playerId) => myStanceOnTarget('resign_player', playerId)}
               disabledIds={disabledResignIds}
               globalDisabled={globalDisabled}
               balance={balance}
@@ -956,10 +967,11 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
               tallies={gm.summary?.tallies ?? []}
               teamColor={teamColor}
               voting={gm.voting}
-              onVote={(playerId) => gm.castVote('cut_player', playerId)}
+              onVote={(playerId, dir) => gm.castVote('cut_player', playerId, dir)}
               undoing={gm.undoing}
               onUndo={(playerId) => gm.undoVote('cut_player', playerId)}
               myVoteCount={(playerId) => myVotesOnTarget('cut_player', playerId)}
+              myStance={(playerId) => myStanceOnTarget('cut_player', playerId)}
               disabledIds={disabledCutIds}
               globalDisabled={globalDisabled}
               balance={balance}

@@ -15,7 +15,8 @@ interface FireCoachCardProps {
   tally: GmVoteTally | null
   teamColor: string
   voting: boolean
-  onVote: () => void
+  onVote: (direction: 'yea' | 'nay') => void
+  myStance: 'yea' | 'nay' | null
   undoing: boolean
   onUndo: () => void
   myVoteCount: number
@@ -33,6 +34,7 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
   teamColor,
   voting,
   onVote,
+  myStance,
   undoing,
   onUndo,
   myVoteCount,
@@ -43,23 +45,41 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
   thresholdMet,
 }) => {
   const cost = nextCost
+  const OPPOSE_COLOR = '#ef4444'
+  // A fan holds a single stance — lock the opposite side until they withdraw.
+  const forLocked = myStance === 'nay'
+  const opposeLocked = myStance === 'yea'
+  const forDisabled = disabled || forLocked
+  const opposeDisabled = disabled || opposeLocked
 
-  // Two-tap confirm — mirror VoteControls.VoteButton for the full-width button.
+  // Two-tap confirm for each side — mirrors VoteControls.VoteButton.
   const [armed, setArmed] = useState(false)
+  const [armedOppose, setArmedOppose] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const opposeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const clearTimer = () => { if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null } }
-  useEffect(() => clearTimer, [])
-  useEffect(() => { if (disabled && armed) { setArmed(false); clearTimer() } }, [disabled, armed])
+  const clearOpposeTimer = () => { if (opposeTimerRef.current) { clearTimeout(opposeTimerRef.current); opposeTimerRef.current = null } }
+  useEffect(() => () => { clearTimer(); clearOpposeTimer() }, [])
+  useEffect(() => { if (forDisabled && armed) { setArmed(false); clearTimer() } }, [forDisabled, armed])
+  useEffect(() => { if (opposeDisabled && armedOppose) { setArmedOppose(false); clearOpposeTimer() } }, [opposeDisabled, armedOppose])
 
   const handleVoteClick = () => {
-    if (disabled || voting) return
-    if (armed) { clearTimer(); setArmed(false); onVote() }
+    if (forDisabled || voting) return
+    if (armed) { clearTimer(); setArmed(false); onVote('yea') }
     else { setArmed(true); clearTimer(); timerRef.current = setTimeout(() => setArmed(false), CONFIRM_WINDOW_MS) }
   }
+  const handleOpposeClick = () => {
+    if (opposeDisabled || voting) return
+    if (armedOppose) { clearOpposeTimer(); setArmedOppose(false); onVote('nay') }
+    else { setArmedOppose(true); clearOpposeTimer(); opposeTimerRef.current = setTimeout(() => setArmedOppose(false), CONFIRM_WINDOW_MS) }
+  }
 
-  const btnBg = disabled ? '#1e293b' : armed ? CONFIRM_COLOR : teamColor
-  const btnFg = disabled ? '#475569' : armed ? getContrastTextColor(CONFIRM_COLOR) : getContrastTextColor(teamColor)
+  const btnBg = forDisabled ? '#1e293b' : armed ? CONFIRM_COLOR : teamColor
+  const btnFg = forDisabled ? '#475569' : armed ? getContrastTextColor(CONFIRM_COLOR) : getContrastTextColor(teamColor)
   const btnText = voting ? 'Filing...' : armed ? `Confirm — ${cost} F` : `File Grievance — ${cost} F`
+  const oppBg = opposeDisabled ? '#1e293b' : armedOppose ? CONFIRM_COLOR : OPPOSE_COLOR
+  const oppFg = opposeDisabled ? '#475569' : armedOppose ? getContrastTextColor(CONFIRM_COLOR) : getContrastTextColor(OPPOSE_COLOR)
+  const oppText = voting ? '...' : armedOppose ? `Confirm — ${cost} F` : `Defend Coach — ${cost} F`
 
   return (
     <div style={{ flex: 1, minWidth: '240px' }}>
@@ -95,6 +115,8 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
         <div style={{ marginBottom: '10px' }}>
           <ProbabilityMeter
             votes={tally.votes}
+            votesFor={tally.votesFor}
+            votesAgainst={tally.votesAgainst}
             threshold={tally.threshold}
             probability={tally.probability}
             accentColor={teamColor}
@@ -102,44 +124,80 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: '6px' }}>
-        <button
-          onClick={handleVoteClick}
-          onMouseLeave={() => { if (armed) { setArmed(false); clearTimer() } }}
-          disabled={disabled || voting}
-          style={{
-            flex: 1,
-            padding: '8px 12px',
-            backgroundColor: btnBg,
-            color: btnFg,
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '12px',
-            fontWeight: '700',
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            opacity: voting ? 0.6 : 1,
-            transition: 'background-color 0.12s ease, opacity 0.2s',
-          }}
-        >
-          {btnText}
-        </button>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {(() => {
+          const btn = (
+            <button
+              onClick={handleVoteClick}
+              onMouseLeave={() => { if (armed) { setArmed(false); clearTimer() } }}
+              disabled={forDisabled || voting}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                backgroundColor: btnBg,
+                color: btnFg,
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '700',
+                cursor: forDisabled ? 'not-allowed' : 'pointer',
+                opacity: voting ? 0.6 : 1,
+                transition: 'background-color 0.12s ease, opacity 0.2s',
+              }}
+            >
+              {btnText}
+            </button>
+          )
+          return forLocked
+            ? <HoverTooltip text="Withdraw your Defend vote to switch to firing"><span style={{ display: 'block' }}>{btn}</span></HoverTooltip>
+            : btn
+        })()}
+
+        {(() => {
+          const btn = (
+            <button
+              onClick={handleOpposeClick}
+              onMouseLeave={() => { if (armedOppose) { setArmedOppose(false); clearOpposeTimer() } }}
+              disabled={opposeDisabled || voting}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                backgroundColor: oppBg,
+                color: oppFg,
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '700',
+                cursor: opposeDisabled ? 'not-allowed' : 'pointer',
+                opacity: voting ? 0.6 : 1,
+                transition: 'background-color 0.12s ease, opacity 0.2s',
+              }}
+            >
+              {oppText}
+            </button>
+          )
+          return opposeLocked
+            ? <HoverTooltip text="Withdraw your Grievance to switch to defending"><span style={{ display: 'block' }}>{btn}</span></HoverTooltip>
+            : btn
+        })()}
 
         {myVoteCount > 0 && (
           <HoverTooltip text={
             myVoteCount > 1
-              ? `Undo your last grievance (${myVoteCount} filed) \u2014 refunds ${lastCost} F`
-              : `Undo your grievance \u2014 refunds ${lastCost} F`
+              ? `Undo your last ${myStance === 'nay' ? 'defense' : 'grievance'} (${myVoteCount} filed) \u2014 refunds ${lastCost} F`
+              : `Undo your ${myStance === 'nay' ? 'defense' : 'grievance'} \u2014 refunds ${lastCost} F`
           }>
             <button
               onClick={() => { if (!undoing) onUndo() }}
               disabled={undoing}
               style={{
-                padding: '8px 12px',
+                width: '100%',
+                padding: '6px 12px',
                 backgroundColor: '#1e293b',
                 color: '#cbd5e1',
                 border: '1px solid #334155',
                 borderRadius: '6px',
-                fontSize: '12px',
+                fontSize: '11px',
                 fontWeight: '700',
                 cursor: undoing ? 'wait' : 'pointer',
                 opacity: undoing ? 0.6 : 1,

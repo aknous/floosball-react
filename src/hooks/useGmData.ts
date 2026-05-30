@@ -33,7 +33,7 @@ export interface GmData {
   voting: string | null // key of in-flight vote button
   undoing: string | null // key of in-flight undo button
   // Actions
-  castVote: (voteType: string, targetPlayerId?: number | null) => Promise<GmCastVoteResponse | null>
+  castVote: (voteType: string, targetPlayerId?: number | null, direction?: 'yea' | 'nay') => Promise<GmCastVoteResponse | null>
   undoVote: (voteType: string, targetPlayerId?: number | null) => Promise<GmUndoVoteResponse | null>
   submitBallot: (rankings: number[]) => Promise<GmFaBallotResponse | null>
   refetch: () => void
@@ -123,7 +123,7 @@ export function useGmData(teamId: number | null): GmData {
   }, [teamId, getToken])
 
   // ── Cast a vote ──
-  const castVote = useCallback(async (voteType: string, targetPlayerId?: number | null): Promise<GmCastVoteResponse | null> => {
+  const castVote = useCallback(async (voteType: string, targetPlayerId?: number | null, direction: 'yea' | 'nay' = 'yea'): Promise<GmCastVoteResponse | null> => {
     const tok = await getToken()
     if (!tok) return null
     const key = targetPlayerId != null ? `${voteType}:${targetPlayerId}` : voteType
@@ -132,7 +132,7 @@ export function useGmData(teamId: number | null): GmData {
       const res = await fetch(`${API_BASE}/gm/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-        body: JSON.stringify({ voteType, targetPlayerId: targetPlayerId ?? null }),
+        body: JSON.stringify({ voteType, targetPlayerId: targetPlayerId ?? null, direction }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: 'Vote failed' }))

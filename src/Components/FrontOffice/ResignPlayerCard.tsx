@@ -2,7 +2,7 @@ import React from 'react'
 import { Stars, calcStars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import ProbabilityMeter from './ProbabilityMeter'
-import { VoteButton, UndoButton } from './VoteControls'
+import { StanceControls, UndoButton } from './VoteControls'
 import type { GmPlayerInfo, GmVoteTally } from '@/types/gm'
 
 interface ResignPlayerCardProps {
@@ -10,10 +10,11 @@ interface ResignPlayerCardProps {
   tallies: GmVoteTally[]
   teamColor: string
   voting: string | null
-  onVote: (playerId: number) => void
+  onVote: (playerId: number, direction: 'yea' | 'nay') => void
   undoing: string | null
   onUndo: (playerId: number) => void
   myVoteCount: (playerId: number) => number
+  myStance: (playerId: number) => 'yea' | 'nay' | null
   disabledIds: Set<number>
   globalDisabled: boolean
   balance: number
@@ -31,6 +32,7 @@ const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
   undoing,
   onUndo,
   myVoteCount,
+  myStance,
   disabledIds,
   globalDisabled,
   balance,
@@ -104,6 +106,8 @@ const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
                   <div style={{ width: '90px' }}>
                     <ProbabilityMeter
                       votes={tally.votes}
+                      votesFor={tally.votesFor}
+                      votesAgainst={tally.votesAgainst}
                       threshold={tally.threshold}
                       probability={tally.probability}
                       compact
@@ -121,12 +125,13 @@ const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
                   />
                 )}
 
-                <VoteButton
+                <StanceControls
                   cost={cost}
-                  disabled={isDisabled}
+                  stance={myStance(p.id)}
+                  baseDisabled={isDisabled}
                   voting={isVoting}
-                  onConfirm={() => onVote(p.id)}
                   teamColor="#22c55e"
+                  onVote={(dir) => onVote(p.id, dir)}
                 />
               </div>
             )

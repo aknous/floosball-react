@@ -144,3 +144,55 @@ export const UndoButton: React.FC<UndoButtonProps> = ({ onUndo, undoing, voteCou
     </HoverTooltip>
   )
 }
+
+const OPPOSE_COLOR = '#ef4444'
+
+interface StanceControlsProps {
+  cost: number
+  stance: 'yea' | 'nay' | null
+  baseDisabled: boolean   // budget / global / can't-afford — applies to both sides
+  voting: boolean
+  teamColor: string
+  onVote: (direction: 'yea' | 'nay') => void
+}
+
+/**
+ * Side-by-side For / Against buttons for the threshold directives. A fan holds
+ * a single stance per target — the opposite side locks once they've voted
+ * (withdraw via the Undo button to switch). Both keep the two-tap confirm.
+ * The locked side is wrapped in a span so its tooltip still shows on hover.
+ */
+export const StanceControls: React.FC<StanceControlsProps> = ({
+  cost, stance, baseDisabled, voting, teamColor, onVote,
+}) => {
+  const forBtn = (
+    <VoteButton
+      cost={cost}
+      disabled={baseDisabled || stance === 'nay'}
+      voting={voting}
+      onConfirm={() => onVote('yea')}
+      teamColor={teamColor}
+      label="For"
+    />
+  )
+  const opposeBtn = (
+    <VoteButton
+      cost={cost}
+      disabled={baseDisabled || stance === 'yea'}
+      voting={voting}
+      onConfirm={() => onVote('nay')}
+      teamColor={OPPOSE_COLOR}
+      label="Against"
+    />
+  )
+  return (
+    <div style={{ display: 'flex', gap: '4px' }}>
+      {stance === 'nay'
+        ? <HoverTooltip text="Withdraw your Against vote to switch sides"><span>{forBtn}</span></HoverTooltip>
+        : forBtn}
+      {stance === 'yea'
+        ? <HoverTooltip text="Withdraw your For vote to switch sides"><span>{opposeBtn}</span></HoverTooltip>
+        : opposeBtn}
+    </div>
+  )
+}
