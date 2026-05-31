@@ -73,6 +73,19 @@ const NAV_ITEMS = [
     ),
   },
   {
+    key: 'bracket',
+    label: 'Bracket',
+    path: '/bracket',
+    icon: (
+      // Tournament bracket — four slots merging to a final.
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 5h4M6 11h4M10 5v6M10 8h4" />
+        <path d="M6 13h4M6 19h4M10 13v6M10 16h4" />
+        <path d="M14 8v8M14 12h3" />
+      </svg>
+    ),
+  },
+  {
     key: 'achievements',
     label: 'Achievements',
     path: '/achievements',
