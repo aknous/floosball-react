@@ -17,7 +17,6 @@ interface HireCoachCardProps {
   disabledIds: Set<number>
   globalDisabled: boolean
   balance: number
-  votesRemaining: number
   getCost: (coachId: number) => number
   lastCost: (coachId: number) => number
 }
@@ -34,7 +33,6 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
   disabledIds,
   globalDisabled,
   balance,
-  votesRemaining,
   getCost,
   lastCost,
 }) => {
@@ -54,9 +52,6 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
           marginBottom: '10px',
         }}>
           <span>Coaching Candidates</span>
-          <span style={{ fontWeight: '600', color: votesRemaining > 0 ? '#94a3b8' : '#ef4444', textTransform: 'none' }}>
-            {votesRemaining} remaining
-          </span>
         </div>
         <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
           Candidates appear once the current coach is fired or retires.
@@ -79,9 +74,6 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
         marginBottom: '10px',
       }}>
         <span>Coaching Candidates</span>
-        <span style={{ fontWeight: '600', color: votesRemaining > 0 ? '#94a3b8' : '#ef4444', textTransform: 'none' }}>
-          {votesRemaining} remaining
-        </span>
       </div>
       <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '8px' }}>
         Three candidates, one job. Most votes hires. If no one votes, the highest-rated one signs.
@@ -176,10 +168,12 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
                 <VoteButton
                   cost={cost}
                   disabled={isDisabled}
+                  selected={myVotes > 0}
                   voting={isVoting}
                   onConfirm={() => onVote(coachId)}
                   teamColor={teamColor}
                   label={`Nominate · ${cost} F`}
+                  selectedLabel="Nominated"
                 />
               </div>
             </div>

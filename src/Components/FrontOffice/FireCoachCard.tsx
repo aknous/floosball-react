@@ -22,7 +22,6 @@ interface FireCoachCardProps {
   myVoteCount: number
   lastCost: number
   disabled: boolean
-  votesRemaining: number
   nextCost: number
   thresholdMet: boolean
 }
@@ -40,17 +39,18 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
   myVoteCount,
   lastCost,
   disabled,
-  votesRemaining,
   nextCost,
   thresholdMet,
 }) => {
   const cost = nextCost
   const OPPOSE_COLOR = '#ef4444'
-  // A fan holds a single stance — lock the opposite side until they withdraw.
-  const forLocked = myStance === 'nay'
-  const opposeLocked = myStance === 'yea'
-  const forDisabled = disabled || forLocked
-  const opposeDisabled = disabled || opposeLocked
+  // One vote per fan: once they've voted, their pick shows filled and both
+  // sides lock — use Undo to change it.
+  const voted = myStance !== null
+  const forSelected = myStance === 'yea'
+  const oppSelected = myStance === 'nay'
+  const forDisabled = disabled || voted
+  const opposeDisabled = disabled || voted
 
   // Two-tap confirm for each side — mirrors VoteControls.VoteButton.
   const [armed, setArmed] = useState(false)
@@ -74,12 +74,12 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
     else { setArmedOppose(true); clearOpposeTimer(); opposeTimerRef.current = setTimeout(() => setArmedOppose(false), CONFIRM_WINDOW_MS) }
   }
 
-  const btnBg = forDisabled ? '#1e293b' : armed ? CONFIRM_COLOR : teamColor
-  const btnFg = forDisabled ? '#475569' : armed ? getContrastTextColor(CONFIRM_COLOR) : getContrastTextColor(teamColor)
-  const btnText = voting ? 'Filing...' : armed ? `Confirm — ${cost} F` : `File Grievance — ${cost} F`
-  const oppBg = opposeDisabled ? '#1e293b' : armedOppose ? CONFIRM_COLOR : OPPOSE_COLOR
-  const oppFg = opposeDisabled ? '#475569' : armedOppose ? getContrastTextColor(CONFIRM_COLOR) : getContrastTextColor(OPPOSE_COLOR)
-  const oppText = voting ? '...' : armedOppose ? `Confirm — ${cost} F` : `Defend Coach — ${cost} F`
+  const btnBg = forSelected ? teamColor : forDisabled ? '#1e293b' : armed ? CONFIRM_COLOR : teamColor
+  const btnFg = (forSelected || !forDisabled) ? getContrastTextColor(armed && !forSelected ? CONFIRM_COLOR : teamColor) : '#475569'
+  const btnText = voting ? '...' : armed ? `Confirm · ${cost} F` : 'Fire'
+  const oppBg = oppSelected ? OPPOSE_COLOR : opposeDisabled ? '#1e293b' : armedOppose ? CONFIRM_COLOR : OPPOSE_COLOR
+  const oppFg = (oppSelected || !opposeDisabled) ? getContrastTextColor(armedOppose && !oppSelected ? CONFIRM_COLOR : OPPOSE_COLOR) : '#475569'
+  const oppText = voting ? '...' : armedOppose ? `Confirm · ${cost} F` : 'Keep'
 
   return (
     <div style={{ flex: 1, minWidth: '240px' }}>
@@ -95,9 +95,6 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
         marginBottom: '10px',
       }}>
         <span>File Grievance</span>
-        <span style={{ fontWeight: '600', color: votesRemaining > 0 ? '#94a3b8' : '#ef4444', textTransform: 'none' }}>
-          {votesRemaining} remaining
-        </span>
       </div>
 
       <CoachHoverCard coach={coach} teamColor={teamColor}>
@@ -125,68 +122,50 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {(() => {
-          const btn = (
-            <button
-              onClick={handleVoteClick}
-              onMouseLeave={() => { if (armed) { setArmed(false); clearTimer() } }}
-              disabled={forDisabled || voting}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                backgroundColor: btnBg,
-                color: btnFg,
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: '700',
-                cursor: forDisabled ? 'not-allowed' : 'pointer',
-                opacity: voting ? 0.6 : 1,
-                transition: 'background-color 0.12s ease, opacity 0.2s',
-              }}
-            >
-              {btnText}
-            </button>
-          )
-          return forLocked
-            ? <HoverTooltip text="Withdraw your Defend vote to switch to firing"><span style={{ display: 'block' }}>{btn}</span></HoverTooltip>
-            : btn
-        })()}
+        <button
+          onClick={handleVoteClick}
+          onMouseLeave={() => { if (armed) { setArmed(false); clearTimer() } }}
+          disabled={forDisabled || voting}
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            backgroundColor: btnBg,
+            color: btnFg,
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: '700',
+            cursor: forSelected ? 'default' : forDisabled ? 'not-allowed' : 'pointer',
+            opacity: voting ? 0.6 : 1,
+            transition: 'background-color 0.12s ease, opacity 0.2s',
+          }}
+        >
+          {btnText}
+        </button>
 
-        {(() => {
-          const btn = (
-            <button
-              onClick={handleOpposeClick}
-              onMouseLeave={() => { if (armedOppose) { setArmedOppose(false); clearOpposeTimer() } }}
-              disabled={opposeDisabled || voting}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                backgroundColor: oppBg,
-                color: oppFg,
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: '700',
-                cursor: opposeDisabled ? 'not-allowed' : 'pointer',
-                opacity: voting ? 0.6 : 1,
-                transition: 'background-color 0.12s ease, opacity 0.2s',
-              }}
-            >
-              {oppText}
-            </button>
-          )
-          return opposeLocked
-            ? <HoverTooltip text="Withdraw your Grievance to switch to defending"><span style={{ display: 'block' }}>{btn}</span></HoverTooltip>
-            : btn
-        })()}
+        <button
+          onClick={handleOpposeClick}
+          onMouseLeave={() => { if (armedOppose) { setArmedOppose(false); clearOpposeTimer() } }}
+          disabled={opposeDisabled || voting}
+          style={{
+            width: '100%',
+            padding: '8px 12px',
+            backgroundColor: oppBg,
+            color: oppFg,
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: '700',
+            cursor: oppSelected ? 'default' : opposeDisabled ? 'not-allowed' : 'pointer',
+            opacity: voting ? 0.6 : 1,
+            transition: 'background-color 0.12s ease, opacity 0.2s',
+          }}
+        >
+          {oppText}
+        </button>
 
         {myVoteCount > 0 && (
-          <HoverTooltip text={
-            myVoteCount > 1
-              ? `Undo your last ${myStance === 'nay' ? 'defense' : 'grievance'} (${myVoteCount} filed) \u2014 refunds ${lastCost} F`
-              : `Undo your ${myStance === 'nay' ? 'defense' : 'grievance'} \u2014 refunds ${lastCost} F`
-          }>
+          <HoverTooltip text={`Take back your vote. Refunds ${lastCost} F`}>
             <button
               onClick={() => { if (!undoing) onUndo() }}
               disabled={undoing}

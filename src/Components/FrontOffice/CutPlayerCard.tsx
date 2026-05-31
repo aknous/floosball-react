@@ -18,7 +18,6 @@ interface CutPlayerCardProps {
   disabledIds: Set<number>
   globalDisabled: boolean
   balance: number
-  votesRemaining: number
   getCost: (playerId: number) => number
   lastCost: (playerId: number) => number
 }
@@ -36,7 +35,6 @@ const CutPlayerCard: React.FC<CutPlayerCardProps> = ({
   disabledIds,
   globalDisabled,
   balance,
-  votesRemaining,
   getCost,
   lastCost,
 }) => {
@@ -58,9 +56,6 @@ const CutPlayerCard: React.FC<CutPlayerCardProps> = ({
         marginBottom: '10px',
       }}>
         <span>Release Memoranda</span>
-        <span style={{ fontWeight: '600', color: votesRemaining > 0 ? '#94a3b8' : '#ef4444', textTransform: 'none' }}>
-          {votesRemaining} remaining
-        </span>
       </div>
 
       {players.length === 0 ? (
@@ -137,6 +132,8 @@ const CutPlayerCard: React.FC<CutPlayerCardProps> = ({
                   baseDisabled={isDisabled}
                   voting={isVoting}
                   teamColor={teamColor}
+                  supportLabel="Release"
+                  opposeLabel="Keep"
                   onVote={(dir) => onVote(p.id, dir)}
                 />
               </div>

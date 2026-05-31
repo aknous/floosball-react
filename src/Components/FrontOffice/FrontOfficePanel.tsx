@@ -4,7 +4,6 @@ import { useFloosball } from '@/contexts/FloosballContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useGmData } from '@/hooks/useGmData'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import VoteBudgetBar from './VoteBudgetBar'
 import FireCoachCard from './FireCoachCard'
 import HireCoachCard from './HireCoachCard'
 import CutPlayerCard from './CutPlayerCard'
@@ -14,11 +13,7 @@ import FaBallotModal, { ScoutingPlayer, OpenSlot, StatLine } from './FaBallotMod
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 import { Stars, calcStars } from '@/Components/Stars'
 import PlayerLink from '@/Components/PlayerLink'
-import { GM_VOTE_COST, GM_VOTES_PER_SEASON, GM_VOTES_PER_TARGET, GM_VOTES_PER_TYPE, GM_VOTES_PER_TYPE_DEFAULT } from '@/types/gm'
-
-// Per-type vote cap helper. Coach votes cap at 4, player votes at 8.
-const perTypeCap = (voteType: string): number =>
-  GM_VOTES_PER_TYPE[voteType] ?? GM_VOTES_PER_TYPE_DEFAULT
+import { GM_VOTE_COST } from '@/types/gm'
 
 const GM_ACTIVE_WEEK = 22
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -275,105 +270,46 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
     return !!tally && tally.threshold > 0 && tally.votes >= tally.threshold
   }
 
+  // One vote per target (the per-side lock lives in StanceControls). The only
+  // thing we still grey out here is a target whose directive has already met
+  // its pass threshold — further votes can't change the outcome and the spend
+  // would be wasted.
   const disabledCutIds = useMemo(() => {
     const ids = new Set<number>()
-    if (!gm.myVotes) return ids
-    const { perType, perTarget } = gm.myVotes.counts
-    // Global type limit
-    if ((perType['cut_player'] ?? 0) >= perTypeCap('cut_player')) {
-      gm.eligible?.rosteredPlayers.forEach(p => ids.add(p.id))
-      return ids
-    }
-    // Per-target limit
-    for (const [key, count] of Object.entries(perTarget)) {
-      if (key.startsWith('cut_player:') && count >= GM_VOTES_PER_TARGET) {
-        const pid = parseInt(key.split(':')[1])
-        if (!isNaN(pid)) ids.add(pid)
-      }
-    }
-    // Threshold already met — directive will pass without more votes
     gm.eligible?.rosteredPlayers.forEach(p => {
       if (targetThresholdMet('cut_player', p.id)) ids.add(p.id)
     })
     return ids
-  }, [gm.myVotes, gm.eligible, gm.summary])
+  }, [gm.eligible, gm.summary])
 
   const disabledResignIds = useMemo(() => {
     const ids = new Set<number>()
-    if (!gm.myVotes) return ids
-    const { perType, perTarget } = gm.myVotes.counts
-    if ((perType['resign_player'] ?? 0) >= perTypeCap('resign_player')) {
-      gm.eligible?.expiringPlayers.forEach(p => ids.add(p.id))
-      return ids
-    }
-    for (const [key, count] of Object.entries(perTarget)) {
-      if (key.startsWith('resign_player:') && count >= GM_VOTES_PER_TARGET) {
-        const pid = parseInt(key.split(':')[1])
-        if (!isNaN(pid)) ids.add(pid)
-      }
-    }
     gm.eligible?.expiringPlayers.forEach(p => {
       if (targetThresholdMet('resign_player', p.id)) ids.add(p.id)
     })
     return ids
-  }, [gm.myVotes, gm.eligible, gm.summary])
+  }, [gm.eligible, gm.summary])
 
   const fireCoachDisabled = useMemo(() => {
-    if (!gm.myVotes) return false
-    const { perType } = gm.myVotes.counts
-    if ((perType['fire_coach'] ?? 0) >= perTypeCap('fire_coach')) return true
     // Fire votes are aggregated against a single target=null, so check the
     // tally directly instead of going through targetThresholdMet.
     const fireTally = gm.summary?.tallies.find(t => t.voteType === 'fire_coach')
-    if (fireTally && fireTally.threshold > 0 && fireTally.votes >= fireTally.threshold) {
-      return true
-    }
-    return false
-  }, [gm.myVotes, gm.summary])
+    return !!fireTally && fireTally.threshold > 0 && fireTally.votes >= fireTally.threshold
+  }, [gm.summary])
 
-  const disabledHireCoachIds = useMemo(() => {
-    const ids = new Set<number>()
-    if (!gm.myVotes) return ids
-    const { perType, perTarget } = gm.myVotes.counts
-    if ((perType['hire_coach'] ?? 0) >= perTypeCap('hire_coach')) {
-      gm.eligible?.coachCandidates.forEach(c => { if (c.id !== null) ids.add(c.id) })
-      return ids
-    }
-    for (const [key, count] of Object.entries(perTarget)) {
-      if (key.startsWith('hire_coach:') && count >= GM_VOTES_PER_TARGET) {
-        const cid = parseInt(key.split(':')[1])
-        if (!isNaN(cid)) ids.add(cid)
-      }
-    }
-    return ids
-  }, [gm.myVotes, gm.eligible])
+  // Hire is a plurality election with no pass threshold; the per-candidate
+  // voted lock is handled by the Nominate button's selected state.
+  const disabledHireCoachIds = useMemo(() => new Set<number>(), [])
 
-  const globalDisabled = useMemo(() => {
-    if (!gm.myVotes) return false
-    return gm.myVotes.counts.total >= 20
-  }, [gm.myVotes])
+  const globalDisabled = false
 
   const coachTally = gm.summary?.tallies.find(t => t.voteType === 'fire_coach') ?? null
   const [showHelp, setShowHelp] = useState(false)
 
-  // Remaining votes per directive type
-  const votesUsed = gm.myVotes?.counts.perType ?? {}
-  const remainingByType = {
-    fire_coach:    perTypeCap('fire_coach')    - (votesUsed['fire_coach']    ?? 0),
-    hire_coach:    perTypeCap('hire_coach')    - (votesUsed['hire_coach']    ?? 0),
-    cut_player:    perTypeCap('cut_player')    - (votesUsed['cut_player']    ?? 0),
-    resign_player: perTypeCap('resign_player') - (votesUsed['resign_player'] ?? 0),
-  }
-
-  // Escalating cost: base * 2^(votes already cast for this specific target)
+  // Flat cost per vote — one vote per target, so no escalation.
   const balance = user?.floobits ?? 0
   const targetVotesUsed = gm.myVotes?.counts.perTarget ?? {}
-  const nextTargetCost = (type: string, targetId?: number) => {
-    const base = GM_VOTE_COST[type] ?? 10
-    const targetKey = `${type}:${targetId ?? 'none'}`
-    const used = targetVotesUsed[targetKey] ?? 0
-    return base * Math.pow(2, used)
-  }
+  const nextTargetCost = (type: string, _targetId?: number) => GM_VOTE_COST[type] ?? 10
   // How many votes the current user has on a specific target (drives the undo
   // button's visibility + count badge).
   const myVotesOnTarget = (type: string, targetId?: number) => {
@@ -389,13 +325,9 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
     )
     return v ? ((v.direction as 'yea' | 'nay') ?? 'yea') : null
   }
-  // What the user paid for their most-recent vote on a target = the cost tier
-  // one below the next one. This is exactly what undo refunds.
-  const lastTargetCost = (type: string, targetId?: number) => {
-    const base = GM_VOTE_COST[type] ?? 10
-    const used = myVotesOnTarget(type, targetId)
-    return used > 0 ? base * Math.pow(2, used - 1) : 0
-  }
+  // What the user paid for their vote on a target (flat) — what undo refunds.
+  const lastTargetCost = (type: string, targetId?: number) =>
+    myVotesOnTarget(type, targetId) > 0 ? (GM_VOTE_COST[type] ?? 10) : 0
   // For single-target directives (fire_coach), use the target cost directly
   const nextCostByType = {
     fire_coach: nextTargetCost('fire_coach'),
@@ -714,12 +646,6 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
     <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
       {sectionHeader('The Front Office', true)}
 
-      {/* Vote budget bar */}
-      <VoteBudgetBar
-        totalVotes={gm.myVotes?.counts.total ?? 0}
-        floobits={user?.floobits ?? 0}
-      />
-
       {/* FA Requisition — always visible when the board is active so fans can
           find the ballot. When there are no projected openings, we explain
           why voting isn't available rather than hiding the section entirely. */}
@@ -874,7 +800,6 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                 myVoteCount={myVotesOnTarget('fire_coach')}
                 lastCost={lastTargetCost('fire_coach')}
                 disabled={globalDisabled || fireCoachDisabled || balance < nextCostByType.fire_coach}
-                votesRemaining={remainingByType.fire_coach}
                 nextCost={nextCostByType.fire_coach}
                 thresholdMet={!!coachTally && coachTally.votes >= coachTally.threshold}
               />
@@ -893,7 +818,6 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                 disabledIds={disabledHireCoachIds}
                 globalDisabled={globalDisabled}
                 balance={balance}
-                votesRemaining={remainingByType.hire_coach}
                 getCost={(coachId) => nextTargetCost('hire_coach', coachId)}
                 lastCost={(coachId) => lastTargetCost('hire_coach', coachId)}
               />
@@ -957,7 +881,6 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
               disabledIds={disabledResignIds}
               globalDisabled={globalDisabled}
               balance={balance}
-              votesRemaining={remainingByType.resign_player}
               getCost={(playerId) => nextTargetCost('resign_player', playerId)}
               lastCost={(playerId) => lastTargetCost('resign_player', playerId)}
             />
@@ -975,7 +898,6 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
               disabledIds={disabledCutIds}
               globalDisabled={globalDisabled}
               balance={balance}
-              votesRemaining={remainingByType.cut_player}
               getCost={(playerId) => nextTargetCost('cut_player', playerId)}
               lastCost={(playerId) => lastTargetCost('cut_player', playerId)}
             />
@@ -1019,10 +941,8 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} title="The Front Office">
         <GuideSection title="Directives">
           As a board member, you may issue directives to influence your team's decisions.
-          Each directive costs Floobits, with the cost doubling for each subsequent directive
-          of the same category. Coach directives cap at {perTypeCap('fire_coach')} per
-          season, and player directives cap at {perTypeCap('cut_player')} per category, with
-          {GM_VOTES_PER_TARGET} per individual target and a seasonal allowance of {GM_VOTES_PER_SEASON} total.
+          You get one vote per decision: back it or oppose it, for a flat Floobit cost.
+          Changed your mind? Withdraw your vote for a refund, then cast the other way.
         </GuideSection>
         <GuideSection title="Quorum & Ratification">
           Coach hires are decided by simple plurality: whichever candidate receives the most

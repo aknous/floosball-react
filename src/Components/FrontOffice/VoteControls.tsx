@@ -14,6 +14,10 @@ interface VoteButtonProps {
   teamColor: string
   /** Optional override label for the resting state (defaults to "{cost} F"). */
   label?: string
+  /** The user's cast pick on this side — shows filled and locks the button. */
+  selected?: boolean
+  /** Optional label shown when selected (defaults to `label`, then "Voted"). */
+  selectedLabel?: string
 }
 
 /**
@@ -22,7 +26,7 @@ interface VoteButtonProps {
  * undo feature otherwise has to clean up. Arming auto-reverts after a beat.
  */
 export const VoteButton: React.FC<VoteButtonProps> = ({
-  cost, disabled, voting, onConfirm, teamColor, label,
+  cost, disabled, voting, onConfirm, teamColor, label, selected = false, selectedLabel,
 }) => {
   const [armed, setArmed] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -57,15 +61,19 @@ export const VoteButton: React.FC<VoteButtonProps> = ({
     }
   }
 
-  const bg = disabled ? '#1e293b' : armed ? CONFIRM_COLOR : teamColor
-  const fg = disabled ? '#475569' : armed ? getContrastTextColor(CONFIRM_COLOR) : getContrastTextColor(teamColor)
-  const text = voting ? '...' : armed ? `Confirm · ${cost} F` : (label ?? `${cost} F`)
+  // selected = the user's cast pick on this side: filled + locked (no re-vote).
+  const bg = selected ? teamColor : disabled ? '#1e293b' : armed ? CONFIRM_COLOR : teamColor
+  const fg = selected || !disabled
+    ? getContrastTextColor(armed && !selected ? CONFIRM_COLOR : teamColor)
+    : '#475569'
+  const text = voting ? '...' : selected ? (selectedLabel ?? label ?? 'Voted') : armed ? `Confirm · ${cost} F` : (label ?? `${cost} F`)
+  const inert = disabled || voting || selected
 
   return (
     <button
       onClick={handleClick}
       onMouseLeave={() => { if (armed) { setArmed(false); clearTimer() } }}
-      disabled={disabled || voting}
+      disabled={inert}
       style={{
         padding: '4px 8px',
         backgroundColor: bg,
@@ -74,7 +82,7 @@ export const VoteButton: React.FC<VoteButtonProps> = ({
         borderRadius: '4px',
         fontSize: '11px',
         fontWeight: 700,
-        cursor: disabled ? 'not-allowed' : 'pointer',
+        cursor: selected ? 'default' : disabled ? 'not-allowed' : 'pointer',
         opacity: voting ? 0.6 : 1,
         whiteSpace: 'nowrap',
         transition: 'background-color 0.12s ease',
@@ -113,8 +121,8 @@ const UndoIcon: React.FC<{ color: string }> = ({ color }) => (
  */
 export const UndoButton: React.FC<UndoButtonProps> = ({ onUndo, undoing, voteCount, refundAmount }) => {
   const tip = voteCount > 1
-    ? `Undo your last vote here (${voteCount} cast) — refunds ${refundAmount} F`
-    : `Undo your vote here — refunds ${refundAmount} F`
+    ? `Take back your last vote here (${voteCount} cast). Refunds ${refundAmount} F`
+    : `Take back your vote here. Refunds ${refundAmount} F`
 
   return (
     <HoverTooltip text={tip}>
@@ -150,49 +158,44 @@ const OPPOSE_COLOR = '#ef4444'
 interface StanceControlsProps {
   cost: number
   stance: 'yea' | 'nay' | null
-  baseDisabled: boolean   // budget / global / can't-afford — applies to both sides
+  baseDisabled: boolean   // budget / global / can't-afford, applies to both sides
   voting: boolean
   teamColor: string
+  supportLabel: string    // the take-the-action verb (e.g. Release, Renew)
+  opposeLabel: string     // the opposite verb (e.g. Keep)
   onVote: (direction: 'yea' | 'nay') => void
 }
 
 /**
- * Side-by-side For / Against buttons for the threshold directives. A fan holds
- * a single stance per target — the opposite side locks once they've voted
- * (withdraw via the Undo button to switch). Both keep the two-tap confirm.
- * The locked side is wrapped in a span so its tooltip still shows on hover.
+ * Side-by-side action buttons for the threshold directives (e.g. Release/Keep,
+ * Renew/Release). One vote per fan per target: once they've voted, their pick
+ * shows filled and both sides lock — use the Undo button to change it. Both
+ * keep the two-tap confirm.
  */
 export const StanceControls: React.FC<StanceControlsProps> = ({
-  cost, stance, baseDisabled, voting, teamColor, onVote,
+  cost, stance, baseDisabled, voting, teamColor, supportLabel, opposeLabel, onVote,
 }) => {
-  const forBtn = (
-    <VoteButton
-      cost={cost}
-      disabled={baseDisabled || stance === 'nay'}
-      voting={voting}
-      onConfirm={() => onVote('yea')}
-      teamColor={teamColor}
-      label="For"
-    />
-  )
-  const opposeBtn = (
-    <VoteButton
-      cost={cost}
-      disabled={baseDisabled || stance === 'yea'}
-      voting={voting}
-      onConfirm={() => onVote('nay')}
-      teamColor={OPPOSE_COLOR}
-      label="Against"
-    />
-  )
+  const voted = stance !== null
   return (
     <div style={{ display: 'flex', gap: '4px' }}>
-      {stance === 'nay'
-        ? <HoverTooltip text="Withdraw your Against vote to switch sides"><span>{forBtn}</span></HoverTooltip>
-        : forBtn}
-      {stance === 'yea'
-        ? <HoverTooltip text="Withdraw your For vote to switch sides"><span>{opposeBtn}</span></HoverTooltip>
-        : opposeBtn}
+      <VoteButton
+        cost={cost}
+        disabled={baseDisabled || voted}
+        selected={stance === 'yea'}
+        voting={voting}
+        onConfirm={() => onVote('yea')}
+        teamColor={teamColor}
+        label={supportLabel}
+      />
+      <VoteButton
+        cost={cost}
+        disabled={baseDisabled || voted}
+        selected={stance === 'nay'}
+        voting={voting}
+        onConfirm={() => onVote('nay')}
+        teamColor={OPPOSE_COLOR}
+        label={opposeLabel}
+      />
     </div>
   )
 }
