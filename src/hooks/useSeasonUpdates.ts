@@ -24,6 +24,7 @@ export interface SeasonState {
   nextSeasonStartTime: string | null
   offseasonPhase: OffseasonPhase | null
   offseasonPhaseTargetTime: string | null
+  bracketAvailable: boolean
 }
 
 export const useSeasonUpdates = () => {
@@ -42,6 +43,7 @@ export const useSeasonUpdates = () => {
     nextSeasonStartTime: null,
     offseasonPhase: null,
     offseasonPhaseTargetTime: null,
+    bracketAvailable: false,
   })
 
   const fetchSeasonData = useCallback(async () => {
@@ -62,6 +64,7 @@ export const useSeasonUpdates = () => {
           offseasonPhaseTargetTime: result.data.offseason_phase_target_time || null,
           seasonComplete: result.data.is_complete || false,
           regularSeasonOver: result.data.regular_season_over || false,
+          bracketAvailable: result.data.bracket_available ?? false,
         }))
       }
     } catch (err) {

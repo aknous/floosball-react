@@ -46,6 +46,13 @@ export interface MyBracket {
   locked?: boolean
   perRound?: Record<string, { correct: number; predicted: number; points: number }>
   actualAdvancers?: Record<string, number[]>
+  gameResults?: Array<{
+    round: number
+    homeTeamId: number
+    awayTeamId: number
+    homeScore: number
+    awayScore: number
+  }>
 }
 
 export interface BracketLeaderRow {
