@@ -686,8 +686,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 // so characters periodically swap to glitch glyphs. The row-level
                 // class above also applies a chromatic shimmer to every text
                 // descendant via CSS animation.
-                // L3 resolves to clarity — render the description clean (the
-                // row's violet glow carries the charge). L1/L2 corrupt it.
+                // L1/L2 corrupt the description with character swaps. L3 stays
+                // legible (no char-flip) — its drama is the steady violet charge
+                // the row class lays over every line.
                 if (hasGlitch && !isGlitchL3) {
                   return <GlitchedText text={cleaned} intensity={isGlitchL2 ? 'high' : 'low'} />
                 }
