@@ -1,6 +1,7 @@
 import React from 'react'
 import CoachHoverCard from '@/Components/CoachHoverCard'
 import { Stars, calcStars } from '@/Components/Stars'
+import { VoteButton, UndoButton } from './VoteControls'
 import { getContrastTextColor } from '@/utils/colors'
 import type { GmCoachInfo, GmVoteTally } from '@/types/gm'
 
@@ -10,11 +11,14 @@ interface HireCoachCardProps {
   teamColor: string
   voting: string | null
   onVote: (coachId: number) => void
+  undoing: string | null
+  onUndo: (coachId: number) => void
+  myVoteCount: (coachId: number) => number
   disabledIds: Set<number>
   globalDisabled: boolean
   balance: number
-  votesRemaining: number
   getCost: (coachId: number) => number
+  lastCost: (coachId: number) => number
 }
 
 const HireCoachCard: React.FC<HireCoachCardProps> = ({
@@ -23,11 +27,14 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
   teamColor,
   voting,
   onVote,
+  undoing,
+  onUndo,
+  myVoteCount,
   disabledIds,
   globalDisabled,
   balance,
-  votesRemaining,
   getCost,
+  lastCost,
 }) => {
 
   if (availableCoaches.length === 0) {
@@ -45,9 +52,6 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
           marginBottom: '10px',
         }}>
           <span>Coaching Candidates</span>
-          <span style={{ fontWeight: '600', color: votesRemaining > 0 ? '#94a3b8' : '#ef4444', textTransform: 'none' }}>
-            {votesRemaining} remaining
-          </span>
         </div>
         <div style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
           Candidates appear once the current coach is fired or retires.
@@ -70,9 +74,6 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
         marginBottom: '10px',
       }}>
         <span>Coaching Candidates</span>
-        <span style={{ fontWeight: '600', color: votesRemaining > 0 ? '#94a3b8' : '#ef4444', textTransform: 'none' }}>
-          {votesRemaining} remaining
-        </span>
       </div>
       <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '8px' }}>
         Three candidates, one job. Most votes hires. If no one votes, the highest-rated one signs.
@@ -96,7 +97,9 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
             const isLeader = votes > 0 && votes === maxVotes
             const isSoleLeader = isLeader && leaderCount === 1
             const isVoting = voting === `hire_coach:${coachId}`
+            const isUndoing = undoing === `hire_coach:${coachId}`
             const cost = getCost(coachId)
+            const myVotes = myVoteCount(coachId)
             const isDisabled = globalDisabled || disabledIds.has(coachId) || balance < cost
 
             return (
@@ -153,25 +156,26 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
                     {votes} {votes === 1 ? 'vote' : 'votes'}
                   </div>
                 </div>
-              <button
-                onClick={() => onVote(coachId)}
-                disabled={isDisabled || isVoting}
-                style={{
-                  flexShrink: 0,
-                  padding: '4px 10px',
-                  backgroundColor: isDisabled ? '#1e293b' : teamColor,
-                  color: isDisabled ? '#475569' : getContrastTextColor(teamColor),
-                  border: 'none',
-                  borderRadius: '4px',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  cursor: isDisabled ? 'not-allowed' : 'pointer',
-                  opacity: isVoting ? 0.6 : 1,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {isVoting ? '...' : `Nominate · ${cost} F`}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                {myVotes > 0 && (
+                  <UndoButton
+                    onUndo={() => onUndo(coachId)}
+                    undoing={isUndoing}
+                    voteCount={myVotes}
+                    refundAmount={lastCost(coachId)}
+                  />
+                )}
+                <VoteButton
+                  cost={cost}
+                  disabled={isDisabled}
+                  selected={myVotes > 0}
+                  voting={isVoting}
+                  onConfirm={() => onVote(coachId)}
+                  teamColor={teamColor}
+                  label={`Nominate · ${cost} F`}
+                  selectedLabel="Nominated"
+                />
+              </div>
             </div>
           )
           })

@@ -12,6 +12,26 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.17.0',
+    date: '2026-05-29',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[UI/UX] Replay finished games. A Replay button on any final game walks back through the game one play at a time, driving the scoreboard, field graphic, win-probability chart, and play feed. Play/pause, step, scrub, and 1x/2x/4x speed.',
+          '[Front Office] Undo your votes. Cut, re-sign, fire, and coaching votes now show an undo button on any directive you have voted on, with a full Floobit refund. Votes can be retracted any time before the offseason locks them in.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Front Office] Vote buttons now confirm on a second tap before spending, so an accidental press costs nothing.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.16.1',
     date: '2026-05-27',
     changes: [],

@@ -21,6 +21,104 @@ interface GameModalNewProps {
   gameId: number
 }
 
+interface ReplayControlBarProps {
+  active: boolean
+  playing: boolean
+  index: number
+  count: number
+  speed: number
+  isLive: boolean
+  accentColor: string
+  onStart: (speed?: number) => void
+  onExit: () => void
+  onStep: (delta: number) => void
+  onScrub: (i: number) => void
+  onToggle: () => void
+  onCycleSpeed: () => void
+}
+
+/** Replay / catch-up transport, rendered on the "Field Position" header line so
+ *  it never adds a row of its own. Idle = label + a compact button; active =
+ *  the full transport replaces the label. */
+const ReplayControlBar: React.FC<ReplayControlBarProps> = ({
+  active, playing, index, count, speed, isLive, accentColor,
+  onStart, onExit, onStep, onScrub, onToggle, onCycleSpeed,
+}) => {
+  const iconBtn: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: '28px', height: '26px', backgroundColor: '#1e293b',
+    border: '1px solid #334155', borderRadius: '5px',
+    color: '#e2e8f0', cursor: 'pointer', flexShrink: 0,
+  }
+  const atEnd = index >= count - 1
+
+  if (!active) {
+    return (
+      <>
+        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Field Position
+        </span>
+        <span style={{ flex: 1 }} />
+        {count > 0 && (
+          <button
+            onClick={() => onStart(isLive ? 4 : 1)}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '6px',
+              padding: '4px 11px', backgroundColor: '#1e293b',
+              border: '1px solid #334155', borderRadius: '6px',
+              color: '#e2e8f0', fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l11 6-11 6z" /></svg>
+            {isLive ? 'Catch Up' : 'Replay'}
+          </button>
+        )}
+      </>
+    )
+  }
+
+  return (
+    <>
+      <button onClick={() => onStep(-1)} disabled={index <= 0}
+        style={{ ...iconBtn, opacity: index <= 0 ? 0.4 : 1 }} aria-label="Previous play">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M5 2v12H3V2zm9 0v12L6 8z" /></svg>
+      </button>
+      <button onClick={onToggle} style={iconBtn} aria-label={playing ? 'Pause' : 'Play'}>
+        {playing ? (
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2h4v12H3zm6 0h4v12H9z" /></svg>
+        ) : (
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor"><path d="M3 2l11 6-11 6z" /></svg>
+        )}
+      </button>
+      <button onClick={() => onStep(1)} disabled={atEnd}
+        style={{ ...iconBtn, opacity: atEnd ? 0.4 : 1 }} aria-label="Next play">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor"><path d="M11 2v12h2V2zM2 2v12l8-6z" /></svg>
+      </button>
+      <input
+        type="range" min={0} max={count - 1} value={index}
+        onChange={e => onScrub(Number(e.target.value))}
+        style={{ flex: 1, minWidth: '70px', accentColor, cursor: 'pointer' }}
+      />
+      <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums', minWidth: '48px', textAlign: 'center' }}>
+        {index + 1}/{count}
+      </span>
+      <button onClick={onCycleSpeed} style={{ ...iconBtn, width: '32px', fontSize: '11px', fontWeight: 700 }} aria-label="Playback speed">
+        {speed}×
+      </button>
+      <button onClick={onExit} style={{
+        padding: '4px 10px',
+        backgroundColor: isLive ? '#166534' : 'transparent',
+        border: isLive ? '1px solid #22c55e' : '1px solid #334155',
+        borderRadius: '5px',
+        color: isLive ? '#dcfce7' : '#94a3b8',
+        fontSize: '11px', fontWeight: 700, cursor: 'pointer', flexShrink: 0,
+      }}>
+        {isLive ? 'Go Live' : 'Exit'}
+      </button>
+    </>
+  )
+}
+
 /** Tiny icon + tooltip shown wherever we surface clock state. Used both in
     the per-play feed row and next to the main game clock. */
 const ClockStateIcon: React.FC<{ stopped: boolean }> = ({ stopped }) => {
@@ -98,14 +196,138 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   if (liveGameData) frozenRef.current = liveGameData
   const gameData = frozenRef.current
 
-  // Plays with WP data, in chronological order (oldest first), for the chart
-  const wpPlays = useMemo(() => {
-    if (!gameData?.plays) return []
+  // ── Replay mode ──────────────────────────────────────────────────────────
+  // Step a finished game back through its plays, feeding the scoreboard, field
+  // graphic, WP chart and feed the state as of each play — the same data the
+  // live components already react to, just played back from a frozen snapshot.
+  const [replayActive, setReplayActive] = useState(false)
+  const [replayIndex, setReplayIndex] = useState(0)
+  const [replayPlaying, setReplayPlaying] = useState(false)
+  const [replaySpeed, setReplaySpeed] = useState(1) // plays per second
+
+  // Steppable plays, oldest-first (the snaps — events/cutaways excluded).
+  const replaySequence = useMemo(() => {
+    if (!gameData?.plays) return [] as any[]
     return (gameData.plays as any[])
-      .filter(p => !p.event && p.homeWinProbability != null && p.quarter && p.timeRemaining)
+      .filter(p => !p.event && p.playResult != null && !p.isSidelineCutaway)
       .slice()
       .reverse()
   }, [gameData?.plays])
+
+  const replayCount = replaySequence.length
+  const replayCursor = replayActive ? replaySequence[replayIndex] : undefined
+
+  // Drive playback: one step per (1000 / speed) ms. On the last available
+  // play, a finished game just stops; a live game rejoins the live feed —
+  // the catch-up has reached the current play, so hand back to live. As live
+  // plays keep arriving, replayCount grows and playback chases the edge until
+  // it catches up.
+  useEffect(() => {
+    if (!replayActive || !replayPlaying) return
+    if (replayIndex >= replayCount - 1) {
+      if (gameData?.status === 'Active') setReplayActive(false)
+      setReplayPlaying(false)
+      return
+    }
+    const id = setTimeout(
+      () => setReplayIndex(i => Math.min(i + 1, replayCount - 1)),
+      1000 / replaySpeed,
+    )
+    return () => clearTimeout(id)
+  }, [replayActive, replayPlaying, replayIndex, replaySpeed, replayCount, gameData?.status])
+
+  // Ball spot isn't stored per play; derive it from the play's yardLine
+  // ("TEAM YD") + which side has the ball — the same parse the API uses.
+  const deriveYardsToEndzone = (play: any): number | null => {
+    const yl = play?.yardLine
+    if (typeof yl !== 'string' || !yl.includes(' ')) return null
+    const parts = yl.split(' ')
+    const num = parseInt(parts[1], 10)
+    if (isNaN(num)) return null
+    return parts[0] === play.defensiveTeam ? num : 100 - num
+  }
+
+  // Plays visible right now: sliced to the cursor in replay (preserving the
+  // feed's newest-first order and interleaved events), full otherwise.
+  const displayPlays = useMemo(() => {
+    const all = (gameData?.plays as any[]) ?? []
+    if (!replayActive || !replayCursor) return all
+    const ci = all.indexOf(replayCursor)
+    return ci >= 0 ? all.slice(ci) : all
+  }, [gameData?.plays, replayActive, replayCursor])
+
+  // Game-state values for the scoreboard / field / clock. In replay they read
+  // off the cursor play; otherwise straight from the live snapshot.
+  const dHomeScore = replayActive && replayCursor ? (replayCursor.homeTeamScore ?? 0) : gameData?.homeScore
+  const dAwayScore = replayActive && replayCursor ? (replayCursor.awayTeamScore ?? 0) : gameData?.awayScore
+  const dQuarter = replayActive && replayCursor ? replayCursor.quarter : gameData?.quarter
+  const dClock = replayActive && replayCursor ? replayCursor.timeRemaining : gameData?.timeRemaining
+  const dPossession = replayActive && replayCursor ? replayCursor.offensiveTeam : gameData?.possession
+  const dYardsToEndzone = replayActive && replayCursor ? deriveYardsToEndzone(replayCursor) : gameData?.yardsToEndzone
+  // Ball anchor for the field graphic. Runs/passes anchor on the END spot and
+  // the trajectory walks back by yardsGained, so in replay we advance the
+  // cursor's line of scrimmage by the yards gained. Punts/kicks are the
+  // opposite — they anchor on the LOS and draw the arc forward to the landing
+  // spot — so those keep the pre-snap position. Live state already reflects
+  // the right spot, so this only adjusts replay.
+  const dBallYardsToEndzone = (() => {
+    if (!(replayActive && replayCursor)) return gameData?.yardsToEndzone
+    const pre = deriveYardsToEndzone(replayCursor)
+    if (pre == null) return null
+    const pt = String(replayCursor.playType || '').toUpperCase()
+    if (pt === 'PUNT' || pt === 'FIELDGOAL' || pt === 'EXTRAPOINT') return pre
+    const gained = replayCursor.yardsGained ?? 0
+    return Math.max(0, Math.min(100, pre - gained))
+  })()
+  const dDown = replayActive && replayCursor ? replayCursor.down : gameData?.down
+  const dYardLine = replayActive && replayCursor ? replayCursor.yardLine : gameData?.yardLine
+  const dDistance = replayActive && replayCursor ? replayCursor.distance : gameData?.yardsToFirstDown
+
+  // Per-quarter breakdown as of the cursor. Plays carry the running cumulative
+  // score, so the score through the end of each quarter is the last cumulative
+  // in that quarter (filled forward for quarters not yet reached → 0 points).
+  const dQuarterScores = useMemo(() => {
+    if (!replayActive || !replayCursor) return gameData?.quarterScores
+    const seq = replaySequence.slice(0, replayIndex + 1)
+    let runH = 0, runA = 0
+    const lastInQuarter: Record<number, { h: number; a: number }> = {}
+    for (const p of seq) {
+      if (p.homeTeamScore != null) runH = p.homeTeamScore
+      if (p.awayTeamScore != null) runA = p.awayTeamScore
+      const qc = Math.min(4, Math.max(1, p.quarter || 1))
+      lastInQuarter[qc] = { h: runH, a: runA }
+    }
+    const through: Record<number, { h: number; a: number }> = { 0: { h: 0, a: 0 } }
+    for (let q = 1; q <= 4; q++) through[q] = lastInQuarter[q] ?? through[q - 1]
+    return {
+      home: { q1: through[1].h - through[0].h, q2: through[2].h - through[1].h, q3: through[3].h - through[2].h, q4: through[4].h - through[3].h },
+      away: { q1: through[1].a - through[0].a, q2: through[2].a - through[1].a, q3: through[3].a - through[2].a, q4: through[4].a - through[3].a },
+    }
+  }, [replayActive, replayCursor, replaySequence, replayIndex, gameData?.quarterScores])
+
+  const startReplay = (speed = 1) => { setReplayIndex(0); setReplaySpeed(speed); setReplayActive(true); setReplayPlaying(true); setActiveTab('plays') }
+  const exitReplay = () => { setReplayActive(false); setReplayPlaying(false) }
+  const replayStep = (delta: number) => {
+    setReplayPlaying(false)
+    setReplayIndex(i => Math.max(0, Math.min(replayCount - 1, i + delta)))
+  }
+  const replayScrub = (i: number) => {
+    setReplayPlaying(false)
+    setReplayIndex(Math.max(0, Math.min(replayCount - 1, i)))
+  }
+  const toggleReplayPlay = () => {
+    if (replayIndex >= replayCount - 1) { setReplayIndex(0); setReplayPlaying(true) }
+    else setReplayPlaying(p => !p)
+  }
+  const cycleReplaySpeed = () => setReplaySpeed(s => (s === 1 ? 2 : s === 2 ? 4 : 1))
+
+  // Plays with WP data, in chronological order (oldest first), for the chart
+  const wpPlays = useMemo(() => {
+    return (displayPlays as any[])
+      .filter(p => !p.event && p.homeWinProbability != null && p.quarter && p.timeRemaining)
+      .slice()
+      .reverse()
+  }, [displayPlays])
 
   const isHighlightPlay = (play: any) =>
     !play._type && !play.event && !play.text &&
@@ -113,8 +335,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
   // Pre-process plays: inject drive separators between possession changes
   const processedPlays = useMemo(() => {
-    if (!gameData?.plays) return []
-    const plays = gameData.plays as any[]
+    const plays = displayPlays as any[]
+    if (!plays.length) return []
     const result: any[] = []
     for (let i = 0; i < plays.length; i++) {
       const play = plays[i]
@@ -129,7 +351,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       }
     }
     return result
-  }, [gameData?.plays])
+  }, [displayPlays])
 
   const chartPoints = useMemo(() => {
     const pts: { elapsed: number; wp: number }[] = [{ elapsed: 0, wp: 50 }]
@@ -153,32 +375,32 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     return pts
   }, [wpPlays])
 
-  const prevHomeScore = useRef(gameData?.homeScore)
-  const prevAwayScore = useRef(gameData?.awayScore)
+  const prevHomeScore = useRef(dHomeScore)
+  const prevAwayScore = useRef(dAwayScore)
   const [homeFlash, setHomeFlash] = useState(false)
   const [awayFlash, setAwayFlash] = useState(false)
 
   useEffect(() => {
-    if (prevHomeScore.current !== undefined && gameData?.homeScore !== undefined && gameData.homeScore !== prevHomeScore.current) {
+    if (prevHomeScore.current !== undefined && dHomeScore !== undefined && dHomeScore !== prevHomeScore.current) {
       setHomeFlash(false)
       requestAnimationFrame(() => setHomeFlash(true))
       const t = setTimeout(() => setHomeFlash(false), 700)
-      prevHomeScore.current = gameData.homeScore
+      prevHomeScore.current = dHomeScore
       return () => clearTimeout(t)
     }
-    prevHomeScore.current = gameData?.homeScore
-  }, [gameData?.homeScore])
+    prevHomeScore.current = dHomeScore
+  }, [dHomeScore])
 
   useEffect(() => {
-    if (prevAwayScore.current !== undefined && gameData?.awayScore !== undefined && gameData.awayScore !== prevAwayScore.current) {
+    if (prevAwayScore.current !== undefined && dAwayScore !== undefined && dAwayScore !== prevAwayScore.current) {
       setAwayFlash(false)
       requestAnimationFrame(() => setAwayFlash(true))
       const t = setTimeout(() => setAwayFlash(false), 700)
-      prevAwayScore.current = gameData.awayScore
+      prevAwayScore.current = dAwayScore
       return () => clearTimeout(t)
     }
-    prevAwayScore.current = gameData?.awayScore
-  }, [gameData?.awayScore])
+    prevAwayScore.current = dAwayScore
+  }, [dAwayScore])
 
   // Fetch plays when modal opens
   useEffect(() => {
@@ -709,7 +931,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={homeFlash ? 'score-updated' : ''}>
-                  {gameData.homeScore}
+                  {dHomeScore}
                 </div>
               </div>
 
@@ -757,7 +979,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={awayFlash ? 'score-updated' : ''}>
-                  {gameData.awayScore}
+                  {dAwayScore}
                 </div>
               </div>
 
@@ -775,7 +997,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               )}
 
               {/* Quarter-by-quarter breakdown */}
-              {gameData.quarterScores && (
+              {dQuarterScores && (
                 <div style={{ borderTop: '1px solid #334155', marginTop: '12px', paddingTop: '8px' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
                     <thead>
@@ -790,17 +1012,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     <tbody>
                       <tr>
                         <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{gameData.homeTeam.abbr}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{gameData.quarterScores.home.q1}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{gameData.quarterScores.home.q2}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{gameData.quarterScores.home.q3}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{gameData.quarterScores.home.q4}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.home.q1}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.home.q2}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.home.q3}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.home.q4}</td>
                       </tr>
                       <tr>
                         <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{gameData.awayTeam.abbr}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{gameData.quarterScores.away.q1}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{gameData.quarterScores.away.q2}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{gameData.quarterScores.away.q3}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{gameData.quarterScores.away.q4}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.away.q1}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.away.q2}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.away.q3}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.away.q4}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -831,7 +1053,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               <div style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '600', marginBottom: '3px',
                             display: 'inline-flex', alignItems: 'center', gap: '6px',
                             justifyContent: 'center', width: '100%' }}>
-                {gameData.status === 'Final' ? (
+                {replayActive ? (
+                  <span>{`${dQuarter > 4 ? 'OT' : `Q${dQuarter}`}  •  ${dClock}`}</span>
+                ) : gameData.status === 'Final' ? (
                   <span>Final{gameData.isOvertime ? ' (OT)' : ''}</span>
                 ) : gameData.status === 'Active' ? (
                   <>
@@ -851,12 +1075,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   <span>{gameData.status}</span>
                 )}
               </div>
-              {/* Row 2: down & distance (active only) */}
-              {gameData.status === 'Active' && (() => {
-                const down = gameData.down
-                const distance = gameData.yardsToFirstDown
-                const yardLine = gameData.yardLine
-                const yardsToEndzone = gameData.yardsToEndzone
+              {/* Row 2: down & distance (active games + replay) */}
+              {(gameData.status === 'Active' || replayActive) && (() => {
+                const down = dDown
+                const distance = dDistance
+                const yardLine = dYardLine
+                const yardsToEndzone = dYardsToEndzone
                 if (!down || !yardLine) return null
                 const downSuffix = ['1st', '2nd', '3rd', '4th'][down - 1]
                 const showGoal = yardsToEndzone != null && distance != null && yardsToEndzone < distance
@@ -870,6 +1094,31 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               })()}
             </div>
 
+            {/* "Field Position" header + replay/catch-up controls on one line,
+                so the transport never adds a row of its own. Kept here (not in
+                the field-viz IIFE) and gated with a single condition — moving it
+                or using (A || B) && (...) trips an eslint-plugin-react-hooks
+                false-positive in this file. */}
+            {gameData.status !== 'Scheduled' && (
+              <div style={{ padding: '2px 16px 6px', display: 'flex', alignItems: 'center', gap: '8px', minHeight: '26px' }}>
+                <ReplayControlBar
+                  active={replayActive}
+                  playing={replayPlaying}
+                  index={replayIndex}
+                  count={replayCount}
+                  speed={replaySpeed}
+                  isLive={gameData.status === 'Active'}
+                  accentColor={gameData.homeTeam.color}
+                  onStart={startReplay}
+                  onExit={exitReplay}
+                  onStep={replayStep}
+                  onScrub={replayScrub}
+                  onToggle={toggleReplayPlay}
+                  onCycleSpeed={cycleReplaySpeed}
+                />
+              </div>
+            )}
+
             {/* Field Position Visualization */}
             {gameData.status !== 'Scheduled' && (() => {
               const FW = 600, FH = 220
@@ -878,7 +1127,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               // Fixed layout: home end zone = LEFT, away end zone = RIGHT
               const homeTeam = gameData.homeTeam
               const awayTeam = gameData.awayTeam
-              const isHomePoss = gameData.possession === homeTeam.abbr
+              const isHomePoss = dPossession === homeTeam.abbr
               const possTeam = isHomePoss ? homeTeam : awayTeam
 
               // x coord: yards from left (0–120) → SVG x (0–FW)
@@ -891,7 +1140,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               // dramatic moment) until the next real possession starts.
               // 2-Pt tries are kept — they're real run/pass plays worth
               // seeing.
-              const realPlays = (gameData.plays || []).filter((p: any) =>
+              const realPlays = (displayPlays || []).filter((p: any) =>
                 !p.event && p.playResult != null && !p.isSidelineCutaway
               )
               const isXpKick = (p: any) => String(p?.playType || '').toUpperCase() === 'EXTRAPOINT'
@@ -919,8 +1168,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               if (isTD && lastPlay) {
                 ballAbsYfl = lastPlayDir === 1 ? 110 : 10
               } else {
-                ballAbsYfl = gameData.yardsToEndzone != null
-                  ? (isHomePoss ? 110 - gameData.yardsToEndzone : 10 + gameData.yardsToEndzone)
+                ballAbsYfl = dBallYardsToEndzone != null
+                  ? (isHomePoss ? 110 - dBallYardsToEndzone : 10 + dBallYardsToEndzone)
                   : null
               }
               const ballX = ballAbsYfl != null ? toX(ballAbsYfl) : null
@@ -929,7 +1178,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               // Only show trajectory when the same team that ran the last play still has possession.
               // After a possession change event, ball position updates to new team but trajectory
               // from the old play would be meaningless.
-              const sameTeamHasBall = !lastPlay || lastPlay.offensiveTeam === gameData.possession
+              const sameTeamHasBall = !lastPlay || lastPlay.offensiveTeam === dPossession
 
               // Start of last play: move backwards from current ball in play direction
               const startAbsYfl = ballAbsYfl != null && lastPlay != null
@@ -937,10 +1186,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 : null
               const startX = startAbsYfl != null ? toX(startAbsYfl) : null
 
-              // First down marker: forward from ball in possession team's direction
+              // First down marker: the line to gain, measured from the line of
+              // scrimmage (NOT the post-play ball spot). Anchoring on the LOS
+              // (dYardsToEndzone) keeps the marker fixed across a series instead
+              // of drifting with the ball each play — in replay the ball anchor
+              // is the play's end spot, so using it here moved the line every
+              // play. dYardsToEndzone + dDistance are the live values when not
+              // replaying, so this is identical to before for live games.
               const fdDir = isHomePoss ? 1 : -1
-              const fdAbsYfl = ballAbsYfl != null && gameData.yardsToFirstDown != null
-                ? ballAbsYfl + gameData.yardsToFirstDown * fdDir
+              const losAbsYfl = dYardsToEndzone != null
+                ? (isHomePoss ? 110 - dYardsToEndzone : 10 + dYardsToEndzone)
+                : null
+              const fdAbsYfl = losAbsYfl != null && dDistance != null
+                ? losAbsYfl + dDistance * fdDir
                 : null
               const firstDownX = fdAbsYfl != null ? toX(fdAbsYfl) : null
 
@@ -962,6 +1220,26 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 playStroke = '#a78bfa'
                 playDash = '8,4'
                 playEndX = puntEndX
+              } else if (playType === 'FIELDGOAL' && lastPlay) {
+                // A kick gains no yards, so it never hits the yardage branch
+                // below. Anchor on the kick's own line of scrimmage (from its
+                // yardLine, since live game state has already advanced past it)
+                // and arc high toward the goal posts on the defending end line —
+                // green if good, gray if missed.
+                const fgGood = lastPlay.playResult === 'Field Goal is Good'
+                const losYte = deriveYardsToEndzone(lastPlay)
+                const losAbs = losYte != null
+                  ? (lastPlayDir === 1 ? 110 - losYte : 10 + losYte)
+                  : ballAbsYfl
+                const fgStartX = losAbs != null ? toX(losAbs) : ballX
+                const fgEndX = lastPlayDir === 1 ? FW - 4 : 4
+                if (fgStartX != null) {
+                  const midPX = (fgStartX + fgEndX) / 2
+                  playPath = `M${fgStartX},${midY} Q${midPX},${midY - 75} ${fgEndX},${midY}`
+                  playStroke = fgGood ? '#4ade80' : '#ef4444'  // miss = turnover
+                  playDash = '5,4'
+                  playEndX = fgEndX
+                }
               } else if (ballX != null && startX != null && Math.abs(yardsGained) >= 1) {
                 const midPX = (startX + ballX) / 2
                 const arcH = Math.min(Math.abs(ballX - startX) * 0.35, 45)
@@ -970,11 +1248,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 if (playType === 'RUN' || playType === 'KNEEL' || playType === 'SPIKE') {
                   playPath = `M${startX},${midY} L${ballX},${midY}`
                   playStroke = isTurnover ? '#f87171' : '#4ade80'
-                } else if (playType === 'FIELDGOAL') {
-                  const peakY = midY - Math.min(arcH * 1.6, 60)
-                  playPath = `M${startX},${midY} Q${midPX},${peakY} ${ballX},${midY}`
-                  playStroke = '#a78bfa'
-                  playDash = '8,4'
                 } else {
                   // PASS / default — arc through the air from the QB drop
                   // to the catch point, then a straight line for YAC.
@@ -1004,7 +1277,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 if (isTD) playStroke = '#fbbf24'
               }
 
-              if (!sameTeamHasBall) playPath = null
+              // The possession-change guard suppresses a stale run/pass
+              // trajectory, but a kick's arc is the play itself and stays
+              // meaningful even though possession flips after it.
+              if (!sameTeamHasBall && playType !== 'PUNT' && playType !== 'FIELDGOAL') playPath = null
 
               // Arrowhead points toward the end of the play
               const arrowDir = playEndX != null && ballX != null ? (playEndX >= ballX ? 1 : -1) : lastPlayDir
@@ -1018,13 +1294,38 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               ]
 
               const playResult = lastPlay?.playResult ?? null
-              const playDescription = lastPlay?.description ?? lastPlay?.text ?? null
+              // The backend appends anomaly glitch line(s) to the play text;
+              // strip them here so the under-field blurb shows only the play
+              // itself. Glitch lines stay exclusive to the play feed (which
+              // renders them with their own styling).
+              const rawDescription = lastPlay?.description ?? lastPlay?.text ?? null
+              const lastGlitch = (lastPlay as any)?.glitchText
+              const playDescription = rawDescription && lastGlitch && rawDescription.includes(lastGlitch)
+                ? rawDescription.replace(`\n${lastGlitch}`, '').replace(lastGlitch, '').trim()
+                : rawDescription
+
+              // Big-play reaction overlay. Keyed by play so the CSS animation
+              // re-fires each time a new qualifying play lands (live) or the
+              // cursor steps onto one (replay). Scores and turnovers take
+              // precedence; otherwise a "big" flash fires on a 20+ yard run/pass
+              // OR any play the feed flags as a big WPA swing (isBigPlay).
+              const isBigGain = (playType === 'RUN' || playType === 'PASS') && yardsGained >= 20
+              const isMadeFg = playType === 'FIELDGOAL' && lastPlay?.playResult === 'Field Goal is Good'
+              const bigReaction = isTD
+                ? { label: 'TOUCHDOWN', color: '#fbbf24', kind: 'td' }
+                : isTurnover
+                  ? { label: 'TURNOVER', color: '#ef4444', kind: 'turnover' }
+                  : isMadeFg
+                    ? { label: 'FIELD GOAL', color: '#4ade80', kind: 'fg' }
+                    : (isBigGain || lastPlay?.isBigPlay)
+                      ? { label: '', color: '#38bdf8', kind: 'big' }
+                      : null
+              const reactionKey = `${lastPlay?.playNumber ?? 0}-${bigReaction?.kind ?? 'none'}`
 
               return (
                 <div style={{ padding: '0 16px 16px' }}>
-                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '7px', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>
-                    Field Position
-                  </div>
+                  {/* "Field Position" label + replay controls live on the row
+                      above (consolidated), so no header here. */}
                   <svg viewBox={`0 0 ${FW} ${FH}`} style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '4px' }}>
                     {/* Home end zone (LEFT) */}
                     <rect x={0} y={0} width={EZW} height={FH} fill={homeTeam.color} opacity={0.4} />
@@ -1107,14 +1408,49 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       />
                     )}
 
-                    {/* Ball marker */}
+                    {/* Ball marker + possession indicator */}
                     {ballX != null && (
                       <g>
-                        <circle cx={ballX} cy={midY} r={10} fill={possTeam.color} opacity={0.2} />
+                        <circle cx={ballX} cy={midY} r={11} fill={possTeam.color} opacity={0.3} />
                         <ellipse cx={ballX} cy={midY} rx={8} ry={5}
                           fill="#7B4F2E" stroke="rgba(255,255,255,0.9)" strokeWidth={1.5} />
                         <line x1={ballX - 3} y1={midY} x2={ballX + 3} y2={midY}
                           stroke="rgba(255,255,255,0.6)" strokeWidth={1} />
+                        {/* Who has the ball: team logo above, white arrow toward their endzone */}
+                        {dPossession && (
+                          <>
+                            <circle cx={ballX} cy={midY - 22} r={11} fill="#0f172a" opacity={0.85}
+                              stroke={possTeam.color} strokeWidth={1.5} />
+                            <image href={`/avatars/${possTeam.id}.png`}
+                              x={ballX - 9} y={midY - 31} width={18} height={18} />
+                            <polygon
+                              points={fdDir === 1
+                                ? `${ballX + 14},${midY} ${ballX + 7},${midY - 5} ${ballX + 7},${midY + 5}`
+                                : `${ballX - 14},${midY} ${ballX - 7},${midY - 5} ${ballX - 7},${midY + 5}`}
+                              fill="#f8fafc" stroke="rgba(0,0,0,0.55)" strokeWidth={0.5} opacity={0.95} />
+                          </>
+                        )}
+                      </g>
+                    )}
+
+                    {/* Big-play reaction. Every kind gets a full-field color
+                        flash; TD/turnover also get a text banner. Big gains are
+                        flash-only (a double pulse) — no text. */}
+                    {bigReaction && (
+                      <rect key={`flash-${reactionKey}`}
+                        className={bigReaction.kind === 'big' ? 'fieldReactionFlash--pulse' : 'fieldReactionFlash'}
+                        x={0} y={0} width={FW} height={FH} fill={bigReaction.color} pointerEvents="none" />
+                    )}
+                    {bigReaction && bigReaction.kind !== 'big' && (
+                      <g key={`banner-${reactionKey}`}
+                        className={`fieldReactionBanner${bigReaction.kind === 'turnover' ? ' fieldReactionBanner--shake' : ''}`}
+                        pointerEvents="none">
+                        <text x={FW / 2} y={midY + 7} textAnchor="middle"
+                          fontSize={20}
+                          fill={bigReaction.color} stroke="rgba(0,0,0,0.7)" strokeWidth={1}
+                          paintOrder="stroke" fontFamily="pressStart, monospace">
+                          {bigReaction.label}
+                        </text>
                       </g>
                     )}
                   </svg>
@@ -1438,7 +1774,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     </div>
                   ) : showHighlightsOnly ? (
                     (() => {
-                      const highlights = (gameData.plays as any[]).filter(isHighlightPlay)
+                      const highlights = (displayPlays as any[]).filter(isHighlightPlay)
                       return highlights.length === 0 ? (
                         <div style={{ textAlign: 'center', color: '#64748b', padding: '48px 0' }}>No highlights yet</div>
                       ) : (
