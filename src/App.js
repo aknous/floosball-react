@@ -17,6 +17,7 @@ import AboutPage from './Views/About/AboutPage'
 import CardsPage from './Views/Cards/CardsPage'
 import AchievementsPage from './Views/Achievements/AchievementsPage'
 import FrontOfficePage from './Views/FrontOffice/FrontOfficePage'
+import BracketView from './Views/Bracket/BracketView'
 import Dashboard from './Views/Dashboard/Dashboard'
 import DashboardNew from './Views/Dashboard/DashboardNew'
 import BetaBlockedPage from './Components/Auth/BetaBlockedPage'
@@ -76,6 +77,7 @@ function AppLayout() {
           <Route exact path='/cards' element={<CardsPage />} />
           <Route exact path='/achievements' element={<AchievementsPage />} />
           <Route exact path='/front-office' element={<FrontOfficePage />} />
+          <Route exact path='/bracket' element={<BracketView />} />
           <Route exact path='/history' element={<HistoryPage />} />
           <Route exact path='/about' element={<AboutPage />} />
           <Route exact path='/admin' element={<AdminPage />} />

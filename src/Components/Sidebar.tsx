@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useSidebar, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from '@/contexts/SidebarContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
+import { useFloosball } from '@/contexts/FloosballContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -73,6 +74,19 @@ const NAV_ITEMS = [
     ),
   },
   {
+    key: 'bracket',
+    label: 'Bracket',
+    path: '/bracket',
+    icon: (
+      // Tournament bracket — four slots merging to a final.
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 5h4M6 11h4M10 5v6M10 8h4" />
+        <path d="M6 13h4M6 19h4M10 13v6M10 16h4" />
+        <path d="M14 8v8M14 12h3" />
+      </svg>
+    ),
+  },
+  {
     key: 'achievements',
     label: 'Achievements',
     path: '/achievements',
@@ -113,6 +127,7 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
   const [hovered, setHovered] = useState(false)
   const { user } = useAuth()
   const { unclaimedCount } = useAchievements()
+  const { seasonState } = useFloosball()
   const location = useLocation()
 
   // Look up favorite team name for the nav item. Cached in localStorage keyed
@@ -186,6 +201,9 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
           // Team Management is a per-user hub (contribute, ballots, etc.).
           // Signed-out visitors have no team to manage — hide the entry.
           if (item.key === 'frontoffice' && !user) return false
+          // Bracket challenge only opens once the playoffs are seeded — hide
+          // the entry during the regular season.
+          if (item.key === 'bracket' && !seasonState.bracketAvailable) return false
           return true
         }).map(item => {
           const isActive = location.pathname === item.path || (item.path === '/dashboard' && location.pathname === '/')

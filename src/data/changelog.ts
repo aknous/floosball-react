@@ -12,6 +12,34 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.17.0',
+    date: '2026-05-31',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Front Office] Vote for or against any decision. Cut or keep a player, re-sign or let a contract expire, fire or back your coach. One vote per fan per call, and you can switch sides any time before the offseason locks.',
+          '[Front Office] Undo your votes. Cut, re-sign, fire, and coaching votes show an undo button on anything you have voted on, with a full Floobit refund. Retract any time before the offseason locks them in.',
+          '[Playoff Bracket] Playoff bracket challenge. Once the playoff field is set, pick every matchup through to the Floos Bowl. The bracket re-seeds as upsets land, later rounds are worth more, and a results view shows how the real bracket played out. New season leaderboard, plus goals to chase and a couple of secret unlocks.',
+          '[UI/UX] Replay finished games. A Replay button on any final game walks back through the game one play at a time, driving the scoreboard, field graphic, win-probability chart, and play feed. Play/pause, step, scrub, and 1x/2x/4x speed.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Front Office] Vote buttons confirm on a second tap before spending, so an accidental press costs nothing.',
+          '[Pick-Em] The Clairvoyant bonus is easier to reach. A strong week of picks clears the threshold more often.',
+          '[Simulation] Interceptions reworked into three distinct paths, so picks happen for the right reasons and read more naturally in the feed.',
+          '[Simulation] Pass plays now narrate incompletions and interceptions with real context instead of a generic line.',
+          '[Simulation] Fumbles on a catch are now contested for the recovery rather than always returning to the offense.',
+          '[Simulation] Smarter late-game clock management: better timeout timing, two-minute awareness, third-down spikes, and protecting a lead.',
+          '[Performance] Fantasy pages and leaderboards load faster.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.16.1',
     date: '2026-05-27',
     changes: [],

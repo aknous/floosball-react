@@ -67,7 +67,9 @@ export interface GmEligibleTargets {
 export interface GmVoteTally {
   voteType: string
   targetPlayerId: number | null
-  votes: number
+  votes: number          // NET tally (votesFor - votesAgainst)
+  votesFor?: number
+  votesAgainst?: number
   threshold: number
   probability: number
 }
@@ -81,9 +83,24 @@ export interface GmTeamSummary {
 export interface GmCastVoteResponse {
   voteId: number
   voteType: string
+  direction?: 'yea' | 'nay'
   targetPlayerId: number | null
   costPaid: number
   currentVotes: number
+  votesFor?: number
+  votesAgainst?: number
+  threshold: number
+  probability: number
+  remainingBalance: number
+}
+
+export interface GmUndoVoteResponse {
+  voteType: string
+  targetPlayerId: number | null
+  refunded: number
+  currentVotes: number
+  votesFor?: number
+  votesAgainst?: number
   threshold: number
   probability: number
   remainingBalance: number
@@ -93,6 +110,7 @@ export interface GmUserVote {
   id: number
   voteType: string
   targetPlayerId: number | null
+  direction?: 'yea' | 'nay'
   costPaid: number
   createdAt: string | null
 }
@@ -115,7 +133,8 @@ export interface GmVoteResult {
   targetPlayerId: number | null
   targetName: string | null
   directiveNames: string[]
-  totalVotes: number
+  totalVotes: number       // 'yea' (for) count
+  votesAgainst?: number
   threshold: number
   probability: number
   outcome: 'success' | 'below_threshold' | 'failed_roll' | 'ineligible' | 'retiring'
@@ -141,6 +160,7 @@ export interface GmFaBallotResponse {
 export interface GmVoteRequest {
   voteType: string
   targetPlayerId?: number | null
+  direction?: 'yea' | 'nay'
 }
 
 export interface GmFaBallotRequest {
