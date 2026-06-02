@@ -81,6 +81,7 @@ export default function HalftimeShowModal() {
           borderRadius: '10px',
           overflow: 'hidden',
           boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
+          fontFamily: 'pressStart, monospace',
         }}
       >
         <div style={{
@@ -122,7 +123,7 @@ export default function HalftimeShowModal() {
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 gap: '14px', cursor: 'pointer',
                 background: 'radial-gradient(circle at 50% 45%, #1e293b 0%, #020617 80%)',
-                border: 'none', color: '#e2e8f0', fontFamily: 'inherit',
+                border: 'none', color: '#e2e8f0', fontFamily: 'pressStart, monospace',
               }}
             >
               <span style={{
