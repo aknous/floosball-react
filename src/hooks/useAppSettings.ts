@@ -8,6 +8,8 @@ export interface AppSettings {
   survey_url: string
   survey_visible: boolean
   survey_text: string
+  halftime_show_url: string
+  halftime_show_pause_seconds: string
 }
 
 const DEFAULTS: AppSettings = {
@@ -16,6 +18,8 @@ const DEFAULTS: AppSettings = {
   survey_url: 'https://forms.gle/s2ycdsBLxTpsWEk4A',
   survey_visible: false,
   survey_text: '',
+  halftime_show_url: '',
+  halftime_show_pause_seconds: '120',
 }
 
 let cache: AppSettings | null = null
