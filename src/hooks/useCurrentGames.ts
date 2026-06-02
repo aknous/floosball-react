@@ -57,6 +57,7 @@ export interface CurrentGame {
   startTime?: number
   isOvertime?: boolean
   isHalftime?: boolean
+  isFloosBowl?: boolean
   isUpsetAlert?: boolean
   isFeatured?: boolean
   homeTimeouts?: number

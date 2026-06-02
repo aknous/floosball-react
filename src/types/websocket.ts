@@ -501,6 +501,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   momentum: number
   momentumTeam: string | null
   isHalftime: boolean
+  isFloosBowl?: boolean
   isOvertime: boolean
   isUpsetAlert?: boolean
   homeTimeouts: number
