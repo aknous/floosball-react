@@ -46,18 +46,43 @@ const MAX_LINES = 80
 const AMBIENT_MS = 45_000
 const AMBIENT_QUIET_MS = 30_000
 
+// Compact relative time for a block. Falls back to a clock time past a day so
+// old backfilled history still reads clearly.
+const formatRelative = (ts: number, now: number): string => {
+  const diff = Math.max(0, now - ts)
+  if (diff < 45_000) return 'now'
+  if (diff < 3_600_000) return `${Math.round(diff / 60_000)}m ago`
+  if (diff < 86_400_000) return `${Math.round(diff / 3_600_000)}h ago`
+  try {
+    return new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  } catch {
+    return ''
+  }
+}
+
 interface CoresPopoverProps {
   anchorRef: React.RefObject<HTMLElement | null>
   onClose: () => void
+  pinned?: boolean
+  onPanelEnter?: () => void
+  onPanelLeave?: () => void
 }
 
-const CoresPopover: React.FC<CoresPopoverProps> = ({ anchorRef, onClose }) => {
+const CoresPopover: React.FC<CoresPopoverProps> = ({
+  anchorRef, onClose, pinned = false, onPanelEnter, onPanelLeave,
+}) => {
   const { subscribe } = useSeasonWebSocket()
   const { status } = useCoresStatus()
   const [lines, setLines] = useState<CoreLine[]>([])
   const lastLiveRef = useRef<number>(0)
   const panelRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
+  // Drives relative-time refresh ("now" → "3m" → "1h") without per-line timers.
+  const [now, setNow] = useState<number>(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000)
+    return () => clearInterval(id)
+  }, [])
 
   // Position under the anchor, right-aligned, clamped to the viewport.
   useEffect(() => {
@@ -199,6 +224,8 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({ anchorRef, onClose }) => {
       ref={panelRef}
       role="dialog"
       aria-label="The Cores"
+      onMouseEnter={onPanelEnter}
+      onMouseLeave={onPanelLeave}
       style={{
         position: 'fixed', top: pos.top, left: pos.left, width: PANEL_WIDTH,
         maxWidth: 'calc(100vw - 16px)', maxHeight: 'min(70vh, 560px)',
@@ -217,10 +244,23 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({ anchorRef, onClose }) => {
           <StatusOrb color={v.color} pulseMs={v.pulseMs} />
           <span style={{
             fontSize: '14px', fontWeight: 800, color: v.color,
-            textTransform: 'uppercase', letterSpacing: '0.06em',
+            textTransform: 'uppercase', letterSpacing: '0.06em', flex: 1,
           }}>
             {status.label || v.label}
           </span>
+          {pinned && (
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              style={{
+                width: '22px', height: '22px', borderRadius: '5px', flexShrink: 0,
+                background: 'transparent', border: '1px solid #334155',
+                color: '#cbd5e1', cursor: 'pointer', fontSize: '13px', lineHeight: 1,
+              }}
+            >
+              ×
+            </button>
+          )}
         </div>
         <p style={{ fontSize: '12px', color: '#cbd5e1', margin: '8px 0 0', lineHeight: 1.5 }}>
           {description}
@@ -234,7 +274,7 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({ anchorRef, onClose }) => {
             The channel is quiet.
           </p>
         ) : (
-          blocks.map(b => <ExchangeBlock key={b.key} block={b} />)
+          blocks.map(b => <ExchangeBlock key={b.key} block={b} now={now} />)
         )}
       </div>
     </div>,
@@ -255,7 +295,7 @@ const StatusOrb: React.FC<{ color: string; pulseMs: number }> = ({ color, pulseM
   </span>
 )
 
-const ExchangeBlock: React.FC<{ block: Block }> = ({ block }) => {
+const ExchangeBlock: React.FC<{ block: Block; now: number }> = ({ block, now }) => {
   const tag = block.ambient ? null : (block.eventType ? EVENT_TAG[block.eventType] : null)
   const isConversation = block.turns.length > 1
   return (
@@ -264,11 +304,20 @@ const ExchangeBlock: React.FC<{ block: Block }> = ({ block }) => {
       border: `1px solid ${tag ? `${tag.color}33` : '#1e293b'}`,
       borderRadius: '8px', padding: '10px 11px',
     }}>
-      {tag && (
-        <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.1em', color: tag.color, textTransform: 'uppercase', marginBottom: '7px' }}>
-          {tag.label}
-        </div>
-      )}
+      {/* Header row: event tag (or nothing) + when it happened */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: '8px', marginBottom: '7px',
+      }}>
+        {tag ? (
+          <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.1em', color: tag.color, textTransform: 'uppercase' }}>
+            {tag.label}
+          </span>
+        ) : <span />}
+        <span style={{ fontSize: '9px', color: '#64748b', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          {formatRelative(block.ts, now)}
+        </span>
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: isConversation ? '7px' : '0' }}>
         {block.turns.map(t => {
           const c = coreColor(t.core)
