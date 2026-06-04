@@ -10,6 +10,7 @@ import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { FavoriteTeamModal } from './Auth/FavoriteTeamModal'
 import { AuthModal } from './Auth/AuthModal'
 import ShopModal from './Shop/ShopModal'
+import CriticalityIndicator from './CriticalityIndicator'
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 const TrophySVG = () => (
@@ -566,6 +567,7 @@ export default function Navbar() {
 
             {isMobile ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CriticalityIndicator compact />
                 {fantasyPoints && seasonState.currentWeek <= 28 && !seasonState.seasonComplete && (
                   <NavLink to="/fantasy" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '5px', backgroundColor: 'rgba(34,197,94,0.12)' }}>
                     <span style={{ fontSize: '13px', fontWeight: '700', color: '#4ade80' }}>
@@ -592,6 +594,7 @@ export default function Navbar() {
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: isTablet ? '14px' : '24px' }}>
+                <CriticalityIndicator />
                 {fantasyPoints && seasonState.currentWeek <= 28 && !seasonState.seasonComplete && (
                   <NavLink to="/fantasy" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '0 14px', height: '36px', borderRadius: '6px', backgroundColor: 'rgba(34,197,94,0.12)' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1' }}>

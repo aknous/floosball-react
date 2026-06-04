@@ -4,6 +4,8 @@ import { useSidebar, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from '@/c
 import { useAuth } from '@/contexts/AuthContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { useFloosball } from '@/contexts/FloosballContext'
+import { useCoresStatus } from '@/contexts/CoresStatusContext'
+import { bandVisual, isElevated } from '@/utils/coresVisual'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -109,6 +111,17 @@ const NAV_ITEMS = [
     ),
   },
   {
+    key: 'cores',
+    label: 'The Cores',
+    path: '/cores',
+    icon: (
+      // Watching eye — the intelligences observing the simulation.
+      <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10 2C5 2 1.7 5.1.5 10c1.2 4.9 4.5 8 9.5 8s8.3-3.1 9.5-8C18.3 5.1 15 2 10 2zm0 13a5 5 0 110-10 5 5 0 010 10zm0-8a3 3 0 100 6 3 3 0 000-6z" />
+      </svg>
+    ),
+  },
+  {
     key: 'guide',
     label: 'Guide',
     path: '/about',
@@ -128,6 +141,9 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
   const { user } = useAuth()
   const { unclaimedCount } = useAchievements()
   const { seasonState } = useFloosball()
+  const { status: coresStatus } = useCoresStatus()
+  const coresElevated = isElevated(coresStatus.status)
+  const coresBand = bandVisual(coresStatus.status)
   const location = useLocation()
 
   // Look up favorite team name for the nav item. Cached in localStorage keyed
@@ -195,6 +211,7 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
         overflow: 'hidden',
       }}
     >
+      <style>{`@keyframes sidebarCoresPulse { 0%{opacity:1;} 50%{opacity:0.35;} 100%{opacity:1;} }`}</style>
       {/* Nav items */}
       <div style={{ flex: 1, paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
         {NAV_ITEMS.filter(item => {
@@ -256,6 +273,15 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
                     {unclaimedCount > 9 ? '9+' : unclaimedCount}
                   </span>
                 )}
+                {item.key === 'cores' && coresElevated && !expanded && (
+                  <span style={{
+                    position: 'absolute', top: '-1px', right: '-3px',
+                    width: '8px', height: '8px', borderRadius: '50%',
+                    backgroundColor: coresBand.color,
+                    boxShadow: `0 0 6px ${coresBand.color}`,
+                    animation: coresBand.pulseMs > 0 ? `sidebarCoresPulse ${coresBand.pulseMs}ms ease-in-out infinite` : undefined,
+                  }} />
+                )}
               </span>
               {expanded && (
                 <span style={{ fontSize: '15px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -268,6 +294,21 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       {unclaimedCount}
+                    </span>
+                  )}
+                  {item.key === 'cores' && coresElevated && (
+                    <span style={{
+                      fontSize: '9px', fontWeight: 700, letterSpacing: '0.06em',
+                      color: coresBand.color, textTransform: 'uppercase',
+                      display: 'flex', alignItems: 'center', gap: '5px',
+                    }}>
+                      <span style={{
+                        width: '7px', height: '7px', borderRadius: '50%',
+                        backgroundColor: coresBand.color,
+                        boxShadow: `0 0 5px ${coresBand.color}`,
+                        animation: coresBand.pulseMs > 0 ? `sidebarCoresPulse ${coresBand.pulseMs}ms ease-in-out infinite` : undefined,
+                      }} />
+                      {coresBand.label}
                     </span>
                   )}
                 </span>
