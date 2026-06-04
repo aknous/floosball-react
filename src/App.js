@@ -39,6 +39,7 @@ import { AchievementsProvider } from './contexts/AchievementsContext'
 import AchievementUnlockedToast from './Components/AchievementUnlockedToast'
 import FloobitsReceivedToast from './Components/FloobitsReceivedToast'
 import PendingPackResumer from './Components/Cards/PendingPackResumer'
+import HalftimeShowModal from './Components/HalftimeShowModal'
 import { ChakraProvider } from '@chakra-ui/react'
 
 function AppLayout() {
@@ -269,6 +270,7 @@ function App() {
                     <AchievementUnlockedToast />
                     <FloobitsReceivedToast />
                     <PendingPackResumer />
+                    <HalftimeShowModal />
                   </SidebarProvider>
                 </AchievementsProvider>
               </GamesProvider>

@@ -296,6 +296,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               homeTimeouts: gsEvt.homeTimeouts,
               awayTimeouts: gsEvt.awayTimeouts,
               isHalftime: gsEvt.isHalftime,
+              isFloosBowl: gsEvt.isFloosBowl ?? curGame.isFloosBowl,
               isOvertime: gsEvt.isOvertime,
               isUpsetAlert: gsEvt.isUpsetAlert ?? curGame.isUpsetAlert,
               momentum: gsEvt.momentum,

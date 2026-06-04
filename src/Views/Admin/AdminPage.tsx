@@ -839,7 +839,8 @@ const AdminContent: React.FC<{
   // ── App Settings ──────────────────────────────────────────────────
   const [settingsForm, setSettingsForm] = useState<{
     feedback_url: string; feedback_visible: boolean; survey_url: string; survey_visible: boolean; survey_text: string
-  }>({ feedback_url: '', feedback_visible: true, survey_url: '', survey_visible: false, survey_text: '' })
+    halftime_show_url: string; halftime_show_pause_seconds: string
+  }>({ feedback_url: '', feedback_visible: true, survey_url: '', survey_visible: false, survey_text: '', halftime_show_url: '', halftime_show_pause_seconds: '120' })
   const [settingsLoading, setSettingsLoading] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
@@ -857,6 +858,8 @@ const AdminContent: React.FC<{
         survey_url: data.survey_url || '',
         survey_visible: data.survey_visible === true,
         survey_text: data.survey_text || '',
+        halftime_show_url: data.halftime_show_url || '',
+        halftime_show_pause_seconds: data.halftime_show_pause_seconds || '120',
       })
     } catch (e: any) {
       setSettingsError(e?.message || 'Failed to load settings')
@@ -2355,6 +2358,53 @@ const AdminContent: React.FC<{
             />
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
               Shown above the "Take the Survey" button. Newlines are preserved.
+            </div>
+          </div>
+
+          <div style={{ paddingTop: '14px', borderTop: '1px solid #1e293b' }}>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
+              Floos Bowl halftime show video
+            </label>
+            <input
+              type="text"
+              value={settingsForm.halftime_show_url}
+              onChange={e => setSettingsForm(s => ({ ...s, halftime_show_url: e.target.value }))}
+              disabled={settingsLoading}
+              placeholder="https://www.youtube.com/watch?v=..."
+              style={{
+                width: '100%', padding: '8px 10px',
+                fontSize: '13px', color: '#e2e8f0',
+                backgroundColor: '#0f172a',
+                border: '1px solid #334155', borderRadius: '4px',
+                fontFamily: 'inherit',
+              }}
+            />
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+              YouTube link. Plays at Floos Bowl halftime. Leave empty to disable the show.
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
+              Halftime pause (seconds)
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={settingsForm.halftime_show_pause_seconds}
+              onChange={e => setSettingsForm(s => ({ ...s, halftime_show_pause_seconds: e.target.value }))}
+              disabled={settingsLoading}
+              placeholder="120"
+              style={{
+                width: '140px', padding: '8px 10px',
+                fontSize: '13px', color: '#e2e8f0',
+                backgroundColor: '#0f172a',
+                border: '1px solid #334155', borderRadius: '4px',
+                fontFamily: 'inherit',
+              }}
+            />
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+              How long the Floos Bowl holds at halftime so the show can play. Scheduled mode only.
             </div>
           </div>
 
