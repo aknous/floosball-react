@@ -113,6 +113,14 @@ const BracketView: React.FC = () => {
   const pairKey = (a: number, b: number) => (a < b ? `${a}-${b}` : `${b}-${a}`)
   const displayTree = (mode === 'results' && actualProjected) ? actualProjected : projected
 
+  // Dual-sided (March Madness) layout: each league funnels inward to the
+  // Floos Bowl in the center. One league on the left, the other mirrored on the
+  // right. Per-league rounds run R1 → R2 → League Championship toward center.
+  const leagues = Object.keys(conferences)
+  const leagueLeft = leagues[0]
+  const leagueRight = leagues[1]
+  const perLeagueRounds = ROUND_ORDER.filter((r) => r !== 'floosbowl')
+
   const pickWinner = (round: RoundKey, m: Matchup, teamId: number) => {
     if (locked || mode === 'results') return
     const others = (picks[round] || []).filter((id) => id !== m.higher.teamId && id !== m.lower.teamId)
@@ -128,7 +136,7 @@ const BracketView: React.FC = () => {
   }
   const allComplete = ROUND_ORDER.every(roundComplete)
 
-  const TeamPick: React.FC<{ team: BracketSeedTeam; round: RoundKey; m: Matchup }> = ({ team, round, m }) => {
+  const TeamPick: React.FC<{ team: BracketSeedTeam; round: RoundKey; m: Matchup; side?: 'left' | 'right' }> = ({ team, round, m, side = 'left' }) => {
     const picked = (picks[round] || []).includes(team.teamId)
     const advanced = (actual[round] || []).includes(team.teamId)
     const resolved = roundResolved(round)
@@ -157,25 +165,28 @@ const BracketView: React.FC = () => {
       : undefined
     const bold = advanced || (mode === 'picks' && picked)
     const interactive = mode === 'picks' && !locked
+    const mirror = side === 'right'
+
     return (
       <button
         onClick={() => pickWinner(round, m, team.teamId)}
         disabled={!interactive}
         style={{
-          display: 'flex', alignItems: 'center', gap: 6, width: '100%',
-          padding: isMobile ? '8px 7px' : '5px 7px', backgroundColor: bg, color: fg,
-          border: `1px solid ${border}`, borderRadius: 4,
-          fontSize: 11, fontWeight: bold ? 700 : 500,
-          cursor: interactive ? 'pointer' : 'default', textAlign: 'left',
+          display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+          flexDirection: mirror ? 'row-reverse' : 'row',
+          padding: isMobile ? '8px 9px' : '7px 10px', backgroundColor: bg, color: fg,
+          border: `1px solid ${border}`, borderRadius: 5,
+          fontSize: 13, fontWeight: bold ? 700 : 600,
+          cursor: interactive ? 'pointer' : 'default',
         }}
       >
-        <span style={{ color: C.muted, fontWeight: 700, minWidth: 14 }}>{team.seed}</span>
-        <img src={avatarUrl(team.teamId)} alt="" width={18} height={18} style={{ flexShrink: 0 }} />
-        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ color: C.muted, fontWeight: 700, minWidth: 14, textAlign: 'center' }}>{team.seed}</span>
+        <img src={avatarUrl(team.teamId, 24)} alt="" width={24} height={24} style={{ flexShrink: 0 }} />
+        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: mirror ? 'right' : 'left' }}>
           {team.teamName}
         </span>
         {score != null && (
-          <span style={{ fontWeight: 800, fontSize: 12, color: advanced ? C.correct : C.body, minWidth: 16, textAlign: 'right' }}>
+          <span style={{ fontWeight: 800, fontSize: 15, color: advanced ? C.correct : C.body, minWidth: 16, textAlign: 'center' }}>
             {score}
           </span>
         )}
@@ -183,36 +194,86 @@ const BracketView: React.FC = () => {
     )
   }
 
-  const MatchupCell: React.FC<{ round: RoundKey; m: Matchup }> = ({ round, m }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 18 }}>
-      <TeamPick team={m.higher} round={round} m={m} />
-      <TeamPick team={m.lower} round={round} m={m} />
+  const MatchupCell: React.FC<{ round: RoundKey; m: Matchup; side?: 'left' | 'right' }> = ({ round, m, side }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <TeamPick team={m.higher} round={round} m={m} side={side} />
+      <TeamPick team={m.lower} round={round} m={m} side={side} />
     </div>
   )
 
-  const RoundColumn: React.FC<{ round: RoundKey }> = ({ round }) => {
-    const matchups: Array<{ conf: string; m: Matchup }> = round === 'floosbowl'
-      ? displayTree.floosbowl.map((m) => ({ conf: '', m }))
-      : Object.entries((displayTree as any)[round] as Record<string, Matchup[]>)
-          .flatMap(([conf, ms]) => ms.map((m) => ({ conf, m })))
+  const ColHeader: React.FC<{ round: RoundKey; side: 'left' | 'right' }> = ({ round, side }) => {
     const pr = mine?.perRound?.[round]
     return (
-      <div style={{ minWidth: isMobile ? 150 : 184, flex: '0 0 auto' }}>
-        <div style={{
-          fontSize: 11, fontWeight: 700, color: C.text,
-          textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8,
-          display: 'flex', justifyContent: 'space-between', gap: 6,
-        }}>
-          <span>{ROUND_LABEL[round]}</span>
-          <span style={{ color: C.muted, fontWeight: 600 }}>
-            {mode === 'results' && pr && pr.predicted > 0 ? `${pr.correct}/${pr.predicted} · ` : ''}{ROUND_POINTS[round]}pt
-          </span>
+      <div style={{
+        fontSize: 11, fontWeight: 700, color: C.text,
+        textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10,
+        display: 'flex', justifyContent: 'space-between', gap: 6,
+        flexDirection: side === 'right' ? 'row-reverse' : 'row',
+      }}>
+        <span>{ROUND_LABEL[round]}</span>
+        <span style={{ color: C.muted, fontWeight: 600 }}>
+          {mode === 'results' && pr && pr.predicted > 0 ? `${pr.correct}/${pr.predicted} · ` : ''}{ROUND_POINTS[round]}pt
+        </span>
+      </div>
+    )
+  }
+
+  // One league's column for a single round. The matchup area flexes and uses
+  // space-around so later rounds (fewer games) sit centered against the round
+  // that feeds them — the bracket funnel — without explicit connector lines.
+  const LeagueRoundColumn: React.FC<{ round: RoundKey; conf: string; side: 'left' | 'right' }> = ({ round, conf, side }) => {
+    const ms = ((displayTree as any)[round] as Record<string, Matchup[]>)[conf] || []
+    return (
+      <div style={{
+        // Desktop: shrink to share the container width so the whole bracket
+        // fits without horizontal scroll. Mobile: fixed width + scroll.
+        flex: isMobile ? '0 0 auto' : '1 1 0', minWidth: isMobile ? 150 : 0,
+        display: 'flex', flexDirection: 'column',
+      }}>
+        <ColHeader round={round} side={side} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-around', gap: 14 }}>
+          {ms.length === 0 ? (
+            <div style={{ fontSize: 11, color: C.muted, fontStyle: 'italic', textAlign: side === 'right' ? 'right' : 'left' }}>
+              {mode === 'results' ? 'Awaiting results' : 'Pick the prior round'}
+            </div>
+          ) : ms.map((m, i) => <MatchupCell key={`${round}-${conf}-${i}`} round={round} m={m} side={side} />)}
         </div>
-        {matchups.length === 0 ? (
-          <div style={{ fontSize: 10, color: C.muted, fontStyle: 'italic' }}>
-            {mode === 'results' ? 'Awaiting results' : 'Pick the prior round'}
+      </div>
+    )
+  }
+
+  // The center finale — both league champions meet. Vertically centered and
+  // gold-accented as the bracket's focal point.
+  const FloosBowlColumn: React.FC = () => {
+    const ms = displayTree.floosbowl
+    const pr = mine?.perRound?.floosbowl
+    return (
+      <div style={{
+        flex: isMobile ? '0 0 auto' : '1 1 0', minWidth: isMobile ? 160 : 0,
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            {ROUND_LABEL.floosbowl}
           </div>
-        ) : matchups.map(({ m }, i) => <MatchupCell key={`${round}-${i}`} round={round} m={m} />)}
+          <div style={{ fontSize: 10, color: C.muted, fontWeight: 600, marginTop: 2 }}>
+            {mode === 'results' && pr && pr.predicted > 0 ? `${pr.correct}/${pr.predicted} · ` : ''}{ROUND_POINTS.floosbowl}pt
+          </div>
+        </div>
+        {ms.length === 0 ? (
+          <div style={{ fontSize: 11, color: C.muted, fontStyle: 'italic', textAlign: 'center' }}>
+            {mode === 'results' ? 'Awaiting the finalists' : 'Pick the league championships'}
+          </div>
+        ) : ms.map((m, i) => (
+          <div key={`fb-${i}`} style={{
+            display: 'flex', flexDirection: 'column', gap: 4,
+            border: '1px solid rgba(245,158,11,0.4)', borderRadius: 7, padding: 7,
+            backgroundColor: 'rgba(245,158,11,0.06)',
+          }}>
+            <TeamPick team={m.higher} round="floosbowl" m={m} />
+            <TeamPick team={m.lower} round="floosbowl" m={m} />
+          </div>
+        ))}
       </div>
     )
   }
@@ -232,7 +293,7 @@ const BracketView: React.FC = () => {
   )
 
   return (
-    <div style={{ padding: isMobile ? '14px 10px' : 20, maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '14px 10px' : 20, maxWidth: 1400, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
         <h2 style={{ color: C.text, fontSize: isMobile ? 16 : 18, margin: 0 }}>Playoff Bracket Challenge</h2>
         {mine?.hasBracket && (
@@ -259,11 +320,20 @@ const BracketView: React.FC = () => {
       </p>
 
       <div style={{
-        display: 'flex', gap: isMobile ? 10 : 16, overflowX: 'auto',
-        padding: isMobile ? 10 : 14, WebkitOverflowScrolling: 'touch',
+        display: 'flex', alignItems: 'stretch', gap: isMobile ? 8 : 12, overflowX: 'auto',
+        padding: isMobile ? 12 : 18, WebkitOverflowScrolling: 'touch',
         backgroundColor: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, marginBottom: 16,
       }}>
-        {ROUND_ORDER.map((r) => <RoundColumn key={r} round={r} />)}
+        {/* Left league funnels inward */}
+        {perLeagueRounds.map((r) => (
+          <LeagueRoundColumn key={`L-${r}`} round={r} conf={leagueLeft} side="left" />
+        ))}
+        {/* Center finale */}
+        <FloosBowlColumn />
+        {/* Right league mirrored (League Championship innermost → Round 1 outermost) */}
+        {leagueRight && [...perLeagueRounds].reverse().map((r) => (
+          <LeagueRoundColumn key={`R-${r}`} round={r} conf={leagueRight} side="right" />
+        ))}
       </div>
 
       {mode === 'picks' && !locked && (
