@@ -8,6 +8,7 @@ import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useAuth } from '@/contexts/AuthContext'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { personalityAccent } from '@/utils/personality'
+import { coreColor } from '@/utils/coresVisual'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -437,7 +438,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
           const isMvp = !isLore && item.text.includes('MVP:')
           const isAllPro = !isLore && item.text.includes('All-Pro')
           const borderColor = isAnomaly ? '#c084fc'
-                              : isCores ? '#fbbf24'
+                              : isCores ? coreColor(item.core)
                               : isChamp ? '#f59e0b'
                               : isMvp ? '#f59e0b'
                               : isAllPro ? '#a78bfa'

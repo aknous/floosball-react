@@ -34,6 +34,25 @@ export const CORE_DISPLAY_NAMES: Record<string, string> = {
   vera: 'Vera',
 }
 
+// Per-Core accent colors. Non-verbal characterization — distinguishes who is
+// speaking and gives each Core an identity without a written personality note.
+// All chosen bright enough to read on the dark feed/popover backgrounds.
+//   Cassian   gold    — the record-keeper / fanatic
+//   Pyre      red     — fire, the enforcer
+//   Aris      violet  — the anomaly-lover (echoes the anomaly palette)
+//   Halverson emerald — warmth, the protective one
+//   Vera      cyan    — the cold, distant observer
+export const CORE_COLORS: Record<string, string> = {
+  cassian: '#fbbf24',
+  pyre: '#f87171',
+  aris: '#c084fc',
+  halverson: '#34d399',
+  vera: '#38bdf8',
+}
+
+export const coreColor = (core?: string): string =>
+  CORE_COLORS[(core ?? '').toLowerCase()] ?? '#fbbf24'
+
 // Qualitative Criticality bands, mirrored from the backend getCriticalityStatus.
 // No numbers — the band IS the information. Pulse speed (ms) scales with
 // severity so the header indicator visibly quickens as the season tenses.

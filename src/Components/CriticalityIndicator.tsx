@@ -1,11 +1,13 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useRef, useState } from 'react'
 import { useCoresStatus } from '@/contexts/CoresStatusContext'
 import { bandVisual, isElevated } from '@/utils/coresVisual'
+import CoresPopover from './CoresPopover'
 
-// Compact header indicator for the league's Criticality state. Hidden while
-// dormant so it only draws the eye when the simulation is actually tensing.
-// Pulses faster as the band escalates; links through to the Cores control room.
+// Header entry point for the Cores. Always present so the Cores are reachable
+// (a faint dot while dormant), escalating to a colored, pulsing, labeled pill as
+// the simulation tenses. Clicking toggles an anchored popover with the league's
+// status and the live Cores conversation — no dedicated page, no personality
+// descriptions.
 
 const KEYFRAMES = `
 @keyframes criticalityPulse {
@@ -16,52 +18,54 @@ const KEYFRAMES = `
 
 const CriticalityIndicator: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const { status } = useCoresStatus()
-  if (!isElevated(status.status)) return null
+  const [open, setOpen] = useState(false)
+  const btnRef = useRef<HTMLButtonElement>(null)
 
+  const elevated = isElevated(status.status)
   const v = bandVisual(status.status)
+  // Dormant: a muted, label-less dot. Elevated: the band color, pulsing + label.
+  const dotColor = elevated ? v.color : '#64748b'
+  const showLabel = elevated && !compact
 
   return (
-    <Link
-      to="/cores"
-      aria-label={`Cores: ${v.label}`}
-      title={`The Cores — ${v.label}`}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '7px',
-        padding: compact ? '4px 7px' : '4px 10px',
-        borderRadius: '999px',
-        textDecoration: 'none',
-        backgroundColor: v.tint,
-        border: `1px solid ${v.color}55`,
-        lineHeight: 1,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      <style>{KEYFRAMES}</style>
-      <span style={{ position: 'relative', width: '8px', height: '8px', flexShrink: 0 }}>
-        {v.pulseMs > 0 && (
-          <span
-            style={{
-              position: 'absolute', inset: 0, borderRadius: '50%',
-              backgroundColor: v.color,
+    <>
+      <button
+        ref={btnRef}
+        onClick={() => setOpen(o => !o)}
+        aria-label={`The Cores — ${status.label || v.label}`}
+        aria-expanded={open}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: showLabel ? '7px' : '0',
+          padding: compact ? '5px 6px' : (elevated ? '4px 10px' : '5px 7px'),
+          borderRadius: '999px', cursor: 'pointer',
+          background: elevated ? v.tint : 'transparent',
+          border: elevated ? `1px solid ${v.color}55` : '1px solid transparent',
+          lineHeight: 1, whiteSpace: 'nowrap',
+        }}
+        onMouseEnter={e => { if (!elevated) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+        onMouseLeave={e => { if (!elevated) e.currentTarget.style.background = 'transparent' }}
+      >
+        <style>{KEYFRAMES}</style>
+        <span style={{ position: 'relative', width: '8px', height: '8px', flexShrink: 0 }}>
+          {elevated && v.pulseMs > 0 && (
+            <span style={{
+              position: 'absolute', inset: 0, borderRadius: '50%', backgroundColor: dotColor,
               animation: `criticalityPulse ${v.pulseMs}ms ease-in-out infinite`,
-            }}
-          />
-        )}
-        <span style={{
-          position: 'absolute', inset: 0, borderRadius: '50%', backgroundColor: v.color,
-        }} />
-      </span>
-      {!compact && (
-        <span style={{
-          fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
-          color: v.color, textTransform: 'uppercase',
-        }}>
-          {v.label}
+            }} />
+          )}
+          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', backgroundColor: dotColor }} />
         </span>
-      )}
-    </Link>
+        {showLabel && (
+          <span style={{
+            fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
+            color: v.color, textTransform: 'uppercase',
+          }}>
+            {v.label}
+          </span>
+        )}
+      </button>
+      {open && <CoresPopover anchorRef={btnRef} onClose={() => setOpen(false)} />}
+    </>
   )
 }
 
