@@ -205,6 +205,10 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({ anchorRef, onClose }) => {
         backgroundColor: '#0b1220', border: `1px solid ${v.color}44`,
         borderRadius: '10px', boxShadow: '0 18px 50px rgba(0,0,0,0.6)',
         zIndex: 10010, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        // Portal renders outside the app's font-pixel root, so set the app font
+        // explicitly (matches tailwind's `pixel` family) or it falls back to the
+        // browser default.
+        fontFamily: 'pressStart, sans-serif',
       }}
     >
       {/* Status header */}
