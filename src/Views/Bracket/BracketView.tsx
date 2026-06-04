@@ -167,41 +167,26 @@ const BracketView: React.FC = () => {
     const interactive = mode === 'picks' && !locked
     const mirror = side === 'right'
 
-    // Secondary stat line: real W-L + ELO when the payload carries them, else
-    // fall back to the seeding stats we always have (win% as a record proxy
-    // and point differential).
-    const pct = team.winPct ?? 0
-    const recordText = (team.wins != null && team.losses != null)
-      ? `${team.wins}-${team.losses}`
-      : (pct >= 1 ? '1.000' : `.${Math.round(pct * 1000).toString().padStart(3, '0')}`)
-    const diff = Math.round(team.scoreDiff ?? 0)
-    const eloText = team.elo != null ? `${Math.round(team.elo)} ELO` : null
-    const subLine = [recordText, `${diff >= 0 ? '+' : ''}${diff}`, eloText].filter(Boolean).join('  ·  ')
-
     return (
       <button
         onClick={() => pickWinner(round, m, team.teamId)}
         disabled={!interactive}
         style={{
-          display: 'flex', alignItems: 'center', gap: 9, width: '100%',
+          display: 'flex', alignItems: 'center', gap: 8, width: '100%',
           flexDirection: mirror ? 'row-reverse' : 'row',
-          padding: isMobile ? '8px 9px' : '8px 11px', backgroundColor: bg, color: fg,
+          padding: isMobile ? '8px 9px' : '7px 10px', backgroundColor: bg, color: fg,
           border: `1px solid ${border}`, borderRadius: 5,
+          fontSize: 13, fontWeight: bold ? 700 : 600,
           cursor: interactive ? 'pointer' : 'default',
         }}
       >
-        <span style={{ color: C.muted, fontWeight: 700, fontSize: 13, minWidth: 16, textAlign: 'center' }}>{team.seed}</span>
-        <img src={avatarUrl(team.teamId, 26)} alt="" width={26} height={26} style={{ flexShrink: 0 }} />
-        <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1, alignItems: mirror ? 'flex-end' : 'flex-start' }}>
-          <span style={{ fontSize: 13, fontWeight: bold ? 700 : 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
-            {team.teamName}
-          </span>
-          <span style={{ fontSize: 10, color: C.muted, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
-            {subLine}
-          </span>
+        <span style={{ color: C.muted, fontWeight: 700, minWidth: 14, textAlign: 'center' }}>{team.seed}</span>
+        <img src={avatarUrl(team.teamId, 24)} alt="" width={24} height={24} style={{ flexShrink: 0 }} />
+        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: mirror ? 'right' : 'left' }}>
+          {team.teamName}
         </span>
         {score != null && (
-          <span style={{ fontWeight: 800, fontSize: 15, color: advanced ? C.correct : C.body, minWidth: 18, textAlign: 'center' }}>
+          <span style={{ fontWeight: 800, fontSize: 15, color: advanced ? C.correct : C.body, minWidth: 16, textAlign: 'center' }}>
             {score}
           </span>
         )}
@@ -239,7 +224,12 @@ const BracketView: React.FC = () => {
   const LeagueRoundColumn: React.FC<{ round: RoundKey; conf: string; side: 'left' | 'right' }> = ({ round, conf, side }) => {
     const ms = ((displayTree as any)[round] as Record<string, Matchup[]>)[conf] || []
     return (
-      <div style={{ minWidth: isMobile ? 168 : 200, flex: '0 0 auto', display: 'flex', flexDirection: 'column' }}>
+      <div style={{
+        // Desktop: shrink to share the container width so the whole bracket
+        // fits without horizontal scroll. Mobile: fixed width + scroll.
+        flex: isMobile ? '0 0 auto' : '1 1 0', minWidth: isMobile ? 150 : 0,
+        display: 'flex', flexDirection: 'column',
+      }}>
         <ColHeader round={round} side={side} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-around', gap: 14 }}>
           {ms.length === 0 ? (
@@ -258,7 +248,10 @@ const BracketView: React.FC = () => {
     const ms = displayTree.floosbowl
     const pr = mine?.perRound?.floosbowl
     return (
-      <div style={{ minWidth: isMobile ? 176 : 216, flex: '0 0 auto', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div style={{
+        flex: isMobile ? '0 0 auto' : '1 1 0', minWidth: isMobile ? 160 : 0,
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+      }}>
         <div style={{ textAlign: 'center', marginBottom: 10 }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             {ROUND_LABEL.floosbowl}

@@ -23,11 +23,6 @@ export interface BracketSeedTeam {
   teamName: string
   city?: string
   abbreviation?: string
-  // Optional — present once the backend adds them to the seed payload. The
-  // bracket cell shows real W-L + ELO when available, else falls back to winPct.
-  wins?: number
-  losses?: number
-  elo?: number
 }
 
 export type BracketPredictions = Partial<Record<RoundKey, number[]>>
