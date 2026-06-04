@@ -86,6 +86,11 @@ const getBadge = (play: any): { label: string; color: string } | null => {
 // than users read them.
 const OFF_DAY_POLL_MS = 60_000
 
+// Which Cores beats are loud enough to echo into the highlight feed. The full
+// conversation (routine warnings, idle banter) lives in the Cores popover; the
+// feed only flags the big moments — the near-miss patch, a breach, the purge.
+const CORES_FEED_EVENTS = new Set(['suppression', 'criticality', 'reset'])
+
 
 // Per-Core lore icons drawn from Game Icons (gi). Each Core's icon evokes
 // its system-level role inside the simulation:
@@ -119,6 +124,9 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
   useEffect(() => {
     if (!event || event.event !== 'league_news') return
     const e = event as any
+    // Cores dialogue has its own popover; only the big beats echo into the feed
+    // (the routine warnings + idle banter would be noise here).
+    if (e.category === 'cores' && !CORES_FEED_EVENTS.has(e.eventType)) return
     setNewsItems(prev => [{
       type: 'league_news',
       id: `news-${Date.now()}-${Math.random()}`,
@@ -141,7 +149,10 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
       .then((rows: any[]) => {
         if (cancelled || !Array.isArray(rows) || rows.length === 0) return
         const baseTs = Date.now() - 60 * 60 * 1000
-        const restored: LeagueNewsHighlight[] = rows.map((r, i) => ({
+        const restored: LeagueNewsHighlight[] = rows
+          // Same big-beats-only rule for backfilled Cores lines.
+          .filter(r => r.category !== 'cores' || CORES_FEED_EVENTS.has(r.eventType))
+          .map((r, i) => ({
           type: 'league_news',
           id: `news-rest-${r.id}`,
           sortKey: r.createdAt ? Date.parse(r.createdAt) : (baseTs - i * 1000),
