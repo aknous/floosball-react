@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
+import SupporterCard from '@/Components/FrontOffice/SupporterCard'
 import RookiesSection from './RookiesSection'
 import MarketsSection from './MarketsSection'
 import { Stars, calcStars } from '@/Components/Stars'
@@ -359,11 +360,14 @@ export default function FrontOfficePage() {
 
       {/* Only the active tab's content renders */}
       {activeSection === 'overview' && (
-        <OverviewTab
-          team={team}
-          retirementWatch={retirementWatch}
-          prospects={prospects}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <SupporterCard />
+          <OverviewTab
+            team={team}
+            retirementWatch={retirementWatch}
+            prospects={prospects}
+          />
+        </div>
       )}
 
       {activeSection === 'markets' && (
