@@ -12,6 +12,7 @@ import { personalityAccent } from '@/utils/personality'
 import { pressureHandlingTier } from '@/utils/mentalProfile'
 import { PlayReactions } from './GameModal/PlayReactions'
 import RallyButton from './GameModal/RallyPanel'
+import CheerBar from './CheerBar'
 import { GlitchedText } from './GlitchedText'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -993,6 +994,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       transition: 'background-color 0.3s',
                     }} />
                   ))}
+                </div>
+              )}
+
+              {/* Cheer bar — earn Floobits for watching this live game */}
+              {isLive && (
+                <div style={{ marginTop: '12px' }}>
+                  <CheerBar gameId={gameId} isLive={isLive} />
                 </div>
               )}
 
