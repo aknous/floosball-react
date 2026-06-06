@@ -877,19 +877,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           borderBottom: '1px solid #334155',
           flexShrink: 0
         }}>
-          <div />
+          {/* Cheer bar lives in the existing header row (live games only) so it
+              adds no height and never pushes the body / WP graph down. */}
+          {isLive ? <CheerBar gameId={gameId} isLive={isLive} compact /> : <div />}
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
             <XIcon style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
           </button>
         </div>
-
-        {/* Cheer bar — full-width strip, always visible (live games only) so it
-            doesn't push the scrollable left column (WP graph etc.) down. */}
-        {isLive && (
-          <div style={{ padding: '10px 20px', borderBottom: '1px solid #334155', flexShrink: 0 }}>
-            <CheerBar gameId={gameId} isLive={isLive} />
-          </div>
-        )}
 
         {/* Body: two-column on desktop, stacked on mobile */}
         <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: isMobile ? 'auto' : 'hidden', minHeight: 0 }}>

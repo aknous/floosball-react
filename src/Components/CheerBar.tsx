@@ -27,7 +27,7 @@ const C = {
   muted: '#94a3b8', green: '#22c55e', gold: '#fbbf24', warn: '#f59e0b',
 }
 
-const CheerBar: React.FC<{ gameId: number; isLive: boolean }> = ({ gameId, isLive }) => {
+const CheerBar: React.FC<{ gameId: number; isLive: boolean; compact?: boolean }> = ({ gameId, isLive, compact = false }) => {
   const { getToken } = useAuth()
   const [status, setStatus] = useState<SpectatorStatus | null>(null)
   const [visible, setVisible] = useState(() => document.visibilityState === 'visible')
@@ -75,6 +75,24 @@ const CheerBar: React.FC<{ gameId: number; isLive: boolean }> = ({ gameId, isLiv
   const accent = status?.cappedOut ? C.muted : earning ? C.green : C.warn
   const pct = Math.round((status?.segmentProgress ?? 0) * 100)
   const weekly = status ? `${status.weeklyFloobits} / ${status.weeklyCap} F this week` : ''
+
+  // Compact single-line variant — fits inside the modal header row so it adds
+  // no vertical height.
+  if (compact) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: accent, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+          Cheer{status?.cappedOut ? ' · maxed' : earning ? '' : ' · paused'}
+        </span>
+        <div style={{ width: 110, height: 6, borderRadius: 3, backgroundColor: '#1e293b', overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{ width: `${pct}%`, height: '100%', backgroundColor: accent, transition: 'width 0.5s ease' }} />
+        </div>
+        <span style={{ fontSize: 10, fontWeight: flash ? 700 : 400, color: flash ? C.gold : C.muted, whiteSpace: 'nowrap' }}>
+          {flash ? `+${status?.segmentPayout} F!` : `${status?.weeklyFloobits ?? 0}/${status?.weeklyCap ?? 60} F`}
+        </span>
+      </div>
+    )
+  }
 
   return (
     <div style={{
