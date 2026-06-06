@@ -80,14 +80,14 @@ const CheerBar: React.FC<{ gameId: number; isLive: boolean; compact?: boolean }>
   // no vertical height.
   if (compact) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: accent, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: accent, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
           Spectating{status?.cappedOut ? ' · maxed' : earning ? '' : ' · paused'}
         </span>
-        <div style={{ width: 110, height: 6, borderRadius: 3, backgroundColor: '#1e293b', overflow: 'hidden', flexShrink: 0 }}>
+        <div style={{ width: 150, height: 9, borderRadius: 4, backgroundColor: '#1e293b', overflow: 'hidden', flexShrink: 0 }}>
           <div style={{ width: `${pct}%`, height: '100%', backgroundColor: accent, transition: 'width 0.5s ease' }} />
         </div>
-        <span style={{ fontSize: 10, fontWeight: flash ? 700 : 600, color: C.gold, whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 12, fontWeight: flash ? 700 : 600, color: C.gold, whiteSpace: 'nowrap' }}>
           {flash ? `+${status?.segmentPayout} F!` : `${status?.weeklyFloobits ?? 0}/${status?.weeklyCap ?? 60} F`}
         </span>
       </div>
