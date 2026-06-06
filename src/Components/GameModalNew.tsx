@@ -879,7 +879,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         }}>
           {/* Cheer bar lives in the existing header row (live games only) so it
               adds no height and never pushes the body / WP graph down. */}
-          {isLive ? <CheerBar gameId={gameId} isLive={isLive} compact /> : <div />}
+          {isLive ? (
+            <CheerBar
+              gameId={gameId}
+              isLive={isLive}
+              playCount={(gameData?.plays as any[])?.filter((p: any) => !p.event && !p.isSidelineCutaway).length ?? 0}
+              score={(gameData?.homeScore ?? 0) + (gameData?.awayScore ?? 0)}
+              bigPlayCount={(gameData?.plays as any[])?.filter((p: any) => p.isBigPlay && !p.isSidelineCutaway).length ?? 0}
+              compact
+            />
+          ) : <div />}
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
             <XIcon style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
           </button>
@@ -1290,6 +1299,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
               // Yard lines at 10-yd intervals across the 120-yd field
               const yardLinePositions = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110]
+              // The 5-yd lines that fall between the numbered 10s (real field has
+              // a line every 5 yards; only the 10s are numbered).
+              const fiveYardLinePositions = [15, 25, 35, 45, 55, 65, 75, 85, 95, 105]
               // NFL-style yard numbers (count from each end)
               const yardNums: [number, string][] = [
                 [20, '10'], [30, '20'], [40, '30'], [50, '40'], [60, '50'],
@@ -1342,7 +1354,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     <line x1={toX(10)} y1={0} x2={toX(10)} y2={FH} stroke="rgba(255,255,255,0.55)" strokeWidth={1.5} />
                     <line x1={toX(110)} y1={0} x2={toX(110)} y2={FH} stroke="rgba(255,255,255,0.55)" strokeWidth={1.5} />
 
-                    {/* Yard lines */}
+                    {/* 5-yard lines (between the numbered 10s) — fainter so the
+                        numbered 10-yard lines stay the primary references. */}
+                    {fiveYardLinePositions.map(yd => (
+                      <line key={`f-${yd}`}
+                        x1={toX(yd)} y1={0} x2={toX(yd)} y2={FH}
+                        stroke="rgba(255,255,255,0.10)" strokeWidth={0.6}
+                      />
+                    ))}
+
+                    {/* Yard lines (every 10) */}
                     {yardLinePositions.map(yd => (
                       <line key={yd}
                         x1={toX(yd)} y1={0} x2={toX(yd)} y2={FH}
@@ -1362,19 +1383,23 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     {/* Yard numbers */}
                     {yardNums.map(([ydPos, label]) => (
                       <text key={ydPos} x={toX(ydPos)} y={FH * 0.82}
-                        textAnchor="middle" fontSize={11} fill="rgba(255,255,255,0.28)" fontFamily="sans-serif">
+                        textAnchor="middle" fontSize={17} fill="rgba(255,255,255,0.3)" fontFamily="pressStart, monospace">
                         {label}
                       </text>
                     ))}
 
-                    {/* End zone team labels (fixed: home=left, away=right) */}
-                    <text x={EZW / 2} y={midY + 5} textAnchor="middle" fontSize={11} fontWeight="700"
-                      fill={homeTeam.color} opacity={0.9} fontFamily="sans-serif">
-                      {homeTeam.abbr}
+                    {/* End zone team names — vertical (parallel to the yard
+                        lines), reading into the field from each end (home left
+                        reads bottom-to-top, away right reads top-to-bottom). */}
+                    <text x={EZW / 2} y={midY} transform={`rotate(-90 ${EZW / 2} ${midY})`}
+                      textAnchor="middle" dominantBaseline="central" fontSize={21} fontWeight={800}
+                      letterSpacing={1.5} fill={homeTeam.color} opacity={0.9} fontFamily="pressStart, monospace">
+                      {(homeTeam.name || homeTeam.abbr).toUpperCase()}
                     </text>
-                    <text x={FW - EZW / 2} y={midY + 5} textAnchor="middle" fontSize={11} fontWeight="700"
-                      fill={awayTeam.color} opacity={0.9} fontFamily="sans-serif">
-                      {awayTeam.abbr}
+                    <text x={FW - EZW / 2} y={midY} transform={`rotate(90 ${FW - EZW / 2} ${midY})`}
+                      textAnchor="middle" dominantBaseline="central" fontSize={21} fontWeight={800}
+                      letterSpacing={1.5} fill={awayTeam.color} opacity={0.9} fontFamily="pressStart, monospace">
+                      {(awayTeam.name || awayTeam.abbr).toUpperCase()}
                     </text>
 
                     {/* First down marker */}
@@ -1463,7 +1488,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     {(playResult || playDescription) && (
                       <>
                         {playDescription && (
-                          <p style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', margin: 0, lineHeight: '1.4', marginBottom: playResult ? '4px' : 0 }}>
+                          <p style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', margin: 0, lineHeight: '1.4', marginBottom: playResult ? '4px' : 0, fontFamily: 'pressStart, monospace' }}>
                             {playDescription}
                           </p>
                         )}
@@ -1480,6 +1505,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                                 fontWeight: '700',
                                 letterSpacing: '0.04em',
                                 textTransform: 'uppercase',
+                                fontFamily: 'pressStart, monospace',
                               }}>
                                 {playResult}
                               </span>
