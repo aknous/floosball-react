@@ -883,6 +883,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           </button>
         </div>
 
+        {/* Cheer bar — full-width strip, always visible (live games only) so it
+            doesn't push the scrollable left column (WP graph etc.) down. */}
+        {isLive && (
+          <div style={{ padding: '10px 20px', borderBottom: '1px solid #334155', flexShrink: 0 }}>
+            <CheerBar gameId={gameId} isLive={isLive} />
+          </div>
+        )}
+
         {/* Body: two-column on desktop, stacked on mobile */}
         <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: isMobile ? 'auto' : 'hidden', minHeight: 0 }}>
 
@@ -994,13 +1002,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       transition: 'background-color 0.3s',
                     }} />
                   ))}
-                </div>
-              )}
-
-              {/* Cheer bar — earn Floobits for watching this live game */}
-              {isLive && (
-                <div style={{ marginTop: '12px' }}>
-                  <CheerBar gameId={gameId} isLive={isLive} />
                 </div>
               )}
 
