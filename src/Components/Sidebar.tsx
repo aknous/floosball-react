@@ -125,10 +125,36 @@ const FOOTER_HEIGHT = 37
 const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => {
   const { collapsed, toggle } = useSidebar()
   const [hovered, setHovered] = useState(false)
-  const { user } = useAuth()
+  const { user, getToken } = useAuth()
   const { unclaimedCount } = useAchievements()
   const { seasonState } = useFloosball()
   const location = useLocation()
+
+  // Supporter dividends waiting to be claimed → a badge on the Front Office
+  // entry. Refresh on mount, on navigation, on a slow interval (to catch
+  // week-end accrual), and when the Front Office page reports a claim.
+  const [supporterUnclaimed, setSupporterUnclaimed] = useState(0)
+  useEffect(() => {
+    if (!user) { setSupporterUnclaimed(0); return }
+    let cancelled = false
+    const loadSupporter = async () => {
+      try {
+        const tok = await getToken()
+        const res = await fetch(`${API_BASE}/supporter/me`, { headers: { Authorization: `Bearer ${tok}` } })
+        const json = await res.json()
+        const amt = (json?.data?.unclaimed ?? 0) as number
+        if (!cancelled) setSupporterUnclaimed(amt)
+      } catch { /* keep last */ }
+    }
+    loadSupporter()
+    const id = setInterval(loadSupporter, 180_000)
+    window.addEventListener('supporter:claimed', loadSupporter)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+      window.removeEventListener('supporter:claimed', loadSupporter)
+    }
+  }, [user, getToken, location.pathname])
 
   // Look up favorite team name for the nav item. Cached in localStorage keyed
   // by team id so name shows immediately on reload; refresh in the background.
@@ -217,6 +243,7 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
                 gap: '12px',
                 padding: '10px 0',
                 paddingLeft: '20px',
+                paddingRight: '12px',
                 textDecoration: 'none',
                 color: isActive ? '#e2e8f0' : '#cbd5e1',
                 backgroundColor: isActive ? 'rgba(59,130,246,0.1)' : 'transparent',
@@ -256,18 +283,40 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
                     {unclaimedCount > 9 ? '9+' : unclaimedCount}
                   </span>
                 )}
+                {/* Front Office: a gold dot when supporter dividends are claimable. */}
+                {item.key === 'frontoffice' && supporterUnclaimed > 0 && !expanded && (
+                  <span style={{
+                    position: 'absolute', top: '-2px', right: '-4px',
+                    width: '10px', height: '10px', borderRadius: '5px',
+                    backgroundColor: '#fbbf24', border: '2px solid #0f172a',
+                  }} />
+                )}
               </span>
               {expanded && (
-                <span style={{ fontSize: '15px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {item.label}
+                <span style={{ flex: 1, minWidth: 0, fontSize: '15px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
                   {item.key === 'achievements' && unclaimedCount > 0 && (
                     <span style={{
+                      flexShrink: 0, marginLeft: 'auto',
                       minWidth: '18px', height: '18px', padding: '0 6px',
                       borderRadius: '9px', backgroundColor: '#f59e0b', color: '#0f172a',
                       fontSize: '10px', fontWeight: 700,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       {unclaimedCount}
+                    </span>
+                  )}
+                  {/* Gold pill = claimable dividends, capped so it never widens
+                      enough to clip against the sidebar edge. */}
+                  {item.key === 'frontoffice' && supporterUnclaimed > 0 && (
+                    <span style={{
+                      flexShrink: 0, marginLeft: 'auto',
+                      minWidth: '18px', height: '18px', padding: '0 6px',
+                      borderRadius: '9px', backgroundColor: '#fbbf24', color: '#0f172a',
+                      fontSize: '10px', fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {supporterUnclaimed > 99 ? '99+' : supporterUnclaimed}
                     </span>
                   )}
                 </span>
