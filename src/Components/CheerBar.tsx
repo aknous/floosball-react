@@ -87,7 +87,7 @@ const CheerBar: React.FC<{ gameId: number; isLive: boolean; compact?: boolean }>
         <div style={{ width: 110, height: 6, borderRadius: 3, backgroundColor: '#1e293b', overflow: 'hidden', flexShrink: 0 }}>
           <div style={{ width: `${pct}%`, height: '100%', backgroundColor: accent, transition: 'width 0.5s ease' }} />
         </div>
-        <span style={{ fontSize: 10, fontWeight: flash ? 700 : 400, color: flash ? C.gold : C.muted, whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 10, fontWeight: flash ? 700 : 600, color: C.gold, whiteSpace: 'nowrap' }}>
           {flash ? `+${status?.segmentPayout} F!` : `${status?.weeklyFloobits ?? 0}/${status?.weeklyCap ?? 60} F`}
         </span>
       </div>
@@ -103,8 +103,8 @@ const CheerBar: React.FC<{ gameId: number; isLive: boolean; compact?: boolean }>
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: accent, textTransform: 'uppercase' }}>
           Spectating{status?.cappedOut ? ' · maxed' : earning ? '' : ' · paused'}
         </span>
-        <span style={{ fontSize: 10, color: C.muted }}>
-          {flash ? <span style={{ color: C.gold, fontWeight: 700 }}>+{status?.segmentPayout} F!</span>
+        <span style={{ fontSize: 10, color: C.gold, fontWeight: 600 }}>
+          {flash ? <span style={{ fontWeight: 700 }}>+{status?.segmentPayout} F!</span>
             : `next +${status?.segmentPayout ?? 3} F`}
         </span>
       </div>
@@ -116,7 +116,7 @@ const CheerBar: React.FC<{ gameId: number; isLive: boolean; compact?: boolean }>
         }} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
-        <span style={{ fontSize: 10, color: C.muted }}>{weekly}</span>
+        <span style={{ fontSize: 10, color: C.gold, fontWeight: 600 }}>{weekly}</span>
         {!visible && <span style={{ fontSize: 10, color: C.warn }}>return to the tab to earn</span>}
       </div>
     </div>

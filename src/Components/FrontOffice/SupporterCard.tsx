@@ -136,7 +136,7 @@ const SupporterCard: React.FC = () => {
       }}>
         <div>
           <div style={{ fontSize: 9, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Claimable</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: status.unclaimed > 0 ? C.green : C.muted }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: status.unclaimed > 0 ? C.gold : C.muted }}>
             {status.unclaimed} F
           </div>
         </div>
