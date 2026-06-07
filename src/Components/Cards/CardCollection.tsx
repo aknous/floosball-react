@@ -3,6 +3,7 @@ import TradingCard, { CardData } from './TradingCard'
 import CombineModal from './CombineModal'
 import LevelUpModal from './LevelUpModal'
 import VaultConfirmModal from './VaultConfirmModal'
+import ShowcaseView from './ShowcaseView'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -28,7 +29,7 @@ const SORTS = [
   { value: 'position', label: 'Position' },
 ] as const
 
-type ViewMode = 'collection' | 'vault'
+type ViewMode = 'collection' | 'vault' | 'showcase'
 
 const pillStyle = (active: boolean): React.CSSProperties => ({
   padding: '4px 10px',
@@ -156,7 +157,21 @@ const CardCollection: React.FC = () => {
         }}>
           Vault
         </button>
+        <button onClick={() => setView('showcase')} style={{
+          ...pillStyle(view === 'showcase'), padding: '6px 14px', fontSize: '12px',
+          ...(view === 'showcase' ? {
+            borderColor: '#fbbf24', color: '#fbbf24',
+            backgroundColor: 'rgba(251,191,36,0.12)',
+          } : {}),
+        }}>
+          Showcase
+        </button>
       </div>
+
+      {view === 'showcase' && <ShowcaseView />}
+      {view !== 'showcase' && (
+      <>
+      {/* collection / vault content */}
 
       {/* Header */}
       <div style={{
@@ -323,6 +338,8 @@ const CardCollection: React.FC = () => {
         onClose={() => setVaultCards([])}
         onComplete={() => { setSelectedIds(new Set()); fetchCards() }}
       />
+      </>
+      )}
     </div>
   )
 }
