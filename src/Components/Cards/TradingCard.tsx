@@ -267,11 +267,13 @@ const SIZES = {
 }
 
 // Corner tier ribbon dimensions per card size (diagonal banner over top-left).
+// Fixed-width centered band; top/left derived so the band's center lands on the
+// corner diagonal — that keeps the numeral centered in the visible triangle.
 const RIBBON_DIMS = {
-  xs: { top: 6, left: -22, padV: 1, padH: 22, font: 8, headerPad: 15 },
-  sm: { top: 9, left: -28, padV: 2, padH: 28, font: 9, headerPad: 24 },
-  md: { top: 11, left: -34, padV: 3, padH: 35, font: 11, headerPad: 30 },
-  lg: { top: 13, left: -40, padV: 4, padH: 41, font: 13, headerPad: 36 },
+  xs: { top: 6, left: -17, width: 56, padV: 1, font: 8, headerPad: 16 },
+  sm: { top: 9, left: -26, width: 82, padV: 2, font: 9, headerPad: 28 },
+  md: { top: 10, left: -32, width: 100, padV: 3, font: 11, headerPad: 32 },
+  lg: { top: 13, left: -41, width: 128, padV: 4, font: 13, headerPad: 38 },
 }
 
 const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
@@ -867,7 +869,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
             : 'linear-gradient(135deg, #fbbf24 0%, #b45309 100%)',
           color: '#1a1206', fontWeight: 800, fontSize: rb.font,
           letterSpacing: '1px', fontFamily: 'pressStart',
-          padding: `${rb.padV}px ${rb.padH}px`,
+          width: rb.width, padding: `${rb.padV}px 0`,
           textAlign: 'center', pointerEvents: 'none',
           borderTop: '1px solid rgba(255,255,255,0.5)',
           boxShadow: isMaxTier
