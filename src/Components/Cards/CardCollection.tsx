@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import TradingCard, { CardData } from './TradingCard'
 import CombineModal from './CombineModal'
 import LevelUpModal from './LevelUpModal'
 import VaultConfirmModal from './VaultConfirmModal'
+import TrashConfirmModal from './TrashConfirmModal'
 import ShowcaseView from './ShowcaseView'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -26,6 +27,7 @@ const SORTS = [
   { value: 'rating', label: 'Rating' },
   { value: 'tier', label: 'Tier' },
   { value: 'name', label: 'Name' },
+  { value: 'team', label: 'Team' },
   { value: 'position', label: 'Position' },
 ] as const
 
@@ -62,8 +64,11 @@ const CardCollection: React.FC = () => {
   const [showCombine, setShowCombine] = useState(false)
   const [levelUpCard, setLevelUpCard] = useState<CardData | null>(null)
   const [vaultCards, setVaultCards] = useState<CardData[]>([])
+  const [trashTarget, setTrashTarget] = useState<CardData | null>(null)
+  const dragIndex = useRef<number | null>(null)
 
   const inVault = view === 'vault'
+  const canReorder = inVault && sortBy === 'manual'
 
   const fetchCards = useCallback(async () => {
     try {
@@ -91,8 +96,38 @@ const CardCollection: React.FC = () => {
 
   useEffect(() => { setLoading(true); fetchCards() }, [fetchCards])
 
-  // Clear selection whenever we switch views
-  useEffect(() => { setSelectedIds(new Set()) }, [view])
+  // Clear selection on view switch, and default the sort to each view's natural
+  // order (Vault opens in manual/arrangeable order; Collection in newest-first).
+  useEffect(() => {
+    setSelectedIds(new Set())
+    if (view === 'vault') setSortBy('manual')
+    else if (view === 'collection') setSortBy('recent')
+  }, [view])
+
+  // Drag-to-reorder (Vault, manual sort only): reorder locally then persist.
+  const persistOrder = async (ordered: CardData[]) => {
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      await fetch(`${API_BASE}/cards/vault/order`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+        body: JSON.stringify({ orderedCardIds: ordered.map(c => c.id) }),
+      })
+    } catch {
+      // silent — local order already reflects the intent
+    }
+  }
+  const handleDrop = (targetIdx: number) => {
+    const from = dragIndex.current
+    dragIndex.current = null
+    if (from === null || from === targetIdx) return
+    const next = [...cards]
+    const [moved] = next.splice(from, 1)
+    next.splice(targetIdx, 0, moved)
+    setCards(next)
+    persistOrder(next)
+  }
 
   const equippedIds = new Set(cards.filter(c => c.isEquipped).map(c => c.id))
 
@@ -285,6 +320,7 @@ const CardCollection: React.FC = () => {
             cursor: 'pointer',
           }}
         >
+          {inVault && <option value="manual">Manual</option>}
           {SORTS.map(s => (
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
@@ -303,22 +339,38 @@ const CardCollection: React.FC = () => {
             : 'No cards found. Open packs in the Shop to get started!'}
         </div>
       ) : (
+        <>
+        {canReorder && (
+          <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px', fontFamily: 'pressStart' }}>
+            Drag cards to arrange your Vault
+          </div>
+        )}
         <div style={{
           display: 'flex', flexWrap: 'wrap', gap: '12px',
           justifyContent: isMobile ? 'center' : 'flex-start',
         }}>
-          {cards.map(card => (
-            <TradingCard
+          {cards.map((card, idx) => (
+            <div
               key={card.id}
-              card={card}
-              size={isMobile ? 'sm' : 'md'}
-              selected={!inVault && selectedIds.has(card.id)}
-              onSelect={inVault ? undefined : () => toggleSelect(card.id)}
-              onLevelUp={inVault ? undefined : () => setLevelUpCard(card)}
-              showSellValue={!inVault}
-            />
+              draggable={canReorder}
+              onDragStart={canReorder ? () => { dragIndex.current = idx } : undefined}
+              onDragOver={canReorder ? (e) => e.preventDefault() : undefined}
+              onDrop={canReorder ? () => handleDrop(idx) : undefined}
+              style={{ cursor: canReorder ? 'grab' : undefined }}
+            >
+              <TradingCard
+                card={card}
+                size={isMobile ? 'sm' : 'md'}
+                selected={!inVault && selectedIds.has(card.id)}
+                onSelect={inVault ? undefined : () => toggleSelect(card.id)}
+                onLevelUp={inVault ? undefined : () => setLevelUpCard(card)}
+                onTrash={inVault ? () => setTrashTarget(card) : undefined}
+                showSellValue={!inVault}
+              />
+            </div>
           ))}
         </div>
+        </>
       )}
 
       <CombineModal
@@ -337,6 +389,12 @@ const CardCollection: React.FC = () => {
         cards={vaultCards}
         onClose={() => setVaultCards([])}
         onComplete={() => { setSelectedIds(new Set()); fetchCards() }}
+      />
+
+      <TrashConfirmModal
+        card={trashTarget}
+        onClose={() => setTrashTarget(null)}
+        onComplete={() => fetchCards()}
       />
       </>
       )}

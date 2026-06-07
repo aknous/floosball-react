@@ -20,6 +20,7 @@ const SORTS = [
   { value: 'recent', label: 'Newest' },
   { value: 'tier', label: 'Tier' },
   { value: 'name', label: 'Name' },
+  { value: 'team', label: 'Team' },
   { value: 'position', label: 'Position' },
 ] as const
 

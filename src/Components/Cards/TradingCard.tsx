@@ -258,6 +258,7 @@ interface TradingCardProps {
   onSelect?: () => void
   onClick?: () => void
   onLevelUp?: () => void  // shows a "Level Up" affordance (collection view)
+  onTrash?: () => void    // shows a "Trash" affordance (vault view — permanent delete)
   showSellValue?: boolean
   glowColor?: string  // persistent outline/glow (e.g. team color for roster match)
   staticGlow?: boolean  // if true, glow without pulse animation (for deck cards)
@@ -740,7 +741,7 @@ const DiamondEdgeShimmer: React.FC = () => (
 )
 
 const TradingCard: React.FC<TradingCardProps> = ({
-  card, size = 'md', selected = false, onSelect, onClick, onLevelUp, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState,
+  card, size = 'md', selected = false, onSelect, onClick, onLevelUp, onTrash, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState,
 }) => {
   const [hovered, setHovered] = useState(false)
   const [flipped, setFlipped] = useState(false)
@@ -1128,6 +1129,29 @@ const TradingCard: React.FC<TradingCardProps> = ({
                 <path d="M6 2v8M6 2L3 5M6 2l3 3" stroke="#1a1206" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               Level Up
+            </button>
+          )}
+
+          {/* Trash affordance (vault) — red icon button, bottom-right on hover */}
+          {onTrash && hovered && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onTrash() }}
+              title="Remove from vault (permanent)"
+              style={{
+                position: 'absolute',
+                bottom: d.pad - 2,
+                right: d.pad - 2,
+                zIndex: 4,
+                width: '24px', height: '24px', borderRadius: '5px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1px solid rgba(239,68,68,0.55)',
+                background: 'rgba(15,23,42,0.85)',
+                color: '#ef4444', cursor: 'pointer',
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </button>
           )}
         </>
