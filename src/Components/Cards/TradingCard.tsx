@@ -1164,6 +1164,12 @@ const TradingCard: React.FC<TradingCardProps> = ({
                 </>
               )}
             </div>
+            {/* Player star rating */}
+            <div style={{ display: 'flex', gap: '2px', justifyContent: 'center', marginTop: '4px' }}>
+              {Array.from({ length: stars }, (_, i) => (
+                <span key={i} style={{ fontSize: d.starSize - 8, color: tierColor }}>★</span>
+              ))}
+            </div>
             <div style={{
               fontSize: d.font - 3, fontWeight: 700, color: '#94a3b8',
               textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '4px',
