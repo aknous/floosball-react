@@ -5,6 +5,33 @@ import TradingCard, { CardData } from './TradingCard'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+const EDITIONS = ['all', 'base', 'holographic', 'prismatic', 'diamond'] as const
+const POSITIONS = [
+  { value: 0, label: 'All' },
+  { value: 1, label: 'QB' },
+  { value: 2, label: 'RB' },
+  { value: 3, label: 'WR' },
+  { value: 4, label: 'TE' },
+  { value: 5, label: 'K' },
+]
+const SORTS = [
+  { value: 'rarity', label: 'Rarity' },
+  { value: 'rating', label: 'Rating' },
+  { value: 'recent', label: 'Newest' },
+  { value: 'tier', label: 'Tier' },
+  { value: 'name', label: 'Name' },
+  { value: 'position', label: 'Position' },
+] as const
+
+const pillStyle = (active: boolean): React.CSSProperties => ({
+  padding: '4px 10px', borderRadius: '6px',
+  border: `1px solid ${active ? '#3b82f6' : '#334155'}`,
+  backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'transparent',
+  color: active ? '#60a5fa' : '#94a3b8',
+  fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+  transition: 'all 0.15s', fontFamily: 'pressStart', textTransform: 'capitalize',
+})
+
 interface ShowcasePickerModalProps {
   open: boolean
   excludeIds: Set<number>       // already-featured card ids
@@ -16,13 +43,21 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
   const { getToken } = useAuth()
   const [cards, setCards] = useState<CardData[]>([])
   const [loading, setLoading] = useState(false)
+  const [editionFilter, setEditionFilter] = useState('all')
+  const [positionFilter, setPositionFilter] = useState(0)
+  const [sortBy, setSortBy] = useState<string>('rarity')
 
   const fetchVaulted = useCallback(async () => {
     setLoading(true)
     try {
       const tok = await getToken()
       if (!tok) return
-      const res = await fetch(`${API_BASE}/cards/collection?vaulted=true&sort=rarity`, {
+      const params = new URLSearchParams()
+      params.set('vaulted', 'true')
+      params.set('sort', sortBy)
+      if (editionFilter !== 'all') params.set('edition', editionFilter)
+      if (positionFilter > 0) params.set('position', String(positionFilter))
+      const res = await fetch(`${API_BASE}/cards/collection?${params}`, {
         headers: { Authorization: `Bearer ${tok}` },
       })
       if (!res.ok) return
@@ -33,7 +68,7 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
     } finally {
       setLoading(false)
     }
-  }, [getToken])
+  }, [getToken, editionFilter, positionFilter, sortBy])
 
   useEffect(() => { if (open) fetchVaulted() }, [open, fetchVaulted])
 
@@ -80,12 +115,41 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
           }}>x</button>
         </div>
 
+        {/* Filters */}
+        <div style={{ padding: '12px 20px 0', borderBottom: '1px solid #1e293b' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            {EDITIONS.map(e => (
+              <button key={e} onClick={() => setEditionFilter(e)} style={pillStyle(editionFilter === e)}>{e}</button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
+            {POSITIONS.map(p => (
+              <button key={p.value} onClick={() => setPositionFilter(p.value)} style={pillStyle(positionFilter === p.value)}>{p.label}</button>
+            ))}
+            <span style={{ flex: 1 }} />
+            <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'pressStart' }}>Sort</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{
+                padding: '4px 8px', borderRadius: '6px', border: '1px solid #334155',
+                backgroundColor: '#1e293b', color: '#cbd5e1', fontSize: '11px',
+                fontFamily: 'pressStart', cursor: 'pointer',
+              }}
+            >
+              {SORTS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+          </div>
+        </div>
+
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b', fontSize: '13px' }}>Loading…</div>
           ) : available.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b', fontSize: '13px', lineHeight: 1.7 }}>
-              No vaulted cards available to feature. Vault cards from your collection first.
+              {editionFilter !== 'all' || positionFilter > 0
+                ? 'No vaulted cards match these filters.'
+                : 'No vaulted cards available to feature. Vault cards from your collection first.'}
             </div>
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
