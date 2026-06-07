@@ -926,7 +926,12 @@ const TradingCard: React.FC<TradingCardProps> = ({
               />
             )
           })}
-          <span style={{ fontSize: d.font - 3, color: '#64748b' }}>S{card.seasonCreated}</span>
+          <span style={{
+            fontSize: d.font - 3, fontWeight: 700, color: '#cbd5e1',
+            backgroundColor: 'rgba(148,163,184,0.18)',
+            border: '1px solid rgba(148,163,184,0.35)',
+            borderRadius: '3px', padding: '1px 4px', lineHeight: 1.2,
+          }}>S{card.seasonCreated}</span>
         </div>
       </div>
 
