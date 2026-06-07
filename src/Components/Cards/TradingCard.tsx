@@ -218,8 +218,10 @@ export interface CardData {
   teamId: number | null
   teamColor: string | null
   playerRating: number
+  ratingStars?: number  // precomputed star count (falls back to calcStars)
   position: number
   edition: string
+  tier?: number  // Upgrade tier 1-4 (I-IV); ribbon shown for 2+, gold ring at 4
   seasonCreated: number
   isRookie: boolean
   classification?: string | null
@@ -262,6 +264,16 @@ const SIZES = {
   md: { width: 200, height: 340, font: 14, nameFont: 17, avatar: 100, pad: 12, starSize: 28 },
   lg: { width: 260, height: 430, font: 16, nameFont: 20, avatar: 128, pad: 16, starSize: 34 },
 }
+
+// Corner tier ribbon dimensions per card size (diagonal banner over top-left).
+const RIBBON_DIMS = {
+  xs: { top: 6, left: -22, padV: 1, padH: 22, font: 8, headerPad: 15 },
+  sm: { top: 9, left: -28, padV: 2, padH: 28, font: 9, headerPad: 24 },
+  md: { top: 11, left: -34, padV: 3, padH: 35, font: 11, headerPad: 30 },
+  lg: { top: 13, left: -40, padV: 4, padH: 41, font: 13, headerPad: 36 },
+}
+
+const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
 
 // Delegate to calcStars + STAR_COLORS so the card's tier color can't drift out
 // of sync with the star count it displays. Previously hardcoded thresholds here
@@ -740,6 +752,16 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const stars = card.ratingStars || calcStars(card.playerRating)
   const tierColor = getTierColor(card.playerRating)
 
+  // Upgrade tier: ribbon shown for tier 2+ (un-upgraded base cards stay clean),
+  // full gold ring added at the max tier (IV) to flag a fully-upgraded card.
+  const cardTier = card.tier || 1
+  const showRibbon = cardTier >= 2
+  const isMaxTier = cardTier >= 4
+  const rb = RIBBON_DIMS[size]
+  // Gold ring (box-shadow, sits just outside the edition border) for max tier.
+  const tier4Ring = isMaxTier
+    ? '0 0 0 2px #fbbf24, 0 0 16px rgba(251,191,36,0.55), '
+    : ''
 
   const edition = card.edition
   const glowConfig = GLOW_CONFIGS[edition]
@@ -759,7 +781,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
     flexDirection: 'column',
     transition: 'transform 0.15s, box-shadow 0.25s',
     transform: !noHoverLift && hovered ? 'translateY(-4px)' : 'none',
-    boxShadow: selected
+    boxShadow: tier4Ring + (selected
       ? '0 0 0 2px #3b82f6, 0 4px 20px rgba(59,130,246,0.3)'
       : hasGlow && hovered
         ? `0 0 12px ${glowConfig.color}, 0 0 28px ${glowConfig.softColor}, 0 4px 20px ${glowConfig.color}`
@@ -767,7 +789,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           ? `0 0 6px ${glowConfig.softColor}, 0 2px 8px rgba(0,0,0,0.3)`
           : edStyle.glowColor && hovered
             ? `0 4px 20px ${edStyle.glowColor}`
-            : '0 2px 8px rgba(0,0,0,0.3)',
+            : '0 2px 8px rgba(0,0,0,0.3)'),
     opacity: card.isActive ? 1 : 0.7,
     flexShrink: 0,
   }
@@ -833,10 +855,33 @@ const TradingCard: React.FC<TradingCardProps> = ({
       {edition === 'prismatic' && <><HoloBackgroundOverlay /><HoloEdgeShimmer /></>}
       {edition === 'diamond' && <><DiamondEdgeShimmer /><SparkleOverlay /></>}
 
+      {/* Upgrade-tier corner ribbon (tier 2+). Brighter + glowing at max tier,
+          which also gets a full gold ring (see tier4Ring on the container). */}
+      {showRibbon && (
+        <div style={{
+          position: 'absolute', top: rb.top, left: rb.left, zIndex: 6,
+          transform: 'rotate(-45deg)',
+          background: isMaxTier
+            ? 'linear-gradient(135deg, #fde68a 0%, #f59e0b 50%, #d97706 100%)'
+            : 'linear-gradient(135deg, #fbbf24 0%, #b45309 100%)',
+          color: '#1a1206', fontWeight: 800, fontSize: rb.font,
+          letterSpacing: '1px', fontFamily: 'pressStart',
+          padding: `${rb.padV}px ${rb.padH}px`,
+          textAlign: 'center', pointerEvents: 'none',
+          borderTop: '1px solid rgba(255,255,255,0.5)',
+          boxShadow: isMaxTier
+            ? '0 0 10px rgba(251,191,36,0.85), 0 2px 6px rgba(0,0,0,0.5)'
+            : '0 2px 6px rgba(0,0,0,0.5)',
+        }}>
+          {TIER_ROMAN[cardTier] || cardTier}
+        </div>
+      )}
+
       {/* Header: edition + season + rookie */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: `${d.pad - 2}px ${d.pad}px`,
+        paddingLeft: showRibbon ? rb.headerPad : d.pad,
         borderBottom: `1px solid ${edStyle.borderColor}40`,
         position: 'relative', zIndex: 3,
       }}>
