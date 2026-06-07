@@ -1041,26 +1041,12 @@ const TradingCard: React.FC<TradingCardProps> = ({
           </div>
           )}
 
-          {/* Sell value / expired / equipped / vaulted badges */}
-          {(showSellValue || !card.isActive || card.isEquipped || card.vaulted) && (
+          {/* Sell value / expired / equipped badges */}
+          {(showSellValue || !card.isActive || card.isEquipped) && (
             <div style={{
               position: 'absolute', bottom: d.pad - 2, right: d.pad,
               display: 'flex', gap: '4px', alignItems: 'center',
             }}>
-              {card.vaulted && (
-                <span style={{
-                  fontSize: d.font - 4, color: '#fbbf24',
-                  backgroundColor: 'rgba(251,191,36,0.12)', padding: '1px 4px',
-                  borderRadius: '3px', border: '1px solid rgba(251,191,36,0.35)',
-                  display: 'inline-flex', alignItems: 'center', gap: '3px',
-                }}>
-                  <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
-                    <rect x="2.5" y="5.5" width="7" height="5" rx="1" stroke="#fbbf24" strokeWidth="1.4"/>
-                    <path d="M4 5.5V4a2 2 0 014 0v1.5" stroke="#fbbf24" strokeWidth="1.4"/>
-                  </svg>
-                  Vaulted
-                </span>
-              )}
               {card.isEquipped && (
                 <span style={{
                   fontSize: d.font - 4, color: '#60a5fa',
