@@ -222,6 +222,7 @@ export interface CardData {
   position: number
   edition: string
   tier?: number  // Upgrade tier 1-4 (I-IV); ribbon shown for 2+, gold ring at 4
+  tierNote?: string | null  // distinct line, e.g. "Tier 4: +90 FP" or "Tier 4: ×1.5 output"
   seasonCreated: number
   isRookie: boolean
   classification?: string | null
@@ -1015,6 +1016,14 @@ const TradingCard: React.FC<TradingCardProps> = ({
                 {colorizeEffectText(effectTagline, edStyle.labelColor)}
               </div>
             )}
+            {card.tierNote && (
+              <div style={{
+                fontSize: d.font - 3, fontWeight: 700, color: '#fbbf24',
+                marginTop: '3px', lineHeight: 1.2,
+              }}>
+                {card.tierNote}
+              </div>
+            )}
           </div>
 
           {/* Sell value / expired / equipped badges */}
@@ -1147,6 +1156,16 @@ const TradingCard: React.FC<TradingCardProps> = ({
               lineHeight: 1.6, textAlign: 'center',
             }}>
               {colorizeEffectText(effectDetail, '#cbd5e1')}
+            </div>
+          )}
+
+          {/* Upgrade-tier line (own distinct line) */}
+          {card.tierNote && (
+            <div style={{
+              fontSize: d.font - 1, fontWeight: 700, color: '#fbbf24',
+              textAlign: 'center', lineHeight: 1.3,
+            }}>
+              {card.tierNote}
             </div>
           )}
 
