@@ -237,6 +237,7 @@ export interface CardData {
   sellValue: number
   isActive: boolean
   isEquipped?: boolean
+  vaulted?: boolean  // permanently in the Vault — can't equip/sell/combine
   acquiredAt: string | null
   acquiredVia: string
 }
@@ -1020,12 +1021,26 @@ const TradingCard: React.FC<TradingCardProps> = ({
                 it appears on the back/detail only. */}
           </div>
 
-          {/* Sell value / expired / equipped badges */}
-          {(showSellValue || !card.isActive || card.isEquipped) && (
+          {/* Sell value / expired / equipped / vaulted badges */}
+          {(showSellValue || !card.isActive || card.isEquipped || card.vaulted) && (
             <div style={{
               position: 'absolute', bottom: d.pad - 2, right: d.pad,
               display: 'flex', gap: '4px', alignItems: 'center',
             }}>
+              {card.vaulted && (
+                <span style={{
+                  fontSize: d.font - 4, color: '#fbbf24',
+                  backgroundColor: 'rgba(251,191,36,0.12)', padding: '1px 4px',
+                  borderRadius: '3px', border: '1px solid rgba(251,191,36,0.35)',
+                  display: 'inline-flex', alignItems: 'center', gap: '3px',
+                }}>
+                  <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
+                    <rect x="2.5" y="5.5" width="7" height="5" rx="1" stroke="#fbbf24" strokeWidth="1.4"/>
+                    <path d="M4 5.5V4a2 2 0 014 0v1.5" stroke="#fbbf24" strokeWidth="1.4"/>
+                  </svg>
+                  Vaulted
+                </span>
+              )}
               {card.isEquipped && (
                 <span style={{
                   fontSize: d.font - 4, color: '#60a5fa',
@@ -1044,7 +1059,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
                   Expired
                 </span>
               )}
-              {showSellValue && !card.isEquipped && (
+              {showSellValue && !card.isEquipped && !card.vaulted && (
                 <span style={{ fontSize: d.font - 3, color: '#eab308', fontWeight: '600' }}>
                   {card.sellValue}
                 </span>
@@ -1053,7 +1068,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           )}
 
           {/* Select overlay for collection selling — visible on hover or when selected */}
-          {onSelect && !card.isEquipped && (hovered || selected) && (
+          {onSelect && !card.isEquipped && !card.vaulted && (hovered || selected) && (
             <button
               onClick={(e) => { e.stopPropagation(); onSelect() }}
               style={{
@@ -1083,7 +1098,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           )}
 
           {/* Level-Up affordance (collection) — gold pill, bottom-left on hover */}
-          {onLevelUp && !card.isEquipped && hovered && (
+          {onLevelUp && !card.isEquipped && !card.vaulted && hovered && (
             <button
               onClick={(e) => { e.stopPropagation(); onLevelUp() }}
               title="Level Up"
