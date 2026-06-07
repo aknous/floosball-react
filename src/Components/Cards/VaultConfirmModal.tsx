@@ -112,13 +112,14 @@ export default function VaultConfirmModal({ cards, onClose, onComplete }: VaultC
             </div>
           </div>
 
-          {/* Card preview(s) */}
+          {/* Card preview(s). Single card renders full-size with no inner scroll
+              (the modal body scrolls if needed); batches cap height and scroll. */}
           <div style={{
             display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center',
-            maxHeight: '300px', overflowY: 'auto',
+            ...(single ? {} : { maxHeight: '300px', overflowY: 'auto' as const }),
           }}>
             {cards.map(c => (
-              <TradingCard key={c.id} card={c} size={single ? 'md' : 'xs'} />
+              <TradingCard key={c.id} card={c} size={single ? 'sm' : 'xs'} />
             ))}
           </div>
 
