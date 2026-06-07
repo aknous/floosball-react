@@ -242,6 +242,8 @@ export interface CardData {
   // card (which drops its effect and becomes a keepsake player card).
   playerStats?: {
     season: number
+    teamName?: string | null
+    teamColor?: string | null
     fantasyPoints: number
     lines: { label: string; value: number | string }[]
   } | null
@@ -1153,6 +1155,14 @@ const TradingCard: React.FC<TradingCardProps> = ({
             </div>
             <div style={{ fontSize: d.font - 3, color: edStyle.labelColor, marginTop: '2px' }}>
               {posLabel}
+              {card.playerStats?.teamName && (
+                <>
+                  {' · '}
+                  <span style={{ color: card.playerStats.teamColor || edStyle.labelColor }}>
+                    {card.playerStats.teamName}
+                  </span>
+                </>
+              )}
             </div>
             <div style={{
               fontSize: d.font - 3, fontWeight: 700, color: '#94a3b8',
