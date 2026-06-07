@@ -238,6 +238,14 @@ export interface CardData {
   isActive: boolean
   isEquipped?: boolean
   vaulted?: boolean  // permanently in the Vault — can't equip/sell/combine
+  // Player's stat line for the card's season — shown on the back of a vaulted
+  // card (which drops its effect and becomes a keepsake player card).
+  playerStats?: {
+    season: number
+    gamesPlayed: number
+    fantasyPoints: number
+    lines: { label: string; value: number | string }[]
+  } | null
   acquiredAt: string | null
   acquiredVia: string
 }
@@ -757,14 +765,18 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const stars = card.ratingStars || calcStars(card.playerRating)
   const tierColor = getTierColor(card.playerRating)
 
+  // Vaulted cards drop their effect and become keepsake player cards: no effect
+  // text, no behavior tags, no upgrade-tier chrome — just the player + stats.
+  const isVaulted = !!card.vaulted
+
   // Upgrade tier: hexagon badge shown for tier 2+ (un-upgraded base cards stay
   // clean), full gold ring added at the max tier (IV) to flag a fully-upgraded card.
   const cardTier = card.tier || 1
-  const showTierBadge = cardTier >= 2
+  const showTierBadge = cardTier >= 2 && !isVaulted
   const isMaxTier = cardTier >= 4
   const tb = TIER_BADGE_DIMS[size]
   // Gold ring (box-shadow, sits just outside the edition border) for max tier.
-  const tier4Ring = isMaxTier
+  const tier4Ring = (isMaxTier && !isVaulted)
     ? '0 0 0 2px #fbbf24, 0 0 16px rgba(251,191,36,0.55), '
     : ''
 
@@ -991,7 +1003,8 @@ const TradingCard: React.FC<TradingCardProps> = ({
             </div>
           </div>
 
-          {/* Effect footer */}
+          {/* Effect footer — hidden on vaulted cards (effect is gone). */}
+          {!isVaulted && (
           <div style={{
             padding: `${d.pad - 2}px ${d.pad + 18}px`,
             borderTop: `1px solid ${edStyle.borderColor}40`,
@@ -1020,6 +1033,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
             {/* tierNote intentionally not shown on the front (badge covers tier);
                 it appears on the back/detail only. */}
           </div>
+          )}
 
           {/* Sell value / expired / equipped / vaulted badges */}
           {(showSellValue || !card.isActive || card.isEquipped || card.vaulted) && (
@@ -1127,8 +1141,71 @@ const TradingCard: React.FC<TradingCardProps> = ({
         </>
       )}
 
-      {/* ── Card back (details) ── */}
-      {flipped && (
+      {/* ── Card back: player stats (vaulted keepsake) ── */}
+      {flipped && isVaulted && (
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          padding: `${d.pad}px`, gap: '6px',
+          overflowY: 'auto', position: 'relative', zIndex: 3,
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: d.font, fontWeight: 700, color: '#e2e8f0', lineHeight: 1.3 }}>
+              {card.playerName}
+            </div>
+            <div style={{ fontSize: d.font - 3, color: edStyle.labelColor, marginTop: '2px' }}>
+              {posLabel} · Season {card.playerStats?.season ?? card.seasonCreated}
+            </div>
+          </div>
+
+          {card.playerStats ? (
+            <>
+              {/* GP / FP chips */}
+              <div style={{
+                display: 'flex', gap: '6px', justifyContent: 'center',
+                borderTop: `1px solid ${edStyle.borderColor}40`,
+                borderBottom: `1px solid ${edStyle.borderColor}40`,
+                padding: '6px 0', margin: '2px 0',
+              }}>
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: d.font + 1, fontWeight: 700, color: '#e2e8f0' }}>
+                    {card.playerStats.gamesPlayed}
+                  </div>
+                  <div style={{ fontSize: d.font - 4, color: '#94a3b8' }}>GP</div>
+                </div>
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: d.font + 1, fontWeight: 700, color: TYPE_COLORS.fp }}>
+                    {card.playerStats.fantasyPoints}
+                  </div>
+                  <div style={{ fontSize: d.font - 4, color: '#94a3b8' }}>FP</div>
+                </div>
+              </div>
+
+              {/* Stat lines */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
+                {card.playerStats.lines.map((ln, i) => (
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                    fontSize: d.font - 1,
+                  }}>
+                    <span style={{ color: '#94a3b8' }}>{ln.label}</span>
+                    <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{ln.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: d.font - 1, color: '#64748b', textAlign: 'center', lineHeight: 1.6,
+            }}>
+              No stats recorded for Season {card.seasonCreated}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Card back (effect details) ── */}
+      {flipped && !isVaulted && (
         <div
           style={{
             flex: 1, display: 'flex', flexDirection: 'column',
