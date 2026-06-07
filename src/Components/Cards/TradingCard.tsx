@@ -218,8 +218,11 @@ export interface CardData {
   teamId: number | null
   teamColor: string | null
   playerRating: number
+  ratingStars?: number  // precomputed star count (falls back to calcStars)
   position: number
   edition: string
+  tier?: number  // Upgrade tier 1-4 (I-IV); ribbon shown for 2+, gold ring at 4
+  tierNote?: string | null  // distinct line, e.g. "Tier 4: +90 FP" or "Tier 4: ×1.5 output"
   seasonCreated: number
   isRookie: boolean
   classification?: string | null
@@ -244,6 +247,7 @@ interface TradingCardProps {
   selected?: boolean
   onSelect?: () => void
   onClick?: () => void
+  onLevelUp?: () => void  // shows a "Level Up" affordance (collection view)
   showSellValue?: boolean
   glowColor?: string  // persistent outline/glow (e.g. team color for roster match)
   staticGlow?: boolean  // if true, glow without pulse animation (for deck cards)
@@ -262,6 +266,18 @@ const SIZES = {
   md: { width: 200, height: 340, font: 14, nameFont: 17, avatar: 100, pad: 12, starSize: 28 },
   lg: { width: 260, height: 430, font: 16, nameFont: 20, avatar: 128, pad: 16, starSize: 34 },
 }
+
+// Tier badge (hexagon) dimensions per card size. Pinned just under the header
+// divider, top-left of the body. `top` clears the header (≈ 2×(pad-2) + label).
+const TIER_BADGE_DIMS = {
+  xs: { top: 25, left: 6, w: 20, h: 17, font: 7 },
+  sm: { top: 32, left: 8, w: 23, h: 20, font: 8 },
+  md: { top: 42, left: 10, w: 27, h: 23, font: 10 },
+  lg: { top: 53, left: 13, w: 32, h: 27, font: 12 },
+}
+
+const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
+const HEX_CLIP = 'polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)'
 
 // Delegate to calcStars + STAR_COLORS so the card's tier color can't drift out
 // of sync with the star count it displays. Previously hardcoded thresholds here
@@ -714,7 +730,7 @@ const DiamondEdgeShimmer: React.FC = () => (
 )
 
 const TradingCard: React.FC<TradingCardProps> = ({
-  card, size = 'md', selected = false, onSelect, onClick, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState,
+  card, size = 'md', selected = false, onSelect, onClick, onLevelUp, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState,
 }) => {
   const [hovered, setHovered] = useState(false)
   const [flipped, setFlipped] = useState(false)
@@ -740,6 +756,16 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const stars = card.ratingStars || calcStars(card.playerRating)
   const tierColor = getTierColor(card.playerRating)
 
+  // Upgrade tier: hexagon badge shown for tier 2+ (un-upgraded base cards stay
+  // clean), full gold ring added at the max tier (IV) to flag a fully-upgraded card.
+  const cardTier = card.tier || 1
+  const showTierBadge = cardTier >= 2
+  const isMaxTier = cardTier >= 4
+  const tb = TIER_BADGE_DIMS[size]
+  // Gold ring (box-shadow, sits just outside the edition border) for max tier.
+  const tier4Ring = isMaxTier
+    ? '0 0 0 2px #fbbf24, 0 0 16px rgba(251,191,36,0.55), '
+    : ''
 
   const edition = card.edition
   const glowConfig = GLOW_CONFIGS[edition]
@@ -759,7 +785,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
     flexDirection: 'column',
     transition: 'transform 0.15s, box-shadow 0.25s',
     transform: !noHoverLift && hovered ? 'translateY(-4px)' : 'none',
-    boxShadow: selected
+    boxShadow: tier4Ring + (selected
       ? '0 0 0 2px #3b82f6, 0 4px 20px rgba(59,130,246,0.3)'
       : hasGlow && hovered
         ? `0 0 12px ${glowConfig.color}, 0 0 28px ${glowConfig.softColor}, 0 4px 20px ${glowConfig.color}`
@@ -767,7 +793,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           ? `0 0 6px ${glowConfig.softColor}, 0 2px 8px rgba(0,0,0,0.3)`
           : edStyle.glowColor && hovered
             ? `0 4px 20px ${edStyle.glowColor}`
-            : '0 2px 8px rgba(0,0,0,0.3)',
+            : '0 2px 8px rgba(0,0,0,0.3)'),
     opacity: card.isActive ? 1 : 0.7,
     flexShrink: 0,
   }
@@ -832,6 +858,29 @@ const TradingCard: React.FC<TradingCardProps> = ({
       {edition === 'holographic' && <ShimmerOverlay edition={edition} />}
       {edition === 'prismatic' && <><HoloBackgroundOverlay /><HoloEdgeShimmer /></>}
       {edition === 'diamond' && <><DiamondEdgeShimmer /><SparkleOverlay /></>}
+
+      {/* Upgrade-tier hexagon badge (tier 2+), pinned under the header divider.
+          Brighter + glowing at max tier, which also gets a full gold ring
+          (see tier4Ring on the container). */}
+      {showTierBadge && (
+        <div style={{
+          position: 'absolute', top: tb.top, left: tb.left, zIndex: 5,
+          width: tb.w, height: tb.h,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: tb.font, fontWeight: 800, fontFamily: 'pressStart',
+          color: '#1a1206', letterSpacing: '0.5px',
+          clipPath: HEX_CLIP, WebkitClipPath: HEX_CLIP,
+          background: isMaxTier
+            ? 'linear-gradient(135deg, #fde68a 0%, #f59e0b 60%, #d97706 100%)'
+            : 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)',
+          filter: isMaxTier
+            ? 'drop-shadow(0 0 4px rgba(251,191,36,0.85))'
+            : 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))',
+          pointerEvents: 'none',
+        }}>
+          {TIER_ROMAN[cardTier] || cardTier}
+        </div>
+      )}
 
       {/* Header: edition + season + rookie */}
       <div style={{
@@ -967,6 +1016,8 @@ const TradingCard: React.FC<TradingCardProps> = ({
                 {colorizeEffectText(effectTagline, edStyle.labelColor)}
               </div>
             )}
+            {/* tierNote intentionally not shown on the front (badge covers tier);
+                it appears on the back/detail only. */}
           </div>
 
           {/* Sell value / expired / equipped badges */}
@@ -1030,6 +1081,34 @@ const TradingCard: React.FC<TradingCardProps> = ({
               )}
             </button>
           )}
+
+          {/* Level-Up affordance (collection) — gold pill, bottom-left on hover */}
+          {onLevelUp && !card.isEquipped && hovered && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onLevelUp() }}
+              title="Level Up"
+              style={{
+                position: 'absolute',
+                bottom: d.pad - 2,
+                left: d.pad - 2,
+                zIndex: 4,
+                display: 'flex', alignItems: 'center', gap: '3px',
+                padding: '3px 7px',
+                borderRadius: '5px',
+                border: '1px solid rgba(251,191,36,0.6)',
+                background: 'linear-gradient(135deg, rgba(251,191,36,0.9), rgba(217,119,6,0.9))',
+                color: '#1a1206',
+                fontSize: d.font - 3, fontWeight: 800,
+                fontFamily: 'pressStart', cursor: 'pointer',
+                boxShadow: '0 0 8px rgba(251,191,36,0.4)',
+              }}
+            >
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                <path d="M6 2v8M6 2L3 5M6 2l3 3" stroke="#1a1206" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Level Up
+            </button>
+          )}
         </>
       )}
 
@@ -1071,6 +1150,16 @@ const TradingCard: React.FC<TradingCardProps> = ({
               lineHeight: 1.6, textAlign: 'center',
             }}>
               {colorizeEffectText(effectDetail, '#cbd5e1')}
+            </div>
+          )}
+
+          {/* Upgrade-tier line (own distinct line) */}
+          {card.tierNote && (
+            <div style={{
+              fontSize: d.font - 1, fontWeight: 700, color: '#fbbf24',
+              textAlign: 'center', lineHeight: 1.3,
+            }}>
+              {card.tierNote}
             </div>
           )}
 
