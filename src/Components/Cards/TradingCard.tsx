@@ -266,17 +266,17 @@ const SIZES = {
   lg: { width: 260, height: 430, font: 16, nameFont: 20, avatar: 128, pad: 16, starSize: 34 },
 }
 
-// Corner tier ribbon dimensions per card size (diagonal banner over top-left).
-// Fixed-width centered band; top/left derived so the band's center lands on the
-// corner diagonal — that keeps the numeral centered in the visible triangle.
-const RIBBON_DIMS = {
-  xs: { top: 6, left: -17, width: 56, padV: 1, font: 8, headerPad: 16 },
-  sm: { top: 9, left: -26, width: 82, padV: 2, font: 9, headerPad: 28 },
-  md: { top: 10, left: -32, width: 100, padV: 3, font: 11, headerPad: 32 },
-  lg: { top: 13, left: -41, width: 128, padV: 4, font: 13, headerPad: 38 },
+// Tier badge (hexagon) dimensions per card size. Pinned just under the header
+// divider, top-left of the body. `top` clears the header (≈ 2×(pad-2) + label).
+const TIER_BADGE_DIMS = {
+  xs: { top: 25, left: 6, w: 20, h: 17, font: 7 },
+  sm: { top: 32, left: 8, w: 23, h: 20, font: 8 },
+  md: { top: 42, left: 10, w: 27, h: 23, font: 10 },
+  lg: { top: 53, left: 13, w: 32, h: 27, font: 12 },
 }
 
 const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
+const HEX_CLIP = 'polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)'
 
 // Delegate to calcStars + STAR_COLORS so the card's tier color can't drift out
 // of sync with the star count it displays. Previously hardcoded thresholds here
@@ -755,12 +755,12 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const stars = card.ratingStars || calcStars(card.playerRating)
   const tierColor = getTierColor(card.playerRating)
 
-  // Upgrade tier: ribbon shown for tier 2+ (un-upgraded base cards stay clean),
-  // full gold ring added at the max tier (IV) to flag a fully-upgraded card.
+  // Upgrade tier: hexagon badge shown for tier 2+ (un-upgraded base cards stay
+  // clean), full gold ring added at the max tier (IV) to flag a fully-upgraded card.
   const cardTier = card.tier || 1
-  const showRibbon = cardTier >= 2
+  const showTierBadge = cardTier >= 2
   const isMaxTier = cardTier >= 4
-  const rb = RIBBON_DIMS[size]
+  const tb = TIER_BADGE_DIMS[size]
   // Gold ring (box-shadow, sits just outside the edition border) for max tier.
   const tier4Ring = isMaxTier
     ? '0 0 0 2px #fbbf24, 0 0 16px rgba(251,191,36,0.55), '
@@ -858,23 +858,24 @@ const TradingCard: React.FC<TradingCardProps> = ({
       {edition === 'prismatic' && <><HoloBackgroundOverlay /><HoloEdgeShimmer /></>}
       {edition === 'diamond' && <><DiamondEdgeShimmer /><SparkleOverlay /></>}
 
-      {/* Upgrade-tier corner ribbon (tier 2+). Brighter + glowing at max tier,
-          which also gets a full gold ring (see tier4Ring on the container). */}
-      {showRibbon && (
+      {/* Upgrade-tier hexagon badge (tier 2+), pinned under the header divider.
+          Brighter + glowing at max tier, which also gets a full gold ring
+          (see tier4Ring on the container). */}
+      {showTierBadge && (
         <div style={{
-          position: 'absolute', top: rb.top, left: rb.left, zIndex: 6,
-          transform: 'rotate(-45deg)',
+          position: 'absolute', top: tb.top, left: tb.left, zIndex: 5,
+          width: tb.w, height: tb.h,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: tb.font, fontWeight: 800, fontFamily: 'pressStart',
+          color: '#1a1206', letterSpacing: '0.5px',
+          clipPath: HEX_CLIP, WebkitClipPath: HEX_CLIP,
           background: isMaxTier
-            ? 'linear-gradient(135deg, #fde68a 0%, #f59e0b 50%, #d97706 100%)'
-            : 'linear-gradient(135deg, #fbbf24 0%, #b45309 100%)',
-          color: '#1a1206', fontWeight: 800, fontSize: rb.font,
-          letterSpacing: '1px', fontFamily: 'pressStart',
-          width: rb.width, padding: `${rb.padV}px 0`,
-          textAlign: 'center', pointerEvents: 'none',
-          borderTop: '1px solid rgba(255,255,255,0.5)',
-          boxShadow: isMaxTier
-            ? '0 0 10px rgba(251,191,36,0.85), 0 2px 6px rgba(0,0,0,0.5)'
-            : '0 2px 6px rgba(0,0,0,0.5)',
+            ? 'linear-gradient(135deg, #fde68a 0%, #f59e0b 60%, #d97706 100%)'
+            : 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)',
+          filter: isMaxTier
+            ? 'drop-shadow(0 0 4px rgba(251,191,36,0.85))'
+            : 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))',
+          pointerEvents: 'none',
         }}>
           {TIER_ROMAN[cardTier] || cardTier}
         </div>
@@ -884,7 +885,6 @@ const TradingCard: React.FC<TradingCardProps> = ({
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: `${d.pad - 2}px ${d.pad}px`,
-        paddingLeft: showRibbon ? rb.headerPad : d.pad,
         borderBottom: `1px solid ${edStyle.borderColor}40`,
         position: 'relative', zIndex: 3,
       }}>
