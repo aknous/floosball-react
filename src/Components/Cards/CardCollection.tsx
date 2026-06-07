@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import TradingCard, { CardData } from './TradingCard'
 import CombineModal from './CombineModal'
+import LevelUpModal from './LevelUpModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -43,6 +44,7 @@ const CardCollection: React.FC = () => {
   const [selling, setSelling] = useState(false)
   const [currentSeason, setCurrentSeason] = useState(0)
   const [showCombine, setShowCombine] = useState(false)
+  const [levelUpCard, setLevelUpCard] = useState<CardData | null>(null)
 
   const fetchCards = useCallback(async () => {
     try {
@@ -226,6 +228,7 @@ const CardCollection: React.FC = () => {
               size={isMobile ? 'sm' : 'md'}
               selected={selectedIds.has(card.id)}
               onSelect={() => toggleSelect(card.id)}
+              onLevelUp={() => setLevelUpCard(card)}
               showSellValue
             />
           ))}
@@ -235,6 +238,12 @@ const CardCollection: React.FC = () => {
       <CombineModal
         visible={showCombine}
         onClose={() => setShowCombine(false)}
+        onComplete={() => fetchCards()}
+      />
+
+      <LevelUpModal
+        card={levelUpCard}
+        onClose={() => setLevelUpCard(null)}
         onComplete={() => fetchCards()}
       />
     </div>

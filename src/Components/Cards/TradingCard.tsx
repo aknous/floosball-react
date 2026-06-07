@@ -246,6 +246,7 @@ interface TradingCardProps {
   selected?: boolean
   onSelect?: () => void
   onClick?: () => void
+  onLevelUp?: () => void  // shows a "Level Up" affordance (collection view)
   showSellValue?: boolean
   glowColor?: string  // persistent outline/glow (e.g. team color for roster match)
   staticGlow?: boolean  // if true, glow without pulse animation (for deck cards)
@@ -726,7 +727,7 @@ const DiamondEdgeShimmer: React.FC = () => (
 )
 
 const TradingCard: React.FC<TradingCardProps> = ({
-  card, size = 'md', selected = false, onSelect, onClick, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState,
+  card, size = 'md', selected = false, onSelect, onClick, onLevelUp, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState,
 }) => {
   const [hovered, setHovered] = useState(false)
   const [flipped, setFlipped] = useState(false)
@@ -1073,6 +1074,34 @@ const TradingCard: React.FC<TradingCardProps> = ({
                   <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               )}
+            </button>
+          )}
+
+          {/* Level-Up affordance (collection) — gold pill, bottom-left on hover */}
+          {onLevelUp && !card.isEquipped && hovered && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onLevelUp() }}
+              title="Level Up"
+              style={{
+                position: 'absolute',
+                bottom: d.pad - 2,
+                left: d.pad - 2,
+                zIndex: 4,
+                display: 'flex', alignItems: 'center', gap: '3px',
+                padding: '3px 7px',
+                borderRadius: '5px',
+                border: '1px solid rgba(251,191,36,0.6)',
+                background: 'linear-gradient(135deg, rgba(251,191,36,0.9), rgba(217,119,6,0.9))',
+                color: '#1a1206',
+                fontSize: d.font - 3, fontWeight: 800,
+                fontFamily: 'pressStart', cursor: 'pointer',
+                boxShadow: '0 0 8px rgba(251,191,36,0.4)',
+              }}
+            >
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                <path d="M6 2v8M6 2L3 5M6 2l3 3" stroke="#1a1206" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Level Up
             </button>
           )}
         </>
