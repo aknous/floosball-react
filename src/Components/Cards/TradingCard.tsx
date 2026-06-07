@@ -242,7 +242,6 @@ export interface CardData {
   // card (which drops its effect and becomes a keepsake player card).
   playerStats?: {
     season: number
-    gamesPlayed: number
     fantasyPoints: number
     lines: { label: string; value: number | string }[]
   } | null
@@ -1153,31 +1152,29 @@ const TradingCard: React.FC<TradingCardProps> = ({
               {card.playerName}
             </div>
             <div style={{ fontSize: d.font - 3, color: edStyle.labelColor, marginTop: '2px' }}>
-              {posLabel} · Season {card.playerStats?.season ?? card.seasonCreated}
+              {posLabel}
+            </div>
+            <div style={{
+              fontSize: d.font - 3, fontWeight: 700, color: '#94a3b8',
+              textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '4px',
+            }}>
+              Season {card.playerStats?.season ?? card.seasonCreated} Stats
             </div>
           </div>
 
           {card.playerStats ? (
             <>
-              {/* GP / FP chips */}
+              {/* Season fantasy points */}
               <div style={{
-                display: 'flex', gap: '6px', justifyContent: 'center',
+                textAlign: 'center',
                 borderTop: `1px solid ${edStyle.borderColor}40`,
                 borderBottom: `1px solid ${edStyle.borderColor}40`,
                 padding: '6px 0', margin: '2px 0',
               }}>
-                <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{ fontSize: d.font + 1, fontWeight: 700, color: '#e2e8f0' }}>
-                    {card.playerStats.gamesPlayed}
-                  </div>
-                  <div style={{ fontSize: d.font - 4, color: '#94a3b8' }}>GP</div>
+                <div style={{ fontSize: d.font + 1, fontWeight: 700, color: TYPE_COLORS.fp }}>
+                  {card.playerStats.fantasyPoints}
                 </div>
-                <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{ fontSize: d.font + 1, fontWeight: 700, color: TYPE_COLORS.fp }}>
-                    {card.playerStats.fantasyPoints}
-                  </div>
-                  <div style={{ fontSize: d.font - 4, color: '#94a3b8' }}>FP</div>
-                </div>
+                <div style={{ fontSize: d.font - 4, color: '#94a3b8' }}>Season Fantasy Points</div>
               </div>
 
               {/* Stat lines */}
