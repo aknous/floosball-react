@@ -1016,14 +1016,8 @@ const TradingCard: React.FC<TradingCardProps> = ({
                 {colorizeEffectText(effectTagline, edStyle.labelColor)}
               </div>
             )}
-            {card.tierNote && (
-              <div style={{
-                fontSize: d.font - 3, fontWeight: 700, color: '#fbbf24',
-                marginTop: '3px', lineHeight: 1.2,
-              }}>
-                {card.tierNote}
-              </div>
-            )}
+            {/* tierNote intentionally not shown on the front (badge covers tier);
+                it appears on the back/detail only. */}
           </div>
 
           {/* Sell value / expired / equipped badges */}
