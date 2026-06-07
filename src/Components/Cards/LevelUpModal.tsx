@@ -33,6 +33,9 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  // Fully re-serialized card returned by the level-up POST (scaled detail + new
+  // tier) — used as the preview source so the card updates in place after a level.
+  const [upgraded, setUpgraded] = useState<CardData | null>(null)
 
   const fetchInfo = useCallback(async () => {
     if (!card) return
@@ -51,7 +54,7 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
   }, [card, getToken])
 
   useEffect(() => {
-    if (card) { setSuccess(''); fetchInfo() }
+    if (card) { setSuccess(''); setUpgraded(null); fetchInfo() }
   }, [card, fetchInfo])
 
   // ESC to close
@@ -71,9 +74,12 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
   const atMax = info?.atMax ?? false
   const offerings = info?.eligibleOfferings ?? []
   const canConfirm = !!info && !atMax && !!chosen && canAfford && !busy
-  // Live preview: show the target card at the tier it WILL become.
-  const previewTier = atMax ? tier : (info?.nextTier ?? tier)
-  const previewCard: CardData = { ...card, tier: chosen ? previewTier : tier }
+  // Live preview: source from the upgraded card (post-level, scaled detail) once
+  // we have it, else the original. Ribbon shows the tier it WILL become while a
+  // duplicate is selected; otherwise the current tier.
+  const previewBase = upgraded ?? card
+  const previewTier = chosen && !atMax ? (info?.nextTier ?? tier) : tier
+  const previewCard: CardData = { ...previewBase, tier: previewTier }
 
   const handleConfirm = async () => {
     if (!info || !chosen) return
@@ -88,6 +94,7 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
       })
       const json = await res.json()
       if (!res.ok) { setError(json.detail || 'Level up failed'); setBusy(false); return }
+      if (json.data) setUpgraded(json.data)  // scaled detail + new tier for the preview
       setSuccess(`Leveled to Tier ${ROMAN[json.data.tier] || json.data.tier}!`)
       // Refresh navbar balance
       const balRes = await fetch(`${API_BASE}/currency/balance`, {
