@@ -10,6 +10,15 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 interface ShowcaseSet { key: string; name: string }
 interface AlmostSet { key: string; name: string; need: number; hint: string }
 interface ShowcaseSlot { slotNumber: number; card: CardData | null }
+interface LeaderEntry {
+  rank: number
+  userId: number
+  username: string
+  grade: string
+  estimatedPayout: number
+  cardCount: number
+  isCurrentUser: boolean
+}
 interface ShowcaseData {
   slots: ShowcaseSlot[]
   slotCount: number
@@ -58,6 +67,22 @@ const ShowcaseView: React.FC = () => {
   const [error, setError] = useState('')
   const [pickerSlot, setPickerSlot] = useState<number | null>(null)
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null)
+  const [leaderboard, setLeaderboard] = useState<LeaderEntry[]>([])
+
+  const fetchLeaderboard = useCallback(async () => {
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      const res = await fetch(`${API_BASE}/cards/showcase/leaderboard`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      })
+      if (!res.ok) return
+      const json = await res.json()
+      setLeaderboard(json.data?.leaderboard ?? [])
+    } catch {
+      // silent
+    }
+  }, [getToken])
 
   const fetchShowcase = useCallback(async () => {
     try {
@@ -76,7 +101,7 @@ const ShowcaseView: React.FC = () => {
     }
   }, [getToken])
 
-  useEffect(() => { fetchShowcase() }, [fetchShowcase])
+  useEffect(() => { fetchShowcase(); fetchLeaderboard() }, [fetchShowcase, fetchLeaderboard])
 
   // Featured slots as a {slotNumber, userCardId} payload
   const filledPayload = (slots: ShowcaseSlot[]) =>
@@ -95,6 +120,7 @@ const ShowcaseView: React.FC = () => {
       const json = await res.json()
       if (!res.ok) { setError(json.detail || 'Failed to update showcase'); return }
       setData(json.data ?? null)
+      fetchLeaderboard()  // your grade/rank may have moved
     } catch {
       setError('Failed to update showcase')
     } finally {
@@ -128,9 +154,14 @@ const ShowcaseView: React.FC = () => {
         <p style={{ color: '#ef4444', fontSize: '12px', marginBottom: '12px' }}>{error}</p>
       )}
 
+      <div style={{
+        display: 'flex', gap: '16px', alignItems: 'flex-start',
+        flexDirection: isMobile ? 'column' : 'row',
+      }}>
       {/* Display case — framed, lit, distinct from the plain collection grid */}
       <div style={{
         position: 'relative', borderRadius: '16px', overflow: 'hidden',
+        flex: 1, minWidth: 0,
         padding: isMobile ? '22px 12px' : '32px 26px',
         background: 'radial-gradient(ellipse 80% 55% at 50% 0%, rgba(251,191,36,0.08), transparent 70%), linear-gradient(180deg, #141b30 0%, #0a0e1a 100%)',
         border: '1px solid rgba(251,191,36,0.22)',
@@ -288,6 +319,55 @@ const ShowcaseView: React.FC = () => {
             )
           ))}
         </div>
+      </div>
+
+      {/* Standings — everyone with a featured showcase this season */}
+      <aside style={{
+        width: isMobile ? '100%' : '270px', flexShrink: 0,
+        borderRadius: '12px', border: '1px solid #1e293b',
+        background: 'rgba(15,23,42,0.5)', padding: '14px 16px',
+      }}>
+        <div style={{
+          fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase',
+          color: '#94a3b8', fontWeight: 700, fontFamily: 'pressStart', marginBottom: '12px',
+        }}>Standings</div>
+        {leaderboard.length === 0 ? (
+          <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.6 }}>
+            No showcases yet. Be the first to put cards on display.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {leaderboard.map(entry => {
+              const gc = GRADE_COLORS[entry.grade] || '#94a3b8'
+              return (
+                <div key={entry.userId} style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '6px 8px', borderRadius: '6px',
+                  background: entry.isCurrentUser ? 'rgba(251,191,36,0.1)' : 'transparent',
+                  border: entry.isCurrentUser ? '1px solid rgba(251,191,36,0.3)' : '1px solid transparent',
+                }}>
+                  <span style={{
+                    fontSize: '11px', color: '#64748b', fontWeight: 700,
+                    width: '20px', flexShrink: 0, fontVariantNumeric: 'tabular-nums',
+                  }}>{entry.rank}</span>
+                  <span style={{
+                    flex: 1, minWidth: 0, fontSize: '12px',
+                    color: entry.isCurrentUser ? '#fbbf24' : '#cbd5e1', fontWeight: entry.isCurrentUser ? 700 : 400,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>{entry.username}</span>
+                  <span style={{ fontSize: '10px', color: '#64748b', flexShrink: 0 }}>{entry.cardCount}/8</span>
+                  <span style={{
+                    width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: `1.5px solid ${gc}`, color: gc,
+                    fontSize: '12px', fontWeight: 800, fontFamily: 'pressStart',
+                  }}>{entry.grade}</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </aside>
       </div>
 
       <ShowcasePickerModal
