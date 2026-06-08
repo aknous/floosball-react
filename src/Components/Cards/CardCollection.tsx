@@ -11,6 +11,14 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+// 1x1 transparent gif used to suppress the native drag ghost so we can render
+// our own card overlay that tracks the cursor precisely.
+const EMPTY_DRAG_IMG = typeof Image !== 'undefined' ? (() => {
+  const img = new Image()
+  img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+  return img
+})() : null
+
 const EDITIONS = ['all', 'base', 'holographic', 'prismatic', 'diamond'] as const
 const POSITIONS = [
   { value: 0, label: 'All' },
@@ -66,8 +74,11 @@ const CardCollection: React.FC = () => {
   const [levelUpCard, setLevelUpCard] = useState<CardData | null>(null)
   const [vaultCards, setVaultCards] = useState<CardData[]>([])
   const [trashTarget, setTrashTarget] = useState<CardData | null>(null)
+  const [draggingCard, setDraggingCard] = useState<CardData | null>(null)
   const dragIndex = useRef<number | null>(null)
-  const dragGhost = useRef<HTMLElement | null>(null)
+  const grabOffset = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const lastPointer = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const overlayRef = useRef<HTMLDivElement | null>(null)
 
   const inVault = view === 'vault'
   const canReorder = inVault && sortBy === 'manual'
@@ -130,33 +141,41 @@ const CardCollection: React.FC = () => {
     setCards(next)
     persistOrder(next)
   }
-  // Drag image: clone the card off-screen so the ghost is exactly one card,
-  // not a snapshot of the wrapper/section (which some browsers produce).
-  const startDrag = (e: React.DragEvent, idx: number) => {
+  // Custom drag overlay: suppress the native ghost and render our own card that
+  // follows the cursor exactly (native setDragImage is unreliable across browsers).
+  const startDrag = (e: React.DragEvent, idx: number, card: CardData) => {
     dragIndex.current = idx
     const src = (e.currentTarget.firstElementChild as HTMLElement) || null
-    if (src) {
-      const rect = src.getBoundingClientRect()
-      const clone = src.cloneNode(true) as HTMLElement
-      Object.assign(clone.style, {
-        position: 'fixed', top: '-2000px', left: '-2000px', margin: '0',
-        transform: 'none', pointerEvents: 'none',
-        width: `${src.offsetWidth}px`, height: `${src.offsetHeight}px`,
-      })
-      document.body.appendChild(clone)
-      dragGhost.current = clone
-      // Anchor the ghost to the exact point grabbed so it tracks under the cursor.
-      e.dataTransfer.setDragImage(clone, e.clientX - rect.left, e.clientY - rect.top)
-    }
+    const rect = src ? src.getBoundingClientRect() : null
+    grabOffset.current = rect
+      ? { x: e.clientX - rect.left, y: e.clientY - rect.top }
+      : { x: 0, y: 0 }
+    lastPointer.current = { x: e.clientX, y: e.clientY }
+    if (EMPTY_DRAG_IMG) e.dataTransfer.setDragImage(EMPTY_DRAG_IMG, 0, 0)
     e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(card.id))  // required for Firefox
+    setDraggingCard(card)
   }
   const endDrag = () => {
-    if (dragGhost.current) {
-      document.body.removeChild(dragGhost.current)
-      dragGhost.current = null
-    }
     dragIndex.current = null
+    setDraggingCard(null)
   }
+  // Move the overlay with the cursor while dragging (direct style write, no re-render).
+  useEffect(() => {
+    if (!draggingCard) return
+    const place = (x: number, y: number) => {
+      const el = overlayRef.current
+      if (el) el.style.transform = `translate(${x - grabOffset.current.x}px, ${y - grabOffset.current.y}px)`
+    }
+    place(lastPointer.current.x, lastPointer.current.y)
+    const move = (ev: DragEvent) => {
+      if (!ev.clientX && !ev.clientY) return  // ignore spurious 0,0 (e.g. drop/end)
+      lastPointer.current = { x: ev.clientX, y: ev.clientY }
+      place(ev.clientX, ev.clientY)
+    }
+    window.addEventListener('dragover', move)
+    return () => window.removeEventListener('dragover', move)
+  }, [draggingCard])
 
   const equippedIds = new Set(cards.filter(c => c.isEquipped).map(c => c.id))
 
@@ -407,11 +426,15 @@ const CardCollection: React.FC = () => {
             <div
               key={card.id}
               draggable={canReorder}
-              onDragStart={canReorder ? (e) => startDrag(e, idx) : undefined}
+              onDragStart={canReorder ? (e) => startDrag(e, idx, card) : undefined}
               onDragEnd={canReorder ? endDrag : undefined}
               onDragOver={canReorder ? (e) => e.preventDefault() : undefined}
               onDrop={canReorder ? () => handleDrop(idx) : undefined}
-              style={{ cursor: canReorder ? 'grab' : undefined, alignSelf: 'flex-start' }}
+              style={{
+                cursor: canReorder ? 'grab' : undefined, alignSelf: 'flex-start',
+                opacity: draggingCard?.id === card.id ? 0.35 : 1,
+                transition: 'opacity 0.1s',
+              }}
             >
               <TradingCard
                 card={card}
@@ -452,6 +475,19 @@ const CardCollection: React.FC = () => {
         onClose={() => setTrashTarget(null)}
         onComplete={() => fetchCards()}
       />
+
+      {/* Cursor-following drag overlay (vault reorder) */}
+      {draggingCard && (
+        <div
+          ref={overlayRef}
+          style={{
+            position: 'fixed', top: 0, left: 0, zIndex: 10050,
+            pointerEvents: 'none', opacity: 0.92, willChange: 'transform',
+          }}
+        >
+          <TradingCard card={draggingCard} size={isMobile ? 'sm' : 'md'} noHoverLift />
+        </div>
+      )}
       </>
       )}
     </div>
