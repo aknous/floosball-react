@@ -102,6 +102,8 @@ const EDITION_SHORT: Record<string, string> = {
   diamond: 'DMND',
 }
 
+const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
+
 const EDITION_COLORS: Record<string, string> = {
   base: '#94a3b8',
   holographic: '#c4b5fd',
@@ -413,6 +415,13 @@ const PointsBreakdownPanel: React.FC<{
                       {effectLabel}
                     </span>
                   </HoverTooltip>
+                  {(b.tier ?? 1) >= 2 && (
+                    <span style={{
+                      fontSize: '9px', fontWeight: 800, color: '#fbbf24',
+                      background: 'rgba(251,191,36,0.14)', border: '1px solid rgba(251,191,36,0.35)',
+                      borderRadius: '3px', padding: '0 4px', flexShrink: 0,
+                    }}>{TIER_ROMAN[b.tier ?? 1] ?? b.tier}</span>
+                  )}
                   {b.matchMultiplied && (
                     <span style={{
                       color: '#60a5fa', fontSize: '10px', fontWeight: '700', flexShrink: 0,
@@ -905,7 +914,9 @@ export const FantasyRoster: React.FC = () => {
       const tok = await getToken()
       if (!tok) return
       const [collRes, eqRes] = await Promise.all([
-        fetch(`${API_BASE}/cards/collection?activeOnly=true`, {
+        // vaulted=false: vaulted cards are keepsakes with no effect, so they
+        // must not count as roster card-matches.
+        fetch(`${API_BASE}/cards/collection?activeOnly=true&vaulted=false`, {
           headers: { Authorization: `Bearer ${tok}` },
         }),
         fetch(`${API_BASE}/cards/equipped`, {

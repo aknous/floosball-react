@@ -4,6 +4,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
+import SupporterCard from '@/Components/FrontOffice/SupporterCard'
+import FeatureAnnounceModal from '@/Components/FeatureAnnounceModal'
+import { isFeatureSeen, markFeatureSeen, FEATURE_SUPPORTER } from '@/utils/featureAnnounce'
 import RookiesSection from './RookiesSection'
 import MarketsSection from './MarketsSection'
 import { Stars, calcStars } from '@/Components/Stars'
@@ -99,6 +102,13 @@ export default function FrontOfficePage() {
   const { user, getToken, refetchUser } = useAuth()
   const { seasonState } = useFloosball()
   const isMobile = useIsMobile()
+
+  // One-time "what's new" announcement for the Supporter income feature.
+  const [showSupporterNew, setShowSupporterNew] = useState(false)
+  useEffect(() => {
+    if (user && !isFeatureSeen(FEATURE_SUPPORTER)) setShowSupporterNew(true)
+  }, [user])
+  const dismissSupporterNew = () => { markFeatureSeen(FEATURE_SUPPORTER); setShowSupporterNew(false) }
 
   const [team, setTeam] = useState<TeamSummary | null>(null)
   const [projectedTier, setProjectedTier] = useState<string | null>(null)
@@ -280,6 +290,18 @@ export default function FrontOfficePage() {
 
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
+      <FeatureAnnounceModal
+        open={showSupporterNew}
+        onClose={dismissSupporterNew}
+        title="Become a Supporter"
+        intro="A new way to earn Floobits just by backing your favorite team."
+        items={[
+          { title: 'Loyalty dividends', color: '#fbbf24', body: 'Stay with your favorite team to build tenure. The longer you support them, the bigger your weekly dividend.' },
+          { title: 'Patron rank', color: '#a5f3fc', body: 'Contribute to your team\'s funding to climb patron ranks and boost your dividend multiplier.' },
+          { title: 'Accrue and claim', color: '#4ade80', body: 'Dividends pile up over the season. Claim them here whenever you like. A gold marker shows when there\'s something to collect.' },
+        ]}
+      />
+
       {/* Header */}
       <div style={{ marginBottom: '16px' }}>
         <h1 style={{ fontSize: '24px', color: '#e2e8f0', margin: 0, marginBottom: '4px' }}>
@@ -359,11 +381,14 @@ export default function FrontOfficePage() {
 
       {/* Only the active tab's content renders */}
       {activeSection === 'overview' && (
-        <OverviewTab
-          team={team}
-          retirementWatch={retirementWatch}
-          prospects={prospects}
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <SupporterCard />
+          <OverviewTab
+            team={team}
+            retirementWatch={retirementWatch}
+            prospects={prospects}
+          />
+        </div>
       )}
 
       {activeSection === 'markets' && (

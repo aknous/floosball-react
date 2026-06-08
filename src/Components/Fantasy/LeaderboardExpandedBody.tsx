@@ -23,6 +23,7 @@ interface EquippedCardEntry {
 // Subset of CardBreakdownEntry fields we render in this view.
 interface CardBreakdown {
   edition: string
+  tier?: number
   effectName?: string
   displayName?: string
   detail?: string
@@ -51,6 +52,19 @@ const EDITION_SHORT: Record<string, string> = {
   holographic: 'HOLO',
   prismatic: 'PRSM',
   diamond: 'DMND',
+}
+
+const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
+// Small gold tier chip — only shown for upgraded cards (tier 2+).
+const TierTag: React.FC<{ tier?: number }> = ({ tier }) => {
+  if (!tier || tier < 2) return null
+  return (
+    <span style={{
+      fontSize: '9px', fontWeight: 800, color: '#fbbf24',
+      background: 'rgba(251,191,36,0.14)', border: '1px solid rgba(251,191,36,0.35)',
+      borderRadius: '3px', padding: '0 4px', flexShrink: 0, lineHeight: '14px',
+    }}>{TIER_ROMAN[tier] ?? tier}</span>
+  )
 }
 
 const EDITION_COLORS: Record<string, string> = {
@@ -198,6 +212,7 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
             <span>{effectLabel}</span>
           </HoverTooltip>
         </span>
+        <TierTag tier={b.tier} />
         {outputParts.length > 0 ? (
           <span style={{
             display: 'inline-flex', alignItems: 'center', gap: '6px',
@@ -250,6 +265,7 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
             <span>{effectLabel}</span>
           </HoverTooltip>
         </span>
+        <TierTag tier={card.tier} />
       </div>
     )
   }

@@ -235,34 +235,36 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const curGame = updated.get(gameId)!
             let existingPlays = curGame.plays || []
 
-            // Identity check for plays. A duplicate must match on BOTH
-            // playNumber AND description+playResult — playNumber alone has
-            // false-positived on punts and other plays whose number happens
-            // to collide with an existing entry (e.g. when the previous
-            // play was rebroadcast with an updated playResult). The
-            // kneel-twice case this dedup was added to defend against has
-            // matching values on both axes, so requiring both is still safe.
-            // Fall back to description+playResult-only for entries that
-            // don't carry an integer playNumber (event messages, cutaways).
-            const sameAsExisting = (cand: any) => {
-              if (!cand) return false
+            // Merge a freshly-broadcast play into the feed. A play's identity is
+            // its integer playNumber + description: the SAME play gets re-emitted
+            // at quarter boundaries / turnovers with an updated playResult or WP,
+            // so we must REPLACE the existing entry (newest data wins) rather than
+            // append a duplicate. (Matching playResult too — as the old check did —
+            // let those rebroadcasts slip through as dupes.) Two real kneels have
+            // different playNumbers, so that case is unaffected. Entries without an
+            // integer playNumber (event messages, cutaways) fall back to a
+            // description+playResult dedup.
+            const mergePlay = (list: any[], cand: any): any[] => {
+              if (!cand) return list
               const hasInt = cand.playNumber != null && Number.isInteger(cand.playNumber)
               if (hasInt && cand.description) {
-                if (existingPlays.some((p: any) => (
+                const idx = list.findIndex((p: any) => (
                   p.playNumber === cand.playNumber
                   && p.description === cand.description
-                  && p.playResult === cand.playResult
-                  && !(p as any).isSidelineCutaway
-                ))) return true
+                  && !p.isSidelineCutaway
+                ))
+                if (idx !== -1) {
+                  const copy = list.slice()
+                  copy[idx] = { ...copy[idx], ...cand }
+                  return copy
+                }
               } else if (cand.description) {
-                if (existingPlays.some((p: any) => p.description === cand.description && p.playResult === cand.playResult)) return true
+                if (list.some((p: any) => p.description === cand.description && p.playResult === cand.playResult)) return list
               }
-              return false
+              return [cand, ...list]
             }
 
-            if (finalPlayData && !sameAsExisting(finalPlayData)) {
-              existingPlays = [finalPlayData, ...existingPlays]
-            }
+            if (finalPlayData) existingPlays = mergePlay(existingPlays, finalPlayData)
 
             // Sideline cutaway — render as a flavor entry in the feed (between
             // plays, ordered immediately after the play that just happened).
@@ -304,7 +306,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               gameStats: gsEvt.gameStats ?? curGame.gameStats,
               plays: (() => {
                 let next = existingPlays
-                if (lastPlayData && !sameAsExisting(lastPlayData)) next = [lastPlayData, ...next]
+                if (lastPlayData) next = mergePlay(next, lastPlayData)
                 if (cutawayEntry) next = [cutawayEntry, ...next]
                 return next
               })(),

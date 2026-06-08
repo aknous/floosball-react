@@ -36,6 +36,7 @@ import { FloosballProvider } from './contexts/FloosballContext'
 import { SeasonWebSocketProvider } from './contexts/SeasonWebSocketContext'
 import { GamesProvider } from './contexts/GamesContext'
 import { AchievementsProvider } from './contexts/AchievementsContext'
+import { CoresStatusProvider } from './contexts/CoresStatusContext'
 import AchievementUnlockedToast from './Components/AchievementUnlockedToast'
 import FloobitsReceivedToast from './Components/FloobitsReceivedToast'
 import PendingPackResumer from './Components/Cards/PendingPackResumer'
@@ -265,13 +266,15 @@ function App() {
             <FloosballProvider>
               <GamesProvider>
                 <AchievementsProvider>
-                  <SidebarProvider>
-                    <AuthGate />
-                    <AchievementUnlockedToast />
-                    <FloobitsReceivedToast />
-                    <PendingPackResumer />
-                    <HalftimeShowModal />
-                  </SidebarProvider>
+                  <CoresStatusProvider>
+                    <SidebarProvider>
+                      <AuthGate />
+                      <AchievementUnlockedToast />
+                      <FloobitsReceivedToast />
+                      <PendingPackResumer />
+                      <HalftimeShowModal />
+                    </SidebarProvider>
+                  </CoresStatusProvider>
                 </AchievementsProvider>
               </GamesProvider>
             </FloosballProvider>

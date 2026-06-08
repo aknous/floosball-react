@@ -631,6 +631,17 @@ export interface SeasonEndEvent extends BaseWebSocketEvent {
 export interface LeagueNewsEvent extends BaseWebSocketEvent {
   event: 'league_news'
   text: string
+  // Lore-flavor tagging (anomaly transitions + Cores dialogue)
+  category?: 'anomaly_transition' | 'cores'
+  anomalyState?: string
+  // Cores attribution
+  core?: string
+  coreDisplayName?: string
+  eventType?: string
+  // Multi-Core exchange threading (P4) — present only on exchange turns
+  exchangeId?: string
+  turnIndex?: number
+  turnCount?: number
 }
 
 export interface OffseasonStartEvent extends BaseWebSocketEvent {

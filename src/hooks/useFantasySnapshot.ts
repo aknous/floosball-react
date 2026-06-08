@@ -20,6 +20,7 @@ export interface CardBreakdownEntry {
   slotNumber: number
   playerName: string
   edition: string
+  tier?: number
   effectName: string
   displayName: string
   detail: string
@@ -298,6 +299,7 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
               slotNumber: cb.slotNumber ?? 0,
               playerName: cb.playerName ?? '',
               edition: cb.edition ?? 'base',
+              tier: cb.tier ?? 1,
               effectName: cb.effectName ?? '',
               displayName: cb.displayName ?? '',
               detail: cb.detail ?? '',

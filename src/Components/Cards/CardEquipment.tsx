@@ -305,7 +305,7 @@ const CardEquipment: React.FC = () => {
     try {
       const tok = await getToken()
       if (!tok) return
-      const res = await fetch(`${API_BASE}/cards/collection?activeOnly=true`, {
+      const res = await fetch(`${API_BASE}/cards/collection?activeOnly=true&vaulted=false`, {
         headers: { Authorization: `Bearer ${tok}` },
       })
       if (!res.ok) return
@@ -425,7 +425,7 @@ const CardEquipment: React.FC = () => {
       try {
         const tok = await getToken()
         if (!tok) return
-        const res = await fetch(`${API_BASE}/cards/collection?activeOnly=true`, {
+        const res = await fetch(`${API_BASE}/cards/collection?activeOnly=true&vaulted=false`, {
           headers: { Authorization: `Bearer ${tok}` },
         })
         if (!res.ok) return

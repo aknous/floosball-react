@@ -38,6 +38,9 @@ const SECTION_GROUPS: SectionCategory[] = [
       { id: 'card-equipment', title: 'Card Equipment' },
       { id: 'card-packs', title: 'Card Packs' },
       { id: 'the-combine', title: 'The Combine' },
+      { id: 'card-upgrades', title: 'Card Upgrades' },
+      { id: 'the-vault', title: 'The Vault' },
+      { id: 'the-showcase', title: 'The Showcase' },
       { id: 'floobits', title: 'Floobits' },
       { id: 'power-ups', title: 'Power-Ups' },
       { id: 'achievements', title: 'Achievements' },
@@ -1439,8 +1442,8 @@ const AboutPage: React.FC = () => {
             <p style={labelStyle}>Participation Reward</p>
             <p style={textStyle}>
               At the end of each week, your weekly FP is converted to Floobits along a tapering
-              curve — big weeks always pay more than small weeks, but with diminishing returns
-              so payouts can't run away. Everyone who plays earns something.
+              curve. Big weeks pay more than small weeks, but with diminishing returns. Everyone
+              who plays earns something.
             </p>
           </Section>
 
@@ -1504,7 +1507,8 @@ const AboutPage: React.FC = () => {
               Cards are tied to the season they were created in. When a season ends, all cards from that
               season expire and can no longer be equipped. Expired cards can still be sold (at 20% of their
               normal value) or sacrificed in The Combine, but they won't contribute to your fantasy scoring.
-              Build your collection each season knowing you'll start fresh next time.
+              Build your collection each season knowing you'll start fresh next time. The exception is the
+              Vault: vaulting a card keeps it forever (see The Vault below).
             </p>
 
             <p style={labelStyle}>Classifications</p>
@@ -1642,9 +1646,10 @@ const AboutPage: React.FC = () => {
           {/* ── The Combine ── */}
           <Section id="the-combine" title="The Combine">
             <p style={textStyle}>
-              The Combine is the card upgrade system on the <Link to="/cards" style={linkStyle}>Cards</Link> page.
-              Sacrifice 2 or more cards to destroy them and create a single new card. The resulting edition
-              depends on the total combined sell value of the sacrificed cards. The new card's player and
+              The Combine is one of two ways to upgrade cards on the <Link to="/cards" style={linkStyle}>Cards</Link> page.
+              It raises a card's <em>edition</em>: sacrifice 2 or more cards to destroy them and create a single
+              new card. The resulting edition depends on the total combined sell value of the sacrificed cards.
+              (To raise a single card's <em>tier</em> instead, see Card Upgrades below.) The new card's player and
               effect are randomly assigned.
             </p>
 
@@ -1697,6 +1702,91 @@ const AboutPage: React.FC = () => {
             </p>
           </Section>
 
+          {/* ── Card Upgrades ── */}
+          <Section id="card-upgrades" title="Card Upgrades">
+            <p style={textStyle}>
+              Level Up raises a single card's tier from I to IV, making it stronger without changing its
+              edition or effect. Hover a card on the <Link to="/cards" style={linkStyle}>Cards</Link> page and
+              hit Level Up.
+            </p>
+
+            <p style={labelStyle}>How it works</p>
+            {bulletList([
+              'Each level up costs Floobits plus one duplicate of the same effect, which is consumed',
+              'Effects are locked to one edition, so any duplicate of the effect already matches the rarity you need',
+              'Tiers go I, II, III, IV. The tier shows as a roman numeral on the card and in your scoring breakdown',
+              'Higher tiers pay more (FP, FPx, or Floobits), and the card sells and scores for more',
+            ])}
+
+            <p style={labelStyle}>The Combine vs Level Up</p>
+            <p style={textStyle}>
+              The Combine fuses several cards into one of a higher <em>edition</em>. Level Up raises one card's
+              <em> tier</em>. They're two different ways to spend your spare duplicates.
+            </p>
+
+            <p style={labelStyle}>Seasonal</p>
+            <p style={textStyle}>
+              A card's tier lasts the season, just like the card. Vault the card to keep its tier for good and
+              feed it into your Showcase.
+            </p>
+          </Section>
+
+          {/* ── The Vault ── */}
+          <Section id="the-vault" title="The Vault">
+            <p style={textStyle}>
+              The Vault is your permanent collection. Vaulting a card keeps it forever, even after the season
+              ends when normal cards expire. Find it as a tab on the <Link to="/cards" style={linkStyle}>Cards</Link> page.
+            </p>
+
+            <p style={labelStyle}>The trade-off</p>
+            <p style={textStyle}>
+              Vaulting is permanent. A vaulted card can no longer be equipped, sold, or used in The Combine or
+              Level Up. In return it's yours for keeps. So vault the cards you want to collect and show off, not
+              the ones you want to play.
+            </p>
+
+            <p style={labelStyle}>Keepsakes</p>
+            <p style={textStyle}>
+              A vaulted card drops its effect and becomes a player keepsake. The back shows the player's stats
+              for the season the card is from: their team, star rating, and season fantasy points.
+            </p>
+
+            {bulletList([
+              'Arrange your Vault by switching to Manual sort and dragging cards into any order',
+              'Removing a card from the Vault trashes it for good, with no Floobit return',
+              'Vaulting cards drives Collection achievements (Hometown Hero, Full Spectrum, Ice Cold, Archivist, and more)',
+            ])}
+          </Section>
+
+          {/* ── The Showcase ── */}
+          <Section id="the-showcase" title="The Showcase">
+            <p style={textStyle}>
+              The Showcase is where you put your best cards on display for a season-end Floobit payout. Feature
+              up to 8 vaulted cards on the Showcase tab of the <Link to="/cards" style={linkStyle}>Cards</Link> page.
+            </p>
+
+            <p style={labelStyle}>Grades and payout</p>
+            <p style={textStyle}>
+              Your featured cards earn a grade from F to S. The grade pays out flat Floobits when the season
+              ends, then the Showcase clears for a fresh start. A better collection earns a better grade:
+              rarer editions, classifications (MVP, Champion, All-Pro), and higher tiers all push it up.
+              Newer cards are worth more than old ones.
+            </p>
+
+            <p style={labelStyle}>Sets</p>
+            <p style={textStyle}>
+              Grouping cards into named sets boosts your grade. One Club (six from a team), Diamond Vault
+              (eight Diamonds), Full Spectrum (all four editions of one player), and others. The Showcase shows
+              which sets are Active and which you're one or two cards Away from.
+            </p>
+
+            {bulletList([
+              'Only vaulted cards can be featured',
+              'Editable all season, so keep swapping cards to push the grade higher',
+              'Standings show everyone with a featured Showcase this season. Tap a name to view theirs',
+            ])}
+          </Section>
+
           {/* ── Floobits Economy ── */}
           <Section id="floobits" title="Floobits">
             <p style={{ ...textStyle, marginBottom: '12px' }}>
@@ -1706,7 +1796,7 @@ const AboutPage: React.FC = () => {
               Earning:
             </p>
             {bulletList([
-              'Weekly participation: 15% of your FP converted to Floobits (max 20/week)',
+              'Weekly fantasy: your weekly FP converts to Floobits on a tapering curve (more FP earns more, with diminishing returns, no hard cap)',
               'Weekly leaderboard: 1st = 30, 2nd = 20, 3rd = 15 (top 25% get 5)',
               'Season leaderboard: 1st = 200, 2nd = 125, 3rd = 75 (top 25% get 25)',
               'Prognostications: points x 0.5 Floobits, plus weekly prizes and Clairvoyant bonus',
@@ -1719,7 +1809,8 @@ const AboutPage: React.FC = () => {
               Spending:
             </p>
             {bulletList([
-              'Card Packs: Humble (100), Proper (300), Grand (900), Exquisite (2500)',
+              'Card Packs: Humble (50), Grand (100), Exquisite (150), themed packs (150 to 250)',
+              'Card Upgrades: Floobits to Level Up a card a tier',
               'Daily Selection cards and rerolls (escalating cost)',
               'Roster swaps: 15 Floobits base, +15 per repeat swap in same slot (season-long)',
               'Power-Ups: Dispensation, Annulment, Conscription, Accession, Patronage, Endowment',
@@ -1768,7 +1859,7 @@ const AboutPage: React.FC = () => {
           <Section id="achievements" title="Achievements">
             <p style={textStyle}>
               Achievements reward you with Floobits, packs, or powerups for hitting milestones across
-              the site. They split into three buckets that all live on
+              the site. They split into four buckets that all live on
               the <Link to="/achievements" style={linkStyle}>Achievements</Link> page.
             </p>
 
@@ -1785,7 +1876,14 @@ const AboutPage: React.FC = () => {
             <p style={textStyle}>
               Per-season achievements that reset every offseason, so you can earn them again each year.
               Some are tiered (Banner Week I through IV, Dedicated I through VI) and reward larger prizes
-              as you climb. Rewards can include Floobits, card packs, or powerups.
+              as you climb. Card upgrades have their own tiers here (Artificer, Ascendant). Rewards can
+              include Floobits, card packs, or powerups.
+            </p>
+
+            <p style={labelStyle}>Collection</p>
+            <p style={textStyle}>
+              Permanent goals for your Vault that never reset, like vaulting your favorite team's players,
+              every edition of one player, or a stack of Diamonds.
             </p>
 
             <p style={labelStyle}>Secret Achievements</p>

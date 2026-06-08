@@ -12,6 +12,7 @@ import { personalityAccent } from '@/utils/personality'
 import { pressureHandlingTier } from '@/utils/mentalProfile'
 import { PlayReactions } from './GameModal/PlayReactions'
 import RallyButton from './GameModal/RallyPanel'
+import CheerBar from './CheerBar'
 import { GlitchedText } from './GlitchedText'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -518,8 +519,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const isChokePlay = !!play.isChokePlay
     const isMomentumShift = !!play.isMomentumShift
     const hasGlitch = !!(play as any).glitchText
-    const glitchLayer = (play as any).glitchLayer as ('micro' | 'personality' | undefined)
+    const glitchLayer = (play as any).glitchLayer as ('micro' | 'personality' | 'signature' | undefined)
     const isGlitchL2 = glitchLayer === 'personality'
+    const isGlitchL3 = glitchLayer === 'signature'
+    const glitchDelta = (play as any).glitchYardDelta as number | null | undefined
     // Pick a deterministic glitch variant (a/b/c) per play so the same
     // play always looks the same on re-render, but different anomaly
     // plays don't all use the identical effect.
@@ -529,7 +532,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       return ['a', 'b', 'c'][Math.abs(seed) % 3]
     })()
     const glitchTextClass = hasGlitch
-      ? (isGlitchL2 ? `glitch-text-l2-${glitchVariant}` : `glitch-text-l1-${glitchVariant}`)
+      ? (isGlitchL3 ? 'glitch-text-l3'
+         : isGlitchL2 ? `glitch-text-l2-${glitchVariant}`
+         : `glitch-text-l1-${glitchVariant}`)
       : ''
     const homeGained = (play.homeWpa ?? 0) > 0
     const bigPlayTeamAbbr = homeGained ? gameData.homeTeam.abbr : gameData.awayTeam.abbr
@@ -544,7 +549,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       <div key={playKey} style={{ borderBottom: '1px solid #334155' }}>
         <div
           onClick={hasInsights ? () => setExpandedPlayKey(isExpanded ? null : playKey) : undefined}
-          className={hasGlitch ? (isGlitchL2 ? 'anomaly-row-l2' : 'anomaly-row-l1') : undefined}
+          className={hasGlitch ? (isGlitchL3 ? 'anomaly-row-l3' : isGlitchL2 ? 'anomaly-row-l2' : 'anomaly-row-l1') : undefined}
           style={{
             paddingBottom: '12px',
             paddingTop: '6px',
@@ -617,14 +622,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </span>
                 )}
                 {hasGlitch && (
-                  <span className="anomaly-label" style={{
-                    color: '#39ff14',
+                  <span className={isGlitchL3 ? 'anomaly-label-l3' : 'anomaly-label'} style={{
+                    color: isGlitchL3 ? '#c4b5fd' : '#39ff14',
                     fontWeight: 700,
                     fontSize: '10px',
                     letterSpacing: '1px',
                     fontFamily: 'monospace',
                   }}>
-                    {isGlitchL2 ? '◆ data corrupted' : '◇ aberration detected'}
+                    {isGlitchL3 ? '◆◆ reality warped' : isGlitchL2 ? '◆ data corrupted' : '◇ aberration detected'}
                   </span>
                 )}
               </div>
@@ -682,7 +687,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 // so characters periodically swap to glitch glyphs. The row-level
                 // class above also applies a chromatic shimmer to every text
                 // descendant via CSS animation.
-                if (hasGlitch) {
+                // L1/L2 corrupt the description with character swaps. L3 stays
+                // legible (no char-flip) — its drama is the steady violet charge
+                // the row class lays over every line.
+                if (hasGlitch && !isGlitchL3) {
                   return <GlitchedText text={cleaned} intensity={isGlitchL2 ? 'high' : 'low'} />
                 }
                 return cleaned
@@ -737,17 +745,39 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 className={glitchTextClass}
                 style={{
                   fontSize: '12px',
-                  color: isGlitchL2 ? '#86efac' : '#bbf7d0',
+                  color: isGlitchL3 ? '#ddd6fe' : isGlitchL2 ? '#86efac' : '#bbf7d0',
                   fontStyle: 'italic',
                   fontFamily: 'monospace',
                   letterSpacing: '0.2px',
                   margin: '6px 0 0',
-                  backgroundColor: isGlitchL2 ? 'rgba(57,255,20,0.10)' : 'rgba(57,255,20,0.06)',
+                  backgroundColor: isGlitchL3 ? 'rgba(167,139,250,0.10)' : isGlitchL2 ? 'rgba(57,255,20,0.10)' : 'rgba(57,255,20,0.06)',
                   padding: '5px 9px',
                   borderRadius: '4px',
-                  borderLeft: '2px solid #39ff14',
+                  borderLeft: isGlitchL3 ? '2px solid #a78bfa' : '2px solid #39ff14',
+                  display: isGlitchL3 ? 'flex' : undefined,
+                  alignItems: isGlitchL3 ? 'center' : undefined,
+                  gap: isGlitchL3 ? '8px' : undefined,
                 }}>
-                <GlitchedText text={(play as any).glitchText} intensity={isGlitchL2 ? 'high' : 'low'} />
+                {isGlitchL3 ? (
+                  <>
+                    {typeof glitchDelta === 'number' && glitchDelta !== 0 && (
+                      <span style={{
+                        flexShrink: 0,
+                        fontWeight: 700,
+                        fontStyle: 'normal',
+                        color: glitchDelta > 0 ? '#86efac' : '#fbbf24',
+                        backgroundColor: glitchDelta > 0 ? 'rgba(134,239,172,0.14)' : 'rgba(251,191,36,0.14)',
+                        padding: '1px 6px',
+                        borderRadius: '3px',
+                      }}>
+                        {glitchDelta > 0 ? `+${glitchDelta}` : glitchDelta} yds
+                      </span>
+                    )}
+                    <span>{(play as any).glitchText}</span>
+                  </>
+                ) : (
+                  <GlitchedText text={(play as any).glitchText} intensity={isGlitchL2 ? 'high' : 'low'} />
+                )}
               </p>
             )}
             {play.scoreChange && play.homeTeamScore != null && (
@@ -876,7 +906,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           borderBottom: '1px solid #334155',
           flexShrink: 0
         }}>
-          <div />
+          {/* Cheer bar lives in the existing header row (live games only) so it
+              adds no height and never pushes the body / WP graph down. */}
+          {isLive ? (
+            <CheerBar
+              gameId={gameId}
+              isLive={isLive}
+              playCount={(gameData?.plays as any[])?.filter((p: any) => !p.event && !p.isSidelineCutaway).length ?? 0}
+              score={(gameData?.homeScore ?? 0) + (gameData?.awayScore ?? 0)}
+              bigPlayCount={(gameData?.plays as any[])?.filter((p: any) => p.isBigPlay && !p.isSidelineCutaway).length ?? 0}
+              compact
+            />
+          ) : <div />}
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
             <XIcon style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
           </button>
@@ -1287,6 +1328,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
               // Yard lines at 10-yd intervals across the 120-yd field
               const yardLinePositions = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110]
+              // The 5-yd lines that fall between the numbered 10s (real field has
+              // a line every 5 yards; only the 10s are numbered).
+              const fiveYardLinePositions = [15, 25, 35, 45, 55, 65, 75, 85, 95, 105]
               // NFL-style yard numbers (count from each end)
               const yardNums: [number, string][] = [
                 [20, '10'], [30, '20'], [40, '30'], [50, '40'], [60, '50'],
@@ -1339,7 +1383,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     <line x1={toX(10)} y1={0} x2={toX(10)} y2={FH} stroke="rgba(255,255,255,0.55)" strokeWidth={1.5} />
                     <line x1={toX(110)} y1={0} x2={toX(110)} y2={FH} stroke="rgba(255,255,255,0.55)" strokeWidth={1.5} />
 
-                    {/* Yard lines */}
+                    {/* 5-yard lines (between the numbered 10s) — fainter so the
+                        numbered 10-yard lines stay the primary references. */}
+                    {fiveYardLinePositions.map(yd => (
+                      <line key={`f-${yd}`}
+                        x1={toX(yd)} y1={0} x2={toX(yd)} y2={FH}
+                        stroke="rgba(255,255,255,0.10)" strokeWidth={0.6}
+                      />
+                    ))}
+
+                    {/* Yard lines (every 10) */}
                     {yardLinePositions.map(yd => (
                       <line key={yd}
                         x1={toX(yd)} y1={0} x2={toX(yd)} y2={FH}
@@ -1359,19 +1412,23 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     {/* Yard numbers */}
                     {yardNums.map(([ydPos, label]) => (
                       <text key={ydPos} x={toX(ydPos)} y={FH * 0.82}
-                        textAnchor="middle" fontSize={11} fill="rgba(255,255,255,0.28)" fontFamily="sans-serif">
+                        textAnchor="middle" fontSize={17} fill="rgba(255,255,255,0.3)" fontFamily="pressStart, monospace">
                         {label}
                       </text>
                     ))}
 
-                    {/* End zone team labels (fixed: home=left, away=right) */}
-                    <text x={EZW / 2} y={midY + 5} textAnchor="middle" fontSize={11} fontWeight="700"
-                      fill={homeTeam.color} opacity={0.9} fontFamily="sans-serif">
-                      {homeTeam.abbr}
+                    {/* End zone team names — vertical (parallel to the yard
+                        lines), reading into the field from each end (home left
+                        reads bottom-to-top, away right reads top-to-bottom). */}
+                    <text x={EZW / 2} y={midY} transform={`rotate(-90 ${EZW / 2} ${midY})`}
+                      textAnchor="middle" dominantBaseline="central" fontSize={21} fontWeight={800}
+                      letterSpacing={1.5} fill={homeTeam.color} opacity={0.9} fontFamily="pressStart, monospace">
+                      {(homeTeam.name || homeTeam.abbr).toUpperCase()}
                     </text>
-                    <text x={FW - EZW / 2} y={midY + 5} textAnchor="middle" fontSize={11} fontWeight="700"
-                      fill={awayTeam.color} opacity={0.9} fontFamily="sans-serif">
-                      {awayTeam.abbr}
+                    <text x={FW - EZW / 2} y={midY} transform={`rotate(90 ${FW - EZW / 2} ${midY})`}
+                      textAnchor="middle" dominantBaseline="central" fontSize={21} fontWeight={800}
+                      letterSpacing={1.5} fill={awayTeam.color} opacity={0.9} fontFamily="pressStart, monospace">
+                      {(awayTeam.name || awayTeam.abbr).toUpperCase()}
                     </text>
 
                     {/* First down marker */}
@@ -1460,7 +1517,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     {(playResult || playDescription) && (
                       <>
                         {playDescription && (
-                          <p style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', margin: 0, lineHeight: '1.4', marginBottom: playResult ? '4px' : 0 }}>
+                          <p style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', margin: 0, lineHeight: '1.4', marginBottom: playResult ? '4px' : 0, fontFamily: 'pressStart, monospace' }}>
                             {playDescription}
                           </p>
                         )}
@@ -1477,6 +1534,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                                 fontWeight: '700',
                                 letterSpacing: '0.04em',
                                 textTransform: 'uppercase',
+                                fontFamily: 'pressStart, monospace',
                               }}>
                                 {playResult}
                               </span>
