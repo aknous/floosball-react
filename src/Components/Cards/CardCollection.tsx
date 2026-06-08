@@ -136,6 +136,7 @@ const CardCollection: React.FC = () => {
     dragIndex.current = idx
     const src = (e.currentTarget.firstElementChild as HTMLElement) || null
     if (src) {
+      const rect = src.getBoundingClientRect()
       const clone = src.cloneNode(true) as HTMLElement
       Object.assign(clone.style, {
         position: 'fixed', top: '-2000px', left: '-2000px', margin: '0',
@@ -144,7 +145,8 @@ const CardCollection: React.FC = () => {
       })
       document.body.appendChild(clone)
       dragGhost.current = clone
-      e.dataTransfer.setDragImage(clone, src.offsetWidth / 2, 40)
+      // Anchor the ghost to the exact point grabbed so it tracks under the cursor.
+      e.dataTransfer.setDragImage(clone, e.clientX - rect.left, e.clientY - rect.top)
     }
     e.dataTransfer.effectAllowed = 'move'
   }
