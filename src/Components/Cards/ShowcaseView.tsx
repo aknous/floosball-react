@@ -173,7 +173,8 @@ const ShowcaseView: React.FC = () => {
 
   const featuredIds = new Set((data?.slots ?? []).filter(s => s.card).map(s => s.card!.id))
   const gradeColor = GRADE_COLORS[data?.grade ?? 'F'] || '#94a3b8'
-  const cardSize = isMobile ? 'sm' : 'md'
+  // Smaller cards so 4 fit across alongside the standings panel.
+  const cardSize = 'sm' as const
 
   if (loading) {
     return <div style={{ color: '#64748b', fontSize: '13px', padding: '40px 0', textAlign: 'center' }}>Loading showcase...</div>
@@ -277,8 +278,9 @@ const ShowcaseView: React.FC = () => {
         </div>
 
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(2, max-content)',
-          gap: isMobile ? '16px' : '22px',
+          display: 'grid',
+          gridTemplateColumns: isMobile ? 'repeat(2, max-content)' : 'repeat(4, max-content)',
+          gap: isMobile ? '16px' : '18px',
           justifyContent: 'center', justifyItems: 'center',
         }}>
           {(data?.slots ?? []).map(slot => (
