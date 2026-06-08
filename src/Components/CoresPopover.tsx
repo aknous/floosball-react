@@ -1,30 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import ReactDOM from 'react-dom'
-import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
-import { useCoresStatus } from '@/contexts/CoresStatusContext'
+import { useCoresStatus, CoreLine } from '@/contexts/CoresStatusContext'
 import { bandVisual, CoreIcon, CORE_DISPLAY_NAMES, coreColor } from '@/utils/coresVisual'
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
-
-// Anchored popover for the Cores: the league's ominous status plus the live
-// stream of the Cores talking among themselves. Deliberately exposes NO
-// personality descriptions — who each Core is emerges from what they say, not
-// from a label. Number-free: the band is the only "reading".
+// Anchored popover for the Cores: the league's ominous status plus the Cores
+// talking among themselves. The conversation is owned by CoresStatusContext (it
+// accumulates in the background); this panel just reads + renders it, split into
+// event-driven beats (top, priority) and idle chatter (bottom). Deliberately
+// exposes NO personality descriptions — who each Core is emerges from what they
+// say. Number-free: the band is the only "reading".
 
 const PANEL_WIDTH = 360
-
-interface CoreLine {
-  id: string
-  core?: string
-  coreDisplayName?: string
-  text: string
-  eventType?: string
-  exchangeId?: string
-  turnIndex?: number
-  turnCount?: number
-  ambient?: boolean
-  ts: number
-}
 
 interface Block {
   key: string
@@ -41,15 +27,6 @@ const EVENT_TAG: Record<string, { label: string; color: string }> = {
   criticality: { label: 'CRITICALITY', color: '#ef4444' },
   reset: { label: 'RESET', color: '#a78bfa' },
 }
-
-const MAX_LINES = 80
-const AMBIENT_MS = 150_000        // idle banter fires occasionally, not on every open
-const AMBIENT_QUIET_MS = 30_000
-
-// Conversation persists across the popover's open/close remounts (it's mounted
-// only while open), so reopening shows the ongoing conversation instead of
-// conjuring a fresh line each time.
-let cachedLines: CoreLine[] = []
 
 // Compact relative time for a block. Falls back to a clock time past a day so
 // old backfilled history still reads clearly.
@@ -76,10 +53,7 @@ interface CoresPopoverProps {
 const CoresPopover: React.FC<CoresPopoverProps> = ({
   anchorRef, onClose, pinned = false, onPanelEnter, onPanelLeave,
 }) => {
-  const { subscribe } = useSeasonWebSocket()
-  const { status } = useCoresStatus()
-  const [lines, setLines] = useState<CoreLine[]>(cachedLines)
-  const lastLiveRef = useRef<number>(0)
+  const { status, lines } = useCoresStatus()
   const panelRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
   // Drives relative-time refresh ("now" → "3m" → "1h") without per-line timers.
@@ -124,86 +98,7 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({
     }
   }, [anchorRef, onClose])
 
-  const addLines = (incoming: CoreLine[]) => {
-    if (!incoming.length) return
-    // cachedLines is the source of truth so the conversation survives remounts.
-    const seen = new Set(cachedLines.map(l => l.id))
-    const next = [...cachedLines]
-    let changed = false
-    for (const l of incoming) if (!seen.has(l.id)) { next.push(l); seen.add(l.id); changed = true }
-    if (!changed) return
-    cachedLines = next.length > MAX_LINES ? next.slice(next.length - MAX_LINES) : next
-    setLines(cachedLines)
-  }
-
-  // Backfill persisted Cores dialogue when the panel opens.
-  useEffect(() => {
-    let cancelled = false
-    fetch(`${API_BASE}/league-news/recent?category=cores&week=0&limit=40`)
-      .then(r => (r.ok ? r.json() : []))
-      .then((rows: any[]) => {
-        if (cancelled || !Array.isArray(rows)) return
-        addLines(rows.slice().reverse().map(r => ({
-          id: `cn-${r.id}`,
-          core: r.core ?? undefined,
-          coreDisplayName: r.coreDisplayName ?? undefined,
-          text: r.text,
-          eventType: r.eventType ?? undefined,
-          ts: r.createdAt ? Date.parse(r.createdAt) : Date.now(),
-        })))
-      })
-      .catch(() => {})
-    return () => { cancelled = true }
-  }, [])
-
-  // Live Cores dialogue.
-  useEffect(() => {
-    const unsub = subscribe((msg: any) => {
-      if (!msg || msg.event !== 'league_news' || msg.category !== 'cores') return
-      lastLiveRef.current = Date.now()
-      addLines([{
-        id: msg.exchangeId ? `live-${msg.exchangeId}-${msg.turnIndex ?? 0}`
-          : `live-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        core: msg.core,
-        coreDisplayName: msg.coreDisplayName,
-        text: msg.text,
-        eventType: msg.eventType,
-        exchangeId: msg.exchangeId,
-        turnIndex: msg.turnIndex,
-        turnCount: msg.turnCount,
-        ts: Date.now(),
-      }])
-    })
-    return unsub
-  }, [subscribe])
-
-  // Ambient banter while the panel is open and nothing live is happening.
-  useEffect(() => {
-    let cancelled = false
-    const tick = () => {
-      if (cancelled || Date.now() - lastLiveRef.current < AMBIENT_QUIET_MS) return
-      fetch(`${API_BASE}/cores/conversation?event=idle`)
-        .then(r => (r.ok ? r.json() : null))
-        .then(json => {
-          if (cancelled || !json) return
-          const turns = ((json.data ?? json)?.turns ?? []) as any[]
-          if (!turns.length) return
-          const eid = `ambient-${Date.now()}`
-          const ts = Date.now()
-          addLines(turns.map((t, i) => ({
-            id: `${eid}-${i}`, core: t.core, coreDisplayName: t.coreDisplayName,
-            text: t.text, exchangeId: eid, turnIndex: t.turnIndex ?? i,
-            turnCount: t.turnCount ?? turns.length, ambient: true, ts,
-          })))
-        })
-        .catch(() => {})
-    }
-    // No prime-on-open: opening shows the persisted conversation. Idle banter
-    // only appears occasionally on the interval (when nothing live is happening).
-    const id = setInterval(tick, AMBIENT_MS)
-    return () => { cancelled = true; clearInterval(id) }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
+  // Group lines into exchange blocks, newest first.
   const blocks = useMemo<Block[]>(() => {
     const out: Block[] = []
     const byExchange = new Map<string, Block>()
@@ -224,6 +119,10 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({
     return out.sort((a, z) => z.ts - a.ts)
   }, [lines])
 
+  // Event-driven beats take priority (top); idle chatter sits below.
+  const eventBlocks = useMemo(() => blocks.filter(b => !b.ambient), [blocks])
+  const idleBlocks = useMemo(() => blocks.filter(b => b.ambient), [blocks])
+
   const v = bandVisual(status.status)
   const description = status.description || v.fallback
 
@@ -240,9 +139,6 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({
         backgroundColor: '#0b1220', border: `1px solid ${v.color}44`,
         borderRadius: '10px', boxShadow: '0 18px 50px rgba(0,0,0,0.6)',
         zIndex: 10010, display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        // Portal renders outside the app's font-pixel root, so set the app font
-        // explicitly (matches tailwind's `pixel` family) or it falls back to the
-        // browser default.
         fontFamily: 'pressStart, sans-serif',
       }}
     >
@@ -275,20 +171,45 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({
         </p>
       </div>
 
-      {/* Dialogue */}
+      {/* Dialogue — events first (priority), then idle chatter */}
       <div style={{ padding: '10px 12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {blocks.length === 0 ? (
+        {eventBlocks.length === 0 && idleBlocks.length === 0 ? (
           <p style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', margin: '6px 2px' }}>
             The channel is quiet.
           </p>
         ) : (
-          blocks.map(b => <ExchangeBlock key={b.key} block={b} now={now} />)
+          <>
+            {eventBlocks.length > 0 && (
+              <>
+                <SectionLabel text="Activity" color={v.color} />
+                {eventBlocks.map(b => <ExchangeBlock key={b.key} block={b} now={now} />)}
+              </>
+            )}
+            {idleBlocks.length > 0 && (
+              <>
+                <SectionLabel text="Chatter" color="#64748b" />
+                {idleBlocks.map(b => <ExchangeBlock key={b.key} block={b} now={now} />)}
+              </>
+            )}
+          </>
         )}
       </div>
     </div>,
     document.body
   )
 }
+
+const SectionLabel: React.FC<{ text: string; color: string }> = ({ text, color }) => (
+  <div style={{
+    display: 'flex', alignItems: 'center', gap: '8px', margin: '2px 0',
+  }}>
+    <span style={{
+      fontSize: '9px', fontWeight: 700, letterSpacing: '0.16em', color,
+      textTransform: 'uppercase', flexShrink: 0,
+    }}>{text}</span>
+    <span style={{ flex: 1, height: '1px', background: `${color}33` }} />
+  </div>
+)
 
 const StatusOrb: React.FC<{ color: string; pulseMs: number }> = ({ color, pulseMs }) => (
   <span style={{ position: 'relative', width: '12px', height: '12px', flexShrink: 0 }}>

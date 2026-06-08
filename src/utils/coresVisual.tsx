@@ -73,7 +73,7 @@ export const CRITICALITY_BANDS: Record<string, BandVisual> = {
     color: '#94a3b8',
     tint: 'rgba(148,163,184,0.10)',
     pulseMs: 0,
-    fallback: 'All readings nominal. The simulation holds.',
+    fallback: 'All readings nominal.',
   },
   stirring: {
     label: 'Stirring',
