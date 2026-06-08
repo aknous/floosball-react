@@ -252,11 +252,11 @@ const ExchangeBlock: React.FC<{ block: Block; now: number }> = ({ block, now }) 
           const c = coreColor(t.core)
           return (
             <div key={t.id} style={{ display: 'flex', gap: '9px', alignItems: 'flex-start', borderLeft: `2px solid ${c}`, paddingLeft: '8px' }}>
-              <span style={{ marginTop: '1px', flexShrink: 0 }}>
-                <CoreIcon core={t.core} color={c} size={22} />
+              <span style={{ marginTop: '2px', flexShrink: 0 }}>
+                <CoreIcon core={t.core} color={c} size={18} />
               </span>
               <div style={{ minWidth: 0 }}>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: c, marginRight: '6px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: c, marginRight: '6px' }}>
                   {t.coreDisplayName ?? CORE_DISPLAY_NAMES[(t.core ?? '').toLowerCase()] ?? 'The Core'}
                 </span>
                 <span style={{ fontSize: '13px', color: block.ambient ? '#cbd5e1' : '#e2e8f0', lineHeight: 1.5 }}>
