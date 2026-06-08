@@ -5,6 +5,7 @@ import LevelUpModal from './LevelUpModal'
 import VaultConfirmModal from './VaultConfirmModal'
 import TrashConfirmModal from './TrashConfirmModal'
 import ShowcaseView from './ShowcaseView'
+import InfoNote from './InfoNote'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -207,6 +208,14 @@ const CardCollection: React.FC = () => {
       {view !== 'showcase' && (
       <>
       {/* collection / vault content */}
+      {inVault && (
+        <InfoNote accent="rgba(251,191,36,0.3)">
+          Keep your favorite cards forever. Vaulting is permanent: a vaulted card
+          survives the season but can no longer be equipped, sold, or used in The
+          Combine. It becomes a keepsake showing the player's season stats, and you
+          can feature it in your Showcase.
+        </InfoNote>
+      )}
 
       {/* Header */}
       <div style={{

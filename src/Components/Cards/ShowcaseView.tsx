@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import TradingCard, { CardData } from './TradingCard'
 import ShowcasePickerModal from './ShowcasePickerModal'
+import InfoNote from './InfoNote'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -123,6 +124,12 @@ const ShowcaseView: React.FC = () => {
 
   return (
     <div>
+      <InfoNote accent="rgba(251,191,36,0.3)">
+        Feature your best vaulted cards. Your lineup earns a grade that pays Floobits
+        at season end, then resets. Build named sets like One Club or Diamond Vault to
+        push the grade higher. Only vaulted cards can go on display.
+      </InfoNote>
+
       {error && (
         <p style={{ color: '#ef4444', fontSize: '12px', marginBottom: '12px' }}>{error}</p>
       )}
