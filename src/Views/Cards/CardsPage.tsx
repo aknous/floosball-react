@@ -1,11 +1,20 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import CardCollection from '@/Components/Cards/CardCollection'
+import FeatureAnnounceModal from '@/Components/FeatureAnnounceModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { isFeatureSeen, markFeatureSeen, FEATURE_CARDS } from '@/utils/featureAnnounce'
 
 const CardsPage: React.FC = () => {
   const isMobile = useIsMobile()
   const { user, loading: authLoading } = useAuth()
+
+  // One-time "what's new" announcement for the card collection systems.
+  const [showWhatsNew, setShowWhatsNew] = useState(false)
+  useEffect(() => {
+    if (user && !isFeatureSeen(FEATURE_CARDS)) setShowWhatsNew(true)
+  }, [user])
+  const dismissWhatsNew = () => { markFeatureSeen(FEATURE_CARDS); setShowWhatsNew(false) }
 
   return (
     <div style={{
@@ -35,6 +44,18 @@ const CardsPage: React.FC = () => {
         {/* Collection content */}
         {user && <CardCollection />}
       </div>
+
+      <FeatureAnnounceModal
+        open={showWhatsNew}
+        onClose={dismissWhatsNew}
+        title="Level Up Your Collection"
+        intro="Three new ways to build, keep, and show off your cards."
+        items={[
+          { title: 'Card Upgrades', color: '#fbbf24', body: 'Feed a duplicate plus Floobits to Level Up a card from tier I to IV. Higher tiers are more powerful.' },
+          { title: 'The Vault', color: '#a5f3fc', body: 'Keep your favorite cards forever. Vaulted cards survive the season and become player keepsakes.' },
+          { title: 'The Showcase', color: '#f472b6', body: 'Put your best vaulted cards on display for a season-end Floobit payout, graded F to S.' },
+        ]}
+      />
     </div>
   )
 }

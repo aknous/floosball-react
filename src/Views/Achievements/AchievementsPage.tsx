@@ -121,11 +121,21 @@ const FAMILY_LABELS: Record<string, string> = {
   dynamo: 'Dynamo',
   oracle: 'Oracle',
   magnate: 'Magnate',
+  tycoon: 'Tycoon',
   podium: 'Podium',
   pundit: 'Pundit',
+  bracketeer: 'Bracketeer',
   benefactor: 'Benefactor',
   compound: 'Compound',
+  artificer: 'Artificer',
+  ice_cold: 'Ice Cold',
+  archivist: 'Archivist',
 }
+
+// Fallback for any family without an explicit label: title-case the key.
+// "ice_cold" → "Ice Cold", "artificer" → "Artificer".
+const prettifyFamily = (fam: string) =>
+  fam.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 
 interface GuidanceGroup {
   family: string         // "dedicated" | ... | "singles"
@@ -154,7 +164,7 @@ const groupByFamily = (list: Achievement[]): GuidanceGroup[] => {
     if (items.length === 1) {
       singles.push(items[0])
     } else {
-      families.push({ family: fam, label: FAMILY_LABELS[fam] ?? fam, items })
+      families.push({ family: fam, label: FAMILY_LABELS[fam] ?? prettifyFamily(fam), items })
     }
   }
   const out: GuidanceGroup[] = []
@@ -214,12 +224,14 @@ const AchievementsPage: React.FC = () => {
 
   const onboarding = achievements.filter(a => a.category === 'onboarding')
   const guidance = achievements.filter(a => a.category === 'guidance')
+  const collection = achievements.filter(a => a.category === 'collection')
   const secrets = achievements.filter(a => a.category === 'secret')
   const completedCount = (list: Achievement[]) => list.filter(a => a.completedAt != null).length
 
   // Group guidance achievements by family (strip trailing roman numerals from key).
   // Singles collapse into a "Milestones" bucket; multi-tier families get their own bucket.
   const guidanceGroups = groupByFamily(guidance)
+  const collectionGroups = groupByFamily(collection)
 
   if (loading) {
     return (
@@ -321,6 +333,30 @@ const AchievementsPage: React.FC = () => {
             })}
           </div>
         </Section>
+
+        {collection.length > 0 && (
+          <Section
+            title="Collection"
+            subtitle="Permanent Vault goals"
+            completed={completedCount(collection)}
+            total={collection.length}
+            storageKey="collection-goals"
+            customLayout
+          >
+            <div style={{
+              display: 'grid', gap: '10px',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              alignItems: 'start',
+            }}>
+              {collectionGroups.flatMap(group => {
+                if (group.family === 'singles') {
+                  return group.items.map(a => <AchievementRow key={a.id} achievement={a} />)
+                }
+                return [<TieredFamilySummary key={group.family} group={group} />]
+              })}
+            </div>
+          </Section>
+        )}
 
         {secrets.length > 0 && (
           <Section

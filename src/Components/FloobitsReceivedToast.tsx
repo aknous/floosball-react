@@ -21,6 +21,7 @@ const TX_LABELS: Record<string, string> = {
   pickem_leaderboard_weekly: 'Pick-Em Weekly Prize',
   card_effect: 'Card Effect',
   admin_grant: 'Admin Grant',
+  supporter_dividend: 'Supporter Dividend',
 }
 
 const txLabel = (slug: string) => TX_LABELS[slug] || slug.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())

@@ -15,6 +15,13 @@ const C = {
   text: '#e2e8f0', body: '#cbd5e1', muted: '#94a3b8',
   pick: '#3b82f6', correct: '#22c55e', wrong: '#ef4444',
 }
+const GOLD = '#fbbf24'
+
+// Bracket leaderboard prizes — mirrors PLAYOFF_BRACKET_PRIZES /
+// PLAYOFF_BRACKET_TOP_PCT_PRIZE in the backend constants. Free entry; awarded
+// after the Floos Bowl, so standings are provisional until then.
+const BRACKET_PRIZES: Record<number, number> = { 1: 120, 2: 75, 3: 40 }
+const BRACKET_TOP_PCT_PRIZE = 15
 
 const matchIds = (ms: Matchup[]) => new Set(ms.flatMap((m) => [m.higher.teamId, m.lower.teamId]))
 
@@ -358,8 +365,16 @@ const BracketView: React.FC = () => {
 
 const BracketStandings: React.FC<{ rows: import('@/types/playoffBracket').BracketLeaderRow[]; isMobile?: boolean }> = ({ rows, isMobile }) => (
   <div style={{ backgroundColor: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: 14 }}>
-    <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+    <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
       Standings
+    </div>
+    {/* Prize structure (awarded after the Floos Bowl). */}
+    <div style={{ fontSize: 11, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>
+      Prizes:{' '}
+      <span style={{ color: GOLD, fontWeight: 700 }}>1st {BRACKET_PRIZES[1]} F</span> ·{' '}
+      <span style={{ color: GOLD, fontWeight: 700 }}>2nd {BRACKET_PRIZES[2]} F</span> ·{' '}
+      <span style={{ color: GOLD, fontWeight: 700 }}>3rd {BRACKET_PRIZES[3]} F</span> ·{' '}
+      top 25% <span style={{ color: GOLD, fontWeight: 700 }}>{BRACKET_TOP_PCT_PRIZE} F</span>
     </div>
     {rows.length === 0 ? (
       <div style={{ fontSize: 12, color: C.muted, fontStyle: 'italic' }}>No brackets scored yet.</div>
@@ -379,6 +394,11 @@ const BracketStandings: React.FC<{ rows: import('@/types/playoffBracket').Bracke
             </span>
             {!isMobile && <span style={{ color: C.muted }}>{r.correctCount} correct</span>}
             <span style={{ color: C.correct, fontWeight: 700, minWidth: 40, textAlign: 'right' }}>{r.points} pts</span>
+            {/* Gold prize tag on the paying ranks (top 3 deterministic; the top-25%
+                tier is in the legend since its cutoff depends on entrant count). */}
+            <span style={{ color: GOLD, fontWeight: 700, minWidth: 38, textAlign: 'right' }}>
+              {BRACKET_PRIZES[r.rank] ? `${BRACKET_PRIZES[r.rank]} F` : ''}
+            </span>
           </div>
         ))}
       </div>
