@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import TradingCard, { CardData } from './TradingCard'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -14,6 +15,7 @@ interface TrashConfirmModalProps {
 
 export default function TrashConfirmModal({ card, onClose, onComplete }: TrashConfirmModalProps) {
   const { getToken } = useAuth()
+  const isMobile = useIsMobile()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -81,7 +83,12 @@ export default function TrashConfirmModal({ card, onClose, onComplete }: TrashCo
           }}>x</button>
         </div>
 
-        <div style={{ padding: '20px', display: 'flex', gap: '16px', alignItems: 'center' }}>
+        <div style={{
+          padding: '20px', display: 'flex', gap: '16px',
+          alignItems: 'center',
+          flexDirection: isMobile ? 'column' : 'row',
+          textAlign: isMobile ? 'center' : 'left',
+        }}>
           <TradingCard card={card} size="sm" />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: RED, marginBottom: '6px' }}>

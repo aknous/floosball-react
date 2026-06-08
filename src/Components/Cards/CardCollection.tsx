@@ -81,7 +81,8 @@ const CardCollection: React.FC = () => {
   const overlayRef = useRef<HTMLDivElement | null>(null)
 
   const inVault = view === 'vault'
-  const canReorder = inVault && sortBy === 'manual'
+  // Native HTML5 drag doesn't work on touch, so reordering is desktop-only.
+  const canReorder = inVault && sortBy === 'manual' && !isMobile
 
   const fetchCards = useCallback(async () => {
     try {

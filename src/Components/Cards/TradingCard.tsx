@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
 import { calcStars, STAR_COLORS } from '@/Components/Stars'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -745,6 +746,10 @@ const TradingCard: React.FC<TradingCardProps> = ({
 }) => {
   const [hovered, setHovered] = useState(false)
   const [flipped, setFlipped] = useState(false)
+  // Touch devices have no hover, so hover-gated affordances (select / level-up /
+  // trash) must show without it.
+  const isMobile = useIsMobile()
+  const showActions = hovered || isMobile
 
   // Sync with external forceFlipped prop (tutorial)
   useEffect(() => {
@@ -1075,7 +1080,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           )}
 
           {/* Select overlay for collection selling — visible on hover or when selected */}
-          {onSelect && !card.isEquipped && !card.vaulted && (hovered || selected) && (
+          {onSelect && !card.isEquipped && !card.vaulted && (showActions || selected) && (
             <button
               onClick={(e) => { e.stopPropagation(); onSelect() }}
               style={{
@@ -1105,7 +1110,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           )}
 
           {/* Level-Up affordance (collection) — gold pill, bottom-left on hover */}
-          {onLevelUp && !card.isEquipped && !card.vaulted && hovered && (
+          {onLevelUp && !card.isEquipped && !card.vaulted && showActions && (
             <button
               onClick={(e) => { e.stopPropagation(); onLevelUp() }}
               aria-label="Level Up"
@@ -1133,7 +1138,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           )}
 
           {/* Trash affordance (vault) — red icon button, bottom-right on hover */}
-          {onTrash && hovered && (
+          {onTrash && showActions && (
             <button
               onClick={(e) => { e.stopPropagation(); onTrash() }}
               aria-label="Remove from vault (permanent)"
