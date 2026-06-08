@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import TradingCard, { CardData } from './TradingCard'
 import ShowcasePickerModal from './ShowcasePickerModal'
+import ShowcaseViewerModal from './ShowcaseViewerModal'
+import ShowcaseResultModal from './ShowcaseResultModal'
 import HelpButton, { HelpSection } from './HelpButton'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -68,6 +70,35 @@ const ShowcaseView: React.FC = () => {
   const [pickerSlot, setPickerSlot] = useState<number | null>(null)
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderEntry[]>([])
+  const [viewUserId, setViewUserId] = useState<number | null>(null)
+  const [lastResult, setLastResult] = useState<{ season: number; grade: string | null; payout: number } | null>(null)
+
+  // End-of-season recap: show once per season (localStorage-dismissed).
+  const fetchLastResult = useCallback(async () => {
+    try {
+      const tok = await getToken()
+      if (!tok) return
+      const res = await fetch(`${API_BASE}/cards/showcase/last-result`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      })
+      if (!res.ok) return
+      const json = await res.json()
+      const r = json.data
+      if (!r) return
+      const seenKey = `showcase-result-seen-S${r.season}`
+      if (localStorage.getItem(seenKey) === '1') return
+      setLastResult(r)
+    } catch {
+      // silent
+    }
+  }, [getToken])
+
+  const dismissResult = () => {
+    if (lastResult) {
+      try { localStorage.setItem(`showcase-result-seen-S${lastResult.season}`, '1') } catch {}
+    }
+    setLastResult(null)
+  }
 
   const fetchLeaderboard = useCallback(async () => {
     try {
@@ -101,7 +132,7 @@ const ShowcaseView: React.FC = () => {
     }
   }, [getToken])
 
-  useEffect(() => { fetchShowcase(); fetchLeaderboard() }, [fetchShowcase, fetchLeaderboard])
+  useEffect(() => { fetchShowcase(); fetchLeaderboard(); fetchLastResult() }, [fetchShowcase, fetchLeaderboard, fetchLastResult])
 
   // Featured slots as a {slotNumber, userCardId} payload
   const filledPayload = (slots: ShowcaseSlot[]) =>
@@ -340,12 +371,17 @@ const ShowcaseView: React.FC = () => {
             {leaderboard.map(entry => {
               const gc = GRADE_COLORS[entry.grade] || '#94a3b8'
               return (
-                <div key={entry.userId} style={{
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '6px 8px', borderRadius: '6px',
-                  background: entry.isCurrentUser ? 'rgba(251,191,36,0.1)' : 'transparent',
-                  border: entry.isCurrentUser ? '1px solid rgba(251,191,36,0.3)' : '1px solid transparent',
-                }}>
+                <div key={entry.userId}
+                  onClick={() => setViewUserId(entry.userId)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '6px 8px', borderRadius: '6px', cursor: 'pointer',
+                    background: entry.isCurrentUser ? 'rgba(251,191,36,0.1)' : 'transparent',
+                    border: entry.isCurrentUser ? '1px solid rgba(251,191,36,0.3)' : '1px solid transparent',
+                  }}
+                  onMouseEnter={(e) => { if (!entry.isCurrentUser) e.currentTarget.style.background = 'rgba(148,163,184,0.08)' }}
+                  onMouseLeave={(e) => { if (!entry.isCurrentUser) e.currentTarget.style.background = 'transparent' }}
+                >
                   <span style={{
                     fontSize: '11px', color: '#64748b', fontWeight: 700,
                     width: '20px', flexShrink: 0, fontVariantNumeric: 'tabular-nums',
@@ -376,6 +412,10 @@ const ShowcaseView: React.FC = () => {
         onClose={() => setPickerSlot(null)}
         onPick={(card) => { if (pickerSlot !== null) addCard(pickerSlot, card) }}
       />
+
+      <ShowcaseViewerModal userId={viewUserId} onClose={() => setViewUserId(null)} />
+
+      <ShowcaseResultModal result={lastResult} onClose={dismissResult} />
     </div>
   )
 }
