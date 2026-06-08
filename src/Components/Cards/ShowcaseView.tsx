@@ -34,6 +34,7 @@ const ShowcaseView: React.FC = () => {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [pickerSlot, setPickerSlot] = useState<number | null>(null)
+  const [hoveredSlot, setHoveredSlot] = useState<number | null>(null)
 
   const fetchShowcase = useCallback(async () => {
     try {
@@ -171,19 +172,26 @@ const ShowcaseView: React.FC = () => {
       }}>
         {(data?.slots ?? []).map(slot => (
           slot.card ? (
-            <div key={slot.slotNumber} style={{ position: 'relative' }}>
+            <div
+              key={slot.slotNumber}
+              style={{ position: 'relative' }}
+              onMouseEnter={() => setHoveredSlot(slot.slotNumber)}
+              onMouseLeave={() => setHoveredSlot(s => (s === slot.slotNumber ? null : s))}
+            >
               <TradingCard card={slot.card} size={cardSize} />
-              <button
-                onClick={() => removeCard(slot.slotNumber)}
-                title="Remove from showcase"
-                style={{
-                  position: 'absolute', top: '6px', right: '6px', zIndex: 6,
-                  width: '22px', height: '22px', borderRadius: '5px',
-                  border: '1px solid rgba(239,68,68,0.5)', background: 'rgba(15,23,42,0.85)',
-                  color: '#ef4444', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
-                }}
-              >x</button>
+              {hoveredSlot === slot.slotNumber && (
+                <button
+                  onClick={() => removeCard(slot.slotNumber)}
+                  title="Remove from showcase"
+                  style={{
+                    position: 'absolute', top: '6px', right: '6px', zIndex: 6,
+                    width: '22px', height: '22px', borderRadius: '5px',
+                    border: '1px solid rgba(239,68,68,0.5)', background: 'rgba(15,23,42,0.85)',
+                    color: '#ef4444', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                  }}
+                >x</button>
+              )}
             </div>
           ) : (
             <button
