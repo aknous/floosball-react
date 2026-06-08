@@ -914,7 +914,9 @@ export const FantasyRoster: React.FC = () => {
       const tok = await getToken()
       if (!tok) return
       const [collRes, eqRes] = await Promise.all([
-        fetch(`${API_BASE}/cards/collection?activeOnly=true`, {
+        // vaulted=false: vaulted cards are keepsakes with no effect, so they
+        // must not count as roster card-matches.
+        fetch(`${API_BASE}/cards/collection?activeOnly=true&vaulted=false`, {
           headers: { Authorization: `Bearer ${tok}` },
         }),
         fetch(`${API_BASE}/cards/equipped`, {
