@@ -26,6 +26,28 @@ const GRADE_COLORS: Record<string, string> = {
 }
 const GOLD = '#fbbf24'
 
+// Spotlight halo behind a featured card, tinted by edition.
+const EDITION_HALO: Record<string, string> = {
+  base: 'rgba(148,163,184,0.30)',
+  holographic: 'rgba(167,139,250,0.42)',
+  prismatic: 'rgba(244,114,182,0.48)',
+  diamond: 'rgba(103,232,249,0.52)',
+}
+
+// Gold corner brackets for the empty display frames.
+const Corners: React.FC = () => {
+  const c = 'rgba(251,191,36,0.5)'
+  const base: React.CSSProperties = { position: 'absolute', width: '13px', height: '13px' }
+  return (
+    <>
+      <div style={{ ...base, top: 7, left: 7, borderTop: `2px solid ${c}`, borderLeft: `2px solid ${c}`, borderTopLeftRadius: '4px' }} />
+      <div style={{ ...base, top: 7, right: 7, borderTop: `2px solid ${c}`, borderRight: `2px solid ${c}`, borderTopRightRadius: '4px' }} />
+      <div style={{ ...base, bottom: 7, left: 7, borderBottom: `2px solid ${c}`, borderLeft: `2px solid ${c}`, borderBottomLeftRadius: '4px' }} />
+      <div style={{ ...base, bottom: 7, right: 7, borderBottom: `2px solid ${c}`, borderRight: `2px solid ${c}`, borderBottomRightRadius: '4px' }} />
+    </>
+  )
+}
+
 const ShowcaseView: React.FC = () => {
   const { getToken } = useAuth()
   const isMobile = useIsMobile()
@@ -109,11 +131,12 @@ const ShowcaseView: React.FC = () => {
         background: `linear-gradient(135deg, ${gradeColor}14, rgba(15,23,42,0.4))`,
       }}>
         <div style={{
-          width: '64px', height: '64px', borderRadius: '12px', flexShrink: 0,
+          width: '72px', height: '72px', borderRadius: '50%', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: `${gradeColor}1f`, border: `2px solid ${gradeColor}`,
-          fontSize: '38px', fontWeight: 800, color: gradeColor, fontFamily: 'pressStart',
-          boxShadow: data?.grade === 'S' ? `0 0 18px ${gradeColor}66` : 'none',
+          background: `radial-gradient(circle at 35% 30%, ${gradeColor}33, ${gradeColor}10)`,
+          border: `3px solid ${gradeColor}`,
+          fontSize: '40px', fontWeight: 800, color: gradeColor, fontFamily: 'pressStart',
+          boxShadow: `0 0 22px ${gradeColor}55, inset 0 0 18px ${gradeColor}22`,
         }}>
           {data?.grade ?? 'F'}
         </div>
@@ -164,57 +187,101 @@ const ShowcaseView: React.FC = () => {
         <p style={{ color: '#ef4444', fontSize: '12px', marginBottom: '12px' }}>{error}</p>
       )}
 
-      {/* 8 slots */}
+      {/* Display case — framed, lit, distinct from the plain collection grid */}
       <div style={{
-        display: 'flex', flexWrap: 'wrap', gap: '12px',
-        justifyContent: isMobile ? 'center' : 'flex-start',
+        position: 'relative', borderRadius: '16px', overflow: 'hidden',
+        padding: isMobile ? '22px 12px' : '32px 26px',
+        background: 'radial-gradient(ellipse 80% 55% at 50% 0%, rgba(251,191,36,0.08), transparent 70%), linear-gradient(180deg, #141b30 0%, #0a0e1a 100%)',
+        border: '1px solid rgba(251,191,36,0.22)',
+        boxShadow: 'inset 0 2px 60px rgba(0,0,0,0.55), 0 12px 34px rgba(0,0,0,0.45)',
         opacity: saving ? 0.6 : 1, transition: 'opacity 0.15s',
       }}>
-        {(data?.slots ?? []).map(slot => (
-          slot.card ? (
-            <div
-              key={slot.slotNumber}
-              style={{ position: 'relative' }}
-              onMouseEnter={() => setHoveredSlot(slot.slotNumber)}
-              onMouseLeave={() => setHoveredSlot(s => (s === slot.slotNumber ? null : s))}
-            >
-              <TradingCard card={slot.card} size={cardSize} />
-              {hoveredSlot === slot.slotNumber && (
-                <button
-                  onClick={() => removeCard(slot.slotNumber)}
-                  title="Remove from showcase"
-                  style={{
-                    position: 'absolute', top: '6px', right: '6px', zIndex: 6,
-                    width: '22px', height: '22px', borderRadius: '5px',
-                    border: '1px solid rgba(239,68,68,0.5)', background: 'rgba(15,23,42,0.85)',
-                    color: '#ef4444', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
-                  }}
-                >x</button>
-              )}
-            </div>
-          ) : (
-            <button
-              key={slot.slotNumber}
-              onClick={() => setPickerSlot(slot.slotNumber)}
-              style={{
-                width: SLOT_DIMS[cardSize].w, height: SLOT_DIMS[cardSize].h,
-                borderRadius: '12px', border: '2px dashed #334155',
-                background: 'rgba(30,41,59,0.25)', cursor: 'pointer',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: '8px', color: '#64748b', fontFamily: 'pressStart',
-                transition: 'all 0.15s', flexShrink: 0,
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#475569'; e.currentTarget.style.color = '#94a3b8' }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#334155'; e.currentTarget.style.color = '#64748b' }}
-            >
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              <span style={{ fontSize: '11px' }}>Add card</span>
-            </button>
-          )
-        ))}
+        {/* Engraved case label */}
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{
+            fontSize: '11px', letterSpacing: '0.32em', color: 'rgba(251,191,36,0.75)',
+            fontWeight: 700, textTransform: 'uppercase', fontFamily: 'pressStart',
+          }}>On Display</div>
+          <div style={{
+            width: '140px', height: '1px', margin: '10px auto 0',
+            background: 'linear-gradient(90deg, transparent, rgba(251,191,36,0.55), transparent)',
+          }} />
+        </div>
+
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', gap: isMobile ? '16px' : '22px',
+          justifyContent: 'center',
+        }}>
+          {(data?.slots ?? []).map(slot => (
+            slot.card ? (
+              <div
+                key={slot.slotNumber}
+                style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}
+                onMouseEnter={() => setHoveredSlot(slot.slotNumber)}
+                onMouseLeave={() => setHoveredSlot(s => (s === slot.slotNumber ? null : s))}
+              >
+                {/* Spotlight halo (edition-tinted) */}
+                <div style={{
+                  position: 'absolute', inset: '-14px', borderRadius: '24px', zIndex: 0,
+                  background: `radial-gradient(ellipse at 50% 40%, ${EDITION_HALO[slot.card.edition] || EDITION_HALO.base}, transparent 70%)`,
+                  filter: 'blur(12px)', pointerEvents: 'none',
+                }} />
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <TradingCard card={slot.card} size={cardSize} />
+                  {hoveredSlot === slot.slotNumber && (
+                    <button
+                      onClick={() => removeCard(slot.slotNumber)}
+                      title="Remove from showcase"
+                      style={{
+                        position: 'absolute', top: '6px', right: '6px', zIndex: 6,
+                        width: '22px', height: '22px', borderRadius: '5px',
+                        border: '1px solid rgba(239,68,68,0.5)', background: 'rgba(15,23,42,0.85)',
+                        color: '#ef4444', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                      }}
+                    >x</button>
+                  )}
+                </div>
+                {/* Pedestal base */}
+                <div style={{
+                  position: 'absolute', bottom: '-12px', left: '50%', transform: 'translateX(-50%)',
+                  width: '78%', height: '10px', borderRadius: '50%', zIndex: 0,
+                  background: 'radial-gradient(ellipse at center, rgba(251,191,36,0.22), transparent 72%)',
+                  filter: 'blur(3px)',
+                }} />
+              </div>
+            ) : (
+              <button
+                key={slot.slotNumber}
+                onClick={() => setPickerSlot(slot.slotNumber)}
+                style={{
+                  position: 'relative',
+                  width: SLOT_DIMS[cardSize].w, height: SLOT_DIMS[cardSize].h,
+                  borderRadius: '12px', border: '1px solid rgba(251,191,36,0.18)',
+                  background: 'linear-gradient(180deg, rgba(251,191,36,0.05), rgba(10,14,26,0.4))',
+                  cursor: 'pointer', flexShrink: 0,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: '12px', color: 'rgba(251,191,36,0.6)', fontFamily: 'pressStart',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(251,191,36,0.5)'; e.currentTarget.style.color = GOLD; e.currentTarget.style.background = 'linear-gradient(180deg, rgba(251,191,36,0.1), rgba(10,14,26,0.4))' }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(251,191,36,0.18)'; e.currentTarget.style.color = 'rgba(251,191,36,0.6)'; e.currentTarget.style.background = 'linear-gradient(180deg, rgba(251,191,36,0.05), rgba(10,14,26,0.4))' }}
+              >
+                <Corners />
+                <div style={{
+                  width: '38px', height: '38px', borderRadius: '50%',
+                  border: '1px solid rgba(251,191,36,0.45)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <span style={{ fontSize: '10px', letterSpacing: '0.14em' }}>FEATURE</span>
+              </button>
+            )
+          ))}
+        </div>
       </div>
 
       <ShowcasePickerModal
