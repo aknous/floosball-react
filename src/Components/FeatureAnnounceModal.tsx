@@ -51,12 +51,12 @@ export default function FeatureAnnounceModal({
         {/* Header */}
         <div style={{ padding: '22px 22px 14px', textAlign: 'center' }}>
           <div style={{
-            fontSize: '10px', letterSpacing: '0.28em', textTransform: 'uppercase',
+            fontSize: '11px', letterSpacing: '0.28em', textTransform: 'uppercase',
             color: accent, fontWeight: 700, marginBottom: '8px',
           }}>New</div>
-          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#e2e8f0' }}>{title}</h2>
+          <h2 style={{ margin: 0, fontSize: '21px', fontWeight: 800, color: '#e2e8f0' }}>{title}</h2>
           {intro && (
-            <p style={{ margin: '8px 0 0', fontSize: '12px', color: '#cbd5e1', lineHeight: 1.6 }}>{intro}</p>
+            <p style={{ margin: '10px 0 0', fontSize: '14px', color: '#cbd5e1', lineHeight: 1.6 }}>{intro}</p>
           )}
         </div>
 
@@ -68,10 +68,10 @@ export default function FeatureAnnounceModal({
               background: 'rgba(30,41,59,0.45)',
               borderLeft: `3px solid ${it.color || accent}`,
             }}>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: it.color || '#e2e8f0', marginBottom: '4px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 700, color: it.color || '#e2e8f0', marginBottom: '5px' }}>
                 {it.title}
               </div>
-              <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.6 }}>{it.body}</div>
+              <div style={{ fontSize: '13.5px', color: '#cbd5e1', lineHeight: 1.65 }}>{it.body}</div>
             </div>
           ))}
         </div>
@@ -83,7 +83,7 @@ export default function FeatureAnnounceModal({
             style={{
               width: '100%', padding: '12px', borderRadius: '8px', border: 'none',
               background: `linear-gradient(135deg, ${accent}, #d97706)`,
-              color: '#1a1206', fontFamily: 'pressStart', fontWeight: 800, fontSize: '13px',
+              color: '#1a1206', fontFamily: 'pressStart', fontWeight: 800, fontSize: '14px',
               cursor: 'pointer',
             }}
           >

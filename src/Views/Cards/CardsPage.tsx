@@ -48,7 +48,7 @@ const CardsPage: React.FC = () => {
       <FeatureAnnounceModal
         open={showWhatsNew}
         onClose={dismissWhatsNew}
-        title="Your Collection, Leveled Up"
+        title="Level Up Your Collection"
         intro="Three new ways to build, keep, and show off your cards."
         items={[
           { title: 'Card Upgrades', color: '#fbbf24', body: 'Feed a duplicate plus Floobits to Level Up a card from tier I to IV. Higher tiers pay out more.' },
