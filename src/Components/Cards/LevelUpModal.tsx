@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import TradingCard, { CardData } from './TradingCard'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -27,6 +28,7 @@ interface LevelUpModalProps {
 
 export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModalProps) {
   const { user, getToken, updateFloobits } = useAuth()
+  const isMobile = useIsMobile()
   const [info, setInfo] = useState<UpgradeInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [chosen, setChosen] = useState<CardData | null>(null)
@@ -155,7 +157,7 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
               {/* Target card preview (reflects the tier it will become) */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                <TradingCard card={previewCard} size="md" />
+                <TradingCard card={previewCard} size={isMobile ? 'sm' : 'md'} />
                 <div style={{ fontSize: '13px', fontWeight: 700, color: GOLD }}>
                   Tier {ROMAN[tier]}{!atMax && <span style={{ color: '#94a3b8' }}> → </span>}
                   {!atMax && <span>{ROMAN[(info?.nextTier ?? tier)]}</span>}
@@ -163,7 +165,7 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
               </div>
 
               {/* Right panel */}
-              <div style={{ flex: 1, minWidth: '280px', maxWidth: '360px' }}>
+              <div style={{ flex: 1, minWidth: isMobile ? '100%' : '280px', maxWidth: '360px' }}>
                 {atMax ? (
                   <div style={{
                     padding: '20px', borderRadius: '10px', textAlign: 'center',

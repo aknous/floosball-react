@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
 import { calcStars, STAR_COLORS } from '@/Components/Stars'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -237,6 +238,16 @@ export interface CardData {
   sellValue: number
   isActive: boolean
   isEquipped?: boolean
+  vaulted?: boolean  // permanently in the Vault — can't equip/sell/combine
+  // Player's stat line for the card's season — shown on the back of a vaulted
+  // card (which drops its effect and becomes a keepsake player card).
+  playerStats?: {
+    season: number
+    teamName?: string | null
+    teamColor?: string | null
+    fantasyPoints: number
+    lines: { label: string; value: number | string }[]
+  } | null
   acquiredAt: string | null
   acquiredVia: string
 }
@@ -248,6 +259,7 @@ interface TradingCardProps {
   onSelect?: () => void
   onClick?: () => void
   onLevelUp?: () => void  // shows a "Level Up" affordance (collection view)
+  onTrash?: () => void    // shows a "Trash" affordance (vault view — permanent delete)
   showSellValue?: boolean
   glowColor?: string  // persistent outline/glow (e.g. team color for roster match)
   staticGlow?: boolean  // if true, glow without pulse animation (for deck cards)
@@ -730,10 +742,14 @@ const DiamondEdgeShimmer: React.FC = () => (
 )
 
 const TradingCard: React.FC<TradingCardProps> = ({
-  card, size = 'md', selected = false, onSelect, onClick, onLevelUp, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState,
+  card, size = 'md', selected = false, onSelect, onClick, onLevelUp, onTrash, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState,
 }) => {
   const [hovered, setHovered] = useState(false)
   const [flipped, setFlipped] = useState(false)
+  // Touch devices have no hover, so hover-gated affordances (select / level-up /
+  // trash) must show without it.
+  const isMobile = useIsMobile()
+  const showActions = hovered || isMobile
 
   // Sync with external forceFlipped prop (tutorial)
   useEffect(() => {
@@ -756,14 +772,18 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const stars = card.ratingStars || calcStars(card.playerRating)
   const tierColor = getTierColor(card.playerRating)
 
+  // Vaulted cards drop their effect and become keepsake player cards: no effect
+  // text, no behavior tags, no upgrade-tier chrome — just the player + stats.
+  const isVaulted = !!card.vaulted
+
   // Upgrade tier: hexagon badge shown for tier 2+ (un-upgraded base cards stay
   // clean), full gold ring added at the max tier (IV) to flag a fully-upgraded card.
   const cardTier = card.tier || 1
-  const showTierBadge = cardTier >= 2
+  const showTierBadge = cardTier >= 2 && !isVaulted
   const isMaxTier = cardTier >= 4
   const tb = TIER_BADGE_DIMS[size]
   // Gold ring (box-shadow, sits just outside the edition border) for max tier.
-  const tier4Ring = isMaxTier
+  const tier4Ring = (isMaxTier && !isVaulted)
     ? '0 0 0 2px #fbbf24, 0 0 16px rgba(251,191,36,0.55), '
     : ''
 
@@ -840,7 +860,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           opacity: hovered ? 0.8 : 0.4,
           transition: 'opacity 0.15s',
         }}>
-          <div title="Click here to flip" style={{
+          <div style={{
             fontSize: '11px',
             color: '#94a3b8',
             background: 'rgba(15,23,42,0.7)',
@@ -912,7 +932,12 @@ const TradingCard: React.FC<TradingCardProps> = ({
               />
             )
           })}
-          <span style={{ fontSize: d.font - 3, color: '#64748b' }}>S{card.seasonCreated}</span>
+          <span style={{
+            fontSize: d.font - 3, fontWeight: 700, color: '#cbd5e1',
+            backgroundColor: 'rgba(148,163,184,0.18)',
+            border: '1px solid rgba(148,163,184,0.35)',
+            borderRadius: '3px', padding: '1px 4px', lineHeight: 1.2,
+          }}>S{card.seasonCreated}</span>
         </div>
       </div>
 
@@ -990,7 +1015,8 @@ const TradingCard: React.FC<TradingCardProps> = ({
             </div>
           </div>
 
-          {/* Effect footer */}
+          {/* Effect footer — hidden on vaulted cards (effect is gone). */}
+          {!isVaulted && (
           <div style={{
             padding: `${d.pad - 2}px ${d.pad + 18}px`,
             borderTop: `1px solid ${edStyle.borderColor}40`,
@@ -1019,6 +1045,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
             {/* tierNote intentionally not shown on the front (badge covers tier);
                 it appears on the back/detail only. */}
           </div>
+          )}
 
           {/* Sell value / expired / equipped badges */}
           {(showSellValue || !card.isActive || card.isEquipped) && (
@@ -1044,7 +1071,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
                   Expired
                 </span>
               )}
-              {showSellValue && !card.isEquipped && (
+              {showSellValue && !card.isEquipped && !card.vaulted && (
                 <span style={{ fontSize: d.font - 3, color: '#eab308', fontWeight: '600' }}>
                   {card.sellValue}
                 </span>
@@ -1053,7 +1080,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           )}
 
           {/* Select overlay for collection selling — visible on hover or when selected */}
-          {onSelect && !card.isEquipped && (hovered || selected) && (
+          {onSelect && !card.isEquipped && !card.vaulted && (showActions || selected) && (
             <button
               onClick={(e) => { e.stopPropagation(); onSelect() }}
               style={{
@@ -1083,10 +1110,10 @@ const TradingCard: React.FC<TradingCardProps> = ({
           )}
 
           {/* Level-Up affordance (collection) — gold pill, bottom-left on hover */}
-          {onLevelUp && !card.isEquipped && hovered && (
+          {onLevelUp && !card.isEquipped && !card.vaulted && showActions && (
             <button
               onClick={(e) => { e.stopPropagation(); onLevelUp() }}
-              title="Level Up"
+              aria-label="Level Up"
               style={{
                 position: 'absolute',
                 bottom: d.pad - 2,
@@ -1109,11 +1136,109 @@ const TradingCard: React.FC<TradingCardProps> = ({
               Level Up
             </button>
           )}
+
+          {/* Trash affordance (vault) — red icon button, bottom-right on hover */}
+          {onTrash && showActions && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onTrash() }}
+              aria-label="Remove from vault (permanent)"
+              style={{
+                position: 'absolute',
+                bottom: d.pad - 2,
+                right: d.pad - 2,
+                zIndex: 4,
+                width: '24px', height: '24px', borderRadius: '5px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1px solid rgba(239,68,68,0.55)',
+                background: 'rgba(15,23,42,0.85)',
+                color: '#ef4444', cursor: 'pointer',
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )}
         </>
       )}
 
-      {/* ── Card back (details) ── */}
-      {flipped && (
+      {/* ── Card back: player stats (vaulted keepsake) ── */}
+      {flipped && isVaulted && (
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          padding: `${d.pad}px`, gap: '6px',
+          overflowY: 'auto', position: 'relative', zIndex: 3,
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: d.font, fontWeight: 700, color: '#e2e8f0', lineHeight: 1.3 }}>
+              {card.playerName}
+            </div>
+            <div style={{ fontSize: d.font - 3, color: edStyle.labelColor, marginTop: '2px' }}>
+              {posLabel}
+              {card.playerStats?.teamName && (
+                <>
+                  {' · '}
+                  <span style={{ color: card.playerStats.teamColor || edStyle.labelColor }}>
+                    {card.playerStats.teamName}
+                  </span>
+                </>
+              )}
+            </div>
+            {/* Player star rating */}
+            <div style={{ display: 'flex', gap: '2px', justifyContent: 'center', marginTop: '4px' }}>
+              {Array.from({ length: stars }, (_, i) => (
+                <span key={i} style={{ fontSize: d.starSize - 8, color: tierColor }}>★</span>
+              ))}
+            </div>
+            <div style={{
+              fontSize: d.font - 3, fontWeight: 700, color: '#94a3b8',
+              textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '4px',
+            }}>
+              Season {card.playerStats?.season ?? card.seasonCreated} Stats
+            </div>
+          </div>
+
+          {card.playerStats ? (
+            <>
+              {/* Season fantasy points */}
+              <div style={{
+                textAlign: 'center',
+                borderTop: `1px solid ${edStyle.borderColor}40`,
+                borderBottom: `1px solid ${edStyle.borderColor}40`,
+                padding: '6px 0', margin: '2px 0',
+              }}>
+                <div style={{ fontSize: d.font + 1, fontWeight: 700, color: TYPE_COLORS.fp }}>
+                  {card.playerStats.fantasyPoints}
+                </div>
+                <div style={{ fontSize: d.font - 4, color: '#94a3b8' }}>Season Fantasy Points</div>
+              </div>
+
+              {/* Stat lines */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
+                {card.playerStats.lines.map((ln, i) => (
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                    fontSize: d.font - 1,
+                  }}>
+                    <span style={{ color: '#94a3b8' }}>{ln.label}</span>
+                    <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{ln.value}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: d.font - 1, color: '#64748b', textAlign: 'center', lineHeight: 1.6,
+            }}>
+              No stats recorded for Season {card.seasonCreated}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Card back (effect details) ── */}
+      {flipped && !isVaulted && (
         <div
           style={{
             flex: 1, display: 'flex', flexDirection: 'column',

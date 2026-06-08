@@ -1,5 +1,5 @@
 export type AchievementScope = 'once' | 'per_season'
-export type AchievementCategory = 'onboarding' | 'guidance' | 'secret'
+export type AchievementCategory = 'onboarding' | 'guidance' | 'collection' | 'secret'
 
 export interface RewardConfig {
   floobits?: number
