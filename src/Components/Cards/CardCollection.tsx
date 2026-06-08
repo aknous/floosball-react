@@ -67,6 +67,7 @@ const CardCollection: React.FC = () => {
   const [vaultCards, setVaultCards] = useState<CardData[]>([])
   const [trashTarget, setTrashTarget] = useState<CardData | null>(null)
   const dragIndex = useRef<number | null>(null)
+  const dragGhost = useRef<HTMLElement | null>(null)
 
   const inVault = view === 'vault'
   const canReorder = inVault && sortBy === 'manual'
@@ -128,6 +129,31 @@ const CardCollection: React.FC = () => {
     next.splice(targetIdx, 0, moved)
     setCards(next)
     persistOrder(next)
+  }
+  // Drag image: clone the card off-screen so the ghost is exactly one card,
+  // not a snapshot of the wrapper/section (which some browsers produce).
+  const startDrag = (e: React.DragEvent, idx: number) => {
+    dragIndex.current = idx
+    const src = (e.currentTarget.firstElementChild as HTMLElement) || null
+    if (src) {
+      const clone = src.cloneNode(true) as HTMLElement
+      Object.assign(clone.style, {
+        position: 'fixed', top: '-2000px', left: '-2000px', margin: '0',
+        transform: 'none', pointerEvents: 'none',
+        width: `${src.offsetWidth}px`, height: `${src.offsetHeight}px`,
+      })
+      document.body.appendChild(clone)
+      dragGhost.current = clone
+      e.dataTransfer.setDragImage(clone, src.offsetWidth / 2, 40)
+    }
+    e.dataTransfer.effectAllowed = 'move'
+  }
+  const endDrag = () => {
+    if (dragGhost.current) {
+      document.body.removeChild(dragGhost.current)
+      dragGhost.current = null
+    }
+    dragIndex.current = null
   }
 
   const equippedIds = new Set(cards.filter(c => c.isEquipped).map(c => c.id))
@@ -379,13 +405,8 @@ const CardCollection: React.FC = () => {
             <div
               key={card.id}
               draggable={canReorder}
-              onDragStart={canReorder ? (e) => {
-                dragIndex.current = idx
-                // Use just the card as the drag image (not the whole wrapper/section).
-                const node = e.currentTarget.firstElementChild as HTMLElement | null
-                if (node) e.dataTransfer.setDragImage(node, node.offsetWidth / 2, 40)
-                e.dataTransfer.effectAllowed = 'move'
-              } : undefined}
+              onDragStart={canReorder ? (e) => startDrag(e, idx) : undefined}
+              onDragEnd={canReorder ? endDrag : undefined}
               onDragOver={canReorder ? (e) => e.preventDefault() : undefined}
               onDrop={canReorder ? () => handleDrop(idx) : undefined}
               style={{ cursor: canReorder ? 'grab' : undefined, alignSelf: 'flex-start' }}
