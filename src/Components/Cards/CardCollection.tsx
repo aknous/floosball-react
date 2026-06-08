@@ -379,10 +379,16 @@ const CardCollection: React.FC = () => {
             <div
               key={card.id}
               draggable={canReorder}
-              onDragStart={canReorder ? () => { dragIndex.current = idx } : undefined}
+              onDragStart={canReorder ? (e) => {
+                dragIndex.current = idx
+                // Use just the card as the drag image (not the whole wrapper/section).
+                const node = e.currentTarget.firstElementChild as HTMLElement | null
+                if (node) e.dataTransfer.setDragImage(node, node.offsetWidth / 2, 40)
+                e.dataTransfer.effectAllowed = 'move'
+              } : undefined}
               onDragOver={canReorder ? (e) => e.preventDefault() : undefined}
               onDrop={canReorder ? () => handleDrop(idx) : undefined}
-              style={{ cursor: canReorder ? 'grab' : undefined }}
+              style={{ cursor: canReorder ? 'grab' : undefined, alignSelf: 'flex-start' }}
             >
               <TradingCard
                 card={card}
@@ -391,6 +397,7 @@ const CardCollection: React.FC = () => {
                 onSelect={inVault ? undefined : () => toggleSelect(card.id)}
                 onLevelUp={inVault ? undefined : () => setLevelUpCard(card)}
                 onTrash={inVault ? () => setTrashTarget(card) : undefined}
+                noHoverLift={canReorder}
                 showSellValue={!inVault}
               />
             </div>

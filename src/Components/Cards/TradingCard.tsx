@@ -855,7 +855,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           opacity: hovered ? 0.8 : 0.4,
           transition: 'opacity 0.15s',
         }}>
-          <div title="Click here to flip" style={{
+          <div style={{
             fontSize: '11px',
             color: '#94a3b8',
             background: 'rgba(15,23,42,0.7)',
@@ -1108,7 +1108,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           {onLevelUp && !card.isEquipped && !card.vaulted && hovered && (
             <button
               onClick={(e) => { e.stopPropagation(); onLevelUp() }}
-              title="Level Up"
+              aria-label="Level Up"
               style={{
                 position: 'absolute',
                 bottom: d.pad - 2,
@@ -1136,7 +1136,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           {onTrash && hovered && (
             <button
               onClick={(e) => { e.stopPropagation(); onTrash() }}
-              title="Remove from vault (permanent)"
+              aria-label="Remove from vault (permanent)"
               style={{
                 position: 'absolute',
                 bottom: d.pad - 2,

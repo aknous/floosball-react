@@ -22,7 +22,7 @@ export default function HelpButton({ title, accent = '#94a3b8', children }: Help
     <>
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(true) }}
-        title="How it works"
+        aria-label="How it works"
         style={{
           width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0,
           border: `1px solid ${accent}66`, background: 'rgba(30,41,59,0.6)',
@@ -70,8 +70,8 @@ export default function HelpButton({ title, accent = '#94a3b8', children }: Help
 
 /** A titled paragraph block for help-modal bodies. */
 export const HelpSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-  <div style={{ marginBottom: '16px' }}>
-    <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '12px', marginBottom: '5px' }}>{title}</div>
-    <div style={{ color: '#cbd5e1', fontSize: '12px', lineHeight: 1.65 }}>{children}</div>
+  <div style={{ marginBottom: '18px' }}>
+    <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '14px', marginBottom: '6px' }}>{title}</div>
+    <div style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: 1.7 }}>{children}</div>
   </div>
 )

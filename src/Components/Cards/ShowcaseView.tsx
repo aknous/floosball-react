@@ -237,7 +237,7 @@ const ShowcaseView: React.FC = () => {
                   {hoveredSlot === slot.slotNumber && (
                     <button
                       onClick={() => removeCard(slot.slotNumber)}
-                      title="Remove from showcase"
+                      aria-label="Remove from showcase"
                       style={{
                         position: 'absolute', top: '6px', right: '6px', zIndex: 6,
                         width: '22px', height: '22px', borderRadius: '5px',
