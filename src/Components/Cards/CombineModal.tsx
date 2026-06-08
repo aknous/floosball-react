@@ -429,7 +429,7 @@ export default function CombineModal({ visible, onClose, onComplete }: CombineMo
     const tok = await getToken()
     if (!tok) { setLoading(false); return }
     try {
-      const res = await fetch(`${API_BASE}/cards/collection?activeOnly=false`, {
+      const res = await fetch(`${API_BASE}/cards/collection?activeOnly=false&vaulted=false`, {
         headers: { Authorization: `Bearer ${tok}` },
       })
       if (!res.ok) { setLoading(false); return }
