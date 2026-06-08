@@ -1110,7 +1110,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           )}
 
           {/* Level-Up affordance (collection) — gold pill, bottom-left on hover */}
-          {onLevelUp && !card.isEquipped && !card.vaulted && showActions && (
+          {onLevelUp && !card.vaulted && showActions && (
             <button
               onClick={(e) => { e.stopPropagation(); onLevelUp() }}
               aria-label="Level Up"
