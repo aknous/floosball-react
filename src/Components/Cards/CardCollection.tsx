@@ -5,7 +5,7 @@ import LevelUpModal from './LevelUpModal'
 import VaultConfirmModal from './VaultConfirmModal'
 import TrashConfirmModal from './TrashConfirmModal'
 import ShowcaseView from './ShowcaseView'
-import InfoNote from './InfoNote'
+import HelpButton, { HelpSection } from './HelpButton'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -208,26 +208,43 @@ const CardCollection: React.FC = () => {
       {view !== 'showcase' && (
       <>
       {/* collection / vault content */}
-      {inVault && (
-        <InfoNote accent="rgba(251,191,36,0.3)">
-          Keep your favorite cards forever. Vaulting is permanent: a vaulted card
-          survives the season but can no longer be equipped, sold, or used in The
-          Combine. It becomes a keepsake showing the player's season stats, and you
-          can feature it in your Showcase.
-        </InfoNote>
-      )}
 
       {/* Header */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         marginBottom: '16px', flexWrap: 'wrap', gap: '8px',
       }}>
-        <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
-          {inVault ? 'The Vault' : 'Collection'}
-          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '400', marginLeft: '8px' }}>
-            {cards.length} {cards.length === 1 ? 'card' : 'cards'}
-          </span>
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
+            {inVault ? 'The Vault' : 'Collection'}
+            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '400', marginLeft: '8px' }}>
+              {cards.length} {cards.length === 1 ? 'card' : 'cards'}
+            </span>
+          </h2>
+          {inVault && (
+            <HelpButton title="The Vault" accent="#fbbf24">
+              <HelpSection title="Forever keepsakes">
+                Vaulting moves a card into your permanent collection. It stays even after
+                the season ends, when normal cards expire.
+              </HelpSection>
+              <HelpSection title="It's permanent">
+                Once vaulted, a card can no longer be equipped, sold, or used in The
+                Combine. Vault the cards you want to keep, not the ones you want to play.
+              </HelpSection>
+              <HelpSection title="A new look">
+                A vaulted card drops its effect and shows the player's stats from that
+                season instead.
+              </HelpSection>
+              <HelpSection title="Show them off">
+                Feature vaulted cards in your Showcase to earn a payout at season end.
+              </HelpSection>
+              <HelpSection title="Arrange and remove">
+                Switch to Manual sort to drag cards into any order. Removing a card from
+                the Vault trashes it for good, with no Floobit return.
+              </HelpSection>
+            </HelpButton>
+          )}
+        </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {!inVault && (
             <button

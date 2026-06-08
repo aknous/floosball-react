@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import TradingCard, { CardData } from './TradingCard'
 import ShowcasePickerModal from './ShowcasePickerModal'
-import InfoNote from './InfoNote'
+import HelpButton, { HelpSection } from './HelpButton'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -124,12 +124,6 @@ const ShowcaseView: React.FC = () => {
 
   return (
     <div>
-      <InfoNote accent="rgba(251,191,36,0.3)">
-        Feature your best vaulted cards. Your lineup earns a grade that pays Floobits
-        at season end, then resets. Build named sets like One Club or Diamond Vault to
-        push the grade higher. Only vaulted cards can go on display.
-      </InfoNote>
-
       {error && (
         <p style={{ color: '#ef4444', fontSize: '12px', marginBottom: '12px' }}>{error}</p>
       )}
@@ -161,9 +155,35 @@ const ShowcaseView: React.FC = () => {
           </div>
           <div style={{ minWidth: '180px' }}>
             <div style={{
-              fontSize: '10px', letterSpacing: '0.28em', color: 'rgba(251,191,36,0.75)',
-              fontWeight: 700, textTransform: 'uppercase', fontFamily: 'pressStart', marginBottom: '3px',
-            }}>On Display</div>
+              display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px',
+            }}>
+              <span style={{
+                fontSize: '10px', letterSpacing: '0.28em', color: 'rgba(251,191,36,0.75)',
+                fontWeight: 700, textTransform: 'uppercase', fontFamily: 'pressStart',
+              }}>On Display</span>
+              <HelpButton title="The Showcase" accent="#fbbf24">
+                <HelpSection title="Put your best on display">
+                  Feature up to 8 vaulted cards. Your lineup earns a grade from F to S.
+                </HelpSection>
+                <HelpSection title="Get paid">
+                  The grade pays Floobits at season end, then the Showcase clears for a
+                  fresh start next season.
+                </HelpSection>
+                <HelpSection title="Build sets">
+                  Group cards into named sets to raise your grade. One Club for six from
+                  a team, Diamond Vault for eight Diamonds, Full Spectrum for all four
+                  editions of one player, and more. The "Almost" hints show what you're
+                  close to.
+                </HelpSection>
+                <HelpSection title="Newer pays more">
+                  Recent cards are worth more than old ones, so a fresh Showcase scores
+                  best. Upgraded cards score higher too.
+                </HelpSection>
+                <HelpSection title="Vault first">
+                  Only vaulted cards can be featured. Vault a card, then add it here.
+                </HelpSection>
+              </HelpButton>
+            </div>
             <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.4 }}>
               Pays <span style={{ color: GOLD, fontWeight: 700 }}>{data?.estimatedPayout ?? 0} Floobits</span> at season end
             </div>
