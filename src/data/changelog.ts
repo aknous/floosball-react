@@ -12,6 +12,31 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.18.0',
+    date: '2026-06-08',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Cards] The Vault. Permanently keep your favorite cards. Vaulted cards survive the season as keepsakes that show the player\'s stats for that season, can be arranged in any order, and drive a new set of Collection goals.',
+          '[Cards] The Showcase. Feature up to 8 vaulted cards for a season-end Floobit payout, graded F to S. Build named sets to raise the grade. Standings rank every fan with a showcase, and you can view theirs.',
+          '[Cards] Card Upgrades. Feed a duplicate plus Floobits to Level Up a card from tier I to IV. Higher tiers are more powerful and worth more.',
+          '[Front Office] Supporter dividends. Back your favorite team to earn loyalty income that accrues over the season and pays out when you claim. Contribute to climb patron ranks for a bigger multiplier.',
+          '[The Cores] The AIs running the simulation now have a voice. A status indicator in the header opens their ongoing conversation and a read on the league\'s instability.',
+          '[Achievements] New permanent Collection goals, seasonal card-upgrade goals, and a handful of new secrets.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Cards] Card tier shows in the scoring breakdown and leaderboard, with equations reflecting the upgraded values.',
+          '[UI/UX] New features are flagged with a nav indicator and a one-time intro.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.17.0',
     date: '2026-05-31',
     changes: [],
