@@ -291,6 +291,31 @@ const CardCollection: React.FC = () => {
               </HelpSection>
             </HelpButton>
           )}
+          {!inVault && (
+            <HelpButton title="Upgrading Cards" accent="#fbbf24">
+              <HelpSection title="Level Up">
+                Hover a card and hit Level Up to make it stronger. It costs Floobits plus
+                one duplicate of the same effect, which is consumed.
+              </HelpSection>
+              <HelpSection title="Tiers I to IV">
+                Each level raises the card's tier, shown as a roman numeral on the card
+                and in your box score. Higher tiers pay out more (FP, FPx, or Floobits)
+                and the card is worth more.
+              </HelpSection>
+              <HelpSection title="Finding duplicates">
+                Duplicates come from packs and The Combine. Since effects are locked to one
+                edition, any duplicate of the effect already matches the rarity you need.
+              </HelpSection>
+              <HelpSection title="Tiers are seasonal">
+                A card's tier lasts the season, like the card itself. Vault the card to
+                keep its tier for good and feed it into your Showcase.
+              </HelpSection>
+              <HelpSection title="The Combine vs Level Up">
+                The Combine fuses cards into a higher edition. Level Up raises one card's
+                tier. Two different ways to spend duplicates.
+              </HelpSection>
+            </HelpButton>
+          )}
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {!inVault && (
