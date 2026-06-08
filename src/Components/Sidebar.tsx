@@ -4,8 +4,38 @@ import { useSidebar, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from '@/c
 import { useAuth } from '@/contexts/AuthContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { useFloosball } from '@/contexts/FloosballContext'
+import { isFeatureSeen, FEATURE_CARDS, FEATURE_SUPPORTER } from '@/utils/featureAnnounce'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+
+// New-feature "ping": a soft pulsing dot with an expanding ring. Distinct from
+// the count badges (achievements / dividends) — it just says "look here".
+if (typeof document !== 'undefined' && !document.getElementById('feature-ping-kf')) {
+  const style = document.createElement('style')
+  style.id = 'feature-ping-kf'
+  style.textContent = `
+    @keyframes featurePingRing { 0% { transform: scale(0.6); opacity: 0.7; } 100% { transform: scale(2.4); opacity: 0; } }
+    @keyframes featurePingDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+  `
+  document.head.appendChild(style)
+}
+
+const FeaturePing: React.FC = () => (
+  <span style={{
+    position: 'absolute', top: '-3px', right: '-5px',
+    width: '9px', height: '9px', pointerEvents: 'none',
+  }}>
+    <span style={{
+      position: 'absolute', inset: 0, borderRadius: '50%',
+      backgroundColor: '#22d3ee', animation: 'featurePingRing 1.8s ease-out infinite',
+    }} />
+    <span style={{
+      position: 'absolute', inset: 0, borderRadius: '50%',
+      backgroundColor: '#22d3ee', border: '2px solid #0f172a',
+      animation: 'featurePingDot 1.8s ease-in-out infinite',
+    }} />
+  </span>
+)
 
 
 const NAV_ITEMS = [
@@ -156,6 +186,22 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
     }
   }, [user, getToken, location.pathname])
 
+  // New-feature pings (Cards systems, Supporter). Clear when the user has seen
+  // the announcement (markFeatureSeen dispatches 'feature:seen').
+  const [featureSeen, setFeatureSeen] = useState({
+    cards: isFeatureSeen(FEATURE_CARDS),
+    supporter: isFeatureSeen(FEATURE_SUPPORTER),
+  })
+  useEffect(() => {
+    const refresh = () => setFeatureSeen({
+      cards: isFeatureSeen(FEATURE_CARDS),
+      supporter: isFeatureSeen(FEATURE_SUPPORTER),
+    })
+    refresh()
+    window.addEventListener('feature:seen', refresh)
+    return () => window.removeEventListener('feature:seen', refresh)
+  }, [location.pathname])
+
   // Look up favorite team name for the nav item. Cached in localStorage keyed
   // by team id so name shows immediately on reload; refresh in the background.
   const favTeamId = user?.favoriteTeamId ?? null
@@ -291,6 +337,9 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
                     backgroundColor: '#fbbf24', border: '2px solid #0f172a',
                   }} />
                 )}
+                {/* New-feature pings (until the user has seen the announcement). */}
+                {item.key === 'cards' && user && !featureSeen.cards && <FeaturePing />}
+                {item.key === 'frontoffice' && user && !featureSeen.supporter && <FeaturePing />}
               </span>
               {expanded && (
                 <span style={{ flex: 1, minWidth: 0, fontSize: '15px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}>
