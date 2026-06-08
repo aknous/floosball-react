@@ -51,7 +51,7 @@ const CardsPage: React.FC = () => {
         title="Level Up Your Collection"
         intro="Three new ways to build, keep, and show off your cards."
         items={[
-          { title: 'Card Upgrades', color: '#fbbf24', body: 'Feed a duplicate plus Floobits to Level Up a card from tier I to IV. Higher tiers pay out more.' },
+          { title: 'Card Upgrades', color: '#fbbf24', body: 'Feed a duplicate plus Floobits to Level Up a card from tier I to IV. Higher tiers are more powerful.' },
           { title: 'The Vault', color: '#a5f3fc', body: 'Keep your favorite cards forever. Vaulted cards survive the season and become player keepsakes.' },
           { title: 'The Showcase', color: '#f472b6', body: 'Put your best vaulted cards on display for a season-end Floobit payout, graded F to S.' },
         ]}
