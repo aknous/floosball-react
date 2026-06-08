@@ -25,16 +25,24 @@ interface MarketTeam {
   effectiveFunding: number
   baselineFunding: number
   fanContributions: number
-  // Funding value the current locked tier was computed from. At season start
-  // this is baseline + carried; at offseason recompute it's effective_funding
-  // at that moment. Falls back to effectiveFunding if backend omits it.
+  // Season-start funding (baseline + carried). Shown in the tooltip and used
+  // for the "vs season start" projection delta. Falls back to effective minus
+  // contributions if the backend omits it.
   tierLockedFunding?: number
+  // Funding value the LOCKED tier was actually derived from (last season's
+  // effective-funding share, during the regular season). The current dot is
+  // plotted against this so it lands in the band its tier badge displays.
+  tierBasisFunding?: number
   fanCount: number
   totalFans: number
   topPatrons: Patron[]
   tierMovement: number
   projectedTier: Tier
   projectedFunding: number
+  // Share-of-league basis the projected tier was computed from (projected
+  // end-of-season effective funding). Used to place the projection arrow so it
+  // lands in the projectedTier band. Falls back to projectedFunding if omitted.
+  projectedShareFunding?: number
   record: { wins: number; losses: number }
 }
 
@@ -105,26 +113,34 @@ function FundingSnapshotChart({
   const LARGE_RATIO = 1.15
   const MEGA_RATIO = 2.0
 
-  // Filled dot = the funding value the current tier was LOCKED against —
-  // exposed by the backend as tierLockedFunding. During the regular season
-  // that's baseline + carried (season-start). After the offseason recompute
-  // it's the effective_funding snapshot at that moment, so the dot always
-  // sits inside the tier band the badge displays. Falls back to effective -
-  // contributions for compatibility with older backends.
+  // Filled dot = where the team sits in the band its LOCKED tier badge shows.
+  // The badge is the inherited tier, computed from last season's effective-
+  // funding share, so the dot is plotted against that same basis
+  // (tierBasisFunding) — NOT season-start funding, whose flat baseline can
+  // shove a boundary team's dot into the wrong band. Falls back to season-start
+  // then effective for older backends.
+  const tierBasis = (t: MarketTeam) =>
+    t.tierBasisFunding ?? t.tierLockedFunding ?? (t.effectiveFunding - t.fanContributions)
+  // Season-start funding (baseline + carried) — tooltip + projection delta only.
   const tierLockedFunding = (t: MarketTeam) =>
     t.tierLockedFunding ?? (t.effectiveFunding - t.fanContributions)
-  const totalSeasonStart = sorted.reduce((acc, t) => acc + tierLockedFunding(t), 0)
-  const startFairShare = sorted.length > 0 ? totalSeasonStart / sorted.length : 1
+  const totalBasis = sorted.reduce((acc, t) => acc + tierBasis(t), 0)
+  const startFairShare = sorted.length > 0 ? totalBasis / sorted.length : 1
 
   // Arrow = next season's projected position, recomputed live as
-  // contributions roll in. Uses the projected fair-share so the arrow lands
-  // in the projected-tier zone matching the backend's badge.
-  const totalProj = sorted.reduce((acc, t) => acc + (t.projectedFunding || t.effectiveFunding), 0)
+  // contributions roll in. The projected TIER badge is computed by the backend
+  // from share-of-league on projected END-of-season effective funding (the
+  // basis the rollover actually inherits), exposed as projectedShareFunding.
+  // Plot the arrow against that same basis so it always lands in the badge's
+  // band. (projectedFunding is the decayed display number, not the tier basis.)
+  const projShareFunding = (t: MarketTeam) =>
+    t.projectedShareFunding ?? t.projectedFunding ?? t.effectiveFunding
+  const totalProj = sorted.reduce((acc, t) => acc + projShareFunding(t), 0)
   const projFairShare = sorted.length > 0 ? totalProj / sorted.length : 1
 
-  const currentRatio = (t: MarketTeam) => tierLockedFunding(t) / Math.max(1, startFairShare)
+  const currentRatio = (t: MarketTeam) => tierBasis(t) / Math.max(1, startFairShare)
   const projRatio = (t: MarketTeam) =>
-    (t.projectedFunding || t.effectiveFunding) / Math.max(1, projFairShare)
+    projShareFunding(t) / Math.max(1, projFairShare)
 
   // X-axis in ratio space: fit the widest line (current or projected) across
   // all teams plus some headroom past the MEGA threshold so that band is
@@ -225,6 +241,7 @@ function FundingSnapshotChart({
           const tierDelta = TIER_RANK[team.tier] - TIER_RANK[team.projectedTier]
           const isFav = team.id === favoriteTeamId
           const seasonStart = tierLockedFunding(team)
+          const tierBasisVal = tierBasis(team)
           const projFundingVal = team.projectedFunding || team.effectiveFunding
           const fundingDelta = projFundingVal - seasonStart
 
@@ -240,7 +257,7 @@ function FundingSnapshotChart({
                   {TIER_LABELS[team.tier]}
                 </strong>
               </div>
-              <div>Tier locked at: <strong>{seasonStart.toLocaleString()}F</strong></div>
+              <div>Tier locked at: <strong>{tierBasisVal.toLocaleString()}F</strong></div>
               <div>Fan contributions: <strong style={{ color: '#fbbf24' }}>{team.fanContributions.toLocaleString()}F</strong></div>
               <div>Effective now: <strong>{team.effectiveFunding.toLocaleString()}F</strong></div>
             </div>
