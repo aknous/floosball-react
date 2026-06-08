@@ -814,7 +814,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           : edStyle.glowColor && hovered
             ? `0 4px 20px ${edStyle.glowColor}`
             : '0 2px 8px rgba(0,0,0,0.3)'),
-    opacity: card.isActive ? 1 : 0.7,
+    opacity: (card.isActive || card.vaulted) ? 1 : 0.7,
     flexShrink: 0,
   }
 
@@ -1048,7 +1048,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           )}
 
           {/* Sell value / expired / equipped badges */}
-          {(showSellValue || !card.isActive || card.isEquipped) && (
+          {(showSellValue || (!card.isActive && !card.vaulted) || card.isEquipped) && (
             <div style={{
               position: 'absolute', bottom: d.pad - 2, right: d.pad,
               display: 'flex', gap: '4px', alignItems: 'center',
@@ -1062,7 +1062,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
                   Equipped
                 </span>
               )}
-              {!card.isActive && (
+              {!card.isActive && !card.vaulted && (
                 <span style={{
                   fontSize: d.font - 4, color: '#ef4444',
                   backgroundColor: 'rgba(239,68,68,0.15)', padding: '1px 4px',
