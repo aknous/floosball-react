@@ -110,7 +110,7 @@ const CORE_ICON_MAP: Record<string, React.ComponentType<{ size?: number; color?:
 
 const CoreIcon: React.FC<{ core?: string; color: string }> = ({ core, color }) => {
   const Icon = CORE_ICON_MAP[(core ?? '').toLowerCase()] ?? GiProcessor
-  return <Icon size={14} color={color} style={{ flexShrink: 0 }} />
+  return <Icon size={19} color={color} style={{ flexShrink: 0 }} />
 }
 
 export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () => {} }) => {

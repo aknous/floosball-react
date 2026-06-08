@@ -43,8 +43,13 @@ const EVENT_TAG: Record<string, { label: string; color: string }> = {
 }
 
 const MAX_LINES = 80
-const AMBIENT_MS = 45_000
+const AMBIENT_MS = 150_000        // idle banter fires occasionally, not on every open
 const AMBIENT_QUIET_MS = 30_000
+
+// Conversation persists across the popover's open/close remounts (it's mounted
+// only while open), so reopening shows the ongoing conversation instead of
+// conjuring a fresh line each time.
+let cachedLines: CoreLine[] = []
 
 // Compact relative time for a block. Falls back to a clock time past a day so
 // old backfilled history still reads clearly.
@@ -73,7 +78,7 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({
 }) => {
   const { subscribe } = useSeasonWebSocket()
   const { status } = useCoresStatus()
-  const [lines, setLines] = useState<CoreLine[]>([])
+  const [lines, setLines] = useState<CoreLine[]>(cachedLines)
   const lastLiveRef = useRef<number>(0)
   const panelRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
@@ -121,12 +126,14 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({
 
   const addLines = (incoming: CoreLine[]) => {
     if (!incoming.length) return
-    setLines(prev => {
-      const seen = new Set(prev.map(l => l.id))
-      const merged = [...prev]
-      for (const l of incoming) if (!seen.has(l.id)) { merged.push(l); seen.add(l.id) }
-      return merged.length > MAX_LINES ? merged.slice(merged.length - MAX_LINES) : merged
-    })
+    // cachedLines is the source of truth so the conversation survives remounts.
+    const seen = new Set(cachedLines.map(l => l.id))
+    const next = [...cachedLines]
+    let changed = false
+    for (const l of incoming) if (!seen.has(l.id)) { next.push(l); seen.add(l.id); changed = true }
+    if (!changed) return
+    cachedLines = next.length > MAX_LINES ? next.slice(next.length - MAX_LINES) : next
+    setLines(cachedLines)
   }
 
   // Backfill persisted Cores dialogue when the panel opens.
@@ -191,9 +198,10 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({
         })
         .catch(() => {})
     }
+    // No prime-on-open: opening shows the persisted conversation. Idle banter
+    // only appears occasionally on the interval (when nothing live is happening).
     const id = setInterval(tick, AMBIENT_MS)
-    const prime = setTimeout(() => { if (!cancelled && lines.length === 0) tick() }, 1200)
-    return () => { cancelled = true; clearInterval(id); clearTimeout(prime) }
+    return () => { cancelled = true; clearInterval(id) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const blocks = useMemo<Block[]>(() => {
@@ -322,9 +330,9 @@ const ExchangeBlock: React.FC<{ block: Block; now: number }> = ({ block, now }) 
         {block.turns.map(t => {
           const c = coreColor(t.core)
           return (
-            <div key={t.id} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', borderLeft: `2px solid ${c}`, paddingLeft: '8px' }}>
-              <span style={{ marginTop: '2px' }}>
-                <CoreIcon core={t.core} color={c} size={13} />
+            <div key={t.id} style={{ display: 'flex', gap: '9px', alignItems: 'flex-start', borderLeft: `2px solid ${c}`, paddingLeft: '8px' }}>
+              <span style={{ marginTop: '1px', flexShrink: 0 }}>
+                <CoreIcon core={t.core} color={c} size={22} />
               </span>
               <div style={{ minWidth: 0 }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: c, marginRight: '6px' }}>
