@@ -277,8 +277,9 @@ const ShowcaseView: React.FC = () => {
         </div>
 
         <div style={{
-          display: 'flex', flexWrap: 'wrap', gap: isMobile ? '16px' : '22px',
-          justifyContent: 'center',
+          display: 'grid', gridTemplateColumns: 'repeat(2, max-content)',
+          gap: isMobile ? '16px' : '22px',
+          justifyContent: 'center', justifyItems: 'center',
         }}>
           {(data?.slots ?? []).map(slot => (
             slot.card ? (
