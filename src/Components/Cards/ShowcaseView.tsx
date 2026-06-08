@@ -123,66 +123,6 @@ const ShowcaseView: React.FC = () => {
 
   return (
     <div>
-      {/* Grade + payout banner */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap',
-        padding: '16px 20px', marginBottom: '18px', borderRadius: '12px',
-        border: `1px solid ${gradeColor}55`,
-        background: `linear-gradient(135deg, ${gradeColor}14, rgba(15,23,42,0.4))`,
-      }}>
-        <div style={{
-          width: '72px', height: '72px', borderRadius: '50%', flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: `radial-gradient(circle at 35% 30%, ${gradeColor}33, ${gradeColor}10)`,
-          border: `3px solid ${gradeColor}`,
-          fontSize: '40px', fontWeight: 800, color: gradeColor, fontFamily: 'pressStart',
-          boxShadow: `0 0 22px ${gradeColor}55, inset 0 0 18px ${gradeColor}22`,
-        }}>
-          {data?.grade ?? 'F'}
-        </div>
-        <div style={{ flex: 1, minWidth: '200px' }}>
-          <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
-            Showcase Grade
-          </div>
-          <div style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.5 }}>
-            Pays <span style={{ color: GOLD, fontWeight: 700 }}>{data?.estimatedPayout ?? 0} Floobits</span> at season end
-          </div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-            {data?.slotCount ?? 0}/{data?.maxSlots ?? 8} slots featured · resets each season
-          </div>
-        </div>
-        {/* Active + Almost sets */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '220px' }}>
-          {(data?.activeSets?.length ?? 0) > 0 && (
-            <div>
-              <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Active</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                {data!.activeSets.map(s => (
-                  <span key={s.key} style={{
-                    fontSize: '11px', color: GOLD, fontWeight: 700,
-                    background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)',
-                    borderRadius: '4px', padding: '2px 7px',
-                  }}>◆ {s.name}</span>
-                ))}
-              </div>
-            </div>
-          )}
-          {(data?.almostSets?.length ?? 0) > 0 && (
-            <div>
-              <div style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Almost</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                {data!.almostSets.map(s => (
-                  <span key={s.key} style={{ fontSize: '11px', color: '#cbd5e1' }}>
-                    <span style={{ color: '#64748b' }}>○</span> {s.name}
-                    <span style={{ color: '#64748b' }}> — {s.hint}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
       {error && (
         <p style={{ color: '#ef4444', fontSize: '12px', marginBottom: '12px' }}>{error}</p>
       )}
@@ -196,16 +136,55 @@ const ShowcaseView: React.FC = () => {
         boxShadow: 'inset 0 2px 60px rgba(0,0,0,0.55), 0 12px 34px rgba(0,0,0,0.45)',
         opacity: saving ? 0.6 : 1, transition: 'opacity 0.15s',
       }}>
-        {/* Engraved case label */}
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        {/* Compact grade header — kept slim so the cards stay in the spotlight */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap',
+          marginBottom: '18px', paddingBottom: '14px',
+          borderBottom: '1px solid rgba(251,191,36,0.18)',
+        }}>
           <div style={{
-            fontSize: '11px', letterSpacing: '0.32em', color: 'rgba(251,191,36,0.75)',
-            fontWeight: 700, textTransform: 'uppercase', fontFamily: 'pressStart',
-          }}>On Display</div>
-          <div style={{
-            width: '140px', height: '1px', margin: '10px auto 0',
-            background: 'linear-gradient(90deg, transparent, rgba(251,191,36,0.55), transparent)',
-          }} />
+            width: '52px', height: '52px', borderRadius: '50%', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `radial-gradient(circle at 35% 30%, ${gradeColor}33, ${gradeColor}10)`,
+            border: `2px solid ${gradeColor}`,
+            fontSize: '28px', fontWeight: 800, color: gradeColor, fontFamily: 'pressStart',
+            boxShadow: `0 0 16px ${gradeColor}55, inset 0 0 12px ${gradeColor}22`,
+          }}>
+            {data?.grade ?? 'F'}
+          </div>
+          <div style={{ minWidth: '180px' }}>
+            <div style={{
+              fontSize: '10px', letterSpacing: '0.28em', color: 'rgba(251,191,36,0.75)',
+              fontWeight: 700, textTransform: 'uppercase', fontFamily: 'pressStart', marginBottom: '3px',
+            }}>On Display</div>
+            <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.4 }}>
+              Pays <span style={{ color: GOLD, fontWeight: 700 }}>{data?.estimatedPayout ?? 0} Floobits</span> at season end
+            </div>
+            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
+              {data?.slotCount ?? 0}/{data?.maxSlots ?? 8} featured · resets each season
+            </div>
+          </div>
+          <span style={{ flex: 1 }} />
+          {/* Active + Almost sets, compact */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '340px' }}>
+            {(data?.activeSets?.length ?? 0) > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', justifyContent: 'flex-end' }}>
+                {data!.activeSets.map(s => (
+                  <span key={s.key} style={{
+                    fontSize: '11px', color: GOLD, fontWeight: 700,
+                    background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)',
+                    borderRadius: '4px', padding: '2px 7px',
+                  }}>◆ {s.name}</span>
+                ))}
+              </div>
+            )}
+            {(data?.almostSets?.length ?? 0) > 0 && data!.almostSets.map(s => (
+              <span key={s.key} style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'right' }}>
+                <span style={{ color: '#64748b' }}>○</span> {s.name}
+                <span style={{ color: '#64748b' }}> — {s.hint}</span>
+              </span>
+            ))}
+          </div>
         </div>
 
         <div style={{
