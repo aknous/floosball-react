@@ -10,7 +10,7 @@ import { bandVisual, CoreIcon, CORE_DISPLAY_NAMES, coreColor } from '@/utils/cor
 // exposes NO personality descriptions — who each Core is emerges from what they
 // say. Number-free: the band is the only "reading".
 
-const PANEL_WIDTH = 360
+const PANEL_WIDTH = 600
 
 interface Block {
   key: string
@@ -26,6 +26,16 @@ const EVENT_TAG: Record<string, { label: string; color: string }> = {
   suppression: { label: 'CONTAINMENT', color: '#38bdf8' },
   criticality: { label: 'CRITICALITY', color: '#ef4444' },
   reset: { label: 'RESET', color: '#a78bfa' },
+}
+
+// Escalating label for the progress-to-Criticality readout. Thresholds match
+// the real warning-line triggers: 40% = warning_low, 65% = warning_high, 100% =
+// the Criticality crossing (anomalyManager.WARNING_LOW/HIGH_THRESHOLD).
+const criticalityLabel = (pct: number): string => {
+  if (pct >= 100) return 'Criticality Imminent'
+  if (pct >= 65) return 'Approaching Criticality Event'
+  if (pct >= 40) return 'Containment Breach'
+  return 'Containment Nominal'
 }
 
 // Compact relative time for a block. Falls back to a clock time past a day so
@@ -119,9 +129,14 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({
     return out.sort((a, z) => z.ts - a.ts)
   }, [lines])
 
-  // Event-driven beats take priority (top); idle chatter sits below.
-  const eventBlocks = useMemo(() => blocks.filter(b => !b.ambient), [blocks])
-  const idleBlocks = useMemo(() => blocks.filter(b => b.ambient), [blocks])
+  // Activity shows ONLY the latest event's conversation — a new warning clears
+  // the previous one, so the column never mixes lines from different events.
+  // Chatter keeps a short rolling history.
+  const MAX_IDLE = 8
+  const eventBlocks = useMemo(
+    () => blocks.filter(b => !b.ambient).slice(0, 1), [blocks])
+  const idleBlocks = useMemo(
+    () => blocks.filter(b => b.ambient).slice(0, MAX_IDLE), [blocks])
 
   const v = bandVisual(status.status)
   const description = status.description || v.fallback
@@ -169,31 +184,62 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({
         <p style={{ fontSize: '12px', color: '#cbd5e1', margin: '8px 0 0', lineHeight: 1.5 }}>
           {description}
         </p>
-      </div>
-
-      {/* Dialogue — events first (priority), then idle chatter */}
-      <div style={{ padding: '10px 12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {eventBlocks.length === 0 && idleBlocks.length === 0 ? (
-          <p style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', margin: '6px 2px' }}>
-            The channel is quiet.
-          </p>
-        ) : (
-          <>
-            {eventBlocks.length > 0 && (
-              <>
-                <SectionLabel text="Activity" color={v.color} />
-                {eventBlocks.map(b => <ExchangeBlock key={b.key} block={b} now={now} />)}
-              </>
-            )}
-            {idleBlocks.length > 0 && (
-              <>
-                <SectionLabel text="Chatter" color="#64748b" />
-                {idleBlocks.map(b => <ExchangeBlock key={b.key} block={b} now={now} />)}
-              </>
-            )}
-          </>
+        {/* Progress toward Criticality — control-room flavor. Hidden during a
+            suppression window (the climb has been forced back). */}
+        {!status.inSuppression && typeof status.progressPct === 'number' && (
+          <div style={{ marginTop: '10px' }}>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+              marginBottom: '4px',
+            }}>
+              <span style={{ fontSize: '9px', letterSpacing: '0.1em', color: '#94a3b8', textTransform: 'uppercase' }}>
+                {criticalityLabel(status.progressPct ?? 0)}
+              </span>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: v.color }}>
+                {status.progressPct.toFixed(0)}%
+              </span>
+            </div>
+            <div style={{ height: '4px', borderRadius: '2px', background: 'rgba(148,163,184,0.18)', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', width: `${Math.min(100, Math.max(0, status.progressPct))}%`,
+                background: v.color, borderRadius: '2px', transition: 'width 0.4s ease',
+              }} />
+            </div>
+          </div>
         )}
       </div>
+
+      {/* Dialogue — Activity (event beats) and Chatter (idle) side by side,
+          each scrolling on its own so neither buries the other. */}
+      {eventBlocks.length === 0 && idleBlocks.length === 0 ? (
+        <div style={{ padding: '10px 12px' }}>
+          <p style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic', margin: '6px 2px' }}>
+            The channel is quiet.
+          </p>
+        </div>
+      ) : (
+        <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+          <div style={{
+            flex: 1, minWidth: 0, padding: '10px 12px', overflowY: 'auto',
+            display: 'flex', flexDirection: 'column', gap: '8px',
+            borderRight: '1px solid #1e293b',
+          }}>
+            <SectionLabel text="Activity" color={v.color} />
+            {eventBlocks.length > 0
+              ? eventBlocks.map(b => <ExchangeBlock key={b.key} block={b} now={now} />)
+              : <p style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', margin: '2px' }}>All quiet.</p>}
+          </div>
+          <div style={{
+            flex: 1, minWidth: 0, padding: '10px 12px', overflowY: 'auto',
+            display: 'flex', flexDirection: 'column', gap: '8px',
+          }}>
+            <SectionLabel text="Chatter" color="#64748b" />
+            {idleBlocks.length > 0
+              ? idleBlocks.map(b => <ExchangeBlock key={b.key} block={b} now={now} />)
+              : <p style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', margin: '2px' }}>Nothing lately.</p>}
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   )
