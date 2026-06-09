@@ -36,6 +36,7 @@ const SORTS = [
   { value: 'rating', label: 'Rating' },
   { value: 'tier', label: 'Tier' },
   { value: 'name', label: 'Name' },
+  { value: 'effect', label: 'Effect' },
   { value: 'team', label: 'Team' },
   { value: 'position', label: 'Position' },
 ] as const

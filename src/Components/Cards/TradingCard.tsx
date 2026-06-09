@@ -250,6 +250,9 @@ export interface CardData {
   } | null
   acquiredAt: string | null
   acquiredVia: string
+  // Pack-reveal only: how many of this effect the user already owns (non-vaulted).
+  // >0 means keeping this card yields a same-effect duplicate (Level Up fuel).
+  ownedEffectCount?: number
 }
 
 interface TradingCardProps {
