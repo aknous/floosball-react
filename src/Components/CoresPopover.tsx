@@ -184,9 +184,9 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({
         <p style={{ fontSize: '12px', color: '#cbd5e1', margin: '8px 0 0', lineHeight: 1.5 }}>
           {description}
         </p>
-        {/* Progress toward Criticality — control-room flavor. Hidden during a
-            suppression window (the climb has been forced back). */}
-        {!status.inSuppression && typeof status.progressPct === 'number' && (
+        {/* Progress toward Criticality — control-room flavor. Shown even while
+            stabilizing so the climb back from a patch is visible. */}
+        {typeof status.progressPct === 'number' && (
           <div style={{ marginTop: '10px' }}>
             <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
