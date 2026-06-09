@@ -18,6 +18,9 @@ interface UpgradeInfo {
   nextTier: number | null
   cost: number | null
   eligibleOfferings: CardData[]
+  // The card serialized at nextTier (null at max) — the projected result, used
+  // to show what the upgrade buys before committing.
+  preview?: CardData | null
 }
 
 interface LevelUpModalProps {
@@ -76,12 +79,15 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
   const atMax = info?.atMax ?? false
   const offerings = info?.eligibleOfferings ?? []
   const canConfirm = !!info && !atMax && !!chosen && canAfford && !busy
-  // Live preview: source from the upgraded card (post-level, scaled detail) once
-  // we have it, else the original. Ribbon shows the tier it WILL become while a
-  // duplicate is selected; otherwise the current tier.
-  const previewBase = upgraded ?? card
-  const previewTier = chosen && !atMax ? (info?.nextTier ?? tier) : tier
+  // Live preview: once leveled, source the upgraded card (post-level, scaled
+  // detail). While a duplicate is selected, source the server's projected
+  // next-tier card so the effect NUMBERS match the "→ II" ribbon (not just the
+  // tier badge). Otherwise show the current card.
+  const projecting = !!chosen && !atMax
+  const previewBase = upgraded ?? (projecting && info?.preview ? info.preview : card)
+  const previewTier = projecting ? (info?.nextTier ?? tier) : tier
   const previewCard: CardData = { ...previewBase, tier: previewTier }
+  const nextRoman = ROMAN[(info?.nextTier ?? tier)]
 
   const handleConfirm = async () => {
     if (!info || !chosen) return
@@ -166,6 +172,27 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
 
               {/* Right panel */}
               <div style={{ flex: 1, minWidth: isMobile ? '100%' : '280px', maxWidth: '360px' }}>
+                {/* What the upgrade buys — projected next-tier effect vs current.
+                    Visible whenever there's a next tier, even with no duplicate
+                    yet, so the player can decide before hunting for one. */}
+                {!atMax && info?.preview && (
+                  <div style={{
+                    marginBottom: '14px', padding: '12px 14px', borderRadius: '8px',
+                    border: `1px solid ${GOLD}33`, background: 'rgba(251,191,36,0.06)',
+                  }}>
+                    <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '3px' }}>Now (Tier {ROMAN[tier]})</div>
+                    <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: 1.5, marginBottom: '9px' }}>
+                      {card.detail}
+                    </div>
+                    <div style={{ fontSize: '10px', color: GOLD, marginBottom: '3px' }}>At Tier {nextRoman}</div>
+                    <div style={{ fontSize: '11px', color: '#e2e8f0', lineHeight: 1.5 }}>
+                      {info.preview.detail}
+                    </div>
+                    {info.preview.tierNote && (
+                      <div style={{ fontSize: '10px', color: GOLD, marginTop: '7px' }}>{info.preview.tierNote}</div>
+                    )}
+                  </div>
+                )}
                 {atMax ? (
                   <div style={{
                     padding: '20px', borderRadius: '10px', textAlign: 'center',

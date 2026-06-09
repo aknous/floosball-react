@@ -370,10 +370,11 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
             </div>
           )}
 
-          {/* Cards row */}
+          {/* Cards row. Top-align so cards with extra info below them (projection
+              pill, "You own N" badge) don't float upward relative to ones without. */}
           <div style={{
             display: 'flex', gap: '16px', flexWrap: 'wrap',
-            justifyContent: 'center', alignItems: 'center',
+            justifyContent: 'center', alignItems: 'flex-start',
           }}>
             {sortedCards.map((card, i) => {
               const isRevealed = i < revealedCount
@@ -457,6 +458,17 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                       />
                       {projByTemplateId.get(card.templateId) && (
                         <ProjectionPillInline proj={projByTemplateId.get(card.templateId)!} />
+                      )}
+                      {(card.ownedEffectCount ?? 0) > 0 && (
+                        <span
+                          style={{
+                            fontSize: '10px', fontFamily: 'pressStart', fontWeight: 600,
+                            color: '#fbbf24', padding: '2px 6px', borderRadius: '5px',
+                            border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.10)',
+                          }}
+                        >
+                          You own {card.ownedEffectCount}
+                        </span>
                       )}
                     </div>
                   ) : (
