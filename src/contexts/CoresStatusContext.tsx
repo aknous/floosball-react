@@ -21,6 +21,7 @@ export interface CoresStatus {
   activeCore: string | null
   activeCoreDisplayName: string | null
   criticalityActive: boolean
+  progressPct?: number   // progress toward Criticality, 0-100 (control-room flavor)
 }
 
 export interface CoreLine {
@@ -45,6 +46,7 @@ const DORMANT: CoresStatus = {
   activeCore: null,
   activeCoreDisplayName: null,
   criticalityActive: false,
+  progressPct: 0,
 }
 
 interface CoresStatusContextType {
@@ -112,6 +114,11 @@ export const CoresStatusProvider: React.FC<{ children: ReactNode }> = ({ childre
           coreDisplayName: r.coreDisplayName ?? undefined,
           text: r.text,
           eventType: r.eventType ?? undefined,
+          // Carry exchange threading so a multi-Core conversation groups under
+          // one header on refresh, not one header per turn.
+          exchangeId: r.exchangeId ?? undefined,
+          turnIndex: r.turnIndex ?? undefined,
+          turnCount: r.turnCount ?? undefined,
           ts: r.createdAt ? Date.parse(r.createdAt) : Date.now(),
         })))
       })

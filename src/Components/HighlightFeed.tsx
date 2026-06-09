@@ -89,7 +89,10 @@ const OFF_DAY_POLL_MS = 60_000
 // Which Cores beats are loud enough to echo into the highlight feed. The full
 // conversation (routine warnings, idle banter) lives in the Cores popover; the
 // feed only flags the big moments — the near-miss patch, a breach, the purge.
-const CORES_FEED_EVENTS = new Set(['suppression', 'criticality', 'reset'])
+// Cores voice beats (warnings, containment, criticality, reset) live ONLY in
+// the control-room popover now — keep them out of the main league feed. Player
+// anomaly_transition lines (a separate category) still show here.
+const CORES_FEED_EVENTS = new Set<string>([])
 
 
 // Per-Core lore icons drawn from Game Icons (gi). Each Core's icon evokes

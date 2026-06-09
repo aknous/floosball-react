@@ -60,9 +60,13 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           })
 
           // Merge: use API plays as base, overlay any enrichment from WebSocket.
-          // Stamp _receivedAt for plays that came from REST without one — back-
-          // dated by one hour so they always sort below anything fired live.
-          const restBaseMs = Date.now() - 60 * 60 * 1000
+          // Stamp _receivedAt for plays that came from REST without one. Anchor
+          // just under "now" — this is the current slate the user is looking at,
+          // so its plays belong above older league-news (anomaly/Cores) items,
+          // which fired at the weekly tick. The small per-playNumber offset keeps
+          // intra-game order; staying a hair in the past lets a brand-new live WS
+          // play (stamped Date.now()) still sort above the snapshot.
+          const restBaseMs = Date.now() - 1000
           const restPlayNumbers = new Set<number>()
           const restPlayDescs = new Set<string>()
           gameData.plays.forEach((p: any) => {
@@ -74,7 +78,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const merged = enrich ? { ...p, ...enrich } : p
             return merged._receivedAt
               ? merged
-              : { ...merged, _receivedAt: restBaseMs - (1000 - (p.playNumber || 0)) * 1000 }
+              : { ...merged, _receivedAt: restBaseMs - (1000 - (p.playNumber || 0)) }
           })
           // Preserve WS-only plays the REST snapshot missed (race: snapshot taken
           // before the play was inserted into gameFeed but WS already fired).
