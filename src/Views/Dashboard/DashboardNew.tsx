@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { GameGridNew } from '@/Components/GameGridNew'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { HighlightFeed } from '@/Components/HighlightFeed'
-import { OffseasonPanel } from '@/Components/OffseasonPanel'
+import { OffseasonMain } from '@/Components/Recap/OffseasonMain'
 import { Standings } from '@/Components/Standings'
 import { PlayerLeaders } from '@/Components/PlayerLeaders'
 import { MvpRankings } from '@/Components/MvpRankings'
@@ -307,7 +307,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                   <HelpButton onClick={helpButtonClick} size={24} />
                 </div>
               </div>
-              {isOffseason ? <OffseasonPanel /> : <GameGridNew handleClick={handleGameClick} />}
+              {isOffseason ? <OffseasonMain /> : <GameGridNew handleClick={handleGameClick} />}
             </section>
 
             {/* Highlights */}
@@ -373,7 +373,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                   <HelpButton onClick={helpButtonClick} size={24} />
                 </div>
               </div>
-              {isOffseason ? <OffseasonPanel /> : <GameGridNew handleClick={handleGameClick} />}
+              {isOffseason ? <OffseasonMain /> : <GameGridNew handleClick={handleGameClick} />}
             </section>
 
             {/* Tabbed panel — full width */}
@@ -435,7 +435,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
                   <HelpButton onClick={helpButtonClick} />
                 </div>
-                <OffseasonPanel />
+                <OffseasonMain />
               </>
             ) : (
               <>
