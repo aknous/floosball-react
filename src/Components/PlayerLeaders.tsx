@@ -177,9 +177,9 @@ export const PlayerLeaders: React.FC<{ embedded?: boolean }> = ({ embedded = fal
 
       {/* Leader rows */}
       {loading ? (
-        <div style={{ padding: '24px', textAlign: 'center', color: '#475569', fontSize: '13px' }}>Loading…</div>
+        <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>Loading…</div>
       ) : leaders.length === 0 ? (
-        <div style={{ padding: '24px', textAlign: 'center', color: '#475569', fontSize: '13px' }}>No data yet</div>
+        <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>No data yet</div>
       ) : (
         <div>
           {leaders.map((player, idx) => {
@@ -194,7 +194,7 @@ export const PlayerLeaders: React.FC<{ embedded?: boolean }> = ({ embedded = fal
                 gap: embedded ? '6px' : '5px',
                 padding: embedded ? '7px 14px' : '5px 6px 5px 4px',
                 borderBottom: idx < leaders.length - 1 ? '1px solid #1a2640' : 'none',
-                backgroundColor: isOnRoster ? 'rgba(34,197,94,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+                backgroundColor: isOnRoster ? 'rgba(34,197,94,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
                 borderLeft: isOnRoster ? '2px solid #22c55e' : '2px solid transparent',
               }}
             >

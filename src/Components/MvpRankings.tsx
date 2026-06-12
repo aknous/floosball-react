@@ -1,57 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import ReactDOM from 'react-dom'
 import { Link } from 'react-router-dom'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import PlayerHoverCard from './PlayerHoverCard'
+import HoverTooltip from './HoverTooltip'
 import { Stars } from './Stars'
 import { GiStarMedal } from 'react-icons/gi'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
-
-const InfoTooltip: React.FC<{ text: string }> = ({ text }) => {
-  const [show, setShow] = useState(false)
-  const [pos, setPos] = useState({ x: 0, y: 0 })
-  const ref = useRef<HTMLSpanElement>(null)
-
-  const handleEnter = (e: React.MouseEvent) => {
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    setPos({ x: rect.left + rect.width / 2, y: rect.top })
-    setShow(true)
-  }
-
-  return (
-    <>
-      <span
-        ref={ref}
-        onMouseEnter={handleEnter}
-        onMouseLeave={() => setShow(false)}
-        style={{ width: '16px', height: '16px', borderRadius: '50%', border: '1px solid #475569', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700', color: '#64748b', cursor: 'default', flexShrink: 0 }}
-      >?</span>
-      {show && ReactDOM.createPortal(
-        <div style={{
-          position: 'fixed',
-          left: pos.x,
-          top: pos.y - 8,
-          transform: 'translate(-50%, -100%)',
-          backgroundColor: '#0f172a',
-          border: '1px solid #334155',
-          borderRadius: '8px',
-          padding: '10px 14px',
-          maxWidth: '240px',
-          fontSize: '12px',
-          color: '#cbd5e1',
-          lineHeight: '1.6',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-          zIndex: 10000,
-          pointerEvents: 'none',
-        }}>
-          {text}
-        </div>,
-        document.body
-      )}
-    </>
-  )
-}
 
 interface MvpCandidate {
   rank: number
@@ -180,7 +135,7 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
   if (loading) {
     return (
       <div style={{ ...(!embedded && { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px' }), padding: '16px' }}>
-        <div style={{ fontSize: '13px', color: '#475569', textAlign: 'center' }}>Loading...</div>
+        <div style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center' }}>Loading...</div>
       </div>
     )
   }
@@ -198,7 +153,9 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
           <span style={{ fontSize: '14px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {crownedMvp ? 'Season MVP' : 'MVP Race'}
           </span>
-          <InfoTooltip text="Players ranked by z-score — how far above average each player's performance rating is compared to their peers. Higher = more dominant." />
+          <HoverTooltip text="Players ranked by z-score: how far above average a player's performance rating is versus their peers. Higher means more dominant.">
+            <span style={{ width: '16px', height: '16px', borderRadius: '50%', border: '1px solid #475569', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700', color: '#94a3b8', flexShrink: 0 }}>?</span>
+          </HoverTooltip>
         </div>
 
         {crownedMvp && (
@@ -238,7 +195,7 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
                 gap: '6px',
                 padding: embedded ? '7px 14px' : '7px 10px',
                 borderBottom: idx < rankings.length - 1 ? '1px solid #1a2640' : 'none',
-                backgroundColor: isLeader ? 'rgba(245,158,11,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
+                backgroundColor: isLeader ? 'rgba(245,158,11,0.06)' : idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
                 borderLeft: isLeader ? '2px solid #f59e0b' : '2px solid transparent',
               }}
             >
@@ -259,10 +216,14 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
                     {player.name}
                   </Link>
                 </PlayerHoverCard>
-                {isCrowned && <GiStarMedal style={{ marginLeft: '4px', fontSize: '13px', color: '#fbbf24', display: 'inline', verticalAlign: 'middle' }} title="Season MVP" />}
+                {isCrowned && (
+                  <HoverTooltip text="Season MVP" color="#fbbf24">
+                    <GiStarMedal style={{ marginLeft: '4px', fontSize: '13px', color: '#fbbf24', display: 'inline', verticalAlign: 'middle' }} />
+                  </HoverTooltip>
+                )}
                 <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                   {player.teamAbbr}
-                  <span style={{ marginLeft: '4px', color: '#64748b' }}>· {player.position}</span>
+                  <span style={{ marginLeft: '4px', color: '#94a3b8' }}>· {player.position}</span>
                 </div>
                 <div style={{ marginTop: '1px' }}>
                   <Stars stars={player.ratingStars} size={11} />
