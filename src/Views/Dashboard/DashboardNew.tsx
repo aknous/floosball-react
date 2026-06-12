@@ -138,7 +138,11 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   const { refetch } = useGames()
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
   const [standingsView, setStandingsView] = useState<StandingsView>('standings')
-  const [activeTab, setActiveTab] = useState<TabView>('highlights')
+  const [activeTab, setActiveTab] = useState<TabView>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('dashboardTab') : null
+    return (saved === 'highlights' || saved === 'pickem' || saved === 'standings' || saved === 'leaders')
+      ? saved : 'highlights'
+  })
   const [showHelp, setShowHelp] = useState(false)
   const isMobile = useIsMobile()
   const isTablet = useIsMobile(1200)
@@ -147,6 +151,11 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   const tour = useTutorial({ tourId: 'dashboard', steps: DASHBOARD_TOUR_STEPS })
 
   useEffect(() => { refetch() }, [])
+
+  // Remember the last-selected right-panel tab across reloads.
+  useEffect(() => {
+    try { localStorage.setItem('dashboardTab', activeTab) } catch { /* ignore */ }
+  }, [activeTab])
 
   // Tour tab-switching listeners
   useEffect(() => {

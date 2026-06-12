@@ -1,231 +1,354 @@
 import React, { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useSeasonRecap } from '@/hooks/useSeasonRecap'
-import type { RecapTransaction, RecapEventType, RecapPlayerStub } from '@/types/recap'
+import PlayerLink from '@/Components/PlayerLink'
+import TeamHoverCard from '@/Components/TeamHoverCard'
+import { Stars as AppStars, calcStars } from '@/Components/Stars'
+import HoverTooltip from '@/Components/HoverTooltip'
+import type {
+  RecapTransaction, RecapEventType, RecapPlayerStub, RecapAwards,
+  RecapLeagueStandings, RecapLeaderCategory, RecapUserLeaderboards, RecapUserLbEntry, RecapShowcaseEntry,
+} from '@/types/recap'
 
-const CARD = { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px' }
-const H2: React.CSSProperties = { fontSize: '14px', fontWeight: 700, color: '#e2e8f0', margin: '0 0 10px' }
+const CARD: React.CSSProperties = { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '10px' }
+const SECTION_H: React.CSSProperties = { fontSize: '16px', fontWeight: 700, color: '#e2e8f0', margin: '0 0 12px' }
+const LABEL: React.CSSProperties = { fontSize: '12px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.04em' }
 
-// Movement event badges (color matches the action).
+const POS_ORDER: Record<string, number> = { QB: 0, RB: 1, WR: 2, TE: 3, K: 4 }
+
 const MOVE_BADGE: Record<string, { label: string; color: string }> = {
-  rookie_pick: { label: 'Drafted', color: '#60a5fa' },
-  fa_pick:     { label: 'Signed',  color: '#4ade80' },
+  rookie_pick: { label: 'Drafted',   color: '#60a5fa' },
+  fa_pick:     { label: 'Signed',    color: '#4ade80' },
   resign:      { label: 'Re-signed', color: '#2dd4bf' },
-  promotion:   { label: 'Promoted', color: '#c084fc' },
-  cut:         { label: 'Cut',     color: '#f87171' },
-  walked:      { label: 'Departed', color: '#fbbf24' },
+  promotion:   { label: 'Promoted',  color: '#c084fc' },
+  cut:         { label: 'Cut',       color: '#f87171' },
+  walked:      { label: 'Departed',  color: '#fbbf24' },
 }
 
-const TierAvatar: React.FC<{ teamId?: number | null; abbr?: string | null; size?: number }> = ({ teamId, abbr, size = 18 }) => (
-  teamId != null
-    ? <img src={`/avatars/${teamId}.png`} alt={abbr || ''} crossOrigin="anonymous"
-        style={{ width: size, height: size, flexShrink: 0 }} />
-    : <span style={{ width: size, height: size, flexShrink: 0 }} />
+// Team name (+ optional avatar) → routes to /team/:id with a hover card.
+const TeamLink: React.FC<{
+  teamId?: number | null; abbr?: string | null; name?: string | null
+  avatar?: boolean; avatarSize?: number; style?: React.CSSProperties
+}> = ({ teamId, abbr, name, avatar = false, avatarSize = 18, style }) => {
+  const label = name ?? abbr ?? '—'
+  const inner = (
+    <>
+      {avatar && teamId != null && (
+        <img src={`/avatars/${teamId}.png`} alt={abbr || ''} crossOrigin="anonymous"
+          style={{ width: avatarSize, height: avatarSize, flexShrink: 0 }} />
+      )}
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+    </>
+  )
+  if (teamId == null) {
+    return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', ...style }}>{inner}</span>
+  }
+  return (
+    <TeamHoverCard teamId={teamId}>
+      <Link to={`/team/${teamId}`} style={{
+        color: 'inherit', textDecoration: 'none', cursor: 'pointer',
+        display: 'inline-flex', alignItems: 'center', gap: '6px', minWidth: 0, ...style,
+      }}>
+        {inner}
+      </Link>
+    </TeamHoverCard>
+  )
+}
+
+const PosBadge: React.FC<{ pos?: string | null }> = ({ pos }) => (
+  pos ? <span style={{
+    fontSize: '11px', fontWeight: 700, color: '#94a3b8', backgroundColor: 'rgba(148,163,184,0.14)',
+    padding: '1px 6px', borderRadius: '4px', flexShrink: 0, minWidth: '30px', textAlign: 'center',
+  }}>{pos}</span> : null
 )
 
+// Thin wrapper over the shared Stars: accepts a raw rating or a star count and
+// uses the app-standard per-count colors (5 gold, 4 green, 3 blue, 2 gray, 1 red).
+const Stars: React.FC<{ rating?: number | null; stars?: number | null; size?: number }> = ({ rating, stars, size = 13 }) => {
+  const n = stars ?? (rating != null ? calcStars(rating) : 0)
+  if (!n) return null
+  return <span style={{ flexShrink: 0 }}><AppStars stars={n} size={size} /></span>
+}
+
+type Tab = 'results' | 'stats' | 'fans' | 'transactions'
+const TABS: [Tab, string][] = [
+  ['results', 'Results'], ['stats', 'Stats'], ['fans', 'Fans'], ['transactions', 'Transactions'],
+]
+
 export const SeasonRecap: React.FC = () => {
-  const { recap, season, setSeason, loading } = useSeasonRecap()
-  const [statCat, setStatCat] = useState<string | null>(null)
+  const { recap, loading } = useSeasonRecap()
+  const [tab, setTab] = useState<Tab>('results')
 
   if (loading && !recap) {
-    return <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>Loading recap...</div>
+    return <div style={{ padding: '28px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Loading recap...</div>
   }
   if (!recap) {
-    return <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>No recap available.</div>
+    return <div style={{ padding: '28px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>No recap available.</div>
   }
-
-  const { awards, standings, leaders, transactions, userLeaderboards, showcase, seasonsAvailable } = recap
-  const viewSeason = recap.season
-
-  const activeCat = statCat || (leaders[0]?.category ?? null)
-  const activeLeaders = leaders.find(l => l.category === activeCat)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Header + season picker */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-        <h1 style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
-          Season {viewSeason} Recap
-        </h1>
-        {seasonsAvailable.length > 1 && (
-          <select
-            value={season ?? recap.season}
-            onChange={e => setSeason(Number(e.target.value))}
-            style={{
-              backgroundColor: '#1e293b', color: '#e2e8f0', border: '1px solid #334155',
-              borderRadius: '6px', padding: '5px 8px', fontSize: '12px', fontFamily: 'inherit',
-            }}
-          >
-            {seasonsAvailable.map(s => (
-              <option key={s} value={s}>Season {s}{s === recap.currentSeason ? ' (current)' : ''}</option>
-            ))}
-          </select>
-        )}
+      {/* Header */}
+      <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
+        Season {recap.season} Recap
+      </h1>
+
+      {/* Tab bar */}
+      <div style={{ display: 'flex', gap: '2px', borderBottom: '1px solid #2a3a4e' }}>
+        {TABS.map(([key, label]) => {
+          const on = tab === key
+          return (
+            <button key={key} onClick={() => setTab(key)} style={{
+              padding: '10px 18px', fontSize: '14px', fontWeight: 700, fontFamily: 'inherit',
+              color: on ? '#e2e8f0' : '#94a3b8', backgroundColor: on ? '#1e293b' : 'transparent',
+              border: 'none', borderBottom: on ? '2px solid #3b82f6' : '2px solid transparent',
+              cursor: 'pointer', transition: 'all 0.15s',
+            }}>{label}</button>
+          )
+        })}
       </div>
 
-      {/* ── Season Results ── */}
-      <ResultsSection awards={awards} standings={standings} />
-
-      {/* ── Stat Leaders ── */}
-      {leaders.length > 0 && (
-        <div style={{ ...CARD, padding: '14px' }}>
-          <h2 style={H2}>Stat Leaders</h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
-            {leaders.map(l => {
-              const on = l.category === activeCat
-              return (
-                <button key={l.category} onClick={() => setStatCat(l.category)} style={{
-                  fontSize: '11px', fontWeight: 600, padding: '4px 9px', borderRadius: '5px',
-                  border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                  backgroundColor: on ? '#3b82f6' : '#0f172a', color: on ? '#fff' : '#94a3b8',
-                }}>{l.label}</button>
-              )
-            })}
-          </div>
-          {activeLeaders && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {activeLeaders.leaders.map(p => (
-                <div key={p.id} style={{
-                  display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px',
-                  borderRadius: '6px', backgroundColor: p.rank === 1 ? 'rgba(234,179,8,0.10)' : '#162231',
-                }}>
-                  <span style={{ width: '18px', fontSize: '12px', fontWeight: 700, color: p.rank === 1 ? '#eab308' : '#94a3b8' }}>{p.rank}</span>
-                  <TierAvatar teamId={p.teamId} abbr={p.teamAbbr} />
-                  <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {p.name} <span style={{ color: '#64748b', fontSize: '11px' }}>{p.position} · {p.teamAbbr}</span>
-                  </span>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>{p.value}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── User Leaderboards ── */}
-      <UserSection userLeaderboards={userLeaderboards} showcase={showcase} />
-
-      {/* ── Transactions & Announcements ── */}
-      <TransactionsSection transactions={transactions} />
+      {tab === 'results' && <ResultsTab awards={recap.awards} standings={recap.standings} leagueChampions={recap.leagueChampions} />}
+      {tab === 'stats' && <StatsTab leaders={recap.leaders} />}
+      {tab === 'fans' && <FansTab userLeaderboards={recap.userLeaderboards} />}
+      {tab === 'transactions' && <TransactionsTab transactions={recap.transactions} />}
     </div>
   )
 }
 
-// ── Section: Season Results (awards + standings) ──
-const ResultsSection: React.FC<{ awards: any; standings: any[] }> = ({ awards, standings }) => (
-  <div style={{ ...CARD, padding: '14px' }}>
-    <h2 style={H2}>Season Results</h2>
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
-      {/* Champion */}
-      <div style={{ flex: '1 1 160px', padding: '10px', borderRadius: '8px', backgroundColor: 'rgba(234,179,8,0.10)', border: '1px solid rgba(234,179,8,0.35)' }}>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: '#eab308', letterSpacing: '0.05em' }}>FLOOS BOWL CHAMPION</div>
-        {awards.champion ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-            <img src={`/avatars/${awards.champion.id}.png`} alt={awards.champion.abbr} crossOrigin="anonymous" style={{ width: 28, height: 28 }} />
-            <span style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0' }}>{awards.champion.name}</span>
-          </div>
-        ) : <div style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>TBD</div>}
-      </div>
-      {/* MVP */}
-      <div style={{ flex: '1 1 160px', padding: '10px', borderRadius: '8px', backgroundColor: '#162231' }}>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: '#38bdf8', letterSpacing: '0.05em' }}>MVP</div>
-        {awards.mvp ? (
-          <div style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', marginTop: '6px' }}>
-            {awards.mvp.name} <span style={{ fontSize: '11px', color: '#64748b' }}>{awards.mvp.position} · {awards.mvp.teamAbbr}</span>
-          </div>
-        ) : <div style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>TBD</div>}
-      </div>
-    </div>
-
-    {/* All-Pro team */}
-    {awards.allPro?.length > 0 && (
-      <div style={{ marginBottom: '14px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>ALL-PRO TEAM</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-          {awards.allPro.map((p: RecapPlayerStub) => (
-            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 8px', borderRadius: '6px', backgroundColor: '#162231' }}>
-              <TierAvatar teamId={p.teamId} abbr={p.teamAbbr} size={16} />
-              <span style={{ fontSize: '12px', color: '#e2e8f0' }}>{p.name}</span>
-              <span style={{ fontSize: '10px', color: '#64748b' }}>{p.position}</span>
+// ── Results ──
+const ResultsTab: React.FC<{ awards: RecapAwards; standings: RecapLeagueStandings[]; leagueChampions: number[] }> = ({ awards, standings, leagueChampions }) => {
+  const allPro = [...(awards.allPro || [])].sort((a, b) => (POS_ORDER[a.position || ''] ?? 9) - (POS_ORDER[b.position || ''] ?? 9))
+  const champId = awards.champion?.id
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Champion + MVP */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ flex: '1 1 220px', padding: '14px', borderRadius: '10px', backgroundColor: 'rgba(234,179,8,0.10)', border: '1px solid rgba(234,179,8,0.4)' }}>
+          <div style={{ ...LABEL, color: '#eab308' }}>FLOOS BOWL CHAMPION</div>
+          {awards.champion ? (
+            <TeamLink teamId={awards.champion.id}
+              name={[awards.champion.city, awards.champion.name].filter(Boolean).join(' ')}
+              avatar avatarSize={34}
+              style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', marginTop: '8px' }} />
+          ) : <div style={{ fontSize: '15px', color: '#64748b', marginTop: '8px' }}>TBD</div>}
+        </div>
+        <div style={{ flex: '1 1 220px', padding: '14px', borderRadius: '10px', backgroundColor: '#162231' }}>
+          <div style={{ ...LABEL, color: '#38bdf8' }}>SEASON MVP</div>
+          {awards.mvp ? (
+            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {awards.mvp.teamId != null && <img src={`/avatars/${awards.mvp.teamId}.png`} alt={awards.mvp.teamAbbr || ''} crossOrigin="anonymous" style={{ width: 30, height: 30, flexShrink: 0 }} />}
+              <PosBadge pos={awards.mvp.position} />
+              <PlayerLink playerId={awards.mvp.id} playerName={awards.mvp.name}
+                style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0' }} />
+              <Stars rating={awards.mvp.rating} stars={awards.mvp.stars} size={12} />
+              <TeamLink teamId={awards.mvp.teamId} abbr={awards.mvp.teamAbbr}
+                style={{ fontSize: '13px', color: '#94a3b8' }} />
             </div>
-          ))}
+          ) : <div style={{ fontSize: '15px', color: '#64748b', marginTop: '8px' }}>TBD</div>}
         </div>
       </div>
-    )}
 
-    {/* Standings by league */}
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-      {standings.map((lg: any) => (
-        <div key={lg.league} style={{ flex: '1 1 280px', minWidth: 0 }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', marginBottom: '4px' }}>{lg.league}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {lg.standings.map((t: any, i: number) => (
-              <div key={t.teamId} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 6px', borderRadius: '4px', backgroundColor: i % 2 ? 'transparent' : '#162231' }}>
-                <span style={{ width: '16px', fontSize: '11px', color: '#64748b' }}>{i + 1}</span>
-                <img src={`/avatars/${t.teamId}.png`} alt={t.teamAbbr} crossOrigin="anonymous" style={{ width: 16, height: 16 }} />
-                <span style={{ flex: 1, fontSize: '12px', color: '#cbd5e1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.teamName}</span>
-                <span style={{ fontSize: '12px', fontWeight: 600, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{t.wins}-{t.losses}{t.ties ? `-${t.ties}` : ''}</span>
+      {/* All-Pro team with positions */}
+      {allPro.length > 0 && (
+        <div style={{ ...CARD, padding: '16px' }}>
+          <h2 style={SECTION_H}>All-Pro Team</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+            {allPro.map(p => (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '8px', backgroundColor: '#162231', minWidth: 0 }}>
+                <PosBadge pos={p.position} />
+                {p.teamId != null && <img src={`/avatars/${p.teamId}.png`} alt={p.teamAbbr || ''} crossOrigin="anonymous" style={{ width: 20, height: 20, flexShrink: 0 }} />}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <PlayerLink playerId={p.id} playerName={p.name} style={{ fontSize: '14px', fontWeight: 600, color: '#e2e8f0' }} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                    <Stars rating={p.rating} stars={p.stars} size={12} />
+                    <TeamLink teamId={p.teamId} abbr={p.teamAbbr} style={{ fontSize: '12px', color: '#94a3b8' }} />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </div>
-      ))}
+      )}
+
+      {/* Standings by league with champion badges */}
+      <div style={{ ...CARD, padding: '16px' }}>
+        <h2 style={SECTION_H}>Final Standings</h2>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+          {standings.map(lg => (
+            <div key={lg.league} style={{ flex: '1 1 320px', minWidth: 0 }}>
+              <div style={{ ...LABEL, marginBottom: '6px' }}>{lg.league}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {lg.standings.map((t, i) => {
+                  const isBowl = champId === t.teamId
+                  const isLeague = leagueChampions.includes(t.teamId)
+                  return (
+                    <div key={t.teamId} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px', borderRadius: '6px', backgroundColor: i % 2 ? 'transparent' : '#162231' }}>
+                      <span style={{ width: '18px', fontSize: '13px', color: '#64748b' }}>{i + 1}</span>
+                      <TeamLink teamId={t.teamId} name={t.teamName} abbr={t.teamAbbr} avatar avatarSize={18}
+                        style={{ flex: 1, fontSize: '14px', color: '#cbd5e1', minWidth: 0 }} />
+                      {isBowl && <ChampBadge label="Floos Bowl" color="#eab308" />}
+                      {!isBowl && isLeague && <ChampBadge label="League Champ" color="#94a3b8" />}
+                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
+                        {t.wins}-{t.losses}{t.ties ? `-${t.ties}` : ''}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
+  )
+}
+
+// Collapsible card section with a count chip in the header (keeps the
+// Transactions tab manageable when it gets dense).
+const CollapsibleSection: React.FC<{ title: string; count: number; defaultOpen?: boolean; children: React.ReactNode }> = ({ title, count, defaultOpen = true, children }) => {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div style={{ ...CARD, overflow: 'hidden' }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '13px 16px',
+        background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+      }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+          style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }}>
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+        <span style={LABEL}>{title}</span>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', backgroundColor: 'rgba(148,163,184,0.12)', padding: '1px 7px', borderRadius: '10px' }}>{count}</span>
+      </button>
+      {open && <div style={{ padding: '0 16px 14px' }}>{children}</div>}
+    </div>
+  )
+}
+
+const ChampBadge: React.FC<{ label: string; color: string }> = ({ label, color }) => (
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', fontWeight: 700, color, backgroundColor: `${color}22`, padding: '1px 6px', borderRadius: '4px', flexShrink: 0 }}>
+    <svg width="10" height="10" viewBox="0 0 24 24" fill={color}><path d="M5 4h14v2a5 5 0 0 1-3 4.58A4 4 0 0 1 13 13v3h3v2H8v-2h3v-3a4 4 0 0 1-3-2.42A5 5 0 0 1 5 6V4Z" /></svg>
+    {label}
+  </span>
+)
+
+// ── Stats ──
+const StatsTab: React.FC<{ leaders: RecapLeaderCategory[] }> = ({ leaders }) => {
+  const [cat, setCat] = useState<string | null>(null)
+  if (leaders.length === 0) return <div style={{ ...CARD, padding: '16px', color: '#64748b', fontSize: '14px' }}>No stats yet.</div>
+  const activeCat = cat || leaders[0].category
+  const active = leaders.find(l => l.category === activeCat)
+  return (
+    <div style={{ ...CARD, padding: '16px' }}>
+      <h2 style={SECTION_H}>Stat Leaders</h2>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '14px' }}>
+        {leaders.map(l => {
+          const on = l.category === activeCat
+          return (
+            <button key={l.category} onClick={() => setCat(l.category)} style={{
+              fontSize: '12px', fontWeight: 600, padding: '6px 11px', borderRadius: '6px', border: 'none',
+              cursor: 'pointer', fontFamily: 'inherit', backgroundColor: on ? '#3b82f6' : '#0f172a', color: on ? '#fff' : '#94a3b8',
+            }}>{l.label}</button>
+          )
+        })}
+      </div>
+      {active && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          {active.leaders.map(p => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 10px', borderRadius: '8px', backgroundColor: p.rank === 1 ? 'rgba(234,179,8,0.10)' : '#162231' }}>
+              <span style={{ width: '22px', fontSize: '14px', fontWeight: 700, color: p.rank === 1 ? '#eab308' : '#94a3b8' }}>{p.rank}</span>
+              <PosBadge pos={p.position} />
+              {p.teamId != null && <img src={`/avatars/${p.teamId}.png`} alt={p.teamAbbr || ''} crossOrigin="anonymous" style={{ width: 20, height: 20, flexShrink: 0 }} />}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <PlayerLink playerId={p.id} playerName={p.name} style={{ fontSize: '14px', fontWeight: 600, color: '#e2e8f0' }} />
+                  <Stars rating={p.rating} stars={p.stars} />
+                </div>
+                <TeamLink teamId={p.teamId} abbr={p.teamAbbr} style={{ fontSize: '12px', color: '#64748b' }} />
+              </div>
+              <span style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{p.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Fans (user leaderboards) ──
+const FanLbCol: React.FC<{ title: string; color: string; rows: RecapUserLbEntry[]; unit?: string }> = ({ title, color, rows, unit }) => (
+  <div style={{ flex: '1 1 230px', minWidth: 0 }}>
+    <div style={{ ...LABEL, color, marginBottom: '8px' }}>{title}</div>
+    {rows.length === 0 ? <div style={{ fontSize: '13px', color: '#64748b' }}>No entries yet.</div> : (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        {rows.slice(0, 5).map(r => (
+          <div key={r.userId} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px', borderRadius: '6px', backgroundColor: r.rank === 1 ? 'rgba(234,179,8,0.10)' : 'transparent' }}>
+            <span style={{ width: '16px', fontSize: '14px', fontWeight: 700, color: r.rank === 1 ? '#eab308' : '#64748b' }}>{r.rank}</span>
+            {r.favoriteTeam?.teamId != null && (
+              <img src={`/avatars/${r.favoriteTeam.teamId}.png`} alt={r.favoriteTeam.teamAbbr} crossOrigin="anonymous" style={{ width: 16, height: 16, flexShrink: 0 }} />
+            )}
+            <span style={{ flex: 1, fontSize: '14px', color: '#cbd5e1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.username}</span>
+            <span style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', whiteSpace: 'nowrap' }}>
+              {r.totalPoints}{unit ? <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', marginLeft: '3px' }}>{unit}</span> : null}
+            </span>
+          </div>
+        ))}
+      </div>
+    )}
   </div>
 )
 
-// ── Section: User leaderboards + top showcase ──
-const UserSection: React.FC<{ userLeaderboards: any; showcase: any }> = ({ userLeaderboards, showcase }) => {
-  const { fantasy, pickem, sweptBoth } = userLeaderboards
-  if (!fantasy?.length && !pickem?.length && !showcase) return null
-  const lbCol = (title: string, color: string, rows: any[]) => (
-    <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-      <div style={{ fontSize: '11px', fontWeight: 700, color, marginBottom: '6px' }}>{title}</div>
-      {rows.length === 0 ? <div style={{ fontSize: '12px', color: '#64748b' }}>No entries.</div> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          {rows.slice(0, 5).map(r => (
-            <div key={r.userId} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 6px', borderRadius: '4px', backgroundColor: r.rank === 1 ? 'rgba(234,179,8,0.10)' : 'transparent' }}>
-              <span style={{ width: '16px', fontSize: '11px', fontWeight: 700, color: r.rank === 1 ? '#eab308' : '#64748b' }}>{r.rank}</span>
-              <span style={{ flex: 1, fontSize: '12px', color: '#cbd5e1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.username}</span>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>{r.totalPoints}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-  return (
-    <div style={{ ...CARD, padding: '14px' }}>
-      <h2 style={H2}>Players of the Season</h2>
-      {sweptBoth && (
-        <div style={{ padding: '8px 12px', borderRadius: '8px', marginBottom: '12px', backgroundColor: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.4)' }}>
-          <span style={{ fontSize: '10px', fontWeight: 700, color: '#eab308', letterSpacing: '0.05em' }}>THE SWEEP — #1 IN FANTASY AND PROGNOSTICATIONS</span>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#fde68a', marginTop: '2px' }}>{sweptBoth.username}</div>
-        </div>
-      )}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-        {lbCol('FANTASY', '#4ade80', fantasy ?? [])}
-        {lbCol('PROGNOSTICATIONS', '#60a5fa', pickem ?? [])}
-        {showcase && (
-          <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#c084fc', marginBottom: '6px' }}>TOP SHOWCASE</div>
-            <div style={{ padding: '8px', borderRadius: '6px', backgroundColor: '#162231' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <span style={{ fontSize: '20px', fontWeight: 800, color: '#c084fc' }}>{showcase.grade}</span>
-                <span style={{ fontSize: '12px', color: '#cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{showcase.username}</span>
-              </div>
-              <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                {showcase.cardCount} cards · {showcase.estimatedPayout} Floobits
-              </div>
-            </div>
+const ShowcaseLbCol: React.FC<{ rows: RecapShowcaseEntry[] }> = ({ rows }) => (
+  <div style={{ flex: '1 1 230px', minWidth: 0 }}>
+    <div style={{ ...LABEL, color: '#c084fc', marginBottom: '8px' }}>VAULT SHOWCASE <span style={{ fontWeight: 400, color: '#64748b' }}>(grade)</span></div>
+    {rows.length === 0 ? <div style={{ fontSize: '13px', color: '#64748b' }}>No entries yet.</div> : (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        {rows.slice(0, 5).map(r => (
+          <div key={r.userId} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px', borderRadius: '6px', backgroundColor: r.rank === 1 ? 'rgba(234,179,8,0.10)' : 'transparent' }}>
+            <span style={{ width: '16px', fontSize: '14px', fontWeight: 700, color: r.rank === 1 ? '#eab308' : '#64748b' }}>{r.rank}</span>
+            {r.favoriteTeam?.teamId != null && (
+              <img src={`/avatars/${r.favoriteTeam.teamId}.png`} alt={r.favoriteTeam.teamAbbr} crossOrigin="anonymous" style={{ width: 16, height: 16, flexShrink: 0 }} />
+            )}
+            <span style={{ flex: 1, fontSize: '14px', color: '#cbd5e1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.username}</span>
+            <HoverTooltip text={`Grade ${r.grade} · ${r.cardCount} cards · ${r.estimatedPayout} Floobits payout`} color="#c084fc">
+              <span style={{ fontSize: '18px', fontWeight: 800, color: '#c084fc', minWidth: '22px', textAlign: 'right', display: 'inline-block' }}>{r.grade}</span>
+            </HoverTooltip>
           </div>
-        )}
+        ))}
+      </div>
+    )}
+  </div>
+)
+
+const FansTab: React.FC<{ userLeaderboards: RecapUserLeaderboards }> = ({ userLeaderboards }) => {
+  const { fantasy, pickem, bracket, funding, showcase, sweptBoth } = userLeaderboards
+  const empty = !fantasy?.length && !pickem?.length && !bracket?.length && !funding?.length && !showcase?.length
+  return (
+    <div style={{ ...CARD, padding: '16px' }}>
+      <h2 style={SECTION_H}>Top Fans</h2>
+      {empty && <div style={{ fontSize: '13px', color: '#64748b' }}>No fan results yet this season.</div>}
+      {sweptBoth && (
+        <div style={{ padding: '12px 14px', borderRadius: '10px', marginBottom: '14px', backgroundColor: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.45)' }}>
+          <div style={{ ...LABEL, color: '#eab308' }}>THE SWEEP — #1 IN FANTASY AND PROGNOSTICATIONS</div>
+          <div style={{ fontSize: '18px', fontWeight: 700, color: '#fde68a', marginTop: '3px' }}>{sweptBoth.username}</div>
+        </div>
+      )}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
+        <FanLbCol title="FANTASY" color="#4ade80" rows={fantasy ?? []} unit="FP" />
+        <FanLbCol title="PROGNOSTICATIONS" color="#60a5fa" rows={pickem ?? []} unit="pts" />
+        <FanLbCol title="BRACKET CHALLENGE" color="#f59e0b" rows={bracket ?? []} unit="pts" />
+        <FanLbCol title="TEAM FUNDING" color="#2dd4bf" rows={funding ?? []} unit="F" />
+        <ShowcaseLbCol rows={showcase ?? []} />
       </div>
     </div>
   )
 }
 
-// ── Section: Transactions & Announcements ──
-const TransactionsSection: React.FC<{ transactions: RecapTransaction[] }> = ({ transactions }) => {
+// ── Transactions & Announcements ──
+const TransactionsTab: React.FC<{ transactions: RecapTransaction[] }> = ({ transactions }) => {
   const groups = useMemo(() => {
     const retirements = transactions.filter(t => t.type === 'retirement')
     const hof = transactions.filter(t => t.type === 'hof_induction')
@@ -242,75 +365,71 @@ const TransactionsSection: React.FC<{ transactions: RecapTransaction[] }> = ({ t
   }, [transactions])
 
   if (transactions.length === 0) {
-    return (
-      <div style={{ ...CARD, padding: '14px' }}>
-        <h2 style={H2}>Transactions &amp; Announcements</h2>
-        <div style={{ fontSize: '12px', color: '#64748b' }}>No moves yet this offseason.</div>
-      </div>
-    )
+    return <div style={{ ...CARD, padding: '16px', color: '#64748b', fontSize: '14px' }}>No moves yet this offseason.</div>
   }
 
   const announce = (title: string, items: RecapTransaction[], render: (t: RecapTransaction) => React.ReactNode) =>
-    items.length > 0 && (
-      <div style={{ marginBottom: '12px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>{title}</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>{items.map(render)}</div>
-      </div>
-    )
+    items.length > 0 ? (
+      <CollapsibleSection title={title} count={items.length}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>{items.map(render)}</div>
+      </CollapsibleSection>
+    ) : null
 
   return (
-    <div style={{ ...CARD, padding: '14px' }}>
-      <h2 style={H2}>Transactions &amp; Announcements</h2>
-
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {announce('RETIREMENTS', groups.retirements, t => (
-        <div key={`ret-${t.playerId}`} style={{ fontSize: '12px', color: '#cbd5e1' }}>
-          <span style={{ fontWeight: 600, color: '#e2e8f0' }}>{t.playerName}</span>
-          <span style={{ color: '#64748b' }}> {t.position}{t.teamAbbr ? ` · ${t.teamAbbr}` : ''}{t.detail ? ` · ${t.detail}` : ''}</span>
+        <div key={`ret-${t.playerId}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+          <PosBadge pos={t.position} />
+          <PlayerLink playerId={t.playerId} playerName={t.playerName || '—'} style={{ fontWeight: 600, color: '#e2e8f0' }} />
+          <Stars rating={t.rating} />
+          <TeamLink teamId={t.teamId} abbr={t.teamAbbr} style={{ color: '#94a3b8', fontSize: '13px' }} />
+          {t.detail && <span style={{ color: '#64748b', fontSize: '13px' }}>· {t.detail}</span>}
         </div>
       ))}
 
       {announce('HALL OF FAME', groups.hof, t => (
-        <div key={`hof-${t.playerId}`} style={{ fontSize: '12px', color: '#fde68a' }}>
-          <span style={{ fontWeight: 700 }}>{t.playerName}</span>
-          <span style={{ color: '#a8a29e' }}> {t.position}{t.teamName ? ` · ${t.teamName}` : ''}</span>
+        <div key={`hof-${t.playerId}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+          <PosBadge pos={t.position} />
+          <PlayerLink playerId={t.playerId} playerName={t.playerName || '—'} style={{ fontWeight: 700, color: '#fde68a' }} />
+          <Stars rating={t.rating} />
+          {t.teamName && <TeamLink teamId={t.teamId} name={t.teamName} style={{ color: '#a8a29e', fontSize: '13px' }} />}
         </div>
       ))}
 
       {announce('COACHING CHANGES', groups.coach, t => (
-        <div key={`coach-${t.type}-${t.teamId}`} style={{ fontSize: '12px', color: '#cbd5e1' }}>
-          <span style={{ color: t.type === 'coach_fire' ? '#f87171' : '#4ade80', fontWeight: 600 }}>
+        <div key={`coach-${t.type}-${t.teamId}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#cbd5e1' }}>
+          <span style={{ color: t.type === 'coach_fire' ? '#f87171' : '#4ade80', fontWeight: 700 }}>
             {t.type === 'coach_fire' ? 'Fired' : 'Hired'}
           </span>
-          <span> {t.detail || 'coach'} </span>
-          <span style={{ color: '#64748b' }}>· {t.teamName}</span>
+          <span>{t.detail || 'coach'}</span>
+          <TeamLink teamId={t.teamId} name={t.teamName} style={{ color: '#94a3b8', fontSize: '13px' }} />
         </div>
       ))}
 
-      {/* Player movement, grouped by team */}
       {groups.byTeam.size > 0 && (
-        <div>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>ROSTER MOVES</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+        <CollapsibleSection title="ROSTER MOVES" count={Array.from(groups.byTeam.values()).reduce((n, a) => n + a.length, 0)}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
             {Array.from(groups.byTeam.entries()).map(([team, items]) => (
-              <div key={team} style={{ flex: '1 1 220px', minWidth: 0, padding: '8px', borderRadius: '6px', backgroundColor: '#162231' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                  <TierAvatar teamId={items[0]?.teamId} abbr={items[0]?.teamAbbr} size={16} />
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>{team}</span>
+              <div key={team} style={{ padding: '10px', borderRadius: '8px', backgroundColor: '#162231' }}>
+                <TeamLink teamId={items[0]?.teamId} name={team} avatar avatarSize={18}
+                  style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', marginBottom: '6px' }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '6px' }}>
+                  {items.map((t, i) => {
+                    const b = MOVE_BADGE[t.type] || { label: t.type, color: '#94a3b8' }
+                    return (
+                      <div key={`${t.type}-${t.playerId}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: b.color, backgroundColor: `${b.color}1f`, padding: '2px 6px', borderRadius: '3px', flexShrink: 0, minWidth: '64px', textAlign: 'center' }}>{b.label}</span>
+                        <PlayerLink playerId={t.playerId} playerName={t.playerName || '—'} style={{ flex: 1, fontSize: '13px', color: '#cbd5e1', minWidth: 0 }} />
+                        <Stars rating={t.rating} size={9} />
+                        <PosBadge pos={t.position} />
+                      </div>
+                    )
+                  })}
                 </div>
-                {items.map((t, i) => {
-                  const b = MOVE_BADGE[t.type] || { label: t.type, color: '#94a3b8' }
-                  return (
-                    <div key={`${t.type}-${t.playerId}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 0' }}>
-                      <span style={{ fontSize: '9px', fontWeight: 700, color: b.color, backgroundColor: `${b.color}1f`, padding: '1px 5px', borderRadius: '3px', flexShrink: 0, minWidth: '52px', textAlign: 'center' }}>{b.label}</span>
-                      <span style={{ flex: 1, fontSize: '12px', color: '#cbd5e1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.playerName}</span>
-                      <span style={{ fontSize: '10px', color: '#64748b' }}>{t.position}</span>
-                    </div>
-                  )
-                })}
               </div>
             ))}
           </div>
-        </div>
+        </CollapsibleSection>
       )}
     </div>
   )

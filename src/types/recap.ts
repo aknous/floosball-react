@@ -18,6 +18,8 @@ export interface RecapPlayerStub {
   rank?: number
   value?: number
   gamesPlayed?: number
+  rating?: number | null
+  stars?: number | null
 }
 
 export interface RecapAwards {
@@ -75,31 +77,35 @@ export interface RecapUserLbEntry {
   totalPoints: number
   correct?: number
   total?: number
+  favoriteTeam?: { teamId: number; teamAbbr: string; teamColor: string } | null
 }
 
-export interface RecapUserLeaderboards {
-  fantasy: RecapUserLbEntry[]
-  pickem: RecapUserLbEntry[]
-  sweptBoth: { userId: number; username: string } | null
-}
-
-export interface RecapShowcase {
+export interface RecapShowcaseEntry {
+  rank: number
   userId: number
   username: string
   grade: string
   estimatedPayout: number
   cardCount: number
-  activeSets: string[]
+  favoriteTeam?: { teamId: number; teamAbbr: string; teamColor: string } | null
+}
+
+export interface RecapUserLeaderboards {
+  fantasy: RecapUserLbEntry[]
+  pickem: RecapUserLbEntry[]
+  bracket: RecapUserLbEntry[]
+  funding: RecapUserLbEntry[]
+  showcase: RecapShowcaseEntry[]
+  sweptBoth: { userId: number; username: string } | null
 }
 
 export interface SeasonRecapResponse {
   season: number
   currentSeason: number
-  seasonsAvailable: number[]
   awards: RecapAwards
   standings: RecapLeagueStandings[]
+  leagueChampions: number[]   // team IDs that won their league championship (Floos Bowl participants)
   leaders: RecapLeaderCategory[]
   transactions: RecapTransaction[]
   userLeaderboards: RecapUserLeaderboards
-  showcase: RecapShowcase | null
 }

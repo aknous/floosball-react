@@ -8,7 +8,7 @@ type View = 'draft' | 'recap'
  *  Season Recap. Replaces the bare <OffseasonPanel /> on the dashboard during
  *  the offseason. */
 export const OffseasonMain: React.FC = () => {
-  const [view, setView] = useState<View>('draft')
+  const [view, setView] = useState<View>('recap')
 
   return (
     <div>

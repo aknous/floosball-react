@@ -6,17 +6,14 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 interface UseSeasonRecapResult {
   recap: SeasonRecapResponse | null
-  season: number | null          // the season being viewed (null = default/current)
-  setSeason: (s: number | null) => void
   loading: boolean
   refetch: () => void
 }
 
-/** Fetches the consolidated Season Recap. Public endpoint; refetches on
- *  offseason WS events so the live draft/FA transactions fill in. */
+/** Fetches the current season's recap. Public endpoint; refetches on offseason
+ *  WS events so the live draft/FA transactions fill in. */
 export function useSeasonRecap(): UseSeasonRecapResult {
   const [recap, setRecap] = useState<SeasonRecapResponse | null>(null)
-  const [season, setSeason] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const { event } = useSeasonWebSocket()
   const hasLoaded = useRef(false)
@@ -24,8 +21,7 @@ export function useSeasonRecap(): UseSeasonRecapResult {
   const fetchRecap = useCallback(async () => {
     try {
       if (!hasLoaded.current) setLoading(true)
-      const qs = season != null ? `?season=${season}` : ''
-      const resp = await fetch(`${API_BASE}/recap${qs}`)
+      const resp = await fetch(`${API_BASE}/recap`)
       const json = await resp.json()
       setRecap(json.data ?? json)
       hasLoaded.current = true
@@ -34,7 +30,7 @@ export function useSeasonRecap(): UseSeasonRecapResult {
     } finally {
       setLoading(false)
     }
-  }, [season])
+  }, [])
 
   useEffect(() => { fetchRecap() }, [fetchRecap])
 
@@ -51,5 +47,5 @@ export function useSeasonRecap(): UseSeasonRecapResult {
     }
   }, [event, fetchRecap])
 
-  return { recap, season, setSeason, loading, refetch: fetchRecap }
+  return { recap, loading, refetch: fetchRecap }
 }
