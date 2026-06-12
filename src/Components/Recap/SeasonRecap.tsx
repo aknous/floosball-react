@@ -82,7 +82,7 @@ export const SeasonRecap: React.FC = () => {
   if (loading && !recap) {
     return <div style={{ padding: '28px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Loading recap...</div>
   }
-  if (!recap) {
+  if (!recap || !recap.awards) {
     return <div style={{ padding: '28px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>No recap available.</div>
   }
 

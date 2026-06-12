@@ -22,8 +22,12 @@ export function useSeasonRecap(): UseSeasonRecapResult {
     try {
       if (!hasLoaded.current) setLoading(true)
       const resp = await fetch(`${API_BASE}/recap`)
+      if (!resp.ok) { setRecap(null); hasLoaded.current = true; return }
       const json = await resp.json()
-      setRecap(json.data ?? json)
+      const data = json?.data ?? json
+      // Guard against error bodies (e.g. a 404 {detail:"Not Found"}) being
+      // stored as a recap — a valid payload always carries `awards`.
+      setRecap(data && typeof data === 'object' && 'awards' in data ? data : null)
       hasLoaded.current = true
     } catch (err) {
       console.error('Error fetching season recap:', err)
