@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react'
 import { usePickEm } from '@/contexts/PickEmContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useGames } from '@/contexts/GamesContext'
+import HoverTooltip from '@/Components/HoverTooltip'
 import type { PickEmGame, PickEmLeaderboardEntry } from '@/types/pickem'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -100,28 +101,29 @@ export const PickEmPanel: React.FC = () => {
             {m === 'results' ? 'My Picks' : 'Leaderboard'}
           </button>
         ))}
-        <button
-          onClick={() => setShowHelp(!showHelp)}
-          title="How Prognostications work"
-          style={{
-            width: '24px',
-            height: '24px',
-            borderRadius: '50%',
-            border: '1px solid #475569',
-            backgroundColor: showHelp ? '#334155' : 'transparent',
-            color: showHelp ? '#e2e8f0' : '#94a3b8',
-            fontSize: '12px',
-            fontWeight: '700',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            transition: 'all 0.15s',
-          }}
-        >
-          ?
-        </button>
+        <HoverTooltip text="How Prognostications work">
+          <button
+            onClick={() => setShowHelp(!showHelp)}
+            style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              border: '1px solid #475569',
+              backgroundColor: showHelp ? '#334155' : 'transparent',
+              color: showHelp ? '#e2e8f0' : '#94a3b8',
+              fontSize: '12px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+              transition: 'all 0.15s',
+            }}
+          >
+            ?
+          </button>
+        </HoverTooltip>
       </div>
 
       {/* Help Tooltip */}
@@ -129,7 +131,7 @@ export const PickEmPanel: React.FC = () => {
         <div style={{
           padding: '10px 12px',
           borderRadius: '8px',
-          backgroundColor: '#1a2332',
+          backgroundColor: '#1e293b',
           border: '1px solid #334155',
           marginBottom: '8px',
           fontSize: '11px',
@@ -468,7 +470,7 @@ const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
           <div style={{
             fontSize: '10px',
             fontWeight: '700',
-            color: isCorrect ? '#22c55e' : '#64748b',
+            color: isCorrect ? '#22c55e' : '#94a3b8',
             whiteSpace: 'nowrap',
           }}>
             {isCorrect ? `+${game.result.pointsEarned}` : '0'} pts
@@ -565,17 +567,18 @@ const LeaderboardRow: React.FC<{
 
       {/* Auto-pick badge — weekly view only, when every pick this week was auto */}
       {!isSeason && entry.allAuto && (
-        <span
-          title="All picks this week were auto-picked"
-          style={{
-            fontSize: '9px', fontWeight: '700',
-            color: '#94a3b8', backgroundColor: 'rgba(148,163,184,0.15)',
-            padding: '2px 5px', borderRadius: '3px',
-            letterSpacing: '0.04em', flexShrink: 0,
-          }}
-        >
-          AUTO
-        </span>
+        <HoverTooltip text="All picks this week were auto-picked">
+          <span
+            style={{
+              fontSize: '10px', fontWeight: '700',
+              color: '#94a3b8', backgroundColor: 'rgba(148,163,184,0.15)',
+              padding: '2px 5px', borderRadius: '3px',
+              letterSpacing: '0.04em', flexShrink: 0,
+            }}
+          >
+            AUTO
+          </span>
+        </HoverTooltip>
       )}
 
       {/* Points */}
