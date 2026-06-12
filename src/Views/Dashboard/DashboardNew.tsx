@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { GameGridNew } from '@/Components/GameGridNew'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { HighlightFeed } from '@/Components/HighlightFeed'
-import { OffseasonPanel } from '@/Components/OffseasonPanel'
+import { OffseasonMain } from '@/Components/Recap/OffseasonMain'
 import { Standings } from '@/Components/Standings'
 import { PlayerLeaders } from '@/Components/PlayerLeaders'
 import { MvpRankings } from '@/Components/MvpRankings'
@@ -138,7 +138,11 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   const { refetch } = useGames()
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
   const [standingsView, setStandingsView] = useState<StandingsView>('standings')
-  const [activeTab, setActiveTab] = useState<TabView>('highlights')
+  const [activeTab, setActiveTab] = useState<TabView>(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('dashboardTab') : null
+    return (saved === 'highlights' || saved === 'pickem' || saved === 'standings' || saved === 'leaders')
+      ? saved : 'highlights'
+  })
   const [showHelp, setShowHelp] = useState(false)
   const isMobile = useIsMobile()
   const isTablet = useIsMobile(1200)
@@ -147,6 +151,11 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   const tour = useTutorial({ tourId: 'dashboard', steps: DASHBOARD_TOUR_STEPS })
 
   useEffect(() => { refetch() }, [])
+
+  // Remember the last-selected right-panel tab across reloads.
+  useEffect(() => {
+    try { localStorage.setItem('dashboardTab', activeTab) } catch { /* ignore */ }
+  }, [activeTab])
 
   // Tour tab-switching listeners
   useEffect(() => {
@@ -307,7 +316,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                   <HelpButton onClick={helpButtonClick} size={24} />
                 </div>
               </div>
-              {isOffseason ? <OffseasonPanel /> : <GameGridNew handleClick={handleGameClick} />}
+              {isOffseason ? <OffseasonMain /> : <GameGridNew handleClick={handleGameClick} />}
             </section>
 
             {/* Highlights */}
@@ -373,7 +382,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                   <HelpButton onClick={helpButtonClick} size={24} />
                 </div>
               </div>
-              {isOffseason ? <OffseasonPanel /> : <GameGridNew handleClick={handleGameClick} />}
+              {isOffseason ? <OffseasonMain /> : <GameGridNew handleClick={handleGameClick} />}
             </section>
 
             {/* Tabbed panel — full width */}
@@ -435,7 +444,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
                   <HelpButton onClick={helpButtonClick} />
                 </div>
-                <OffseasonPanel />
+                <OffseasonMain />
               </>
             ) : (
               <>
