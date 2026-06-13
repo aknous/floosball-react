@@ -422,7 +422,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                       <span style={{
                         fontSize: '14px',
                         fontWeight: '700',
-                        color: idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#cd7f32' : '#64748b',
+                        color: idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#cd7f32' : '#94a3b8',
                         minWidth: '24px',
                       }}>
                         {idx + 1}.
