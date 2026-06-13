@@ -5,6 +5,7 @@ import PlayerLink from '@/Components/PlayerLink'
 import TeamHoverCard from '@/Components/TeamHoverCard'
 import { Stars as AppStars, calcStars } from '@/Components/Stars'
 import HoverTooltip from '@/Components/HoverTooltip'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import type {
   RecapTransaction, RecapEventType, RecapPlayerStub, RecapAwards,
   RecapLeagueStandings, RecapLeaderCategory, RecapUserLeaderboards, RecapUserLbEntry, RecapShowcaseEntry,
@@ -78,6 +79,7 @@ const TABS: [Tab, string][] = [
 export const SeasonRecap: React.FC = () => {
   const { recap, loading } = useSeasonRecap()
   const [tab, setTab] = useState<Tab>('results')
+  const isMobile = useIsMobile()
 
   if (loading && !recap) {
     return <div style={{ padding: '28px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Loading recap...</div>
@@ -89,20 +91,20 @@ export const SeasonRecap: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Header */}
-      <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
+      <h1 style={{ fontSize: isMobile ? '20px' : '22px', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
         Season {recap.season} Recap
       </h1>
 
-      {/* Tab bar */}
-      <div style={{ display: 'flex', gap: '2px', borderBottom: '1px solid #2a3a4e' }}>
+      {/* Tab bar — scrolls horizontally on narrow screens so all four tabs stay reachable */}
+      <div style={{ display: 'flex', gap: '2px', borderBottom: '1px solid #2a3a4e', overflowX: 'auto', scrollbarWidth: 'none' }}>
         {TABS.map(([key, label]) => {
           const on = tab === key
           return (
             <button key={key} onClick={() => setTab(key)} style={{
-              padding: '10px 18px', fontSize: '14px', fontWeight: 700, fontFamily: 'inherit',
+              padding: isMobile ? '9px 13px' : '10px 18px', fontSize: isMobile ? '13px' : '14px', fontWeight: 700, fontFamily: 'inherit',
               color: on ? '#e2e8f0' : '#94a3b8', backgroundColor: on ? '#1e293b' : 'transparent',
               border: 'none', borderBottom: on ? '2px solid #3b82f6' : '2px solid transparent',
-              cursor: 'pointer', transition: 'all 0.15s',
+              cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0, whiteSpace: 'nowrap',
             }}>{label}</button>
           )
         })}
@@ -118,6 +120,7 @@ export const SeasonRecap: React.FC = () => {
 
 // ── Results ──
 const ResultsTab: React.FC<{ awards: RecapAwards; standings: RecapLeagueStandings[]; leagueChampions: number[] }> = ({ awards, standings, leagueChampions }) => {
+  const isMobile = useIsMobile()
   const allPro = [...(awards.allPro || [])].sort((a, b) => (POS_ORDER[a.position || ''] ?? 9) - (POS_ORDER[b.position || ''] ?? 9))
   const champId = awards.champion?.id
   return (
@@ -153,7 +156,7 @@ const ResultsTab: React.FC<{ awards: RecapAwards; standings: RecapLeagueStanding
       {allPro.length > 0 && (
         <div style={{ ...CARD, padding: '16px' }}>
           <h2 style={SECTION_H}>All-Pro Team</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
             {allPro.map(p => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '8px', backgroundColor: '#162231', minWidth: 0 }}>
                 <PosBadge pos={p.position} />
@@ -349,6 +352,7 @@ const FansTab: React.FC<{ userLeaderboards: RecapUserLeaderboards }> = ({ userLe
 
 // ── Transactions & Announcements ──
 const TransactionsTab: React.FC<{ transactions: RecapTransaction[] }> = ({ transactions }) => {
+  const isMobile = useIsMobile()
   const groups = useMemo(() => {
     const retirements = transactions.filter(t => t.type === 'retirement')
     const hof = transactions.filter(t => t.type === 'hof_induction')
@@ -408,7 +412,7 @@ const TransactionsTab: React.FC<{ transactions: RecapTransaction[] }> = ({ trans
 
       {groups.byTeam.size > 0 && (
         <CollapsibleSection title="ROSTER MOVES" count={Array.from(groups.byTeam.values()).reduce((n, a) => n + a.length, 0)}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
             {Array.from(groups.byTeam.entries()).map(([team, items]) => (
               <div key={team} style={{ padding: '10px', borderRadius: '8px', backgroundColor: '#162231' }}>
                 <TeamLink teamId={items[0]?.teamId} name={team} avatar avatarSize={18}
