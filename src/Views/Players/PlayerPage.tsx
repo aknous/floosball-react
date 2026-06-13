@@ -1008,21 +1008,20 @@ export default function PlayerPage() {
                           <GiStarMedal style={{ fontSize: '32px', color: '#fbbf24' }} />
                           <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>MVP</div>
                           <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
-                          <div style={{ fontSize: '10px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
                         </div>
                       ))}
                       {(player.championships ?? []).map((c: any, i: number) => (
                         <div key={`champ-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
                           <GiLaurelsTrophy style={{ fontSize: '32px', color: '#f59e0b' }} />
-                          <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600', marginTop: '3px' }}>S{c.Season}</div>
-                          <div style={{ fontSize: '10px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
+                          <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>CHAMPION</div>
+                          <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{c.Season}</div>
                         </div>
                       ))}
                       {(player.allProSeasons ?? []).map((s: any, i: number) => (
                         <div key={`allpro-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
-                          <GiStarsStack style={{ fontSize: '32px', color: '#a78bfa' }} />
-                          <div style={{ fontSize: '10px', color: '#a78bfa', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>ALL-PRO</div>
-                          <div style={{ fontSize: '10px', color: '#a78bfa', fontWeight: '600' }}>S{s}</div>
+                          <GiStarsStack style={{ fontSize: '32px', color: '#cbd5e1' }} />
+                          <div style={{ fontSize: '10px', color: '#cbd5e1', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>ALL-PRO</div>
+                          <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>S{s}</div>
                         </div>
                       ))}
                     </div>
@@ -1118,21 +1117,20 @@ export default function PlayerPage() {
                   <GiStarMedal style={{ fontSize: '32px', color: '#fbbf24' }} />
                   <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>MVP</div>
                   <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
-                  <div style={{ fontSize: '10px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
                 </div>
               ))}
               {(player.championships ?? []).map((c: any, i: number) => (
                 <div key={`champ-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
                   <GiLaurelsTrophy style={{ fontSize: '32px', color: '#f59e0b' }} />
-                  <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600', marginTop: '3px' }}>S{c.Season}</div>
-                  <div style={{ fontSize: '10px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
+                  <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>CHAMPION</div>
+                  <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{c.Season}</div>
                 </div>
               ))}
               {(player.allProSeasons ?? []).map((s: any, i: number) => (
                 <div key={`allpro-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
-                  <GiStarsStack style={{ fontSize: '32px', color: '#a78bfa' }} />
-                  <div style={{ fontSize: '10px', color: '#a78bfa', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>ALL-PRO</div>
-                  <div style={{ fontSize: '10px', color: '#a78bfa', fontWeight: '600' }}>S{s}</div>
+                  <GiStarsStack style={{ fontSize: '32px', color: '#cbd5e1' }} />
+                  <div style={{ fontSize: '10px', color: '#cbd5e1', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>ALL-PRO</div>
+                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>S{s}</div>
                 </div>
               ))}
             </div>
