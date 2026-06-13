@@ -150,6 +150,20 @@ const ResultsTab: React.FC<{ awards: RecapAwards; standings: RecapLeagueStanding
             </div>
           ) : <div style={{ fontSize: '15px', color: '#64748b', marginTop: '8px' }}>TBD</div>}
         </div>
+        {awards.dpoy && (
+          <div style={{ flex: '1 1 220px', padding: '14px', borderRadius: '10px', backgroundColor: 'rgba(251,146,60,0.10)', border: '1px solid rgba(251,146,60,0.35)' }}>
+            <div style={{ ...LABEL, color: '#fb923c' }}>DEFENSIVE PLAYER OF THE YEAR</div>
+            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {awards.dpoy.teamId != null && <img src={`/avatars/${awards.dpoy.teamId}.png`} alt={awards.dpoy.teamAbbr || ''} crossOrigin="anonymous" style={{ width: 30, height: 30, flexShrink: 0 }} />}
+              <PosBadge pos={awards.dpoy.defGroup} />
+              <PlayerLink playerId={awards.dpoy.id} playerName={awards.dpoy.name}
+                style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0' }} />
+              <Stars rating={awards.dpoy.rating} stars={awards.dpoy.stars} size={12} />
+              <TeamLink teamId={awards.dpoy.teamId} abbr={awards.dpoy.teamAbbr}
+                style={{ fontSize: '13px', color: '#94a3b8' }} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* All-Pro team with positions */}
@@ -160,6 +174,30 @@ const ResultsTab: React.FC<{ awards: RecapAwards; standings: RecapLeagueStanding
             {allPro.map(p => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '8px', backgroundColor: '#162231', minWidth: 0 }}>
                 <PosBadge pos={p.position} />
+                {p.teamId != null && <img src={`/avatars/${p.teamId}.png`} alt={p.teamAbbr || ''} crossOrigin="anonymous" style={{ width: 20, height: 20, flexShrink: 0 }} />}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <PlayerLink playerId={p.id} playerName={p.name} style={{ fontSize: '14px', fontWeight: 600, color: '#e2e8f0' }} />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                    <Stars rating={p.rating} stars={p.stars} size={12} />
+                    <TeamLink teamId={p.teamId} abbr={p.teamAbbr} style={{ fontSize: '12px', color: '#94a3b8' }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* All-Defense team */}
+      {(awards.allDefense?.length ?? 0) > 0 && (
+        <div style={{ ...CARD, padding: '16px' }}>
+          <h2 style={SECTION_H}>All-Defense Team</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+            {(awards.allDefense ?? []).map(p => (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '8px', backgroundColor: '#162231', minWidth: 0 }}>
+                <PosBadge pos={p.defGroup} />
                 {p.teamId != null && <img src={`/avatars/${p.teamId}.png`} alt={p.teamAbbr || ''} crossOrigin="anonymous" style={{ width: 20, height: 20, flexShrink: 0 }} />}
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

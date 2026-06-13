@@ -20,12 +20,15 @@ export interface RecapPlayerStub {
   gamesPlayed?: number
   rating?: number | null
   stars?: number | null
+  defGroup?: string | null   // S / LB / CB / DE (DPOY + All-Defense)
 }
 
 export interface RecapAwards {
   champion: RecapTeamRef | null
   mvp: RecapPlayerStub | null
   allPro: RecapPlayerStub[]
+  dpoy?: RecapPlayerStub | null
+  allDefense?: RecapPlayerStub[]
 }
 
 export interface RecapStandingRow {
