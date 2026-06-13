@@ -19,6 +19,11 @@ interface MvpCandidate {
   teamId: number
   seasonPerformanceRating: number
   zScore: number
+  wpaScore: number
+  offenseScore: number
+  defValue: number
+  mvpScore: number
+  seasonWpa: number
   gamesPlayed: number
   ratingStars: number
 }
@@ -38,13 +43,16 @@ interface AllProPlayer {
   id: number
   name: string
   position: string
+  side?: 'offense' | 'defense'
+  value: number                 // mvpScore (offense) or defValue (defense)
   team: string
   teamAbbr: string
   teamColor: string
   teamId: number
-  seasonPerformanceRating: number
-  zScore: number
   ratingStars: number
+  seasonPerformanceRating?: number
+  zScore?: number
+  mvpScore?: number
 }
 
 export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
@@ -153,7 +161,7 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
           <span style={{ fontSize: '14px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {crownedMvp ? 'Season MVP' : 'MVP Race'}
           </span>
-          <HoverTooltip text="Players ranked by z-score: how far above average a player's performance rating is versus their peers. Higher means more dominant.">
+          <HoverTooltip text="Combines a player's stats, the win probability they add, and their defense into one value.">
             <span style={{ width: '16px', height: '16px', borderRadius: '50%', border: '1px solid #475569', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700', color: '#94a3b8', flexShrink: 0 }}>?</span>
           </HoverTooltip>
         </div>
@@ -230,7 +238,7 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
                 </div>
               </div>
               <span style={{ fontSize: '16px', fontWeight: '700', color: isLeader ? '#fbbf24' : '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
-                {player.zScore > 0 ? '+' : ''}{player.zScore.toFixed(2)}
+                {player.mvpScore > 0 ? '+' : ''}{player.mvpScore.toFixed(2)}
               </span>
             </div>
           )
@@ -246,49 +254,58 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
             </span>
           </div>
 
-          {allPro.map((player, idx) => (
-            <div
-              key={player.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '28px 20px 1fr auto',
-                alignItems: 'center',
-                gap: '6px',
-                padding: embedded ? '7px 14px' : '7px 10px',
-                borderBottom: idx < allPro.length - 1 ? '1px solid #1a2640' : 'none',
-                borderLeft: '2px solid #a78bfa',
-                backgroundColor: idx % 2 === 0 ? 'rgba(167,139,250,0.04)' : 'transparent',
-              }}
-            >
-              <span style={{ fontSize: '12px', fontWeight: '600', color: '#a78bfa', textAlign: 'center' }}>
-                {player.position}
-              </span>
-              <img
-                src={`/avatars/${player.teamId}.png`}
-                alt=""
-                style={{ width: '20px', height: '20px', flexShrink: 0 }}
-              />
-              <div style={{ minWidth: 0 }}>
-                <PlayerHoverCard playerId={player.id} playerName={player.name}>
-                  <Link
-                    to={`/players/${player.id}`}
-                    style={{ fontSize: '14px', color: '#e2e8f0', textDecoration: 'none', display: 'inline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                  >
-                    {player.name}
-                  </Link>
-                </PlayerHoverCard>
-                <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                  {player.teamAbbr}
+          {allPro.map((player, idx) => {
+            const showDivider = player.side != null && (idx === 0 || allPro[idx - 1].side !== player.side)
+            return (
+            <React.Fragment key={`${player.side || 'o'}-${player.id}`}>
+              {showDivider && (
+                <div style={{ padding: embedded ? '6px 14px 2px' : '6px 10px 2px', fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  {player.side === 'defense' ? 'Defense' : 'Offense'}
                 </div>
-                <div style={{ marginTop: '1px' }}>
-                  <Stars stars={player.ratingStars} size={11} />
+              )}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '28px 20px 1fr auto',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: embedded ? '7px 14px' : '7px 10px',
+                  borderBottom: idx < allPro.length - 1 ? '1px solid #1a2640' : 'none',
+                  borderLeft: '2px solid #a78bfa',
+                  backgroundColor: idx % 2 === 0 ? 'rgba(167,139,250,0.04)' : 'transparent',
+                }}
+              >
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#a78bfa', textAlign: 'center' }}>
+                  {player.position}
+                </span>
+                <img
+                  src={`/avatars/${player.teamId}.png`}
+                  alt=""
+                  style={{ width: '20px', height: '20px', flexShrink: 0 }}
+                />
+                <div style={{ minWidth: 0 }}>
+                  <PlayerHoverCard playerId={player.id} playerName={player.name}>
+                    <Link
+                      to={`/players/${player.id}`}
+                      style={{ fontSize: '14px', color: '#e2e8f0', textDecoration: 'none', display: 'inline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    >
+                      {player.name}
+                    </Link>
+                  </PlayerHoverCard>
+                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    {player.teamAbbr}
+                  </div>
+                  <div style={{ marginTop: '1px' }}>
+                    <Stars stars={player.ratingStars} size={11} />
+                  </div>
                 </div>
+                <span style={{ fontSize: '14px', fontWeight: '600', color: '#a78bfa', fontVariantNumeric: 'tabular-nums' }}>
+                  {(player.value ?? 0) > 0 ? '+' : ''}{(player.value ?? 0).toFixed(2)}
+                </span>
               </div>
-              <span style={{ fontSize: '14px', fontWeight: '600', color: '#a78bfa', fontVariantNumeric: 'tabular-nums' }}>
-                {player.zScore > 0 ? '+' : ''}{player.zScore.toFixed(2)}
-              </span>
-            </div>
-          ))}
+            </React.Fragment>
+            )
+          })}
         </div>
       )}
     </div>

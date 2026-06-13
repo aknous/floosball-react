@@ -442,7 +442,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   return (
     <>
       <div style={{ height: `calc(100vh - ${headerHeight}px - 33px)`, overflow: 'hidden', backgroundColor: '#0f172a', color: '#e2e8f0', padding: '24px', boxSizing: 'border-box' }}>
-        <div style={{ height: '100%', display: 'grid', gridTemplateColumns: isOffseason ? 'minmax(0, 1fr)' : 'minmax(0, 960px) 380px', justifyContent: 'center', gap: '32px' }}>
+        <div style={{ height: '100%', display: 'grid', gridTemplateColumns: isOffseason ? 'minmax(0, 1100px)' : 'minmax(0, 960px) 380px', justifyContent: 'center', gap: '32px' }}>
 
           {/* Left Column - Games / Offseason */}
           <div data-tour="dashboard-games" style={{ overflowY: 'auto' }}>

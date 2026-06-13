@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Stars, SwordIcon, ShieldIcon, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { GiLaurelsTrophy, GiStarMedal, GiShield } from 'react-icons/gi'
+import { GiLaurelsTrophy, GiStarMedal, GiStarsStack } from 'react-icons/gi'
 import { personalityAccent } from '@/utils/personality'
 import {
   attitudeTier as attTier, resilienceTier, selfBeliefTier,
@@ -113,8 +113,7 @@ interface PlayerData {
   ratingValue: number
   championships: any[]
   mvpAwards?: any[]
-  dpoyAwards?: any[]
-  allDefenseSeasons?: any[]
+  allProSeasons?: any[]
   attributes: PlayerAttributes
   stats: any[]
   allTimeStats: any
@@ -958,7 +957,7 @@ export default function PlayerPage() {
           {!isMobile && (() => {
             const hasMoments = quotes.length > 0
             const hasAwards = (player.mvpAwards?.length ?? 0) > 0 || (player.championships?.length ?? 0) > 0
-              || (player.dpoyAwards?.length ?? 0) > 0 || (player.allDefenseSeasons?.length ?? 0) > 0
+              || (player.allProSeasons?.length ?? 0) > 0
             if (!hasMoments && !hasAwards) return <div />  // spacer keeps 3-col grid aligned
             return (
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '16px', minWidth: 0 }}>
@@ -1019,19 +1018,11 @@ export default function PlayerPage() {
                           <div style={{ fontSize: '10px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
                         </div>
                       ))}
-                      {(player.dpoyAwards ?? []).map((a: any, i: number) => (
-                        <div key={`dpoy-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
-                          <GiShield style={{ fontSize: '32px', color: '#fb923c' }} />
-                          <div style={{ fontSize: '10px', color: '#fb923c', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>DPOY</div>
-                          <div style={{ fontSize: '10px', color: '#f97316', fontWeight: '600' }}>S{a.Season}</div>
-                          <div style={{ fontSize: '10px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
-                        </div>
-                      ))}
-                      {(player.allDefenseSeasons ?? []).map((s: any, i: number) => (
-                        <div key={`alldef-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
-                          <GiShield style={{ fontSize: '28px', color: '#94a3b8' }} />
-                          <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>ALL-DEF</div>
-                          <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>S{s}</div>
+                      {(player.allProSeasons ?? []).map((s: any, i: number) => (
+                        <div key={`allpro-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+                          <GiStarsStack style={{ fontSize: '32px', color: '#a78bfa' }} />
+                          <div style={{ fontSize: '10px', color: '#a78bfa', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>ALL-PRO</div>
+                          <div style={{ fontSize: '10px', color: '#a78bfa', fontWeight: '600' }}>S{s}</div>
                         </div>
                       ))}
                     </div>
@@ -1112,7 +1103,7 @@ export default function PlayerPage() {
         )}
         {/* Mobile-only Trophy Case — desktop has its own slot below
             Recent Moments in the right column. */}
-        {isMobile && ((player.mvpAwards?.length ?? 0) > 0 || (player.championships?.length ?? 0) > 0) && (
+        {isMobile && ((player.mvpAwards?.length ?? 0) > 0 || (player.championships?.length ?? 0) > 0 || (player.allProSeasons?.length ?? 0) > 0) && (
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' }}>
             {sectionHeader('Trophy Case')}
             <div style={{
@@ -1137,19 +1128,11 @@ export default function PlayerPage() {
                   <div style={{ fontSize: '10px', color: c.teamColor || teamColor, fontWeight: '600' }}>{c.team}</div>
                 </div>
               ))}
-              {(player.dpoyAwards ?? []).map((a: any, i: number) => (
-                <div key={`dpoy-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
-                  <GiShield style={{ fontSize: '32px', color: '#fb923c' }} />
-                  <div style={{ fontSize: '10px', color: '#fb923c', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>DPOY</div>
-                  <div style={{ fontSize: '10px', color: '#f97316', fontWeight: '600' }}>S{a.Season}</div>
-                  <div style={{ fontSize: '10px', color: a.teamColor || teamColor, fontWeight: '600' }}>{a.team}</div>
-                </div>
-              ))}
-              {(player.allDefenseSeasons ?? []).map((s: any, i: number) => (
-                <div key={`alldef-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
-                  <GiShield style={{ fontSize: '28px', color: '#94a3b8' }} />
-                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>ALL-DEF</div>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>S{s}</div>
+              {(player.allProSeasons ?? []).map((s: any, i: number) => (
+                <div key={`allpro-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+                  <GiStarsStack style={{ fontSize: '32px', color: '#a78bfa' }} />
+                  <div style={{ fontSize: '10px', color: '#a78bfa', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>ALL-PRO</div>
+                  <div style={{ fontSize: '10px', color: '#a78bfa', fontWeight: '600' }}>S{s}</div>
                 </div>
               ))}
             </div>
