@@ -85,3 +85,40 @@ export interface PickEmHistoryWeek {
 export interface PickEmHistoryResponse {
   weeks: PickEmHistoryWeek[]
 }
+
+// ── Whole-day prognostications (all of a calendar day's slots at once) ──
+export interface PickEmDaySlot {
+  week: number
+  label: string | null            // e.g. "Week 9"
+  isActive: boolean               // the live slot right now
+  isPast: boolean                 // already finaled earlier today
+  isNext: boolean                 // the next slot to kick off
+  games: PickEmGame[]
+  pickedCount?: number
+}
+
+export interface PickEmDayResponse {
+  season: number
+  day: number | null
+  currentWeek: number
+  slots: PickEmDaySlot[]
+}
+
+// ── Fantasy modifier schedule (for planning cards/rosters ahead) ──
+export interface ModifierSlot {
+  week: number
+  etHour: number
+  label: string
+  modifier: string
+  displayName: string
+  description: string
+  isActive: boolean
+  isPast: boolean
+  isNext: boolean
+}
+
+export interface ModifierScheduleResponse {
+  season: number
+  day: number | null
+  slots: ModifierSlot[]
+}
