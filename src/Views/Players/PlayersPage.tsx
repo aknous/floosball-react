@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { Stars } from '@/Components/Stars'
 import { useAuth } from '@/contexts/AuthContext'
+import HallOfFame from './HallOfFame'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -122,6 +123,9 @@ export default function PlayersPage() {
   const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
+    // The Hall of Fame tab renders its own gallery (HallOfFame) off a dedicated
+    // endpoint, so skip the regular players fetch entirely for it.
+    if (status === 'hof') { setLoading(false); return }
     setLoading(true)
     let cancelled = false
     const run = async () => {
@@ -227,6 +231,8 @@ export default function PlayersPage() {
             </button>
           ))}
         </div>
+
+        {status === 'hof' ? <HallOfFame /> : (<>
 
         {/* Position tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid #334155', marginBottom: '16px' }}>
@@ -363,6 +369,8 @@ export default function PlayersPage() {
             {sorted.length} player{sorted.length !== 1 ? 's' : ''}
           </div>
         )}
+
+        </>)}
 
       </div>
     </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Stars, SwordIcon, ShieldIcon, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { GiLaurelsTrophy, GiStarMedal, GiStarsStack } from 'react-icons/gi'
+import { GiLaurelsTrophy, GiStarMedal, GiStarsStack, GiLaurelCrown } from 'react-icons/gi'
 import { personalityAccent } from '@/utils/personality'
 import {
   attitudeTier as attTier, resilienceTier, selfBeliefTier,
@@ -114,6 +114,9 @@ interface PlayerData {
   championships: any[]
   mvpAwards?: any[]
   allProSeasons?: any[]
+  isHof?: boolean
+  hofSeason?: number | null
+  recordsHeld?: string[]
   attributes: PlayerAttributes
   stats: any[]
   allTimeStats: any
@@ -594,6 +597,20 @@ export default function PlayerPage() {
                 {POSITION_FULL[player.position] ?? player.position}
               </div>
               <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{player.name}</div>
+              {player.isHof && (
+                <div style={{ marginTop: '7px', display: 'flex', justifyContent: 'center' }}>
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '3px 11px', borderRadius: '999px',
+                    background: 'linear-gradient(135deg, rgba(245,158,11,0.20), rgba(251,191,36,0.10))',
+                    border: '1px solid rgba(251,191,36,0.45)',
+                  }}>
+                    <GiLaurelCrown style={{ fontSize: '15px', color: '#fbbf24', flexShrink: 0 }} />
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#fbbf24', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                      Hall of Famer{player.hofSeason ? ` · Class of S${player.hofSeason}` : ''}
+                    </span>
+                  </div>
+                </div>
+              )}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '6px' }}>
                 <Stars stars={player.ratingStars} size={16} />
                 {(player.isProspect || player.rank) && (
@@ -628,7 +645,7 @@ export default function PlayerPage() {
                     </span>
                   </Link>
                 ) : (
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Free Agent</span>
+                  <span style={{ fontSize: '14px', color: '#64748b' }}>{player.rank === 'Retired' ? 'Retired' : 'Free Agent'}</span>
                 )}
               </div>
               {user && playerId != null && (
@@ -958,7 +975,8 @@ export default function PlayerPage() {
             const hasMoments = quotes.length > 0
             const hasAwards = (player.mvpAwards?.length ?? 0) > 0 || (player.championships?.length ?? 0) > 0
               || (player.allProSeasons?.length ?? 0) > 0
-            if (!hasMoments && !hasAwards) return <div />  // spacer keeps 3-col grid aligned
+            const hasRecords = (player.recordsHeld?.length ?? 0) > 0
+            if (!hasMoments && !hasAwards && !hasRecords) return <div />  // spacer keeps 3-col grid aligned
             return (
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '16px', minWidth: 0 }}>
                 {hasMoments && (
@@ -993,38 +1011,50 @@ export default function PlayerPage() {
                     </div>
                   </div>
                 )}
-                {hasAwards && (
+                {(hasAwards || hasRecords) && (
                   <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', display: 'flex', flexDirection: 'column' as const }}>
                     {sectionHeader('Trophy Case')}
-                    <div style={{
-                      padding: '14px 12px',
-                      display: 'flex',
-                      flexWrap: 'wrap' as const,
-                      gap: '14px',
-                      alignContent: 'flex-start',
-                    }}>
-                      {(player.mvpAwards ?? []).map((a: any, i: number) => (
-                        <div key={`mvp-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
-                          <GiStarMedal style={{ fontSize: '32px', color: '#fbbf24' }} />
-                          <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>MVP</div>
-                          <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
+                    {hasAwards && (
+                      <div style={{
+                        padding: '14px 12px',
+                        display: 'flex',
+                        flexWrap: 'wrap' as const,
+                        gap: '14px',
+                        alignContent: 'flex-start',
+                      }}>
+                        {(player.mvpAwards ?? []).map((a: any, i: number) => (
+                          <div key={`mvp-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+                            <GiStarMedal style={{ fontSize: '32px', color: '#fbbf24' }} />
+                            <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>MVP</div>
+                            <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
+                          </div>
+                        ))}
+                        {(player.championships ?? []).map((c: any, i: number) => (
+                          <div key={`champ-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+                            <GiLaurelsTrophy style={{ fontSize: '32px', color: '#f59e0b' }} />
+                            <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>CHAMPION</div>
+                            <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{c.Season}</div>
+                          </div>
+                        ))}
+                        {(player.allProSeasons ?? []).map((s: any, i: number) => (
+                          <div key={`allpro-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+                            <GiStarsStack style={{ fontSize: '32px', color: '#cbd5e1' }} />
+                            <div style={{ fontSize: '10px', color: '#cbd5e1', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>ALL-PRO</div>
+                            <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>S{s && typeof s === 'object' ? s.Season : s}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {hasRecords && (
+                      <div style={{ padding: hasAwards ? '0 12px 14px' : '12px', ...(hasAwards ? { borderTop: '1px solid #0f172a', paddingTop: '12px' } : {}) }}>
+                        <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Records</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {(player.recordsHeld ?? []).map((r: string, i: number) => (
+                            <span key={i} style={{ fontSize: '11px', fontWeight: '600', color: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.28)', borderRadius: '5px', padding: '3px 7px', whiteSpace: 'nowrap' }}>{r}</span>
+                          ))}
                         </div>
-                      ))}
-                      {(player.championships ?? []).map((c: any, i: number) => (
-                        <div key={`champ-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
-                          <GiLaurelsTrophy style={{ fontSize: '32px', color: '#f59e0b' }} />
-                          <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>CHAMPION</div>
-                          <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{c.Season}</div>
-                        </div>
-                      ))}
-                      {(player.allProSeasons ?? []).map((s: any, i: number) => (
-                        <div key={`allpro-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
-                          <GiStarsStack style={{ fontSize: '32px', color: '#cbd5e1' }} />
-                          <div style={{ fontSize: '10px', color: '#cbd5e1', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>ALL-PRO</div>
-                          <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>S{s}</div>
-                        </div>
-                      ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1102,40 +1132,57 @@ export default function PlayerPage() {
         )}
         {/* Mobile-only Trophy Case — desktop has its own slot below
             Recent Moments in the right column. */}
-        {isMobile && ((player.mvpAwards?.length ?? 0) > 0 || (player.championships?.length ?? 0) > 0 || (player.allProSeasons?.length ?? 0) > 0) && (
+        {isMobile && (() => {
+          const hasAwards = (player.mvpAwards?.length ?? 0) > 0 || (player.championships?.length ?? 0) > 0 || (player.allProSeasons?.length ?? 0) > 0
+          const hasRecords = (player.recordsHeld?.length ?? 0) > 0
+          if (!hasAwards && !hasRecords) return null
+          return (
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '16px' }}>
             {sectionHeader('Trophy Case')}
-            <div style={{
-              padding: '14px 12px',
-              display: 'flex',
-              flexWrap: 'wrap' as const,
-              gap: '14px',
-              alignContent: 'flex-start',
-            }}>
-              {(player.mvpAwards ?? []).map((a: any, i: number) => (
-                <div key={`mvp-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
-                  <GiStarMedal style={{ fontSize: '32px', color: '#fbbf24' }} />
-                  <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>MVP</div>
-                  <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
+            {hasAwards && (
+              <div style={{
+                padding: '14px 12px',
+                display: 'flex',
+                flexWrap: 'wrap' as const,
+                gap: '14px',
+                alignContent: 'flex-start',
+              }}>
+                {(player.mvpAwards ?? []).map((a: any, i: number) => (
+                  <div key={`mvp-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+                    <GiStarMedal style={{ fontSize: '32px', color: '#fbbf24' }} />
+                    <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>MVP</div>
+                    <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{a.Season}</div>
+                  </div>
+                ))}
+                {(player.championships ?? []).map((c: any, i: number) => (
+                  <div key={`champ-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+                    <GiLaurelsTrophy style={{ fontSize: '32px', color: '#f59e0b' }} />
+                    <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>CHAMPION</div>
+                    <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{c.Season}</div>
+                  </div>
+                ))}
+                {(player.allProSeasons ?? []).map((s: any, i: number) => (
+                  <div key={`allpro-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
+                    <GiStarsStack style={{ fontSize: '32px', color: '#cbd5e1' }} />
+                    <div style={{ fontSize: '10px', color: '#cbd5e1', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>ALL-PRO</div>
+                    <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>S{s && typeof s === 'object' ? s.Season : s}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {hasRecords && (
+              <div style={{ padding: '0 12px 14px', ...(hasAwards ? { borderTop: '1px solid #0f172a', paddingTop: '12px' } : { paddingTop: '12px' }) }}>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Records</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {(player.recordsHeld ?? []).map((r: string, i: number) => (
+                    <span key={i} style={{ fontSize: '11px', fontWeight: '600', color: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.28)', borderRadius: '5px', padding: '3px 7px', whiteSpace: 'nowrap' }}>{r}</span>
+                  ))}
                 </div>
-              ))}
-              {(player.championships ?? []).map((c: any, i: number) => (
-                <div key={`champ-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
-                  <GiLaurelsTrophy style={{ fontSize: '32px', color: '#f59e0b' }} />
-                  <div style={{ fontSize: '10px', color: '#fbbf24', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>CHAMPION</div>
-                  <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '600' }}>S{c.Season}</div>
-                </div>
-              ))}
-              {(player.allProSeasons ?? []).map((s: any, i: number) => (
-                <div key={`allpro-m-${i}`} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '52px' }}>
-                  <GiStarsStack style={{ fontSize: '32px', color: '#cbd5e1' }} />
-                  <div style={{ fontSize: '10px', color: '#cbd5e1', fontWeight: '600', marginTop: '3px', letterSpacing: '0.04em' }}>ALL-PRO</div>
-                  <div style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '600' }}>S{s}</div>
-                </div>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
-        )}
+          )
+        })()}
 
         {/* Career Stats — toggle between offense and defense for two-way players.
             Full-width since the rest of the personality content lives up in the
