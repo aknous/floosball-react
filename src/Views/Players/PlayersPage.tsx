@@ -4,6 +4,7 @@ import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { Stars } from '@/Components/Stars'
 import { useAuth } from '@/contexts/AuthContext'
 import HallOfFame from './HallOfFame'
+import ArchetypeBadge from '@/Components/ArchetypeBadge'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -44,6 +45,7 @@ interface PlayerListItem {
   draftingTeamColor?: string | null
   ratingStars: number
   playerRating: number
+  archetype?: string | null
   currentStats: CurrentStats
 }
 
@@ -301,8 +303,9 @@ export default function PlayersPage() {
                             {player.name}
                           </Link>
                         </PlayerHoverCard>
-                        <div style={{ marginTop: '1px' }}>
+                        <div style={{ marginTop: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <Stars stars={player.ratingStars} size={11} />
+                          <ArchetypeBadge archetype={player.archetype} size={13} />
                         </div>
                       </td>
 

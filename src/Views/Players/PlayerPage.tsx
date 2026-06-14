@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { Stars, SwordIcon, ShieldIcon, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { GiLaurelsTrophy, GiStarMedal, GiStarsStack, GiLaurelCrown } from 'react-icons/gi'
+import ArchetypeBadge from '@/Components/ArchetypeBadge'
 import { personalityAccent } from '@/utils/personality'
 import {
   attitudeTier as attTier, resilienceTier, selfBeliefTier,
@@ -117,6 +118,8 @@ interface PlayerData {
   isHof?: boolean
   hofSeason?: number | null
   recordsHeld?: string[]
+  archetype?: string | null
+  seasonImpact?: { offenseTier?: string | null; defenseTier?: string | null; offenseScore?: number | null; defenseValue?: number | null } | null
   attributes: PlayerAttributes
   stats: any[]
   allTimeStats: any
@@ -125,6 +128,14 @@ interface PlayerData {
 const POSITION_FULL: Record<string, string> = {
   QB: 'Quarterback', RB: 'Running Back', WR: 'Wide Receiver', TE: 'Tight End', K: 'Kicker',
 }
+
+// Defensive position full names (players play both ways: QB->S, RB->LB, WR->CB, TE->DE).
+const DEF_POSITION_FULL: Record<string, string> = {
+  S: 'Safety', LB: 'Linebacker', CB: 'Cornerback', DE: 'Defensive End',
+}
+
+// Season-impact tier colors (hybrid archetype layer).
+const TIER_COLOR: Record<string, string> = { Elite: '#fbbf24', Strong: '#22c55e', Average: '#94a3b8', Quiet: '#64748b' }
 
 // ── Jersey SVG ───────────────────────────────────────────────────────────────
 
@@ -595,8 +606,12 @@ export default function PlayerPage() {
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: isMobile ? '11px' : '13px', color: '#64748b' }}>
                 {POSITION_FULL[player.position] ?? player.position}
+                {player.defensivePosition && ` · ${DEF_POSITION_FULL[player.defensivePosition] ?? player.defensivePosition}`}
               </div>
-              <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{player.name}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{player.name}</span>
+                <ArchetypeBadge archetype={player.archetype} size={isMobile ? 16 : 18} />
+              </div>
               {player.isHof && (
                 <div style={{ marginTop: '7px', display: 'flex', justifyContent: 'center' }}>
                   <div style={{
@@ -648,6 +663,13 @@ export default function PlayerPage() {
                   <span style={{ fontSize: '14px', color: '#64748b' }}>{player.rank === 'Retired' ? 'Retired' : 'Free Agent'}</span>
                 )}
               </div>
+              {player.seasonImpact && (player.seasonImpact.offenseTier || player.seasonImpact.defenseTier) && (
+                <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', fontSize: '11px', color: '#64748b' }}>
+                  <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#475569' }}>This season</span>
+                  {player.seasonImpact.offenseTier && <span>Offense <b style={{ color: TIER_COLOR[player.seasonImpact.offenseTier] ?? '#94a3b8' }}>{player.seasonImpact.offenseTier}</b></span>}
+                  {player.seasonImpact.defenseTier && <span>Defense <b style={{ color: TIER_COLOR[player.seasonImpact.defenseTier] ?? '#94a3b8' }}>{player.seasonImpact.defenseTier}</b></span>}
+                </div>
+              )}
               {user && playerId != null && (
                 <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                   <button
