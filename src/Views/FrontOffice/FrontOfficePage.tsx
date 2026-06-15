@@ -832,7 +832,10 @@ function OverviewTab({
             return (
               <div key={slot} style={{
                 display: 'grid',
-                gridTemplateColumns: 'auto minmax(0, 1fr) auto auto auto',
+                // Fixed widths so rows stay aligned regardless of content.
+                // The retirement column reserves a fixed slot only while
+                // retirement data is live (weeks 22+); otherwise it collapses.
+                gridTemplateColumns: `auto minmax(0, 1fr) 60px 80px ${Object.keys(retirementWatch).length > 0 ? '96px' : 'auto'}`,
                 columnGap: '10px',
                 alignItems: 'center',
                 padding: '7px 10px',
@@ -844,12 +847,12 @@ function OverviewTab({
                   {nameLink}
                   <Stars stars={player.ratingStars} size={11} />
                 </div>
-                <span style={{ minWidth: '52px' }}>{statusPill}</span>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', minWidth: '74px' }}>
+                <span>{statusPill}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
                   {contractText}
                   {svcChip}
                 </div>
-                <span style={{ minWidth: '56px', display: 'flex', justifyContent: 'flex-end' }}>
+                <span style={{ minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
                   {retirementBadge}
                 </span>
               </div>
