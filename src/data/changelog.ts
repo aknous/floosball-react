@@ -34,6 +34,11 @@ export const CHANGELOG: ChangelogEntry[] = [
           '[Front Office] Fire, cut, and re-sign votes now pass at a fan majority instead of requiring a unanimous room, so a strong bloc can carry a decision.',
           '[Players] Retirement reworked. Risk is measured against a player\'s own longevity, surfaced as a TWILIGHT tier, and player development now follows a peak-relative career arc.',
           '[Season Recap] The standings table adds win percentage, ELO, and point differential, and the recap reads cleanly on mobile.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
           '[Simulation] Fixed interceptions and turnovers reading too high in the box score and the pre-game matchup.',
         ],
       },
