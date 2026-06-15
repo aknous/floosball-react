@@ -121,9 +121,11 @@ const NAV_ITEMS = [
     label: 'Awards',
     path: '/awards',
     icon: (
-      // Trophy — MVP & Hall of Fame voting (season's-end only).
+      // Award medal + ribbon — distinct from the Achievements trophy cup.
+      // MVP & Hall of Fame voting (season's-end only).
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-        <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM7 6H4v2a3 3 0 003 3M17 6h3v2a3 3 0 01-3 3" />
+        <circle cx="12" cy="9" r="6" />
+        <path d="M8.5 14L7 22l5-3 5 3-1.5-8" />
       </svg>
     ),
   },
