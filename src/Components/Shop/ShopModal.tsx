@@ -599,10 +599,26 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             <div key={card.templateId} style={{
                               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? '4px' : '6px',
                             }}>
-                              <TradingCard
-                                card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
-                                size="sm"
-                              />
+                              {/* Owned badge overlays the card (absolute) so it
+                                  doesn't add column height and push the buy
+                                  button below its neighbors. */}
+                              <div style={{ position: 'relative' }}>
+                                <TradingCard
+                                  card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
+                                  size="sm"
+                                />
+                                {(card.ownedEffectCount ?? 0) > 0 && (
+                                  <span style={{
+                                    position: 'absolute', top: '4px', left: '50%', transform: 'translateX(-50%)',
+                                    fontSize: isMobile ? '9px' : '10px', fontFamily: 'pressStart', fontWeight: 600,
+                                    color: '#fbbf24', padding: '1px 6px', borderRadius: '5px',
+                                    border: '1px solid rgba(251,191,36,0.4)', background: 'rgba(15,23,42,0.9)',
+                                    whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 2,
+                                  }}>
+                                    You own {card.ownedEffectCount}
+                                  </span>
+                                )}
+                              </div>
                               {featuredProjections.get(card.templateId) && (
                                 <ShopProjectionPill proj={featuredProjections.get(card.templateId)!} />
                               )}
