@@ -16,6 +16,7 @@ interface PlayerDetail {
   teamColor: string | null
   teamId: number | null
   teamAbbr: string | null
+  rank?: string | null   // service time ('Retired', 'Veteran', ...) — distinguishes retired from FA
   playerRating: number
   ratingStars: number
   offensiveRating?: number
@@ -146,7 +147,9 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
             </span>
           </div>
         ) : (
-          <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '12px' }}>Free Agent</div>
+          <div style={{ fontSize: '14px', color: '#94a3b8', marginBottom: '12px' }}>
+            {data.rank === 'Retired' ? 'Retired' : 'Free Agent'}
+          </div>
         )}
 
         {/* Mood + Attitude badges — current mental state + locker-room
