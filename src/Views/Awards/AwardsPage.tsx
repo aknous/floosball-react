@@ -70,7 +70,7 @@ function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPi
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
           <Stars stars={c.ratingStars} size={11} />
           {c.stats.map(s => <StatPair key={s.label} label={s.label} value={s.value} />)}
-          <HoverTooltip content="Win Probability Added: the total win probability this player's plays swung over the season, expressed in wins. Higher is better." color="#38bdf8">
+          <HoverTooltip content="Win Probability Added: the net win probability this player's plays swung over the season, in win units (100 percentage points = 1). Higher is better." color="#38bdf8">
             <span style={{ cursor: 'help' }}><StatPair label="WPA" value={(c.seasonWpa / 100).toFixed(1)} /></span>
           </HoverTooltip>
           <StatPair label="FP" value={c.fantasyPoints} />
