@@ -279,6 +279,15 @@ const CardShop: React.FC = () => {
                     card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
                     size={isMobile ? 'sm' : 'md'}
                   />
+                  {(card.ownedEffectCount ?? 0) > 0 && (
+                    <span style={{
+                      fontSize: '10px', fontFamily: 'pressStart', fontWeight: 600,
+                      color: '#fbbf24', padding: '2px 6px', borderRadius: '5px',
+                      border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.10)',
+                    }}>
+                      You own {card.ownedEffectCount}
+                    </span>
+                  )}
                   <button
                     onClick={() => handleBuyCard(card.templateId)}
                     disabled={!canAfford || isBuying || !user || !shopOpen}
