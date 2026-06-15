@@ -12,6 +12,27 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.19.1',
+    date: '2026-06-15',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Awards] Fan-voted MVP and Hall of Fame. At season\'s end, vote for the MVP from the top candidates at each position, and approve the players you want enshrined. The algorithm sets the ballot and only steps in if turnout is low. A dedicated Awards page opens when voting is live.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Fantasy] The modifier schedule preview now shows the full day\'s slate instead of dropping the last slot.',
+          '[Offseason] Teams can no longer finish the free agent draft with an unfilled roster spot when a position runs thin.',
+          '[Players] Retired players now read as Retired on their hover card instead of Free Agent.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.19.0',
     date: '2026-06-14',
     changes: [],
