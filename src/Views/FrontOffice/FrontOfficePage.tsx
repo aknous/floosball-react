@@ -85,6 +85,7 @@ interface TeamSummary {
   schedule: ScheduleEntry[]
 }
 
+type Tier = 'SMALL_MARKET' | 'MID_MARKET' | 'LARGE_MARKET' | 'MEGA_MARKET'
 const TIER_COLORS: Record<string, string> = {
   MEGA_MARKET: '#a78bfa',
   LARGE_MARKET: '#3b82f6',
@@ -700,7 +701,7 @@ function OverviewTab({
 }) {
   const isMobile = useIsMobile()
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', alignItems: 'start' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.6fr) minmax(0, 1fr)', gap: '16px', alignItems: 'start' }}>
       {/* Roster */}
       <div style={PANEL_STYLE}>
         <div style={PANEL_HEADER_STYLE}>
