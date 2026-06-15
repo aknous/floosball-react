@@ -12,6 +12,34 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.19.0',
+    date: '2026-06-14',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Awards] MVP is now a value award. It blends on-field production with win-probability impact, measured against everyone else at the position, so the trophy goes to whoever moved the needle most.',
+          '[Awards] One All-Pro team, offense and defense. The best at every position make a single squad, and a dominant two-way star can hold a spot on both sides.',
+          '[Hall of Fame] A new plaque gallery. Inductees are grouped by their class, with their teams, accolades, and the records they still hold.',
+          '[Players] Know a player\'s game at a glance. Profiles, lists, and hover cards now flag each player as an offensive weapon, a defensive specialist, or a two-way threat, and show their defensive position.',
+          '[Pick-Em] Pick the whole day at once. The day view lays out every game across the slate so you can prognosticate in one sitting.',
+          '[Fantasy] See the modifier schedule. The day\'s scoring modifiers are revealed ahead of time so you can plan your roster around what is coming.',
+          '[Simulation] QB scrambles. A mobile quarterback with no one open tucks the ball and runs instead of forcing a throw. Agility decides whether they take off, speed decides how far they get.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Front Office] Fire, cut, and re-sign votes now pass at a fan majority instead of requiring a unanimous room, so a strong bloc can carry a decision.',
+          '[Players] Retirement reworked. Risk is measured against a player\'s own longevity, surfaced as a TWILIGHT tier, and player development now follows a peak-relative career arc.',
+          '[Season Recap] The standings table adds win percentage, ELO, and point differential, and the recap reads cleanly on mobile.',
+          '[Simulation] Fixed interceptions and turnovers reading too high in the box score and the pre-game matchup.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.18.0',
     date: '2026-06-08',
     changes: [],
