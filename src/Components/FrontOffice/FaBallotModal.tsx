@@ -4,6 +4,7 @@ import { Stars, calcStars } from '@/Components/Stars'
 import { GM_FA_BALLOT_MAX_RANKINGS, GM_FA_BALLOT_COST } from '@/types/gm'
 import { attitudeTier, resilienceTier, pressureHandlingTier } from '@/utils/mentalProfile'
 import HoverTooltip from '@/Components/HoverTooltip'
+import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 export interface PlayerStats {
@@ -421,16 +422,18 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                       <span style={{
                         fontSize: '14px',
                         fontWeight: '700',
-                        color: idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#cd7f32' : '#64748b',
+                        color: idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#cd7f32' : '#94a3b8',
                         minWidth: '24px',
                       }}>
                         {idx + 1}.
                       </span>
                       <PositionChip position={player.position} />
                       <Stars stars={calcStars(player.rating)} size={18} />
-                      <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {player.name}
-                      </span>
+                      <PlayerHoverCard playerId={player.id} playerName={player.name}>
+                        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
+                          {player.name}
+                        </span>
+                      </PlayerHoverCard>
                       <HoverTooltip text="Move up">
                         <button
                           onClick={() => movePlayer(id, -1)}
@@ -743,9 +746,11 @@ const PlayerRow: React.FC<{
         a second line for the truly long ones rather than truncating. */}
     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', rowGap: '4px' }}>
       <PositionChip position={p.position} />
-      <span style={{ fontSize: '15px', color: '#e2e8f0', fontWeight: '700', wordBreak: 'break-word' }}>
-        {p.name}
-      </span>
+      <PlayerHoverCard playerId={p.id} playerName={p.name}>
+        <span style={{ fontSize: '15px', color: '#e2e8f0', fontWeight: '700', wordBreak: 'break-word' }}>
+          {p.name}
+        </span>
+      </PlayerHoverCard>
       {/* The ★ glyph sits visually low in its line-height box because the
           star shape extends below the baseline. Nudge it up 2px so it
           reads centered against the name. */}

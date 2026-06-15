@@ -36,6 +36,14 @@ const REACTIONS: ReadonlyArray<{
 
 const ICON_BY_TYPE = Object.fromEntries(REACTIONS.map(r => [r.type, r])) as Record<ReactionType, typeof REACTIONS[number]>
 
+// Reactions are inert for this long after the widget mounts. Opening the game
+// modal (a tap/click on a game card) can otherwise land on a reaction pill at
+// the top of the play list as the overlay renders — on touch devices the
+// synthesized "ghost click" fires ~300ms after the tap, right where the modal
+// now sits — adding a reaction (usually the first/leftmost: fire) the user
+// never intended. No human opens the modal and deliberately reacts this fast.
+const REACTION_MOUNT_GUARD_MS = 400
+
 interface PlayReactionsProps {
   gameId: number
   playNumber: number
@@ -53,6 +61,7 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
   const [pickerOpen, setPickerOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const mountedAtRef = useRef<number>(Date.now())
 
   // Sync local state when the parent passes a fresh `initial` aggregate.
   // useState only captures the initial value on first mount, so without
@@ -103,6 +112,12 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
 
   const handleReact = useCallback(async (type: ReactionType) => {
     if (busy || !user) return
+    // Swallow clicks that fire as the modal opens (ghost click / click-through
+    // landing on a pill) — see REACTION_MOUNT_GUARD_MS.
+    if (Date.now() - mountedAtRef.current < REACTION_MOUNT_GUARD_MS) {
+      setPickerOpen(false)
+      return
+    }
     setBusy(true)
     setPickerOpen(false)
     try {

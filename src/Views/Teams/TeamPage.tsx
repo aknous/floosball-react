@@ -193,7 +193,7 @@ interface ProspectEntry {
 
 const RISK_STYLES: Record<RetirementRisk, { label: string; color: string; bg: string }> = {
   safe:         { label: '',                color: '',        bg: '' },
-  possible:     { label: 'AGING',           color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
+  possible:     { label: 'TWILIGHT',        color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
   likely:       { label: 'RETIRING?',       color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
   very_likely:  { label: 'FAREWELL TOUR',   color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
   retiring:     { label: 'RETIRING',        color: '#f97316', bg: 'rgba(249,115,22,0.18)' },

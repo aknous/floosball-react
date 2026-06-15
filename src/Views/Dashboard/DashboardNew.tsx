@@ -193,13 +193,15 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   const pickemRef = useRef<HTMLElement>(null)
   const leadersRef = useRef<HTMLElement>(null)
 
-  const MOBILE_SECTIONS = [
+  // In the offseason the right-panel sections are hidden (OffseasonMain takes
+  // the body), so the mobile section nav collapses to just the Offseason entry.
+  const MOBILE_SECTIONS = ([
     { key: 'games', label: isOffseason ? 'Offseason' : 'Games', ref: gamesRef },
     { key: 'highlights', label: 'Highlights', ref: highlightsRef },
     { key: 'pickem', label: 'Pick-Em', ref: pickemRef },
     { key: 'standings', label: 'Standings', ref: standingsRef },
     { key: 'leaders', label: 'Leaders', ref: leadersRef },
-  ] as const
+  ] as const).filter(s => !isOffseason || s.key === 'games')
 
   const scrollToSection = (ref: React.RefObject<HTMLElement | null>) => {
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -319,6 +321,8 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
               {isOffseason ? <OffseasonMain /> : <GameGridNew handleClick={handleGameClick} />}
             </section>
 
+            {/* Right-panel sections — hidden in offseason; OffseasonMain above takes the body */}
+            {!isOffseason && (<>
             {/* Highlights */}
             <section ref={highlightsRef} data-tour="dashboard-highlights" style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
               <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: '#cbd5e1' }}>Highlights</h2>
@@ -352,6 +356,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                 <PlayerLeaders />
               </div>
             </section>
+            </>)}
 
           </div>
         </div>
@@ -385,7 +390,8 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
               {isOffseason ? <OffseasonMain /> : <GameGridNew handleClick={handleGameClick} />}
             </section>
 
-            {/* Tabbed panel — full width */}
+            {/* Tabbed panel — full width (hidden in offseason; OffseasonMain takes the body) */}
+            {!isOffseason && (
             <section>
               <TabToggle tabs={PANEL_TABS} active={activeTab} onChange={setActiveTab} />
               <div data-tour="dashboard-highlights" style={{
@@ -424,6 +430,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                 </div>
               </div>
             </section>
+            )}
           </div>
         </div>
         {sharedPortals}
@@ -435,7 +442,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   return (
     <>
       <div style={{ height: `calc(100vh - ${headerHeight}px - 33px)`, overflow: 'hidden', backgroundColor: '#0f172a', color: '#e2e8f0', padding: '24px', boxSizing: 'border-box' }}>
-        <div style={{ height: '100%', display: 'grid', gridTemplateColumns: 'minmax(0, 960px) 380px', justifyContent: 'center', gap: '32px' }}>
+        <div style={{ height: '100%', display: 'grid', gridTemplateColumns: isOffseason ? 'minmax(0, 1100px)' : 'minmax(0, 960px) 380px', justifyContent: 'center', gap: '32px' }}>
 
           {/* Left Column - Games / Offseason */}
           <div data-tour="dashboard-games" style={{ overflowY: 'auto' }}>
@@ -464,7 +471,8 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             )}
           </div>
 
-          {/* Right Column - Tabbed panel */}
+          {/* Right Column - Tabbed panel (hidden in offseason; recap/draft board take the full body) */}
+          {!isOffseason && (
           <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             <TabToggle tabs={PANEL_TABS} active={activeTab} onChange={setActiveTab} />
             <div data-tour="dashboard-highlights" style={{
@@ -503,6 +511,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
               </div>
             </div>
           </div>
+          )}
 
         </div>
       </div>

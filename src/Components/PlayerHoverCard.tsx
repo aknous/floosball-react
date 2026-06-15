@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { Stars, SwordIcon, ShieldIcon } from './Stars'
+import ArchetypeBadge from './ArchetypeBadge'
 import { personalityAccent } from '@/utils/personality'
 import { attitudeTier } from '@/utils/mentalProfile'
 
@@ -20,6 +21,7 @@ interface PlayerDetail {
   offensiveRating?: number
   defensiveRating?: number
   defensivePosition?: string | null
+  archetype?: string | null
   attributes: {
     att1?: string; att1Value?: number; att1stars?: number
     att2?: string; att2Value?: number; att2stars?: number
@@ -46,6 +48,11 @@ interface PlayerDetail {
 
 const POSITION_FULL: Record<string, string> = {
   QB: 'Quarterback', RB: 'Running Back', WR: 'Wide Receiver', TE: 'Tight End', K: 'Kicker',
+}
+
+// Defensive position full names (players play both ways: QB->S, RB->LB, WR->CB, TE->DE).
+const DEF_POSITION_FULL: Record<string, string> = {
+  S: 'Safety', LB: 'Linebacker', CB: 'Cornerback', DE: 'Defensive End',
 }
 
 // ── Portal card ───────────────────────────────────────────────────────────────
@@ -122,8 +129,9 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
         {/* Name + position + stars */}
         <div style={{ marginBottom: '12px' }}>
           <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{data.name}</div>
-          <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px' }}>
-            {POSITION_FULL[data.position] ?? data.position}
+          <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
+            <span>{POSITION_FULL[data.position] ?? data.position}{data.defensivePosition ? ` · ${DEF_POSITION_FULL[data.defensivePosition] ?? data.defensivePosition}` : ''}</span>
+            <ArchetypeBadge archetype={data.archetype} size={13} />
           </div>
           <div style={{ marginTop: '3px' }}><Stars stars={data.ratingStars} size={20} /></div>
         </div>
