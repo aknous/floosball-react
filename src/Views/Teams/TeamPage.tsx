@@ -577,7 +577,7 @@ export default function TeamPage() {
         {/* === OVERVIEW TAB === */}
         {activeTab === 'overview' && (<>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px', alignItems: 'start', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.6fr) minmax(0, 1fr)', gap: '16px', alignItems: 'start', marginBottom: '20px' }}>
 
           {/* Roster */}
           <div data-tour="team-roster" style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
