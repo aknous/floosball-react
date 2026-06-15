@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAwards, MvpCandidate, HofCandidate } from '@/hooks/useAwards'
 import { Stars } from '@/Components/Stars'
@@ -15,43 +15,58 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
   )
 }
 
+function StatPair({ label, value }: { label: string; value: number | string }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '3px' }}>
+      <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+    </span>
+  )
+}
+
 function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPick: () => void }) {
   return (
-    <button
-      onClick={onPick}
-      style={{
-        textAlign: 'left', cursor: 'pointer', width: '100%',
-        display: 'flex', alignItems: 'center', gap: '10px',
-        padding: '10px 12px', borderRadius: '8px',
-        border: `1px solid ${picked ? GOLD : '#334155'}`,
-        background: picked ? 'rgba(251,191,36,0.10)' : '#0f172a',
-        transition: 'border-color 0.15s, background 0.15s',
-      }}
-    >
-      <span style={{ width: '34px', fontSize: '11px', fontWeight: 800, color: c.teamColor || '#94a3b8' }}>{c.position}</span>
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '12px',
+      padding: '10px 12px', borderRadius: '8px',
+      border: `1px solid ${picked ? GOLD : '#334155'}`,
+      background: picked ? 'rgba(251,191,36,0.08)' : '#0f172a',
+      transition: 'border-color 0.15s, background 0.15s',
+    }}>
+      {c.teamId != null && (
+        <img src={`/avatars/${c.teamId}.png`} alt={c.teamAbbr}
+             style={{ width: '32px', height: '32px', flexShrink: 0 }}
+             onError={e => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden' }} />
+      )}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Link
-          to={`/players/${c.id}`}
-          onClick={e => e.stopPropagation()}
-          style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-        >
-          {c.name}
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Link to={`/players/${c.id}`}
+                style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {c.name}
+          </Link>
+          <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>{c.teamAbbr}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
           <Stars stars={c.ratingStars} size={11} />
-          <span style={{ fontSize: '11px', color: '#94a3b8' }}>{c.teamAbbr}</span>
-          <span style={{ fontSize: '11px', color: '#64748b' }}>{c.fantasyPoints} FP</span>
+          {c.stats.map(s => <StatPair key={s.label} label={s.label} value={s.value} />)}
+          <StatPair label="WPA" value={c.seasonWpa} />
+          <StatPair label="FP" value={c.fantasyPoints} />
         </div>
       </div>
-      <span style={{
-        fontSize: '10px', fontWeight: 800, letterSpacing: '0.04em',
-        color: picked ? GOLD : '#475569',
-        border: `1px solid ${picked ? 'rgba(251,191,36,0.5)' : '#334155'}`,
-        borderRadius: '5px', padding: '3px 8px', whiteSpace: 'nowrap',
-      }}>
+      <button
+        onClick={onPick}
+        style={{
+          flexShrink: 0, cursor: 'pointer',
+          fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em',
+          color: picked ? '#0f172a' : GOLD,
+          background: picked ? GOLD : 'rgba(251,191,36,0.12)',
+          border: `1px solid ${GOLD}`, borderRadius: '6px', padding: '8px 14px',
+          whiteSpace: 'nowrap',
+        }}
+      >
         {picked ? 'YOUR PICK' : 'VOTE'}
-      </span>
-    </button>
+      </button>
+    </div>
   )
 }
 
@@ -88,10 +103,10 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
         onClick={onToggle}
         style={{
           cursor: 'pointer', flexShrink: 0,
-          fontSize: '11px', fontWeight: 800, letterSpacing: '0.04em',
+          fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em',
           color: approved ? '#0f172a' : GOLD,
-          background: approved ? GOLD : 'transparent',
-          border: `1px solid ${GOLD}`, borderRadius: '6px', padding: '7px 12px',
+          background: approved ? GOLD : 'rgba(251,191,36,0.12)',
+          border: `1px solid ${GOLD}`, borderRadius: '6px', padding: '8px 14px',
         }}
       >
         {approved ? 'APPROVED' : 'APPROVE'}
@@ -100,9 +115,35 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
   )
 }
 
+function Tab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        cursor: 'pointer', flex: 1,
+        fontSize: '13px', fontWeight: 800, letterSpacing: '0.03em',
+        color: active ? '#0f172a' : '#cbd5e1',
+        background: active ? GOLD : 'transparent',
+        border: `1px solid ${active ? GOLD : '#334155'}`,
+        borderRadius: '8px', padding: '9px 0',
+        transition: 'all 0.15s',
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
 export default function AwardsPage() {
   const { loading, mvpOpen, hofOpen, anyOpen, mvpCandidates, myMvpVote,
           hofCandidates, myApprovals, classCap, castMvpVote, toggleHofApproval } = useAwards()
+  const [tab, setTab] = useState<'mvp' | 'hof'>('mvp')
+
+  // Default the active tab to whichever window is open (MVP wins if both).
+  useEffect(() => {
+    if (mvpOpen) setTab('mvp')
+    else if (hofOpen) setTab('hof')
+  }, [mvpOpen, hofOpen])
 
   const wrap: React.CSSProperties = { maxWidth: '760px', margin: '0 auto', padding: '24px 16px' }
 
@@ -124,13 +165,22 @@ export default function AwardsPage() {
   }
 
   const myApprovalSet = new Set(myApprovals)
+  const showTabs = mvpOpen && hofOpen
+  const active = showTabs ? tab : (mvpOpen ? 'mvp' : 'hof')
 
   return (
     <div style={wrap}>
-      <div style={{ fontSize: '24px', fontWeight: 900, color: GOLD, letterSpacing: '0.03em', marginBottom: '20px' }}>Awards</div>
+      <div style={{ fontSize: '24px', fontWeight: 900, color: GOLD, letterSpacing: '0.03em', marginBottom: '16px' }}>Awards</div>
 
-      {mvpOpen && (
-        <div style={{ marginBottom: '32px' }}>
+      {showTabs && (
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+          <Tab label="MVP" active={active === 'mvp'} onClick={() => setTab('mvp')} />
+          <Tab label="Hall of Fame" active={active === 'hof'} onClick={() => setTab('hof')} />
+        </div>
+      )}
+
+      {active === 'mvp' && mvpOpen && (
+        <div>
           <SectionHeader title="Most Valuable Player" subtitle="Vote for the season's MVP. One pick, change it any time before voting closes." />
           {POSITION_ORDER.map(pos => {
             const group = mvpCandidates.filter(c => c.position === pos)
@@ -149,7 +199,7 @@ export default function AwardsPage() {
         </div>
       )}
 
-      {hofOpen && (
+      {active === 'hof' && hofOpen && (
         <div>
           <SectionHeader
             title="Hall of Fame"

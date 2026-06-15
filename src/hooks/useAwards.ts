@@ -3,6 +3,8 @@ import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+export interface MvpStat { label: string; value: number | string }
+
 export interface MvpCandidate {
   id: number
   name: string
@@ -16,6 +18,7 @@ export interface MvpCandidate {
   seasonWpa: number
   fantasyPoints: number
   gamesPlayed: number
+  stats: MvpStat[]
 }
 
 export interface HofCandidate {
