@@ -24,6 +24,11 @@ export interface MvpCandidate {
 export interface HofCandidate {
   playerId: number
   name: string | null
+  position: string | null
+  teamAbbr: string
+  teamId: number | null
+  teamColor: string
+  ratingStars: number
   seasonsRemaining: number
   firstEligibleSeason: number
   points: number

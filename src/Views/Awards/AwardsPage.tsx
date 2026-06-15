@@ -1,10 +1,30 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { GiStarMedal, GiLaurelsTrophy, GiStarsStack } from 'react-icons/gi'
 import { useAwards, MvpCandidate, HofCandidate } from '@/hooks/useAwards'
 import { Stars } from '@/Components/Stars'
 
 const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K']
 const GOLD = '#fbbf24'
+
+// Award badges — same icons/colors as the Hall of Fame plaques + trophy case.
+const HOF_AWARDS: { key: 'mvps' | 'championships' | 'allPros'; label: string; Icon: React.ComponentType<any>; color: string }[] = [
+  { key: 'mvps', label: 'MVP', Icon: GiStarMedal, color: '#fbbf24' },
+  { key: 'championships', label: 'Champ', Icon: GiLaurelsTrophy, color: '#f59e0b' },
+  { key: 'allPros', label: 'All-Pro', Icon: GiStarsStack, color: '#cbd5e1' },
+]
+
+const AwardBadge: React.FC<{ count: number; label: string; Icon: React.ComponentType<any>; color: string }> = ({ count, label, Icon, color }) => (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', gap: '4px',
+    fontSize: '11px', fontWeight: 700, color,
+    backgroundColor: `${color}1a`, border: `1px solid ${color}33`,
+    borderRadius: '5px', padding: '2px 6px', whiteSpace: 'nowrap',
+  }}>
+    <Icon style={{ fontSize: '13px' }} />
+    {count}&times; {label}
+  </span>
+)
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
@@ -71,14 +91,11 @@ function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPi
 }
 
 function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean; onToggle: () => void }) {
-  const chips: string[] = []
   const k = c.case || {}
-  if (k.championships) chips.push(`${k.championships} ${k.championships === 1 ? 'ring' : 'rings'}`)
-  if (k.allPros) chips.push(`${k.allPros} All-Pro`)
-  if (k.mvps) chips.push(`${k.mvps} MVP`)
   const recs = (k.careerRecords || 0) + (k.seasonRecords || 0) + (k.gameRecords || 0)
-  if (recs) chips.push(`${recs} record${recs === 1 ? '' : 's'}`)
-  if (k.seasons) chips.push(`${k.seasons} seasons`)
+  const secondary: string[] = []
+  if (recs) secondary.push(`${recs} record${recs === 1 ? '' : 's'}`)
+  if (k.seasons) secondary.push(`${k.seasons} seasons`)
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: '12px',
@@ -86,16 +103,29 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
       border: `1px solid ${approved ? GOLD : '#334155'}`,
       background: approved ? 'rgba(251,191,36,0.08)' : '#0f172a',
     }}>
+      {c.teamId != null && (
+        <img src={`/avatars/${c.teamId}.png`} alt={c.teamAbbr}
+             style={{ width: '34px', height: '34px', flexShrink: 0 }}
+             onError={e => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden' }} />
+      )}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Link to={`/players/${c.playerId}`} style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', textDecoration: 'none' }}>
-          {c.name || `Player #${c.playerId}`}
-        </Link>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-          {chips.map(chip => (
-            <span key={chip} style={{ fontSize: '11px', color: '#cbd5e1', background: '#1e293b', border: '1px solid #334155', borderRadius: '4px', padding: '1px 7px' }}>{chip}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <Link to={`/players/${c.playerId}`} style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', textDecoration: 'none' }}>
+            {c.name || `Player #${c.playerId}`}
+          </Link>
+          {c.position && <span style={{ fontSize: '11px', fontWeight: 700, color: c.teamColor || '#94a3b8' }}>{c.position}</span>}
+          {c.teamAbbr && <span style={{ fontSize: '11px', color: '#94a3b8' }}>{c.teamAbbr}</span>}
+          <Stars stars={c.ratingStars} size={11} />
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '7px' }}>
+          {HOF_AWARDS.filter(a => (k[a.key] || 0) > 0).map(a => (
+            <AwardBadge key={a.key} count={k[a.key] || 0} label={a.label} Icon={a.Icon} color={a.color} />
+          ))}
+          {secondary.map(chip => (
+            <span key={chip} style={{ fontSize: '11px', color: '#cbd5e1', background: '#1e293b', border: '1px solid #334155', borderRadius: '5px', padding: '2px 7px' }}>{chip}</span>
           ))}
         </div>
-        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px' }}>
+        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '7px' }}>
           {c.seasonsRemaining === 1 ? 'Final year on the ballot' : `${c.seasonsRemaining} years left on the ballot`}
         </div>
       </div>
