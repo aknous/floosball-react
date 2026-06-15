@@ -20,12 +20,14 @@ export interface RecapPlayerStub {
   gamesPlayed?: number
   rating?: number | null
   stars?: number | null
+  side?: 'offense' | 'defense'   // which half of the All-Pro team this slot is
+  defGroup?: string | null       // S / LB / CB / DE (defense slots)
 }
 
 export interface RecapAwards {
   champion: RecapTeamRef | null
   mvp: RecapPlayerStub | null
-  allPro: RecapPlayerStub[]
+  allPro: RecapPlayerStub[]   // combined: offense slots then defense slots
 }
 
 export interface RecapStandingRow {
@@ -39,6 +41,8 @@ export interface RecapStandingRow {
   pointsFor: number
   pointsAgainst: number
   winPct: number
+  pointDiff?: number
+  elo?: number | null
 }
 
 export interface RecapLeagueStandings {

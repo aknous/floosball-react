@@ -2569,10 +2569,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
                 const compactRows = (arr: (StatRow | null)[]) => arr.filter(Boolean) as StatRow[]
 
+                // A QB who scrambled shows up in the rushing section too. The qb
+                // object flattens passing, so merge in its nested rushing block.
+                const qbRushRow = (p: any): StatRow | null =>
+                  (p && p.rushing && p.rushing.carries > 0) ? rushRow({ ...p, ...p.rushing }) : null
                 const homePassRows = compactRows([passRow(hp.qb)])
                 const awayPassRows = compactRows([passRow(ap.qb)])
-                const homeRushRows = compactRows([rushRow(hp.rb)])
-                const awayRushRows = compactRows([rushRow(ap.rb)])
+                const homeRushRows = compactRows([rushRow(hp.rb), qbRushRow(hp.qb)])
+                const awayRushRows = compactRows([rushRow(ap.rb), qbRushRow(ap.qb)])
                 const homeRcvRows = compactRows([rcvRow(hp.wr1), rcvRow(hp.wr2), rcvRow(hp.te)])
                 const awayRcvRows = compactRows([rcvRow(ap.wr1), rcvRow(ap.wr2), rcvRow(ap.te)])
                 const homeKRows = compactRows([kRow(hp.k)])

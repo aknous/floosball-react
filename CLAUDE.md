@@ -48,7 +48,9 @@ src/
     useFantasyLivePoints.ts         # Live earned FP from GamesContext gameStats (earned = total − pointsAtLock)
     useFantasySnapshot.ts           # REST /api/fantasy/snapshot + WS leaderboard_update merge
     useGmData.ts                    # GM eligible/summary/votes/results; castVote/undoVote/submitBallot
-    usePickEm.ts                    # Pick-em week + leaderboard; optimistic submitPick
+    usePickEm.ts                    # Pick-em current-slot week + leaderboard; optimistic submitPick
+    usePickEmDay.ts                 # Whole-day picks: /api/pickem/day draft state + bulk /api/pickem/picks submit
+    useModifierSchedule.ts          # /api/fantasy/modifier-schedule — day's modifier slate (active/next)
     useCardProjection.ts            # Card payout projection (owned + not-yet-owned templates)
     useAppSettings.ts               # Singleton fetch of /api/app-settings (feedback/survey toggles)
     useIsMobile.ts                  # 768px breakpoint
@@ -99,7 +101,7 @@ WS URL from `REACT_APP_WS_URL` (default `ws://localhost:8000/ws`). On (re)connec
 | `/team/:id` | `TeamPage` | tabs: Overview / Funding / Schedule |
 | `/players` `/players/:id` | `PlayersPage` / `PlayerPage` | |
 | `/cards` | `CardsPage` | |
-| `/fantasy` | `FantasyPage` | roster + card equipment |
+| `/fantasy` | `FantasyPage` | roster + card equipment; status bar shows `DayModifierBadge` (active modifier chip; click → dropdown of the day's full slate by week, `useModifierSchedule`) next to the lock countdown + swaps badge |
 | `/front-office` | `FrontOfficePage` | tabs: Overview / Markets / Votes |
 | `/achievements` | `AchievementsPage` | Rookie Goals + Season Goals |
 | `/history` | `HistoryPage` | seasons / records / user-records |
@@ -113,7 +115,7 @@ WS URL from `REACT_APP_WS_URL` (default `ws://localhost:8000/ws`). On (re)connec
 - **Dashboard / Games**: `Views/Dashboard/DashboardNew.tsx` (grid `minmax(0,960px) 380px`; right tabs Highlights/Prognosticate/Standings/Leaders; wraps `PickEmProvider`; tutorial overlay), `GameCard.tsx` (scores, momentum flame, WP bar, inline pick), `GameGridNew.tsx`, `GameModalNew.tsx` (box score / plays / stats; replay+catch-up bar; PlayReactions, RallyButton, PlayInsightsPanel), `HighlightFeed.tsx`. During the **offseason** the main body renders `Recap/OffseasonMain.tsx` (Draft Board ⇄ Season Recap toggle) instead of the bare `OffseasonPanel`.
 - **Season Recap** (`Recap/SeasonRecap.tsx`, `useSeasonRecap` → `GET /api/recap`): offseason fixture, **tabbed** (Results / Stats / Fans / Transactions). Results = champion/MVP/All-Pro (links + hover via `PlayerLink`/`TeamHoverCard`, positions, star ratings, team logos) + standings by league with league-champ badges; Stats = per-category leaders; Fans = fantasy/pick-em/bracket/funding leaderboards (favorite-team logos, swept-both callout) + top showcase; Transactions = collapsible retirements/HoF/coach/roster-moves. Current season only (no archive); refetches live on offseason WS events.
 - **Fantasy & Cards**: `Fantasy/FantasyRoster.tsx`, `Fantasy/FantasyLeaderboard.tsx` (season/weekly/players), `Fantasy/PlayerPicker.tsx`, `Cards/TradingCard.tsx`, `Cards/CardCollection.tsx`, `Cards/CardEquipment.tsx`, `Cards/CardPickerModal.tsx`, `Cards/CombineModal.tsx` (The Combine), `Cards/PackOpeningModal.tsx` (reveal→keep, particle bursts for prismatic/diamond), `Cards/PendingPackResumer.tsx`, `Shop/ShopModal.tsx`.
-- **Pick-Em & Front Office**: `PickEm/PickEmPanel.tsx` (auto-pick modes off/favorites/underdogs/random), `FrontOffice/FrontOfficePanel.tsx` + sub-cards `FireCoachCard` / `HireCoachCard` / `CutPlayerCard` / `ResignPlayerCard`, shared `FrontOffice/VoteControls.tsx` (`VoteButton` two-tap confirm, `UndoButton`, `StanceControls`), `FrontOffice/ProbabilityMeter.tsx`, `FrontOffice/FaBallotModal.tsx`, `FrontOffice/VoteResultsBanner.tsx`; `Views/FrontOffice/FrontOfficePage.tsx` + `MarketsSection` / `RookiesSection`.
+- **Pick-Em & Front Office**: `PickEm/PickEmPanel.tsx` (tabs: This Slot / All Today / Leaderboard; auto-pick modes off/favorites/underdogs/random), `PickEm/PickEmDay.tsx` (whole-day slate by week — per-slot "pick favorites" + batched submit; no modifiers, those live on the fantasy page), `PickEm/PickRow.tsx` (shared single-game row, extracted to break the Panel↔Day import cycle), `FrontOffice/FrontOfficePanel.tsx` + sub-cards `FireCoachCard` / `HireCoachCard` / `CutPlayerCard` / `ResignPlayerCard`, shared `FrontOffice/VoteControls.tsx` (`VoteButton` two-tap confirm, `UndoButton`, `StanceControls`), `FrontOffice/ProbabilityMeter.tsx`, `FrontOffice/FaBallotModal.tsx`, `FrontOffice/VoteResultsBanner.tsx`; `Views/FrontOffice/FrontOfficePage.tsx` + `MarketsSection` / `RookiesSection`.
 - **Stats / History**: `Standings.tsx` (standings / power-rankings), `PlayerLeaders.tsx`, `MvpRankings.tsx`, `Views/History/HistoryPage.tsx`.
 - **Onboarding / Misc**: `Auth/FavoriteTeamModal.tsx`, `Auth/BetaBlockedPage.tsx`, `Onboarding/OnboardingModal.tsx`, `WelcomeModal.tsx`, `SeasonRecapModal.tsx`, `SurveyModal.tsx`, `Notifications/NotificationBell.tsx`, `Tutorial/*` (`TutorialOverlay` spotlight via `data-tour=`), `HelpModal.tsx` (exports `HelpModal` + `HelpButton` + `GuideSection`), `HoverTooltip.tsx`, `GlitchedText.tsx`, hover cards (`PlayerHoverCard`, `CoachHoverCard`, `TeamHoverCard`), `Stars.tsx`, `TeamFormBadge.tsx`, `GameModal/PlayReactions.tsx`, `GameModal/RallyPanel.tsx`.
 

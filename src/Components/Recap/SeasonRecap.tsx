@@ -5,6 +5,7 @@ import PlayerLink from '@/Components/PlayerLink'
 import TeamHoverCard from '@/Components/TeamHoverCard'
 import { Stars as AppStars, calcStars } from '@/Components/Stars'
 import HoverTooltip from '@/Components/HoverTooltip'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import type {
   RecapTransaction, RecapEventType, RecapPlayerStub, RecapAwards,
   RecapLeagueStandings, RecapLeaderCategory, RecapUserLeaderboards, RecapUserLbEntry, RecapShowcaseEntry,
@@ -13,8 +14,10 @@ import type {
 const CARD: React.CSSProperties = { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '10px' }
 const SECTION_H: React.CSSProperties = { fontSize: '16px', fontWeight: 700, color: '#e2e8f0', margin: '0 0 12px' }
 const LABEL: React.CSSProperties = { fontSize: '12px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.04em' }
+const STAT_HEAD: React.CSSProperties = { fontSize: '10px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.04em', textTransform: 'uppercase', textAlign: 'right' }
+const STAT_CELL: React.CSSProperties = { fontSize: '13px', fontVariantNumeric: 'tabular-nums', textAlign: 'right', flexShrink: 0 }
 
-const POS_ORDER: Record<string, number> = { QB: 0, RB: 1, WR: 2, TE: 3, K: 4 }
+const POS_ORDER: Record<string, number> = { QB: 0, RB: 1, WR: 2, TE: 3, K: 4, S: 5, LB: 6, CB: 7, DE: 8 }
 
 const MOVE_BADGE: Record<string, { label: string; color: string }> = {
   rookie_pick: { label: 'Drafted',   color: '#60a5fa' },
@@ -78,31 +81,32 @@ const TABS: [Tab, string][] = [
 export const SeasonRecap: React.FC = () => {
   const { recap, loading } = useSeasonRecap()
   const [tab, setTab] = useState<Tab>('results')
+  const isMobile = useIsMobile()
 
   if (loading && !recap) {
     return <div style={{ padding: '28px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Loading recap...</div>
   }
-  if (!recap) {
+  if (!recap || !recap.awards) {
     return <div style={{ padding: '28px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>No recap available.</div>
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Header */}
-      <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
+      <h1 style={{ fontSize: isMobile ? '20px' : '22px', fontWeight: 700, color: '#e2e8f0', margin: 0 }}>
         Season {recap.season} Recap
       </h1>
 
-      {/* Tab bar */}
-      <div style={{ display: 'flex', gap: '2px', borderBottom: '1px solid #2a3a4e' }}>
+      {/* Tab bar — scrolls horizontally on narrow screens so all four tabs stay reachable */}
+      <div style={{ display: 'flex', gap: '2px', borderBottom: '1px solid #2a3a4e', overflowX: 'auto', scrollbarWidth: 'none' }}>
         {TABS.map(([key, label]) => {
           const on = tab === key
           return (
             <button key={key} onClick={() => setTab(key)} style={{
-              padding: '10px 18px', fontSize: '14px', fontWeight: 700, fontFamily: 'inherit',
+              padding: isMobile ? '9px 13px' : '10px 18px', fontSize: isMobile ? '13px' : '14px', fontWeight: 700, fontFamily: 'inherit',
               color: on ? '#e2e8f0' : '#94a3b8', backgroundColor: on ? '#1e293b' : 'transparent',
               border: 'none', borderBottom: on ? '2px solid #3b82f6' : '2px solid transparent',
-              cursor: 'pointer', transition: 'all 0.15s',
+              cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0, whiteSpace: 'nowrap',
             }}>{label}</button>
           )
         })}
@@ -116,9 +120,30 @@ export const SeasonRecap: React.FC = () => {
   )
 }
 
+// One All-Pro slot row (shared by the Offense and Defense sub-grids).
+const AllProRow: React.FC<{ p: RecapPlayerStub }> = ({ p }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '8px', backgroundColor: '#162231', minWidth: 0 }}>
+    <PosBadge pos={p.position} />
+    {p.teamId != null && <img src={`/avatars/${p.teamId}.png`} alt={p.teamAbbr || ''} crossOrigin="anonymous" style={{ width: 20, height: 20, flexShrink: 0 }} />}
+    <div style={{ minWidth: 0, flex: 1 }}>
+      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <PlayerLink playerId={p.id} playerName={p.name} style={{ fontSize: '14px', fontWeight: 600, color: '#e2e8f0' }} />
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+        <Stars rating={p.rating} stars={p.stars} size={12} />
+        <TeamLink teamId={p.teamId} abbr={p.teamAbbr} style={{ fontSize: '12px', color: '#94a3b8' }} />
+      </div>
+    </div>
+  </div>
+)
+
 // ── Results ──
 const ResultsTab: React.FC<{ awards: RecapAwards; standings: RecapLeagueStandings[]; leagueChampions: number[] }> = ({ awards, standings, leagueChampions }) => {
-  const allPro = [...(awards.allPro || [])].sort((a, b) => (POS_ORDER[a.position || ''] ?? 9) - (POS_ORDER[b.position || ''] ?? 9))
+  const isMobile = useIsMobile()
+  const allProSorted = [...(awards.allPro || [])].sort((a, b) => (POS_ORDER[a.position || ''] ?? 9) - (POS_ORDER[b.position || ''] ?? 9))
+  const isDef = (p: RecapPlayerStub) => p.side === 'defense' || ['S', 'LB', 'CB', 'DE'].includes(p.position || '')
+  const allProOffense = allProSorted.filter(p => !isDef(p))
+  const allProDefense = allProSorted.filter(p => isDef(p))
   const champId = awards.champion?.id
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -149,27 +174,26 @@ const ResultsTab: React.FC<{ awards: RecapAwards; standings: RecapLeagueStanding
         </div>
       </div>
 
-      {/* All-Pro team with positions */}
-      {allPro.length > 0 && (
+      {/* All-Pro team — combined offense + defense */}
+      {(allProOffense.length > 0 || allProDefense.length > 0) && (
         <div style={{ ...CARD, padding: '16px' }}>
           <h2 style={SECTION_H}>All-Pro Team</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
-            {allPro.map(p => (
-              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '8px', backgroundColor: '#162231', minWidth: 0 }}>
-                <PosBadge pos={p.position} />
-                {p.teamId != null && <img src={`/avatars/${p.teamId}.png`} alt={p.teamAbbr || ''} crossOrigin="anonymous" style={{ width: 20, height: 20, flexShrink: 0 }} />}
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <PlayerLink playerId={p.id} playerName={p.name} style={{ fontSize: '14px', fontWeight: 600, color: '#e2e8f0' }} />
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                    <Stars rating={p.rating} stars={p.stars} size={12} />
-                    <TeamLink teamId={p.teamId} abbr={p.teamAbbr} style={{ fontSize: '12px', color: '#94a3b8' }} />
-                  </div>
-                </div>
+          {allProOffense.length > 0 && (
+            <>
+              <div style={{ ...LABEL, marginBottom: '8px' }}>Offense</div>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+                {allProOffense.map(p => <AllProRow key={`o-${p.id}`} p={p} />)}
               </div>
-            ))}
-          </div>
+            </>
+          )}
+          {allProDefense.length > 0 && (
+            <>
+              <div style={{ ...LABEL, margin: '16px 0 8px' }}>Defense</div>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+                {allProDefense.map(p => <AllProRow key={`d-${p.id}`} p={p} />)}
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -178,20 +202,42 @@ const ResultsTab: React.FC<{ awards: RecapAwards; standings: RecapLeagueStanding
         <h2 style={SECTION_H}>Final Standings</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
           {standings.map(lg => (
-            <div key={lg.league} style={{ flex: '1 1 320px', minWidth: 0 }}>
+            <div key={lg.league} style={{ flex: '1 1 340px', minWidth: 0 }}>
               <div style={{ ...LABEL, marginBottom: '6px' }}>{lg.league}</div>
+              {/* column headers */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 8px 4px' }}>
+                <span style={{ width: '18px' }} />
+                <span style={{ flex: 1, ...STAT_HEAD, textAlign: 'left' }}>Team</span>
+                <span style={{ width: '40px', ...STAT_HEAD }}>PCT</span>
+                <span style={{ width: '42px', ...STAT_HEAD }}>DIFF</span>
+                <span style={{ width: '42px', ...STAT_HEAD }}>ELO</span>
+                <span style={{ width: '52px', ...STAT_HEAD }}>REC</span>
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 {lg.standings.map((t, i) => {
                   const isBowl = champId === t.teamId
                   const isLeague = leagueChampions.includes(t.teamId)
+                  const diff = t.pointDiff ?? (t.pointsFor - t.pointsAgainst)
+                  const diffColor = diff > 0 ? '#4ade80' : diff < 0 ? '#f87171' : '#94a3b8'
                   return (
                     <div key={t.teamId} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px', borderRadius: '6px', backgroundColor: i % 2 ? 'transparent' : '#162231' }}>
                       <span style={{ width: '18px', fontSize: '13px', color: '#64748b' }}>{i + 1}</span>
-                      <TeamLink teamId={t.teamId} name={t.teamName} abbr={t.teamAbbr} avatar avatarSize={18}
-                        style={{ flex: 1, fontSize: '14px', color: '#cbd5e1', minWidth: 0 }} />
-                      {isBowl && <ChampBadge label="Floos Bowl" color="#eab308" />}
-                      {!isBowl && isLeague && <ChampBadge label="League Champ" color="#94a3b8" />}
-                      <span style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>
+                      <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                        <TeamLink teamId={t.teamId} name={t.teamName} abbr={t.teamAbbr} avatar avatarSize={18}
+                          style={{ fontSize: '14px', color: '#cbd5e1', minWidth: 0 }} />
+                        {isBowl && <ChampBadge label="Floos Bowl" color="#eab308" />}
+                        {!isBowl && isLeague && <ChampBadge label="League Champ" color="#94a3b8" />}
+                      </span>
+                      <span style={{ width: '40px', ...STAT_CELL, color: '#cbd5e1' }}>
+                        {t.winPct.toFixed(3).replace(/^0/, '')}
+                      </span>
+                      <span style={{ width: '42px', ...STAT_CELL, color: diffColor }}>
+                        {diff > 0 ? '+' : ''}{diff}
+                      </span>
+                      <span style={{ width: '42px', ...STAT_CELL, color: '#94a3b8' }}>
+                        {t.elo != null ? t.elo : '—'}
+                      </span>
+                      <span style={{ width: '52px', ...STAT_CELL, color: '#e2e8f0', fontWeight: 700 }}>
                         {t.wins}-{t.losses}{t.ties ? `-${t.ties}` : ''}
                       </span>
                     </div>
@@ -349,6 +395,7 @@ const FansTab: React.FC<{ userLeaderboards: RecapUserLeaderboards }> = ({ userLe
 
 // ── Transactions & Announcements ──
 const TransactionsTab: React.FC<{ transactions: RecapTransaction[] }> = ({ transactions }) => {
+  const isMobile = useIsMobile()
   const groups = useMemo(() => {
     const retirements = transactions.filter(t => t.type === 'retirement')
     const hof = transactions.filter(t => t.type === 'hof_induction')
@@ -408,7 +455,7 @@ const TransactionsTab: React.FC<{ transactions: RecapTransaction[] }> = ({ trans
 
       {groups.byTeam.size > 0 && (
         <CollapsibleSection title="ROSTER MOVES" count={Array.from(groups.byTeam.values()).reduce((n, a) => n + a.length, 0)}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
             {Array.from(groups.byTeam.entries()).map(([team, items]) => (
               <div key={team} style={{ padding: '10px', borderRadius: '8px', backgroundColor: '#162231' }}>
                 <TeamLink teamId={items[0]?.teamId} name={team} avatar avatarSize={18}

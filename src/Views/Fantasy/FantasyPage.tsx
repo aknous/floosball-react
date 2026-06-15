@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { FantasyRoster } from '@/Components/Fantasy/FantasyRoster'
 import { FantasyLeaderboard } from '@/Components/Fantasy/FantasyLeaderboard'
@@ -12,7 +12,7 @@ import { useTutorial, TutorialStep } from '@/Components/Tutorial/useTutorial'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useFloosball } from '@/contexts/FloosballContext'
-import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
+import { useModifierSchedule } from '@/hooks/useModifierSchedule'
 
 const FANTASY_TOUR_STEPS: TutorialStep[] = [
   {
@@ -87,61 +87,61 @@ const FANTASY_TOUR_STEPS: TutorialStep[] = [
 ]
 
 const MODIFIER_STYLES: Record<string, { color: string; icon: React.ReactNode }> = {
-  amplify: { color: '#4ade80', icon: (
+  amplify: { color: '#f472b6', icon: (  // FPx → magenta
     // chevrons-up — amplification
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="17 11 12 6 7 11" /><polyline points="17 18 12 13 7 18" />
     </svg>
   )},
-  cascade: { color: '#4ade80', icon: (
+  cascade: { color: '#f472b6', icon: (  // legacy amplify (FPx) → magenta
     // layers — cascading stacks
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" />
     </svg>
   )},
-  frenzy: { color: '#4ade80', icon: (
+  frenzy: { color: '#4ade80', icon: (  // +FP → green
     // flame — wild energy
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.07-2.14 0-5.5 3.5-7.5 0 0 .5 4 3 5.5 2.77 1.66 4.5 4 4.5 7.5a7 7 0 11-14 0c0-1.15.39-2.26 1.5-3" />
     </svg>
   )},
-  overdrive: { color: '#4ade80', icon: (
+  overdrive: { color: '#60a5fa', icon: (  // match bonus → blue
     // zap — electric overdrive
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
     </svg>
   )},
-  payday: { color: '#4ade80', icon: (
+  payday: { color: '#eab308', icon: (  // Floobits → gold
     // dollar-sign — money
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
     </svg>
   )},
-  longshot: { color: '#4ade80', icon: (
+  longshot: { color: '#60a5fa', icon: (  // conditional → blue
     // crosshair — precision aim
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" /><line x1="22" y1="12" x2="18" y2="12" /><line x1="6" y1="12" x2="2" y2="12" /><line x1="12" y1="6" x2="12" y2="2" /><line x1="12" y1="22" x2="12" y2="18" />
     </svg>
   )},
-  ironclad: { color: '#fbbf24', icon: (
+  ironclad: { color: '#fb923c', icon: (  // streak → orange
     // shield — defense
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </svg>
   )},
-  wildcard: { color: '#fbbf24', icon: (
+  wildcard: { color: '#60a5fa', icon: (  // treats cards as matched → blue
     // shuffle — randomness
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="16 3 21 3 21 8" /><line x1="4" y1="20" x2="21" y2="3" /><polyline points="21 16 21 21 16 21" /><line x1="15" y1="15" x2="21" y2="21" /><line x1="4" y1="4" x2="9" y2="9" />
     </svg>
   )},
-  synergy: { color: '#4ade80', icon: (
+  synergy: { color: '#f472b6', icon: (  // FPx → magenta
     // git-merge — connections/synergy
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><path d="M6 21V9a9 9 0 009 9" />
     </svg>
   )},
-  fortunate: { color: '#4ade80', icon: (
+  fortunate: { color: '#c084fc', icon: (  // chance → purple
     // clover — luck
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 12c-2-2.67-6-6-6-8a4 4 0 018 0c0 2-4 5.33-6 8z" transform="rotate(0 12 12)" />
@@ -165,38 +165,20 @@ const MODIFIER_STYLES: Record<string, { color: string; icon: React.ReactNode }> 
   )},
 }
 
+// Swaps badge. The day's modifiers render via DayModifierBadge (active chip
+// + click-to-expand dropdown) alongside this in the status bar.
 function GameInfoBar() {
-  const { user, fantasyRoster } = useAuth()
-  const { modifier } = useFantasySnapshot(user?.id)
+  const { fantasyRoster } = useAuth()
 
   const swapsAvailable = (fantasyRoster?.swapsAvailable ?? 0) + (fantasyRoster?.purchasedSwaps ?? 0)
   const isLocked = fantasyRoster?.isLocked ?? false
 
-  if (!modifier && !isLocked) return null
-
-  const modStyle = modifier ? (MODIFIER_STYLES[modifier.name] ?? MODIFIER_STYLES.steady) : MODIFIER_STYLES.steady
-  const modColor = modStyle.color
+  if (!isLocked || swapsAvailable <= 0) return null
 
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',
     }}>
-      {modifier && (
-        <HoverTooltip text={modifier.description} color={modColor}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '7px',
-            padding: '5px 10px', borderRadius: '6px',
-            backgroundColor: `${modColor}15`,
-            color: modColor,
-            cursor: 'default',
-          }}>
-            {modStyle.icon}
-            <span style={{ fontSize: '11px', fontWeight: '600' }}>
-              {modifier.displayName}
-            </span>
-          </div>
-        </HoverTooltip>
-      )}
       {isLocked && swapsAvailable > 0 && (
         <HoverTooltip text={`${swapsAvailable} roster swap${swapsAvailable !== 1 ? 's' : ''} available between games`} color="#38bdf8">
           <div style={{
@@ -216,6 +198,101 @@ function GameInfoBar() {
             </span>
           </div>
         </HoverTooltip>
+      )}
+    </div>
+  )
+}
+
+// The active weekly modifier as a compact chip; click to reveal the rest of
+// the day's slate (so users can plan cards/rosters ahead) without crowding the
+// status bar. Regular season only — the schedule endpoint returns empty otherwise.
+function DayModifierBadge() {
+  const { slots, active, day } = useModifierSchedule()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDocClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [open])
+
+  if (slots.length === 0 || !active) return null
+
+  const activeStyle = MODIFIER_STYLES[active.modifier] ?? MODIFIER_STYLES.steady
+  const c = activeStyle.color
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '7px',
+          padding: '5px 10px', borderRadius: '6px',
+          backgroundColor: `${c}15`,
+          border: open ? `1px solid ${c}` : '1px solid transparent',
+          color: c, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+        }}
+      >
+        {activeStyle.icon}
+        <span style={{ fontSize: '11px', fontWeight: 600 }}>{active.displayName}</span>
+        <svg
+          width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+          style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', opacity: 0.7 }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 20000,
+          minWidth: '230px',
+          backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)', padding: '8px',
+        }}>
+          <div style={{
+            fontSize: '11px', fontWeight: 700, color: '#94a3b8',
+            letterSpacing: '0.04em', padding: '2px 4px 6px',
+          }}>
+            {day != null ? `DAY ${day + 1} MODIFIERS` : "TODAY'S MODIFIERS"}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+            {slots.map(s => {
+              const style = MODIFIER_STYLES[s.modifier] ?? MODIFIER_STYLES.steady
+              const sc = style.color
+              return (
+                <div key={s.week} style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '6px', borderRadius: '6px',
+                  backgroundColor: s.isActive ? `${sc}1a` : 'transparent',
+                  opacity: s.isPast ? 0.5 : 1,
+                }}>
+                  <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', width: '24px', flexShrink: 0 }}>
+                    W{s.week}
+                  </span>
+                  <span style={{ color: sc, display: 'flex', flexShrink: 0 }}>{style.icon}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: sc }}>{s.displayName}</span>
+                      {s.isActive && (
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: sc, letterSpacing: '0.05em' }}>NOW</span>
+                      )}
+                      {s.isNext && (
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em' }}>NEXT</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: 1.35 }}>{s.description}</div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
       )}
     </div>
   )
@@ -357,11 +434,16 @@ const FantasyPage: React.FC = () => {
           </>
         ) : (
           <>
-            {/* Status bar: countdown + modifier + swaps + shop */}
+            {/* Status bar: countdown + modifier badge + swaps + actions */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <div data-tour="fantasy-countdown"><LockCountdown /></div>
-              <div data-tour="fantasy-gameinfo"><GameInfoBar /></div>
+              <div data-tour="fantasy-gameinfo" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <DayModifierBadge />
+                <GameInfoBar />
+              </div>
               <div style={{ flex: 1 }} />
+              {/* Actions + help grouped so the ? never orphans onto its own row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
               <div data-tour="fantasy-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {user && (
                   <Link
@@ -434,6 +516,7 @@ const FantasyPage: React.FC = () => {
                   tour.startTour()
                 }
               }} />
+              </div>
             </div>
 
             {/* Card slots — full width at top */}

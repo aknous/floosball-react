@@ -106,10 +106,10 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
     return (
       <div style={{ ...(!embedded ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
         <div style={{ display: 'grid', gridTemplateColumns: '20px 1fr 48px 44px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
-          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>#</span>
-          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Team</span>
-          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>ELO</span>
-          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>W-L</span>
+          <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>#</span>
+          <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Team</span>
+          <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: 'right' }}>ELO</span>
+          <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: 'right' }}>W-L</span>
         </div>
         {allTeams.map((team, index) => {
           const isFav = user?.favoriteTeamId === team.id
@@ -123,7 +123,7 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
                 gridTemplateColumns: '20px 1fr 48px 44px',
                 alignItems: 'center',
                 padding: '7px 14px',
-                borderBottom: index < allTeams.length - 1 ? '1px solid #1e293b' : 'none',
+                borderBottom: index < allTeams.length - 1 ? '1px solid #1a2640' : 'none',
                 backgroundColor: rowBg,
               }}>
                 <span style={{ fontSize: '12px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>{index + 1}</span>
@@ -178,10 +178,10 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
 
       {/* Header row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 48px 44px 44px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
-        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textTransform: 'uppercase' }}>Team</span>
-        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>ELO</span>
-        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>W-L</span>
-        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600', textAlign: 'right' }}>PCT</span>
+        <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Team</span>
+        <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: 'right' }}>ELO</span>
+        <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: 'right' }}>W-L</span>
+        <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: 'right' }}>PCT</span>
       </div>
 
       {displayTeams.map((team, index) => {
@@ -209,7 +209,7 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
             borderLeft: leftBorder,
             borderBottom: isPlayoffCutline
               ? '2px solid #334155'
-              : index < displayTeams.length - 1 ? '1px solid #1e293b' : 'none',
+              : index < displayTeams.length - 1 ? '1px solid #1a2640' : 'none',
             backgroundColor: rowBg,
             opacity: rowOpacity,
           }}
