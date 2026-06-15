@@ -117,6 +117,17 @@ const NAV_ITEMS = [
     ),
   },
   {
+    key: 'awards',
+    label: 'Awards',
+    path: '/awards',
+    icon: (
+      // Trophy — MVP & Hall of Fame voting (season's-end only).
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM7 6H4v2a3 3 0 003 3M17 6h3v2a3 3 0 01-3 3" />
+      </svg>
+    ),
+  },
+  {
     key: 'achievements',
     label: 'Achievements',
     path: '/achievements',
@@ -185,6 +196,23 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
       window.removeEventListener('supporter:claimed', loadSupporter)
     }
   }, [user, getToken, location.pathname])
+
+  // Awards (MVP / Hall of Fame) voting is season's-end only — the nav entry
+  // appears only while a window is open. Public status endpoint, no auth.
+  const [awardsOpen, setAwardsOpen] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    const loadAwards = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/awards/status`)
+        const json = await res.json()
+        if (!cancelled) setAwardsOpen(!!json?.data?.anyOpen)
+      } catch { /* keep last */ }
+    }
+    loadAwards()
+    const id = setInterval(loadAwards, 180_000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [location.pathname])
 
   // New-feature pings (Cards systems, Supporter). Clear when the user has seen
   // the announcement (markFeatureSeen dispatches 'feature:seen').
@@ -276,6 +304,9 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
           // Bracket challenge only opens once the playoffs are seeded — hide
           // the entry during the regular season.
           if (item.key === 'bracket' && !seasonState.bracketAvailable) return false
+          // Awards voting is season's-end only — show the entry only while a
+          // window (MVP or Hall of Fame) is open.
+          if (item.key === 'awards' && !awardsOpen) return false
           return true
         }).map(item => {
           const isActive = location.pathname === item.path || (item.path === '/dashboard' && location.pathname === '/')
@@ -331,6 +362,15 @@ const Sidebar: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => 
                 )}
                 {/* Front Office: a gold dot when supporter dividends are claimable. */}
                 {item.key === 'frontoffice' && supporterUnclaimed > 0 && !expanded && (
+                  <span style={{
+                    position: 'absolute', top: '-2px', right: '-4px',
+                    width: '10px', height: '10px', borderRadius: '5px',
+                    backgroundColor: '#fbbf24', border: '2px solid #0f172a',
+                  }} />
+                )}
+                {/* Awards: a gold dot while voting is open (the entry only
+                    appears in-window, so this just draws the eye). */}
+                {item.key === 'awards' && !expanded && (
                   <span style={{
                     position: 'absolute', top: '-2px', right: '-4px',
                     width: '10px', height: '10px', borderRadius: '5px',
