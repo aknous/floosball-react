@@ -40,7 +40,7 @@ function StatPair({ label, value }: { label: string; value: number | string }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '3px' }}>
       <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
-      <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+      <span style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
     </span>
   )
 }
@@ -140,7 +140,7 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
             <span key={chip} style={{ fontSize: '11px', color: '#cbd5e1', background: '#1e293b', border: '1px solid #334155', borderRadius: '5px', padding: '2px 7px' }}>{chip}</span>
           ))}
         </div>
-        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '7px' }}>
+        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '7px' }}>
           {c.seasonsRemaining === 1 ? 'Final year on the ballot' : `${c.seasonsRemaining} years left on the ballot`}
         </div>
       </div>
@@ -232,7 +232,7 @@ export default function AwardsPage() {
             if (!group.length) return null
             return (
               <div key={pos} style={{ marginBottom: '14px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', marginBottom: '6px' }}>{pos}</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', marginBottom: '6px' }}>{pos}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {group.map(c => (
                     <MvpCard key={c.id} c={c} picked={myMvpVote === c.id} onPick={() => castMvpVote(c.id)} />
@@ -251,7 +251,7 @@ export default function AwardsPage() {
             subtitle={`Approve the players you want enshrined. Up to ${classCap} are inducted this year; the rest carry over.`}
           />
           {hofCandidates.length === 0 ? (
-            <div style={{ fontSize: '13px', color: '#64748b', padding: '12px 0' }}>No players on the ballot this season.</div>
+            <div style={{ fontSize: '13px', color: '#94a3b8', padding: '12px 0' }}>No players on the ballot this season.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {hofCandidates.map(c => (
