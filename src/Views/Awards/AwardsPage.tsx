@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { GiStarMedal, GiLaurelsTrophy, GiStarsStack } from 'react-icons/gi'
 import { useAwards, MvpCandidate, HofCandidate } from '@/hooks/useAwards'
 import { Stars } from '@/Components/Stars'
+import HoverTooltip from '@/Components/HoverTooltip'
 
 const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K']
 const GOLD = '#fbbf24'
@@ -92,9 +93,8 @@ function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPi
 
 function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean; onToggle: () => void }) {
   const k = c.case || {}
-  const recs = (k.careerRecords || 0) + (k.seasonRecords || 0) + (k.gameRecords || 0)
+  const records = c.recordsHeld || []
   const secondary: string[] = []
-  if (recs) secondary.push(`${recs} record${recs === 1 ? '' : 's'}`)
   if (k.seasons) secondary.push(`${k.seasons} seasons`)
   return (
     <div style={{
@@ -121,6 +121,19 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
           {HOF_AWARDS.filter(a => (k[a.key] || 0) > 0).map(a => (
             <AwardBadge key={a.key} count={k[a.key] || 0} label={a.label} Icon={a.Icon} color={a.color} />
           ))}
+          {records.length > 0 && (
+            <HoverTooltip content={
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', textAlign: 'left' }}>
+                {records.map((r, i) => <span key={i}>{r}</span>)}
+              </div>
+            } color="#38bdf8">
+              <span style={{
+                fontSize: '11px', fontWeight: 600, color: '#38bdf8',
+                backgroundColor: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.28)',
+                borderRadius: '5px', padding: '2px 8px', whiteSpace: 'nowrap', cursor: 'help',
+              }}>{records.length} league record{records.length !== 1 ? 's' : ''}</span>
+            </HoverTooltip>
+          )}
           {secondary.map(chip => (
             <span key={chip} style={{ fontSize: '11px', color: '#cbd5e1', background: '#1e293b', border: '1px solid #334155', borderRadius: '5px', padding: '2px 7px' }}>{chip}</span>
           ))}

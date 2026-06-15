@@ -32,6 +32,7 @@ export interface HofCandidate {
   seasonsRemaining: number
   firstEligibleSeason: number
   points: number
+  recordsHeld: string[]
   case: {
     mvps?: number
     championships?: number
