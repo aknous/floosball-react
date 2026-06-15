@@ -64,7 +64,8 @@ const FooterChangelogItems: React.FC<{ entry: ChangelogEntry }> = ({ entry }) =>
   )
 }
 
-const APP_VERSION = process.env.REACT_APP_VERSION || '0.18.0'
+// Derive from the changelog so the footer version can't drift behind a release.
+const APP_VERSION = process.env.REACT_APP_VERSION || CHANGELOG[0].version.replace(/^v/, '')
 
 export const Footer: React.FC = () => {
   const [showChangelog, setShowChangelog] = useState(false)
