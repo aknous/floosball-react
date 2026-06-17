@@ -485,6 +485,7 @@ export default function PlayerPage() {
   const { id } = useParams<{ id: string }>()
   const [player, setPlayer] = useState<PlayerData | null>(null)
   const [ratingHistory, setRatingHistory] = useState<RatingPoint[]>([])
+  const [ratingCeiling, setRatingCeiling] = useState<number | null>(null)
   const [quotes, setQuotes] = useState<Array<{ text: string; event?: string; personality?: string; timestamp?: string }>>([])
   const [loading, setLoading] = useState(true)
   const [statsView, setStatsView] = useState<'offense' | 'defense'>('offense')
@@ -504,6 +505,7 @@ export default function PlayerPage() {
     ]).then(([playerRes, historyRes, quotesRes]) => {
       if (playerRes?.success && playerRes.data) setPlayer(playerRes.data)
       if (historyRes?.success && historyRes.data?.history) setRatingHistory(historyRes.data.history)
+      if (historyRes?.success) setRatingCeiling(historyRes.data?.ceiling ?? null)
       if (quotesRes?.success && Array.isArray(quotesRes.data)) setQuotes(quotesRes.data)
     }).finally(() => setLoading(false))
   }, [id])
@@ -980,7 +982,7 @@ export default function PlayerPage() {
                       justifyContent: 'center',
                       height: '280px',
                     }}>
-                      <RatingHistoryChart history={ratingHistory} teamColor={teamColor} />
+                      <RatingHistoryChart history={ratingHistory} teamColor={teamColor} ceiling={ratingCeiling} />
                     </div>
                   )}
 
@@ -1286,7 +1288,7 @@ export default function PlayerPage() {
 // Full-size rating progression chart for the player page. Line chart with
 // endpoint dots and season labels on the x-axis, rating (60-100) on the y.
 // Colors by per-segment trend so climbs look green, declines red, flat gray.
-function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; teamColor: string }) {
+function RatingHistoryChart({ history, teamColor, ceiling }: { history: RatingPoint[]; teamColor: string; ceiling?: number | null }) {
   const PAD_LEFT = 36
   const PAD_RIGHT = 12
   const PAD_TOP = 16
@@ -1347,6 +1349,26 @@ function RatingHistoryChart({ history, teamColor }: { history: RatingPoint[]; te
           </text>
         </g>
       ))}
+
+      {/* Projected ceiling — dotted reference line at the player's top
+          attainable rating (full potential). Label flips below the line when
+          it sits near the top edge so it doesn't clip. */}
+      {ceiling != null && ceiling > 0 && (
+        <g>
+          <line
+            x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT}
+            y1={yFor(ceiling)} y2={yFor(ceiling)}
+            stroke="#facc15" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85}
+          />
+          <text
+            x={WIDTH - PAD_RIGHT}
+            y={yFor(ceiling) < PAD_TOP + 12 ? yFor(ceiling) + 13 : yFor(ceiling) - 5}
+            fontSize="11" fill="#facc15" fontWeight={700} textAnchor="end"
+          >
+            Ceiling {Math.round(ceiling)}
+          </text>
+        </g>
+      )}
 
       {/* X-axis season labels */}
       {seasons.map(s => (
