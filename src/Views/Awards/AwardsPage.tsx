@@ -140,15 +140,25 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
       </div>
       <button
         onClick={onToggle}
+        aria-pressed={approved}
+        title={approved ? 'Voted for induction' : 'Vote for induction'}
         style={{
           cursor: 'pointer', flexShrink: 0,
-          fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em',
-          color: approved ? '#0f172a' : GOLD,
-          background: approved ? GOLD : 'rgba(251,191,36,0.12)',
-          border: `1px solid ${GOLD}`, borderRadius: '6px', padding: '8px 14px',
+          width: '34px', height: '34px', padding: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: approved ? GOLD : 'rgba(251,191,36,0.08)',
+          border: `2px solid ${approved ? GOLD : 'rgba(251,191,36,0.45)'}`,
+          borderRadius: '7px',
+          transition: 'background 0.15s, border-color 0.15s',
         }}
       >
-        {approved ? 'VOTED' : 'VOTE'}
+        {approved && (
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="3.5"
+               strokeLinecap="round" strokeLinejoin="round"
+               style={{ width: '20px', height: '20px' }}>
+            <path d="M5 13l4 4L19 7" />
+          </svg>
+        )}
       </button>
     </div>
   )
