@@ -136,11 +136,11 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
                   />
                   <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {team.name}
-                      </div>
                       <div style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {team.city}
+                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {team.name}
                       </div>
                     </div>
                     {isFav && (
@@ -226,11 +226,11 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
             />
             <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {team.name}
-                </div>
                 <div style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {team.city}
+                </div>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {team.name}
                 </div>
               </div>
               {isFav && (
