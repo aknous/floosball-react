@@ -136,11 +136,11 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
                   />
                   <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '14px', fontWeight: '500', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {team.city}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {team.name}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {team.city}
                       </div>
                     </div>
                     {isFav && (
@@ -178,9 +178,8 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
       </div>
 
       {/* Header row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 48px 44px 44px 44px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 48px 44px 48px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
         <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Team</span>
-        <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: 'right' }}>ELO</span>
         <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: 'right' }}>W-L</span>
         <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: 'right' }}>PCT</span>
         <HoverTooltip text="Point differential — the first playoff-seeding tiebreaker">
@@ -207,7 +206,7 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 48px 44px 44px 44px',
+            gridTemplateColumns: '1fr 48px 44px 48px',
             alignItems: 'center',
             padding: `7px 14px 7px ${paddingLeft}`,
             borderLeft: leftBorder,
@@ -227,11 +226,11 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
             />
             <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '14px', fontWeight: '500', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {team.city}
-                </div>
-                <div style={{ fontSize: '12px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {team.name}
+                </div>
+                <div style={{ fontSize: '11px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {team.city}
                 </div>
               </div>
               {isFav && (
@@ -250,11 +249,6 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
               )}
             </div>
           </Link>
-
-          {/* ELO */}
-          <div style={{ fontSize: '14px', fontWeight: '400', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-            {Math.round(team.elo)}
-          </div>
 
           {/* W-L */}
           <div style={{ fontSize: '14px', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
