@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { Stars, calcStars } from '@/Components/Stars'
-import { GiBroadsword, GiShield } from 'react-icons/gi'
+import ArchetypeBadge from '@/Components/ArchetypeBadge'
 import { GM_FA_BALLOT_MAX_RANKINGS, GM_FA_BALLOT_COST } from '@/types/gm'
-import { attitudeTier, resilienceTier, pressureHandlingTier } from '@/utils/mentalProfile'
+import { attitudeTier } from '@/utils/mentalProfile'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -47,6 +47,9 @@ export interface ScoutingPlayer {
   // Anchored to the sim's real peakSeason. Optional: older API responses omit
   // it and the row simply shows no stage badge.
   careerStage?: 'developing' | 'prime' | 'aging' | 'near_retirement' | 'retiring'
+  // Two-way identity (sword/shield) — only set for 4+ star offense/defense
+  // players, matching the hover card. Null/undefined → no icons.
+  archetype?: string | null
   // Mental snapshot — surfaced as badges so fans can spot toxic personalities
   // before ranking them. Optional: legacy ballot rows from older API versions
   // can omit these without breaking the row layout.
@@ -474,13 +477,14 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                         {idx + 1}.
                       </span>
                       <PositionChip position={player.position} />
-                      <Stars stars={calcStars(player.rating)} size={18} />
-                      <OffDefMini />
                       <PlayerHoverCard playerId={player.id} playerName={player.name}>
-                        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
+                        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help', minWidth: 0 }}>
                           {player.name}
                         </span>
                       </PlayerHoverCard>
+                      <Stars stars={calcStars(player.rating)} size={20} />
+                      <ArchetypeBadge archetype={player.archetype} size={14} />
+                      <div style={{ flex: 1 }} />
                       <HoverTooltip text="Move up">
                         <button
                           onClick={() => movePlayer(id, -1)}
@@ -716,84 +720,9 @@ const SectionDivider: React.FC<{ label: string; count: number; color: string }> 
   </div>
 )
 
-// Mental signals render as quiet inline labels with a colored value —
-// "Presence Toxic" rather than a bordered uppercase chip. Keeps them
-// from competing with the headline perf badge for visual weight on a
-// dense row.
-const MentalLabel: React.FC<{ name: string; value: string; color: string; tip?: string }> = ({ name, value, color, tip }) => {
-  const inner = (
-    <span style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
-      <span style={{ color: '#64748b' }}>{name} </span>
-      <span style={{ color, fontWeight: 600 }}>{value}</span>
-    </span>
-  )
-  if (!tip) return inner
-  return <HoverTooltip text={tip} color={color}>{inner}</HoverTooltip>
-}
-
-// Middle-tier labels — render nothing when a player is at these tiers
-// since "Presence Neutral · Resilience Steady · Pressure Even" on every
-// row carries no actionable signal and just clutters the layout. Only
-// surface mental data when it's meaningfully above or below average.
+// Neutral attitude tiers carry no actionable signal, so PresenceChip renders
+// nothing for them.
 const MENTAL_NEUTRAL_LABELS = new Set(['Neutral', 'Steady', 'Even'])
-
-const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
-  const items: React.ReactNode[] = []
-  if (p.attitude != null) {
-    const t = attitudeTier(p.attitude)
-    if (!MENTAL_NEUTRAL_LABELS.has(t.label)) {
-      items.push(
-        <MentalLabel
-          key="attitude"
-          name="Presence"
-          value={t.label}
-          color={t.color}
-          tip="Locker-room presence. Toxic players drag the room, Leaders lift it."
-        />
-      )
-    }
-  }
-  if (p.resilience != null) {
-    const t = resilienceTier(p.resilience)
-    if (!MENTAL_NEUTRAL_LABELS.has(t.label)) {
-      items.push(
-        <MentalLabel
-          key="resilience"
-          name="Resilience"
-          value={t.label}
-          color={t.color}
-          tip="Resilience — how well they shake off bad games."
-        />
-      )
-    }
-  }
-  if (p.pressureHandling != null) {
-    const t = pressureHandlingTier(p.pressureHandling)
-    if (!MENTAL_NEUTRAL_LABELS.has(t.label)) {
-      items.push(
-        <MentalLabel
-          key="pressure"
-          name="Pressure"
-          value={t.label}
-          color={t.color}
-          tip="Pressure handling — clutch vs. choke under late-game stress."
-        />
-      )
-    }
-  }
-
-  if (items.length === 0) return null
-  return (
-    <div style={{ marginTop: '4px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-      {items.map((item, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && <span style={{ color: '#334155', fontSize: '11px' }}>·</span>}
-          {item}
-        </React.Fragment>
-      ))}
-    </div>
-  )
-}
 
 // Career-stage badge — surfaces where a signable player sits on their arc so
 // fans can weigh runway, not just rating, and avoid stacking an already-old
@@ -821,17 +750,45 @@ const CareerBadge: React.FC<{ stage?: string; suppressDeveloping?: boolean }> = 
   )
 }
 
-// Orange sword / blue shield next to the overall stars — the same icons and
-// offense=orange / defense=blue convention the hover card's ArchetypeBadge
-// uses. Icons only, no rating numbers.
-const OFFENSE_COLOR = '#fb923c'
-const DEFENSE_COLOR = '#38bdf8'
-const OffDefMini: React.FC = () => (
-  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
-    <GiBroadsword size={13} color={OFFENSE_COLOR} />
-    <GiShield size={13} color={DEFENSE_COLOR} />
-  </span>
-)
+// Presence chip — the locker-room signal fans care most about (spot a Toxic
+// player fast). Just the attitude tier word, colored; hidden when neutral.
+// Resilience / pressure-handling move to the player hover card to keep the row
+// tight.
+const PresenceChip: React.FC<{ attitude?: number }> = ({ attitude }) => {
+  if (attitude == null) return null
+  const t = attitudeTier(attitude)
+  if (MENTAL_NEUTRAL_LABELS.has(t.label)) return null
+  return (
+    <HoverTooltip text="Locker-room presence. Toxic players drag the room, Leaders lift it." color={t.color}>
+      <span style={{ fontSize: '11px', fontWeight: 700, color: t.color, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+        {t.label}
+      </span>
+    </HoverTooltip>
+  )
+}
+
+// Performance — +/- symbols plus the Over/Underperforming label, styled to sit
+// in the right-hand signal column alongside career stage + presence. Same
+// tiers/colors as the hover card; hidden within normal variance.
+const CompactPerf: React.FC<{ delta: number }> = ({ delta }) => {
+  let symbols = '', color = '', label = ''
+  if (delta >= 20)       { symbols = '+++'; color = '#22c55e'; label = 'Overperforming' }
+  else if (delta >= 12)  { symbols = '++';  color = '#22c55e'; label = 'Overperforming' }
+  else if (delta >= 5)   { symbols = '+';   color = '#4ade80'; label = 'Overperforming' }
+  else if (delta <= -20) { symbols = '---'; color = '#ef4444'; label = 'Underperforming' }
+  else if (delta <= -12) { symbols = '--';  color = '#ef4444'; label = 'Underperforming' }
+  else if (delta <= -5)  { symbols = '-';   color = '#f87171'; label = 'Underperforming' }
+  else return null
+  const mag = Math.abs(delta)
+  return (
+    <HoverTooltip text={`Playing ${mag} rating points ${delta > 0 ? 'above' : 'below'} their listed rating this season.`} color={color}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+        <span style={{ fontFamily: 'monospace', letterSpacing: '0.5px' }}>{symbols}</span>
+        {label}
+      </span>
+    </HoverTooltip>
+  )
+}
 
 const PlayerRow: React.FC<{
   player: ScoutingPlayer
@@ -841,132 +798,61 @@ const PlayerRow: React.FC<{
   <div
     onClick={onClick}
     style={{
-      padding: '10px 12px',
+      padding: '8px 12px',
       borderRadius: '6px',
       cursor: canAddMore ? 'pointer' : 'not-allowed',
-      marginBottom: '2px',
-      borderBottom: '1px solid #1a2640',
+      borderBottom: '1px solid #334155',
       opacity: canAddMore ? 1 : 0.5,
     }}
     onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
   >
-    {/* Row 1: Position + name + stars + status/perf. Row wraps when
-        narrow (long name + 5 stars + a 'OVERPERFORMING' chip can exceed
-        a phone width) — the perf chip drops below and right-aligns
-        rather than squeezing the name to ellipsis. Name itself wraps to
-        a second line for the truly long ones rather than truncating. */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', rowGap: '4px' }}>
+    {/* Line 1: position + name, then the overall rating with the offense/
+        defense icons right after it, then the signals fans rank on (career
+        stage, presence, condensed +/- performance) pushed to the right. */}
+    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap', rowGap: '3px' }}>
       <PositionChip position={p.position} />
       <PlayerHoverCard playerId={p.id} playerName={p.name}>
-        <span style={{ fontSize: '15px', color: '#e2e8f0', fontWeight: '700', wordBreak: 'break-word' }}>
+        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '700', wordBreak: 'break-word' }}>
           {p.name}
         </span>
       </PlayerHoverCard>
-      {/* The ★ glyph sits visually low in its line-height box because the
-          star shape extends below the baseline. Nudge it up 2px so it
-          reads centered against the name. */}
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', position: 'relative', top: '-2px', flexShrink: 0 }}>
-        <Stars stars={calcStars(p.rating)} size={22} />
-        <OffDefMini />
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', flexShrink: 0, position: 'relative', top: '-1px' }}>
+        <Stars stars={calcStars(p.rating)} size={20} />
+        <ArchetypeBadge archetype={p.archetype} size={14} />
       </span>
-      {/* Spacer pushes the status block to the far right. marginLeft:auto
-          on the status itself is the wrap-friendly equivalent — when the
-          row wraps, the status hits a new line and still right-aligns. */}
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-        <CareerBadge stage={p.careerStage} suppressDeveloping={p.isRookie || p.isProspect} />
+      {/* Signals stacked as a right-aligned column: career stage, presence,
+          performance (each only when it has something to say). */}
+      <span style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px', flexShrink: 0, lineHeight: 1.1 }}>
         {p.isProspect ? (
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Prospect
-          </span>
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prospect</span>
         ) : p.isRookie ? (
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Rookie
-          </span>
-        ) : p.isProjected && p.projectedReason === 'cut_vote' ? (
-          // Cut-vote players get a distinct tag — the board is actively
-          // pushing them out, which is a stronger signal than a routine
-          // walk-year contract expiry. Walk-year FAs render as plain FAs.
-          <>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Cut Vote
-            </span>
-            {p.stats && <PerformanceBadge delta={p.ratingDelta} />}
-          </>
-        ) : p.stats ? (
-          <PerformanceBadge delta={p.ratingDelta} />
-        ) : null}
-      </div>
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rookie</span>
+        ) : (
+          <CareerBadge stage={p.careerStage} />
+        )}
+        <PresenceChip attitude={p.attitude} />
+        {p.isProjected && p.projectedReason === 'cut_vote' && (
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cut Vote</span>
+        )}
+        {p.stats && <CompactPerf delta={p.ratingDelta} />}
+      </span>
     </div>
-    {/* Row 2: stats / context note. Prospects + rookies get a single
-        italic note; FAs with stats get the stat line; FAs without
-        stats get a quiet "no stats" placeholder. */}
-    {p.isProspect ? (
-      <div style={{ marginTop: '5px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
-        Pipeline prospect. Rank to promote instead of signing a FA.
-      </div>
-    ) : p.isRookie ? (
-      <div style={{ marginTop: '5px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
-        No professional record
-      </div>
-    ) : p.stats ? (
-      <div style={{ marginTop: '5px', fontSize: '13px', color: '#cbd5e1', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <StatLine position={p.position} stats={p.stats} />
-      </div>
-    ) : (
-      <div style={{ marginTop: '5px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
-        No stats this season
-      </div>
-    )}
-    {/* Row 3: Mental flags — only renders when something's notable
-        (Toxic, Leader, Fragile, Ironclad, Choker, Ice, etc). Boring
-        middle-tier players don't get a row at all. */}
-    <MentalBadges player={p} />
+    {/* Line 2: the stat line (or a context note). */}
+    <div style={{ marginTop: '3px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8', flexWrap: 'wrap' }}>
+      {p.isProspect ? (
+        <span style={{ color: '#a78bfa', fontStyle: 'italic' }}>Pipeline prospect — rank to promote instead of signing a FA.</span>
+      ) : p.isRookie ? (
+        <span style={{ color: '#38bdf8', fontStyle: 'italic' }}>No professional record</span>
+      ) : p.stats ? (
+        <span style={{ color: '#cbd5e1', display: 'inline-flex', gap: '10px', flexWrap: 'wrap' }}><StatLine position={p.position} stats={p.stats} /></span>
+      ) : (
+        <span style={{ fontStyle: 'italic' }}>No stats this season</span>
+      )}
+    </div>
   </div>
 )
 
-const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
-  // Mirror the +++ / ++ / + / - / -- / --- convention from the player
-  // hover card so fans see the same signal in both places. Hover card
-  // renders it as plain text; the ballot uses chip styling for visual
-  // weight against the dense row, but the symbol + label + color tiers
-  // are identical.
-  let symbols = ''
-  let label = ''
-  let color = ''
-  if (delta >= 20)        { symbols = '+++'; label = 'Overperforming';  color = '#22c55e' }
-  else if (delta >= 12)   { symbols = '++';  label = 'Overperforming';  color = '#22c55e' }
-  else if (delta >= 5)    { symbols = '+';   label = 'Overperforming';  color = '#4ade80' }
-  else if (delta <= -20)  { symbols = '---'; label = 'Underperforming'; color = '#ef4444' }
-  else if (delta <= -12)  { symbols = '--';  label = 'Underperforming'; color = '#ef4444' }
-  else if (delta <= -5)   { symbols = '-';   label = 'Underperforming'; color = '#f87171' }
-  else return null  // within normal variance — nothing to flag
-
-  const magnitude = Math.abs(delta)
-  const tooltip = delta > 0
-    ? `Playing ${magnitude} rating points above their listed rating this season.`
-    : `Playing ${magnitude} rating points below their listed rating this season.`
-  return (
-    <HoverTooltip text={tooltip} color={color}>
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '5px',
-        fontSize: '12px',
-        fontWeight: 700,
-        color,
-        backgroundColor: `${color}22`,
-        border: `1px solid ${color}55`,
-        padding: '2px 9px',
-        borderRadius: '4px',
-        letterSpacing: '0.04em',
-      }}>
-        <span style={{ fontFamily: 'monospace', letterSpacing: '0.5px' }}>{symbols}</span>
-        {label}
-      </span>
-    </HoverTooltip>
-  )
-}
 
 export const StatLine: React.FC<{ position: string; stats: PlayerStats }> = ({ stats, position }) => {
   const parts: string[] = []
