@@ -653,6 +653,31 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           explain why voting isn't available rather than hiding it entirely. */}
       {view !== 'roster' && (
       <>
+      {/* In the Free Agent Ballot sub-tab the ballot is rendered inline (no
+          modal). Standalone (team page) keeps the requisition row + Open Ballot
+          button that triggers the modal below. */}
+      {view === 'fa' && (
+        <div style={{ padding: '14px' }}>
+          {faOpenSlots.length > 0 ? (
+            <FaBallotModal
+              inline
+              visible
+              openSlots={faOpenSlots}
+              scoutingPlayers={faScoutingPlayers}
+              faWindowEnd={faWindowEnd}
+              onSubmit={handleSubmitFaBallot}
+              submitting={faBallotSubmitting}
+              existingBallot={existingFaBallot}
+              onClose={() => {}}
+            />
+          ) : (
+            <div style={{ fontSize: '13px', color: '#94a3b8', padding: '8px 0' }}>
+              No roster openings projected yet — the board will vote on vacancies once cut/re-sign motions settle or contracts expire.
+            </div>
+          )}
+        </div>
+      )}
+      {view !== 'fa' && (
       <div style={{ padding: '12px 14px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' as const }}>
         <div style={{ flex: 1, minWidth: '200px' }}>
           <div style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0', marginBottom: '2px' }}>
@@ -682,6 +707,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           {existingFaBallot ? 'Revise Ballot' : 'Open Ballot'}
         </button>
       </div>
+      )}
 
       {/* Fan Vote Tallies — single overall priority list. Live during the
           voting window; once the offseason ballot resolves, the post-IRV
@@ -966,16 +992,20 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
         </GuideSection>
       </HelpModal>
 
-      <FaBallotModal
-        visible={faModalOpen}
-        onClose={() => setFaModalOpen(false)}
-        openSlots={faOpenSlots}
-        scoutingPlayers={faScoutingPlayers}
-        faWindowEnd={faWindowEnd}
-        onSubmit={handleSubmitFaBallot}
-        submitting={faBallotSubmitting}
-        existingBallot={existingFaBallot}
-      />
+      {/* Modal trigger only outside the FA sub-tab (the sub-tab renders the
+          ballot inline above). */}
+      {view !== 'fa' && (
+        <FaBallotModal
+          visible={faModalOpen}
+          onClose={() => setFaModalOpen(false)}
+          openSlots={faOpenSlots}
+          scoutingPlayers={faScoutingPlayers}
+          faWindowEnd={faWindowEnd}
+          onSubmit={handleSubmitFaBallot}
+          submitting={faBallotSubmitting}
+          existingBallot={existingFaBallot}
+        />
+      )}
     </div>
   )
 }

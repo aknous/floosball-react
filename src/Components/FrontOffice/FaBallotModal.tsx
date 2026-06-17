@@ -82,6 +82,9 @@ interface FaBallotModalProps {
   onSubmit: (rankings: number[]) => Promise<any>
   submitting: boolean
   existingBallot?: number[] | null
+  /** Render inline (in a tab) instead of as a modal overlay: no backdrop,
+   *  portal, or close button. `visible`/`onClose` are ignored in this mode. */
+  inline?: boolean
 }
 
 const POS_CHIP_COLORS: Record<string, { bg: string; fg: string }> = {
@@ -151,6 +154,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
   onSubmit,
   submitting,
   existingBallot,
+  inline = false,
 }) => {
   const [ranking, setRanking] = useState<number[]>([])
   const [posFilter, setPosFilter] = useState<'ALL' | string>('ALL')
@@ -274,15 +278,17 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
   const isUpdate = existingBallot && existingBallot.length > 0
   const cost = isUpdate ? 0 : GM_FA_BALLOT_COST
 
-  if (!visible) return null
+  if (!visible && !inline) return null
 
   // Position filter chips: ALL + every distinct open position.
   const posFilterOptions: string[] = ['ALL', ...Array.from(openPositionSet).sort()]
 
-  return ReactDOM.createPortal(
+  const tree = (
     <div
-      onClick={onClose}
-      style={{
+      onClick={inline ? undefined : onClose}
+      style={inline
+        ? { fontFamily: 'pressStart' }
+        : {
         position: 'fixed',
         inset: 0,
         zIndex: 10002,
@@ -299,11 +305,11 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: '1040px',
-          height: isMobile ? '100vh' : '85vh',
+          maxWidth: inline ? '100%' : '1040px',
+          height: inline ? '70vh' : (isMobile ? '100vh' : '85vh'),
           backgroundColor: '#0f172a',
-          border: isMobile ? 'none' : '1px solid #334155',
-          borderRadius: isMobile ? 0 : '12px',
+          border: (isMobile && !inline) ? 'none' : '1px solid #334155',
+          borderRadius: (isMobile && !inline) ? 0 : '12px',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -369,7 +375,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                 {timeLeft}
               </div>
             )}
-            {isMobile && (
+            {isMobile && !inline && (
               <button
                 onClick={onClose}
                 aria-label="Close"
@@ -690,9 +696,10 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
           </button>
         </div>
       </div>
-    </div>,
-    document.body
+    </div>
   )
+
+  return inline ? tree : ReactDOM.createPortal(tree, document.body)
 }
 
 /* ── Helper components ── */
