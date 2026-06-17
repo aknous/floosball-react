@@ -28,6 +28,7 @@ interface TeamStanding {
   wins: number
   losses: number
   winPerc: string
+  scoreDiff?: number
   clinchedPlayoffs?: boolean
   clinchedTopSeed?: boolean
   eliminated?: boolean
@@ -177,11 +178,14 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
       </div>
 
       {/* Header row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 48px 44px 44px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 48px 44px 44px 44px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
         <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase' }}>Team</span>
         <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: 'right' }}>ELO</span>
         <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: 'right' }}>W-L</span>
         <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: 'right' }}>PCT</span>
+        <HoverTooltip text="Point differential — the first playoff-seeding tiebreaker">
+          <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: 'right', display: 'block', cursor: 'help' }}>DIFF</span>
+        </HoverTooltip>
       </div>
 
       {displayTeams.map((team, index) => {
@@ -203,7 +207,7 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 48px 44px 44px',
+            gridTemplateColumns: '1fr 48px 44px 44px 44px',
             alignItems: 'center',
             padding: `7px 14px 7px ${paddingLeft}`,
             borderLeft: leftBorder,
@@ -260,6 +264,11 @@ export const Standings: React.FC<StandingsProps> = ({ leagueIndex, maxHeight = 2
           {/* PCT */}
           <div style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
             {team.winPerc.replace(/^0/, '')}
+          </div>
+
+          {/* DIFF — point differential (first seeding tiebreaker) */}
+          <div style={{ fontSize: '14px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: (team.scoreDiff ?? 0) > 0 ? '#4ade80' : (team.scoreDiff ?? 0) < 0 ? '#f87171' : '#94a3b8' }}>
+            {team.scoreDiff == null ? '—' : (team.scoreDiff > 0 ? '+' : '') + team.scoreDiff}
           </div>
         </div>
         </TeamHoverCard>
