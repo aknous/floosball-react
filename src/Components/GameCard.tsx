@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react'
 import TeamHoverCard from './TeamHoverCard'
+import { effectiveAwayColor } from '@/utils/colors'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -46,6 +47,11 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
   const isComplete = status === 'Final'
   const isLive = status === 'Active' && (quarter ?? 0) > 0
   const isFinal = isComplete
+
+  // Away team's effective color for the WP meter: falls back to its secondary
+  // when its primary is basically the same as home's, so the two halves of the
+  // bar stay distinguishable. Home is the reference and keeps its primary.
+  const awayColor = effectiveAwayColor(homeTeam.color, awayTeam.color, awayTeam.secondaryColor)
 
   const absMomentum = Math.abs(momentum ?? 0)
   const homeMomentum = isLive && momentumTeam === homeTeam.abbr
@@ -237,7 +243,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             return `#${clamp(r).toString(16).padStart(2, '0')}${clamp(g).toString(16).padStart(2, '0')}${clamp(b).toString(16).padStart(2, '0')}`
           }
           const homeTextColor = homeFavored ? lightenColor(homeTeam.color) : '#cbd5e1'
-          const awayTextColor = awayFavored ? lightenColor(awayTeam.color) : '#cbd5e1'
+          const awayTextColor = awayFavored ? lightenColor(awayColor) : '#cbd5e1'
           return (
             <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #475569' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -259,7 +265,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                   }} />
                   <div style={{
                     width: `${awayWP}%`,
-                    backgroundColor: awayTeam.color,
+                    backgroundColor: awayColor,
                     transition: 'width 0.5s ease',
                   }} />
                 </div>
@@ -295,10 +301,10 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
 
         const homePickStyle: React.CSSProperties = canPick ? { cursor: 'pointer' } : {}
         const homeBtnBg = pickedHome ? `${homeTeam.color}70` : 'transparent'
-        const awayBtnBg = pickedAway ? `${awayTeam.color}70` : 'transparent'
+        const awayBtnBg = pickedAway ? `${awayColor}70` : 'transparent'
         const unpickedBorder = canPick && !hasPick ? '1px dashed #64748b' : '1px solid transparent'
         const homeTextColor = pickedHome ? '#fff' : homeFavored ? lightenColor(homeTeam.color) : '#cbd5e1'
-        const awayTextColor = pickedAway ? '#fff' : awayFavored ? lightenColor(awayTeam.color) : '#cbd5e1'
+        const awayTextColor = pickedAway ? '#fff' : awayFavored ? lightenColor(awayColor) : '#cbd5e1'
 
         return (
           <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #475569' }}>
@@ -350,7 +356,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                 }} />
                 <div style={{
                   width: `${awayWP}%`,
-                  backgroundColor: awayTeam.color,
+                  backgroundColor: awayColor,
                   transition: 'width 0.5s ease',
                 }} />
               </div>
@@ -365,8 +371,8 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                   padding: '2px 6px',
                   borderRadius: '4px',
                   backgroundColor: awayBtnBg,
-                  border: pickedAway ? `1px solid ${awayTeam.color}80` : unpickedBorder,
-                  borderBottom: pickedAway ? `2px solid ${awayTeam.color}` : '2px solid transparent',
+                  border: pickedAway ? `1px solid ${awayColor}80` : unpickedBorder,
+                  borderBottom: pickedAway ? `2px solid ${awayColor}` : '2px solid transparent',
                   fontSize: awayFavored && !hasPick ? '15px' : '14px',
                   fontWeight: pickedAway || (awayFavored && !hasPick) ? '700' : '500',
                   color: awayTextColor,

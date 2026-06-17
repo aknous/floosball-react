@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { Stars, calcStars } from '@/Components/Stars'
+import { GiBroadsword, GiShield } from 'react-icons/gi'
 import { GM_FA_BALLOT_MAX_RANKINGS, GM_FA_BALLOT_COST } from '@/types/gm'
 import { attitudeTier, resilienceTier, pressureHandlingTier } from '@/utils/mentalProfile'
 import HoverTooltip from '@/Components/HoverTooltip'
@@ -37,6 +38,15 @@ export interface ScoutingPlayer {
   isProjected?: boolean
   projectedReason?: 'walk_year' | 'cut_vote'
   currentTeam?: string
+  // Split offense/defense ratings drive the sword/shield dual-star display.
+  // Optional: older API responses omit them and the row falls back to a
+  // single overall star rating.
+  offensiveRating?: number
+  defensiveRating?: number
+  // Career-arc stage so fans can weigh a player's runway, not just rating.
+  // Anchored to the sim's real peakSeason. Optional: older API responses omit
+  // it and the row simply shows no stage badge.
+  careerStage?: 'developing' | 'prime' | 'aging' | 'near_retirement' | 'retiring'
   // Mental snapshot — surfaced as badges so fans can spot toxic personalities
   // before ranking them. Optional: legacy ballot rows from older API versions
   // can omit these without breaking the row layout.
@@ -94,6 +104,41 @@ const PositionChip: React.FC<{ position: string }> = ({ position }) => {
   )
 }
 
+// ── Candidate sorting ────────────────────────────────────────────────────────
+type SortKey = 'rating' | 'performance' | 'fantasy' | 'stage'
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'rating', label: 'Rating' },
+  { key: 'performance', label: 'Performance' },
+  { key: 'fantasy', label: 'Fantasy Pts' },
+  { key: 'stage', label: 'Career' },
+]
+
+// Career-stage sort puts the strongest outlook first: at-peak, then rising,
+// then the declining tiers. Within a stage, fall back to overall rating.
+const STAGE_RANK: Record<string, number> = {
+  prime: 0, developing: 1, aging: 2, near_retirement: 3, retiring: 4,
+}
+
+// All comparators sort "best first" (descending) so the toggle direction is
+// consistent across options. Players missing a value sink to the bottom.
+function compareCandidates(sortBy: SortKey, a: ScoutingPlayer, b: ScoutingPlayer): number {
+  switch (sortBy) {
+    case 'performance':
+      return (b.performanceRating ?? 0) - (a.performanceRating ?? 0) || b.rating - a.rating
+    case 'fantasy':
+      return (b.stats?.fantasyPoints ?? -1) - (a.stats?.fantasyPoints ?? -1) || b.rating - a.rating
+    case 'stage': {
+      const ra = STAGE_RANK[a.careerStage ?? ''] ?? 99
+      const rb = STAGE_RANK[b.careerStage ?? ''] ?? 99
+      return ra - rb || b.rating - a.rating
+    }
+    case 'rating':
+    default:
+      return b.rating - a.rating
+  }
+}
+
 const FaBallotModal: React.FC<FaBallotModalProps> = ({
   visible,
   onClose,
@@ -106,6 +151,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
 }) => {
   const [ranking, setRanking] = useState<number[]>([])
   const [posFilter, setPosFilter] = useState<'ALL' | string>('ALL')
+  const [sortBy, setSortBy] = useState<SortKey>('rating')
   const [timeLeft, setTimeLeft] = useState('')
   // Below 768px the side-by-side ranked/available grid is unusable —
   // each column shrinks to ~180px and player rows can't render. Swap
@@ -183,10 +229,10 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
       if (p.isProspect) prospectList.push(p)
       else otherList.push(p)
     }
-    prospectList.sort((a, b) => b.rating - a.rating)
-    otherList.sort((a, b) => b.rating - a.rating)
+    prospectList.sort((a, b) => compareCandidates(sortBy, a, b))
+    otherList.sort((a, b) => compareCandidates(sortBy, a, b))
     return { prospects: prospectList, others: otherList }
-  }, [scoutingPlayers, openPositionSet, rankedSet, posFilter])
+  }, [scoutingPlayers, openPositionSet, rankedSet, posFilter, sortBy])
 
   const canAddMore = ranking.length < GM_FA_BALLOT_MAX_RANKINGS
 
@@ -429,6 +475,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                       </span>
                       <PositionChip position={player.position} />
                       <Stars stars={calcStars(player.rating)} size={18} />
+                      <OffDefMini />
                       <PlayerHoverCard playerId={player.id} playerName={player.name}>
                         <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
                           {player.name}
@@ -527,6 +574,33 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                     }}
                   >
                     {opt}
+                  </button>
+                )
+              })}
+            </div>
+            <div style={{
+              padding: '8px 14px', borderBottom: '1px solid #1e293b',
+              display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
+              flexWrap: 'wrap',
+            }}>
+              <span style={{ fontSize: '12px', color: '#64748b', marginRight: '4px' }}>Sort:</span>
+              {SORT_OPTIONS.map(opt => {
+                const active = sortBy === opt.key
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => setSortBy(opt.key)}
+                    style={{
+                      fontSize: '11px', fontWeight: '600',
+                      padding: '3px 8px', borderRadius: '4px',
+                      backgroundColor: active ? 'rgba(59,130,246,0.18)' : 'transparent',
+                      color: active ? '#60a5fa' : '#94a3b8',
+                      border: '1px solid ' + (active ? 'rgba(59,130,246,0.4)' : '#334155'),
+                      fontFamily: 'inherit',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {opt.label}
                   </button>
                 )
               })}
@@ -721,6 +795,44 @@ const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
   )
 }
 
+// Career-stage badge — surfaces where a signable player sits on their arc so
+// fans can weigh runway, not just rating, and avoid stacking an already-old
+// roster. Anchored to the sim's real peakSeason (backend computeCareerStage).
+// A 'developing' rookie/prospect already carries its own Rookie/Prospect tag,
+// so the stage chip is suppressed there to avoid a redundant double-label.
+const CAREER_BADGE: Record<string, { label: string; color: string; tip: string }> = {
+  developing:      { label: 'Developing',      color: '#38bdf8', tip: 'Still climbing toward their peak.' },
+  prime:           { label: 'Prime',           color: '#4ade80', tip: 'In their peak seasons.' },
+  aging:           { label: 'Aging',           color: '#facc15', tip: 'Past their peak and gradually declining.' },
+  near_retirement: { label: 'Near Retirement', color: '#f87171', tip: 'At the end of their longevity. Could retire soon.' },
+  retiring:        { label: 'Retiring',        color: '#ef4444', tip: 'Set to retire after this season.' },
+}
+
+const CareerBadge: React.FC<{ stage?: string; suppressDeveloping?: boolean }> = ({ stage, suppressDeveloping }) => {
+  if (stage === 'developing' && suppressDeveloping) return null
+  const cfg = stage ? CAREER_BADGE[stage] : undefined
+  if (!cfg) return null
+  return (
+    <HoverTooltip text={cfg.tip} color={cfg.color}>
+      <span style={{ fontSize: '11px', fontWeight: 700, color: cfg.color, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+        {cfg.label}
+      </span>
+    </HoverTooltip>
+  )
+}
+
+// Orange sword / blue shield next to the overall stars — the same icons and
+// offense=orange / defense=blue convention the hover card's ArchetypeBadge
+// uses. Icons only, no rating numbers.
+const OFFENSE_COLOR = '#fb923c'
+const DEFENSE_COLOR = '#38bdf8'
+const OffDefMini: React.FC = () => (
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+    <GiBroadsword size={13} color={OFFENSE_COLOR} />
+    <GiShield size={13} color={DEFENSE_COLOR} />
+  </span>
+)
+
 const PlayerRow: React.FC<{
   player: ScoutingPlayer
   canAddMore: boolean
@@ -754,13 +866,15 @@ const PlayerRow: React.FC<{
       {/* The ★ glyph sits visually low in its line-height box because the
           star shape extends below the baseline. Nudge it up 2px so it
           reads centered against the name. */}
-      <span style={{ display: 'inline-flex', alignItems: 'center', position: 'relative', top: '-2px', flexShrink: 0 }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', position: 'relative', top: '-2px', flexShrink: 0 }}>
         <Stars stars={calcStars(p.rating)} size={22} />
+        <OffDefMini />
       </span>
       {/* Spacer pushes the status block to the far right. marginLeft:auto
           on the status itself is the wrap-friendly equivalent — when the
           row wraps, the status hits a new line and still right-aligns. */}
       <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        <CareerBadge stage={p.careerStage} suppressDeveloping={p.isRookie || p.isProspect} />
         {p.isProspect ? (
           <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Prospect
