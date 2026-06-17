@@ -12,6 +12,7 @@ import TeamNavStrip from '@/Components/TeamNavStrip'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { useTutorial, TutorialStep } from '@/Components/Tutorial/useTutorial'
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
+import CareerStageBadge, { hasRenderableStage } from '@/Components/CareerStageBadge'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -229,6 +230,7 @@ export default function TeamPage() {
   const [fundingRefresh, setFundingRefresh] = useState(0)
   const [showHelp, setShowHelp] = useState(false)
   const [retirementWatch, setRetirementWatch] = useState<Record<number, RetirementRiskEntry>>({})
+  const [careerStages, setCareerStages] = useState<Record<number, string>>({})
   const [prospects, setProspects] = useState<ProspectEntry[]>([])
   const [prospectsMeta, setProspectsMeta] = useState<{ slotCapPerPosition: number, developmentWindow: number, promotionThreshold: number } | null>(null)
   const [expandedRosterSlot, setExpandedRosterSlot] = useState<string | null>(null)
@@ -330,6 +332,7 @@ export default function TeamPage() {
         const byId: Record<number, RetirementRiskEntry> = {}
         for (const w of watchJson.data.watch) byId[w.playerId] = w
         setRetirementWatch(byId)
+        setCareerStages(watchJson.data.stages || {})
       }
       if (prospectsJson?.success && prospectsJson.data) {
         setProspects(prospectsJson.data.prospects || [])
@@ -680,7 +683,7 @@ export default function TeamPage() {
                 ) : null
                 const retirementBadge = retirementWatch[player.id]
                   ? <RetirementBadge risk={retirementWatch[player.id].risk} />
-                  : null
+                  : <CareerStageBadge stage={careerStages[player.id]} />
 
                 const isExpanded = expandedRosterSlot === slot
                 const toggleExpand = () => setExpandedRosterSlot(isExpanded ? null : slot)
@@ -869,7 +872,7 @@ export default function TeamPage() {
                       // The retirement column reserves a fixed slot only while
                       // retirement data is live (weeks 22+); otherwise it
                       // collapses so the off-season layout isn't padded out.
-                      gridTemplateColumns: `auto minmax(0, 1fr) 60px 80px ${Object.keys(retirementWatch).length > 0 ? '96px' : 'auto'} 20px`,
+                      gridTemplateColumns: `auto minmax(0, 1fr) 60px 80px ${(Object.keys(retirementWatch).length > 0 || hasRenderableStage(careerStages)) ? '96px' : 'auto'} 20px`,
                       columnGap: '10px',
                       alignItems: 'center',
                       padding: '7px 10px',
