@@ -219,6 +219,34 @@ function RetirementBadge({ risk }: { risk: RetirementRisk }) {
   )
 }
 
+// Young-end career stage, shown in the same roster slot as the retirement
+// badges so fans see who's still developing or in their prime. Only the
+// young/peak stages render here; the aging/retiring end is the retirement
+// badge's job.
+const CAREER_STAGE_STYLES: Record<string, { label: string; color: string; bg: string }> = {
+  developing: { label: 'DEVELOPING', color: '#38bdf8', bg: 'rgba(56,189,248,0.12)' },
+  prime:      { label: 'PRIME',      color: '#4ade80', bg: 'rgba(74,222,128,0.12)' },
+}
+function CareerStageBadge({ stage }: { stage?: string }) {
+  const style = stage ? CAREER_STAGE_STYLES[stage] : undefined
+  if (!style) return null
+  return (
+    <span style={{
+      fontSize: '9px',
+      fontWeight: 800,
+      letterSpacing: '0.06em',
+      color: style.color,
+      backgroundColor: style.bg,
+      padding: '2px 6px',
+      borderRadius: '3px',
+      flexShrink: 0,
+      whiteSpace: 'nowrap',
+    }}>
+      {style.label}
+    </span>
+  )
+}
+
 export default function TeamPage() {
   const { id } = useParams<{ id: string }>()
   const { user, getToken, refetchUser } = useAuth()
@@ -229,6 +257,7 @@ export default function TeamPage() {
   const [fundingRefresh, setFundingRefresh] = useState(0)
   const [showHelp, setShowHelp] = useState(false)
   const [retirementWatch, setRetirementWatch] = useState<Record<number, RetirementRiskEntry>>({})
+  const [careerStages, setCareerStages] = useState<Record<number, string>>({})
   const [prospects, setProspects] = useState<ProspectEntry[]>([])
   const [prospectsMeta, setProspectsMeta] = useState<{ slotCapPerPosition: number, developmentWindow: number, promotionThreshold: number } | null>(null)
   const [expandedRosterSlot, setExpandedRosterSlot] = useState<string | null>(null)
@@ -330,6 +359,7 @@ export default function TeamPage() {
         const byId: Record<number, RetirementRiskEntry> = {}
         for (const w of watchJson.data.watch) byId[w.playerId] = w
         setRetirementWatch(byId)
+        setCareerStages(watchJson.data.stages || {})
       }
       if (prospectsJson?.success && prospectsJson.data) {
         setProspects(prospectsJson.data.prospects || [])
@@ -680,7 +710,7 @@ export default function TeamPage() {
                 ) : null
                 const retirementBadge = retirementWatch[player.id]
                   ? <RetirementBadge risk={retirementWatch[player.id].risk} />
-                  : null
+                  : <CareerStageBadge stage={careerStages[player.id]} />
 
                 const isExpanded = expandedRosterSlot === slot
                 const toggleExpand = () => setExpandedRosterSlot(isExpanded ? null : slot)
@@ -869,7 +899,7 @@ export default function TeamPage() {
                       // The retirement column reserves a fixed slot only while
                       // retirement data is live (weeks 22+); otherwise it
                       // collapses so the off-season layout isn't padded out.
-                      gridTemplateColumns: `auto minmax(0, 1fr) 60px 80px ${Object.keys(retirementWatch).length > 0 ? '96px' : 'auto'} 20px`,
+                      gridTemplateColumns: `auto minmax(0, 1fr) 60px 80px ${(Object.keys(retirementWatch).length > 0 || Object.values(careerStages).some(s => s === 'developing' || s === 'prime')) ? '96px' : 'auto'} 20px`,
                       columnGap: '10px',
                       alignItems: 'center',
                       padding: '7px 10px',
