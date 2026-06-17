@@ -148,7 +148,7 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
           border: `1px solid ${GOLD}`, borderRadius: '6px', padding: '8px 14px',
         }}
       >
-        {approved ? 'APPROVED' : 'APPROVE'}
+        {approved ? 'VOTED' : 'VOTE'}
       </button>
     </div>
   )
