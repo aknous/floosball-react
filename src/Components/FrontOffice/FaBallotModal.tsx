@@ -474,7 +474,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                       </span>
                       <PositionChip position={player.position} />
                       <Stars stars={calcStars(player.rating)} size={18} />
-                      <OffDefMini off={player.offensiveRating} def={player.defensiveRating} />
+                      <OffDefMini />
                       <PlayerHoverCard playerId={player.id} playerName={player.name}>
                         <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
                           {player.name}
@@ -820,28 +820,14 @@ const CareerBadge: React.FC<{ stage?: string; suppressDeveloping?: boolean }> = 
   )
 }
 
-// Offense/defense ratings as compact sword/shield icon + number pairs — same
-// idiom as the player hover card. Pairs with the overall star rating; we don't
-// break the stars out per side.
-const OffDefMini: React.FC<{ off?: number; def?: number }> = ({ off, def }) => {
-  if (off == null && def == null) return null
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
-      {off != null && (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-          <SwordIcon size={11} color="#94a3b8" />
-          <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: 600 }}>{Math.round(off)}</span>
-        </span>
-      )}
-      {def != null && (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-          <ShieldIcon size={11} color="#94a3b8" />
-          <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: 600 }}>{Math.round(def)}</span>
-        </span>
-      )}
-    </span>
-  )
-}
+// Sword/shield icons next to the overall stars — same icons the player hover
+// card uses, no numbers. A two-way / offense+defense motif, not a rating split.
+const OffDefMini: React.FC = () => (
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+    <SwordIcon size={11} color="#94a3b8" />
+    <ShieldIcon size={11} color="#94a3b8" />
+  </span>
+)
 
 const PlayerRow: React.FC<{
   player: ScoutingPlayer
@@ -878,7 +864,7 @@ const PlayerRow: React.FC<{
           reads centered against the name. */}
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', position: 'relative', top: '-2px', flexShrink: 0 }}>
         <Stars stars={calcStars(p.rating)} size={22} />
-        <OffDefMini off={p.offensiveRating} def={p.defensiveRating} />
+        <OffDefMini />
       </span>
       {/* Spacer pushes the status block to the far right. marginLeft:auto
           on the status itself is the wrap-friendly equivalent — when the
