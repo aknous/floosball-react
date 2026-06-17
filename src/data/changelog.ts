@@ -12,6 +12,43 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.19.2',
+    date: '2026-06-17',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Standings] Playoff tiebreakers now run in order: win percentage, then score differential, then head-to-head point differential (a mini round-robin that handles three or more tied teams). The standings board adds a score-differential column and orders teams the same way the playoffs seed.',
+          '[Players] Career-stage badges. Players now show as Developing, Prime, Aging, or Near Retirement on the free-agent ballot and on team rosters, so you can tell who is rising from who is winding down.',
+          '[Players] Projected ceiling. The progression chart shows a dotted ceiling line and the hover card marks the ceiling on the rating gauge, so a young player\'s upside is clear at a glance.',
+          '[Front Office] Redesigned free-agent ballot rows for clarity: overall rating with role icons, career stage, locker-room presence, and recent form, plus sort options.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Sim] Hail Mary rework. It now only fires as a genuine last-play heave into the end zone, thrown to the goal line and limited by the QB\'s arm strength, with a long-shot completion rate. A completion that reaches the end zone is a touchdown rather than a short catch.',
+          '[Sim] Interception rate tuned down to a more realistic level.',
+          '[Standings] ELO moved to the Power Rankings view, and the team name now reads above the city for cleaner, less cluttered standings.',
+          '[Front Office] Removed the projected free-agent pool preview list.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Cards] Fixed a Doubler bug that double-counted roster touchdowns at week\'s end, and stopped marker cards (Doubler, Surveyor, Sharpshooter, Conductor) from leaking fantasy points through Lemons and Conductor.',
+          '[Sim] A pass caught and taken out of bounds no longer reports a phantom fumble or tackle.',
+          '[Sim] A Hail Mary caught short of the goal line no longer says it went into the end zone.',
+          '[Sim] End-of-first-half play-calling fixed so both teams keep attacking regardless of the score.',
+          '[Fantasy] Extra roster swaps earned from achievements now reach your swap pool.',
+          '[Teams] When two teams have nearly the same color, the away team switches to its secondary color on the win-probability meter and in the game view so you can tell them apart.',
+          '[Players] A ceiling can no longer show below a rating the player has already reached, and the ceiling label no longer overlaps the progression line.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.19.1',
     date: '2026-06-15',
     changes: [],
