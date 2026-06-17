@@ -26,9 +26,14 @@ export function getContrastTextColor(hex: string): string {
 
 // ── Team color-clash handling ────────────────────────────────────────────────
 // Two teams with near-identical primary colors are hard to tell apart on a WP
-// meter / scoreboard / field. Plain RGB euclidean distance with a "basically
-// the same" cutoff (tunable).
-const COLOR_CLASH_THRESHOLD = 72
+// meter / scoreboard / field. Plain RGB euclidean distance weights every channel
+// equally, so same-hue pairs (two pinks like Melons/Broads, two greens like
+// Rocks/Pinecones) read as "the same color" to the eye yet sit far apart
+// numerically and slip through. Instead we use a perceptually-weighted
+// ("redmean") distance that weights green ~4x — where the eye is most sensitive
+// — so same-family colors register as clashing. Threshold tuned so same-hue
+// pairs clash while genuinely different hues stay distinct.
+const COLOR_CLASH_THRESHOLD = 155
 
 function hexToRgb(hex?: string | null): [number, number, number] | null {
   if (!hex) return null
@@ -42,7 +47,15 @@ export function colorsTooClose(a?: string | null, b?: string | null): boolean {
   const ra = hexToRgb(a), rb = hexToRgb(b)
   if (!ra || !rb) return false
   const dr = ra[0] - rb[0], dg = ra[1] - rb[1], db = ra[2] - rb[2]
-  return Math.sqrt(dr * dr + dg * dg + db * db) < COLOR_CLASH_THRESHOLD
+  const rmean = (ra[0] + rb[0]) / 2
+  // Redmean weighted euclidean: green dominates (4x), red/blue weights shift
+  // with the mean red level. https://www.compuphase.com/cmetric.htm
+  const dist = Math.sqrt(
+    (2 + rmean / 256) * dr * dr +
+    4 * dg * dg +
+    (2 + (255 - rmean) / 256) * db * db,
+  )
+  return dist < COLOR_CLASH_THRESHOLD
 }
 
 /**
