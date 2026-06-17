@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import ReactDOM from 'react-dom'
-import { Stars, calcStars, SwordIcon, ShieldIcon } from '@/Components/Stars'
+import { Stars, calcStars } from '@/Components/Stars'
+import { GiBroadsword, GiShield } from 'react-icons/gi'
 import { GM_FA_BALLOT_MAX_RANKINGS, GM_FA_BALLOT_COST } from '@/types/gm'
 import { attitudeTier, resilienceTier, pressureHandlingTier } from '@/utils/mentalProfile'
 import HoverTooltip from '@/Components/HoverTooltip'
@@ -820,12 +821,15 @@ const CareerBadge: React.FC<{ stage?: string; suppressDeveloping?: boolean }> = 
   )
 }
 
-// Sword/shield icons next to the overall stars — same icons the player hover
-// card uses, no numbers. A two-way / offense+defense motif, not a rating split.
+// Orange sword / blue shield next to the overall stars — the same icons and
+// offense=orange / defense=blue convention the hover card's ArchetypeBadge
+// uses. Icons only, no rating numbers.
+const OFFENSE_COLOR = '#fb923c'
+const DEFENSE_COLOR = '#38bdf8'
 const OffDefMini: React.FC = () => (
-  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-    <SwordIcon size={11} color="#94a3b8" />
-    <ShieldIcon size={11} color="#94a3b8" />
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+    <GiBroadsword size={13} color={OFFENSE_COLOR} />
+    <GiShield size={13} color={DEFENSE_COLOR} />
   </span>
 )
 
