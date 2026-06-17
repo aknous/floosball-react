@@ -215,7 +215,7 @@ export default function AwardsPage() {
 
   return (
     <div style={wrap}>
-      <div style={{ fontSize: '24px', fontWeight: 900, color: GOLD, letterSpacing: '0.03em', marginBottom: '16px' }}>Awards</div>
+      <div style={{ fontSize: '24px', fontWeight: 900, color: GOLD, letterSpacing: '0.03em', marginBottom: '16px' }}>Awards Voting</div>
 
       {showTabs && (
         <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
@@ -248,7 +248,7 @@ export default function AwardsPage() {
         <div>
           <SectionHeader
             title="Hall of Fame"
-            subtitle={`Approve the players you want enshrined. Up to ${classCap} are inducted this year; the rest carry over.`}
+            subtitle={`Vote for the players you want inducted into the Hall of Fame. Only ${classCap} can be inducted each season, and players stay on the ballot for up to 5 seasons.`}
           />
           {hofCandidates.length === 0 ? (
             <div style={{ fontSize: '13px', color: '#94a3b8', padding: '12px 0' }}>No players on the ballot this season.</div>
