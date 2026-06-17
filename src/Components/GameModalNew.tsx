@@ -14,29 +14,9 @@ import { PlayReactions } from './GameModal/PlayReactions'
 import RallyButton from './GameModal/RallyPanel'
 import CheerBar from './CheerBar'
 import { GlitchedText } from './GlitchedText'
+import { effectiveAwayColor } from '@/utils/colors'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
-
-// Two teams with near-identical primary colors are hard to tell apart on the
-// scoreboard / WP chart / field. When that happens we fall the AWAY team back
-// to its secondary color (home stays the reference). Plain RGB euclidean
-// distance with a "basically the same" cutoff — tunable.
-const COLOR_CLASH_THRESHOLD = 72
-
-function hexToRgb(hex?: string | null): [number, number, number] | null {
-  if (!hex) return null
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
-  if (!m) return null
-  const n = parseInt(m[1], 16)
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
-}
-
-function colorsTooClose(a?: string | null, b?: string | null): boolean {
-  const ra = hexToRgb(a), rb = hexToRgb(b)
-  if (!ra || !rb) return false
-  const dr = ra[0] - rb[0], dg = ra[1] - rb[1], db = ra[2] - rb[2]
-  return Math.sqrt(dr * dr + dg * dg + db * db) < COLOR_CLASH_THRESHOLD
-}
 
 interface GameModalNewProps {
   onClose: () => void
@@ -221,15 +201,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // Effective away-team display color: when the two primaries are basically the
   // same, swap the away team to its secondary so they're distinguishable — but
   // only if that secondary actually separates from home (else keep the primary).
-  const awayDisplayColor = useMemo(() => {
-    const home = gameData?.homeTeam?.color
-    const away = gameData?.awayTeam?.color ?? '#888'
-    const awaySecondary = (gameData?.awayTeam as any)?.secondaryColor
-    if (colorsTooClose(home, away) && awaySecondary && !colorsTooClose(home, awaySecondary)) {
-      return awaySecondary
-    }
-    return away
-  }, [gameData?.homeTeam?.color, gameData?.awayTeam?.color, (gameData?.awayTeam as any)?.secondaryColor])
+  const awayDisplayColor = useMemo(
+    () => effectiveAwayColor(gameData?.homeTeam?.color, gameData?.awayTeam?.color, (gameData?.awayTeam as any)?.secondaryColor),
+    [gameData?.homeTeam?.color, gameData?.awayTeam?.color, (gameData?.awayTeam as any)?.secondaryColor]
+  )
 
   // ── Replay mode ──────────────────────────────────────────────────────────
   // Step a finished game back through its plays, feeding the scoreboard, field
