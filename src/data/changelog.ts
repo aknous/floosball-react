@@ -38,6 +38,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         label: 'Fixes',
         items: [
           '[Cards] Fixed a Doubler bug that double-counted roster touchdowns at week\'s end, and stopped marker cards (Doubler, Surveyor, Sharpshooter, Conductor) from leaking fantasy points through Lemons and Conductor.',
+          '[Cards] The shop now shows the Champion, MVP, and All-Pro badge on featured cards. The classification was being dropped from the shop preview, so those tags only appeared once the card was in your collection.',
           '[Sim] A pass caught and taken out of bounds no longer reports a phantom fumble or tackle.',
           '[Sim] A Hail Mary caught short of the goal line no longer says it went into the end zone.',
           '[Sim] End-of-first-half play-calling fixed so both teams keep attacking regardless of the score.',
