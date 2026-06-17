@@ -534,9 +534,12 @@ export default function FrontOfficePage() {
               the tab uncluttered while the front office is still dormant —
               no rookie cards flooding the view before the window is active. */}
           {currentWeek >= 22 && (
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '10px' }}>
+            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', marginBottom: '4px' }}>
                 Rookie Draft Ballot
+              </div>
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '14px' }}>
+                Rank the incoming rookies you want your team to target in the upcoming draft.
               </div>
               <RookiesSection />
             </div>
