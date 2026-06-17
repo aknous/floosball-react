@@ -51,7 +51,7 @@ function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPi
       display: 'flex', alignItems: 'center', gap: '12px',
       padding: '10px 12px', borderRadius: '8px',
       border: `1px solid ${picked ? GOLD : '#334155'}`,
-      background: picked ? 'rgba(251,191,36,0.08)' : '#0f172a',
+      background: picked ? 'rgba(251,191,36,0.08)' : '#1e293b',
       transition: 'border-color 0.15s, background 0.15s',
     }}>
       {c.teamId != null && (
@@ -103,7 +103,7 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
       display: 'flex', alignItems: 'center', gap: '12px',
       padding: '12px', borderRadius: '8px',
       border: `1px solid ${approved ? GOLD : '#334155'}`,
-      background: approved ? 'rgba(251,191,36,0.08)' : '#0f172a',
+      background: approved ? 'rgba(251,191,36,0.08)' : '#1e293b',
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
