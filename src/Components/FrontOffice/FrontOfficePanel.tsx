@@ -86,7 +86,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   const [teamFaVotes, setTeamFaVotes] = useState<FanVoteEntry[]>([])
   const [liveBallotTally, setLiveBallotTally] = useState<(FanVoteEntry & { votes: number; firstChoice: number })[]>([])
   const [totalBallots, setTotalBallots] = useState<number>(0)
-  const [fanVotesOpen, setFanVotesOpen] = useState(true)
+  const [fanVotesOpen, setFanVotesOpen] = useState(false)
   // Bumped whenever a WS event signals that the ballot state may have
   // changed — forces the fetch effect to re-run so the Vote Tallies sections
   // appear immediately after voting closes, not after all drafts are over.
