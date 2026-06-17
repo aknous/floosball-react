@@ -171,11 +171,11 @@ function Tab({ label, active, onClick }: { label: string; active: boolean; onCli
       onClick={onClick}
       style={{
         cursor: 'pointer', flex: 1,
-        fontSize: '13px', fontWeight: 800, letterSpacing: '0.03em',
+        fontSize: '16px', fontWeight: 800, letterSpacing: '0.03em',
         color: active ? '#0f172a' : '#cbd5e1',
         background: active ? GOLD : 'transparent',
         border: `1px solid ${active ? GOLD : '#334155'}`,
-        borderRadius: '8px', padding: '9px 0',
+        borderRadius: '8px', padding: '12px 0',
         transition: 'all 0.15s',
       }}
     >
