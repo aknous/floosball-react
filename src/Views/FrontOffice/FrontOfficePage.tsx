@@ -568,10 +568,10 @@ export default function FrontOfficePage() {
             currentWeek >= 22 ? (
               <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
                 <div style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', marginBottom: '4px' }}>
-                  Rookie Draft Ballot
+                  Prospect Ballot
                 </div>
                 <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '14px' }}>
-                  Rank the incoming rookies you want your team to target in the upcoming draft.
+                  Rank the prospects you want your team to target in the upcoming draft.
                 </div>
                 <RookiesSection />
               </div>
