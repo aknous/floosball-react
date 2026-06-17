@@ -40,8 +40,8 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
 function StatPair({ label, value }: { label: string; value: number | string }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '3px' }}>
-      <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
-      <span style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+      <span style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
     </span>
   )
 }
@@ -49,27 +49,27 @@ function StatPair({ label, value }: { label: string; value: number | string }) {
 function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPick: () => void }) {
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: '12px',
-      padding: '10px 12px', borderRadius: '8px',
+      display: 'flex', alignItems: 'center', gap: '14px',
+      padding: '14px 16px', borderRadius: '8px',
       border: `1px solid ${picked ? GOLD : '#334155'}`,
       background: picked ? 'rgba(251,191,36,0.08)' : '#1e293b',
       transition: 'border-color 0.15s, background 0.15s',
     }}>
       {c.teamId != null && (
         <img src={`/avatars/${c.teamId}.png`} alt={c.teamAbbr}
-             style={{ width: '32px', height: '32px', flexShrink: 0 }}
+             style={{ width: '40px', height: '40px', flexShrink: 0 }}
              onError={e => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden' }} />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Link to={`/players/${c.id}`}
-                style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {c.name}
           </Link>
-          <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>{c.teamAbbr}</span>
+          <span style={{ fontSize: '13px', color: '#94a3b8', flexShrink: 0 }}>{c.teamAbbr}</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
-          <Stars stars={c.ratingStars} size={11} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '6px', flexWrap: 'wrap' }}>
+          <Stars stars={c.ratingStars} size={13} />
           {c.stats.map(s => <StatPair key={s.label} label={s.label} value={s.value} />)}
           <HoverTooltip content="Win Probability Added: the net win probability this player's plays swung over the season, in win units (100 percentage points = 1). Higher is better." color="#38bdf8">
             <span style={{ cursor: 'help' }}><StatPair label="WPA" value={(c.seasonWpa / 100).toFixed(1)} /></span>
@@ -81,10 +81,10 @@ function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPi
         onClick={onPick}
         style={{
           flexShrink: 0, cursor: 'pointer',
-          fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em',
+          fontSize: '12px', fontWeight: 800, letterSpacing: '0.05em',
           color: picked ? '#0f172a' : GOLD,
           background: picked ? GOLD : 'rgba(251,191,36,0.12)',
-          border: `1px solid ${GOLD}`, borderRadius: '6px', padding: '8px 14px',
+          border: `1px solid ${GOLD}`, borderRadius: '6px', padding: '10px 18px',
           whiteSpace: 'nowrap',
         }}
       >
