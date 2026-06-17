@@ -4,6 +4,7 @@ import { GiStarMedal, GiLaurelsTrophy, GiStarsStack } from 'react-icons/gi'
 import { useAwards, MvpCandidate, HofCandidate } from '@/hooks/useAwards'
 import { Stars } from '@/Components/Stars'
 import HoverTooltip from '@/Components/HoverTooltip'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K']
 const GOLD = '#fbbf24'
@@ -187,6 +188,7 @@ export default function AwardsPage() {
   const { loading, mvpOpen, hofOpen, anyOpen, mvpCandidates, myMvpVote,
           hofCandidates, myApprovals, classCap, castMvpVote, toggleHofApproval } = useAwards()
   const [tab, setTab] = useState<'mvp' | 'hof'>('mvp')
+  const isMobile = useIsMobile()
 
   // Default the active tab to whichever window is open (MVP wins if both).
   useEffect(() => {
@@ -194,7 +196,7 @@ export default function AwardsPage() {
     else if (hofOpen) setTab('hof')
   }, [mvpOpen, hofOpen])
 
-  const wrap: React.CSSProperties = { maxWidth: '760px', margin: '0 auto', padding: '24px 16px' }
+  const wrap: React.CSSProperties = { maxWidth: '880px', margin: '0 auto', padding: '24px 16px' }
 
   if (loading) {
     return <div style={wrap}><div style={{ color: '#94a3b8', textAlign: 'center', padding: '40px' }}>Loading the Awards Hall...</div></div>
@@ -237,7 +239,7 @@ export default function AwardsPage() {
             return (
               <div key={pos} style={{ marginBottom: '14px' }}>
                 <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', marginBottom: '6px' }}>{pos}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '6px' }}>
                   {group.map(c => (
                     <MvpCard key={c.id} c={c} picked={myMvpVote === c.id} onPick={() => castMvpVote(c.id)} />
                   ))}
@@ -257,7 +259,7 @@ export default function AwardsPage() {
           {hofCandidates.length === 0 ? (
             <div style={{ fontSize: '13px', color: '#94a3b8', padding: '12px 0' }}>No players on the ballot this season.</div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gridAutoFlow: 'row', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gridAutoFlow: 'row', gap: '8px' }}>
               {hofCandidates.map(c => (
                 <HofCard key={c.playerId} c={c} approved={myApprovalSet.has(c.playerId)} onToggle={() => toggleHofApproval(c.playerId)} />
               ))}
