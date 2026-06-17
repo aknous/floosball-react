@@ -1353,22 +1353,26 @@ function RatingHistoryChart({ history, teamColor, ceiling }: { history: RatingPo
       {/* Projected ceiling — dotted reference line at the player's top
           attainable rating (full potential). Label flips below the line when
           it sits near the top edge so it doesn't clip. */}
-      {ceiling != null && ceiling > 0 && (
-        <g>
-          <line
-            x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT}
-            y1={yFor(ceiling)} y2={yFor(ceiling)}
-            stroke="#facc15" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85}
-          />
-          <text
-            x={WIDTH - PAD_RIGHT}
-            y={yFor(ceiling) < PAD_TOP + 12 ? yFor(ceiling) + 13 : yFor(ceiling) - 5}
-            fontSize="11" fill="#facc15" fontWeight={700} textAnchor="end"
-          >
-            Ceiling {Math.round(ceiling)}
-          </text>
-        </g>
-      )}
+      {ceiling != null && ceiling > 0 && (() => {
+        const cy = yFor(ceiling)
+        // Label sits at the LEFT, where the progression (which rises toward the
+        // peak/ceiling on the right) is lowest, so it clears the data points. A
+        // dark pill keeps it legible over the gridlines and dotted line.
+        const labelY = cy < PAD_TOP + 14 ? cy + 14 : cy - 5
+        return (
+          <g>
+            <line
+              x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT}
+              y1={cy} y2={cy}
+              stroke="#facc15" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85}
+            />
+            <rect x={PAD_LEFT + 2} y={labelY - 10} width={66} height={13} rx={2} fill="#0f172a" opacity={0.9} />
+            <text x={PAD_LEFT + 6} y={labelY} fontSize="11" fill="#facc15" fontWeight={700} textAnchor="start">
+              Ceiling {Math.round(ceiling)}
+            </text>
+          </g>
+        )
+      })()}
 
       {/* X-axis season labels */}
       {seasons.map(s => (
