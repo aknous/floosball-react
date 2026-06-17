@@ -257,7 +257,7 @@ export default function AwardsPage() {
           {hofCandidates.length === 0 ? (
             <div style={{ fontSize: '13px', color: '#94a3b8', padding: '12px 0' }}>No players on the ballot this season.</div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gridAutoFlow: 'row', gap: '8px' }}>
               {hofCandidates.map(c => (
                 <HofCard key={c.playerId} c={c} approved={myApprovalSet.has(c.playerId)} onToggle={() => toggleHofApproval(c.playerId)} />
               ))}
