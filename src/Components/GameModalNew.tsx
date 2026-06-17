@@ -17,6 +17,27 @@ import { GlitchedText } from './GlitchedText'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+// Two teams with near-identical primary colors are hard to tell apart on the
+// scoreboard / WP chart / field. When that happens we fall the AWAY team back
+// to its secondary color (home stays the reference). Plain RGB euclidean
+// distance with a "basically the same" cutoff — tunable.
+const COLOR_CLASH_THRESHOLD = 72
+
+function hexToRgb(hex?: string | null): [number, number, number] | null {
+  if (!hex) return null
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+  if (!m) return null
+  const n = parseInt(m[1], 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+
+function colorsTooClose(a?: string | null, b?: string | null): boolean {
+  const ra = hexToRgb(a), rb = hexToRgb(b)
+  if (!ra || !rb) return false
+  const dr = ra[0] - rb[0], dg = ra[1] - rb[1], db = ra[2] - rb[2]
+  return Math.sqrt(dr * dr + dg * dg + db * db) < COLOR_CLASH_THRESHOLD
+}
+
 interface GameModalNewProps {
   onClose: () => void
   gameId: number
@@ -196,6 +217,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   const frozenRef = useRef(liveGameData)
   if (liveGameData) frozenRef.current = liveGameData
   const gameData = frozenRef.current
+
+  // Effective away-team display color: when the two primaries are basically the
+  // same, swap the away team to its secondary so they're distinguishable — but
+  // only if that secondary actually separates from home (else keep the primary).
+  const awayDisplayColor = useMemo(() => {
+    const home = gameData?.homeTeam?.color
+    const away = gameData?.awayTeam?.color ?? '#888'
+    const awaySecondary = (gameData?.awayTeam as any)?.secondaryColor
+    if (colorsTooClose(home, away) && awaySecondary && !colorsTooClose(home, awaySecondary)) {
+      return awaySecondary
+    }
+    return away
+  }, [gameData?.homeTeam?.color, gameData?.awayTeam?.color, (gameData?.awayTeam as any)?.secondaryColor])
 
   // ── Replay mode ──────────────────────────────────────────────────────────
   // Step a finished game back through its plays, feeding the scoreboard, field
@@ -538,7 +572,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       : ''
     const homeGained = (play.homeWpa ?? 0) > 0
     const bigPlayTeamAbbr = homeGained ? gameData.homeTeam.abbr : gameData.awayTeam.abbr
-    const bigPlayTeamColor = homeGained ? gameData.homeTeam.color : gameData.awayTeam.color
+    const bigPlayTeamColor = homeGained ? gameData.homeTeam.color : awayDisplayColor
     const wpaValue = homeGained ? (play.homeWpa ?? 0) : (play.awayWpa ?? 0)
     const hasAccent = isBigPlay || isClutchPlay || isChokePlay || isMomentumShift
     const playKey = play.playNumber != null ? `pn-${play.playNumber}` : `${keyPrefix}-${index}`
@@ -813,7 +847,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   const wpSegments = useMemo(() => {
     if (chartPoints.length < 2) return []
     const homeColor = gameData?.homeTeam.color ?? '#fff'
-    const awayColor = gameData?.awayTeam.color ?? '#888'
+    const awayColor = awayDisplayColor
     const W = 800, H = 140
     const lastElapsed = chartPoints[chartPoints.length - 1].elapsed
     const numOTPeriods = lastElapsed > 3600 ? Math.ceil((lastElapsed - 3600) / 600) : 0
@@ -842,7 +876,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     }
     segments.push({ pts: curPts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' '), color: curColor })
     return segments
-  }, [chartPoints, gameData?.homeTeam.color, gameData?.awayTeam.color])
+  }, [chartPoints, gameData?.homeTeam.color, awayDisplayColor])
 
   // Momentum indicator (matches GameCard logic)
   const isLive = gameData?.status === 'Active'
@@ -1083,7 +1117,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   borderTop: '1px solid #334155',
                 }}>
                   <RallyButton game={gameData as any} teamId={Number(gameData.homeTeam.id)} teamColor={gameData.homeTeam.color} />
-                  <RallyButton game={gameData as any} teamId={Number(gameData.awayTeam.id)} teamColor={gameData.awayTeam.color} />
+                  <RallyButton game={gameData as any} teamId={Number(gameData.awayTeam.id)} teamColor={awayDisplayColor} />
                 </div>
               )}
             </div>
@@ -1167,7 +1201,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
               // Fixed layout: home end zone = LEFT, away end zone = RIGHT
               const homeTeam = gameData.homeTeam
-              const awayTeam = gameData.awayTeam
+              const awayTeam = { ...gameData.awayTeam, color: awayDisplayColor }
               const isHomePoss = dPossession === homeTeam.abbr
               const possTeam = isHomePoss ? homeTeam : awayTeam
 
@@ -1551,7 +1585,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             {/* Win Probability chart */}
             {gameData.homeWinProbability !== undefined && (() => {
               const homeColor = gameData.homeTeam.color
-              const awayColor = gameData.awayTeam.color
+              const awayColor = awayDisplayColor
               const homeSecondary = gameData.homeTeam.secondaryColor
               const awaySecondary = gameData.awayTeam.secondaryColor
               const W = 800, H = 140
@@ -1574,7 +1608,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     <span style={{ position: 'absolute', top: '5px', left: '6px', fontSize: '11px', fontWeight: '700', color: homeSecondary, background: homeColor, padding: '1px 5px', borderRadius: '3px', pointerEvents: 'none', zIndex: 1 }}>
                       {gameData.homeTeam.abbr} {gameData.homeWinProbability.toFixed(1)}%
                     </span>
-                    <span style={{ position: 'absolute', bottom: '5px', left: '6px', fontSize: '11px', fontWeight: '700', color: awaySecondary, background: awayColor, padding: '1px 5px', borderRadius: '3px', pointerEvents: 'none', zIndex: 1 }}>
+                    <span style={{ position: 'absolute', bottom: '5px', left: '6px', fontSize: '11px', fontWeight: '700', color: awayColor === awaySecondary ? gameData.awayTeam.color : awaySecondary, background: awayColor, padding: '1px 5px', borderRadius: '3px', pointerEvents: 'none', zIndex: 1 }}>
                       {gameData.awayTeam.abbr} {gameData.awayWinProbability?.toFixed(1)}%
                     </span>
                     <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: '140px', display: 'block' }}>
@@ -1644,7 +1678,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 const homeAbbr = gameData.homeTeam.abbr
                 const awayAbbr = gameData.awayTeam.abbr
                 const homeColor = gameData.homeTeam.color
-                const awayColor = gameData.awayTeam.color
+                const awayColor = awayDisplayColor
                 const homeId = gameData.homeTeam.id
                 const awayId = gameData.awayTeam.id
                 const homeName = gameData.homeTeam.name
@@ -1856,7 +1890,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 const homeAbbr = gameData.homeTeam.abbr
                 const awayAbbr = gameData.awayTeam.abbr
                 const homeColor = gameData.homeTeam.color
-                const awayColor = gameData.awayTeam.color
+                const awayColor = awayDisplayColor
 
                 // For each row, return numeric values used to determine the
                 // "leader" side (lower-is-better stats flip the comparison).
@@ -2051,7 +2085,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 const homeAbbr = gameData.homeTeam.abbr
                 const awayAbbr = gameData.awayTeam.abbr
                 const homeColor = gameData.homeTeam.color
-                const awayColor = gameData.awayTeam.color
+                const awayColor = awayDisplayColor
                 const hp = gs.home.players
                 const ap = gs.away.players
 
