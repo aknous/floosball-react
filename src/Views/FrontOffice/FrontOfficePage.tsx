@@ -120,6 +120,9 @@ export default function FrontOfficePage() {
   const [contributeFlash, setContributeFlash] = useState<string | null>(null)
   const [customAmount, setCustomAmount] = useState<string>('')
   const [activeSection, setActiveSection] = useState<SectionId>('overview')
+  // Sub-tabs within the Front Office tab so roster voting, the FA ballot, and
+  // the prospect ballot each get their own view instead of one long scroll.
+  const [voteSubTab, setVoteSubTab] = useState<'roster' | 'fa' | 'prospect'>('roster')
 
   // Retirement watch + prospects — fetched alongside team data so Overview
   // tab can display the same surfaces as the /team/{id} page
@@ -528,21 +531,55 @@ export default function FrontOfficePage() {
       )}
 
       {activeSection === 'votes' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <FrontOfficePanel teamId={team.id} teamAbbr={team.abbr} teamColor={team.color} />
-          {/* Rookie ballot renders only once voting opens (Week 22+). Keeps
-              the tab uncluttered while the front office is still dormant —
-              no rookie cards flooding the view before the window is active. */}
-          {currentWeek >= 22 && (
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
-              <div style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', marginBottom: '4px' }}>
-                Rookie Draft Ballot
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Sub-tabs: each front-office ballot gets its own view */}
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const }}>
+            {([
+              { id: 'roster', label: 'Roster Voting' },
+              { id: 'fa', label: 'Free Agent Ballot' },
+              { id: 'prospect', label: 'Prospect Ballot' },
+            ] as const).map(t => {
+              const active = voteSubTab === t.id
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setVoteSubTab(t.id)}
+                  style={{
+                    padding: '7px 14px', fontSize: '13px', fontWeight: active ? 700 : 500,
+                    borderRadius: '6px',
+                    border: `1px solid ${active ? team.color : '#334155'}`,
+                    backgroundColor: active ? `${team.color}22` : 'transparent',
+                    color: active ? '#e2e8f0' : '#94a3b8', cursor: 'pointer',
+                  }}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {voteSubTab === 'roster' && (
+            <FrontOfficePanel teamId={team.id} teamAbbr={team.abbr} teamColor={team.color} view="roster" />
+          )}
+          {voteSubTab === 'fa' && (
+            <FrontOfficePanel teamId={team.id} teamAbbr={team.abbr} teamColor={team.color} view="fa" />
+          )}
+          {voteSubTab === 'prospect' && (
+            currentWeek >= 22 ? (
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', marginBottom: '4px' }}>
+                  Rookie Draft Ballot
+                </div>
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '14px' }}>
+                  Rank the incoming rookies you want your team to target in the upcoming draft.
+                </div>
+                <RookiesSection />
               </div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '14px' }}>
-                Rank the incoming rookies you want your team to target in the upcoming draft.
+            ) : (
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '28px 16px', textAlign: 'center' as const, color: '#94a3b8', fontSize: '13px' }}>
+                The rookie draft ballot opens at week 22, once the front office is active.
               </div>
-              <RookiesSection />
-            </div>
+            )
           )}
         </div>
       )}

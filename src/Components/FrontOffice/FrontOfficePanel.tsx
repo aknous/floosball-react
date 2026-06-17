@@ -45,6 +45,9 @@ interface FrontOfficePanelProps {
   teamId: number
   teamAbbr: string
   teamColor: string
+  /** Render only one section (for the Front Office sub-tabs). Omit to render
+   *  everything (used standalone on the team page). */
+  view?: 'roster' | 'fa'
 }
 
 interface FanVoteEntry {
@@ -55,7 +58,7 @@ interface FanVoteEntry {
   isProspect?: boolean
 }
 
-const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, teamColor }) => {
+const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, teamColor, view }) => {
   const { user, getToken, refetchUser, updateFloobits } = useAuth()
   const { seasonState } = useFloosball()
   const { event: wsEvent } = useSeasonWebSocket()
@@ -642,11 +645,14 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
 
   return (
     <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
-      {sectionHeader('The Front Office', true)}
+      {view !== 'fa' && sectionHeader('The Front Office', true)}
 
-      {/* FA Requisition — always visible when the board is active so fans can
-          find the ballot. When there are no projected openings, we explain
-          why voting isn't available rather than hiding the section entirely. */}
+      {/* FA Requisition + tallies — only in the Free Agent Ballot sub-tab (or
+          standalone). FA Requisition is always visible when the board is active
+          so fans can find the ballot; when there are no projected openings we
+          explain why voting isn't available rather than hiding it entirely. */}
+      {view !== 'roster' && (
+      <>
       <div style={{ padding: '12px 14px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' as const }}>
         <div style={{ flex: 1, minWidth: '200px' }}>
           <div style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0', marginBottom: '2px' }}>
@@ -761,7 +767,10 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           </div>
         )
       })()}
+      </>
+      )}
 
+      {view !== 'fa' && (
       <div style={{ padding: '14px' }}>
         {/* Two-column layout: Coaching (left) | Roster (right) */}
         <div style={{
@@ -923,6 +932,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
         )}
 
       </div>
+      )}
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} title="The Front Office">
         <GuideSection title="Directives">
