@@ -105,18 +105,12 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
       border: `1px solid ${approved ? GOLD : '#334155'}`,
       background: approved ? 'rgba(251,191,36,0.08)' : '#0f172a',
     }}>
-      {c.teamId != null && (
-        <img src={`/avatars/${c.teamId}.png`} alt={c.teamAbbr}
-             style={{ width: '34px', height: '34px', flexShrink: 0 }}
-             onError={e => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden' }} />
-      )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <Link to={`/players/${c.playerId}`} style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', textDecoration: 'none' }}>
             {c.name || `Player #${c.playerId}`}
           </Link>
-          {c.position && <span style={{ fontSize: '11px', fontWeight: 700, color: c.teamColor || '#94a3b8' }}>{c.position}</span>}
-          {c.teamAbbr && <span style={{ fontSize: '11px', color: '#94a3b8' }}>{c.teamAbbr}</span>}
+          {c.position && <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>{c.position}</span>}
           <Stars stars={c.ratingStars} size={11} />
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '7px' }}>
