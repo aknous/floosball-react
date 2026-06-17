@@ -11,6 +11,7 @@ import RookiesSection from './RookiesSection'
 import MarketsSection from './MarketsSection'
 import { Stars, calcStars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
+import CareerStageBadge, { hasRenderableStage } from '@/Components/CareerStageBadge'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -131,6 +132,7 @@ export default function FrontOfficePage() {
     isUndrafted: boolean; ratingHistory: RatingPoint[]
   }
   const [retirementWatch, setRetirementWatch] = useState<Record<number, RetirementRisk>>({})
+  const [careerStages, setCareerStages] = useState<Record<number, string>>({})
   const [prospects, setProspects] = useState<ProspectEntry[]>([])
 
   const favTeamId = user?.favoriteTeamId ?? null
@@ -156,6 +158,7 @@ export default function FrontOfficePage() {
         const byId: Record<number, RetirementRisk> = {}
         for (const w of watchRes.data.watch) byId[w.playerId] = w.risk
         setRetirementWatch(byId)
+        setCareerStages(watchRes.data.stages || {})
       }
       if (prospectsRes?.success && prospectsRes.data) {
         setProspects(prospectsRes.data.prospects || [])
@@ -387,6 +390,7 @@ export default function FrontOfficePage() {
           <OverviewTab
             team={team}
             retirementWatch={retirementWatch}
+            careerStages={careerStages}
             prospects={prospects}
           />
         </div>
@@ -693,10 +697,11 @@ const RISK_STYLES: Record<string, { label: string; color: string; bg: string }> 
 }
 
 function OverviewTab({
-  team, retirementWatch, prospects,
+  team, retirementWatch, careerStages, prospects,
 }: {
   team: TeamSummary
   retirementWatch: Record<number, 'safe' | 'possible' | 'likely' | 'very_likely' | 'retiring'>
+  careerStages: Record<number, string>
   prospects: any[]
 }) {
   const isMobile = useIsMobile()
@@ -806,7 +811,7 @@ function OverviewTab({
               }}>
                 {RISK_STYLES[retirementWatch[player.id]].label}
               </span>
-            ) : null
+            ) : <CareerStageBadge stage={careerStages[player.id]} />
 
             if (isMobile) {
               return (
@@ -835,7 +840,7 @@ function OverviewTab({
                 // Fixed widths so rows stay aligned regardless of content.
                 // The retirement column reserves a fixed slot only while
                 // retirement data is live (weeks 22+); otherwise it collapses.
-                gridTemplateColumns: `auto minmax(0, 1fr) 60px 80px ${Object.keys(retirementWatch).length > 0 ? '96px' : 'auto'}`,
+                gridTemplateColumns: `auto minmax(0, 1fr) 60px 80px ${(Object.keys(retirementWatch).length > 0 || hasRenderableStage(careerStages)) ? '96px' : 'auto'}`,
                 columnGap: '10px',
                 alignItems: 'center',
                 padding: '7px 10px',
