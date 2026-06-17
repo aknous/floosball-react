@@ -184,6 +184,15 @@ function Tab({ label, active, onClick }: { label: string; active: boolean; onCli
   )
 }
 
+function ClosedNotice({ title, body }: { title: string; body: string }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '40px 24px', borderRadius: '12px', border: '1px solid #334155', background: '#1e293b' }}>
+      <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0' }}>{title}</div>
+      <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '8px', lineHeight: 1.5, maxWidth: '440px', margin: '8px auto 0' }}>{body}</div>
+    </div>
+  )
+}
+
 export default function AwardsPage() {
   const { loading, mvpOpen, hofOpen, anyOpen, mvpCandidates, myMvpVote,
           hofCandidates, myApprovals, classCap, castMvpVote, toggleHofApproval } = useAwards()
@@ -216,18 +225,22 @@ export default function AwardsPage() {
   }
 
   const myApprovalSet = new Set(myApprovals)
-  const showTabs = mvpOpen && hofOpen
-  const active = showTabs ? tab : (mvpOpen ? 'mvp' : 'hof')
+  const active = tab
 
   return (
     <div style={wrap}>
       <div style={{ fontSize: '24px', fontWeight: 900, color: GOLD, letterSpacing: '0.03em', marginBottom: '16px' }}>Awards Voting</div>
 
-      {showTabs && (
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-          <Tab label="MVP" active={active === 'mvp'} onClick={() => setTab('mvp')} />
-          <Tab label="Hall of Fame" active={active === 'hof'} onClick={() => setTab('hof')} />
-        </div>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+        <Tab label="MVP" active={active === 'mvp'} onClick={() => setTab('mvp')} />
+        <Tab label="Hall of Fame" active={active === 'hof'} onClick={() => setTab('hof')} />
+      </div>
+
+      {active === 'mvp' && !mvpOpen && (
+        <ClosedNotice
+          title="MVP voting isn't open right now"
+          body="MVP voting runs at the end of each regular season. Check back when the season wraps to cast your ballot."
+        />
       )}
 
       {active === 'mvp' && mvpOpen && (
@@ -248,6 +261,13 @@ export default function AwardsPage() {
             )
           })}
         </div>
+      )}
+
+      {active === 'hof' && !hofOpen && (
+        <ClosedNotice
+          title="Hall of Fame voting isn't open right now"
+          body="The Hall of Fame ballot opens late in the regular season and resolves in the offseason. Check back to weigh in on this year's class."
+        />
       )}
 
       {active === 'hof' && hofOpen && (
