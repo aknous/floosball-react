@@ -296,7 +296,7 @@ export default function FrontOfficePage() {
   ]
 
   return (
-    <div style={{ maxWidth: '880px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
+    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
       <FeatureAnnounceModal
         open={showSupporterNew}
         onClose={dismissSupporterNew}

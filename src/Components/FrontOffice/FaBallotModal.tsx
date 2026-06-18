@@ -764,7 +764,7 @@ const PlayerRow: React.FC<{
     <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap', rowGap: '3px' }}>
       <PositionChip position={p.position} />
       <PlayerHoverCard playerId={p.id} playerName={p.name}>
-        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '700', wordBreak: 'break-word' }}>
+        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
           {p.name}
         </span>
       </PlayerHoverCard>
