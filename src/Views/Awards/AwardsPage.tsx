@@ -29,11 +29,17 @@ const AwardBadge: React.FC<{ count: number; label: string; Icon: React.Component
   </span>
 )
 
-function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
+function SectionHeader({ title, subtitle, closes }: { title: string; subtitle: string; closes?: string }) {
   return (
     <div style={{ marginBottom: '14px' }}>
       <div style={{ fontSize: '18px', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.02em' }}>{title}</div>
       <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>{subtitle}</div>
+      {closes && (
+        <div style={{ fontSize: '12px', color: GOLD, marginTop: '6px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: GOLD, display: 'inline-block', flexShrink: 0 }} />
+          {closes}
+        </div>
+      )}
     </div>
   )
 }
@@ -244,7 +250,7 @@ export default function AwardsPage() {
 
       {active === 'mvp' && mvpOpen && (
         <div>
-          <SectionHeader title="Most Valuable Player" subtitle="Vote for the season's MVP. One pick, change it any time before voting closes." />
+          <SectionHeader title="Most Valuable Player" subtitle="Vote for the season's MVP. One pick, change it any time before voting closes." closes="Open through the playoffs. Closes after the Floos Bowl, when the season wraps." />
           {POSITION_ORDER.map(pos => {
             const group = mvpCandidates.filter(c => c.position === pos)
             if (!group.length) return null
@@ -274,6 +280,7 @@ export default function AwardsPage() {
           <SectionHeader
             title="Hall of Fame"
             subtitle={`Vote for the players you want inducted into the Hall of Fame. Only ${classCap} can be inducted each season, and players stay on the ballot for up to 5 seasons.`}
+            closes="Open through the playoffs and into the offseason. Closes at the induction ceremony."
           />
           {hofCandidates.length === 0 ? (
             <div style={{ fontSize: '13px', color: '#94a3b8', padding: '12px 0' }}>No players on the ballot this season.</div>
