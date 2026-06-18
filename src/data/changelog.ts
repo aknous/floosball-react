@@ -13,12 +13,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: 'v0.19.2',
-    date: '2026-06-17',
+    date: '2026-06-18',
     changes: [],
     sections: [
       {
         label: 'New Features',
         items: [
+          '[Awards] Fan-voted awards. A new Awards Voting page lets you vote for the season MVP and Hall of Fame inductees. The MVP ballot is the five best players by the season value metric; the Hall of Fame is a rolling ballot where candidates stay eligible across several seasons. Voting is free and optional, tallies stay hidden until a window closes, and the page tells you when each window opens and closes.',
+          '[Awards] MVP results. Once MVP voting closes, the page shows the winner and the full vote tally.',
+          '[Offseason] The Hall of Fame class now appears in the offseason once voting closes, and the inductees show up in the Season Recap.',
+          '[Front Office] Team Management is now split into Roster Voting, Free Agent Ballot, and Prospect Ballot sub-tabs, with the free-agent ballot built right into its tab.',
           '[Standings] Playoff tiebreakers now run in order: win percentage, then score differential, then head-to-head point differential (a mini round-robin that handles three or more tied teams). The standings board adds a score-differential column and orders teams the same way the playoffs seed.',
           '[Players] Career-stage badges. Players now show as Developing, Prime, Aging, or Near Retirement on the free-agent ballot and on team rosters, so you can tell who is rising from who is winding down.',
           '[Players] Projected ceiling. The progression chart shows a dotted ceiling line and the hover card marks the ceiling on the rating gauge, so a young player\'s upside is clear at a glance.',
@@ -32,6 +36,12 @@ export const CHANGELOG: ChangelogEntry[] = [
           '[Sim] Interception rate tuned down to a more realistic level.',
           '[Standings] ELO moved to the Power Rankings view, and the team name now reads above the city for cleaner, less cluttered standings.',
           '[Front Office] Removed the projected free-agent pool preview list.',
+          '[Awards] The MVP and All-Pro team are now decided after the Floos Bowl (so playoff voting counts), using an offense-only value metric that rewards production. The MVP ballot is the top five players overall, kickers are not MVP-eligible, and the All-Pro team is a single six-player squad of the best player at each offensive slot.',
+          '[Awards] Hall of Fame voting: if turnout is below quorum, only slam-dunk candidates are auto-inducted and everyone else waits for a future vote. Quorum scales with the active player base.',
+          '[Recap] The season-end pop-up recap was removed; the Season Recap on the dashboard covers it.',
+          '[Teams] Color-clash detection is more aggressive and now catches adjacent shades such as blue and purple or yellow and lime.',
+          '[Front Office] Restyled the voting cards, retirement watch, and section headers for clarity, and replacement-coach voting now only appears after you vote to fire the current coach.',
+          '[Nav] Awards Voting and the Bracket now appear in the mobile menu.',
         ],
       },
       {
@@ -45,6 +55,11 @@ export const CHANGELOG: ChangelogEntry[] = [
           '[Fantasy] Extra roster swaps earned from achievements now reach your swap pool.',
           '[Teams] When two teams have nearly the same color, the away team switches to its secondary color on the win-probability meter and in the game view so you can tell them apart.',
           '[Players] A ceiling can no longer show below a rating the player has already reached, and the ceiling label no longer overlaps the progression line.',
+          '[Offseason] Fixed a roughly 30-second site freeze when the offseason finished. A database lock during Hall of Fame induction was stalling everything.',
+          '[Awards] The recap no longer shows the MVP and All-Pro as TBD. They were being decided before the playoffs and never saved.',
+          '[Awards] The Hall of Fame voting window no longer disappears during the offseason.',
+          '[Front Office] The Hire Coach card is no longer empty; coach candidates were failing to generate.',
+          '[Cards] The Bizarro card description now matches the bonus it actually gives.',
         ],
       },
     ],
