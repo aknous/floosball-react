@@ -163,8 +163,6 @@ function MvpResults({ winner, candidates, tally, voterCount }: {
 function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean; onToggle: () => void }) {
   const k = c.case || {}
   const records = c.recordsHeld || []
-  const secondary: string[] = []
-  if (k.seasons) secondary.push(`${k.seasons} seasons`)
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: '12px',
@@ -197,9 +195,6 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
               }}>{records.length} league record{records.length !== 1 ? 's' : ''}</span>
             </HoverTooltip>
           )}
-          {secondary.map(chip => (
-            <span key={chip} style={{ fontSize: '11px', color: '#cbd5e1', background: '#1e293b', border: '1px solid #334155', borderRadius: '5px', padding: '2px 7px' }}>{chip}</span>
-          ))}
         </div>
         <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '7px' }}>
           {c.seasonsRemaining === 1 ? 'Final year on the ballot' : `${c.seasonsRemaining} years left on the ballot`}
