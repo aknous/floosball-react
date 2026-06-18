@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { GiStarMedal, GiLaurelsTrophy, GiStarsStack } from 'react-icons/gi'
-import { useAwards, MvpCandidate, HofCandidate } from '@/hooks/useAwards'
+import { useAwards, MvpCandidate, MvpWinner, HofCandidate } from '@/hooks/useAwards'
 import { Stars } from '@/Components/Stars'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
@@ -94,6 +94,68 @@ function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPi
       >
         {picked ? 'YOUR PICK' : 'VOTE'}
       </button>
+    </div>
+  )
+}
+
+// Shown after the MVP window closes: the winner + the final vote tally.
+function MvpResults({ winner, candidates, tally, voterCount }: {
+  winner: MvpWinner; candidates: MvpCandidate[]; tally: Record<number, number> | null; voterCount: number
+}) {
+  const votesFor = (id: number) => tally?.[id] ?? 0
+  const ranked = [...candidates].sort((a, b) => votesFor(b.id) - votesFor(a.id))
+  const winnerVotes = votesFor(winner.id)
+  return (
+    <div>
+      <SectionHeader
+        title="Most Valuable Player"
+        subtitle={`Voting is closed. ${voterCount} ${voterCount === 1 ? 'ballot' : 'ballots'} cast this season.`}
+      />
+      {/* Winner */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px', borderRadius: '10px', border: `1px solid ${GOLD}`, background: 'rgba(251,191,36,0.10)', marginBottom: '16px' }}>
+        {winner.teamId != null && (
+          <img src={`/avatars/${winner.teamId}.png`} alt={winner.teamAbbr}
+               style={{ width: '44px', height: '44px', flexShrink: 0 }}
+               onError={e => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden' }} />
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', color: GOLD }}>SEASON MVP</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+            <PlayerLink playerId={winner.id} playerName={winner.name} style={{ fontSize: '20px', fontWeight: 800, color: '#e2e8f0' }} />
+            <span style={{ fontSize: '13px', color: '#94a3b8' }}>{winner.position} · {winner.teamAbbr}</span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+            {winner.viaVote
+              ? `Won the fan vote with ${winnerVotes} ${winnerVotes === 1 ? 'vote' : 'votes'}.`
+              : 'Selected by the value metric — turnout was below quorum.'}
+          </div>
+        </div>
+      </div>
+      {/* Full tally */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {ranked.map((c, i) => {
+          const v = votesFor(c.id)
+          const isWinner = c.id === winner.id
+          return (
+            <div key={c.id} style={{
+              display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '8px',
+              border: `1px solid ${isWinner ? GOLD : '#334155'}`, background: isWinner ? 'rgba(251,191,36,0.08)' : '#1e293b',
+            }}>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#94a3b8', minWidth: '20px' }}>{i + 1}</span>
+              {c.teamId != null && (
+                <img src={`/avatars/${c.teamId}.png`} alt={c.teamAbbr} style={{ width: '28px', height: '28px', flexShrink: 0 }}
+                     onError={e => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden' }} />
+              )}
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: '8px', overflow: 'hidden' }}>
+                <PlayerLink playerId={c.id} playerName={c.name} style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} />
+                <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>{c.position} · {c.teamAbbr}</span>
+              </div>
+              <span style={{ fontSize: '15px', fontWeight: 800, color: isWinner ? GOLD : '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{v}</span>
+              <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>{v === 1 ? 'vote' : 'votes'}</span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -199,6 +261,7 @@ function ClosedNotice({ title, body }: { title: string; body: string }) {
 
 export default function AwardsPage() {
   const { loading, mvpOpen, hofOpen, anyOpen, mvpCandidates, myMvpVote,
+          mvpTally, mvpVoterCount, mvpWinner,
           hofCandidates, myApprovals, classCap, castMvpVote, toggleHofApproval } = useAwards()
   const [tab, setTab] = useState<'mvp' | 'hof'>('mvp')
   const isMobile = useIsMobile()
@@ -240,11 +303,15 @@ export default function AwardsPage() {
         <Tab label="Hall of Fame" active={active === 'hof'} onClick={() => setTab('hof')} />
       </div>
 
-      {active === 'mvp' && !mvpOpen && (
+      {active === 'mvp' && !mvpOpen && !mvpWinner && (
         <ClosedNotice
           title="MVP voting isn't open right now"
           body="MVP voting runs at the end of each regular season. Check back when the season wraps to cast your ballot."
         />
+      )}
+
+      {active === 'mvp' && !mvpOpen && mvpWinner && (
+        <MvpResults winner={mvpWinner} candidates={mvpCandidates} tally={mvpTally} voterCount={mvpVoterCount} />
       )}
 
       {active === 'mvp' && mvpOpen && (

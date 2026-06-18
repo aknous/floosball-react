@@ -21,6 +21,18 @@ export interface MvpCandidate {
   stats: MvpStat[]
 }
 
+export interface MvpWinner {
+  id: number
+  name: string
+  position: string
+  teamAbbr: string
+  teamColor: string
+  teamId: number | null
+  ratingStars: number
+  votes: number
+  viaVote: boolean
+}
+
 export interface HofCandidate {
   playerId: number
   name: string | null
@@ -52,6 +64,9 @@ interface UseAwardsResult {
   anyOpen: boolean
   mvpCandidates: MvpCandidate[]
   myMvpVote: number | null
+  mvpTally: Record<number, number> | null
+  mvpVoterCount: number
+  mvpWinner: MvpWinner | null
   hofCandidates: HofCandidate[]
   myApprovals: number[]
   classCap: number
@@ -68,6 +83,9 @@ export function useAwards(): UseAwardsResult {
   const [hofOpen, setHofOpen] = useState(false)
   const [mvpCandidates, setMvpCandidates] = useState<MvpCandidate[]>([])
   const [myMvpVote, setMyMvpVote] = useState<number | null>(null)
+  const [mvpTally, setMvpTally] = useState<Record<number, number> | null>(null)
+  const [mvpVoterCount, setMvpVoterCount] = useState(0)
+  const [mvpWinner, setMvpWinner] = useState<MvpWinner | null>(null)
   const [hofCandidates, setHofCandidates] = useState<HofCandidate[]>([])
   const [myApprovals, setMyApprovals] = useState<number[]>([])
   const [classCap, setClassCap] = useState(5)
@@ -89,6 +107,9 @@ export function useAwards(): UseAwardsResult {
         setMvpOpen(!!d.windowOpen)
         setMvpCandidates(d.candidates ?? [])
         setMyMvpVote(d.myVote ?? null)
+        setMvpTally(d.tally ?? null)
+        setMvpVoterCount(d.voterCount ?? 0)
+        setMvpWinner(d.winner ?? null)
       }
       if (hofRes.ok) {
         const d = (await hofRes.json()).data
@@ -132,7 +153,8 @@ export function useAwards(): UseAwardsResult {
 
   return {
     loading, season, mvpOpen, hofOpen, anyOpen: mvpOpen || hofOpen,
-    mvpCandidates, myMvpVote, hofCandidates, myApprovals, classCap,
+    mvpCandidates, myMvpVote, mvpTally, mvpVoterCount, mvpWinner,
+    hofCandidates, myApprovals, classCap,
     castMvpVote, toggleHofApproval, refetch: fetchAll,
   }
 }
