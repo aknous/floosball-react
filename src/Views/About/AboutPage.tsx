@@ -1153,7 +1153,7 @@ const AboutPage: React.FC = () => {
               'Fire Coach: push to fire the current head coach',
               'Hire Coach: nominate a replacement from the available coaching pool. Only matters if the fire vote ratifies',
               'Cut Player: release a rostered player to the FA pool',
-              'Re-Sign Player: keep a walk-year player on the roster',
+              'Re-Sign Player: keep a walk-season player on the roster',
               'Free Agent Requisition: rank up to 5 replacements (FAs or your own prospects) for each projected roster opening',
             ])}
 
@@ -1177,7 +1177,7 @@ const AboutPage: React.FC = () => {
             <p style={labelStyle}>Free Agent Requisitions</p>
             <p style={textStyle}>
               FA requisitions use ranked-choice voting. For each roster slot that's projected to open,
-              you rank up to 5 candidates. The pool includes current free agents, projected walk-year
+              you rank up to 5 candidates. The pool includes current free agents, projected walk-season
               players from other teams, and your own pipeline prospects. If you rank a prospect above an
               FA at the same slot, the team promotes that prospect instead of signing the FA. If your
               ballot hits quorum and ratifies, those rankings drive the team's picks in the FA draft.
@@ -1194,7 +1194,7 @@ const AboutPage: React.FC = () => {
             {bulletList([
               'Fire Coach, then Hire Coach if the fire ratified',
               'Cut Player releases ratified cuts to the FA pool',
-              'Re-Sign Player renews walk-year contracts',
+              'Re-Sign Player renews walk-season contracts',
               'Rookie Draft picks in turn, pulling from ranked rookie ballots',
               'FA Draft picks in turn, pulling from ranked FA ballots',
             ])}

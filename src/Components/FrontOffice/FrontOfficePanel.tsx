@@ -678,7 +678,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
             />
           ) : (
             <div style={{ fontSize: '13px', color: '#94a3b8', padding: '8px 0' }}>
-              No roster openings projected yet — the board will vote on vacancies once cut/re-sign motions settle or contracts expire.
+              No roster openings projected yet. The board will vote on vacancies once cut/re-sign motions settle or contracts expire.
             </div>
           )}
         </div>
@@ -992,7 +992,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           votes is appointed. If nobody nominates anyone, a coach is appointed at random.
         </GuideSection>
         <GuideSection title="Free Agent Requisitions">
-          Rank up to 5 replacements for projected roster openings — walk-year players, cut-vote
+          Rank up to 5 replacements for projected roster openings — walk-season players, cut-vote
           targets, and current prospects all appear on the same ballot. Submit any time once the
           board convenes (Week {GM_ACTIVE_WEEK}). If the ballot achieves quorum and is ratified,
           the front office will prioritize those names during the draft using ranked-choice voting.
