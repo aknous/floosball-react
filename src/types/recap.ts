@@ -28,6 +28,7 @@ export interface RecapAwards {
   champion: RecapTeamRef | null
   mvp: RecapPlayerStub | null
   allPro: RecapPlayerStub[]   // combined: offense slots then defense slots
+  hofInductees?: RecapPlayerStub[]   // this season's Hall of Fame class
 }
 
 export interface RecapStandingRow {
