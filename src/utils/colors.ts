@@ -25,15 +25,20 @@ export function getContrastTextColor(hex: string): string {
 }
 
 // ── Team color-clash handling ────────────────────────────────────────────────
-// Two teams with near-identical primary colors are hard to tell apart on a WP
-// meter / scoreboard / field. Plain RGB euclidean distance weights every channel
-// equally, so same-hue pairs (two pinks like Melons/Broads, two greens like
-// Rocks/Pinecones) read as "the same color" to the eye yet sit far apart
-// numerically and slip through. Instead we use a perceptually-weighted
-// ("redmean") distance that weights green ~4x — where the eye is most sensitive
-// — so same-family colors register as clashing. Threshold tuned so same-hue
-// pairs clash while genuinely different hues stay distinct.
+// Two teams with similar primary colors are hard to tell apart on a WP meter /
+// scoreboard / field. We flag a clash two ways:
+//   1. A perceptually-weighted ("redmean") distance that weights green ~4x (the
+//      eye's most sensitive channel) — catches near-identical colors of any hue
+//      (two pinks like Melons/Broads, two greens like Rocks/Pinecones).
+//   2. A hue-family check — adjacent hues read as "similar" even when their
+//      redmean distance is larger (blue vs purple, yellow vs lime), so we also
+//      clash colors whose hues sit within HUE_CLASH_DEGREES, gated on both being
+//      saturated enough that hue is meaningful and not wildly different in
+//      lightness (a light tint and a dark shade of one hue stay distinct).
 const COLOR_CLASH_THRESHOLD = 155
+const HUE_CLASH_DEGREES = 60          // adjacent hues within this clash (blue/purple ≈ 60°)
+const HUE_CLASH_MIN_SAT = 0.25        // below this a color is too gray for hue to matter
+const HUE_CLASH_MAX_LIGHT_DIFF = 0.35 // a light vs dark shade of one hue stays distinguishable
 
 function hexToRgb(hex?: string | null): [number, number, number] | null {
   if (!hex) return null
@@ -43,19 +48,45 @@ function hexToRgb(hex?: string | null): [number, number, number] | null {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }
 
+function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
+  r /= 255; g /= 255; b /= 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b)
+  const l = (max + min) / 2
+  const d = max - min
+  if (d === 0) return [0, 0, l]
+  const s = d / (1 - Math.abs(2 * l - 1))
+  let h: number
+  if (max === r) h = ((g - b) / d) % 6
+  else if (max === g) h = (b - r) / d + 2
+  else h = (r - g) / d + 4
+  h *= 60
+  if (h < 0) h += 360
+  return [h, s, l]
+}
+
 export function colorsTooClose(a?: string | null, b?: string | null): boolean {
   const ra = hexToRgb(a), rb = hexToRgb(b)
   if (!ra || !rb) return false
+  // 1) Redmean weighted euclidean distance. https://www.compuphase.com/cmetric.htm
   const dr = ra[0] - rb[0], dg = ra[1] - rb[1], db = ra[2] - rb[2]
   const rmean = (ra[0] + rb[0]) / 2
-  // Redmean weighted euclidean: green dominates (4x), red/blue weights shift
-  // with the mean red level. https://www.compuphase.com/cmetric.htm
   const dist = Math.sqrt(
     (2 + rmean / 256) * dr * dr +
     4 * dg * dg +
     (2 + (255 - rmean) / 256) * db * db,
   )
-  return dist < COLOR_CLASH_THRESHOLD
+  if (dist < COLOR_CLASH_THRESHOLD) return true
+  // 2) Same hue-family clash (blue/purple, yellow/lime): close hue, both
+  // saturated, similar lightness.
+  const [ha, sa, la] = rgbToHsl(ra[0], ra[1], ra[2])
+  const [hb, sb, lb] = rgbToHsl(rb[0], rb[1], rb[2])
+  let hueDiff = Math.abs(ha - hb)
+  if (hueDiff > 180) hueDiff = 360 - hueDiff
+  return (
+    hueDiff <= HUE_CLASH_DEGREES &&
+    Math.min(sa, sb) >= HUE_CLASH_MIN_SAT &&
+    Math.abs(la - lb) <= HUE_CLASH_MAX_LIGHT_DIFF
+  )
 }
 
 /**
