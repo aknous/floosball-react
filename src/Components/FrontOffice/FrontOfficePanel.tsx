@@ -882,7 +882,6 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                         <span style={{ color: '#94a3b8', marginRight: '8px' }}>{p.position}</span>
                         {p.name}
                       </span>
-                      <span style={{ color: '#94a3b8', fontSize: '11px' }}>OVR {p.rating}</span>
                     </div>
                   ))}
                 </div>
