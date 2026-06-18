@@ -127,7 +127,7 @@ function MvpResults({ winner, candidates, tally, voterCount }: {
           <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
             {winner.viaVote
               ? `Won the fan vote with ${winnerVotes} ${winnerVotes === 1 ? 'vote' : 'votes'}.`
-              : 'Selected by the value metric — turnout was below quorum.'}
+              : 'Selected by the value metric (turnout below quorum).'}
           </div>
         </div>
       </div>
