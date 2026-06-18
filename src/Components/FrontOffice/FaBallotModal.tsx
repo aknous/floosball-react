@@ -761,7 +761,7 @@ const PlayerRow: React.FC<{
     {/* Two columns so the right-hand signals (up to three stacked) don't inflate
         the name line: left holds name + rating on top and the stat line below;
         right holds the signals fans rank on (career stage, presence, +/-). */}
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', minHeight: '44px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', minHeight: '52px' }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* position + name + the overall rating with offense/defense icons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
