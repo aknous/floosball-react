@@ -7,7 +7,6 @@ import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K']
 const GOLD = '#fbbf24'
 
 // Award badges — same icons/colors as the Hall of Fame plaques + trophy case.
@@ -71,7 +70,7 @@ function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPi
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <PlayerLink playerId={c.id} playerName={c.name}
                 style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} />
-          <span style={{ fontSize: '13px', color: '#94a3b8', flexShrink: 0 }}>{c.teamAbbr}</span>
+          <span style={{ fontSize: '13px', color: '#94a3b8', flexShrink: 0 }}>{c.position} · {c.teamAbbr}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '6px', flexWrap: 'wrap' }}>
           <Stars stars={c.ratingStars} size={13} />
@@ -250,21 +249,12 @@ export default function AwardsPage() {
 
       {active === 'mvp' && mvpOpen && (
         <div>
-          <SectionHeader title="Most Valuable Player" subtitle="Vote for the season's MVP. One pick, change it any time before voting closes." closes="Open through the playoffs. Closes after the Floos Bowl, when the season wraps." />
-          {POSITION_ORDER.map(pos => {
-            const group = mvpCandidates.filter(c => c.position === pos)
-            if (!group.length) return null
-            return (
-              <div key={pos} style={{ marginBottom: '14px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', marginBottom: '6px' }}>{pos}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {group.map(c => (
-                    <MvpCard key={c.id} c={c} picked={myMvpVote === c.id} onPick={() => castMvpVote(c.id)} />
-                  ))}
-                </div>
-              </div>
-            )
-          })}
+          <SectionHeader title="Most Valuable Player" subtitle="The season's five most valuable players by the value metric. One pick, change it any time before voting closes." closes="Open through the playoffs. Closes after the Floos Bowl, when the season wraps." />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {mvpCandidates.map(c => (
+              <MvpCard key={c.id} c={c} picked={myMvpVote === c.id} onPick={() => castMvpVote(c.id)} />
+            ))}
+          </div>
         </div>
       )}
 
