@@ -4,6 +4,7 @@ import { GiStarMedal, GiLaurelsTrophy, GiStarsStack } from 'react-icons/gi'
 import { useAwards, MvpCandidate, HofCandidate } from '@/hooks/useAwards'
 import { Stars } from '@/Components/Stars'
 import HoverTooltip from '@/Components/HoverTooltip'
+import PlayerLink from '@/Components/PlayerLink'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K']
@@ -62,10 +63,8 @@ function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPi
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Link to={`/players/${c.id}`}
-                style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {c.name}
-          </Link>
+          <PlayerLink playerId={c.id} playerName={c.name}
+                style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} />
           <span style={{ fontSize: '13px', color: '#94a3b8', flexShrink: 0 }}>{c.teamAbbr}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '6px', flexWrap: 'wrap' }}>
