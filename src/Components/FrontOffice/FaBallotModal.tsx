@@ -325,22 +325,6 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                 ))}
               </div>
             )}
-            {!isMobile && (
-              <div style={{
-                fontSize: '12px', color: '#cbd5e1', marginTop: '10px',
-                padding: '8px 10px', backgroundColor: 'rgba(59,130,246,0.08)',
-                border: '1px solid rgba(59,130,246,0.25)', borderRadius: '6px',
-                lineHeight: 1.5,
-              }}>
-                <div style={{ marginBottom: '4px' }}>
-                  The team works your list top-down. Once a position fills up, anyone else you ranked there gets skipped.
-                </div>
-                <div>
-                  <span style={{ color: '#60a5fa', fontWeight: 700 }}>No ballot:</span>{' '}
-                  the team signs the best available player at any open slot.
-                </div>
-              </div>
-            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
             {faWindowEnd && (

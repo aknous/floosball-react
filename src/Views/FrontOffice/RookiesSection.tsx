@@ -276,8 +276,8 @@ export default function RookiesSection({ readOnly = false }: RookiesSectionProps
             disabled={submitting || !dirty}
             style={{
               padding: '8px 16px', fontSize: '14px', fontWeight: 700, borderRadius: '5px',
-              border: '1px solid #60a5fa', backgroundColor: dirty ? '#60a5fa' : 'rgba(59,130,246,0.2)',
-              color: dirty ? '#0f172a' : '#60a5fa',
+              border: '1px solid #f59e0b', backgroundColor: dirty ? '#f59e0b' : 'rgba(245,158,11,0.2)',
+              color: dirty ? '#0f172a' : '#f59e0b',
               cursor: submitting || !dirty ? 'default' : 'pointer',
             }}
           >
