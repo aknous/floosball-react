@@ -644,7 +644,13 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   if (!gm.eligible) return null
 
   return (
-    <div style={{ backgroundColor: view === 'fa' ? 'transparent' : '#1e293b', borderRadius: '8px', overflow: view === 'fa' ? 'visible' : 'hidden', marginBottom: '20px' }}>
+    <div style={{
+      backgroundColor: view === 'fa' ? 'transparent' : '#0f172a',
+      border: view === 'fa' ? 'none' : '1px solid #334155',
+      borderRadius: '12px',
+      overflow: view === 'fa' ? 'visible' : 'hidden',
+      marginBottom: '20px',
+    }}>
       {view !== 'fa' && sectionHeader('The Front Office', true)}
 
       {/* FA Requisition + tallies — only in the Free Agent Ballot sub-tab (or
