@@ -566,14 +566,16 @@ export default function FrontOfficePage() {
           )}
           {voteSubTab === 'prospect' && (
             currentWeek >= 22 ? (
-              <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px 18px' }}>
-                <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>
-                  Prospect Ballot
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
+                <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px 18px' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>
+                    Prospect Ballot
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px', marginBottom: '16px' }}>
+                    Rank the prospects you want your team to target in the upcoming draft.
+                  </div>
+                  <RookiesSection />
                 </div>
-                <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px', marginBottom: '16px' }}>
-                  Rank the prospects you want your team to target in the upcoming draft.
-                </div>
-                <RookiesSection />
               </div>
             ) : (
               <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '28px 16px', textAlign: 'center' as const, color: '#94a3b8', fontSize: '13px' }}>
