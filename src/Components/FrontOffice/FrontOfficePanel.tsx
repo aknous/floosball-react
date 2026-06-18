@@ -678,7 +678,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
             />
           ) : (
             <div style={{ fontSize: '13px', color: '#94a3b8', padding: '8px 0' }}>
-              No roster openings projected yet — the board will vote on vacancies once cut/re-sign motions settle or contracts expire.
+              No roster openings projected yet. The board will vote on vacancies once cut/re-sign motions settle or contracts expire.
             </div>
           )}
         </div>
