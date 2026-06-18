@@ -832,7 +832,9 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
               />
             )}
 
-            {gm.eligible.coachCandidates.length > 0 && (
+            {/* Replacement voting only appears once you've voted to fire the
+                current coach (or when there's no coach at all to fire). */}
+            {gm.eligible.coachCandidates.length > 0 && (!gm.eligible.coach || myStanceOnTarget('fire_coach') === 'yea') && (
               <HireCoachCard
                 availableCoaches={gm.eligible.coachCandidates}
                 tallies={gm.summary?.tallies ?? []}
