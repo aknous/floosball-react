@@ -855,8 +855,8 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {(gm.eligible.retiringPlayers?.length ?? 0) > 0 && (
               <div style={{
-                background: '#1e2d3d',
-                border: '1px solid #2a3a4e',
+                background: '#1e293b',
+                border: '1px solid #334155',
                 borderLeft: '3px solid #f59e0b',
                 borderRadius: '6px',
                 padding: '14px 16px',
