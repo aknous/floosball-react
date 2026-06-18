@@ -758,23 +758,40 @@ const PlayerRow: React.FC<{
     onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
   >
-    {/* Line 1: position + name, then the overall rating with the offense/
-        defense icons right after it, then the signals fans rank on (career
-        stage, presence, condensed +/- performance) pushed to the right. */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap', rowGap: '3px' }}>
-      <PositionChip position={p.position} />
-      <PlayerHoverCard playerId={p.id} playerName={p.name}>
-        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
-          {p.name}
-        </span>
-      </PlayerHoverCard>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', flexShrink: 0, position: 'relative', top: '-1px' }}>
-        <Stars stars={calcStars(p.rating)} size={20} />
-        <ArchetypeBadge archetype={p.archetype} size={14} />
-      </span>
+    {/* Two columns so the right-hand signals (up to three stacked) don't inflate
+        the name line: left holds name + rating on top and the stat line below;
+        right holds the signals fans rank on (career stage, presence, +/-). */}
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* position + name + the overall rating with offense/defense icons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+          <PositionChip position={p.position} />
+          <PlayerHoverCard playerId={p.id} playerName={p.name}>
+            <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+              {p.name}
+            </span>
+          </PlayerHoverCard>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', flexShrink: 0, position: 'relative', top: '-1px' }}>
+            <Stars stars={calcStars(p.rating)} size={20} />
+            <ArchetypeBadge archetype={p.archetype} size={14} />
+          </span>
+        </div>
+        {/* the stat line (or a context note) */}
+        <div style={{ marginTop: '3px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8', flexWrap: 'wrap' }}>
+          {p.isProspect ? (
+            <span style={{ color: '#a78bfa', fontStyle: 'italic' }}>Pipeline prospect. Rank to promote instead of signing a FA.</span>
+          ) : p.isRookie ? (
+            <span style={{ color: '#38bdf8', fontStyle: 'italic' }}>No professional record</span>
+          ) : p.stats ? (
+            <span style={{ color: '#cbd5e1', display: 'inline-flex', gap: '10px', flexWrap: 'wrap' }}><StatLine position={p.position} stats={p.stats} /></span>
+          ) : (
+            <span style={{ fontStyle: 'italic' }}>No stats this season</span>
+          )}
+        </div>
+      </div>
       {/* Signals stacked as a right-aligned column: career stage, presence,
           performance (each only when it has something to say). */}
-      <span style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px', flexShrink: 0, lineHeight: 1.1 }}>
+      <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px', flexShrink: 0, lineHeight: 1.1 }}>
         {p.isProspect ? (
           <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prospect</span>
         ) : p.isRookie ? (
@@ -788,18 +805,6 @@ const PlayerRow: React.FC<{
         )}
         {p.stats && <CompactPerf delta={p.ratingDelta} />}
       </span>
-    </div>
-    {/* Line 2: the stat line (or a context note). */}
-    <div style={{ marginTop: '3px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8', flexWrap: 'wrap' }}>
-      {p.isProspect ? (
-        <span style={{ color: '#a78bfa', fontStyle: 'italic' }}>Pipeline prospect. Rank to promote instead of signing a FA.</span>
-      ) : p.isRookie ? (
-        <span style={{ color: '#38bdf8', fontStyle: 'italic' }}>No professional record</span>
-      ) : p.stats ? (
-        <span style={{ color: '#cbd5e1', display: 'inline-flex', gap: '10px', flexWrap: 'wrap' }}><StatLine position={p.position} stats={p.stats} /></span>
-      ) : (
-        <span style={{ fontStyle: 'italic' }}>No stats this season</span>
-      )}
     </div>
   </div>
 )
