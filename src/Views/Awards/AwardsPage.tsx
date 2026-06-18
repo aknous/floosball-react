@@ -197,7 +197,7 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
           )}
         </div>
         <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '7px' }}>
-          {c.seasonsRemaining === 1 ? 'Final year on the ballot' : `${c.seasonsRemaining} years left on the ballot`}
+          {c.seasonsRemaining === 1 ? 'Final season on the ballot' : `${c.seasonsRemaining} seasons left on the ballot`}
         </div>
       </div>
       <button
@@ -323,7 +323,7 @@ export default function AwardsPage() {
       {active === 'hof' && !hofOpen && (
         <ClosedNotice
           title="Hall of Fame voting isn't open right now"
-          body="The Hall of Fame ballot opens late in the regular season and resolves in the offseason. Check back to weigh in on this year's class."
+          body="The Hall of Fame ballot opens late in the regular season and resolves in the offseason. Check back to weigh in on this season's class."
         />
       )}
 
