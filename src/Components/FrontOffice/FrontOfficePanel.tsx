@@ -339,13 +339,13 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
 
   // Section header matching TeamPage pattern
   const sectionHeader = (label: string, withHelp?: boolean) => (
-    <div style={{ padding: '11px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ padding: '12px 16px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <span style={{
-        fontSize: '13px',
-        fontWeight: '600',
-        color: '#94a3b8',
+        fontSize: '15px',
+        fontWeight: 700,
+        color: '#e2e8f0',
         textTransform: 'uppercase' as const,
-        letterSpacing: '0.05em',
+        letterSpacing: '0.04em',
       }}>
         {label}
       </span>
