@@ -100,9 +100,9 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
       <CoachHoverCard coach={coach} teamColor={teamColor}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', cursor: 'default' }}>
           <div>
-            <div style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0' }}>{coach.name}</div>
-            <div style={{ marginTop: '2px' }}>
-              <Stars stars={calcStars(coach.overallRating)} size={11} />
+            <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0' }}>{coach.name}</div>
+            <div style={{ marginTop: '3px' }}>
+              <Stars stars={calcStars(coach.overallRating)} size={13} />
             </div>
           </div>
         </div>
@@ -122,12 +122,13 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ display: 'flex', gap: '6px' }}>
         <button
           onClick={handleVoteClick}
           onMouseLeave={() => { if (armed) { setArmed(false); clearTimer() } }}
           disabled={forDisabled || voting}
           style={{
-            width: '100%',
+            flex: 1,
             padding: '8px 12px',
             backgroundColor: btnBg,
             color: btnFg,
@@ -148,7 +149,7 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
           onMouseLeave={() => { if (armedOppose) { setArmedOppose(false); clearOpposeTimer() } }}
           disabled={opposeDisabled || voting}
           style={{
-            width: '100%',
+            flex: 1,
             padding: '8px 12px',
             backgroundColor: oppBg,
             color: oppFg,
@@ -163,6 +164,7 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
         >
           {oppText}
         </button>
+        </div>
 
         {myVoteCount > 0 && (
           <HoverTooltip text={`Take back your vote. Refunds ${lastCost} F`}>

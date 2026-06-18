@@ -300,6 +300,24 @@ export default function Navbar() {
   const isMobile = useIsMobile()
   const isTablet = useIsMobile(1200)
 
+  // Awards (MVP / Hall of Fame) voting is season's-end only — mirror the
+  // desktop sidebar and surface the mobile menu entry only while a window is
+  // open. Public status endpoint, no auth.
+  const [awardsOpen, setAwardsOpen] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    const loadAwards = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/awards/status`)
+        const json = await res.json()
+        if (!cancelled) setAwardsOpen(!!json?.data?.anyOpen)
+      } catch { /* keep last */ }
+    }
+    loadAwards()
+    const id = setInterval(loadAwards, 180_000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [])
+
   // Phase-aware offseason countdown. Each waiting phase has a target time
   // for the *next* phase, and the navbar replaces the week-text slot with
   // "<NextPhase> in Xh Ym" so users can see what's coming next without
@@ -652,6 +670,8 @@ export default function Navbar() {
                 ['Fantasy', '/fantasy'],
                 ['Cards', '/cards'],
                 ['Team Management', '/front-office'],
+                ...(seasonState.bracketAvailable ? [['Bracket', '/bracket']] : []),
+                ...(awardsOpen ? [['Awards Voting', '/awards']] : []),
                 ['Achievements', '/achievements'],
                 ['History', '/history'],
                 ['Guide', '/about'],

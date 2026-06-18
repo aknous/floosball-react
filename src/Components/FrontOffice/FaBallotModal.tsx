@@ -7,6 +7,7 @@ import { attitudeTier } from '@/utils/mentalProfile'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import PositionChip from '@/Components/FrontOffice/PositionChip'
 
 export interface PlayerStats {
   gamesPlayed: number
@@ -82,29 +83,9 @@ interface FaBallotModalProps {
   onSubmit: (rankings: number[]) => Promise<any>
   submitting: boolean
   existingBallot?: number[] | null
-}
-
-const POS_CHIP_COLORS: Record<string, { bg: string; fg: string }> = {
-  QB: { bg: 'rgba(59,130,246,0.18)', fg: '#60a5fa' },
-  RB: { bg: 'rgba(34,197,94,0.18)', fg: '#4ade80' },
-  WR: { bg: 'rgba(245,158,11,0.18)', fg: '#fbbf24' },
-  TE: { bg: 'rgba(168,85,247,0.18)', fg: '#c084fc' },
-  K: { bg: 'rgba(148,163,184,0.18)', fg: '#cbd5e1' },
-}
-
-const PositionChip: React.FC<{ position: string }> = ({ position }) => {
-  const c = POS_CHIP_COLORS[position] || { bg: '#1e293b', fg: '#94a3b8' }
-  return (
-    <span style={{
-      fontSize: '10px', fontWeight: 700,
-      color: c.fg, backgroundColor: c.bg,
-      padding: '2px 6px', borderRadius: '4px',
-      letterSpacing: '0.04em',
-      minWidth: 28, textAlign: 'center' as const,
-    }}>
-      {position}
-    </span>
-  )
+  /** Render inline (in a tab) instead of as a modal overlay: no backdrop,
+   *  portal, or close button. `visible`/`onClose` are ignored in this mode. */
+  inline?: boolean
 }
 
 // ── Candidate sorting ────────────────────────────────────────────────────────
@@ -151,6 +132,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
   onSubmit,
   submitting,
   existingBallot,
+  inline = false,
 }) => {
   const [ranking, setRanking] = useState<number[]>([])
   const [posFilter, setPosFilter] = useState<'ALL' | string>('ALL')
@@ -274,15 +256,17 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
   const isUpdate = existingBallot && existingBallot.length > 0
   const cost = isUpdate ? 0 : GM_FA_BALLOT_COST
 
-  if (!visible) return null
+  if (!visible && !inline) return null
 
   // Position filter chips: ALL + every distinct open position.
   const posFilterOptions: string[] = ['ALL', ...Array.from(openPositionSet).sort()]
 
-  return ReactDOM.createPortal(
+  const tree = (
     <div
-      onClick={onClose}
-      style={{
+      onClick={inline ? undefined : onClose}
+      style={inline
+        ? { fontFamily: 'pressStart' }
+        : {
         position: 'fixed',
         inset: 0,
         zIndex: 10002,
@@ -299,11 +283,11 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: '1040px',
-          height: isMobile ? '100vh' : '85vh',
+          maxWidth: inline ? '100%' : '1040px',
+          height: inline ? '70vh' : (isMobile ? '100vh' : '85vh'),
           backgroundColor: '#0f172a',
-          border: isMobile ? 'none' : '1px solid #334155',
-          borderRadius: isMobile ? 0 : '12px',
+          border: (isMobile && !inline) ? 'none' : '1px solid #334155',
+          borderRadius: (isMobile && !inline) ? 0 : '12px',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -311,7 +295,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
       >
         {/* Header */}
         <div style={{
-          padding: isMobile ? '12px 14px' : '18px 20px',
+          padding: isMobile ? '10px 12px' : '12px 16px',
           borderBottom: '1px solid #334155',
           display: 'flex',
           justifyContent: 'space-between',
@@ -320,16 +304,16 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
           flexShrink: 0,
         }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: '700', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <div style={{ fontSize: isMobile ? '14px' : '15px', fontWeight: '700', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Free Agent Requisition
             </div>
-            <div style={{ fontSize: isMobile ? '12px' : '13px', color: '#94a3b8', marginTop: '6px' }}>
-              Rank the players you want signed. Front office goes after #1 first, works down the list.
-              {isUpdate ? ' Revisions are free.' : ` First ballot costs ${GM_FA_BALLOT_COST} Floobits.`}
+            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
+              Front office signs top-down from your #1.
+              {isUpdate ? ' Revisions are free.' : ` First ballot: ${GM_FA_BALLOT_COST} Floobits.`}
             </div>
             {openSlots.length > 0 && (
               <div style={{
-                fontSize: '12px', color: '#cbd5e1', marginTop: '8px',
+                fontSize: '12px', color: '#cbd5e1', marginTop: '6px',
                 display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center',
               }}>
                 <span style={{ color: '#94a3b8' }}>Open slots:</span>
@@ -341,27 +325,11 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                 ))}
               </div>
             )}
-            {!isMobile && (
-              <div style={{
-                fontSize: '12px', color: '#cbd5e1', marginTop: '10px',
-                padding: '8px 10px', backgroundColor: 'rgba(59,130,246,0.08)',
-                border: '1px solid rgba(59,130,246,0.25)', borderRadius: '6px',
-                lineHeight: 1.5,
-              }}>
-                <div style={{ marginBottom: '4px' }}>
-                  The team works your list top-down. Once a position fills up, anyone else you ranked there gets skipped.
-                </div>
-                <div>
-                  <span style={{ color: '#60a5fa', fontWeight: 700 }}>No ballot:</span>{' '}
-                  the team signs the best available player at any open slot.
-                </div>
-              </div>
-            )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
             {faWindowEnd && (
               <div style={{
-                fontSize: isMobile ? '14px' : '16px',
+                fontSize: isMobile ? '13px' : '15px',
                 fontWeight: '700',
                 color: timeLeft.startsWith('0:') ? '#ef4444' : '#f59e0b',
                 fontVariantNumeric: 'tabular-nums',
@@ -369,7 +337,26 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                 {timeLeft}
               </div>
             )}
-            {isMobile && (
+            <button
+              onClick={handleSubmit}
+              disabled={ranking.length === 0 || submitting}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: ranking.length === 0 ? '#1e293b' : '#f59e0b',
+                color: ranking.length === 0 ? '#475569' : '#0f172a',
+                border: 'none', borderRadius: '6px', fontFamily: 'inherit',
+                fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap',
+                cursor: ranking.length === 0 ? 'not-allowed' : 'pointer',
+                opacity: submitting ? 0.6 : 1,
+              }}
+            >
+              {submitting
+                ? 'Submitting...'
+                : isUpdate
+                  ? 'Revise'
+                  : `Submit (${ranking.length}) · ${cost} F`}
+            </button>
+            {isMobile && !inline && (
               <button
                 onClick={onClose}
                 aria-label="Close"
@@ -652,47 +639,11 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
           </div>
         </div>
 
-        {/* Footer: Submit */}
-        <div style={{
-          padding: isMobile ? '12px 14px' : '16px 20px',
-          borderTop: '1px solid #334155',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          flexShrink: 0,
-        }}>
-          <span style={{ fontSize: isMobile ? '12px' : '13px', color: '#94a3b8' }}>
-            {ranking.length} ranked
-          </span>
-          <button
-            onClick={handleSubmit}
-            disabled={ranking.length === 0 || submitting}
-            style={{
-              padding: isMobile ? '14px 24px' : '12px 28px',
-              backgroundColor: ranking.length === 0 ? '#1e293b' : '#f59e0b',
-              color: ranking.length === 0 ? '#475569' : '#0f172a',
-              border: 'none',
-              borderRadius: '6px',
-              fontFamily: 'inherit',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: ranking.length === 0 ? 'not-allowed' : 'pointer',
-              opacity: submitting ? 0.6 : 1,
-              minWidth: isMobile ? '140px' : undefined,
-            }}
-          >
-            {submitting
-              ? 'Submitting...'
-              : isUpdate
-                ? 'Revise Requisition'
-                : `Submit Requisition \u2014 ${cost} F`}
-          </button>
-        </div>
       </div>
-    </div>,
-    document.body
+    </div>
   )
+
+  return inline ? tree : ReactDOM.createPortal(tree, document.body)
 }
 
 /* ── Helper components ── */
@@ -807,23 +758,40 @@ const PlayerRow: React.FC<{
     onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
   >
-    {/* Line 1: position + name, then the overall rating with the offense/
-        defense icons right after it, then the signals fans rank on (career
-        stage, presence, condensed +/- performance) pushed to the right. */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap', rowGap: '3px' }}>
-      <PositionChip position={p.position} />
-      <PlayerHoverCard playerId={p.id} playerName={p.name}>
-        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '700', wordBreak: 'break-word' }}>
-          {p.name}
-        </span>
-      </PlayerHoverCard>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', flexShrink: 0, position: 'relative', top: '-1px' }}>
-        <Stars stars={calcStars(p.rating)} size={20} />
-        <ArchetypeBadge archetype={p.archetype} size={14} />
-      </span>
+    {/* Two columns so the right-hand signals (up to three stacked) don't inflate
+        the name line: left holds name + rating on top and the stat line below;
+        right holds the signals fans rank on (career stage, presence, +/-). */}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', minHeight: '52px' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* position + name + the overall rating with offense/defense icons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+          <PositionChip position={p.position} />
+          <PlayerHoverCard playerId={p.id} playerName={p.name}>
+            <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+              {p.name}
+            </span>
+          </PlayerHoverCard>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', flexShrink: 0, position: 'relative', top: '-1px' }}>
+            <Stars stars={calcStars(p.rating)} size={20} />
+            <ArchetypeBadge archetype={p.archetype} size={14} />
+          </span>
+        </div>
+        {/* the stat line (or a context note) */}
+        <div style={{ marginTop: '3px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8', flexWrap: 'wrap' }}>
+          {p.isProspect ? (
+            <span style={{ color: '#a78bfa', fontStyle: 'italic' }}>Pipeline prospect. Rank to promote instead of signing a FA.</span>
+          ) : p.isRookie ? (
+            <span style={{ color: '#38bdf8', fontStyle: 'italic' }}>No professional record</span>
+          ) : p.stats ? (
+            <span style={{ color: '#cbd5e1', display: 'inline-flex', gap: '10px', flexWrap: 'wrap' }}><StatLine position={p.position} stats={p.stats} /></span>
+          ) : (
+            <span style={{ fontStyle: 'italic' }}>No stats this season</span>
+          )}
+        </div>
+      </div>
       {/* Signals stacked as a right-aligned column: career stage, presence,
           performance (each only when it has something to say). */}
-      <span style={{ marginLeft: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px', flexShrink: 0, lineHeight: 1.1 }}>
+      <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px', flexShrink: 0, lineHeight: 1.1 }}>
         {p.isProspect ? (
           <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prospect</span>
         ) : p.isRookie ? (
@@ -837,18 +805,6 @@ const PlayerRow: React.FC<{
         )}
         {p.stats && <CompactPerf delta={p.ratingDelta} />}
       </span>
-    </div>
-    {/* Line 2: the stat line (or a context note). */}
-    <div style={{ marginTop: '3px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8', flexWrap: 'wrap' }}>
-      {p.isProspect ? (
-        <span style={{ color: '#a78bfa', fontStyle: 'italic' }}>Pipeline prospect — rank to promote instead of signing a FA.</span>
-      ) : p.isRookie ? (
-        <span style={{ color: '#38bdf8', fontStyle: 'italic' }}>No professional record</span>
-      ) : p.stats ? (
-        <span style={{ color: '#cbd5e1', display: 'inline-flex', gap: '10px', flexWrap: 'wrap' }}><StatLine position={p.position} stats={p.stats} /></span>
-      ) : (
-        <span style={{ fontStyle: 'italic' }}>No stats this season</span>
-      )}
     </div>
   </div>
 )

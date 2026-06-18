@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { GiStarMedal, GiLaurelsTrophy, GiStarsStack } from 'react-icons/gi'
-import { useAwards, MvpCandidate, HofCandidate } from '@/hooks/useAwards'
+import { useAwards, MvpCandidate, MvpWinner, HofCandidate } from '@/hooks/useAwards'
 import { Stars } from '@/Components/Stars'
 import HoverTooltip from '@/Components/HoverTooltip'
+import PlayerLink from '@/Components/PlayerLink'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
-const POSITION_ORDER = ['QB', 'RB', 'WR', 'TE', 'K']
 const GOLD = '#fbbf24'
 
 // Award badges — same icons/colors as the Hall of Fame plaques + trophy case.
@@ -27,11 +28,17 @@ const AwardBadge: React.FC<{ count: number; label: string; Icon: React.Component
   </span>
 )
 
-function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
+function SectionHeader({ title, subtitle, closes }: { title: string; subtitle: string; closes?: string }) {
   return (
     <div style={{ marginBottom: '14px' }}>
       <div style={{ fontSize: '18px', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.02em' }}>{title}</div>
       <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>{subtitle}</div>
+      {closes && (
+        <div style={{ fontSize: '12px', color: GOLD, marginTop: '6px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: GOLD, display: 'inline-block', flexShrink: 0 }} />
+          {closes}
+        </div>
+      )}
     </div>
   )
 }
@@ -39,8 +46,8 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
 function StatPair({ label, value }: { label: string; value: number | string }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '3px' }}>
-      <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
-      <span style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+      <span style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+      <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
     </span>
   )
 }
@@ -48,27 +55,25 @@ function StatPair({ label, value }: { label: string; value: number | string }) {
 function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPick: () => void }) {
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: '12px',
-      padding: '10px 12px', borderRadius: '8px',
+      display: 'flex', alignItems: 'center', gap: '14px',
+      padding: '14px 16px', borderRadius: '8px',
       border: `1px solid ${picked ? GOLD : '#334155'}`,
-      background: picked ? 'rgba(251,191,36,0.08)' : '#0f172a',
+      background: picked ? 'rgba(251,191,36,0.08)' : '#1e293b',
       transition: 'border-color 0.15s, background 0.15s',
     }}>
       {c.teamId != null && (
         <img src={`/avatars/${c.teamId}.png`} alt={c.teamAbbr}
-             style={{ width: '32px', height: '32px', flexShrink: 0 }}
+             style={{ width: '40px', height: '40px', flexShrink: 0 }}
              onError={e => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden' }} />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Link to={`/players/${c.id}`}
-                style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {c.name}
-          </Link>
-          <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>{c.teamAbbr}</span>
+          <PlayerLink playerId={c.id} playerName={c.name}
+                style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} />
+          <span style={{ fontSize: '13px', color: '#94a3b8', flexShrink: 0 }}>{c.position} · {c.teamAbbr}</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
-          <Stars stars={c.ratingStars} size={11} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '6px', flexWrap: 'wrap' }}>
+          <Stars stars={c.ratingStars} size={13} />
           {c.stats.map(s => <StatPair key={s.label} label={s.label} value={s.value} />)}
           <HoverTooltip content="Win Probability Added: the net win probability this player's plays swung over the season, in win units (100 percentage points = 1). Higher is better." color="#38bdf8">
             <span style={{ cursor: 'help' }}><StatPair label="WPA" value={(c.seasonWpa / 100).toFixed(1)} /></span>
@@ -80,10 +85,10 @@ function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPi
         onClick={onPick}
         style={{
           flexShrink: 0, cursor: 'pointer',
-          fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em',
+          fontSize: '12px', fontWeight: 800, letterSpacing: '0.05em',
           color: picked ? '#0f172a' : GOLD,
           background: picked ? GOLD : 'rgba(251,191,36,0.12)',
-          border: `1px solid ${GOLD}`, borderRadius: '6px', padding: '8px 14px',
+          border: `1px solid ${GOLD}`, borderRadius: '6px', padding: '10px 18px',
           whiteSpace: 'nowrap',
         }}
       >
@@ -93,30 +98,84 @@ function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPi
   )
 }
 
+// Shown after the MVP window closes: the winner + the final vote tally.
+function MvpResults({ winner, candidates, tally, voterCount }: {
+  winner: MvpWinner; candidates: MvpCandidate[]; tally: Record<number, number> | null; voterCount: number
+}) {
+  const votesFor = (id: number) => tally?.[id] ?? 0
+  const ranked = [...candidates].sort((a, b) => votesFor(b.id) - votesFor(a.id))
+  const winnerVotes = votesFor(winner.id)
+  return (
+    <div>
+      <SectionHeader
+        title="Most Valuable Player"
+        subtitle={`Voting is closed. ${voterCount} ${voterCount === 1 ? 'ballot' : 'ballots'} cast this season.`}
+      />
+      {/* Winner */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px', borderRadius: '10px', border: `1px solid ${GOLD}`, background: 'rgba(251,191,36,0.10)', marginBottom: '16px' }}>
+        {winner.teamId != null && (
+          <img src={`/avatars/${winner.teamId}.png`} alt={winner.teamAbbr}
+               style={{ width: '44px', height: '44px', flexShrink: 0 }}
+               onError={e => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden' }} />
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', color: GOLD }}>SEASON MVP</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+            <PlayerLink playerId={winner.id} playerName={winner.name} style={{ fontSize: '20px', fontWeight: 800, color: '#e2e8f0' }} />
+            <span style={{ fontSize: '13px', color: '#94a3b8' }}>{winner.position} · {winner.teamAbbr}</span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+            {winner.viaVote
+              ? `Won the fan vote with ${winnerVotes} ${winnerVotes === 1 ? 'vote' : 'votes'}.`
+              : 'Selected by the value metric (turnout below quorum).'}
+          </div>
+        </div>
+      </div>
+      {/* Full tally */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {ranked.map((c, i) => {
+          const v = votesFor(c.id)
+          const isWinner = c.id === winner.id
+          return (
+            <div key={c.id} style={{
+              display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '8px',
+              border: `1px solid ${isWinner ? GOLD : '#334155'}`, background: isWinner ? 'rgba(251,191,36,0.08)' : '#1e293b',
+            }}>
+              <span style={{ fontSize: '14px', fontWeight: 700, color: '#94a3b8', minWidth: '20px' }}>{i + 1}</span>
+              {c.teamId != null && (
+                <img src={`/avatars/${c.teamId}.png`} alt={c.teamAbbr} style={{ width: '28px', height: '28px', flexShrink: 0 }}
+                     onError={e => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden' }} />
+              )}
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: '8px', overflow: 'hidden' }}>
+                <PlayerLink playerId={c.id} playerName={c.name} style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} />
+                <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>{c.position} · {c.teamAbbr}</span>
+              </div>
+              <span style={{ fontSize: '15px', fontWeight: 800, color: isWinner ? GOLD : '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{v}</span>
+              <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>{v === 1 ? 'vote' : 'votes'}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean; onToggle: () => void }) {
   const k = c.case || {}
   const records = c.recordsHeld || []
-  const secondary: string[] = []
-  if (k.seasons) secondary.push(`${k.seasons} seasons`)
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: '12px',
       padding: '12px', borderRadius: '8px',
       border: `1px solid ${approved ? GOLD : '#334155'}`,
-      background: approved ? 'rgba(251,191,36,0.08)' : '#0f172a',
+      background: approved ? 'rgba(251,191,36,0.08)' : '#1e293b',
     }}>
-      {c.teamId != null && (
-        <img src={`/avatars/${c.teamId}.png`} alt={c.teamAbbr}
-             style={{ width: '34px', height: '34px', flexShrink: 0 }}
-             onError={e => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden' }} />
-      )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <Link to={`/players/${c.playerId}`} style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', textDecoration: 'none' }}>
             {c.name || `Player #${c.playerId}`}
           </Link>
-          {c.position && <span style={{ fontSize: '11px', fontWeight: 700, color: c.teamColor || '#94a3b8' }}>{c.position}</span>}
-          {c.teamAbbr && <span style={{ fontSize: '11px', color: '#94a3b8' }}>{c.teamAbbr}</span>}
+          {c.position && <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>{c.position}</span>}
           <Stars stars={c.ratingStars} size={11} />
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '7px' }}>
@@ -136,9 +195,6 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
               }}>{records.length} league record{records.length !== 1 ? 's' : ''}</span>
             </HoverTooltip>
           )}
-          {secondary.map(chip => (
-            <span key={chip} style={{ fontSize: '11px', color: '#cbd5e1', background: '#1e293b', border: '1px solid #334155', borderRadius: '5px', padding: '2px 7px' }}>{chip}</span>
-          ))}
         </div>
         <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '7px' }}>
           {c.seasonsRemaining === 1 ? 'Final year on the ballot' : `${c.seasonsRemaining} years left on the ballot`}
@@ -146,15 +202,25 @@ function HofCard({ c, approved, onToggle }: { c: HofCandidate; approved: boolean
       </div>
       <button
         onClick={onToggle}
+        aria-pressed={approved}
+        title={approved ? 'Voted for induction' : 'Vote for induction'}
         style={{
           cursor: 'pointer', flexShrink: 0,
-          fontSize: '11px', fontWeight: 800, letterSpacing: '0.05em',
-          color: approved ? '#0f172a' : GOLD,
-          background: approved ? GOLD : 'rgba(251,191,36,0.12)',
-          border: `1px solid ${GOLD}`, borderRadius: '6px', padding: '8px 14px',
+          width: '34px', height: '34px', padding: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: approved ? GOLD : 'rgba(251,191,36,0.08)',
+          border: `2px solid ${approved ? GOLD : 'rgba(251,191,36,0.45)'}`,
+          borderRadius: '7px',
+          transition: 'background 0.15s, border-color 0.15s',
         }}
       >
-        {approved ? 'APPROVED' : 'APPROVE'}
+        {approved && (
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="3.5"
+               strokeLinecap="round" strokeLinejoin="round"
+               style={{ width: '20px', height: '20px' }}>
+            <path d="M5 13l4 4L19 7" />
+          </svg>
+        )}
       </button>
     </div>
   )
@@ -166,11 +232,11 @@ function Tab({ label, active, onClick }: { label: string; active: boolean; onCli
       onClick={onClick}
       style={{
         cursor: 'pointer', flex: 1,
-        fontSize: '13px', fontWeight: 800, letterSpacing: '0.03em',
+        fontSize: '16px', fontWeight: 800, letterSpacing: '0.03em',
         color: active ? '#0f172a' : '#cbd5e1',
         background: active ? GOLD : 'transparent',
         border: `1px solid ${active ? GOLD : '#334155'}`,
-        borderRadius: '8px', padding: '9px 0',
+        borderRadius: '8px', padding: '12px 0',
         transition: 'all 0.15s',
       }}
     >
@@ -179,10 +245,21 @@ function Tab({ label, active, onClick }: { label: string; active: boolean; onCli
   )
 }
 
+function ClosedNotice({ title, body }: { title: string; body: string }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '40px 24px', borderRadius: '12px', border: '1px solid #334155', background: '#1e293b' }}>
+      <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0' }}>{title}</div>
+      <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '8px', lineHeight: 1.5, maxWidth: '440px', margin: '8px auto 0' }}>{body}</div>
+    </div>
+  )
+}
+
 export default function AwardsPage() {
   const { loading, mvpOpen, hofOpen, anyOpen, mvpCandidates, myMvpVote,
+          mvpTally, mvpVoterCount, mvpWinner,
           hofCandidates, myApprovals, classCap, castMvpVote, toggleHofApproval } = useAwards()
   const [tab, setTab] = useState<'mvp' | 'hof'>('mvp')
+  const isMobile = useIsMobile()
 
   // Default the active tab to whichever window is open (MVP wins if both).
   useEffect(() => {
@@ -190,7 +267,7 @@ export default function AwardsPage() {
     else if (hofOpen) setTab('hof')
   }, [mvpOpen, hofOpen])
 
-  const wrap: React.CSSProperties = { maxWidth: '760px', margin: '0 auto', padding: '24px 16px' }
+  const wrap: React.CSSProperties = { maxWidth: '880px', margin: '0 auto', padding: '24px 16px' }
 
   if (loading) {
     return <div style={wrap}><div style={{ color: '#94a3b8', textAlign: 'center', padding: '40px' }}>Loading the Awards Hall...</div></div>
@@ -210,50 +287,57 @@ export default function AwardsPage() {
   }
 
   const myApprovalSet = new Set(myApprovals)
-  const showTabs = mvpOpen && hofOpen
-  const active = showTabs ? tab : (mvpOpen ? 'mvp' : 'hof')
+  const active = tab
 
   return (
     <div style={wrap}>
-      <div style={{ fontSize: '24px', fontWeight: 900, color: GOLD, letterSpacing: '0.03em', marginBottom: '16px' }}>Awards</div>
+      <div style={{ fontSize: '24px', fontWeight: 900, color: GOLD, letterSpacing: '0.03em', marginBottom: '16px' }}>Awards Voting</div>
 
-      {showTabs && (
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-          <Tab label="MVP" active={active === 'mvp'} onClick={() => setTab('mvp')} />
-          <Tab label="Hall of Fame" active={active === 'hof'} onClick={() => setTab('hof')} />
-        </div>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+        <Tab label="MVP" active={active === 'mvp'} onClick={() => setTab('mvp')} />
+        <Tab label="Hall of Fame" active={active === 'hof'} onClick={() => setTab('hof')} />
+      </div>
+
+      {active === 'mvp' && !mvpOpen && !mvpWinner && (
+        <ClosedNotice
+          title="MVP voting isn't open right now"
+          body="MVP voting runs at the end of each regular season. Check back when the season wraps to cast your ballot."
+        />
+      )}
+
+      {active === 'mvp' && !mvpOpen && mvpWinner && (
+        <MvpResults winner={mvpWinner} candidates={mvpCandidates} tally={mvpTally} voterCount={mvpVoterCount} />
       )}
 
       {active === 'mvp' && mvpOpen && (
         <div>
-          <SectionHeader title="Most Valuable Player" subtitle="Vote for the season's MVP. One pick, change it any time before voting closes." />
-          {POSITION_ORDER.map(pos => {
-            const group = mvpCandidates.filter(c => c.position === pos)
-            if (!group.length) return null
-            return (
-              <div key={pos} style={{ marginBottom: '14px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', marginBottom: '6px' }}>{pos}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {group.map(c => (
-                    <MvpCard key={c.id} c={c} picked={myMvpVote === c.id} onPick={() => castMvpVote(c.id)} />
-                  ))}
-                </div>
-              </div>
-            )
-          })}
+          <SectionHeader title="Most Valuable Player" subtitle="The season's five most valuable players by the value metric. One pick, change it any time before voting closes." closes="Open through the playoffs. Closes after the Floos Bowl, when the season wraps." />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {mvpCandidates.map(c => (
+              <MvpCard key={c.id} c={c} picked={myMvpVote === c.id} onPick={() => castMvpVote(c.id)} />
+            ))}
+          </div>
         </div>
+      )}
+
+      {active === 'hof' && !hofOpen && (
+        <ClosedNotice
+          title="Hall of Fame voting isn't open right now"
+          body="The Hall of Fame ballot opens late in the regular season and resolves in the offseason. Check back to weigh in on this year's class."
+        />
       )}
 
       {active === 'hof' && hofOpen && (
         <div>
           <SectionHeader
             title="Hall of Fame"
-            subtitle={`Approve the players you want enshrined. Up to ${classCap} are inducted this year; the rest carry over.`}
+            subtitle={`Vote for the players you want inducted into the Hall of Fame. Only ${classCap} can be inducted each season, and players stay on the ballot for up to 5 seasons. If you don't think anyone on the ballot is deserving, you don't have to vote for anyone.`}
+            closes="Open through the playoffs and into the offseason. Closes once the free-agent draft wraps."
           />
           {hofCandidates.length === 0 ? (
             <div style={{ fontSize: '13px', color: '#94a3b8', padding: '12px 0' }}>No players on the ballot this season.</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gridAutoFlow: 'row', gap: '8px' }}>
               {hofCandidates.map(c => (
                 <HofCard key={c.playerId} c={c} approved={myApprovalSet.has(c.playerId)} onToggle={() => toggleHofApproval(c.playerId)} />
               ))}

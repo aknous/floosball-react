@@ -6,6 +6,7 @@ import { Stars, calcStars, DualStars } from './Stars'
 import PlayerHoverCard from './PlayerHoverCard'
 import PlayerLink from './PlayerLink'
 import FaBallotModal from './FrontOffice/FaBallotModal'
+import { Plaque, type Inductee } from '@/Views/Players/HallOfFame'
 import type { ScoutingPlayer, OpenSlot } from './FrontOffice/FaBallotModal'
 import type {
   OffseasonStartEvent,
@@ -190,6 +191,28 @@ export const OffseasonPanel: React.FC = () => {
   const offseasonPhase = seasonState.offseasonPhase
   const offseasonPhaseTargetTime = seasonState.offseasonPhaseTargetTime
   const [phaseCountdown, setPhaseCountdown] = useState('')
+
+  // Hall of Fame class for the just-ended season. The induction stamps each
+  // inductee's hofSeason at the training step (right after the FA draft, the
+  // moment HoF voting closes), so this turns non-empty exactly then. Refetched
+  // on phase changes + a slow interval so the panel appears without a reload.
+  const [hofClass, setHofClass] = useState<Inductee[]>([])
+  useEffect(() => {
+    let alive = true
+    const loadHof = () => {
+      fetch(`${API_BASE}/hall-of-fame`)
+        .then(r => r.json())
+        .then(json => {
+          if (!alive || !json.success) return
+          const all: Inductee[] = json.data?.inductees || []
+          setHofClass(all.filter(i => i.hofSeason === seasonState.seasonNumber))
+        })
+        .catch(() => {})
+    }
+    loadHof()
+    const id = setInterval(loadHof, 30000)
+    return () => { alive = false; clearInterval(id) }
+  }, [seasonState.seasonNumber, offseasonPhase])
   const [phaseLabel, setPhaseLabel] = useState('')
   useEffect(() => {
     const NEXT_LABEL: Record<string, string> = {
@@ -846,6 +869,27 @@ export const OffseasonPanel: React.FC = () => {
           </span>
         )}
       </div>
+
+      {/* Hall of Fame inductees — appears once voting closes (induction stamps
+          the class at the training step, right after the FA draft). Persists
+          through the rest of the offseason; clears when the next season starts
+          (the season number bumps and no class matches yet). */}
+      {hofClass.length > 0 && (
+        <div style={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '10px', padding: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' as const, marginBottom: '4px' }}>
+            <span style={{ fontSize: '16px', fontWeight: 800, color: '#fbbf24', letterSpacing: '0.02em' }}>Hall of Fame</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
+              Class of Season {seasonState.seasonNumber}
+            </span>
+          </div>
+          <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '14px' }}>
+            This season's inductees, voted in by the fans.
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(236px, 1fr))', gap: '12px' }}>
+            {hofClass.map(p => <Plaque key={p.id} p={p} />)}
+          </div>
+        </div>
+      )}
 
       {/* GM: Favorite team on the clock banner */}
       {isFavoriteOnClock && (
