@@ -237,9 +237,8 @@ export default function RookiesSection({ readOnly = false }: RookiesSectionProps
 
   return (
     <div>
-      <div style={{ marginBottom: '16px', fontSize: '14px', color: '#94a3b8', lineHeight: 1.5 }}>
-        {data.rookies.length} prospects available in the offseason rookie draft.
-        Scouting accuracy depends on your team's head coach and market tier.
+      <div style={{ marginBottom: '10px', fontSize: '13px', color: '#94a3b8' }}>
+        {data.rookies.length} prospects available. Scouting accuracy scales with your coach and market tier.
       </div>
 
       {/* Status bar — scouting badge always; ballot controls only when voting
@@ -247,8 +246,8 @@ export default function RookiesSection({ readOnly = false }: RookiesSectionProps
           instance on the Prospects tab still shows scouting accuracy. */}
       <div style={{
         display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px',
-        padding: '12px 14px', backgroundColor: '#1e293b',
-        border: '1px solid #334155', borderRadius: '8px', marginBottom: '20px',
+        padding: '9px 12px', backgroundColor: '#1e293b',
+        border: '1px solid #334155', borderRadius: '8px', marginBottom: '14px',
       }}>
         <ScoutingAccuracyBadge accuracy={data.effectiveScouting} range={data.rookies[0]?.scoutingRange ?? 15} />
         {readOnly ? (
@@ -257,7 +256,7 @@ export default function RookiesSection({ readOnly = false }: RookiesSectionProps
           </span>
         ) : data.votingOpen ? (
           <span style={{ fontSize: '14px', color: '#22c55e', fontWeight: 600 }}>
-            Voting is open — rank your preferred prospects
+            Voting is open. Rank your preferred prospects.
           </span>
         ) : (
           <span style={{ fontSize: '14px', color: '#94a3b8' }}>

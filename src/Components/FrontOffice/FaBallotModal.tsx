@@ -295,7 +295,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
       >
         {/* Header */}
         <div style={{
-          padding: isMobile ? '12px 14px' : '18px 20px',
+          padding: isMobile ? '10px 12px' : '12px 16px',
           borderBottom: '1px solid #334155',
           display: 'flex',
           justifyContent: 'space-between',
@@ -304,16 +304,16 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
           flexShrink: 0,
         }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: '700', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <div style={{ fontSize: isMobile ? '14px' : '15px', fontWeight: '700', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Free Agent Requisition
             </div>
-            <div style={{ fontSize: isMobile ? '12px' : '13px', color: '#94a3b8', marginTop: '6px' }}>
-              Rank the players you want signed. Front office goes after #1 first, works down the list.
-              {isUpdate ? ' Revisions are free.' : ` First ballot costs ${GM_FA_BALLOT_COST} Floobits.`}
+            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
+              Front office signs top-down from your #1.
+              {isUpdate ? ' Revisions are free.' : ` First ballot: ${GM_FA_BALLOT_COST} Floobits.`}
             </div>
             {openSlots.length > 0 && (
               <div style={{
-                fontSize: '12px', color: '#cbd5e1', marginTop: '8px',
+                fontSize: '12px', color: '#cbd5e1', marginTop: '6px',
                 display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center',
               }}>
                 <span style={{ color: '#94a3b8' }}>Open slots:</span>
@@ -326,10 +326,10 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
               </div>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
             {faWindowEnd && (
               <div style={{
-                fontSize: isMobile ? '14px' : '16px',
+                fontSize: isMobile ? '13px' : '15px',
                 fontWeight: '700',
                 color: timeLeft.startsWith('0:') ? '#ef4444' : '#f59e0b',
                 fontVariantNumeric: 'tabular-nums',
@@ -337,6 +337,25 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                 {timeLeft}
               </div>
             )}
+            <button
+              onClick={handleSubmit}
+              disabled={ranking.length === 0 || submitting}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: ranking.length === 0 ? '#1e293b' : '#f59e0b',
+                color: ranking.length === 0 ? '#475569' : '#0f172a',
+                border: 'none', borderRadius: '6px', fontFamily: 'inherit',
+                fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap',
+                cursor: ranking.length === 0 ? 'not-allowed' : 'pointer',
+                opacity: submitting ? 0.6 : 1,
+              }}
+            >
+              {submitting
+                ? 'Submitting...'
+                : isUpdate
+                  ? 'Revise'
+                  : `Submit (${ranking.length}) · ${cost} F`}
+            </button>
             {isMobile && !inline && (
               <button
                 onClick={onClose}
@@ -620,43 +639,6 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
           </div>
         </div>
 
-        {/* Footer: Submit */}
-        <div style={{
-          padding: isMobile ? '12px 14px' : '16px 20px',
-          borderTop: '1px solid #334155',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          flexShrink: 0,
-        }}>
-          <span style={{ fontSize: isMobile ? '12px' : '13px', color: '#94a3b8' }}>
-            {ranking.length} ranked
-          </span>
-          <button
-            onClick={handleSubmit}
-            disabled={ranking.length === 0 || submitting}
-            style={{
-              padding: isMobile ? '14px 24px' : '12px 28px',
-              backgroundColor: ranking.length === 0 ? '#1e293b' : '#f59e0b',
-              color: ranking.length === 0 ? '#475569' : '#0f172a',
-              border: 'none',
-              borderRadius: '6px',
-              fontFamily: 'inherit',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: ranking.length === 0 ? 'not-allowed' : 'pointer',
-              opacity: submitting ? 0.6 : 1,
-              minWidth: isMobile ? '140px' : undefined,
-            }}
-          >
-            {submitting
-              ? 'Submitting...'
-              : isUpdate
-                ? 'Revise Requisition'
-                : `Submit Requisition \u2014 ${cost} F`}
-          </button>
-        </div>
       </div>
     </div>
   )
@@ -810,7 +792,7 @@ const PlayerRow: React.FC<{
     {/* Line 2: the stat line (or a context note). */}
     <div style={{ marginTop: '3px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8', flexWrap: 'wrap' }}>
       {p.isProspect ? (
-        <span style={{ color: '#a78bfa', fontStyle: 'italic' }}>Pipeline prospect — rank to promote instead of signing a FA.</span>
+        <span style={{ color: '#a78bfa', fontStyle: 'italic' }}>Pipeline prospect. Rank to promote instead of signing a FA.</span>
       ) : p.isRookie ? (
         <span style={{ color: '#38bdf8', fontStyle: 'italic' }}>No professional record</span>
       ) : p.stats ? (
