@@ -280,7 +280,7 @@ export default function AwardsPage() {
           <SectionHeader
             title="Hall of Fame"
             subtitle={`Vote for the players you want inducted into the Hall of Fame. Only ${classCap} can be inducted each season, and players stay on the ballot for up to 5 seasons.`}
-            closes="Open through the playoffs and into the offseason. Closes at the induction ceremony."
+            closes="Open through the playoffs and into the offseason. Closes once the free-agent draft wraps."
           />
           {hofCandidates.length === 0 ? (
             <div style={{ fontSize: '13px', color: '#94a3b8', padding: '12px 0' }}>No players on the ballot this season.</div>
