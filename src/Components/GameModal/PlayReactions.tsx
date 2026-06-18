@@ -36,23 +36,30 @@ const REACTIONS: ReadonlyArray<{
 
 const ICON_BY_TYPE = Object.fromEntries(REACTIONS.map(r => [r.type, r])) as Record<ReactionType, typeof REACTIONS[number]>
 
-// Reactions are inert for this long after the widget mounts. Opening the game
-// modal (a tap/click on a game card) can otherwise land on a reaction pill at
-// the top of the play list as the overlay renders — on touch devices the
-// synthesized "ghost click" fires ~300ms after the tap, right where the modal
-// now sits — adding a reaction (usually the first/leftmost: fire) the user
-// never intended. No human opens the modal and deliberately reacts this fast.
-const REACTION_MOUNT_GUARD_MS = 400
+// Reactions are inert for this long after the GAME MODAL opens — anchored to the
+// modal-open time (passed down from GameModalNew), NOT to each widget's own mount.
+// Top-of-feed widgets remount as the async REST fetch resolves (it unshifts plays
+// onto the top) and on every live WS play; a per-widget guard resets on each of
+// those remounts and lets a late "ghost click" through, which then PERSISTS.
+// Opening the modal (a tap on a game card) can otherwise land the synthesized
+// ghost click (~300ms after the tap) on a reaction pill at the top of the play
+// list, adding a reaction (usually the leftmost: fire) the user never intended.
+// No human opens the modal and deliberately reacts this fast.
+const REACTION_MOUNT_GUARD_MS = 600
 
 interface PlayReactionsProps {
   gameId: number
   playNumber: number
   targetType?: ReactionTargetType
   initial?: ReactionAggregate
+  // Epoch ms when the game modal opened. The mount guard keys off this so a
+  // widget that remounts late (REST merge / live play) shares the modal's window
+  // instead of starting a fresh one. Falls back to mount time if not provided.
+  modalOpenedAt?: number
 }
 
 export const PlayReactions: React.FC<PlayReactionsProps> = ({
-  gameId, playNumber, targetType = 'play', initial,
+  gameId, playNumber, targetType = 'play', initial, modalOpenedAt,
 }) => {
   const { user, getToken } = useAuth()
   const { subscribe } = useSeasonWebSocket()
@@ -113,8 +120,9 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
   const handleReact = useCallback(async (type: ReactionType) => {
     if (busy || !user) return
     // Swallow clicks that fire as the modal opens (ghost click / click-through
-    // landing on a pill) — see REACTION_MOUNT_GUARD_MS.
-    if (Date.now() - mountedAtRef.current < REACTION_MOUNT_GUARD_MS) {
+    // landing on a pill) — see REACTION_MOUNT_GUARD_MS. Keyed off the modal-open
+    // time so a late-remounting widget can't reset its own window.
+    if (Date.now() - (modalOpenedAt ?? mountedAtRef.current) < REACTION_MOUNT_GUARD_MS) {
       setPickerOpen(false)
       return
     }
@@ -146,7 +154,7 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
     } finally {
       setBusy(false)
     }
-  }, [busy, user, getToken, gameId, playNumber, targetType, updateGameReactions])
+  }, [busy, user, getToken, gameId, playNumber, targetType, updateGameReactions, modalOpenedAt])
 
   const presentTypes = (Object.keys(reactions) as ReactionType[])
     .filter(t => (reactions[t]?.count ?? 0) > 0)
