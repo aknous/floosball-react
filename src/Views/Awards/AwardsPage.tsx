@@ -331,7 +331,7 @@ export default function AwardsPage() {
         <div>
           <SectionHeader
             title="Hall of Fame"
-            subtitle={`Vote for the players you want inducted into the Hall of Fame. Only ${classCap} can be inducted each season, and players stay on the ballot for up to 5 seasons.`}
+            subtitle={`Vote for the players you want inducted into the Hall of Fame. Only ${classCap} can be inducted each season, and players stay on the ballot for up to 5 seasons. If you don't think anyone on the ballot is deserving, you don't have to vote for anyone.`}
             closes="Open through the playoffs and into the offseason. Closes once the free-agent draft wraps."
           />
           {hofCandidates.length === 0 ? (
