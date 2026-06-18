@@ -32,13 +32,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         label: 'Changes',
         items: [
-          '[Sim] Hail Mary rework. It now only fires as a genuine last-play heave into the end zone, thrown to the goal line and limited by the QB\'s arm strength, with a long-shot completion rate. A completion that reaches the end zone is a touchdown rather than a short catch.',
-          '[Sim] Interception rate tuned down to a more realistic level.',
           '[Standings] ELO moved to the Power Rankings view, and the team name now reads above the city for cleaner, less cluttered standings.',
-          '[Front Office] Removed the projected free-agent pool preview list.',
-          '[Awards] The MVP and All-Pro team are now decided after the Floos Bowl (so playoff voting counts), using an offense-only value metric that rewards production. The MVP ballot is the top five players overall, kickers are not MVP-eligible, and the All-Pro team is a single six-player squad of the best player at each offensive slot.',
-          '[Awards] Hall of Fame voting: if turnout is below quorum, only slam-dunk candidates are auto-inducted and everyone else waits for a future vote. Quorum scales with the active player base.',
-          '[Recap] The season-end pop-up recap was removed; the Season Recap on the dashboard covers it.',
           '[Teams] Color-clash detection is more aggressive and now catches adjacent shades such as blue and purple or yellow and lime.',
           '[Front Office] Restyled the voting cards, retirement watch, and section headers for clarity, and replacement-coach voting now only appears after you vote to fire the current coach.',
           '[Nav] Awards Voting and the Bracket now appear in the mobile menu.',
@@ -56,8 +50,6 @@ export const CHANGELOG: ChangelogEntry[] = [
           '[Teams] When two teams have nearly the same color, the away team switches to its secondary color on the win-probability meter and in the game view so you can tell them apart.',
           '[Players] A ceiling can no longer show below a rating the player has already reached, and the ceiling label no longer overlaps the progression line.',
           '[Offseason] Fixed a roughly 30-second site freeze when the offseason finished. A database lock during Hall of Fame induction was stalling everything.',
-          '[Awards] The recap no longer shows the MVP and All-Pro as TBD. They were being decided before the playoffs and never saved.',
-          '[Awards] The Hall of Fame voting window no longer disappears during the offseason.',
           '[Front Office] The Hire Coach card is no longer empty; coach candidates were failing to generate.',
           '[Cards] The Bizarro card description now matches the bonus it actually gives.',
         ],
