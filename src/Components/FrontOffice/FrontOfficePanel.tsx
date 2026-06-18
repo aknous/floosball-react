@@ -644,7 +644,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   if (!gm.eligible) return null
 
   return (
-    <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
+    <div style={{ backgroundColor: view === 'fa' ? 'transparent' : '#1e293b', borderRadius: '8px', overflow: view === 'fa' ? 'visible' : 'hidden', marginBottom: '20px' }}>
       {view !== 'fa' && sectionHeader('The Front Office', true)}
 
       {/* FA Requisition + tallies — only in the Free Agent Ballot sub-tab (or
@@ -657,7 +657,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           modal). Standalone (team page) keeps the requisition row + Open Ballot
           button that triggers the modal below. */}
       {view === 'fa' && (
-        <div style={{ padding: '14px' }}>
+        <div>
           {faOpenSlots.length > 0 ? (
             <FaBallotModal
               inline

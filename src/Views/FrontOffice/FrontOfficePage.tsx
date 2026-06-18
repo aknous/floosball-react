@@ -309,35 +309,25 @@ export default function FrontOfficePage() {
         ]}
       />
 
-      {/* Header */}
-      <div style={{ marginBottom: '16px' }}>
-        <h1 style={{ fontSize: '24px', color: '#e2e8f0', margin: 0, marginBottom: '4px' }}>
-          Team Management
-        </h1>
-        <div style={{ fontSize: '14px', color: '#94a3b8' }}>
-          Season {seasonState?.seasonNumber ?? 1} · Week {currentWeek || '—'}
-        </div>
-      </div>
-
-      {/* Persistent team summary — always visible so tier/funding stays in
-          context while the tabs below surface individual control groups */}
+      {/* Header — compact team summary strip (team / record / tier / funding).
+          No page title or season line; the nav already provides the context. */}
       <div style={{
-        backgroundColor: '#1e293b', borderRadius: '8px', padding: '12px 14px',
+        backgroundColor: '#1e293b', borderRadius: '8px', padding: '10px 12px',
         display: 'flex', flexWrap: 'wrap' as const, gap: '14px', alignItems: 'center',
         marginBottom: '16px',
       }}>
         <img
           src={`/avatars/${team.id}.png`}
           alt={team.abbr}
-          style={{ width: '48px', height: '48px', flexShrink: 0 }}
+          style={{ width: '40px', height: '40px', flexShrink: 0 }}
         />
         <div style={{ flex: 1, minWidth: '200px' }}>
-          <div style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0' }}>
+          <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0' }}>
             <Link to={`/team/${team.id}`} style={{ color: '#e2e8f0', textDecoration: 'none' }}>
               {team.city} {team.name}
             </Link>
           </div>
-          <div style={{ fontSize: '14px', color: '#94a3b8', marginTop: '2px' }}>
+          <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>
             {team.record?.wins}–{team.record?.losses}
           </div>
         </div>
@@ -566,16 +556,14 @@ export default function FrontOfficePage() {
           )}
           {voteSubTab === 'prospect' && (
             currentWeek >= 22 ? (
-              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
-                <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px 18px' }}>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>
-                    Prospect Ballot
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px', marginBottom: '16px' }}>
-                    Rank the prospects you want your team to target in the upcoming draft.
-                  </div>
-                  <RookiesSection />
+              <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px 18px' }}>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>
+                  Prospect Ballot
                 </div>
+                <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '6px', marginBottom: '16px' }}>
+                  Rank the prospects you want your team to target in the upcoming draft.
+                </div>
+                <RookiesSection />
               </div>
             ) : (
               <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '28px 16px', textAlign: 'center' as const, color: '#94a3b8', fontSize: '13px' }}>
