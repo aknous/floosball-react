@@ -69,6 +69,13 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
   const [busy, setBusy] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const mountedAtRef = useRef<number>(Date.now())
+  // Set true by a real pointerdown ON a reaction button; required before a
+  // click is honored. A genuine tap fires pointerdown -> pointerup -> click on
+  // the SAME element; the synthesized "ghost click" from the tap that OPENED
+  // the modal dispatches only a `click` (its pointerdown landed on the game
+  // card, before this pill existed), so it arrives un-armed and is swallowed.
+  // This is immune to the time/fetch-latency races a pure timestamp guard hits.
+  const armedRef = useRef(false)
 
   // Sync local state when the parent passes a fresh `initial` aggregate.
   // useState only captures the initial value on first mount, so without
@@ -119,9 +126,18 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
 
   const handleReact = useCallback(async (type: ReactionType) => {
     if (busy || !user) return
-    // Swallow clicks that fire as the modal opens (ghost click / click-through
-    // landing on a pill) — see REACTION_MOUNT_GUARD_MS. Keyed off the modal-open
-    // time so a late-remounting widget can't reset its own window.
+    // PRIMARY GUARD: only honor a click that was preceded by a real pointerdown
+    // ON this button (armedRef). A genuine tap arms it; a synthesized click
+    // (tap-through from opening the modal, or a stray click landing on a pill
+    // that just reflowed in when a new play arrived) does NOT, so it's dropped.
+    // Immune to fetch-latency / remount timing the old timestamp guard lost to.
+    if (!armedRef.current) {
+      setPickerOpen(false)
+      return
+    }
+    armedRef.current = false
+    // SECONDARY GUARD: also swallow anything in the first instants after the
+    // modal opens (belt-and-suspenders for the open gesture). See REACTION_MOUNT_GUARD_MS.
     if (Date.now() - (modalOpenedAt ?? mountedAtRef.current) < REACTION_MOUNT_GUARD_MS) {
       setPickerOpen(false)
       return
@@ -194,6 +210,7 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
           >
             <button
               disabled={busy || !user}
+              onPointerDown={() => { armedRef.current = true }}
               onClick={() => handleReact(type)}
               style={{
                 display: 'inline-flex',
@@ -262,6 +279,7 @@ export const PlayReactions: React.FC<PlayReactionsProps> = ({
           {REACTIONS.map(({ type, Icon, color, label }) => (
             <HoverTooltip key={type} text={label} color={color}>
               <button
+                onPointerDown={() => { armedRef.current = true }}
                 onClick={() => handleReact(type)}
                 style={{
                   display: 'inline-flex',
