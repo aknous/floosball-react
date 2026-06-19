@@ -27,7 +27,6 @@ import LandingPage from './Views/Landing/LandingPage'
 import { OnboardingModal } from './Components/Onboarding/OnboardingModal'
 import WelcomeModal from './Components/WelcomeModal'
 import FrontOfficeModal from './Components/FrontOfficeModal'
-import SeasonRecapModal from './Components/SeasonRecapModal'
 import SurveyModal from './Components/SurveyModal'
 import { Footer } from './Components/Footer'
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
@@ -188,7 +187,6 @@ function AuthGate() {
       <OnboardingModal />
       <WelcomeModal />
       <FrontOfficeModal />
-      <SeasonRecapModal />
       <SurveyModal />
       <AppLayout />
     </>

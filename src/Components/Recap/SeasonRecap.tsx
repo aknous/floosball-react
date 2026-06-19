@@ -141,9 +141,7 @@ const AllProRow: React.FC<{ p: RecapPlayerStub }> = ({ p }) => (
 const ResultsTab: React.FC<{ awards: RecapAwards; standings: RecapLeagueStandings[]; leagueChampions: number[] }> = ({ awards, standings, leagueChampions }) => {
   const isMobile = useIsMobile()
   const allProSorted = [...(awards.allPro || [])].sort((a, b) => (POS_ORDER[a.position || ''] ?? 9) - (POS_ORDER[b.position || ''] ?? 9))
-  const isDef = (p: RecapPlayerStub) => p.side === 'defense' || ['S', 'LB', 'CB', 'DE'].includes(p.position || '')
-  const allProOffense = allProSorted.filter(p => !isDef(p))
-  const allProDefense = allProSorted.filter(p => isDef(p))
+  const hofClass = [...(awards.hofInductees || [])].sort((a, b) => (POS_ORDER[a.position || ''] ?? 9) - (POS_ORDER[b.position || ''] ?? 9))
   const champId = awards.champion?.id
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -174,26 +172,23 @@ const ResultsTab: React.FC<{ awards: RecapAwards; standings: RecapLeagueStanding
         </div>
       </div>
 
-      {/* All-Pro team — combined offense + defense */}
-      {(allProOffense.length > 0 || allProDefense.length > 0) && (
+      {/* All-Pro team — the six best players, by combined offensive + defensive value */}
+      {allProSorted.length > 0 && (
         <div style={{ ...CARD, padding: '16px' }}>
           <h2 style={SECTION_H}>All-Pro Team</h2>
-          {allProOffense.length > 0 && (
-            <>
-              <div style={{ ...LABEL, marginBottom: '8px' }}>Offense</div>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
-                {allProOffense.map(p => <AllProRow key={`o-${p.id}`} p={p} />)}
-              </div>
-            </>
-          )}
-          {allProDefense.length > 0 && (
-            <>
-              <div style={{ ...LABEL, margin: '16px 0 8px' }}>Defense</div>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
-                {allProDefense.map(p => <AllProRow key={`d-${p.id}`} p={p} />)}
-              </div>
-            </>
-          )}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+            {allProSorted.map(p => <AllProRow key={p.id} p={p} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Hall of Fame class inducted this season */}
+      {hofClass.length > 0 && (
+        <div style={{ ...CARD, padding: '16px', border: '1px solid rgba(234,179,8,0.4)', backgroundColor: 'rgba(234,179,8,0.06)' }}>
+          <h2 style={{ ...SECTION_H, color: '#eab308' }}>Hall of Fame Inductees</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+            {hofClass.map(p => <AllProRow key={p.id} p={p} />)}
+          </div>
         </div>
       )}
 

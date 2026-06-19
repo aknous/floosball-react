@@ -45,6 +45,9 @@ interface FrontOfficePanelProps {
   teamId: number
   teamAbbr: string
   teamColor: string
+  /** Render only one section (for the Front Office sub-tabs). Omit to render
+   *  everything (used standalone on the team page). */
+  view?: 'roster' | 'fa'
 }
 
 interface FanVoteEntry {
@@ -55,7 +58,7 @@ interface FanVoteEntry {
   isProspect?: boolean
 }
 
-const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, teamColor }) => {
+const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, teamColor, view }) => {
   const { user, getToken, refetchUser, updateFloobits } = useAuth()
   const { seasonState } = useFloosball()
   const { event: wsEvent } = useSeasonWebSocket()
@@ -79,8 +82,6 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   const [faModalOpen, setFaModalOpen] = useState(false)
   const [faBallotSubmitting, setFaBallotSubmitting] = useState(false)
   const [faWindowEnd, setFaWindowEnd] = useState<number | null>(null)
-  const [poolPreviewOpen, setPoolPreviewOpen] = useState(false)
-  const [poolPositionFilter, setPoolPositionFilter] = useState<'ALL' | 'QB' | 'RB' | 'WR' | 'TE' | 'K'>('ALL')
   // Flat fan vote tally for THIS team — single overall priority list.
   // Two sources: live (raw ballot tallies during voting window) and resolved
   // (post-IRV rankings once the offseason ballot resolves). Each entry
@@ -88,7 +89,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   const [teamFaVotes, setTeamFaVotes] = useState<FanVoteEntry[]>([])
   const [liveBallotTally, setLiveBallotTally] = useState<(FanVoteEntry & { votes: number; firstChoice: number })[]>([])
   const [totalBallots, setTotalBallots] = useState<number>(0)
-  const [fanVotesOpen, setFanVotesOpen] = useState(true)
+  const [fanVotesOpen, setFanVotesOpen] = useState(false)
   // Bumped whenever a WS event signals that the ballot state may have
   // changed — forces the fetch effect to re-run so the Vote Tallies sections
   // appear immediately after voting closes, not after all drafts are over.
@@ -338,13 +339,13 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
 
   // Section header matching TeamPage pattern
   const sectionHeader = (label: string, withHelp?: boolean) => (
-    <div style={{ padding: '11px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ padding: '12px 16px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <span style={{
-        fontSize: '13px',
-        fontWeight: '600',
-        color: '#94a3b8',
+        fontSize: '15px',
+        fontWeight: 700,
+        color: '#e2e8f0',
         textTransform: 'uppercase' as const,
-        letterSpacing: '0.05em',
+        letterSpacing: '0.04em',
       }}>
         {label}
       </span>
@@ -643,12 +644,46 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   if (!gm.eligible) return null
 
   return (
-    <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
-      {sectionHeader('The Front Office', true)}
+    <div style={{
+      backgroundColor: view === 'fa' ? 'transparent' : '#0f172a',
+      border: view === 'fa' ? 'none' : '1px solid #334155',
+      borderRadius: '12px',
+      overflow: view === 'fa' ? 'visible' : 'hidden',
+      marginBottom: '20px',
+    }}>
+      {view !== 'fa' && sectionHeader('The Front Office', true)}
 
-      {/* FA Requisition — always visible when the board is active so fans can
-          find the ballot. When there are no projected openings, we explain
-          why voting isn't available rather than hiding the section entirely. */}
+      {/* FA Requisition + tallies — only in the Free Agent Ballot sub-tab (or
+          standalone). FA Requisition is always visible when the board is active
+          so fans can find the ballot; when there are no projected openings we
+          explain why voting isn't available rather than hiding it entirely. */}
+      {view !== 'roster' && (
+      <>
+      {/* In the Free Agent Ballot sub-tab the ballot is rendered inline (no
+          modal). Standalone (team page) keeps the requisition row + Open Ballot
+          button that triggers the modal below. */}
+      {view === 'fa' && (
+        <div>
+          {faOpenSlots.length > 0 ? (
+            <FaBallotModal
+              inline
+              visible
+              openSlots={faOpenSlots}
+              scoutingPlayers={faScoutingPlayers}
+              faWindowEnd={faWindowEnd}
+              onSubmit={handleSubmitFaBallot}
+              submitting={faBallotSubmitting}
+              existingBallot={existingFaBallot}
+              onClose={() => {}}
+            />
+          ) : (
+            <div style={{ fontSize: '13px', color: '#94a3b8', padding: '8px 0' }}>
+              No roster openings projected yet. The board will vote on vacancies once cut/re-sign motions settle or contracts expire.
+            </div>
+          )}
+        </div>
+      )}
+      {view !== 'fa' && (
       <div style={{ padding: '12px 14px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' as const }}>
         <div style={{ flex: 1, minWidth: '200px' }}>
           <div style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0', marginBottom: '2px' }}>
@@ -678,18 +713,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           {existingFaBallot ? 'Revise Ballot' : 'Open Ballot'}
         </button>
       </div>
-
-      {/* FA Pool Preview — lets fans see every player projected to be
-          available this offseason so they can make informed cut/resign
-          decisions. Includes current free agents, walk-year players from
-          other teams, and cut-vote likely players. Collapsed by default. */}
-      <FaPoolPreview
-        players={faScoutingPlayers}
-        open={poolPreviewOpen}
-        onToggle={() => setPoolPreviewOpen(v => !v)}
-        positionFilter={poolPositionFilter}
-        onPositionFilter={setPoolPositionFilter}
-      />
+      )}
 
       {/* Fan Vote Tallies — single overall priority list. Live during the
           voting window; once the offseason ballot resolves, the post-IRV
@@ -775,7 +799,10 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           </div>
         )
       })()}
+      </>
+      )}
 
+      {view !== 'fa' && (
       <div style={{ padding: '14px' }}>
         {/* Two-column layout: Coaching (left) | Roster (right) */}
         <div style={{
@@ -805,7 +832,9 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
               />
             )}
 
-            {gm.eligible.coachCandidates.length > 0 && (
+            {/* Replacement voting only appears once you've voted to fire the
+                current coach (or when there's no coach at all to fire). */}
+            {gm.eligible.coachCandidates.length > 0 && (!gm.eligible.coach || myStanceOnTarget('fire_coach') === 'yea') && (
               <HireCoachCard
                 availableCoaches={gm.eligible.coachCandidates}
                 tallies={gm.summary?.tallies ?? []}
@@ -828,8 +857,8 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {(gm.eligible.retiringPlayers?.length ?? 0) > 0 && (
               <div style={{
-                background: '#1e2d3d',
-                border: '1px solid #2a3a4e',
+                background: '#1e293b',
+                border: '1px solid #334155',
                 borderLeft: '3px solid #f59e0b',
                 borderRadius: '6px',
                 padding: '14px 16px',
@@ -861,7 +890,6 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                         <span style={{ color: '#94a3b8', marginRight: '8px' }}>{p.position}</span>
                         {p.name}
                       </span>
-                      <span style={{ color: '#94a3b8', fontSize: '11px' }}>OVR {p.rating}</span>
                     </div>
                   ))}
                 </div>
@@ -937,6 +965,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
         )}
 
       </div>
+      )}
 
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} title="The Front Office">
         <GuideSection title="Directives">
@@ -963,178 +992,30 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           votes is appointed. If nobody nominates anyone, a coach is appointed at random.
         </GuideSection>
         <GuideSection title="Free Agent Requisitions">
-          Rank up to 5 replacements for projected roster openings — walk-year players, cut-vote
+          Rank up to 5 replacements for projected roster openings — walk-season players, cut-vote
           targets, and current prospects all appear on the same ballot. Submit any time once the
           board convenes (Week {GM_ACTIVE_WEEK}). If the ballot achieves quorum and is ratified,
           the front office will prioritize those names during the draft using ranked-choice voting.
         </GuideSection>
       </HelpModal>
 
-      <FaBallotModal
-        visible={faModalOpen}
-        onClose={() => setFaModalOpen(false)}
-        openSlots={faOpenSlots}
-        scoutingPlayers={faScoutingPlayers}
-        faWindowEnd={faWindowEnd}
-        onSubmit={handleSubmitFaBallot}
-        submitting={faBallotSubmitting}
-        existingBallot={existingFaBallot}
-      />
-    </div>
-  )
-}
-
-// Collapsible panel that lists every player projected to be available in
-// the upcoming FA draft: current free agents + walk-year players on other
-// teams + cut-vote likely players. Prospects are filtered out since they're
-// not really "available to sign" — they belong to their drafting team.
-const POOL_POSITIONS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'] as const
-type PoolPosition = typeof POOL_POSITIONS[number]
-
-const FaPoolPreview: React.FC<{
-  players: ScoutingPlayer[]
-  open: boolean
-  onToggle: () => void
-  positionFilter: PoolPosition
-  onPositionFilter: (pos: PoolPosition) => void
-}> = ({ players, open, onToggle, positionFilter, onPositionFilter }) => {
-  const pool = React.useMemo(
-    () => players
-      .filter(p => !p.isProspect)
-      .filter(p => positionFilter === 'ALL' || p.position === positionFilter)
-      .sort((a, b) => b.rating - a.rating),
-    [players, positionFilter]
-  )
-
-  const totalCount = players.filter(p => !p.isProspect).length
-
-  const sourceBadge = (p: ScoutingPlayer) => {
-    if (!p.isProjected) return { label: 'FA', color: '#22c55e' }
-    if (p.projectedReason === 'cut_vote') return { label: 'Cut Vote', color: '#ef4444' }
-    return { label: 'Walk Year', color: '#f59e0b' }
-  }
-
-  return (
-    <div style={{ borderBottom: '1px solid #334155' }}>
-      <button
-        onClick={onToggle}
-        style={{
-          width: '100%',
-          padding: '10px 14px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          color: '#e2e8f0',
-          textAlign: 'left' as const,
-        }}
-      >
-        <span>
-          <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>
-            Projected FA Pool
-          </span>
-          <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '8px' }}>
-            {totalCount} player{totalCount !== 1 ? 's' : ''} available this offseason
-          </span>
-        </span>
-        <span style={{ fontSize: '11px', color: '#94a3b8' }}>{open ? '▾' : '▸'}</span>
-      </button>
-      {open && (
-        <div style={{ padding: '4px 14px 14px' }}>
-          {/* Position filter pills */}
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' as const, marginBottom: '10px' }}>
-            {POOL_POSITIONS.map(pos => {
-              const active = positionFilter === pos
-              return (
-                <button
-                  key={pos}
-                  onClick={() => onPositionFilter(pos)}
-                  style={{
-                    padding: '3px 10px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    borderRadius: '3px',
-                    border: `1px solid ${active ? '#334155' : 'transparent'}`,
-                    backgroundColor: active ? '#1e293b' : 'transparent',
-                    color: active ? '#e2e8f0' : '#64748b',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {pos}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Player list */}
-          {pool.length === 0 ? (
-            <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' as const, padding: '8px 0' }}>
-              No players match this filter yet.
-            </div>
-          ) : (
-            <div style={{ maxHeight: '320px', overflowY: 'auto' as const, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              {pool.map(p => {
-                const badge = sourceBadge(p)
-                return (
-                  <div
-                    key={p.id}
-                    style={{
-                      padding: '6px 8px',
-                      borderRadius: '4px',
-                      backgroundColor: '#0f172a',
-                      fontSize: '12px',
-                    }}
-                  >
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: '32px 1fr auto 72px',
-                      gap: '10px',
-                      alignItems: 'center',
-                    }}>
-                      <span style={{ color: '#64748b', fontWeight: 600, fontVariantNumeric: 'tabular-nums' as const }}>
-                        {p.position}
-                      </span>
-                      <span style={{ color: '#e2e8f0' }}>
-                        {p.name}
-                        {p.currentTeam && (
-                          <span style={{ color: '#64748b', marginLeft: '6px', fontSize: '11px' }}>
-                            ({p.currentTeam})
-                          </span>
-                        )}
-                      </span>
-                      <span style={{
-                        fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em',
-                        color: badge.color, padding: '1px 6px', borderRadius: '3px',
-                        backgroundColor: `${badge.color}15`, border: `1px solid ${badge.color}40`,
-                        whiteSpace: 'nowrap' as const,
-                      }}>
-                        {badge.label}
-                      </span>
-                      <span style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <Stars stars={calcStars(p.rating)} size={11} />
-                      </span>
-                    </div>
-                    {p.stats ? (
-                      <div style={{
-                        marginTop: '4px',
-                        paddingLeft: '42px',
-                        fontSize: '11px',
-                        color: '#94a3b8',
-                      }}>
-                        <StatLine position={p.position} stats={p.stats} />
-                      </div>
-                    ) : null}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
+      {/* Modal trigger only outside the FA sub-tab (the sub-tab renders the
+          ballot inline above). */}
+      {view !== 'fa' && (
+        <FaBallotModal
+          visible={faModalOpen}
+          onClose={() => setFaModalOpen(false)}
+          openSlots={faOpenSlots}
+          scoutingPlayers={faScoutingPlayers}
+          faWindowEnd={faWindowEnd}
+          onSubmit={handleSubmitFaBallot}
+          submitting={faBallotSubmitting}
+          existingBallot={existingFaBallot}
+        />
       )}
     </div>
   )
 }
+
 
 export default FrontOfficePanel

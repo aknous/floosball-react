@@ -22,7 +22,7 @@ interface InducteeTeam {
   color: string
 }
 
-interface Inductee {
+export interface Inductee {
   id: number
   name: string
   position: string
@@ -59,7 +59,7 @@ const AwardBadge: React.FC<{ count: number; label: string; Icon: React.Component
   </span>
 )
 
-const Plaque: React.FC<{ p: Inductee }> = ({ p }) => {
+export const Plaque: React.FC<{ p: Inductee }> = ({ p }) => {
   const teams: InducteeTeam[] = (p.teams && p.teams.length)
     ? p.teams
     : [{ abbr: p.teamAbbr, id: p.teamId, name: p.teamName, color: p.teamColor || '#475569' }]

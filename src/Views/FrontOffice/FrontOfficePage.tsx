@@ -11,6 +11,7 @@ import RookiesSection from './RookiesSection'
 import MarketsSection from './MarketsSection'
 import { Stars, calcStars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
+import CareerStageBadge, { hasRenderableStage } from '@/Components/CareerStageBadge'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -119,6 +120,9 @@ export default function FrontOfficePage() {
   const [contributeFlash, setContributeFlash] = useState<string | null>(null)
   const [customAmount, setCustomAmount] = useState<string>('')
   const [activeSection, setActiveSection] = useState<SectionId>('overview')
+  // Sub-tabs within the Front Office tab so roster voting, the FA ballot, and
+  // the prospect ballot each get their own view instead of one long scroll.
+  const [voteSubTab, setVoteSubTab] = useState<'roster' | 'fa' | 'prospect'>('roster')
 
   // Retirement watch + prospects — fetched alongside team data so Overview
   // tab can display the same surfaces as the /team/{id} page
@@ -131,6 +135,7 @@ export default function FrontOfficePage() {
     isUndrafted: boolean; ratingHistory: RatingPoint[]
   }
   const [retirementWatch, setRetirementWatch] = useState<Record<number, RetirementRisk>>({})
+  const [careerStages, setCareerStages] = useState<Record<number, string>>({})
   const [prospects, setProspects] = useState<ProspectEntry[]>([])
 
   const favTeamId = user?.favoriteTeamId ?? null
@@ -156,6 +161,7 @@ export default function FrontOfficePage() {
         const byId: Record<number, RetirementRisk> = {}
         for (const w of watchRes.data.watch) byId[w.playerId] = w.risk
         setRetirementWatch(byId)
+        setCareerStages(watchRes.data.stages || {})
       }
       if (prospectsRes?.success && prospectsRes.data) {
         setProspects(prospectsRes.data.prospects || [])
@@ -303,35 +309,25 @@ export default function FrontOfficePage() {
         ]}
       />
 
-      {/* Header */}
-      <div style={{ marginBottom: '16px' }}>
-        <h1 style={{ fontSize: '24px', color: '#e2e8f0', margin: 0, marginBottom: '4px' }}>
-          Team Management
-        </h1>
-        <div style={{ fontSize: '14px', color: '#94a3b8' }}>
-          Season {seasonState?.seasonNumber ?? 1} · Week {currentWeek || '—'}
-        </div>
-      </div>
-
-      {/* Persistent team summary — always visible so tier/funding stays in
-          context while the tabs below surface individual control groups */}
+      {/* Header — compact team summary strip (team / record / tier / funding).
+          No page title or season line; the nav already provides the context. */}
       <div style={{
-        backgroundColor: '#1e293b', borderRadius: '8px', padding: '12px 14px',
+        backgroundColor: '#1e293b', borderRadius: '8px', padding: '10px 12px',
         display: 'flex', flexWrap: 'wrap' as const, gap: '14px', alignItems: 'center',
         marginBottom: '16px',
       }}>
         <img
           src={`/avatars/${team.id}.png`}
           alt={team.abbr}
-          style={{ width: '48px', height: '48px', flexShrink: 0 }}
+          style={{ width: '40px', height: '40px', flexShrink: 0 }}
         />
         <div style={{ flex: 1, minWidth: '200px' }}>
-          <div style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0' }}>
+          <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0' }}>
             <Link to={`/team/${team.id}`} style={{ color: '#e2e8f0', textDecoration: 'none' }}>
               {team.city} {team.name}
             </Link>
           </div>
-          <div style={{ fontSize: '14px', color: '#94a3b8', marginTop: '2px' }}>
+          <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>
             {team.record?.wins}–{team.record?.losses}
           </div>
         </div>
@@ -387,6 +383,7 @@ export default function FrontOfficePage() {
           <OverviewTab
             team={team}
             retirementWatch={retirementWatch}
+            careerStages={careerStages}
             prospects={prospects}
           />
         </div>
@@ -524,18 +521,55 @@ export default function FrontOfficePage() {
       )}
 
       {activeSection === 'votes' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <FrontOfficePanel teamId={team.id} teamAbbr={team.abbr} teamColor={team.color} />
-          {/* Rookie ballot renders only once voting opens (Week 22+). Keeps
-              the tab uncluttered while the front office is still dormant —
-              no rookie cards flooding the view before the window is active. */}
-          {currentWeek >= 22 && (
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: '10px' }}>
-                Rookie Draft Ballot
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Sub-tabs: each front-office ballot gets its own view */}
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const }}>
+            {([
+              { id: 'roster', label: 'Roster Voting' },
+              { id: 'fa', label: 'Free Agent Ballot' },
+              { id: 'prospect', label: 'Prospect Ballot' },
+            ] as const).map(t => {
+              const active = voteSubTab === t.id
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setVoteSubTab(t.id)}
+                  style={{
+                    padding: '7px 14px', fontSize: '13px', fontWeight: active ? 700 : 500,
+                    borderRadius: '6px',
+                    border: `1px solid ${active ? team.color : '#334155'}`,
+                    backgroundColor: active ? `${team.color}22` : 'transparent',
+                    color: active ? '#e2e8f0' : '#94a3b8', cursor: 'pointer',
+                  }}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {voteSubTab === 'roster' && (
+            <FrontOfficePanel teamId={team.id} teamAbbr={team.abbr} teamColor={team.color} view="roster" />
+          )}
+          {voteSubTab === 'fa' && (
+            <FrontOfficePanel teamId={team.id} teamAbbr={team.abbr} teamColor={team.color} view="fa" />
+          )}
+          {voteSubTab === 'prospect' && (
+            currentWeek >= 22 ? (
+              <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '12px 16px' }}>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>
+                  Prospect Ballot
+                </div>
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px', marginBottom: '12px' }}>
+                  Rank the prospects you want your team to target in the upcoming draft.
+                </div>
+                <RookiesSection />
               </div>
-              <RookiesSection />
-            </div>
+            ) : (
+              <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '28px 16px', textAlign: 'center' as const, color: '#94a3b8', fontSize: '13px' }}>
+                The rookie draft ballot opens at week 22, once the front office is active.
+              </div>
+            )
           )}
         </div>
       )}
@@ -693,10 +727,11 @@ const RISK_STYLES: Record<string, { label: string; color: string; bg: string }> 
 }
 
 function OverviewTab({
-  team, retirementWatch, prospects,
+  team, retirementWatch, careerStages, prospects,
 }: {
   team: TeamSummary
   retirementWatch: Record<number, 'safe' | 'possible' | 'likely' | 'very_likely' | 'retiring'>
+  careerStages: Record<number, string>
   prospects: any[]
 }) {
   const isMobile = useIsMobile()
@@ -806,7 +841,7 @@ function OverviewTab({
               }}>
                 {RISK_STYLES[retirementWatch[player.id]].label}
               </span>
-            ) : null
+            ) : <CareerStageBadge stage={careerStages[player.id]} />
 
             if (isMobile) {
               return (
@@ -835,7 +870,7 @@ function OverviewTab({
                 // Fixed widths so rows stay aligned regardless of content.
                 // The retirement column reserves a fixed slot only while
                 // retirement data is live (weeks 22+); otherwise it collapses.
-                gridTemplateColumns: `auto minmax(0, 1fr) 60px 80px ${Object.keys(retirementWatch).length > 0 ? '96px' : 'auto'}`,
+                gridTemplateColumns: `auto minmax(0, 1fr) 60px 80px ${(Object.keys(retirementWatch).length > 0 || hasRenderableStage(careerStages)) ? '96px' : 'auto'}`,
                 columnGap: '10px',
                 alignItems: 'center',
                 padding: '7px 10px',

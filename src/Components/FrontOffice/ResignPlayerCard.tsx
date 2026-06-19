@@ -79,7 +79,8 @@ const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
                 gap: '8px',
                 padding: '6px 8px',
                 borderRadius: '4px',
-                backgroundColor: '#0f172a',
+                backgroundColor: '#1e293b',
+                border: '1px solid #334155',
               }}>
                 <span style={{
                   fontSize: '11px',

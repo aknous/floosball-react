@@ -109,8 +109,8 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
                 gap: '8px',
                 padding: '6px 8px',
                 borderRadius: '6px',
-                backgroundColor: '#0f172a',
-                border: isSoleLeader ? `1px solid ${teamColor}` : '1px solid transparent',
+                backgroundColor: '#1e293b',
+                border: isSoleLeader ? `1px solid ${teamColor}` : '1px solid #334155',
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>

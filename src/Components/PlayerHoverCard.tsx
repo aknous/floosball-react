@@ -18,6 +18,7 @@ interface PlayerDetail {
   teamAbbr: string | null
   rank?: string | null   // service time ('Retired', 'Veteran', ...) — distinguishes retired from FA
   playerRating: number
+  ceiling?: number | null   // projected top rating at full skill potential
   ratingStars: number
   offensiveRating?: number
   defensiveRating?: number
@@ -195,10 +196,19 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
         <div style={{ marginBottom: '10px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
             <span style={{ fontSize: '13px', color: '#94a3b8' }}>Overall</span>
-            <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '700' }}>{data.playerRating}</span>
+            <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '700' }}>
+              {data.playerRating}
+              {data.ceiling != null && data.ceiling > data.playerRating && (
+                <span style={{ color: '#facc15', fontWeight: 600 }}> / {data.ceiling}</span>
+              )}
+            </span>
           </div>
-          <div style={{ height: '4px', backgroundColor: '#334155', borderRadius: '2px' }}>
+          {/* Track + fill, with an amber tick marking the projected ceiling. */}
+          <div style={{ height: '4px', backgroundColor: '#334155', borderRadius: '2px', position: 'relative' }}>
             <div style={{ width: `${Math.min(100, data.playerRating)}%`, height: '100%', backgroundColor: data.playerRating >= 85 ? '#22c55e' : data.playerRating >= 72 ? '#f59e0b' : '#ef4444', borderRadius: '2px' }} />
+            {data.ceiling != null && data.ceiling > data.playerRating && (
+              <div style={{ position: 'absolute', left: `${Math.min(100, data.ceiling)}%`, top: '-2px', bottom: '-2px', width: '2px', backgroundColor: '#facc15', transform: 'translateX(-1px)', borderRadius: '1px' }} />
+            )}
           </div>
         </div>
 

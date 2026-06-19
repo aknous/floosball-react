@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { Stars } from '@/Components/Stars'
+import PositionChip from '@/Components/FrontOffice/PositionChip'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -99,7 +100,7 @@ function RookieCard({
     <div
       style={{
         backgroundColor: '#1e293b',
-        border: selected ? '1px solid #a78bfa' : '1px solid #334155',
+        border: selected ? '1px solid #60a5fa' : '1px solid #334155',
         borderRadius: '8px',
         padding: '14px',
         display: 'flex',
@@ -110,7 +111,7 @@ function RookieCard({
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <span style={{ fontSize: '13px', fontWeight: 700, color: '#94a3b8', minWidth: '28px' }}>#{rank}</span>
-        <span style={{ fontSize: '13px', fontWeight: 700, color: '#a78bfa', minWidth: '26px' }}>{rookie.position}</span>
+        <PositionChip position={rookie.position} />
         <span style={{ flex: 1, fontSize: '15px', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {rookie.name}
         </span>
@@ -132,9 +133,9 @@ function RookieCard({
             fontSize: '14px',
             fontWeight: 700,
             borderRadius: '5px',
-            border: `1px solid ${selected ? '#a78bfa' : '#334155'}`,
-            backgroundColor: selected ? 'rgba(167,139,250,0.15)' : 'transparent',
-            color: selected ? '#a78bfa' : votingOpen ? '#cbd5e1' : '#475569',
+            border: `1px solid ${selected ? '#60a5fa' : '#334155'}`,
+            backgroundColor: selected ? 'rgba(59,130,246,0.15)' : 'transparent',
+            color: selected ? '#60a5fa' : votingOpen ? '#cbd5e1' : '#475569',
             cursor: votingOpen && (selected || slotCount < 12) ? 'pointer' : 'not-allowed',
             transition: 'all 0.15s',
           }}
@@ -236,9 +237,8 @@ export default function RookiesSection({ readOnly = false }: RookiesSectionProps
 
   return (
     <div>
-      <div style={{ marginBottom: '16px', fontSize: '14px', color: '#94a3b8', lineHeight: 1.5 }}>
-        {data.rookies.length} prospects available in the offseason rookie draft.
-        Scouting accuracy depends on your team's head coach and market tier.
+      <div style={{ marginBottom: '10px', fontSize: '13px', color: '#94a3b8' }}>
+        {data.rookies.length} prospects available. Scouting accuracy scales with your coach and market tier.
       </div>
 
       {/* Status bar — scouting badge always; ballot controls only when voting
@@ -246,8 +246,8 @@ export default function RookiesSection({ readOnly = false }: RookiesSectionProps
           instance on the Prospects tab still shows scouting accuracy. */}
       <div style={{
         display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px',
-        padding: '12px 14px', backgroundColor: '#1e293b',
-        border: '1px solid #334155', borderRadius: '8px', marginBottom: '20px',
+        padding: '9px 12px', backgroundColor: '#1e293b',
+        border: '1px solid #334155', borderRadius: '8px', marginBottom: '14px',
       }}>
         <ScoutingAccuracyBadge accuracy={data.effectiveScouting} range={data.rookies[0]?.scoutingRange ?? 15} />
         {readOnly ? (
@@ -256,7 +256,7 @@ export default function RookiesSection({ readOnly = false }: RookiesSectionProps
           </span>
         ) : data.votingOpen ? (
           <span style={{ fontSize: '14px', color: '#22c55e', fontWeight: 600 }}>
-            Voting is open — rank your preferred prospects
+            Voting is open. Rank your preferred prospects.
           </span>
         ) : (
           <span style={{ fontSize: '14px', color: '#94a3b8' }}>
@@ -275,8 +275,8 @@ export default function RookiesSection({ readOnly = false }: RookiesSectionProps
             disabled={submitting || !dirty}
             style={{
               padding: '8px 16px', fontSize: '14px', fontWeight: 700, borderRadius: '5px',
-              border: '1px solid #a78bfa', backgroundColor: dirty ? '#a78bfa' : 'rgba(167,139,250,0.2)',
-              color: dirty ? '#0f172a' : '#a78bfa',
+              border: '1px solid #f59e0b', backgroundColor: dirty ? '#f59e0b' : 'rgba(245,158,11,0.2)',
+              color: dirty ? '#0f172a' : '#f59e0b',
               cursor: submitting || !dirty ? 'default' : 'pointer',
             }}
           >
@@ -308,8 +308,8 @@ export default function RookiesSection({ readOnly = false }: RookiesSectionProps
                 fontSize: '14px',
                 fontWeight: active ? 700 : 500,
                 borderRadius: '5px',
-                border: `1px solid ${active ? '#a78bfa' : '#334155'}`,
-                backgroundColor: active ? 'rgba(167,139,250,0.15)' : 'transparent',
+                border: `1px solid ${active ? '#60a5fa' : '#334155'}`,
+                backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'transparent',
                 color: active ? '#e2e8f0' : '#94a3b8',
                 cursor: 'pointer',
               }}

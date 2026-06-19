@@ -118,7 +118,7 @@ const NAV_ITEMS = [
   },
   {
     key: 'awards',
-    label: 'Awards',
+    label: 'Awards Voting',
     path: '/awards',
     icon: (
       // Award medal + ribbon — distinct from the Achievements trophy cup.

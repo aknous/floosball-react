@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import { Stars, calcStars } from '@/Components/Stars'
+import ArchetypeBadge from '@/Components/ArchetypeBadge'
 import { GM_FA_BALLOT_MAX_RANKINGS, GM_FA_BALLOT_COST } from '@/types/gm'
-import { attitudeTier, resilienceTier, pressureHandlingTier } from '@/utils/mentalProfile'
+import { attitudeTier } from '@/utils/mentalProfile'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import PositionChip from '@/Components/FrontOffice/PositionChip'
 
 export interface PlayerStats {
   gamesPlayed: number
@@ -37,6 +39,18 @@ export interface ScoutingPlayer {
   isProjected?: boolean
   projectedReason?: 'walk_year' | 'cut_vote'
   currentTeam?: string
+  // Split offense/defense ratings drive the sword/shield dual-star display.
+  // Optional: older API responses omit them and the row falls back to a
+  // single overall star rating.
+  offensiveRating?: number
+  defensiveRating?: number
+  // Career-arc stage so fans can weigh a player's runway, not just rating.
+  // Anchored to the sim's real peakSeason. Optional: older API responses omit
+  // it and the row simply shows no stage badge.
+  careerStage?: 'developing' | 'prime' | 'aging' | 'near_retirement' | 'retiring'
+  // Two-way identity (sword/shield) — only set for 4+ star offense/defense
+  // players, matching the hover card. Null/undefined → no icons.
+  archetype?: string | null
   // Mental snapshot — surfaced as badges so fans can spot toxic personalities
   // before ranking them. Optional: legacy ballot rows from older API versions
   // can omit these without breaking the row layout.
@@ -69,29 +83,44 @@ interface FaBallotModalProps {
   onSubmit: (rankings: number[]) => Promise<any>
   submitting: boolean
   existingBallot?: number[] | null
+  /** Render inline (in a tab) instead of as a modal overlay: no backdrop,
+   *  portal, or close button. `visible`/`onClose` are ignored in this mode. */
+  inline?: boolean
 }
 
-const POS_CHIP_COLORS: Record<string, { bg: string; fg: string }> = {
-  QB: { bg: 'rgba(59,130,246,0.18)', fg: '#60a5fa' },
-  RB: { bg: 'rgba(34,197,94,0.18)', fg: '#4ade80' },
-  WR: { bg: 'rgba(245,158,11,0.18)', fg: '#fbbf24' },
-  TE: { bg: 'rgba(168,85,247,0.18)', fg: '#c084fc' },
-  K: { bg: 'rgba(148,163,184,0.18)', fg: '#cbd5e1' },
+// ── Candidate sorting ────────────────────────────────────────────────────────
+type SortKey = 'rating' | 'performance' | 'fantasy' | 'stage'
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'rating', label: 'Rating' },
+  { key: 'performance', label: 'Performance' },
+  { key: 'fantasy', label: 'Fantasy Pts' },
+  { key: 'stage', label: 'Career' },
+]
+
+// Career-stage sort puts the strongest outlook first: at-peak, then rising,
+// then the declining tiers. Within a stage, fall back to overall rating.
+const STAGE_RANK: Record<string, number> = {
+  prime: 0, developing: 1, aging: 2, near_retirement: 3, retiring: 4,
 }
 
-const PositionChip: React.FC<{ position: string }> = ({ position }) => {
-  const c = POS_CHIP_COLORS[position] || { bg: '#1e293b', fg: '#94a3b8' }
-  return (
-    <span style={{
-      fontSize: '10px', fontWeight: 700,
-      color: c.fg, backgroundColor: c.bg,
-      padding: '2px 6px', borderRadius: '4px',
-      letterSpacing: '0.04em',
-      minWidth: 28, textAlign: 'center' as const,
-    }}>
-      {position}
-    </span>
-  )
+// All comparators sort "best first" (descending) so the toggle direction is
+// consistent across options. Players missing a value sink to the bottom.
+function compareCandidates(sortBy: SortKey, a: ScoutingPlayer, b: ScoutingPlayer): number {
+  switch (sortBy) {
+    case 'performance':
+      return (b.performanceRating ?? 0) - (a.performanceRating ?? 0) || b.rating - a.rating
+    case 'fantasy':
+      return (b.stats?.fantasyPoints ?? -1) - (a.stats?.fantasyPoints ?? -1) || b.rating - a.rating
+    case 'stage': {
+      const ra = STAGE_RANK[a.careerStage ?? ''] ?? 99
+      const rb = STAGE_RANK[b.careerStage ?? ''] ?? 99
+      return ra - rb || b.rating - a.rating
+    }
+    case 'rating':
+    default:
+      return b.rating - a.rating
+  }
 }
 
 const FaBallotModal: React.FC<FaBallotModalProps> = ({
@@ -103,9 +132,11 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
   onSubmit,
   submitting,
   existingBallot,
+  inline = false,
 }) => {
   const [ranking, setRanking] = useState<number[]>([])
   const [posFilter, setPosFilter] = useState<'ALL' | string>('ALL')
+  const [sortBy, setSortBy] = useState<SortKey>('rating')
   const [timeLeft, setTimeLeft] = useState('')
   // Below 768px the side-by-side ranked/available grid is unusable —
   // each column shrinks to ~180px and player rows can't render. Swap
@@ -183,10 +214,10 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
       if (p.isProspect) prospectList.push(p)
       else otherList.push(p)
     }
-    prospectList.sort((a, b) => b.rating - a.rating)
-    otherList.sort((a, b) => b.rating - a.rating)
+    prospectList.sort((a, b) => compareCandidates(sortBy, a, b))
+    otherList.sort((a, b) => compareCandidates(sortBy, a, b))
     return { prospects: prospectList, others: otherList }
-  }, [scoutingPlayers, openPositionSet, rankedSet, posFilter])
+  }, [scoutingPlayers, openPositionSet, rankedSet, posFilter, sortBy])
 
   const canAddMore = ranking.length < GM_FA_BALLOT_MAX_RANKINGS
 
@@ -225,15 +256,17 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
   const isUpdate = existingBallot && existingBallot.length > 0
   const cost = isUpdate ? 0 : GM_FA_BALLOT_COST
 
-  if (!visible) return null
+  if (!visible && !inline) return null
 
   // Position filter chips: ALL + every distinct open position.
   const posFilterOptions: string[] = ['ALL', ...Array.from(openPositionSet).sort()]
 
-  return ReactDOM.createPortal(
+  const tree = (
     <div
-      onClick={onClose}
-      style={{
+      onClick={inline ? undefined : onClose}
+      style={inline
+        ? { fontFamily: 'pressStart' }
+        : {
         position: 'fixed',
         inset: 0,
         zIndex: 10002,
@@ -250,11 +283,11 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: '1040px',
-          height: isMobile ? '100vh' : '85vh',
+          maxWidth: inline ? '100%' : '1040px',
+          height: inline ? '70vh' : (isMobile ? '100vh' : '85vh'),
           backgroundColor: '#0f172a',
-          border: isMobile ? 'none' : '1px solid #334155',
-          borderRadius: isMobile ? 0 : '12px',
+          border: (isMobile && !inline) ? 'none' : '1px solid #334155',
+          borderRadius: (isMobile && !inline) ? 0 : '12px',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -262,7 +295,7 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
       >
         {/* Header */}
         <div style={{
-          padding: isMobile ? '12px 14px' : '18px 20px',
+          padding: isMobile ? '10px 12px' : '12px 16px',
           borderBottom: '1px solid #334155',
           display: 'flex',
           justifyContent: 'space-between',
@@ -271,16 +304,16 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
           flexShrink: 0,
         }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: '700', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <div style={{ fontSize: isMobile ? '14px' : '15px', fontWeight: '700', color: '#e2e8f0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Free Agent Requisition
             </div>
-            <div style={{ fontSize: isMobile ? '12px' : '13px', color: '#94a3b8', marginTop: '6px' }}>
-              Rank the players you want signed. Front office goes after #1 first, works down the list.
-              {isUpdate ? ' Revisions are free.' : ` First ballot costs ${GM_FA_BALLOT_COST} Floobits.`}
+            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
+              Front office signs top-down from your #1.
+              {isUpdate ? ' Revisions are free.' : ` First ballot: ${GM_FA_BALLOT_COST} Floobits.`}
             </div>
             {openSlots.length > 0 && (
               <div style={{
-                fontSize: '12px', color: '#cbd5e1', marginTop: '8px',
+                fontSize: '12px', color: '#cbd5e1', marginTop: '6px',
                 display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center',
               }}>
                 <span style={{ color: '#94a3b8' }}>Open slots:</span>
@@ -292,27 +325,11 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                 ))}
               </div>
             )}
-            {!isMobile && (
-              <div style={{
-                fontSize: '12px', color: '#cbd5e1', marginTop: '10px',
-                padding: '8px 10px', backgroundColor: 'rgba(59,130,246,0.08)',
-                border: '1px solid rgba(59,130,246,0.25)', borderRadius: '6px',
-                lineHeight: 1.5,
-              }}>
-                <div style={{ marginBottom: '4px' }}>
-                  The team works your list top-down. Once a position fills up, anyone else you ranked there gets skipped.
-                </div>
-                <div>
-                  <span style={{ color: '#60a5fa', fontWeight: 700 }}>No ballot:</span>{' '}
-                  the team signs the best available player at any open slot.
-                </div>
-              </div>
-            )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
             {faWindowEnd && (
               <div style={{
-                fontSize: isMobile ? '14px' : '16px',
+                fontSize: isMobile ? '13px' : '15px',
                 fontWeight: '700',
                 color: timeLeft.startsWith('0:') ? '#ef4444' : '#f59e0b',
                 fontVariantNumeric: 'tabular-nums',
@@ -320,7 +337,26 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                 {timeLeft}
               </div>
             )}
-            {isMobile && (
+            <button
+              onClick={handleSubmit}
+              disabled={ranking.length === 0 || submitting}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: ranking.length === 0 ? '#1e293b' : '#f59e0b',
+                color: ranking.length === 0 ? '#475569' : '#0f172a',
+                border: 'none', borderRadius: '6px', fontFamily: 'inherit',
+                fontSize: '12px', fontWeight: '700', whiteSpace: 'nowrap',
+                cursor: ranking.length === 0 ? 'not-allowed' : 'pointer',
+                opacity: submitting ? 0.6 : 1,
+              }}
+            >
+              {submitting
+                ? 'Submitting...'
+                : isUpdate
+                  ? 'Revise'
+                  : `Submit (${ranking.length}) · ${cost} F`}
+            </button>
+            {isMobile && !inline && (
               <button
                 onClick={onClose}
                 aria-label="Close"
@@ -428,12 +464,14 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                         {idx + 1}.
                       </span>
                       <PositionChip position={player.position} />
-                      <Stars stars={calcStars(player.rating)} size={18} />
                       <PlayerHoverCard playerId={player.id} playerName={player.name}>
-                        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help' }}>
+                        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'help', minWidth: 0 }}>
                           {player.name}
                         </span>
                       </PlayerHoverCard>
+                      <Stars stars={calcStars(player.rating)} size={20} />
+                      <ArchetypeBadge archetype={player.archetype} size={14} />
+                      <div style={{ flex: 1 }} />
                       <HoverTooltip text="Move up">
                         <button
                           onClick={() => movePlayer(id, -1)}
@@ -531,6 +569,33 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                 )
               })}
             </div>
+            <div style={{
+              padding: '8px 14px', borderBottom: '1px solid #1e293b',
+              display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
+              flexWrap: 'wrap',
+            }}>
+              <span style={{ fontSize: '12px', color: '#64748b', marginRight: '4px' }}>Sort:</span>
+              {SORT_OPTIONS.map(opt => {
+                const active = sortBy === opt.key
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => setSortBy(opt.key)}
+                    style={{
+                      fontSize: '11px', fontWeight: '600',
+                      padding: '3px 8px', borderRadius: '4px',
+                      backgroundColor: active ? 'rgba(59,130,246,0.18)' : 'transparent',
+                      color: active ? '#60a5fa' : '#94a3b8',
+                      border: '1px solid ' + (active ? 'rgba(59,130,246,0.4)' : '#334155'),
+                      fontFamily: 'inherit',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '4px 10px' }}>
               {openSlots.length === 0 ? (
                 <div style={{ fontSize: '13px', color: '#94a3b8', padding: '24px', textAlign: 'center' }}>
@@ -574,47 +639,11 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
           </div>
         </div>
 
-        {/* Footer: Submit */}
-        <div style={{
-          padding: isMobile ? '12px 14px' : '16px 20px',
-          borderTop: '1px solid #334155',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          flexShrink: 0,
-        }}>
-          <span style={{ fontSize: isMobile ? '12px' : '13px', color: '#94a3b8' }}>
-            {ranking.length} ranked
-          </span>
-          <button
-            onClick={handleSubmit}
-            disabled={ranking.length === 0 || submitting}
-            style={{
-              padding: isMobile ? '14px 24px' : '12px 28px',
-              backgroundColor: ranking.length === 0 ? '#1e293b' : '#f59e0b',
-              color: ranking.length === 0 ? '#475569' : '#0f172a',
-              border: 'none',
-              borderRadius: '6px',
-              fontFamily: 'inherit',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: ranking.length === 0 ? 'not-allowed' : 'pointer',
-              opacity: submitting ? 0.6 : 1,
-              minWidth: isMobile ? '140px' : undefined,
-            }}
-          >
-            {submitting
-              ? 'Submitting...'
-              : isUpdate
-                ? 'Revise Requisition'
-                : `Submit Requisition \u2014 ${cost} F`}
-          </button>
-        </div>
       </div>
-    </div>,
-    document.body
+    </div>
   )
+
+  return inline ? tree : ReactDOM.createPortal(tree, document.body)
 }
 
 /* ── Helper components ── */
@@ -642,82 +671,73 @@ const SectionDivider: React.FC<{ label: string; count: number; color: string }> 
   </div>
 )
 
-// Mental signals render as quiet inline labels with a colored value —
-// "Presence Toxic" rather than a bordered uppercase chip. Keeps them
-// from competing with the headline perf badge for visual weight on a
-// dense row.
-const MentalLabel: React.FC<{ name: string; value: string; color: string; tip?: string }> = ({ name, value, color, tip }) => {
-  const inner = (
-    <span style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
-      <span style={{ color: '#64748b' }}>{name} </span>
-      <span style={{ color, fontWeight: 600 }}>{value}</span>
-    </span>
-  )
-  if (!tip) return inner
-  return <HoverTooltip text={tip} color={color}>{inner}</HoverTooltip>
-}
-
-// Middle-tier labels — render nothing when a player is at these tiers
-// since "Presence Neutral · Resilience Steady · Pressure Even" on every
-// row carries no actionable signal and just clutters the layout. Only
-// surface mental data when it's meaningfully above or below average.
+// Neutral attitude tiers carry no actionable signal, so PresenceChip renders
+// nothing for them.
 const MENTAL_NEUTRAL_LABELS = new Set(['Neutral', 'Steady', 'Even'])
 
-const MentalBadges: React.FC<{ player: ScoutingPlayer }> = ({ player: p }) => {
-  const items: React.ReactNode[] = []
-  if (p.attitude != null) {
-    const t = attitudeTier(p.attitude)
-    if (!MENTAL_NEUTRAL_LABELS.has(t.label)) {
-      items.push(
-        <MentalLabel
-          key="attitude"
-          name="Presence"
-          value={t.label}
-          color={t.color}
-          tip="Locker-room presence. Toxic players drag the room, Leaders lift it."
-        />
-      )
-    }
-  }
-  if (p.resilience != null) {
-    const t = resilienceTier(p.resilience)
-    if (!MENTAL_NEUTRAL_LABELS.has(t.label)) {
-      items.push(
-        <MentalLabel
-          key="resilience"
-          name="Resilience"
-          value={t.label}
-          color={t.color}
-          tip="Resilience — how well they shake off bad games."
-        />
-      )
-    }
-  }
-  if (p.pressureHandling != null) {
-    const t = pressureHandlingTier(p.pressureHandling)
-    if (!MENTAL_NEUTRAL_LABELS.has(t.label)) {
-      items.push(
-        <MentalLabel
-          key="pressure"
-          name="Pressure"
-          value={t.label}
-          color={t.color}
-          tip="Pressure handling — clutch vs. choke under late-game stress."
-        />
-      )
-    }
-  }
+// Career-stage badge — surfaces where a signable player sits on their arc so
+// fans can weigh runway, not just rating, and avoid stacking an already-old
+// roster. Anchored to the sim's real peakSeason (backend computeCareerStage).
+// A 'developing' rookie/prospect already carries its own Rookie/Prospect tag,
+// so the stage chip is suppressed there to avoid a redundant double-label.
+const CAREER_BADGE: Record<string, { label: string; color: string; tip: string }> = {
+  developing:      { label: 'Developing',      color: '#38bdf8', tip: 'Still climbing toward their peak.' },
+  prime:           { label: 'Prime',           color: '#4ade80', tip: 'In their peak seasons.' },
+  aging:           { label: 'Aging',           color: '#facc15', tip: 'Past their peak and gradually declining.' },
+  near_retirement: { label: 'Near Retirement', color: '#f87171', tip: 'At the end of their longevity. Could retire soon.' },
+  retiring:        { label: 'Retiring',        color: '#ef4444', tip: 'Set to retire after this season.' },
+}
 
-  if (items.length === 0) return null
+const CareerBadge: React.FC<{ stage?: string; suppressDeveloping?: boolean }> = ({ stage, suppressDeveloping }) => {
+  if (stage === 'developing' && suppressDeveloping) return null
+  const cfg = stage ? CAREER_BADGE[stage] : undefined
+  if (!cfg) return null
   return (
-    <div style={{ marginTop: '4px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-      {items.map((item, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && <span style={{ color: '#334155', fontSize: '11px' }}>·</span>}
-          {item}
-        </React.Fragment>
-      ))}
-    </div>
+    <HoverTooltip text={cfg.tip} color={cfg.color}>
+      <span style={{ fontSize: '11px', fontWeight: 700, color: cfg.color, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+        {cfg.label}
+      </span>
+    </HoverTooltip>
+  )
+}
+
+// Presence chip — the locker-room signal fans care most about (spot a Toxic
+// player fast). Just the attitude tier word, colored; hidden when neutral.
+// Resilience / pressure-handling move to the player hover card to keep the row
+// tight.
+const PresenceChip: React.FC<{ attitude?: number }> = ({ attitude }) => {
+  if (attitude == null) return null
+  const t = attitudeTier(attitude)
+  if (MENTAL_NEUTRAL_LABELS.has(t.label)) return null
+  return (
+    <HoverTooltip text="Locker-room presence. Toxic players drag the room, Leaders lift it." color={t.color}>
+      <span style={{ fontSize: '11px', fontWeight: 700, color: t.color, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+        {t.label}
+      </span>
+    </HoverTooltip>
+  )
+}
+
+// Performance — +/- symbols plus the Over/Underperforming label, styled to sit
+// in the right-hand signal column alongside career stage + presence. Same
+// tiers/colors as the hover card; hidden within normal variance.
+const CompactPerf: React.FC<{ delta: number }> = ({ delta }) => {
+  let symbols = '', color = '', label = ''
+  if (delta >= 20)       { symbols = '+++'; color = '#22c55e'; label = 'Overperforming' }
+  else if (delta >= 12)  { symbols = '++';  color = '#22c55e'; label = 'Overperforming' }
+  else if (delta >= 5)   { symbols = '+';   color = '#4ade80'; label = 'Overperforming' }
+  else if (delta <= -20) { symbols = '---'; color = '#ef4444'; label = 'Underperforming' }
+  else if (delta <= -12) { symbols = '--';  color = '#ef4444'; label = 'Underperforming' }
+  else if (delta <= -5)  { symbols = '-';   color = '#f87171'; label = 'Underperforming' }
+  else return null
+  const mag = Math.abs(delta)
+  return (
+    <HoverTooltip text={`Playing ${mag} rating points ${delta > 0 ? 'above' : 'below'} their listed rating this season.`} color={color}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+        <span style={{ fontFamily: 'monospace', letterSpacing: '0.5px' }}>{symbols}</span>
+        {label}
+      </span>
+    </HoverTooltip>
   )
 }
 
@@ -729,130 +749,66 @@ const PlayerRow: React.FC<{
   <div
     onClick={onClick}
     style={{
-      padding: '10px 12px',
+      padding: '8px 12px',
       borderRadius: '6px',
       cursor: canAddMore ? 'pointer' : 'not-allowed',
-      marginBottom: '2px',
-      borderBottom: '1px solid #1a2640',
+      borderBottom: '1px solid #334155',
       opacity: canAddMore ? 1 : 0.5,
     }}
     onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
   >
-    {/* Row 1: Position + name + stars + status/perf. Row wraps when
-        narrow (long name + 5 stars + a 'OVERPERFORMING' chip can exceed
-        a phone width) — the perf chip drops below and right-aligns
-        rather than squeezing the name to ellipsis. Name itself wraps to
-        a second line for the truly long ones rather than truncating. */}
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', rowGap: '4px' }}>
-      <PositionChip position={p.position} />
-      <PlayerHoverCard playerId={p.id} playerName={p.name}>
-        <span style={{ fontSize: '15px', color: '#e2e8f0', fontWeight: '700', wordBreak: 'break-word' }}>
-          {p.name}
-        </span>
-      </PlayerHoverCard>
-      {/* The ★ glyph sits visually low in its line-height box because the
-          star shape extends below the baseline. Nudge it up 2px so it
-          reads centered against the name. */}
-      <span style={{ display: 'inline-flex', alignItems: 'center', position: 'relative', top: '-2px', flexShrink: 0 }}>
-        <Stars stars={calcStars(p.rating)} size={22} />
-      </span>
-      {/* Spacer pushes the status block to the far right. marginLeft:auto
-          on the status itself is the wrap-friendly equivalent — when the
-          row wraps, the status hits a new line and still right-aligns. */}
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-        {p.isProspect ? (
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Prospect
-          </span>
-        ) : p.isRookie ? (
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Rookie
-          </span>
-        ) : p.isProjected && p.projectedReason === 'cut_vote' ? (
-          // Cut-vote players get a distinct tag — the board is actively
-          // pushing them out, which is a stronger signal than a routine
-          // walk-year contract expiry. Walk-year FAs render as plain FAs.
-          <>
-            <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Cut Vote
+    {/* Two columns so the right-hand signals (up to three stacked) don't inflate
+        the name line: left holds name + rating on top and the stat line below;
+        right holds the signals fans rank on (career stage, presence, +/-). */}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', minHeight: '52px' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* position + name + the overall rating with offense/defense icons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+          <PositionChip position={p.position} />
+          <PlayerHoverCard playerId={p.id} playerName={p.name}>
+            <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+              {p.name}
             </span>
-            {p.stats && <PerformanceBadge delta={p.ratingDelta} />}
-          </>
-        ) : p.stats ? (
-          <PerformanceBadge delta={p.ratingDelta} />
-        ) : null}
+          </PlayerHoverCard>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', flexShrink: 0, position: 'relative', top: '-1px' }}>
+            <Stars stars={calcStars(p.rating)} size={20} />
+            <ArchetypeBadge archetype={p.archetype} size={14} />
+          </span>
+        </div>
+        {/* the stat line (or a context note) */}
+        <div style={{ marginTop: '3px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8', flexWrap: 'wrap' }}>
+          {p.isProspect ? (
+            <span style={{ color: '#a78bfa', fontStyle: 'italic' }}>Pipeline prospect. Rank to promote instead of signing a FA.</span>
+          ) : p.isRookie ? (
+            <span style={{ color: '#38bdf8', fontStyle: 'italic' }}>No professional record</span>
+          ) : p.stats ? (
+            <span style={{ color: '#cbd5e1', display: 'inline-flex', gap: '10px', flexWrap: 'wrap' }}><StatLine position={p.position} stats={p.stats} /></span>
+          ) : (
+            <span style={{ fontStyle: 'italic' }}>No stats this season</span>
+          )}
+        </div>
       </div>
+      {/* Signals stacked as a right-aligned column: career stage, presence,
+          performance (each only when it has something to say). */}
+      <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px', flexShrink: 0, lineHeight: 1.1 }}>
+        {p.isProspect ? (
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prospect</span>
+        ) : p.isRookie ? (
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rookie</span>
+        ) : (
+          <CareerBadge stage={p.careerStage} />
+        )}
+        <PresenceChip attitude={p.attitude} />
+        {p.isProjected && p.projectedReason === 'cut_vote' && (
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cut Vote</span>
+        )}
+        {p.stats && <CompactPerf delta={p.ratingDelta} />}
+      </span>
     </div>
-    {/* Row 2: stats / context note. Prospects + rookies get a single
-        italic note; FAs with stats get the stat line; FAs without
-        stats get a quiet "no stats" placeholder. */}
-    {p.isProspect ? (
-      <div style={{ marginTop: '5px', fontSize: '12px', color: '#a78bfa', fontStyle: 'italic' }}>
-        Pipeline prospect. Rank to promote instead of signing a FA.
-      </div>
-    ) : p.isRookie ? (
-      <div style={{ marginTop: '5px', fontSize: '12px', color: '#38bdf8', fontStyle: 'italic' }}>
-        No professional record
-      </div>
-    ) : p.stats ? (
-      <div style={{ marginTop: '5px', fontSize: '13px', color: '#cbd5e1', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <StatLine position={p.position} stats={p.stats} />
-      </div>
-    ) : (
-      <div style={{ marginTop: '5px', fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
-        No stats this season
-      </div>
-    )}
-    {/* Row 3: Mental flags — only renders when something's notable
-        (Toxic, Leader, Fragile, Ironclad, Choker, Ice, etc). Boring
-        middle-tier players don't get a row at all. */}
-    <MentalBadges player={p} />
   </div>
 )
 
-const PerformanceBadge: React.FC<{ delta: number }> = ({ delta }) => {
-  // Mirror the +++ / ++ / + / - / -- / --- convention from the player
-  // hover card so fans see the same signal in both places. Hover card
-  // renders it as plain text; the ballot uses chip styling for visual
-  // weight against the dense row, but the symbol + label + color tiers
-  // are identical.
-  let symbols = ''
-  let label = ''
-  let color = ''
-  if (delta >= 20)        { symbols = '+++'; label = 'Overperforming';  color = '#22c55e' }
-  else if (delta >= 12)   { symbols = '++';  label = 'Overperforming';  color = '#22c55e' }
-  else if (delta >= 5)    { symbols = '+';   label = 'Overperforming';  color = '#4ade80' }
-  else if (delta <= -20)  { symbols = '---'; label = 'Underperforming'; color = '#ef4444' }
-  else if (delta <= -12)  { symbols = '--';  label = 'Underperforming'; color = '#ef4444' }
-  else if (delta <= -5)   { symbols = '-';   label = 'Underperforming'; color = '#f87171' }
-  else return null  // within normal variance — nothing to flag
-
-  const magnitude = Math.abs(delta)
-  const tooltip = delta > 0
-    ? `Playing ${magnitude} rating points above their listed rating this season.`
-    : `Playing ${magnitude} rating points below their listed rating this season.`
-  return (
-    <HoverTooltip text={tooltip} color={color}>
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '5px',
-        fontSize: '12px',
-        fontWeight: 700,
-        color,
-        backgroundColor: `${color}22`,
-        border: `1px solid ${color}55`,
-        padding: '2px 9px',
-        borderRadius: '4px',
-        letterSpacing: '0.04em',
-      }}>
-        <span style={{ fontFamily: 'monospace', letterSpacing: '0.5px' }}>{symbols}</span>
-        {label}
-      </span>
-    </HoverTooltip>
-  )
-}
 
 export const StatLine: React.FC<{ position: string; stats: PlayerStats }> = ({ stats, position }) => {
   const parts: string[] = []
