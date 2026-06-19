@@ -196,6 +196,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // Freeze last known data so the modal stays populated after week rollover clears the game
   const frozenRef = useRef(liveGameData)
   if (liveGameData) frozenRef.current = liveGameData
+
+  // When the modal opened (per game). PlayReactions keys its ghost-click guard
+  // off this rather than its own mount time, so top-of-feed widgets that remount
+  // as plays merge/arrive can't reset the guard. Reset on game switch below.
+  const modalOpenedAtRef = useRef(Date.now())
   const gameData = frozenRef.current
 
   // Effective away-team display color: when the two primaries are basically the
@@ -414,6 +419,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
   // Fetch plays when modal opens
   useEffect(() => {
+    modalOpenedAtRef.current = Date.now()
     fetchGamePlays(gameId)
   }, [gameId, fetchGamePlays])
 
@@ -809,6 +815,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 playNumber={play.playNumber}
                 targetType="play"
                 initial={(gameData as any).reactions?.[String(play.playNumber)]?.play}
+                modalOpenedAt={modalOpenedAtRef.current}
               />
             )}
           </div>
