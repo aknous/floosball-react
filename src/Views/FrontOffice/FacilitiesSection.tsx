@@ -330,7 +330,7 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '10px 0 5px' }}>
             <span>Upkeep</span><b style={{ color: '#fbbf24' }}>{f.upkeepFunded}/{f.upkeepCost} F/season</b>
           </div>
-          <div style={{ height: '6px', background: '#18293b', borderRadius: '4px', overflow: 'hidden' }}>
+          <div style={{ height: '6px', background: '#334155', borderRadius: '4px', overflow: 'hidden' }}>
             <div style={{ width: `${f.upkeepCost ? (f.upkeepFunded / f.upkeepCost) * 100 : 100}%`, height: '100%', background: '#3b82f6' }} />
           </div>
           <FundChips onFund={onFund} balance={balance} max={f.upkeepCost - f.upkeepFunded} />
@@ -351,7 +351,7 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '11px 0 5px' }}>
         <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Build progress</span><b style={{ color: '#fbbf24' }}>{p.funded.toLocaleString()} / {p.cost.toLocaleString()} F</b>
       </div>
-      <div style={{ height: '10px', background: '#181430', borderRadius: '6px', overflow: 'hidden', border: '1px solid #2a2147' }}>
+      <div style={{ height: '10px', background: '#2e2552', borderRadius: '6px', overflow: 'hidden', border: '1px solid #3a2d5c' }}>
         <div className={full ? '' : 'facStripes'} style={{ width: `${pct}%`, height: '100%',
           background: full ? '#22c55e' : undefined }} />
       </div>
@@ -381,7 +381,7 @@ function BallotCard({ c, accent, selected, totalVotes, onVote }: { c: Candidate;
         <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Fan votes</span>
         <b style={{ color: '#e2e8f0', fontSize: '12px' }}>{c.votes}{totalVotes > 0 ? ` · ${Math.round((c.votes / totalVotes) * 100)}%` : ''}</b>
       </div>
-      <div style={{ height: '5px', background: '#18293b', borderRadius: '4px', overflow: 'hidden', marginTop: '4px' }}>
+      <div style={{ height: '5px', background: '#334155', borderRadius: '4px', overflow: 'hidden', marginTop: '4px' }}>
         <div style={{ width: `${totalVotes > 0 ? (c.votes / totalVotes) * 100 : 0}%`, height: '100%', background: accent, opacity: 0.85 }} />
       </div>
     </div>
