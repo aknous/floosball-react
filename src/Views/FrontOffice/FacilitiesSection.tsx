@@ -143,7 +143,7 @@ const FacilitiesSection: React.FC = () => {
   const tierColor = data ? TIER_COLOR[league.find(t => t.id === data.teamId)?.marketTier || 'MID_MARKET'] : '#2dd4bf'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px', color: '#e2e8f0' }}>
       {!favId && <div style={{ color: '#94a3b8', fontSize: '13px' }}>Pick a favorite team to manage its facilities.</div>}
 
       {data && (
