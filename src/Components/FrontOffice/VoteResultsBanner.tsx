@@ -23,15 +23,9 @@ const VOTE_TYPE_LABELS: Record<string, string> = {
 
 // Produces a human-readable target clause shown after the vote type.
 // cut_player / resign_player / hire_coach → single name.
-// sign_fa → ordered list of ranked directives (truncated if long).
 // fire_coach → no specific target (it targets whoever the head coach was).
+// (sign_fa is rendered separately as a ranked priority list — see below.)
 function targetText(r: GmVoteResult): string | null {
-  if (r.voteType === 'sign_fa') {
-    if (!r.directiveNames || r.directiveNames.length === 0) return null
-    const shown = r.directiveNames.slice(0, 4).join(', ')
-    const more = r.directiveNames.length > 4 ? ` +${r.directiveNames.length - 4} more` : ''
-    return shown + more
-  }
   return r.targetName || null
 }
 
@@ -52,8 +46,42 @@ const VoteResultsBanner: React.FC<VoteResultsBannerProps> = ({ results, teamColo
       </div>
 
       {results.map(r => {
-        const style = OUTCOME_STYLES[r.outcome] ?? OUTCOME_STYLES.ineligible
         const typeLabel = VOTE_TYPE_LABELS[r.voteType] ?? r.voteType
+
+        // FA Requisition is a ranked-choice "who do the fans want" vote — there's
+        // no pass/fail threshold. Render it as the team's FA targets in priority
+        // order (no RATIFIED / votes-tally), the order they'll be pursued.
+        if (r.voteType === 'sign_fa') {
+          const targets = r.directiveNames ?? []
+          return (
+            <div key={r.id} style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '6px 10px', borderRadius: '4px',
+              backgroundColor: 'rgba(45,212,191,0.10)',
+              border: '1px solid rgba(45,212,191,0.20)',
+            }}>
+              <span style={{ fontSize: '10px', fontWeight: 800, color: '#2dd4bf', letterSpacing: '0.04em', minWidth: '120px' }}>
+                FA TARGETS
+              </span>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', minWidth: '120px', flexShrink: 0 }}>
+                {typeLabel}
+              </span>
+              {targets.length === 0 ? (
+                <span style={{ fontSize: '12px', color: '#64748b', flex: 1 }}>No targets identified</span>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px', flex: 1, minWidth: 0 }}>
+                  {targets.map((name, i) => (
+                    <span key={i} style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 600 }}>
+                      <span style={{ color: '#2dd4bf', fontWeight: 700 }}>{i + 1}.</span> {name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        }
+
+        const style = OUTCOME_STYLES[r.outcome] ?? OUTCOME_STYLES.ineligible
         const target = targetText(r)
 
         return (
