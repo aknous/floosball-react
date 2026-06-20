@@ -153,7 +153,7 @@ const FacilitiesSection: React.FC = () => {
             background: 'linear-gradient(135deg,#11202e,#16273a)', border: '1px solid #243446', borderRadius: '10px', padding: '11px 16px' }}>
             {([
               ['Market', TIER_SHORT[league.find(t => t.id === data.teamId)?.marketTier || 'MID_MARKET'], tierColor],
-              ['Appeal', `${Math.round(data.appeal)} · FA #${faRankOf(league, data.teamId)}`, '#2dd4bf'],
+              ['Free Agency', `#${faRankOf(league, data.teamId)} pick`, '#2dd4bf'],
               ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24'],
             ] as [string, string, string][]).map(([l, v, c]) => (
               <div key={l} style={{ display: 'flex', flexDirection: 'column' }}>
@@ -206,7 +206,7 @@ const FacilitiesSection: React.FC = () => {
 
       {/* league graphs */}
       <section>
-        <SectionHead title="League Facilities & Appeal" hint="best-equipped clubs draft free agents first" />
+        <SectionHead title="League Facilities" hint="best-equipped clubs draft free agents first" />
         <AppealGraph teams={league} catalog={catalog} favId={favId} />
       </section>
       <section>
@@ -295,14 +295,14 @@ function AppealGraph({ teams, catalog, favId }: { teams: LeagueTeam[]; catalog: 
         <span style={{ display: 'flex', gap: '4px' }}>
           {keys.map(k => <span key={k} style={{ flex: 1, fontSize: '11px', color: '#94a3b8', fontWeight: 600, textAlign: 'center' }}>{SHORT_FAC[k] || catalog[k]}</span>)}
         </span>
-        <span style={{ fontSize: '11px', color: '#2dd4bf', fontWeight: 700, textAlign: 'right' }}>APPEAL</span>
+        <span style={{ fontSize: '11px', color: '#2dd4bf', fontWeight: 700, textAlign: 'right' }}>FA PICK</span>
       </div>
-      {teams.map(t => {
+      {teams.map((t, idx) => {
         const isFav = t.id === favId
         const tip = (
           <div style={{ textAlign: 'left', fontSize: '13px', lineHeight: 1.6 }}>
             <div style={{ fontWeight: 700, color: t.color, marginBottom: '4px' }}>{t.city} {t.name}</div>
-            <div>Appeal: <strong>{Math.round(t.appeal)}</strong></div>
+            <div>Free agency: <strong>{`#${idx + 1} pick`}</strong></div>
             {keys.map(k => <div key={k}>{catalog[k]}: <strong>{t.levels[k] ? roman(t.levels[k]) : 'not built'}</strong></div>)}
           </div>
         )
@@ -320,7 +320,7 @@ function AppealGraph({ teams, catalog, favId }: { teams: LeagueTeam[]; catalog: 
                 })}
               </span>
             </HoverTooltip>
-            <span style={{ fontSize: '13px', fontWeight: 800, color: '#2dd4bf', textAlign: 'right' }}>{Math.round(t.appeal)}</span>
+            <span style={{ fontSize: '13px', fontWeight: 800, color: '#2dd4bf', textAlign: 'right' }}>{`#${idx + 1}`}</span>
           </Link>
         )
       })}
