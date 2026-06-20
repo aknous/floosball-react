@@ -15,7 +15,7 @@ const PERK: Record<string, string[]> = {
   training:    ['', '', '', 'Young players develop faster', 'Young players develop faster', 'Young players develop much faster'],
   locker_room: ['', '', '', 'Small pre-game morale boost', 'Moderate pre-game morale boost', 'Strong pre-game morale boost'],
   recovery:    ['', '', '', 'Players tire 15% slower', 'Players tire 30% slower', 'Players tire 35% slower'],
-  scouting:    ['', '', '', '+3 rookie scouting', '+5 rookie scouting', '+7 rookie scouting'],
+  scouting:    ['', '', '', 'Clearer read on draft prospects', 'Sharper read on draft prospects', 'Precise read on draft prospects'],
   stadium:     ['', 'Small home crowd', 'Bigger home crowd', 'Large home crowd', 'Major home crowd', 'Elite home crowd'],
 }
 const perkAt = (key: string, lvl: number) => (PERK[key] || [])[lvl] || ''
