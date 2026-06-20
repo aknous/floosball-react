@@ -9,16 +9,20 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V']
 const roman = (n: number) => ROMAN[n] || String(n)
 
-// Concrete per-level perk copy (mirrors the backend FACILITY effect curves —
-// keep in sync if the curves are retuned).
+// Concrete per-level perk copy (mirrors the backend FACILITY effect curves;
+// keep in sync if the curves are retuned). '' = no active bonus at that level.
 const PERK: Record<string, string[]> = {
-  training:    ['—', '—', '—', '+1 player development', '+1 player development', '+2 player development'],
-  locker_room: ['—', '—', '—', 'minor in-game morale', 'moderate in-game morale', 'strong in-game morale'],
-  recovery:    ['—', '—', '—', '−15% fatigue buildup', '−30% fatigue buildup', '−35% fatigue buildup'],
-  scouting:    ['—', '—', '—', '+3 rookie scouting', '+5 rookie scouting', '+7 rookie scouting'],
-  stadium:     ['—', 'small home crowd', 'bigger home crowd', 'large home crowd', 'major home crowd', 'elite home crowd'],
+  training:    ['', '', '', '+1 player development', '+1 player development', '+2 player development'],
+  locker_room: ['', '', '', 'minor in-game morale', 'moderate in-game morale', 'strong in-game morale'],
+  recovery:    ['', '', '', '-15% fatigue buildup', '-30% fatigue buildup', '-35% fatigue buildup'],
+  scouting:    ['', '', '', '+3 rookie scouting', '+5 rookie scouting', '+7 rookie scouting'],
+  stadium:     ['', 'small home crowd', 'bigger home crowd', 'large home crowd', 'major home crowd', 'elite home crowd'],
 }
-const perkAt = (key: string, lvl: number) => (PERK[key] || [])[lvl] || '—'
+const perkAt = (key: string, lvl: number) => (PERK[key] || [])[lvl] || ''
+// short column labels for the league graph header
+const SHORT_FAC: Record<string, string> = {
+  training: 'Train', locker_room: 'Locker', recovery: 'Recov', scouting: 'Scout', stadium: 'Stadium',
+}
 
 const TIER_SHORT: Record<string, string> = {
   MEGA_MARKET: 'MEGA', LARGE_MARKET: 'LARGE', MID_MARKET: 'MID', SMALL_MARKET: 'SMALL',
@@ -154,8 +158,8 @@ const FacilitiesSection: React.FC = () => {
               ['Your F', balance.toLocaleString(), '#cbd5e1'],
             ] as [string, string, string][]).map(([l, v, c]) => (
               <div key={l} style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '.06em', color: '#94a3b8' }}>{l}</span>
-                <span style={{ fontSize: '16px', fontWeight: 800, color: c }}>{v}</span>
+                <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8' }}>{l}</span>
+                <span style={{ fontSize: '18px', fontWeight: 800, color: c }}>{v}</span>
               </div>
             ))}
           </div>
@@ -175,7 +179,7 @@ const FacilitiesSection: React.FC = () => {
 
           {/* current facilities */}
           <section>
-            <SectionHead title="Current Facilities" hint="what you've built — keep upkeep funded so they don't slip" />
+            <SectionHead title="Current Facilities" hint="keep upkeep funded so facilities hold their level" />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '8px' }}>
               {data.facilities.map(f => <FacilityTile key={f.key} f={f} balance={balance} onFund={(amt) => contribute(amt, 'upkeep', { facilityKey: f.key })} />)}
             </div>
@@ -188,7 +192,7 @@ const FacilitiesSection: React.FC = () => {
               {data.projects.length ? data.projects.map(p => {
                 const fac = data.facilities.find(x => x.key === p.facilityKey)
                 return <ProjectCard key={p.id} p={p} name={catalog[p.facilityKey] || p.facilityKey} fromLvl={fac?.level ?? p.targetLevel - 1} balance={balance} onFund={(amt) => contribute(amt, 'project', { projectId: p.id })} />
-              }) : <div style={{ fontSize: '12px', color: '#64748b', padding: '6px 2px' }}>No project in progress — the ballot winner starts one next season.</div>}
+              }) : <div style={{ fontSize: '12.5px', color: '#94a3b8', padding: '6px 2px' }}>No project in progress. The ballot winner starts one next season.</div>}
             </section>
 
             {/* ballot */}
@@ -203,11 +207,11 @@ const FacilitiesSection: React.FC = () => {
 
       {/* league graphs */}
       <section>
-        <SectionHead title="League — Facilities & Appeal" hint="who's best equipped; drives free-agent draft order" />
+        <SectionHead title="League Facilities & Appeal" hint="best-equipped clubs draft free agents first" />
         <AppealGraph teams={league} catalog={catalog} favId={favId} />
       </section>
       <section>
-        <SectionHead title="League — Fanbase" hint="how many fans each team has (sets the Market tier)" />
+        <SectionHead title="League Fanbase" hint="how many fans each team has, which sets the Market tier" />
         <FanGraph teams={league} favId={favId} />
       </section>
     </div>
@@ -222,8 +226,8 @@ function faRankOf(league: LeagueTeam[], teamId: number): number {
 
 function SectionHead({ title, hint }: { title: string; hint: string }) {
   return (
-    <h2 style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.08em', color: '#94a3b8', margin: '0 0 8px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-      {title}<span style={{ fontSize: '10.5px', textTransform: 'none', letterSpacing: 0, color: '#7e93a8', fontWeight: 400 }}>— {hint}</span>
+    <h2 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.08em', color: '#cbd5e1', margin: '0 0 8px', display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+      {title}<span style={{ fontSize: '11.5px', textTransform: 'none', letterSpacing: 0, color: '#94a3b8', fontWeight: 400 }}>{hint}</span>
     </h2>
   )
 }
@@ -233,18 +237,18 @@ function FacilityTile({ f, balance, onFund }: { f: Facility; balance: number; on
   const covered = f.upkeepFunded >= f.upkeepCost
   return (
     <div style={{ background: '#15202d', border: `1px solid ${f.upgrading ? '#3a2d5c' : '#243446'}`, borderRadius: '8px', padding: '10px 11px' }}>
-      <div style={{ fontSize: '12.5px', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px' }}>
+      <div style={{ fontSize: '14px', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px' }}>
         <span>{f.name}</span>
-        <span style={{ fontSize: '10px', fontWeight: 700, color: '#cbd5e1', background: '#223', padding: '0 6px', borderRadius: '10px', border: '1px solid #33465b' }}>{roman(f.level)}</span>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#cbd5e1', background: '#223', padding: '1px 7px', borderRadius: '10px', border: '1px solid #33465b' }}>{roman(f.level)}</span>
       </div>
-      <div style={{ fontSize: '11.5px', color: perk === '—' ? '#64748b' : '#cbd5e1', margin: '4px 0 6px', minHeight: '16px' }}>{perk === '—' ? 'no bonus yet' : perk}</div>
+      <div style={{ fontSize: '12.5px', color: perk ? '#cbd5e1' : '#64748b', margin: '5px 0 7px', minHeight: '16px' }}>{perk || 'no bonus yet'}</div>
       {f.upgrading ? (
-        <div style={{ fontSize: '11px', color: '#a78bfa' }}>upkeep paused · upgrading</div>
+        <div style={{ fontSize: '12px', color: '#a78bfa' }}>upkeep paused while upgrading</div>
       ) : covered ? (
-        <div style={{ fontSize: '11px', color: '#7e93a8' }}>upkeep {f.upkeepCost} F/yr · <span style={{ color: '#4ade80' }}>covered ✓</span></div>
+        <div style={{ fontSize: '12px', color: '#94a3b8' }}>upkeep {f.upkeepCost} F/yr · <span style={{ color: '#4ade80' }}>covered</span></div>
       ) : (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#7e93a8', marginBottom: '4px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
             <span>upkeep</span><span><b style={{ color: '#cbd5e1' }}>{f.upkeepFunded}/{f.upkeepCost}</b> F/yr</span>
           </div>
           <Bar pct={f.upkeepCost ? (f.upkeepFunded / f.upkeepCost) * 100 : 100} color="#3b82f6" />
@@ -260,9 +264,9 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
   const full = p.funded >= p.cost
   return (
     <div style={{ background: '#15202d', border: '1px solid #3a2d5c', borderRadius: '9px', padding: '11px 13px', marginBottom: '9px' }}>
-      <div style={{ fontSize: '13.5px', fontWeight: 700 }}>{name} {roman(fromLvl)} → {roman(p.targetLevel)}</div>
-      <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel)}</span></div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', marginTop: '8px' }}>
+      <div style={{ fontSize: '14px', fontWeight: 700 }}>{name} {roman(fromLvl)} → {roman(p.targetLevel)}</div>
+      <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'foundational level'}</span></div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: '#94a3b8', marginTop: '8px' }}>
         <span>build</span><b style={{ color: '#cbd5e1' }}>{p.funded.toLocaleString()} / {p.cost.toLocaleString()} F</b>
       </div>
       <div style={{ marginTop: '5px' }}><Bar pct={pct} color="#a78bfa" full={full} /></div>
@@ -277,10 +281,10 @@ function BallotCard({ c, selected, onVote }: { c: Candidate; selected: boolean; 
     <div onClick={onVote} style={{ background: selected ? '#13243a' : '#15202d', border: `1px solid ${selected ? '#3b82f6' : '#243446'}`, borderRadius: '9px', padding: '11px 13px', marginBottom: '9px', cursor: 'pointer' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
         <div style={{ width: '15px', height: '15px', borderRadius: '50%', border: '2px solid #3a4d63', flexShrink: 0, background: selected ? 'radial-gradient(#3b82f6 38%,transparent 44%)' : undefined, borderColor: selected ? '#3b82f6' : '#3a4d63' }} />
-        <span style={{ fontSize: '13.5px', fontWeight: 700 }}>{c.name}</span>
-        <span style={{ fontSize: '10px', fontWeight: 700, color: '#cbd5e1', background: '#223', padding: '0 6px', borderRadius: '10px', border: '1px solid #33465b', marginLeft: 'auto' }}>{roman(c.currentLevel)} → {roman(c.targetLevel)}</span>
+        <span style={{ fontSize: '14px', fontWeight: 700 }}>{c.name}</span>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#cbd5e1', background: '#223', padding: '1px 7px', borderRadius: '10px', border: '1px solid #33465b', marginLeft: 'auto' }}>{roman(c.currentLevel)} → {roman(c.targetLevel)}</span>
       </div>
-      <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel)}</span></div>
+      <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'foundational level'}</span></div>
     </div>
   )
 }
@@ -290,30 +294,38 @@ function AppealGraph({ teams, catalog, favId }: { teams: LeagueTeam[]; catalog: 
   const keys = Object.keys(catalog)
   return (
     <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      {/* facility-name column header */}
+      <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 40px', gap: '10px', alignItems: 'center', padding: '0 8px 6px', borderBottom: '1px solid #1e293b', marginBottom: '2px' }}>
+        <span style={{ fontSize: '10px', color: '#7e93a8', fontWeight: 700 }}>TEAM</span>
+        <span style={{ display: 'flex', gap: '4px' }}>
+          {keys.map(k => <span key={k} style={{ flex: 1, fontSize: '10px', color: '#94a3b8', fontWeight: 600, textAlign: 'center' }}>{SHORT_FAC[k] || catalog[k]}</span>)}
+        </span>
+        <span style={{ fontSize: '10px', color: '#2dd4bf', fontWeight: 700, textAlign: 'right' }}>APPEAL</span>
+      </div>
       {teams.map(t => {
         const isFav = t.id === favId
         const tip = (
           <div style={{ textAlign: 'left', fontSize: '13px', lineHeight: 1.6 }}>
             <div style={{ fontWeight: 700, color: t.color, marginBottom: '4px' }}>{t.city} {t.name}</div>
             <div>Appeal: <strong>{Math.round(t.appeal)}</strong></div>
-            {keys.map(k => <div key={k}>{catalog[k]}: <strong>{roman(t.levels[k] || 0) || '—'}</strong></div>)}
+            {keys.map(k => <div key={k}>{catalog[k]}: <strong>{t.levels[k] ? roman(t.levels[k]) : 'not built'}</strong></div>)}
           </div>
         )
         return (
-          <Link key={t.id} to={`/team/${t.id}`} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 34px', gap: '10px', alignItems: 'center', padding: '3px 8px', borderRadius: '3px', textDecoration: 'none',
+          <Link key={t.id} to={`/team/${t.id}`} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 40px', gap: '10px', alignItems: 'center', padding: '3px 8px', borderRadius: '3px', textDecoration: 'none',
             background: isFav ? `${t.color}15` : 'transparent', border: `1px solid ${isFav ? t.color : 'transparent'}` }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1' }}>{t.abbr}</span>
+            <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#cbd5e1' }}>{t.abbr}</span>
             <HoverTooltip content={tip} color={t.color}>
               <span style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                 {keys.map(k => {
                   const lvl = t.levels[k] || 0
                   return <span key={k} style={{ flex: 1, display: 'flex', gap: '2px' }}>
-                    {[1, 2, 3, 4, 5].map(i => <span key={i} style={{ flex: 1, height: '8px', borderRadius: '2px', background: i <= lvl ? t.color : '#1e2a38', opacity: i <= lvl ? 1 : 1 }} />)}
+                    {[1, 2, 3, 4, 5].map(i => <span key={i} style={{ flex: 1, height: '11px', borderRadius: '2px', background: i <= lvl ? t.color : '#1e2a38', opacity: i <= lvl ? 1 : 0.5 }} />)}
                   </span>
                 })}
               </span>
             </HoverTooltip>
-            <span style={{ fontSize: '12px', fontWeight: 800, color: '#2dd4bf', textAlign: 'right' }}>{Math.round(t.appeal)}</span>
+            <span style={{ fontSize: '13px', fontWeight: 800, color: '#2dd4bf', textAlign: 'right' }}>{Math.round(t.appeal)}</span>
           </Link>
         )
       })}
@@ -337,15 +349,15 @@ function FanGraph({ teams, favId }: { teams: LeagueTeam[]; favId: number | null 
           </div>
         )
         return (
-          <Link key={t.id} to={`/team/${t.id}`} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 34px', gap: '10px', alignItems: 'center', padding: '3px 8px', borderRadius: '3px', textDecoration: 'none',
+          <Link key={t.id} to={`/team/${t.id}`} style={{ display: 'grid', gridTemplateColumns: '52px 1fr 40px', gap: '10px', alignItems: 'center', padding: '3px 8px', borderRadius: '3px', textDecoration: 'none',
             background: isFav ? `${t.color}15` : 'transparent', border: `1px solid ${isFav ? t.color : 'transparent'}` }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1' }}>{t.abbr}</span>
+            <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#cbd5e1' }}>{t.abbr}</span>
             <HoverTooltip content={tip} color={t.color}>
               <span style={{ display: 'block', height: '12px' }}>
                 <span style={{ display: 'block', height: '100%', width: `${(t.fanCount / maxFans) * 100}%`, background: t.color, opacity: 0.9, borderRadius: '2px', minWidth: '2px' }} />
               </span>
             </HoverTooltip>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textAlign: 'right' }}>{t.fanCount}</span>
+            <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#94a3b8', textAlign: 'right' }}>{t.fanCount}</span>
           </Link>
         )
       })}
