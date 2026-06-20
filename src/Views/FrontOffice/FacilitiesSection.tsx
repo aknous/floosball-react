@@ -323,11 +323,11 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
       {f.upgrading ? (
         <div style={{ fontSize: '12px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>UPKEEP PAUSED · UPGRADING</div>
       ) : covered ? (
-        <div style={{ fontSize: '12px', color: '#7e93a8', marginTop: '10px' }}>Upkeep {f.upkeepCost} F/season · <span style={{ color: '#34d399', fontWeight: 700 }}>COVERED</span></div>
+        <div style={{ fontSize: '12px', color: '#7e93a8', marginTop: '10px' }}>Upkeep <span style={{ color: '#fbbf24' }}>{f.upkeepCost} F/season</span> · <span style={{ color: '#34d399', fontWeight: 700 }}>COVERED</span></div>
       ) : (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '10px 0 5px' }}>
-            <span>Upkeep</span><b style={{ color: '#e2e8f0' }}>{f.upkeepFunded}/{f.upkeepCost} F/season</b>
+            <span>Upkeep</span><b style={{ color: '#fbbf24' }}>{f.upkeepFunded}/{f.upkeepCost} F/season</b>
           </div>
           <div style={{ height: '6px', background: '#18293b', borderRadius: '4px', overflow: 'hidden' }}>
             <div style={{ width: `${f.upkeepCost ? (f.upkeepFunded / f.upkeepCost) * 100 : 100}%`, height: '100%', background: '#3b82f6' }} />
@@ -348,7 +348,7 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
       <div style={{ ...QUIP_STYLE, marginTop: '8px' }}>{quipAt(p.facilityKey, p.targetLevel)}</div>
       <div style={{ fontSize: '12.5px', marginTop: '4px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '11px 0 5px' }}>
-        <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Build progress</span><b style={{ color: '#e2e8f0' }}>{p.funded.toLocaleString()} / {p.cost.toLocaleString()} F</b>
+        <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Build progress</span><b style={{ color: '#fbbf24' }}>{p.funded.toLocaleString()} / {p.cost.toLocaleString()} F</b>
       </div>
       <div style={{ height: '10px', background: '#181430', borderRadius: '6px', overflow: 'hidden', border: '1px solid #2a2147' }}>
         <div className={full ? '' : 'facStripes'} style={{ width: `${pct}%`, height: '100%',
@@ -374,7 +374,7 @@ function BallotCard({ c, accent, selected, onVote }: { c: Candidate; accent: str
       <div style={{ ...QUIP_STYLE, marginTop: '8px' }}>{quipAt(c.key, c.targetLevel)}</div>
       <div style={{ fontSize: '12.5px', marginTop: '4px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '5px' }}>
-        Build <b style={{ color: '#e2e8f0' }}>{c.cost.toLocaleString()} F</b>, then upkeep <b style={{ color: '#e2e8f0' }}>{c.upkeep.toLocaleString()} F/season</b>
+        Build <b style={{ color: '#fbbf24' }}>{c.cost.toLocaleString()} F</b>, then upkeep <b style={{ color: '#fbbf24' }}>{c.upkeep.toLocaleString()} F/season</b>
       </div>
     </div>
   )
