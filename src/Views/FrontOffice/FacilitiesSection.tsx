@@ -314,9 +314,8 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
     <div className="facRow" style={{
       background: '#1e293b',
       border: '1px solid #2c3a4d', borderTop: `2px solid ${c}`, borderRadius: '9px', padding: '12px 13px 13px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-        <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', lineHeight: 1.2 }}>{f.name}</span>
-        <span style={{ fontSize: '26px', fontWeight: 800, lineHeight: .8, color: c, flexShrink: 0 }}>{roman(f.level)}</span>
+      <div style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', lineHeight: 1.2 }}>
+        {f.name} <span style={{ color: c }}>{roman(f.level)}</span>
       </div>
       <div style={{ ...QUIP_STYLE, minHeight: '32px', marginTop: '11px' }}>{quip}</div>
       <div style={{ fontSize: '12px', fontWeight: 700, color: perk ? c : '#5b6b7d', marginTop: '3px' }}>{perk || 'No bonus yet'}</div>
