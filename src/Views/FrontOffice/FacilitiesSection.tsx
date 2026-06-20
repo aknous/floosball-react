@@ -62,7 +62,6 @@ function Meter({ level, color }: { level: number; color: string }) {
         return <span key={i} style={{
           flex: 1, height: '7px', borderRadius: '2px',
           background: on ? color : '#1b2a3a',
-          boxShadow: on ? `0 0 7px ${hex(color, 0.6)}` : 'none',
         }} />
       })}
     </div>
@@ -181,10 +180,9 @@ const FacilitiesSection: React.FC = () => {
               ['Free Agency', `#${faRankOf(league, data.teamId)} pick`, '#2dd4bf'],
               ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24'],
             ] as [string, string, string][]).map(([l, v, c]) => (
-              <div key={l} style={{ background: 'linear-gradient(160deg,#1e293b,#141d29)', padding: '12px 15px' }}>
+              <div key={l} style={{ background: '#1e293b', padding: '12px 15px' }}>
                 <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '.14em', color: '#7e93a8' }}>{l}</div>
                 <div style={{ fontSize: '22px', fontWeight: 800, marginTop: '4px', color: c,
-                  textShadow: c === '#fbbf24' ? '0 0 14px #fbbf2433' : 'none',
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</div>
               </div>
             ))}
@@ -254,7 +252,7 @@ function faRankOf(league: LeagueTeam[], teamId: number): number {
 function SectionHead({ title, hint, accent }: { title: string; hint: string; accent: string }) {
   return (
     <h2 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '.12em', color: '#cbd5e1', margin: '0 0 11px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-      <span style={{ width: '4px', height: '15px', borderRadius: '2px', background: accent, boxShadow: `0 0 10px ${accent}`, flexShrink: 0 }} />
+      <span style={{ width: '4px', height: '15px', borderRadius: '2px', background: accent, flexShrink: 0 }} />
       {title}<span style={{ fontSize: '11.5px', textTransform: 'none', letterSpacing: 0, color: '#7e93a8', fontWeight: 400 }}>{hint}</span>
     </h2>
   )
@@ -265,15 +263,12 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
   const covered = f.upkeepFunded >= f.upkeepCost
   const c = f.upgrading ? BUILD : accent
   return (
-    <div className="facRow" style={{ position: 'relative', overflow: 'hidden',
-      background: 'linear-gradient(165deg,#1e293b 0%,#161f2c 100%)',
-      border: '1px solid #2c3a4d', borderTop: `2px solid ${c}`, borderRadius: '9px', padding: '12px 13px 13px',
-      ...(f.level >= 5 ? { boxShadow: `inset 0 0 22px ${hex(accent, 0.16)}` } : {}) }}>
-      <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '80px', height: '80px', borderRadius: '50%',
-        background: `radial-gradient(circle, ${hex(c, 0.18)}, transparent 70%)`, pointerEvents: 'none' }} />
+    <div className="facRow" style={{
+      background: '#1e293b',
+      border: '1px solid #2c3a4d', borderTop: `2px solid ${c}`, borderRadius: '9px', padding: '12px 13px 13px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
         <span style={{ fontSize: '12.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', maxWidth: '125px' }}>{f.name}</span>
-        <span style={{ fontSize: '27px', fontWeight: 800, lineHeight: .8, color: c, textShadow: `0 0 14px ${hex(c, 0.6)}` }}>{roman(f.level)}</span>
+        <span style={{ fontSize: '27px', fontWeight: 800, lineHeight: .8, color: c }}>{roman(f.level)}</span>
       </div>
       <Meter level={f.level} color={c} />
       <div style={{ fontSize: '12.5px', color: perk ? '#cbd5e1' : '#5b6b7d', minHeight: '17px' }}>{perk || 'No bonus yet'}</div>
@@ -287,7 +282,7 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
             <span>Upkeep</span><b style={{ color: '#e2e8f0' }}>{f.upkeepFunded}/{f.upkeepCost} F/season</b>
           </div>
           <div style={{ height: '6px', background: '#18293b', borderRadius: '4px', overflow: 'hidden' }}>
-            <div style={{ width: `${f.upkeepCost ? (f.upkeepFunded / f.upkeepCost) * 100 : 100}%`, height: '100%', background: 'linear-gradient(90deg,#2563eb,#3b82f6)' }} />
+            <div style={{ width: `${f.upkeepCost ? (f.upkeepFunded / f.upkeepCost) * 100 : 100}%`, height: '100%', background: '#3b82f6' }} />
           </div>
           <FundChips onFund={onFund} balance={balance} max={f.upkeepCost - f.upkeepFunded} />
         </>
@@ -300,7 +295,7 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
   const pct = p.cost ? (p.funded / p.cost) * 100 : 0
   const full = p.funded >= p.cost
   return (
-    <div style={{ background: 'linear-gradient(165deg,#1b1633,#15182b)', border: '1px solid #3a2d5c', borderLeft: `3px solid ${BUILD}`, borderRadius: '9px', padding: '13px 15px', marginBottom: '10px' }}>
+    <div style={{ background: '#1a1730', border: '1px solid #3a2d5c', borderLeft: `3px solid ${BUILD}`, borderRadius: '9px', padding: '13px 15px', marginBottom: '10px' }}>
       <div style={{ fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em' }}>{name} {roman(fromLvl)} → {roman(p.targetLevel)}</div>
       <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: '#94a3b8', margin: '11px 0 5px' }}>
@@ -308,7 +303,7 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
       </div>
       <div style={{ height: '10px', background: '#181430', borderRadius: '6px', overflow: 'hidden', border: '1px solid #2a2147' }}>
         <div className={full ? '' : 'facStripes'} style={{ width: `${pct}%`, height: '100%',
-          background: full ? '#22c55e' : undefined, boxShadow: full ? 'none' : `0 0 12px ${hex(BUILD, 0.4)}` }} />
+          background: full ? '#22c55e' : undefined }} />
       </div>
       {full ? <div style={{ fontSize: '12px', fontWeight: 700, color: BUILD, marginTop: '7px' }}>Funded ✓ builds next season</div>
             : <FundChips onFund={onFund} balance={balance} max={p.cost - p.funded} />}
@@ -319,14 +314,12 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
 function BallotCard({ c, accent, selected, onVote }: { c: Candidate; accent: string; selected: boolean; onVote: () => void }) {
   return (
     <div className="facVote" onClick={onVote} style={{ position: 'relative', cursor: 'pointer', marginBottom: '10px',
-      background: selected ? 'linear-gradient(165deg,#13243f,#101d33)' : 'linear-gradient(165deg,#1e293b,#161f2c)',
-      border: `1px solid ${selected ? accent : '#2c3a4d'}`, borderRadius: '9px', padding: '12px 14px',
-      boxShadow: selected ? `0 0 0 1px ${accent}, 0 0 18px ${hex(accent, 0.3)}` : 'none' }}>
+      background: selected ? '#16243a' : '#1e293b',
+      border: `1px solid ${selected ? accent : '#2c3a4d'}`, borderRadius: '9px', padding: '12px 14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <span style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0,
           border: `2px solid ${selected ? accent : '#3a4d63'}`,
-          background: selected ? `radial-gradient(${accent} 38%,transparent 44%)` : 'transparent',
-          boxShadow: selected ? `0 0 8px ${accent}` : 'none' }} />
+          background: selected ? `radial-gradient(${accent} 38%,transparent 44%)` : 'transparent' }} />
         <span style={{ fontSize: '13.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em' }}>{c.name} {roman(c.currentLevel)} → {roman(c.targetLevel)}</span>
       </div>
       <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'Foundational level'}</span></div>
@@ -341,7 +334,7 @@ function BallotCard({ c, accent, selected, onVote }: { c: Candidate; accent: str
 function AppealGraph({ teams, catalog, favId }: { teams: LeagueTeam[]; catalog: Record<string, string>; favId: number | null }) {
   const keys = Object.keys(catalog)
   return (
-    <div style={{ background: 'linear-gradient(180deg,#0d1929,#0a1521)', border: '1px solid #1d2c3e', borderRadius: '10px', padding: '6px 4px' }}>
+    <div style={{ background: '#0f172a', border: '1px solid #1d2c3e', borderRadius: '10px', padding: '6px 4px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 46px', gap: '12px', alignItems: 'center', padding: '5px 12px', borderBottom: '1px solid #1d2c3e' }}>
         <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#7e93a8', fontWeight: 700 }}>Team</span>
         <span style={{ display: 'flex', gap: '4px' }}>
@@ -370,7 +363,7 @@ function AppealGraph({ teams, catalog, favId }: { teams: LeagueTeam[]; catalog: 
                   return <span key={k} style={{ flex: 1, display: 'flex', gap: '2px' }}>
                     {[1, 2, 3, 4, 5].map(i => {
                       const on = i <= lvl
-                      return <span key={i} style={{ flex: 1, height: '9px', borderRadius: '2px', background: on ? rc : '#16273a', boxShadow: on ? `0 0 5px ${hex(rc, 0.6)}` : 'none' }} />
+                      return <span key={i} style={{ flex: 1, height: '9px', borderRadius: '2px', background: on ? rc : '#16273a' }} />
                     })}
                   </span>
                 })}
@@ -389,7 +382,7 @@ function FanGraph({ teams, favId }: { teams: LeagueTeam[]; favId: number | null 
   const sorted = [...teams].sort((a, b) => b.fanCount - a.fanCount)
   const maxFans = Math.max(1, ...sorted.map(t => t.fanCount))
   return (
-    <div style={{ background: 'linear-gradient(180deg,#0d1929,#0a1521)', border: '1px solid #1d2c3e', borderRadius: '10px', padding: '8px 6px' }}>
+    <div style={{ background: '#0f172a', border: '1px solid #1d2c3e', borderRadius: '10px', padding: '8px 6px' }}>
       {sorted.map(t => {
         const isFav = t.id === favId
         const tip = (
@@ -405,7 +398,7 @@ function FanGraph({ teams, favId }: { teams: LeagueTeam[]; favId: number | null 
             <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#cbd5e1' }}>{t.abbr}</span>
             <HoverTooltip content={tip} color={t.color}>
               <span style={{ display: 'block', height: '11px' }}>
-                <span style={{ display: 'block', height: '100%', width: `${(t.fanCount / maxFans) * 100}%`, background: t.color, borderRadius: '3px', minWidth: '2px', boxShadow: `0 0 6px ${hex(t.color, 0.5)}` }} />
+                <span style={{ display: 'block', height: '100%', width: `${(t.fanCount / maxFans) * 100}%`, background: t.color, borderRadius: '3px', minWidth: '2px' }} />
               </span>
             </HoverTooltip>
             <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#94a3b8', textAlign: 'right' }}>{t.fanCount}</span>
