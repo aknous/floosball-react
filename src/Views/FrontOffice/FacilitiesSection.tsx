@@ -36,7 +36,7 @@ const FUND_AMOUNTS = [25, 50, 100]
 interface Facility { key: string; name: string; level: number; maxLevel: number; effect: string; upgrading: boolean; upkeepCost: number; upkeepFunded: number; upgradeCost: number }
 interface Project { id: number; facilityKey: string; kind: string; targetLevel: number; cost: number; funded: number }
 interface TeamFacilities { teamId: number; treasury: number; appeal: number; shareUnit: number; facilities: Facility[]; projects: Project[] }
-interface Candidate { key: string; name: string; currentLevel: number; targetLevel: number; kind: string }
+interface Candidate { key: string; name: string; currentLevel: number; targetLevel: number; kind: string; cost: number; upkeep: number }
 interface LeagueTeam { id: number; name: string; city: string; abbr: string; color: string; appeal: number; levels: Record<string, number>; fanCount: number; marketTier: string }
 
 // ── small UI bits ─────────────────────────────────────────────────────────
@@ -281,6 +281,9 @@ function BallotCard({ c, selected, onVote }: { c: Candidate; selected: boolean; 
         <span style={{ fontSize: '14px', fontWeight: 700 }}>{c.name} {roman(c.currentLevel)} → {roman(c.targetLevel)}</span>
       </div>
       <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'foundational level'}</span></div>
+      <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '5px' }}>
+        build <b style={{ color: '#cbd5e1' }}>{c.cost.toLocaleString()} F</b>, then upkeep <b style={{ color: '#cbd5e1' }}>{c.upkeep.toLocaleString()} F/yr</b>
+      </div>
     </div>
   )
 }
