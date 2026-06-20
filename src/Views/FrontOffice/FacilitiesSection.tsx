@@ -165,7 +165,7 @@ const FacilitiesSection: React.FC = () => {
   const accent = me?.color || tierColor   // the club's own color tints the tab
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', color: '#e2e8f0' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', color: '#e2e8f0', fontFamily: 'pressStart, monospace' }}>
       <style>{FAC_CSS}</style>
       {!favId && <div style={{ color: '#94a3b8', fontSize: '13px' }}>Pick a favorite team to manage its facilities.</div>}
 
@@ -346,7 +346,7 @@ function AppealGraph({ teams, catalog, favId }: { teams: LeagueTeam[]; catalog: 
         const isFav = t.id === favId
         const rc = TIER_COLOR[t.marketTier] || '#2dd4bf'
         const tip = (
-          <div style={{ textAlign: 'left', fontSize: '13px', lineHeight: 1.6 }}>
+          <div style={{ textAlign: 'left', fontSize: '13px', lineHeight: 1.6, fontFamily: 'pressStart, monospace' }}>
             <div style={{ fontWeight: 700, color: t.color, marginBottom: '4px' }}>{t.city} {t.name}</div>
             <div>Free agency: <strong>{`#${idx + 1} pick`}</strong></div>
             {keys.map(k => <div key={k}>{catalog[k]}: <strong>{t.levels[k] ? roman(t.levels[k]) : 'Not built'}</strong></div>)}
@@ -386,7 +386,7 @@ function FanGraph({ teams, favId }: { teams: LeagueTeam[]; favId: number | null 
       {sorted.map(t => {
         const isFav = t.id === favId
         const tip = (
-          <div style={{ textAlign: 'left', fontSize: '13px', lineHeight: 1.6 }}>
+          <div style={{ textAlign: 'left', fontSize: '13px', lineHeight: 1.6, fontFamily: 'pressStart, monospace' }}>
             <div style={{ fontWeight: 700, color: t.color, marginBottom: '4px' }}>{t.city} {t.name}</div>
             <div>Fans: <strong>{t.fanCount.toLocaleString()}</strong></div>
             <div>Market: <strong style={{ color: TIER_COLOR[t.marketTier] }}>{TIER_SHORT[t.marketTier]}</strong></div>
