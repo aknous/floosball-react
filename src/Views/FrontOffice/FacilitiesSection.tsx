@@ -22,6 +22,50 @@ const perkAt = (key: string, lvl: number) => (PERK[key] || [])[lvl] || ''
 const SHORT_FAC: Record<string, string> = {
   training: 'Train', locker_room: 'Locker', recovery: 'Recov', scouting: 'Scout', stadium: 'Stadium',
 }
+// Quippy flavor per facility per level (0-5). Pure personality, no mechanics.
+const QUIP: Record<string, string[]> = {
+  training: [
+    'A field, some cones, and hope.',
+    'A squat rack and a stern whistle.',
+    'Real weights, real treadmills, real sweat.',
+    'Position coaches and film rooms that work.',
+    'Pro-grade everything. Gains all but guaranteed.',
+    'Sports science so advanced it feels illegal.',
+  ],
+  locker_room: [
+    'Hooks on a wall. Welcome to the team.',
+    'Benches, lockers, one flickering light.',
+    'Carpet now. Behold the morale of carpet.',
+    'Comfy chairs and a shower that stays hot.',
+    'Lounge, game room, suspiciously good snacks.',
+    'A clubhouse nobody wants to leave.',
+  ],
+  recovery: [
+    'Ice borrowed from the concession stand.',
+    'Ice baths and a great deal of tape.',
+    'A physio who knows everyone by name.',
+    'Massage tables and a hot tub that works.',
+    'Cryo chambers and suspiciously good naps.',
+    'Players heal faster than physics allows.',
+  ],
+  scouting: [
+    'One guy with a hunch.',
+    'Binoculars and a battered clipboard.',
+    'A few scouts and a serious coffee budget.',
+    'Regional scouts and a spreadsheet empire.',
+    'Analysts with alarmingly large monitors.',
+    'They drafted the kid before he was born.',
+  ],
+  stadium: [
+    'Home games happen, technically, somewhere.',
+    'Bleachers, a hot dog cart, big dreams.',
+    'A roof. Most of one, anyway.',
+    'A real stadium with real noise.',
+    'Sellouts and a proper wall of sound.',
+    'A cathedral. Rivals hear it in their sleep.',
+  ],
+}
+const quipAt = (key: string, lvl: number) => (QUIP[key] || [])[lvl] || ''
 const TIER_SHORT: Record<string, string> = {
   MEGA_MARKET: 'MEGA', LARGE_MARKET: 'LARGE', MID_MARKET: 'MID', SMALL_MARKET: 'SMALL',
 }
@@ -273,18 +317,17 @@ function SectionHead({ title, hint, accent }: { title: string; hint: string; acc
 
 function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: string; balance: number; onFund: (amt: number) => void }) {
   const perk = perkAt(f.key, f.level)
+  const quip = quipAt(f.key, f.level)
   const covered = f.upkeepFunded >= f.upkeepCost
   const c = f.upgrading ? BUILD : accent
   return (
     <div className="facRow" style={{
       background: '#1e293b',
       border: '1px solid #2c3a4d', borderTop: `2px solid ${c}`, borderRadius: '9px', padding: '12px 13px 13px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', minHeight: '32px' }}>
-        <span style={{ flex: 1, minWidth: 0, fontSize: '12.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', lineHeight: 1.2 }}>{f.name}</span>
-        <span style={{ fontSize: '27px', fontWeight: 800, lineHeight: .8, color: c, flexShrink: 0 }}>{roman(f.level)}</span>
-      </div>
+      <div style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', lineHeight: 1.2 }}>{f.name}</div>
       <Meter level={f.level} color={c} />
-      <div style={{ fontSize: '12.5px', color: perk ? '#cbd5e1' : '#5b6b7d', minHeight: '17px' }}>{perk || 'No bonus yet'}</div>
+      <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.35, minHeight: '32px' }}>{quip}</div>
+      <div style={{ fontSize: '12px', fontWeight: 700, color: perk ? c : '#5b6b7d', marginTop: '3px' }}>{perk || 'No bonus yet'}</div>
       {f.upgrading ? (
         <div style={{ fontSize: '12px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>UPKEEP PAUSED · UPGRADING</div>
       ) : covered ? (
