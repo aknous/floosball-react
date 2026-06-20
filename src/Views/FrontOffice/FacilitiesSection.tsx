@@ -217,9 +217,10 @@ const FacilitiesSection: React.FC = () => {
   )
 }
 
+// league arrives already sorted in true FA draft order (appeal, then funding
+// tiebreaker) from the backend, so the array index IS the FA pick.
 function faRankOf(league: LeagueTeam[], teamId: number): number {
-  const sorted = [...league].sort((a, b) => b.appeal - a.appeal || b.fanCount - a.fanCount)
-  const i = sorted.findIndex(t => t.id === teamId)
+  const i = league.findIndex(t => t.id === teamId)
   return i >= 0 ? i + 1 : league.length
 }
 
