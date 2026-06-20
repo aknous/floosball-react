@@ -30,39 +30,39 @@ const QUIP: Record<string, string[]> = {
     'Real weights, real treadmills, real sweat.',
     'Position coaches and film rooms that work.',
     'Pro-grade everything. Gains all but guaranteed.',
-    'Sports science so advanced it feels illegal.',
+    'Sports science so advanced the other teams are suspicious.',
   ],
   locker_room: [
-    'Hooks on a wall. Welcome to the team.',
-    'Benches, lockers, one flickering light.',
-    'Carpet now. Behold the morale of carpet.',
+    'Just hooks on a wall in a room.',
+    'Broken benches, communal lockers, and one flickering light.',
+    'Carpet, lockers, and a faint smell of sweat.',
     'Comfy chairs and a shower that stays hot.',
-    'Lounge, game room, suspiciously good snacks.',
+    'Lounge, game room, and a well stocked snack bar.',
     'A clubhouse nobody wants to leave.',
   ],
   recovery: [
     'Ice borrowed from the concession stand.',
     'Ice baths and a great deal of tape.',
-    'A physio who knows everyone by name.',
+    'A trainer who knows everyone by name.',
     'Massage tables and a hot tub that works.',
-    'Cryo chambers and suspiciously good naps.',
+    'Cryo chambers and oxygen therapy.',
     'Players heal faster than physics allows.',
   ],
   scouting: [
     'One guy with a hunch.',
     'Binoculars and a battered clipboard.',
     'A few scouts and a serious coffee budget.',
-    'Regional scouts and a spreadsheet empire.',
-    'Analysts with alarmingly large monitors.',
-    'They drafted the kid before he was born.',
+    'Regional scouts a well organized spreadsheet.',
+    'Analysts with many large monitors.',
+    'Know who will be a star before they\'re born.',
   ],
   stadium: [
-    'Home games happen, technically, somewhere.',
-    'Bleachers, a hot dog cart, big dreams.',
+    'Home games happen somewhere, technically.',
+    'Bleachers, a hot dog cart, and big dreams.',
     'A roof. Most of one, anyway.',
     'A real stadium with real noise.',
-    'Sellouts and a proper wall of sound.',
-    'A cathedral. Rivals hear it in their sleep.',
+    'Bright lights and a proper wall of sound.',
+    'A cathedral to the sport.',
   ],
 }
 const quipAt = (key: string, lvl: number) => (QUIP[key] || [])[lvl] || ''
@@ -75,6 +75,11 @@ const TIER_COLOR: Record<string, string> = {
 const FUND_AMOUNTS = [25, 50, 100]
 const BUILD = '#a78bfa'   // project / construction purple
 const hex = (c: string, a: number) => `${c}${Math.round(a * 255).toString(16).padStart(2, '0')}`
+// flavor-text treatment for the quips (italic + warm tone + a quote bar)
+const QUIP_STYLE: React.CSSProperties = {
+  fontSize: '12px', fontStyle: 'italic', color: '#caa46a', lineHeight: 1.35,
+  borderLeft: '2px solid #3a4456', paddingLeft: '8px',
+}
 
 // scoped animations + hover states (inline styles can't do either)
 const FAC_CSS = `
@@ -326,7 +331,7 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
       border: '1px solid #2c3a4d', borderTop: `2px solid ${c}`, borderRadius: '9px', padding: '12px 13px 13px' }}>
       <div style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', lineHeight: 1.2 }}>{f.name}</div>
       <Meter level={f.level} color={c} />
-      <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.35, minHeight: '32px' }}>{quip}</div>
+      <div style={{ ...QUIP_STYLE, minHeight: '32px' }}>{quip}</div>
       <div style={{ fontSize: '12px', fontWeight: 700, color: perk ? c : '#5b6b7d', marginTop: '3px' }}>{perk || 'No bonus yet'}</div>
       {f.upgrading ? (
         <div style={{ fontSize: '12px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>UPKEEP PAUSED · UPGRADING</div>
@@ -353,7 +358,7 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
   return (
     <div style={{ background: '#1a1730', border: '1px solid #3a2d5c', borderLeft: `3px solid ${BUILD}`, borderRadius: '9px', padding: '13px 15px', marginBottom: '10px' }}>
       <div style={{ fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em' }}>{name} {roman(fromLvl)} → {roman(p.targetLevel)}</div>
-      <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '6px', lineHeight: 1.35 }}>{quipAt(p.facilityKey, p.targetLevel)}</div>
+      <div style={{ ...QUIP_STYLE, marginTop: '8px' }}>{quipAt(p.facilityKey, p.targetLevel)}</div>
       <div style={{ fontSize: '12.5px', marginTop: '4px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '11px 0 5px' }}>
         <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Build progress</span><b style={{ color: '#e2e8f0' }}>{p.funded.toLocaleString()} / {p.cost.toLocaleString()} F</b>
@@ -379,7 +384,7 @@ function BallotCard({ c, accent, selected, onVote }: { c: Candidate; accent: str
           background: selected ? `radial-gradient(${accent} 38%,transparent 44%)` : 'transparent' }} />
         <span style={{ fontSize: '13.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em' }}>{c.name} {roman(c.currentLevel)} → {roman(c.targetLevel)}</span>
       </div>
-      <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '6px', lineHeight: 1.35 }}>{quipAt(c.key, c.targetLevel)}</div>
+      <div style={{ ...QUIP_STYLE, marginTop: '8px' }}>{quipAt(c.key, c.targetLevel)}</div>
       <div style={{ fontSize: '12.5px', marginTop: '4px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '5px' }}>
         Build <b style={{ color: '#e2e8f0' }}>{c.cost.toLocaleString()} F</b>, then upkeep <b style={{ color: '#e2e8f0' }}>{c.upkeep.toLocaleString()} F/season</b>
