@@ -242,7 +242,7 @@ const FacilitiesSection: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(270px,1fr))', gap: '16px', alignItems: 'start' }}>
             {/* current facilities */}
             <section>
-              <SectionHead title="Your Facilities" hint="Keep upkeep funded" accent={accent} />
+              <SectionHead title="Team Facilities" hint="Keep upkeep funded" accent={accent} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
                 {data.facilities.map(f => <FacilityTile key={f.key} f={f} accent={accent} balance={balance} onFund={(amt) => contribute(amt, 'upkeep', { facilityKey: f.key })} />)}
               </div>
@@ -250,7 +250,7 @@ const FacilitiesSection: React.FC = () => {
 
             {/* active projects */}
             <section>
-              <SectionHead title="In Progress" hint="Fund to finish" accent={BUILD} />
+              <SectionHead title="Active Projects" hint="Fund to finish" accent={BUILD} />
               {data.projects.length ? data.projects.map(p => {
                 const fac = data.facilities.find(x => x.key === p.facilityKey)
                 return <ProjectCard key={p.id} p={p} name={catalog[p.facilityKey] || p.facilityKey} fromLvl={fac?.level ?? p.targetLevel - 1} balance={balance} onFund={(amt) => contribute(amt, 'project', { projectId: p.id })} />
@@ -259,7 +259,7 @@ const FacilitiesSection: React.FC = () => {
 
             {/* ballot */}
             <section>
-              <SectionHead title="Project Vote" hint="What gets built next" accent={accent} />
+              <SectionHead title="Available Projects" hint="What gets built next" accent={accent} />
               {candidates.map(c => <BallotCard key={c.key} c={c} accent={accent} selected={myVote === c.key} totalVotes={candidates.reduce((s, x) => s + (x.votes || 0), 0)} onVote={() => castVote(c.key)} />)}
               {!candidates.length && <div style={{ fontSize: '12px', color: '#64748b', padding: '6px 2px' }}>Every facility is maxed or in progress.</div>}
             </section>
