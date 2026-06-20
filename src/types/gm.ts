@@ -151,6 +151,7 @@ export interface GmTeamResults {
 export interface GmFaBallotResponse {
   ballotId: number
   rankings: number[]
+  positionPriority?: number[] | null
   costPaid: number
   isUpdate: boolean
 }

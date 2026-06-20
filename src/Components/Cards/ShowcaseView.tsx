@@ -4,6 +4,7 @@ import ShowcasePickerModal from './ShowcasePickerModal'
 import ShowcaseViewerModal from './ShowcaseViewerModal'
 import ShowcaseResultModal from './ShowcaseResultModal'
 import HelpButton, { HelpSection } from './HelpButton'
+import HoverTooltip from '@/Components/HoverTooltip'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -11,13 +12,25 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 interface ShowcaseSet { key: string; name: string }
 interface AlmostSet { key: string; name: string; need: number; hint: string }
+// Full paytable entry — every set with its live status.
+interface SetEntry {
+  key: string
+  name: string
+  req: string
+  bonus: number   // base bonus at all-Diamond quality (e.g. 0.5 → +50%)
+  status: 'active' | 'almost' | 'locked'
+  tier?: string         // active: edition quality of the set
+  appliedBonus?: number // active: realized bonus after edition scaling
+  need?: number         // almost/locked: cards still needed
+  hint?: string         // almost: human hint
+}
 interface ShowcaseSlot { slotNumber: number; card: CardData | null }
 interface LeaderEntry {
   rank: number
   userId: number
   username: string
   grade: string
-  estimatedPayout: number
+  weeklyDividend: number
   cardCount: number
   isCurrentUser: boolean
 }
@@ -26,9 +39,12 @@ interface ShowcaseData {
   slotCount: number
   maxSlots: number
   grade: string
-  estimatedPayout: number
+  weeklyDividend: number
+  setBonus: number     // e.g. 0.45 → sets add +45%
+  maxSetBonus: number  // cap on the summed set bonus (e.g. 1.5)
   activeSets: ShowcaseSet[]
   almostSets: AlmostSet[]
+  sets: SetEntry[]
   season: number
 }
 
@@ -71,7 +87,7 @@ const ShowcaseView: React.FC = () => {
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderEntry[]>([])
   const [viewUserId, setViewUserId] = useState<number | null>(null)
-  const [lastResult, setLastResult] = useState<{ season: number; grade: string | null; payout: number } | null>(null)
+  const [lastResult, setLastResult] = useState<{ season: number; grade: string | null; total: number; weeksPaid: number } | null>(null)
 
   // End-of-season recap: show once per season (localStorage-dismissed).
   const fetchLastResult = useCallback(async () => {
@@ -228,15 +244,21 @@ const ShowcaseView: React.FC = () => {
                 <HelpSection title="Put your best on display">
                   Feature up to 8 vaulted cards. Your lineup earns a grade from F to S.
                 </HelpSection>
-                <HelpSection title="Get paid">
-                  The grade pays Floobits at season end, then the Showcase clears for a
-                  fresh start next season.
+                <HelpSection title="Get paid every week">
+                  Your Showcase pays a Floobit dividend every week of the regular
+                  season, scaled by its score. A better display pays more. Build it up
+                  early and it pays all season; the Showcase clears for a fresh start
+                  next season.
+                </HelpSection>
+                <HelpSection title="See the math">
+                  Hover any featured card for its breakdown: edition, classification,
+                  recency, and upgrade tier all feed its share of the weekly dividend.
                 </HelpSection>
                 <HelpSection title="Build sets">
-                  Group cards into named sets to raise your grade. One Club for six from
-                  a team, Diamond Vault for eight Diamonds, Full Spectrum for all four
-                  editions of one player, and more. The "Almost" hints show what you're
-                  close to.
+                  Group cards into named sets to raise your dividend. One Club for six
+                  from a team, Diamond Vault for eight Diamonds, Full Spectrum for all
+                  four editions of one player, and more. The "Almost" hints show what
+                  you're close to.
                 </HelpSection>
                 <HelpSection title="Newer pays more">
                   Recent cards are worth more than old ones, so a fresh Showcase scores
@@ -248,10 +270,14 @@ const ShowcaseView: React.FC = () => {
               </HelpButton>
             </div>
             <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.4 }}>
-              Pays <span style={{ color: GOLD, fontWeight: 700 }}>{data?.estimatedPayout ?? 0} Floobits</span> at season end
+              Pays <span style={{ color: GOLD, fontWeight: 700 }}>{data?.weeklyDividend ?? 0} Floobits</span> / week
             </div>
             <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
-              {data?.slotCount ?? 0}/{data?.maxSlots ?? 8} featured · resets each season
+              {data?.slotCount ?? 0}/{data?.maxSlots ?? 8} featured
+              {(data?.setBonus ?? 0) > 0 && (
+                <span style={{ color: GOLD }}> · sets +{Math.round((data?.setBonus ?? 0) * 100)}%</span>
+              )}
+              <span> · resets each season</span>
             </div>
           </div>
           <span style={{ flex: 1 }} />
@@ -287,7 +313,7 @@ const ShowcaseView: React.FC = () => {
             slot.card ? (
               <div
                 key={slot.slotNumber}
-                style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}
+                style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}
                 onMouseEnter={() => setHoveredSlot(slot.slotNumber)}
                 onMouseLeave={() => setHoveredSlot(s => (s === slot.slotNumber ? null : s))}
               >
@@ -312,14 +338,16 @@ const ShowcaseView: React.FC = () => {
                       }}
                     >x</button>
                   )}
+                  {/* Pedestal base */}
+                  <div style={{
+                    position: 'absolute', bottom: '-12px', left: '50%', transform: 'translateX(-50%)',
+                    width: '78%', height: '10px', borderRadius: '50%', zIndex: 0,
+                    background: 'radial-gradient(ellipse at center, rgba(251,191,36,0.22), transparent 72%)',
+                    filter: 'blur(3px)',
+                  }} />
                 </div>
-                {/* Pedestal base */}
-                <div style={{
-                  position: 'absolute', bottom: '-12px', left: '50%', transform: 'translateX(-50%)',
-                  width: '78%', height: '10px', borderRadius: '50%', zIndex: 0,
-                  background: 'radial-gradient(ellipse at center, rgba(251,191,36,0.22), transparent 72%)',
-                  filter: 'blur(3px)',
-                }} />
+                {/* Per-card weekly dividend + hover breakdown (transparency) */}
+                {slot.card.showcase && <CardDividend showcase={slot.card.showcase} />}
               </div>
             ) : (
               <button
@@ -409,6 +437,9 @@ const ShowcaseView: React.FC = () => {
       </aside>
       </div>
 
+      {/* Sets paytable — every set, what it needs, and how it scores */}
+      {data && <SetsPaytable sets={data.sets} setBonus={data.setBonus} maxSetBonus={data.maxSetBonus} />}
+
       <ShowcasePickerModal
         open={pickerSlot !== null}
         excludeIds={featuredIds}
@@ -419,6 +450,125 @@ const ShowcaseView: React.FC = () => {
       <ShowcaseViewerModal userId={viewUserId} onClose={() => setViewUserId(null)} />
 
       <ShowcaseResultModal result={lastResult} onClose={dismissResult} />
+    </div>
+  )
+}
+
+// Per-card weekly-dividend pill with a hover breakdown. Makes the scoring
+// transparent: edition + classification points, scaled by recency and upgrade
+// tier, then this card's Floobit share of the showcase's weekly dividend.
+interface CardShowcaseBreakdown {
+  editionPoints: number
+  classificationPoints: number
+  recency: number
+  tierMult: number
+  points: number
+  dividend: number
+}
+const CardDividend: React.FC<{ showcase: CardShowcaseBreakdown }> = ({ showcase }) => {
+  const Row: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px' }}>
+      <span style={{ color: '#94a3b8' }}>{label}</span>
+      <span style={{ color: '#e2e8f0' }}>{value}</span>
+    </div>
+  )
+  const content = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left', minWidth: '160px' }}>
+      <Row label="Edition" value={`+${showcase.editionPoints}`} />
+      {showcase.classificationPoints > 0 && (
+        <Row label="Classification" value={`+${showcase.classificationPoints}`} />
+      )}
+      <Row label="Recency" value={`×${showcase.recency.toFixed(2)}`} />
+      {showcase.tierMult > 1 && <Row label="Upgrade tier" value={`×${showcase.tierMult.toFixed(2)}`} />}
+      <div style={{ height: '1px', background: 'rgba(251,191,36,0.25)', margin: '3px 0' }} />
+      <Row label="Pays" value={`${showcase.dividend} F / week`} />
+    </div>
+  )
+  return (
+    <HoverTooltip content={content} color="#fbbf24">
+      <span style={{
+        fontSize: '10px', fontWeight: 700, color: GOLD, fontFamily: 'pressStart',
+        background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)',
+        borderRadius: '5px', padding: '2px 8px', whiteSpace: 'nowrap',
+      }}>+{showcase.dividend}/wk</span>
+    </HoverTooltip>
+  )
+}
+
+// The sets paytable — all "hands", their requirement, and how they score. Active
+// sets glow gold (with the realized bonus after edition scaling), almost-sets show
+// what they still need, locked sets sit muted. Sorted active → almost → locked.
+const SetsPaytable: React.FC<{ sets: SetEntry[]; setBonus: number; maxSetBonus: number }> = ({ sets, setBonus, maxSetBonus }) => {
+  const order = { active: 0, almost: 1, locked: 2 }
+  const sorted = [...sets].sort((a, b) => order[a.status] - order[b.status] || b.bonus - a.bonus)
+  const capped = setBonus >= maxSetBonus
+  return (
+    <div style={{
+      marginTop: '16px', borderRadius: '12px', border: '1px solid #1e293b',
+      background: 'rgba(15,23,42,0.5)', padding: '16px 18px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+        <span style={{
+          fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase',
+          color: '#94a3b8', fontWeight: 700, fontFamily: 'pressStart',
+        }}>Sets</span>
+        <span style={{ fontSize: '11px', color: '#64748b' }}>
+          Group featured cards into sets to lift your dividend. A set pays its full bonus
+          only when its cards are all Diamonds; lower editions pay a fraction.
+        </span>
+        <span style={{ flex: 1 }} />
+        <span style={{ fontSize: '11px', color: setBonus > 0 ? GOLD : '#64748b', fontWeight: 700 }}>
+          Sets {setBonus > 0 ? `+${Math.round(setBonus * 100)}%` : 'none'}
+          {capped && <span style={{ color: '#64748b', fontWeight: 400 }}> (max +{Math.round(maxSetBonus * 100)}%)</span>}
+        </span>
+      </div>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
+        gap: '8px',
+      }}>
+        {sorted.map(s => {
+          const active = s.status === 'active'
+          const almost = s.status === 'almost'
+          const accent = active ? GOLD : almost ? '#94a3b8' : '#475569'
+          return (
+            <div key={s.key} style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '8px 10px', borderRadius: '8px',
+              background: active ? 'rgba(251,191,36,0.08)' : 'rgba(148,163,184,0.04)',
+              border: `1px solid ${active ? 'rgba(251,191,36,0.3)' : '#1e293b'}`,
+              opacity: s.status === 'locked' ? 0.7 : 1,
+            }}>
+              {/* Status marker */}
+              <span style={{
+                width: '14px', height: '14px', borderRadius: '50%', flexShrink: 0,
+                border: `1.5px solid ${accent}`,
+                background: active ? accent : 'transparent',
+              }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontSize: '12px', fontWeight: 700,
+                  color: active ? GOLD : s.status === 'locked' ? '#94a3b8' : '#cbd5e1',
+                }}>{s.name}</div>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '1px' }}>{s.req}</div>
+                {active && (
+                  <div style={{ fontSize: '10px', color: GOLD, marginTop: '2px' }}>
+                    Active · {s.tier} · +{Math.round((s.appliedBonus ?? 0) * 100)}%
+                  </div>
+                )}
+                {almost && (
+                  <div style={{ fontSize: '10px', color: '#cbd5e1', marginTop: '2px' }}>{s.hint}</div>
+                )}
+              </div>
+              {/* Base bonus (the advertised top value) */}
+              <span style={{
+                fontSize: '12px', fontWeight: 800, fontFamily: 'pressStart', flexShrink: 0,
+                color: active ? GOLD : '#64748b',
+              }}>+{Math.round(s.bonus * 100)}%</span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

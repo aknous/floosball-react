@@ -90,7 +90,7 @@ export interface RecapShowcaseEntry {
   userId: number
   username: string
   grade: string
-  estimatedPayout: number
+  weeklyDividend: number
   cardCount: number
   favoriteTeam?: { teamId: number; teamAbbr: string; teamColor: string } | null
 }
