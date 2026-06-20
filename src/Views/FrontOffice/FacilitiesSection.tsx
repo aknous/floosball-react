@@ -259,7 +259,7 @@ function appealRank(appeal: number): string {
   if (avg >= 3.2) return 'Premier'
   if (avg >= 2.2) return 'Modern'
   if (avg >= 1.2) return 'Modest'
-  return 'Spartan'
+  return 'Barebones'
 }
 
 function SectionHead({ title, hint, accent }: { title: string; hint: string; accent: string }) {
