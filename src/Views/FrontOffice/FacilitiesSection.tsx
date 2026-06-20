@@ -172,25 +172,27 @@ const FacilitiesSection: React.FC = () => {
       {data && (
         <>
           {/* readout panel */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1px',
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '1px',
             background: '#2c3a4d', border: '1px solid #334155', borderRadius: '12px', overflow: 'hidden',
             boxShadow: '0 8px 24px rgba(0,0,0,.4)' }}>
             {([
-              ['Market', TIER_SHORT[me?.marketTier || 'MID_MARKET'], tierColor],
-              ['Free Agency', `#${faRankOf(league, data.teamId)} pick`, '#2dd4bf'],
-              ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24'],
-            ] as [string, string, string][]).map(([l, v, c]) => (
-              <div key={l} style={{ background: '#1e293b', padding: '12px 15px' }}>
-                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '.14em', color: '#7e93a8' }}>{l}</div>
-                <div style={{ fontSize: '22px', fontWeight: 800, marginTop: '4px', color: c,
+              ['Market', TIER_SHORT[me?.marketTier || 'MID_MARKET'], tierColor, 'Fanbase size'],
+              ['Appeal', appealRank(data.appeal), '#34d399', 'Facility quality'],
+              ['Free Agency', `#${faRankOf(league, data.teamId)} pick`, '#2dd4bf', 'Draft slot'],
+              ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24', 'Build fund'],
+            ] as [string, string, string, string][]).map(([l, v, c, sub]) => (
+              <div key={l} style={{ background: '#1e293b', padding: '13px 15px' }}>
+                <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', fontWeight: 700 }}>{l}</div>
+                <div style={{ fontSize: '21px', fontWeight: 800, margin: '5px 0 2px', color: c,
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</div>
+                <div style={{ fontSize: '11px', color: '#64748b' }}>{sub}</div>
               </div>
             ))}
           </div>
 
           {/* season-end auto-deposit % */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.08em', color: '#94a3b8', fontWeight: 700, marginRight: '4px' }}>Season-end deposit</span>
+            <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.08em', color: '#94a3b8', fontWeight: 700, marginRight: '4px' }}>Season-end deposit</span>
             {[0, 10, 25, 50, 75, 100].map(p => (
               <button key={p} className="facChip" onClick={() => setAutoPct(p)} style={{
                 padding: '5px 11px', fontSize: '12px', fontWeight: pct === p ? 700 : 500, borderRadius: '5px',
@@ -249,11 +251,22 @@ function faRankOf(league: LeagueTeam[], teamId: number): number {
   return i >= 0 ? i + 1 : league.length
 }
 
+// Appeal (facility quality) as a named rank. Appeal = sum of the 5 facility
+// levels (0-25), so the per-facility average drives the band.
+function appealRank(appeal: number): string {
+  const avg = appeal / 5
+  if (avg >= 4.2) return 'Palatial'
+  if (avg >= 3.2) return 'Premier'
+  if (avg >= 2.2) return 'Modern'
+  if (avg >= 1.2) return 'Modest'
+  return 'Spartan'
+}
+
 function SectionHead({ title, hint, accent }: { title: string; hint: string; accent: string }) {
   return (
     <h2 style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '.12em', color: '#cbd5e1', margin: '0 0 11px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
       <span style={{ width: '4px', height: '15px', borderRadius: '2px', background: accent, flexShrink: 0 }} />
-      {title}<span style={{ fontSize: '11.5px', textTransform: 'none', letterSpacing: 0, color: '#7e93a8', fontWeight: 400 }}>{hint}</span>
+      {title}<span style={{ fontSize: '12px', textTransform: 'none', letterSpacing: 0, color: '#7e93a8', fontWeight: 400 }}>{hint}</span>
     </h2>
   )
 }
@@ -273,12 +286,12 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
       <Meter level={f.level} color={c} />
       <div style={{ fontSize: '12.5px', color: perk ? '#cbd5e1' : '#5b6b7d', minHeight: '17px' }}>{perk || 'No bonus yet'}</div>
       {f.upgrading ? (
-        <div style={{ fontSize: '11.5px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>UPKEEP PAUSED · UPGRADING</div>
+        <div style={{ fontSize: '12px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>UPKEEP PAUSED · UPGRADING</div>
       ) : covered ? (
-        <div style={{ fontSize: '11.5px', color: '#7e93a8', marginTop: '10px' }}>Upkeep {f.upkeepCost} F/season · <span style={{ color: '#34d399', fontWeight: 700 }}>COVERED</span></div>
+        <div style={{ fontSize: '12px', color: '#7e93a8', marginTop: '10px' }}>Upkeep {f.upkeepCost} F/season · <span style={{ color: '#34d399', fontWeight: 700 }}>COVERED</span></div>
       ) : (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: '#94a3b8', margin: '10px 0 5px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '10px 0 5px' }}>
             <span>Upkeep</span><b style={{ color: '#e2e8f0' }}>{f.upkeepFunded}/{f.upkeepCost} F/season</b>
           </div>
           <div style={{ height: '6px', background: '#18293b', borderRadius: '4px', overflow: 'hidden' }}>
@@ -298,7 +311,7 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
     <div style={{ background: '#1a1730', border: '1px solid #3a2d5c', borderLeft: `3px solid ${BUILD}`, borderRadius: '9px', padding: '13px 15px', marginBottom: '10px' }}>
       <div style={{ fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em' }}>{name} {roman(fromLvl)} → {roman(p.targetLevel)}</div>
       <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'Foundational level'}</span></div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: '#94a3b8', margin: '11px 0 5px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '11px 0 5px' }}>
         <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Build progress</span><b style={{ color: '#e2e8f0' }}>{p.funded.toLocaleString()} / {p.cost.toLocaleString()} F</b>
       </div>
       <div style={{ height: '10px', background: '#181430', borderRadius: '6px', overflow: 'hidden', border: '1px solid #2a2147' }}>
@@ -336,18 +349,19 @@ function AppealGraph({ teams, catalog, favId }: { teams: LeagueTeam[]; catalog: 
   return (
     <div style={{ background: '#0f172a', border: '1px solid #1d2c3e', borderRadius: '10px', padding: '6px 4px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 46px', gap: '12px', alignItems: 'center', padding: '5px 12px', borderBottom: '1px solid #1d2c3e' }}>
-        <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#7e93a8', fontWeight: 700 }}>Team</span>
+        <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#7e93a8', fontWeight: 700 }}>Team</span>
         <span style={{ display: 'flex', gap: '4px' }}>
-          {keys.map(k => <span key={k} style={{ flex: 1, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '.04em', color: '#7e93a8', fontWeight: 700, textAlign: 'center' }}>{SHORT_FAC[k] || catalog[k]}</span>)}
+          {keys.map(k => <span key={k} style={{ flex: 1, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.04em', color: '#7e93a8', fontWeight: 700, textAlign: 'center' }}>{SHORT_FAC[k] || catalog[k]}</span>)}
         </span>
-        <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#2dd4bf', fontWeight: 700, textAlign: 'right' }}>FA Pick</span>
+        <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#2dd4bf', fontWeight: 700, textAlign: 'right' }}>FA Pick</span>
       </div>
       {teams.map((t, idx) => {
         const isFav = t.id === favId
-        const rc = TIER_COLOR[t.marketTier] || '#2dd4bf'
+        const rc = t.color || TIER_COLOR[t.marketTier] || '#2dd4bf'
         const tip = (
           <div style={{ textAlign: 'left', fontSize: '13px', lineHeight: 1.6, fontFamily: 'pressStart, monospace' }}>
             <div style={{ fontWeight: 700, color: t.color, marginBottom: '4px' }}>{t.city} {t.name}</div>
+            <div>Appeal: <strong>{appealRank(t.appeal)}</strong></div>
             <div>Free agency: <strong>{`#${idx + 1} pick`}</strong></div>
             {keys.map(k => <div key={k}>{catalog[k]}: <strong>{t.levels[k] ? roman(t.levels[k]) : 'Not built'}</strong></div>)}
           </div>
