@@ -353,7 +353,8 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
   return (
     <div style={{ background: '#1a1730', border: '1px solid #3a2d5c', borderLeft: `3px solid ${BUILD}`, borderRadius: '9px', padding: '13px 15px', marginBottom: '10px' }}>
       <div style={{ fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em' }}>{name} {roman(fromLvl)} → {roman(p.targetLevel)}</div>
-      <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'Foundational level'}</span></div>
+      <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '6px', lineHeight: 1.35 }}>{quipAt(p.facilityKey, p.targetLevel)}</div>
+      <div style={{ fontSize: '12.5px', marginTop: '4px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '11px 0 5px' }}>
         <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Build progress</span><b style={{ color: '#e2e8f0' }}>{p.funded.toLocaleString()} / {p.cost.toLocaleString()} F</b>
       </div>
@@ -378,7 +379,8 @@ function BallotCard({ c, accent, selected, onVote }: { c: Candidate; accent: str
           background: selected ? `radial-gradient(${accent} 38%,transparent 44%)` : 'transparent' }} />
         <span style={{ fontSize: '13.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em' }}>{c.name} {roman(c.currentLevel)} → {roman(c.targetLevel)}</span>
       </div>
-      <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'Foundational level'}</span></div>
+      <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '6px', lineHeight: 1.35 }}>{quipAt(c.key, c.targetLevel)}</div>
+      <div style={{ fontSize: '12.5px', marginTop: '4px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '5px' }}>
         Build <b style={{ color: '#e2e8f0' }}>{c.cost.toLocaleString()} F</b>, then upkeep <b style={{ color: '#e2e8f0' }}>{c.upkeep.toLocaleString()} F/season</b>
       </div>
