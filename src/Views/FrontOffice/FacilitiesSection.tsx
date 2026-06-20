@@ -56,7 +56,7 @@ function FundChips({ onFund, balance, max }: { onFund: (amt: number) => void; ba
         const disabled = balance < amt || max <= 0
         return (
           <button key={a} onClick={() => !disabled && onFund(amt)} disabled={disabled} style={{
-            font: 'inherit', fontSize: '11px', fontWeight: 600, borderRadius: '5px', padding: '3px 9px',
+            font: 'inherit', fontSize: '12px', fontWeight: 600, borderRadius: '5px', padding: '4px 11px',
             border: `1px solid ${disabled ? '#1e293b' : '#3b82f6'}`, background: disabled ? 'transparent' : '#2563eb1f',
             color: disabled ? '#475569' : '#93c5fd', cursor: disabled ? 'not-allowed' : 'pointer',
           }}>+{a}</button>
@@ -154,12 +154,11 @@ const FacilitiesSection: React.FC = () => {
             {([
               ['Market', TIER_SHORT[league.find(t => t.id === data.teamId)?.marketTier || 'MID_MARKET'], tierColor],
               ['Appeal', `${Math.round(data.appeal)} · FA #${faRankOf(league, data.teamId)}`, '#2dd4bf'],
-              ['Treasury', data.treasury.toLocaleString(), '#fbbf24'],
-              ['Your F', balance.toLocaleString(), '#cbd5e1'],
+              ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24'],
             ] as [string, string, string][]).map(([l, v, c]) => (
               <div key={l} style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.05em', color: '#94a3b8' }}>{l}</span>
-                <span style={{ fontSize: '18px', fontWeight: 800, color: c }}>{v}</span>
+                <span style={{ fontSize: '19px', fontWeight: 800, color: c }}>{v}</span>
               </div>
             ))}
           </div>
@@ -188,16 +187,16 @@ const FacilitiesSection: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }} className="fac-cols">
             {/* active projects */}
             <section>
-              <SectionHead title="Active Projects" hint="fund to finish" />
+              <SectionHead title="Active Projects" hint="fund these to finish them" />
               {data.projects.length ? data.projects.map(p => {
                 const fac = data.facilities.find(x => x.key === p.facilityKey)
                 return <ProjectCard key={p.id} p={p} name={catalog[p.facilityKey] || p.facilityKey} fromLvl={fac?.level ?? p.targetLevel - 1} balance={balance} onFund={(amt) => contribute(amt, 'project', { projectId: p.id })} />
-              }) : <div style={{ fontSize: '12.5px', color: '#94a3b8', padding: '6px 2px' }}>No project in progress. The ballot winner starts one next season.</div>}
+              }) : <div style={{ fontSize: '12.5px', color: '#94a3b8', padding: '6px 2px' }}>Nothing under construction. The winning ballot vote starts the next build.</div>}
             </section>
 
             {/* ballot */}
             <section>
-              <SectionHead title="Project Ballot" hint="one vote · winner starts next season" />
+              <SectionHead title="Project Ballot" hint="vote on what the team builds next" />
               {candidates.map(c => <BallotCard key={c.key} c={c} selected={myVote === c.key} onVote={() => castVote(c.key)} />)}
               {!candidates.length && <div style={{ fontSize: '12px', color: '#64748b', padding: '6px 2px' }}>Every facility is maxed or in progress.</div>}
             </section>
@@ -227,7 +226,7 @@ function faRankOf(league: LeagueTeam[], teamId: number): number {
 function SectionHead({ title, hint }: { title: string; hint: string }) {
   return (
     <h2 style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.08em', color: '#cbd5e1', margin: '0 0 8px', display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
-      {title}<span style={{ fontSize: '11.5px', textTransform: 'none', letterSpacing: 0, color: '#94a3b8', fontWeight: 400 }}>{hint}</span>
+      {title}<span style={{ fontSize: '12px', textTransform: 'none', letterSpacing: 0, color: '#94a3b8', fontWeight: 400 }}>{hint}</span>
     </h2>
   )
 }
@@ -237,10 +236,7 @@ function FacilityTile({ f, balance, onFund }: { f: Facility; balance: number; on
   const covered = f.upkeepFunded >= f.upkeepCost
   return (
     <div style={{ background: '#15202d', border: `1px solid ${f.upgrading ? '#3a2d5c' : '#243446'}`, borderRadius: '8px', padding: '10px 11px' }}>
-      <div style={{ fontSize: '14px', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px' }}>
-        <span>{f.name}</span>
-        <span style={{ fontSize: '11px', fontWeight: 700, color: '#cbd5e1', background: '#223', padding: '1px 7px', borderRadius: '10px', border: '1px solid #33465b' }}>{roman(f.level)}</span>
-      </div>
+      <div style={{ fontSize: '14px', fontWeight: 700 }}>{f.name} {roman(f.level)}</div>
       <div style={{ fontSize: '12.5px', color: perk ? '#cbd5e1' : '#64748b', margin: '5px 0 7px', minHeight: '16px' }}>{perk || 'no bonus yet'}</div>
       {f.upgrading ? (
         <div style={{ fontSize: '12px', color: '#a78bfa' }}>upkeep paused while upgrading</div>
@@ -266,11 +262,11 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
     <div style={{ background: '#15202d', border: '1px solid #3a2d5c', borderRadius: '9px', padding: '11px 13px', marginBottom: '9px' }}>
       <div style={{ fontSize: '14px', fontWeight: 700 }}>{name} {roman(fromLvl)} → {roman(p.targetLevel)}</div>
       <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'foundational level'}</span></div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: '#94a3b8', marginTop: '8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>
         <span>build</span><b style={{ color: '#cbd5e1' }}>{p.funded.toLocaleString()} / {p.cost.toLocaleString()} F</b>
       </div>
       <div style={{ marginTop: '5px' }}><Bar pct={pct} color="#a78bfa" full={full} /></div>
-      {full ? <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#a78bfa', marginTop: '6px' }}>Funded ✓ builds next season</div>
+      {full ? <div style={{ fontSize: '12px', fontWeight: 700, color: '#a78bfa', marginTop: '6px' }}>Funded ✓ builds next season</div>
             : <FundChips onFund={onFund} balance={balance} max={p.cost - p.funded} />}
     </div>
   )
@@ -281,8 +277,7 @@ function BallotCard({ c, selected, onVote }: { c: Candidate; selected: boolean; 
     <div onClick={onVote} style={{ background: selected ? '#13243a' : '#15202d', border: `1px solid ${selected ? '#3b82f6' : '#243446'}`, borderRadius: '9px', padding: '11px 13px', marginBottom: '9px', cursor: 'pointer' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
         <div style={{ width: '15px', height: '15px', borderRadius: '50%', border: '2px solid #3a4d63', flexShrink: 0, background: selected ? 'radial-gradient(#3b82f6 38%,transparent 44%)' : undefined, borderColor: selected ? '#3b82f6' : '#3a4d63' }} />
-        <span style={{ fontSize: '14px', fontWeight: 700 }}>{c.name}</span>
-        <span style={{ fontSize: '11px', fontWeight: 700, color: '#cbd5e1', background: '#223', padding: '1px 7px', borderRadius: '10px', border: '1px solid #33465b', marginLeft: 'auto' }}>{roman(c.currentLevel)} → {roman(c.targetLevel)}</span>
+        <span style={{ fontSize: '14px', fontWeight: 700 }}>{c.name} {roman(c.currentLevel)} → {roman(c.targetLevel)}</span>
       </div>
       <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'foundational level'}</span></div>
     </div>
@@ -296,11 +291,11 @@ function AppealGraph({ teams, catalog, favId }: { teams: LeagueTeam[]; catalog: 
     <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
       {/* facility-name column header */}
       <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr 40px', gap: '10px', alignItems: 'center', padding: '0 8px 6px', borderBottom: '1px solid #1e293b', marginBottom: '2px' }}>
-        <span style={{ fontSize: '10px', color: '#7e93a8', fontWeight: 700 }}>TEAM</span>
+        <span style={{ fontSize: '11px', color: '#7e93a8', fontWeight: 700 }}>TEAM</span>
         <span style={{ display: 'flex', gap: '4px' }}>
-          {keys.map(k => <span key={k} style={{ flex: 1, fontSize: '10px', color: '#94a3b8', fontWeight: 600, textAlign: 'center' }}>{SHORT_FAC[k] || catalog[k]}</span>)}
+          {keys.map(k => <span key={k} style={{ flex: 1, fontSize: '11px', color: '#94a3b8', fontWeight: 600, textAlign: 'center' }}>{SHORT_FAC[k] || catalog[k]}</span>)}
         </span>
-        <span style={{ fontSize: '10px', color: '#2dd4bf', fontWeight: 700, textAlign: 'right' }}>APPEAL</span>
+        <span style={{ fontSize: '11px', color: '#2dd4bf', fontWeight: 700, textAlign: 'right' }}>APPEAL</span>
       </div>
       {teams.map(t => {
         const isFav = t.id === favId
