@@ -13,10 +13,10 @@ const roman = (n: number) => ROMAN[n] || String(n)
 // keep in sync if the curves are retuned). '' = no active bonus at that level.
 const PERK: Record<string, string[]> = {
   training:    ['', '', '', '+1 player development', '+1 player development', '+2 player development'],
-  locker_room: ['', '', '', 'minor in-game morale', 'moderate in-game morale', 'strong in-game morale'],
+  locker_room: ['', '', '', 'Minor in-game morale', 'Moderate in-game morale', 'Strong in-game morale'],
   recovery:    ['', '', '', '-15% fatigue buildup', '-30% fatigue buildup', '-35% fatigue buildup'],
   scouting:    ['', '', '', '+3 rookie scouting', '+5 rookie scouting', '+7 rookie scouting'],
-  stadium:     ['', 'small home crowd', 'bigger home crowd', 'large home crowd', 'major home crowd', 'elite home crowd'],
+  stadium:     ['', 'Small home crowd', 'Bigger home crowd', 'Large home crowd', 'Major home crowd', 'Elite home crowd'],
 }
 const perkAt = (key: string, lvl: number) => (PERK[key] || [])[lvl] || ''
 // short column labels for the league graph header
@@ -178,7 +178,7 @@ const FacilitiesSection: React.FC = () => {
 
           {/* current facilities */}
           <section>
-            <SectionHead title="Current Facilities" hint="keep upkeep funded so facilities hold their level" />
+            <SectionHead title="Current Facilities" hint="Keep upkeep funded so facilities hold their level" />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: '8px' }}>
               {data.facilities.map(f => <FacilityTile key={f.key} f={f} balance={balance} onFund={(amt) => contribute(amt, 'upkeep', { facilityKey: f.key })} />)}
             </div>
@@ -187,7 +187,7 @@ const FacilitiesSection: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }} className="fac-cols">
             {/* active projects */}
             <section>
-              <SectionHead title="Active Projects" hint="fund these to finish them" />
+              <SectionHead title="Active Projects" hint="Fund these to finish them" />
               {data.projects.length ? data.projects.map(p => {
                 const fac = data.facilities.find(x => x.key === p.facilityKey)
                 return <ProjectCard key={p.id} p={p} name={catalog[p.facilityKey] || p.facilityKey} fromLvl={fac?.level ?? p.targetLevel - 1} balance={balance} onFund={(amt) => contribute(amt, 'project', { projectId: p.id })} />
@@ -196,7 +196,7 @@ const FacilitiesSection: React.FC = () => {
 
             {/* ballot */}
             <section>
-              <SectionHead title="Project Ballot" hint="vote on what the team builds next" />
+              <SectionHead title="Project Ballot" hint="Vote on what the team builds next" />
               {candidates.map(c => <BallotCard key={c.key} c={c} selected={myVote === c.key} onVote={() => castVote(c.key)} />)}
               {!candidates.length && <div style={{ fontSize: '12px', color: '#64748b', padding: '6px 2px' }}>Every facility is maxed or in progress.</div>}
             </section>
@@ -206,11 +206,11 @@ const FacilitiesSection: React.FC = () => {
 
       {/* league graphs */}
       <section>
-        <SectionHead title="League Facilities" hint="best-equipped clubs draft free agents first" />
+        <SectionHead title="League Facilities" hint="Best-equipped clubs draft free agents first" />
         <AppealGraph teams={league} catalog={catalog} favId={favId} />
       </section>
       <section>
-        <SectionHead title="League Fanbase" hint="how many fans each team has, which sets the Market tier" />
+        <SectionHead title="League Fanbase" hint="How many fans each team has, which sets the Market tier" />
         <FanGraph teams={league} favId={favId} />
       </section>
     </div>
@@ -238,15 +238,15 @@ function FacilityTile({ f, balance, onFund }: { f: Facility; balance: number; on
   return (
     <div style={{ background: '#15202d', border: `1px solid ${f.upgrading ? '#3a2d5c' : '#243446'}`, borderRadius: '8px', padding: '10px 11px' }}>
       <div style={{ fontSize: '14px', fontWeight: 700 }}>{f.name} {roman(f.level)}</div>
-      <div style={{ fontSize: '12.5px', color: perk ? '#cbd5e1' : '#64748b', margin: '5px 0 7px', minHeight: '16px' }}>{perk || 'no bonus yet'}</div>
+      <div style={{ fontSize: '12.5px', color: perk ? '#cbd5e1' : '#64748b', margin: '5px 0 7px', minHeight: '16px' }}>{perk || 'No bonus yet'}</div>
       {f.upgrading ? (
-        <div style={{ fontSize: '12px', color: '#a78bfa' }}>upkeep paused while upgrading</div>
+        <div style={{ fontSize: '12px', color: '#a78bfa' }}>Upkeep paused while upgrading</div>
       ) : covered ? (
-        <div style={{ fontSize: '12px', color: '#94a3b8' }}>upkeep {f.upkeepCost} F/yr · <span style={{ color: '#4ade80' }}>covered</span></div>
+        <div style={{ fontSize: '12px', color: '#94a3b8' }}>Upkeep {f.upkeepCost} F/season · <span style={{ color: '#4ade80' }}>Covered</span></div>
       ) : (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
-            <span>upkeep</span><span><b style={{ color: '#cbd5e1' }}>{f.upkeepFunded}/{f.upkeepCost}</b> F/yr</span>
+            <span>Upkeep</span><span><b style={{ color: '#cbd5e1' }}>{f.upkeepFunded}/{f.upkeepCost}</b> F/season</span>
           </div>
           <Bar pct={f.upkeepCost ? (f.upkeepFunded / f.upkeepCost) * 100 : 100} color="#3b82f6" />
           <FundChips onFund={onFund} balance={balance} max={f.upkeepCost - f.upkeepFunded} />
@@ -262,9 +262,9 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
   return (
     <div style={{ background: '#15202d', border: '1px solid #3a2d5c', borderRadius: '9px', padding: '11px 13px', marginBottom: '9px' }}>
       <div style={{ fontSize: '14px', fontWeight: 700 }}>{name} {roman(fromLvl)} → {roman(p.targetLevel)}</div>
-      <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'foundational level'}</span></div>
+      <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>
-        <span>build</span><b style={{ color: '#cbd5e1' }}>{p.funded.toLocaleString()} / {p.cost.toLocaleString()} F</b>
+        <span>Build</span><b style={{ color: '#cbd5e1' }}>{p.funded.toLocaleString()} / {p.cost.toLocaleString()} F</b>
       </div>
       <div style={{ marginTop: '5px' }}><Bar pct={pct} color="#a78bfa" full={full} /></div>
       {full ? <div style={{ fontSize: '12px', fontWeight: 700, color: '#a78bfa', marginTop: '6px' }}>Funded ✓ builds next season</div>
@@ -280,9 +280,9 @@ function BallotCard({ c, selected, onVote }: { c: Candidate; selected: boolean; 
         <div style={{ width: '15px', height: '15px', borderRadius: '50%', border: '2px solid #3a4d63', flexShrink: 0, background: selected ? 'radial-gradient(#3b82f6 38%,transparent 44%)' : undefined, borderColor: selected ? '#3b82f6' : '#3a4d63' }} />
         <span style={{ fontSize: '14px', fontWeight: 700 }}>{c.name} {roman(c.currentLevel)} → {roman(c.targetLevel)}</span>
       </div>
-      <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'foundational level'}</span></div>
+      <div style={{ fontSize: '12.5px', marginTop: '6px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '5px' }}>
-        build <b style={{ color: '#cbd5e1' }}>{c.cost.toLocaleString()} F</b>, then upkeep <b style={{ color: '#cbd5e1' }}>{c.upkeep.toLocaleString()} F/yr</b>
+        Build <b style={{ color: '#cbd5e1' }}>{c.cost.toLocaleString()} F</b>, then upkeep <b style={{ color: '#cbd5e1' }}>{c.upkeep.toLocaleString()} F/season</b>
       </div>
     </div>
   )
@@ -307,7 +307,7 @@ function AppealGraph({ teams, catalog, favId }: { teams: LeagueTeam[]; catalog: 
           <div style={{ textAlign: 'left', fontSize: '13px', lineHeight: 1.6 }}>
             <div style={{ fontWeight: 700, color: t.color, marginBottom: '4px' }}>{t.city} {t.name}</div>
             <div>Free agency: <strong>{`#${idx + 1} pick`}</strong></div>
-            {keys.map(k => <div key={k}>{catalog[k]}: <strong>{t.levels[k] ? roman(t.levels[k]) : 'not built'}</strong></div>)}
+            {keys.map(k => <div key={k}>{catalog[k]}: <strong>{t.levels[k] ? roman(t.levels[k]) : 'Not built'}</strong></div>)}
           </div>
         )
         return (
