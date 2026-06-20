@@ -181,7 +181,7 @@ const FacilitiesSection: React.FC = () => {
 
   const castVote = useCallback(async (facilityKey: string) => {
     if (!favId || busy) return
-    setBusy(true); setMyVote(facilityKey)
+    setBusy(true); setMyVote(facilityKey)   // optimistic radio selection
     try {
       const tok = await getToken()
       await fetch(`${API_BASE}/teams/${favId}/facilities/vote`, {
@@ -189,8 +189,9 @@ const FacilitiesSection: React.FC = () => {
         headers: { 'Content-Type': 'application/json', ...(tok ? { Authorization: `Bearer ${tok}` } : {}) },
         body: JSON.stringify({ facilityKey }),
       })
+      await load()   // refetch so the vote tallies reflect the change
     } finally { setBusy(false) }
-  }, [favId, busy, getToken])
+  }, [favId, busy, getToken, load])
 
   if (loading) return <div style={{ color: '#64748b', padding: '20px', fontSize: '13px' }}>Loading facilities…</div>
 
