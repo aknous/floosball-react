@@ -237,15 +237,16 @@ const FacilitiesSection: React.FC = () => {
             <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '4px' }}>of unspent Floobits, into the Treasury at season end</span>
           </div>
 
-          {/* current facilities */}
-          <section>
-            <SectionHead title="Your Facilities" hint="Keep upkeep funded so they hold their level" accent={accent} />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(205px,1fr))', gap: '11px' }}>
-              {data.facilities.map(f => <FacilityTile key={f.key} f={f} accent={accent} balance={balance} onFund={(amt) => contribute(amt, 'upkeep', { facilityKey: f.key })} />)}
-            </div>
-          </section>
+          {/* kanban: facilities | in progress | vote */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(270px,1fr))', gap: '16px', alignItems: 'start' }}>
+            {/* current facilities */}
+            <section>
+              <SectionHead title="Your Facilities" hint="Keep upkeep funded" accent={accent} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
+                {data.facilities.map(f => <FacilityTile key={f.key} f={f} accent={accent} balance={balance} onFund={(amt) => contribute(amt, 'upkeep', { facilityKey: f.key })} />)}
+              </div>
+            </section>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }} className="fac-cols">
             {/* active projects */}
             <section>
               <SectionHead title="In Progress" hint="Fund to finish" accent={BUILD} />
