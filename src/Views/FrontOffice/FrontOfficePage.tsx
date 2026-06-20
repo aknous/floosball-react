@@ -9,6 +9,7 @@ import FeatureAnnounceModal from '@/Components/FeatureAnnounceModal'
 import { isFeatureSeen, markFeatureSeen, FEATURE_SUPPORTER } from '@/utils/featureAnnounce'
 import RookiesSection from './RookiesSection'
 import MarketsSection from './MarketsSection'
+import FacilitiesSection from './FacilitiesSection'
 import { Stars, calcStars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import CareerStageBadge, { hasRenderableStage } from '@/Components/CareerStageBadge'
@@ -291,7 +292,7 @@ export default function FrontOfficePage() {
   // and funding context stays visible regardless of which tab is active.
   const tabs: { id: SectionId; label: string }[] = [
     { id: 'overview', label: 'Overview' },
-    { id: 'markets', label: 'Markets' },
+    { id: 'markets', label: 'Facilities' },
     { id: 'votes', label: 'Front Office' },
   ]
 
@@ -390,10 +391,12 @@ export default function FrontOfficePage() {
       )}
 
       {activeSection === 'markets' && (
+        <FacilitiesSection />
+      )}
+      {/* Legacy Markets UI — kept as dead code during the Facilities cutover
+          (avoids an unused-var cascade); delete in a follow-up. */}
+      {false && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Team funding: a compact summary (fan contributions total +
-              projected tier movement) at the top, then contribute + auto-%
-              controls, then the league-wide Markets view below. */}
           <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '14px' }}>
             {team.funding && (
               <FundingSummaryStrip
