@@ -98,7 +98,7 @@ const FAC_CSS = `
 interface Facility { key: string; name: string; level: number; maxLevel: number; effect: string; upgrading: boolean; upkeepCost: number; upkeepFunded: number; upgradeCost: number }
 interface Project { id: number; facilityKey: string; kind: string; targetLevel: number; cost: number; funded: number }
 interface TeamFacilities { teamId: number; treasury: number; appeal: number; shareUnit: number; facilities: Facility[]; projects: Project[] }
-interface Candidate { key: string; name: string; currentLevel: number; targetLevel: number; kind: string; cost: number; upkeep: number }
+interface Candidate { key: string; name: string; currentLevel: number; targetLevel: number; kind: string; cost: number; upkeep: number; votes: number }
 interface LeagueTeam { id: number; name: string; city: string; abbr: string; color: string; appeal: number; levels: Record<string, number>; fanCount: number; marketTier: string }
 
 // ── small UI bits ─────────────────────────────────────────────────────────
@@ -259,7 +259,7 @@ const FacilitiesSection: React.FC = () => {
             {/* ballot */}
             <section>
               <SectionHead title="Project Vote" hint="What gets built next" accent={accent} />
-              {candidates.map(c => <BallotCard key={c.key} c={c} accent={accent} selected={myVote === c.key} onVote={() => castVote(c.key)} />)}
+              {candidates.map(c => <BallotCard key={c.key} c={c} accent={accent} selected={myVote === c.key} totalVotes={candidates.reduce((s, x) => s + (x.votes || 0), 0)} onVote={() => castVote(c.key)} />)}
               {!candidates.length && <div style={{ fontSize: '12px', color: '#64748b', padding: '6px 2px' }}>Every facility is maxed or in progress.</div>}
             </section>
           </div>
@@ -360,7 +360,7 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
   )
 }
 
-function BallotCard({ c, accent, selected, onVote }: { c: Candidate; accent: string; selected: boolean; onVote: () => void }) {
+function BallotCard({ c, accent, selected, totalVotes, onVote }: { c: Candidate; accent: string; selected: boolean; totalVotes: number; onVote: () => void }) {
   return (
     <div className="facVote" onClick={onVote} style={{ position: 'relative', cursor: 'pointer', marginBottom: '10px',
       background: selected ? '#16243a' : '#1e293b',
@@ -375,6 +375,13 @@ function BallotCard({ c, accent, selected, onVote }: { c: Candidate; accent: str
       <div style={{ fontSize: '12.5px', marginTop: '4px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '5px' }}>
         Build <b style={{ color: '#fbbf24' }}>{c.cost.toLocaleString()} F</b>, then upkeep <b style={{ color: '#fbbf24' }}>{c.upkeep.toLocaleString()} F/season</b>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '11px', color: '#7e93a8', marginTop: '8px' }}>
+        <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Fan votes</span>
+        <b style={{ color: '#e2e8f0', fontSize: '12px' }}>{c.votes}{totalVotes > 0 ? ` · ${Math.round((c.votes / totalVotes) * 100)}%` : ''}</b>
+      </div>
+      <div style={{ height: '5px', background: '#18293b', borderRadius: '4px', overflow: 'hidden', marginTop: '4px' }}>
+        <div style={{ width: `${totalVotes > 0 ? (c.votes / totalVotes) * 100 : 0}%`, height: '100%', background: accent, opacity: 0.85 }} />
       </div>
     </div>
   )
