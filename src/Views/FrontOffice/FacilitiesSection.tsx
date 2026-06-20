@@ -266,9 +266,9 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
     <div className="facRow" style={{
       background: '#1e293b',
       border: '1px solid #2c3a4d', borderTop: `2px solid ${c}`, borderRadius: '9px', padding: '12px 13px 13px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
-        <span style={{ fontSize: '12.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', maxWidth: '125px' }}>{f.name}</span>
-        <span style={{ fontSize: '27px', fontWeight: 800, lineHeight: .8, color: c }}>{roman(f.level)}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', minHeight: '32px' }}>
+        <span style={{ flex: 1, minWidth: 0, fontSize: '12.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', lineHeight: 1.2 }}>{f.name}</span>
+        <span style={{ fontSize: '27px', fontWeight: 800, lineHeight: .8, color: c, flexShrink: 0 }}>{roman(f.level)}</span>
       </div>
       <Meter level={f.level} color={c} />
       <div style={{ fontSize: '12.5px', color: perk ? '#cbd5e1' : '#5b6b7d', minHeight: '17px' }}>{perk || 'No bonus yet'}</div>
