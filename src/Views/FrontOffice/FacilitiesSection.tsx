@@ -102,21 +102,6 @@ interface Candidate { key: string; name: string; currentLevel: number; targetLev
 interface LeagueTeam { id: number; name: string; city: string; abbr: string; color: string; appeal: number; levels: Record<string, number>; fanCount: number; marketTier: string }
 
 // ── small UI bits ─────────────────────────────────────────────────────────
-// 5-segment power meter that lights up to the level (borrows the card rarity glow)
-function Meter({ level, color }: { level: number; color: string }) {
-  return (
-    <div style={{ display: 'flex', gap: '3px', margin: '10px 0 8px' }}>
-      {[1, 2, 3, 4, 5].map(i => {
-        const on = i <= level
-        return <span key={i} style={{
-          flex: 1, height: '7px', borderRadius: '2px',
-          background: on ? color : '#1b2a3a',
-        }} />
-      })}
-    </div>
-  )
-}
-
 function FundChips({ onFund, balance, max }: { onFund: (amt: number) => void; balance: number; max: number }) {
   return (
     <div style={{ display: 'flex', gap: '5px', marginTop: '8px', flexWrap: 'wrap' }}>
@@ -329,9 +314,11 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
     <div className="facRow" style={{
       background: '#1e293b',
       border: '1px solid #2c3a4d', borderTop: `2px solid ${c}`, borderRadius: '9px', padding: '12px 13px 13px' }}>
-      <div style={{ fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', lineHeight: 1.2 }}>{f.name}</div>
-      <Meter level={f.level} color={c} />
-      <div style={{ ...QUIP_STYLE, minHeight: '32px' }}>{quip}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+        <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', lineHeight: 1.2 }}>{f.name}</span>
+        <span style={{ fontSize: '26px', fontWeight: 800, lineHeight: .8, color: c, flexShrink: 0 }}>{roman(f.level)}</span>
+      </div>
+      <div style={{ ...QUIP_STYLE, minHeight: '32px', marginTop: '11px' }}>{quip}</div>
       <div style={{ fontSize: '12px', fontWeight: 700, color: perk ? c : '#5b6b7d', marginTop: '3px' }}>{perk || 'No bonus yet'}</div>
       {f.upgrading ? (
         <div style={{ fontSize: '12px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>UPKEEP PAUSED · UPGRADING</div>
