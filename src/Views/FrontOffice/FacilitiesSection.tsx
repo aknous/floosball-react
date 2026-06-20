@@ -12,7 +12,7 @@ const roman = (n: number) => ROMAN[n] || String(n)
 // Concrete per-level perk copy (mirrors the backend FACILITY effect curves;
 // keep in sync if the curves are retuned). '' = no active bonus at that level.
 const PERK: Record<string, string[]> = {
-  training:    ['', '', '', 'Young players develop faster', 'Young players develop faster', 'Young players develop much faster'],
+  training:    ['', 'Young players develop a little faster', 'Young players develop faster', 'Young players develop notably faster', 'Young players develop much faster', 'Young players develop dramatically faster'],
   locker_room: ['', '', '', 'Small pre-game morale boost', 'Moderate pre-game morale boost', 'Strong pre-game morale boost'],
   recovery:    ['', '', '', 'Players tire 15% slower', 'Players tire 30% slower', 'Players tire 35% slower'],
   scouting:    ['', '', '', 'Clearer read on draft prospects', 'Sharper read on draft prospects', 'Precise read on draft prospects'],
