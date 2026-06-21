@@ -250,7 +250,7 @@ const FacilitiesSection: React.FC = () => {
 
             {/* active projects */}
             <section>
-              <SectionHead title="Active Projects" hint="Fund to finish" accent={BUILD} />
+              <SectionHead title="Active Projects" hint="Fund to complete projects" accent={BUILD} />
               {data.projects.length ? data.projects.map(p => {
                 const fac = data.facilities.find(x => x.key === p.facilityKey)
                 return <ProjectCard key={p.id} p={p} name={catalog[p.facilityKey] || p.facilityKey} fromLvl={fac?.level ?? p.targetLevel - 1} balance={balance} onFund={(amt) => contribute(amt, 'project', { projectId: p.id })} />
