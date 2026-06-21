@@ -133,6 +133,7 @@ const FacilitiesSection: React.FC = () => {
   const [pct, setPct] = useState<number>((user as any)?.teamFundingPct ?? 25)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [leagueTab, setLeagueTab] = useState<'facilities' | 'fanbase'>('facilities')
 
   const load = useCallback(async () => {
     const reqs: Promise<any>[] = [
@@ -280,14 +281,26 @@ const FacilitiesSection: React.FC = () => {
         </>
       )}
 
-      {/* league readouts */}
+      {/* league readouts — tabbed (Facilities / Fanbase) */}
       <section>
-        <SectionHead title="League Facilities" hint="Best-equipped clubs draft free agents first" accent="#2dd4bf" />
-        <AppealGraph teams={league} catalog={catalog} favId={favId} />
-      </section>
-      <section>
-        <SectionHead title="League Fanbase" hint="How many fans each team has, which sets the Market tier" accent="#2dd4bf" />
-        <FanGraph teams={league} favId={favId} />
+        <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', margin: '0 0 11px', borderBottom: '1px solid #1e293b' }}>
+          {([['facilities', 'League Facilities'], ['fanbase', 'League Fanbase']] as const).map(([key, label]) => {
+            const active = leagueTab === key
+            return (
+              <button key={key} onClick={() => setLeagueTab(key)} style={{
+                font: 'inherit', cursor: 'pointer', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em',
+                padding: '6px 2px', background: 'none', border: 'none', borderBottom: `2px solid ${active ? '#2dd4bf' : 'transparent'}`,
+                color: active ? '#e2e8f0' : '#64748b', marginBottom: '-1px',
+              }}>{label}</button>
+            )
+          })}
+          <span style={{ fontSize: '11.5px', color: '#7e93a8' }}>
+            {leagueTab === 'facilities' ? 'Best-equipped clubs draft free agents first' : 'How many fans each team has, which sets the Market tier'}
+          </span>
+        </div>
+        {leagueTab === 'facilities'
+          ? <AppealGraph teams={league} catalog={catalog} favId={favId} />
+          : <FanGraph teams={league} favId={favId} />}
       </section>
     </div>
   )
