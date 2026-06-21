@@ -214,7 +214,7 @@ const FacilitiesSection: React.FC = () => {
               ['Market', TIER_SHORT[me?.marketTier || 'MID_MARKET'], tierColor, 'Fanbase size'],
               ['Appeal', appealRank(data.appeal), '#34d399', 'Facility quality'],
               ['Free Agency', `#${faRankOf(league, data.teamId)} pick`, '#2dd4bf', 'Draft slot'],
-              ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24', 'Build fund'],
+              ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24', 'Project fund'],
             ] as [string, string, string, string][]).map(([l, v, c, sub]) => (
               <div key={l} style={{ background: '#1e293b', padding: '13px 15px' }}>
                 <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', fontWeight: 700 }}>{l}</div>
@@ -263,6 +263,14 @@ const FacilitiesSection: React.FC = () => {
               {candidates.map(c => <BallotCard key={c.key} c={c} accent={accent} selected={myVote === c.key} totalVotes={candidates.reduce((s, x) => s + (x.votes || 0), 0)} onVote={() => castVote(c.key)} />)}
               {!candidates.length && <div style={{ fontSize: '12px', color: '#64748b', padding: '6px 2px' }}>Every facility is maxed or in progress.</div>}
             </section>
+          </div>
+
+          {/* how funding works */}
+          <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.55, background: '#15202d', border: '1px solid #2c3a4d', borderRadius: '9px', padding: '12px 15px' }}>
+            <b style={{ color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '.06em', fontSize: '11px' }}>How funding works</b>
+            <div style={{ marginTop: '6px' }}>
+              Chip in to any facility's upkeep or an active project directly, or set a <span style={{ color: '#cbd5e1' }}>season-end deposit</span> above to funnel your leftover Floobits into the <span style={{ color: '#fbbf24' }}>Treasury</span>. When the season ends, the Treasury covers whatever's left in a waterfall: <span style={{ color: '#3b82f6', fontWeight: 700 }}>upkeep first</span> so no facility slips a level, then <span style={{ color: '#a78bfa', fontWeight: 700 }}>active projects</span> from oldest to newest. Unfunded upkeep drops a facility a level; fully funded projects get built.
+            </div>
           </div>
         </>
       )}
