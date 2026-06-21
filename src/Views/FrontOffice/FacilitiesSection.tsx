@@ -242,7 +242,7 @@ const FacilitiesSection: React.FC = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(270px,1fr))', gap: '16px', alignItems: 'start' }}>
             {/* current facilities */}
             <section>
-              <SectionHead title="Team Facilities" hint="Keep upkeep funded" accent={accent} />
+              <SectionHead title="Team Facilities" hint="Fund facility upkeep" accent={accent} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
                 {data.facilities.map(f => <FacilityTile key={f.key} f={f} accent={accent} balance={balance} onFund={(amt) => contribute(amt, 'upkeep', { facilityKey: f.key })} />)}
               </div>
