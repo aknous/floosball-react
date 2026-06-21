@@ -324,7 +324,14 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
       {f.upgrading ? (
         <div style={{ fontSize: '12px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>UPKEEP PAUSED · UPGRADING</div>
       ) : covered ? (
-        <div style={{ fontSize: '12px', color: '#7e93a8', marginTop: '10px' }}>Upkeep <span style={{ color: '#fbbf24' }}>{f.upkeepCost} F/season</span> · <span style={{ color: '#34d399', fontWeight: 700 }}>FUNDED</span></div>
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '10px 0 5px' }}>
+            <span>Upkeep</span><span><b style={{ color: '#fbbf24' }}>{f.upkeepCost} F/season</b> · <span style={{ color: '#34d399', fontWeight: 700 }}>FUNDED</span></span>
+          </div>
+          <div style={{ height: '6px', background: '#334155', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: '100%', background: '#22c55e' }} />
+          </div>
+        </>
       ) : (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '10px 0 5px' }}>
