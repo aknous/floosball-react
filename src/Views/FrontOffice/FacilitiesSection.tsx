@@ -259,7 +259,7 @@ const FacilitiesSection: React.FC = () => {
 
             {/* ballot */}
             <section>
-              <SectionHead title="Available Projects" hint="Vote on the next build" accent={accent} />
+              <SectionHead title="Available Projects" hint="Vote on the next project" accent={accent} />
               {candidates.map(c => <BallotCard key={c.key} c={c} accent={accent} selected={myVote === c.key} totalVotes={candidates.reduce((s, x) => s + (x.votes || 0), 0)} onVote={() => castVote(c.key)} />)}
               {!candidates.length && <div style={{ fontSize: '12px', color: '#64748b', padding: '6px 2px' }}>Every facility is maxed or in progress.</div>}
             </section>
