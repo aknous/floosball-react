@@ -52,7 +52,7 @@ const QUIP: Record<string, string[]> = {
     'One guy with a hunch.',
     'Binoculars and a battered clipboard.',
     'A few scouts and a serious coffee budget.',
-    'Regional scouts a well organized spreadsheet.',
+    'Regional scouts and a well organized spreadsheet.',
     'Analysts with many large monitors.',
     'Know who will be a star before they\'re born.',
   ],
@@ -359,7 +359,7 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
   const pct = p.cost ? (p.funded / p.cost) * 100 : 0
   const full = p.funded >= p.cost
   return (
-    <div style={{ background: '#1a1730', border: '1px solid #3a2d5c', borderLeft: `3px solid ${BUILD}`, borderRadius: '9px', padding: '13px 15px', marginBottom: '10px' }}>
+    <div style={{ background: '#1a1730', border: '1px solid #3a2d5c', borderTop: `2px solid ${BUILD}`, borderRadius: '9px', padding: '13px 15px', marginBottom: '10px' }}>
       <div style={{ fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em' }}>{name} {roman(fromLvl)} → {roman(p.targetLevel)}</div>
       <div style={{ ...QUIP_STYLE, marginTop: '8px' }}>{quipAt(p.facilityKey, p.targetLevel)}</div>
       <div style={{ fontSize: '12.5px', marginTop: '4px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'Foundational level'}</span></div>
