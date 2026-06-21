@@ -254,7 +254,7 @@ const FacilitiesSection: React.FC = () => {
               {data.projects.length ? data.projects.map(p => {
                 const fac = data.facilities.find(x => x.key === p.facilityKey)
                 return <ProjectCard key={p.id} p={p} name={catalog[p.facilityKey] || p.facilityKey} fromLvl={fac?.level ?? p.targetLevel - 1} balance={balance} onFund={(amt) => contribute(amt, 'project', { projectId: p.id })} />
-              }) : <div style={{ fontSize: '12.5px', color: '#7e93a8', padding: '12px 14px', borderRadius: '9px', border: '1px dashed #2c3a4d', background: 'rgba(20,29,41,.5)' }}>Nothing under construction. The winning vote starts the next build.</div>}
+              }) : <div style={{ fontSize: '12.5px', color: '#7e93a8', padding: '12px 14px', borderRadius: '9px', border: '1px dashed #2c3a4d', background: 'rgba(20,29,41,.5)' }}>No active projects. Vote for a project to build next season.</div>}
             </section>
 
             {/* ballot */}
