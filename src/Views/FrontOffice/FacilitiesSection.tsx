@@ -225,7 +225,7 @@ const FacilitiesSection: React.FC = () => {
                 <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', fontWeight: 700 }}>{l}</div>
                 <div style={{ fontSize: '21px', fontWeight: 800, margin: '5px 0 2px', color: c,
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</div>
-                <div style={{ fontSize: '11px', color: '#64748b' }}>{sub}</div>
+                <div style={{ fontSize: '12px', color: '#94a3b8' }}>{sub}</div>
               </div>
             ))}
           </div>
@@ -240,7 +240,7 @@ const FacilitiesSection: React.FC = () => {
                 color: pct === p ? accent : '#cbd5e1',
               }}>{p}%</button>
             ))}
-            <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '4px' }}>of unspent Floobits, into the Treasury at season end</span>
+            <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '4px' }}>of unspent Floobits, into the Treasury at season end</span>
           </div>
 
           {/* kanban: facilities | in progress | vote */}
