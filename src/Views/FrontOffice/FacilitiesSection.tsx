@@ -122,7 +122,7 @@ function FundChips({ onFund, balance, max }: { onFund: (amt: number) => void; ba
 
 // ── main ──────────────────────────────────────────────────────────────────
 const FacilitiesSection: React.FC = () => {
-  const { user, getToken } = useAuth()
+  const { user, getToken, updateFloobits } = useAuth()
   const favId = (user as any)?.favoriteTeamId ?? null
   const [data, setData] = useState<TeamFacilities | null>(null)
   const [candidates, setCandidates] = useState<Candidate[]>([])
@@ -164,9 +164,14 @@ const FacilitiesSection: React.FC = () => {
         body: JSON.stringify({ amount, target, ...extra }),
       })
       const j = await resp.json()
-      if (resp.ok) { setBalance(j.data?.newBalance ?? balance - amount); await load() }
+      if (resp.ok) {
+        const nb = j.data?.newBalance ?? balance - amount
+        setBalance(nb)
+        updateFloobits(nb)   // sync the global (navbar) Floobit total immediately
+        await load()
+      }
     } finally { setBusy(false) }
-  }, [favId, busy, getToken, balance, load])
+  }, [favId, busy, getToken, balance, load, updateFloobits])
 
   const setAutoPct = useCallback(async (p: number) => {
     setPct(p)
