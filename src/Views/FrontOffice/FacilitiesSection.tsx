@@ -244,6 +244,13 @@ const FacilitiesSection: React.FC = () => {
             <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '4px' }}>of unspent Floobits, into the Treasury at season end</span>
           </div>
 
+          {/* direct treasury contribution — funds the open pool now (also counts toward
+              the patron rank + funding achievements, same as upkeep/project chips). */}
+          <div>
+            <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.08em', color: '#94a3b8', fontWeight: 700 }}>Add to Treasury now</div>
+            <FundChips onFund={(amt) => contribute(amt, 'treasury')} balance={balance} max={Number.MAX_SAFE_INTEGER} />
+          </div>
+
           {/* kanban: facilities | in progress | vote */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(270px,1fr))', gap: '16px', alignItems: 'start' }}>
             {/* current facilities */}
@@ -275,7 +282,7 @@ const FacilitiesSection: React.FC = () => {
           <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.55, background: '#15202d', border: '1px solid #2c3a4d', borderRadius: '9px', padding: '12px 15px' }}>
             <b style={{ color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '.06em', fontSize: '11px' }}>How funding works</b>
             <div style={{ marginTop: '6px' }}>
-              Chip in to any facility's upkeep or an active project directly, or set a <span style={{ color: '#cbd5e1' }}>season-end deposit</span> above to funnel your leftover Floobits into the <span style={{ color: '#fbbf24' }}>Treasury</span>. When the season ends, the Treasury covers whatever's left in a waterfall: <span style={{ color: '#3b82f6', fontWeight: 700 }}>upkeep first</span> so no facility slips a level, then <span style={{ color: '#a78bfa', fontWeight: 700 }}>active projects</span> from oldest to newest. Unfunded upkeep drops a facility a level; fully funded projects get built.
+              Chip in to any facility's upkeep, an active project, or the <span style={{ color: '#fbbf24' }}>Treasury</span> directly, or set a <span style={{ color: '#cbd5e1' }}>season-end deposit</span> above to funnel your leftover Floobits into the Treasury at season end. When the season ends, the Treasury covers whatever's left in a waterfall: <span style={{ color: '#3b82f6', fontWeight: 700 }}>upkeep first</span> so no facility slips a level, then <span style={{ color: '#a78bfa', fontWeight: 700 }}>active projects</span> from oldest to newest. Unfunded upkeep drops a facility a level; fully funded projects get built.
             </div>
           </div>
         </>
