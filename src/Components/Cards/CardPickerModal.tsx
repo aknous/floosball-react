@@ -14,6 +14,7 @@ const POSITION_LABELS: Record<number, string> = {
 type PositionFilter = 'all' | 1 | 2 | 3 | 4 | 5
 type EditionFilter = 'all' | 'base' | 'holographic' | 'prismatic' | 'diamond'
 type OutputFilter = 'all' | 'fp' | 'mult' | 'floobits'
+type ClassificationFilter = 'all' | 'mvp' | 'champion' | 'all_pro' | 'rookie'
 type SortMode = 'match' | 'rating' | 'edition'
 
 const EDITION_ORDER: Record<string, number> = {
@@ -181,6 +182,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all')
   const [editionFilter, setEditionFilter] = useState<EditionFilter>('all')
   const [outputFilter, setOutputFilter] = useState<OutputFilter>('all')
+  const [classificationFilter, setClassificationFilter] = useState<ClassificationFilter>('all')
   const [sortMode, setSortMode] = useState<SortMode>('match')
   const [matchOnly, setMatchOnly] = useState(false)
 
@@ -191,6 +193,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
       setPositionFilter('all')
       setEditionFilter('all')
       setOutputFilter('all')
+      setClassificationFilter('all')
       setSortMode('match')
       setMatchOnly(false)
     }
@@ -248,6 +251,13 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
     if (outputFilter !== 'all') {
       filtered = filtered.filter(c => c.outputType === outputFilter)
     }
+    if (classificationFilter !== 'all') {
+      filtered = filtered.filter(c =>
+        classificationFilter === 'rookie'
+          ? ((c.classification || '').includes('rookie') || c.isRookie)
+          : (c.classification || '').includes(classificationFilter)
+      )
+    }
     if (matchOnly) {
       filtered = filtered.filter(c => rosterPlayerIds.has(c.playerId))
     }
@@ -277,7 +287,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
         })
     }
     return sorted
-  }, [cards, query, positionFilter, editionFilter, outputFilter, sortMode, matchOnly, rosterPlayerIds])
+  }, [cards, query, positionFilter, editionFilter, outputFilter, classificationFilter, sortMode, matchOnly, rosterPlayerIds])
 
   if (!visible) return null
 
@@ -380,6 +390,19 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
             ]}
             value={outputFilter}
             onChange={(v) => setOutputFilter(v as OutputFilter)}
+          />
+          <div style={{ height: '6px' }} />
+          <FilterRow
+            label="Class"
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'mvp', label: 'MVP' },
+              { value: 'champion', label: 'Champion' },
+              { value: 'all_pro', label: 'All-Pro' },
+              { value: 'rookie', label: 'Rookie' },
+            ]}
+            value={classificationFilter}
+            onChange={(v) => setClassificationFilter(v as ClassificationFilter)}
           />
 
           {/* Sort + match toggle row */}
