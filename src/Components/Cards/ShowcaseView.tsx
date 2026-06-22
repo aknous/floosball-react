@@ -282,7 +282,16 @@ const ShowcaseView: React.FC = () => {
                 </HelpSection>
               </HelpButton>
             </div>
-            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px' }}>
+            {/* Score (points total) + gap to the next grade, under the grade. */}
+            <div style={{ fontSize: '24px', fontWeight: 800, color: '#e2e8f0', fontFamily: 'pressStart', lineHeight: 1, marginTop: '7px' }}>
+              {showcaseScore}<span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, marginLeft: '5px' }}>pts</span>
+            </div>
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '5px' }}>
+              {nextGrade
+                ? <span><span style={{ color: GOLD, fontWeight: 700 }}>{nextGrade.need}</span> to grade {nextGrade.grade}</span>
+                : <span>top grade</span>}
+            </div>
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '5px' }}>
               {data?.slotCount ?? 0}/{data?.maxSlots ?? 8} featured
               {(data?.setBonus ?? 0) > 0 && (
                 <span style={{ color: GOLD, fontWeight: 600 }}> · sets +{Math.round((data?.setBonus ?? 0) * 100)}%</span>
@@ -292,20 +301,18 @@ const ShowcaseView: React.FC = () => {
 
           <span style={{ flex: 1 }} />
 
-          {/* Score: its own prominent section on the right, with the payout equation. */}
+          {/* Floobit payout on the right, shown as the score x weekly-rate equation. */}
           <div style={{ textAlign: isMobile ? 'left' : 'right', minWidth: '150px' }}>
             <div style={{
               fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase',
               color: '#94a3b8', fontWeight: 700, fontFamily: 'pressStart', marginBottom: '4px',
-            }}>Score</div>
-            <div style={{ fontSize: '30px', fontWeight: 800, color: '#e2e8f0', fontFamily: 'pressStart', lineHeight: 1 }}>
-              {showcaseScore}
+            }}>Pays</div>
+            <div style={{ fontSize: '30px', fontWeight: 800, color: GOLD, fontFamily: 'pressStart', lineHeight: 1 }}>
+              {data?.weeklyDividend ?? 0}F
             </div>
-            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '8px', lineHeight: 1.5 }}>
-              {showcaseScore} × {Math.round((data?.dividendRate ?? 0.13) * 100)}% = <span style={{ color: GOLD, fontWeight: 700 }}>{data?.weeklyDividend ?? 0}F</span> / week
-            </div>
-            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px' }}>
-              {nextGrade ? `${nextGrade.need} to grade ${nextGrade.grade}` : 'top grade'}
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '7px' }}>per week</div>
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
+              {showcaseScore} × {Math.round((data?.dividendRate ?? 0.13) * 100)}%
             </div>
           </div>
         </div>
