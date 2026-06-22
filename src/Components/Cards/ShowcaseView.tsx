@@ -314,7 +314,7 @@ const ShowcaseView: React.FC = () => {
               </HelpButton>
             </div>
             <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
-              Your best cards, paying out every week
+              Show off. Get paid.
             </div>
           </div>
 
