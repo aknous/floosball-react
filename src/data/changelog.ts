@@ -34,8 +34,6 @@ export const CHANGELOG: ChangelogEntry[] = [
           '[Front Office] The Free Agent ballot is now ranked choice with no pass or fail threshold. Any votes resolve into a ranked list of targets the team pursues in order, and one resolution can sign several free agents when multiple slots are open.',
           '[Economy] The Endowment powerup now adds 25% to everything going into the bank, including fantasy, prognostications, and Showcase dividends, not just fantasy. The Floobits counter shows when it is active.',
           '[Sim] Running backs now catch checkdowns and screens, and appear in the receiving box score.',
-          '[Sim] Interception rates are tuned down, with a firmer cap on desperation deep balls late in a loss. Receiver fumbles are now tracked.',
-          '[Prognostications] The last Pick-Em labels now read Prognostication.',
           '[Coaches] A retired player occasionally returns as a coach, reusing their name.',
         ],
       },
