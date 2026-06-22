@@ -206,17 +206,6 @@ export default function PlayersPage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f172a' }}>
 
-      {/* Header */}
-      <div style={{
-        borderBottom: '1px solid #1e293b', padding: '20px 24px',
-        background: 'linear-gradient(135deg, #1e293b50 0%, #0f172a 55%)',
-      }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ fontSize: '22px', fontWeight: '700', color: '#e2e8f0' }}>Player Stats</div>
-          <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Season statistics · click a column header to sort</div>
-        </div>
-      </div>
-
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '20px 24px' }}>
 
         {/* Status tabs */}
