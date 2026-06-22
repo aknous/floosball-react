@@ -18,7 +18,6 @@ import CardsPage from './Views/Cards/CardsPage'
 import AchievementsPage from './Views/Achievements/AchievementsPage'
 import FrontOfficePage from './Views/FrontOffice/FrontOfficePage'
 import AwardsPage from './Views/Awards/AwardsPage'
-import ProfilePage from './Views/Profile/ProfilePage'
 import BracketView from './Views/Bracket/BracketView'
 import Dashboard from './Views/Dashboard/Dashboard'
 import DashboardNew from './Views/Dashboard/DashboardNew'
@@ -81,8 +80,6 @@ function AppLayout() {
           <Route exact path='/achievements' element={<AchievementsPage />} />
           <Route exact path='/front-office' element={<FrontOfficePage />} />
           <Route exact path='/awards' element={<AwardsPage />} />
-          <Route exact path='/profile' element={<ProfilePage />} />
-          <Route path='/profile/:userId' element={<ProfilePage />} />
           <Route exact path='/bracket' element={<BracketView />} />
           <Route exact path='/history' element={<HistoryPage />} />
           <Route exact path='/about' element={<AboutPage />} />
