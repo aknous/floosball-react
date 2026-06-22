@@ -287,9 +287,6 @@ export default function PlayersPage() {
                   {/* Fixed left columns */}
                   <th style={{ ...thStyle('__rank'), textAlign: 'right', width: '32px' }}>#</th>
                   <th style={{ ...thStyle('__name'), textAlign: 'left', width: '200px' }}>Name</th>
-                  {position === 'ALL' && (
-                    <th style={{ ...thStyle('__pos'), textAlign: 'left', width: '40px' }}>Pos</th>
-                  )}
                   <th style={{ ...thStyle('__team'), textAlign: 'left', width: '60px' }}>Team</th>
                   <th style={{ ...thStyle('__rating'), textAlign: 'right', width: '80px', cursor: 'pointer', userSelect: 'none' }}
                     onClick={() => handleSort('__rating')}>
@@ -330,15 +327,13 @@ export default function PlayersPage() {
                           </Link>
                         </PlayerHoverCard>
                         <div style={{ marginTop: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {position === 'ALL' && (
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>{player.position}</span>
+                          )}
                           <Stars stars={player.ratingStars} size={11} />
                           <ArchetypeBadge archetype={player.archetype} size={13} />
                         </div>
                       </td>
-
-                      {/* Position (ALL view only) */}
-                      {position === 'ALL' && (
-                        <td style={{ ...tdStyle, textAlign: 'left', color: '#94a3b8', fontWeight: '600' }}>{player.position}</td>
-                      )}
 
                       {/* Team */}
                       <td style={{ padding: '7px 10px', borderRight: '1px solid #1a2640' }}>
