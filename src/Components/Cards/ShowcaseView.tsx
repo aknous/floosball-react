@@ -263,12 +263,32 @@ const ShowcaseView: React.FC = () => {
           }}>
             {data?.grade ?? 'F'}
           </div>
-          <div style={{ minWidth: '180px' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px',
-            }}>
+          <div style={{ minWidth: '150px' }}>
+            {/* Score (points total) with a hover breakdown; gap to next grade below. */}
+            <HoverTooltip color="#fbbf24" content={
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left', minWidth: '170px', fontSize: '13px' }}>
+                <ScoreRow label="Card scores" value={`${baseScore}`} />
+                {setBonus > 0 && <ScoreRow label="Set bonus" value={`+${Math.round(setBonus * 100)}%`} gold />}
+                <div style={{ height: '1px', background: 'rgba(251,191,36,0.25)', margin: '3px 0' }} />
+                <ScoreRow label="Total score" value={`${showcaseScore}`} gold strong />
+              </div>
+            }>
+              <div style={{ fontSize: '24px', fontWeight: 800, color: '#e2e8f0', fontFamily: 'pressStart', lineHeight: 1, marginTop: '7px', cursor: 'help', display: 'inline-block' }}>
+                {showcaseScore}<span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, marginLeft: '5px' }}>pts</span>
+              </div>
+            </HoverTooltip>
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '5px' }}>
+              {nextGrade
+                ? <span><span style={{ color: GOLD, fontWeight: 700 }}>{nextGrade.need}</span> to grade {nextGrade.grade}</span>
+                : <span>top grade</span>}
+            </div>
+          </div>
+
+          {/* Centered title + help in the middle of the header. */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', padding: '0 12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{
-                fontSize: '12px', letterSpacing: '0.24em', color: 'rgba(251,191,36,0.92)',
+                fontSize: '14px', letterSpacing: '0.22em', color: 'rgba(251,191,36,0.92)',
                 fontWeight: 700, textTransform: 'uppercase', fontFamily: 'pressStart',
               }}>On Display</span>
               <HelpButton title="The Showcase" accent="#fbbf24">
@@ -293,27 +313,10 @@ const ShowcaseView: React.FC = () => {
                 </HelpSection>
               </HelpButton>
             </div>
-            {/* Score (points total) with a hover breakdown; gap to next grade below. */}
-            <HoverTooltip color="#fbbf24" content={
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left', minWidth: '170px', fontSize: '13px' }}>
-                <ScoreRow label="Card scores" value={`${baseScore}`} />
-                {setBonus > 0 && <ScoreRow label="Set bonus" value={`+${Math.round(setBonus * 100)}%`} gold />}
-                <div style={{ height: '1px', background: 'rgba(251,191,36,0.25)', margin: '3px 0' }} />
-                <ScoreRow label="Total score" value={`${showcaseScore}`} gold strong />
-              </div>
-            }>
-              <div style={{ fontSize: '24px', fontWeight: 800, color: '#e2e8f0', fontFamily: 'pressStart', lineHeight: 1, marginTop: '7px', cursor: 'help', display: 'inline-block' }}>
-                {showcaseScore}<span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, marginLeft: '5px' }}>pts</span>
-              </div>
-            </HoverTooltip>
-            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '5px' }}>
-              {nextGrade
-                ? <span><span style={{ color: GOLD, fontWeight: 700 }}>{nextGrade.need}</span> to grade {nextGrade.grade}</span>
-                : <span>top grade</span>}
+            <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
+              Your best cards, paying out every week
             </div>
           </div>
-
-          <span style={{ flex: 1 }} />
 
           {/* Floobit payout on the right. */}
           <div style={{ textAlign: isMobile ? 'left' : 'right', minWidth: '150px' }}>
