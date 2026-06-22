@@ -315,14 +315,17 @@ const ShowcaseView: React.FC = () => {
           // Fixed 4-wide row (2 rows of 4). The case shows full-width by default; the
           // side panels are toggled, so there's always room for all four across.
           gridTemplateColumns: isMobile ? 'repeat(2, max-content)' : 'repeat(4, max-content)',
-          gap: isMobile ? '16px' : '18px',
+          // Wider gap BETWEEN rows than the card->score gap, so a score badge clearly
+          // belongs to the card above it (not the row below).
+          columnGap: isMobile ? '16px' : '18px',
+          rowGap: isMobile ? '26px' : '34px',
           justifyContent: 'center', justifyItems: 'center',
         }}>
           {(data?.slots ?? []).map(slot => (
             slot.card ? (
               <div
                 key={slot.slotNumber}
-                style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}
+                style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}
                 onMouseEnter={() => setHoveredSlot(slot.slotNumber)}
                 onMouseLeave={() => setHoveredSlot(s => (s === slot.slotNumber ? null : s))}
               >
@@ -488,7 +491,7 @@ const ShowcasePanel: React.FC<{
       background: 'rgba(15,23,42,0.6)', borderRadius: '8px', padding: '3px',
     }}>
       <PanelTab label="Sets" active={tab === 'sets'} onClick={() => setTab('sets')} />
-      <PanelTab label="Standings" active={tab === 'standings'} onClick={() => setTab('standings')} />
+      <PanelTab label="Leaderboard" active={tab === 'standings'} onClick={() => setTab('standings')} />
     </div>
     {tab === 'sets'
       ? <SetsGuide data={data} />
