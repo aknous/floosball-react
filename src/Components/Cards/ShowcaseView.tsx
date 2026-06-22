@@ -203,6 +203,9 @@ const ShowcaseView: React.FC = () => {
   const gradeColor = GRADE_COLORS[data?.grade ?? 'F'] || '#94a3b8'
   // Current score + the gap to the next grade up (the lowest threshold above the score).
   const showcaseScore = Math.round(data?.score ?? 0)
+  // Base score (sum of card points before sets) = total / (1 + set bonus).
+  const setBonus = data?.setBonus ?? 0
+  const baseScore = Math.round((data?.score ?? 0) / (1 + setBonus))
   const nextGrade = (() => {
     const grades = data?.scoring?.grades
     if (!grades) return null
@@ -286,6 +289,11 @@ const ShowcaseView: React.FC = () => {
             <div style={{ fontSize: '24px', fontWeight: 800, color: '#e2e8f0', fontFamily: 'pressStart', lineHeight: 1, marginTop: '7px' }}>
               {showcaseScore}<span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, marginLeft: '5px' }}>pts</span>
             </div>
+            {setBonus > 0 && (
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '5px' }}>
+                {baseScore} × <span style={{ color: GOLD, fontWeight: 700 }}>{(1 + setBonus).toFixed(2)}</span> sets = {showcaseScore}
+              </div>
+            )}
             <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '5px' }}>
               {nextGrade
                 ? <span><span style={{ color: GOLD, fontWeight: 700 }}>{nextGrade.need}</span> to grade {nextGrade.grade}</span>
