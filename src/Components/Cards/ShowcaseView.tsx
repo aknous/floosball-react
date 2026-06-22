@@ -241,7 +241,7 @@ const ShowcaseView: React.FC = () => {
       <div style={{
         position: 'relative', borderRadius: '16px', overflow: 'hidden',
         flex: 1, minWidth: 0,
-        padding: isMobile ? '22px 12px' : '32px 26px',
+        padding: isMobile ? '14px 12px 22px' : '18px 26px 32px',
         background: 'radial-gradient(ellipse 80% 55% at 50% 0%, rgba(251,191,36,0.08), transparent 70%), linear-gradient(180deg, #141b30 0%, #0a0e1a 100%)',
         border: '1px solid rgba(251,191,36,0.22)',
         boxShadow: 'inset 0 2px 60px rgba(0,0,0,0.55), 0 12px 34px rgba(0,0,0,0.45)',
@@ -290,7 +290,7 @@ const ShowcaseView: React.FC = () => {
               <span style={{
                 fontSize: '14px', letterSpacing: '0.22em', color: 'rgba(251,191,36,0.92)',
                 fontWeight: 700, textTransform: 'uppercase', fontFamily: 'pressStart',
-              }}>On Display</span>
+              }}>Card Showcase</span>
               <HelpButton title="The Showcase" accent="#fbbf24">
                 <HelpSection title="Put your best on display">
                   Feature up to 8 vaulted cards for a grade from F to S. Your Showcase
@@ -314,7 +314,7 @@ const ShowcaseView: React.FC = () => {
               </HelpButton>
             </div>
             <div style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
-              Show off. Get paid.
+              Show us what you got
             </div>
           </div>
 
