@@ -203,13 +203,13 @@ const ShowcaseView: React.FC = () => {
   const cardSize = 'sm' as const
 
   if (loading) {
-    return <div style={{ color: '#64748b', fontSize: '13px', padding: '40px 0', textAlign: 'center' }}>Loading showcase...</div>
+    return <div style={{ color: '#64748b', fontSize: '14px', padding: '40px 0', textAlign: 'center' }}>Loading showcase...</div>
   }
 
   return (
     <div>
       {error && (
-        <p style={{ color: '#ef4444', fontSize: '12px', marginBottom: '12px' }}>{error}</p>
+        <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px' }}>{error}</p>
       )}
 
       <div style={{
@@ -247,7 +247,7 @@ const ShowcaseView: React.FC = () => {
               display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px',
             }}>
               <span style={{
-                fontSize: '11px', letterSpacing: '0.24em', color: 'rgba(251,191,36,0.92)',
+                fontSize: '12px', letterSpacing: '0.24em', color: 'rgba(251,191,36,0.92)',
                 fontWeight: 700, textTransform: 'uppercase', fontFamily: 'pressStart',
               }}>On Display</span>
               <HelpButton title="The Showcase" accent="#fbbf24">
@@ -275,10 +275,10 @@ const ShowcaseView: React.FC = () => {
                 </HelpSection>
               </HelpButton>
             </div>
-            <div style={{ fontSize: '14px', color: '#e2e8f0', lineHeight: 1.45 }}>
+            <div style={{ fontSize: '15px', color: '#e2e8f0', lineHeight: 1.45 }}>
               Pays <span style={{ color: GOLD, fontWeight: 700 }}>{data?.weeklyDividend ?? 0} Floobits</span> / week
             </div>
-            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px' }}>
               {data?.slotCount ?? 0}/{data?.maxSlots ?? 8} featured
               {(data?.setBonus ?? 0) > 0 && (
                 <span style={{ color: GOLD, fontWeight: 600 }}> · sets +{Math.round((data?.setBonus ?? 0) * 100)}%</span>
@@ -319,7 +319,7 @@ const ShowcaseView: React.FC = () => {
                         position: 'absolute', top: '6px', right: '6px', zIndex: 6,
                         width: '22px', height: '22px', borderRadius: '5px',
                         border: '1px solid rgba(239,68,68,0.5)', background: 'rgba(15,23,42,0.85)',
-                        color: '#ef4444', fontSize: '14px', fontWeight: 700, cursor: 'pointer',
+                        color: '#ef4444', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
                       }}
                     >x</button>
@@ -362,7 +362,7 @@ const ShowcaseView: React.FC = () => {
                     <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </div>
-                <span style={{ fontSize: '11px', letterSpacing: '0.14em' }}>FEATURE</span>
+                <span style={{ fontSize: '12px', letterSpacing: '0.14em' }}>FEATURE</span>
               </button>
             )
           ))}
@@ -443,7 +443,7 @@ const CardDividend: React.FC<{ showcase: CardShowcaseBreakdown; setBonus: number
   return (
     <HoverTooltip content={content} color="#fbbf24">
       <span style={{
-        fontSize: '11px', fontWeight: 700, color: GOLD, fontFamily: 'pressStart',
+        fontSize: '12px', fontWeight: 700, color: GOLD, fontFamily: 'pressStart',
         background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)',
         borderRadius: '5px', padding: '3px 9px', whiteSpace: 'nowrap',
       }}>+{showcase.dividend}/wk</span>
@@ -481,7 +481,7 @@ const ShowcasePanel: React.FC<{
 
 const PanelTab: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({ label, active, onClick }) => (
   <button onClick={onClick} style={{
-    flex: 1, fontSize: '11px', fontWeight: 700, fontFamily: 'pressStart', cursor: 'pointer',
+    flex: 1, fontSize: '12px', fontWeight: 700, fontFamily: 'pressStart', cursor: 'pointer',
     padding: '7px 0', borderRadius: '6px', border: 'none', transition: 'all 0.12s',
     color: active ? '#1a1205' : '#94a3b8',
     background: active ? GOLD : 'transparent',
@@ -497,13 +497,13 @@ const ScoringManual: React.FC<{ scoring?: ScoringRules; dividendRate?: number }>
   const classLabel: Record<string, string> = { rookie: 'Rookie', all_pro: 'All-Pro (AP)', champion: 'Champion (CH)', mvp: 'MVP' }
   const Group: React.FC<{ title: string; sub?: string; children: React.ReactNode }> = ({ title, sub, children }) => (
     <div style={{ marginBottom: '12px' }}>
-      <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '13px', marginBottom: sub ? '1px' : '4px' }}>{title}</div>
-      {sub && <div style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '4px' }}>{sub}</div>}
+      <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '14px', marginBottom: sub ? '1px' : '4px' }}>{title}</div>
+      {sub && <div style={{ color: '#94a3b8', fontSize: '13px', marginBottom: '4px' }}>{sub}</div>}
       {children}
     </div>
   )
   const Line: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '13px', padding: '1px 0', lineHeight: 1.5 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '14px', padding: '1px 0', lineHeight: 1.5 }}>
       <span style={{ color: '#94a3b8' }}>{label}</span>
       <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{value}</span>
     </div>
@@ -541,11 +541,11 @@ const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px' }}>
-        <span style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#cbd5e1', fontWeight: 700, fontFamily: 'pressStart' }}>Set bonuses</span>
+        <span style={{ fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#cbd5e1', fontWeight: 700, fontFamily: 'pressStart' }}>Set bonuses</span>
         <span style={{ flex: 1 }} />
-        <span style={{ fontSize: '13px', fontWeight: 800, fontFamily: 'pressStart', color: data.setBonus > 0 ? GOLD : '#94a3b8' }}>{data.setBonus > 0 ? `+${Math.round(data.setBonus * 100)}%` : 'none'}</span>
+        <span style={{ fontSize: '14px', fontWeight: 800, fontFamily: 'pressStart', color: data.setBonus > 0 ? GOLD : '#94a3b8' }}>{data.setBonus > 0 ? `+${Math.round(data.setBonus * 100)}%` : 'none'}</span>
       </div>
-      <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '10px' }}>
+      <div style={{ fontSize: '13px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '10px' }}>
         Completed sets add a flat bonus on top of your score{data.setBonus >= data.maxSetBonus ? `, maxed at +${Math.round(data.maxSetBonus * 100)}%` : ''}.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
@@ -567,12 +567,12 @@ const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
               }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                  <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: active ? GOLD : s.status === 'locked' ? '#94a3b8' : '#e2e8f0' }}>{s.name}</span>
-                  <span style={{ fontSize: '13px', fontWeight: 800, fontFamily: 'pressStart', flexShrink: 0, color: active ? GOLD : '#94a3b8' }}>+{Math.round(s.bonus * 100)}%</span>
+                  <span style={{ flex: 1, fontSize: '14px', fontWeight: 700, color: active ? GOLD : s.status === 'locked' ? '#94a3b8' : '#e2e8f0' }}>{s.name}</span>
+                  <span style={{ fontSize: '14px', fontWeight: 800, fontFamily: 'pressStart', flexShrink: 0, color: active ? GOLD : '#94a3b8' }}>+{Math.round(s.bonus * 100)}%</span>
                 </div>
-                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', lineHeight: 1.4 }}>{s.req}</div>
-                {active && <div style={{ fontSize: '11px', color: GOLD, fontWeight: 600, marginTop: '3px' }}>Active</div>}
-                {almost && <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '3px' }}>{s.hint}</div>}
+                <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px', lineHeight: 1.4 }}>{s.req}</div>
+                {active && <div style={{ fontSize: '12px', color: GOLD, fontWeight: 600, marginTop: '3px' }}>Active</div>}
+                {almost && <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '3px' }}>{s.hint}</div>}
               </div>
             </div>
           )
@@ -585,7 +585,7 @@ const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
 // The Standings tab: the showcase leaderboard.
 const StandingsList: React.FC<{ leaderboard: LeaderEntry[]; onViewUser: (id: number) => void }> = ({ leaderboard, onViewUser }) => {
   if (leaderboard.length === 0) {
-    return <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6 }}>No showcases yet. Be the first to put cards on display.</div>
+    return <div style={{ fontSize: '13px', color: '#94a3b8', lineHeight: 1.6 }}>No showcases yet. Be the first to put cards on display.</div>
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -603,10 +603,10 @@ const StandingsList: React.FC<{ leaderboard: LeaderEntry[]; onViewUser: (id: num
             onMouseEnter={(e) => { if (!entry.isCurrentUser) e.currentTarget.style.background = 'rgba(148,163,184,0.08)' }}
             onMouseLeave={(e) => { if (!entry.isCurrentUser) e.currentTarget.style.background = 'transparent' }}
           >
-            <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, width: '20px', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{entry.rank}</span>
-            <span style={{ flex: 1, minWidth: 0, fontSize: '13px', color: entry.isCurrentUser ? '#fbbf24' : '#e2e8f0', fontWeight: entry.isCurrentUser ? 700 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.username}</span>
-            <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>{entry.cardCount}/8</span>
-            <span style={{ width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${gc}`, color: gc, fontSize: '12px', fontWeight: 800, fontFamily: 'pressStart' }}>{entry.grade}</span>
+            <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 700, width: '20px', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{entry.rank}</span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: '14px', color: entry.isCurrentUser ? '#fbbf24' : '#e2e8f0', fontWeight: entry.isCurrentUser ? 700 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.username}</span>
+            <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>{entry.cardCount}/8</span>
+            <span style={{ width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${gc}`, color: gc, fontSize: '13px', fontWeight: 800, fontFamily: 'pressStart' }}>{entry.grade}</span>
           </div>
         )
       })}
