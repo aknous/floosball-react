@@ -407,6 +407,7 @@ const ShowcaseView: React.FC = () => {
 interface CardShowcaseBreakdown {
   editionPoints: number
   classificationPoints: number
+  classifications?: { name: string; points: number }[]  // named badges (Champion, All-Pro, MVP, Rookie)
   recency: number
   tierMult: number
   points: number
@@ -425,9 +426,15 @@ const CardDividend: React.FC<{ showcase: CardShowcaseBreakdown; setBonus: number
     // the set bonus + weekly rate convert it to Floobits.
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left', minWidth: '190px' }}>
       <Row label="Edition" value={`+${showcase.editionPoints} pts`} />
-      {showcase.classificationPoints > 0 && (
+      {/* Name each badge (Champion / All-Pro / MVP / Rookie) so it's clear those tags
+          ARE the "classification". Fall back to the lumped value on an older payload. */}
+      {showcase.classifications && showcase.classifications.length > 0 ? (
+        showcase.classifications.map(c => (
+          <Row key={c.name} label={`${c.name} badge`} value={`+${c.points} pts`} />
+        ))
+      ) : showcase.classificationPoints > 0 ? (
         <Row label="Classification" value={`+${showcase.classificationPoints} pts`} />
-      )}
+      ) : null}
       <Row label="Recency" value={`×${showcase.recency.toFixed(2)}`} />
       {showcase.tierMult > 1 && <Row label="Upgrade tier" value={`×${showcase.tierMult.toFixed(2)}`} />}
       {divider}
@@ -492,7 +499,7 @@ const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
   const order = { active: 0, almost: 1, locked: 2 }
   const sorted = [...data.sets].sort((a, b) => order[a.status] - order[b.status] || b.bonus - a.bonus)
   const editionLabel: Record<string, string> = { base: 'Base', holographic: 'Holographic', prismatic: 'Prismatic', diamond: 'Diamond' }
-  const classLabel: Record<string, string> = { rookie: 'Rookie', all_pro: 'All-Pro', champion: 'Champion', mvp: 'MVP' }
+  const classLabel: Record<string, string> = { rookie: 'Rookie', all_pro: 'All-Pro (AP)', champion: 'Champion (CH)', mvp: 'MVP' }
   const Heading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#cbd5e1', fontWeight: 700, fontFamily: 'pressStart', margin: '0 0 7px' }}>{children}</div>
   )
@@ -518,6 +525,9 @@ const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
       </div>
 
       <Heading>Classification</Heading>
+      <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.45, marginBottom: '6px' }}>
+        The badges a card earns — the tags shown on it.
+      </div>
       <div style={{ marginBottom: '14px' }}>
         {['rookie', 'all_pro', 'champion', 'mvp'].filter(c => c in sc.classification).map(c => (
           <Line key={c} label={classLabel[c] || c} value={`+${sc.classification[c]} pts`} />
