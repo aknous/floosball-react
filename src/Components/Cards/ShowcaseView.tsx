@@ -282,20 +282,30 @@ const ShowcaseView: React.FC = () => {
                 </HelpSection>
               </HelpButton>
             </div>
-            <div style={{ fontSize: '15px', color: '#e2e8f0', lineHeight: 1.45 }}>
-              Pays <span style={{ color: GOLD, fontWeight: 700 }}>{data?.weeklyDividend ?? 0} Floobits</span> / week
-            </div>
-            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px' }}>
-              Score <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{showcaseScore}</span>
-              {nextGrade
-                ? <span> · <span style={{ color: GOLD, fontWeight: 700 }}>{nextGrade.need}</span> to grade {nextGrade.grade}</span>
-                : <span> · top grade</span>}
-            </div>
             <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px' }}>
               {data?.slotCount ?? 0}/{data?.maxSlots ?? 8} featured
               {(data?.setBonus ?? 0) > 0 && (
                 <span style={{ color: GOLD, fontWeight: 600 }}> · sets +{Math.round((data?.setBonus ?? 0) * 100)}%</span>
               )}
+            </div>
+          </div>
+
+          <span style={{ flex: 1 }} />
+
+          {/* Score: its own prominent section on the right, with the payout equation. */}
+          <div style={{ textAlign: isMobile ? 'left' : 'right', minWidth: '150px' }}>
+            <div style={{
+              fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase',
+              color: '#94a3b8', fontWeight: 700, fontFamily: 'pressStart', marginBottom: '4px',
+            }}>Score</div>
+            <div style={{ fontSize: '30px', fontWeight: 800, color: '#e2e8f0', fontFamily: 'pressStart', lineHeight: 1 }}>
+              {showcaseScore}
+            </div>
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '8px', lineHeight: 1.5 }}>
+              {showcaseScore} × {Math.round((data?.dividendRate ?? 0.13) * 100)}% = <span style={{ color: GOLD, fontWeight: 700 }}>{data?.weeklyDividend ?? 0}F</span> / week
+            </div>
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px' }}>
+              {nextGrade ? `${nextGrade.need} to grade ${nextGrade.grade}` : 'top grade'}
             </div>
           </div>
         </div>
@@ -346,7 +356,7 @@ const ShowcaseView: React.FC = () => {
                   }} />
                 </div>
                 {/* Per-card weekly dividend + hover breakdown (transparency) */}
-                {slot.card.showcase && <CardDividend showcase={slot.card.showcase} setBonus={data?.setBonus ?? 0} rate={data?.dividendRate ?? 0.13} />}
+                {slot.card.showcase && <CardScore showcase={slot.card.showcase} />}
               </div>
             ) : (
               <button
@@ -421,21 +431,19 @@ interface CardShowcaseBreakdown {
   points: number
   dividend: number
 }
-const CardDividend: React.FC<{ showcase: CardShowcaseBreakdown; setBonus: number; rate: number }> = ({ showcase, setBonus, rate }) => {
+const CardScore: React.FC<{ showcase: CardShowcaseBreakdown }> = ({ showcase }) => {
   const Row: React.FC<{ label: string; value: string; strong?: boolean }> = ({ label, value, strong }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px' }}>
       <span style={{ color: strong ? '#e2e8f0' : '#94a3b8' }}>{label}</span>
       <span style={{ color: strong ? GOLD : '#e2e8f0', fontWeight: strong ? 700 : 400 }}>{value}</span>
     </div>
   )
-  const divider = <div style={{ height: '1px', background: 'rgba(251,191,36,0.25)', margin: '3px 0' }} />
   const content = (
-    // Walk the full chain so the F/week reconciles: points build a card score, then
-    // the set bonus + weekly rate convert it to Floobits.
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left', minWidth: '190px' }}>
+    // How the card's point score is built: edition + classification points, scaled by
+    // recency and upgrade tier. (The card scores sum into the Showcase total, which the
+    // header turns into Floobits via the weekly rate.)
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left', minWidth: '180px' }}>
       <Row label="Edition" value={`+${showcase.editionPoints} pts`} />
-      {/* Name each badge (Champion / All-Pro / MVP / Rookie) so it's clear those tags
-          ARE the "classification". Fall back to the lumped value on an older payload. */}
       {showcase.classifications && showcase.classifications.length > 0 ? (
         showcase.classifications.map(c => (
           <Row key={c.name} label={`${c.name} badge`} value={`+${c.points} pts`} />
@@ -445,12 +453,8 @@ const CardDividend: React.FC<{ showcase: CardShowcaseBreakdown; setBonus: number
       ) : null}
       <Row label="Recency" value={`×${showcase.recency.toFixed(2)}`} />
       {showcase.tierMult > 1 && <Row label="Upgrade tier" value={`×${showcase.tierMult.toFixed(2)}`} />}
-      {divider}
+      <div style={{ height: '1px', background: 'rgba(251,191,36,0.25)', margin: '3px 0' }} />
       <Row label="Card score" value={`${Math.round(showcase.points)}`} strong />
-      {setBonus > 0 && <Row label="Set bonus" value={`×${(1 + setBonus).toFixed(2)}`} />}
-      <Row label="Weekly rate" value={`×${rate.toFixed(2)}`} />
-      {divider}
-      <Row label="Pays" value={`${showcase.dividend} F / week`} strong />
     </div>
   )
   return (
@@ -459,7 +463,7 @@ const CardDividend: React.FC<{ showcase: CardShowcaseBreakdown; setBonus: number
         fontSize: '12px', fontWeight: 700, color: GOLD, fontFamily: 'pressStart',
         background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)',
         borderRadius: '5px', padding: '3px 9px', whiteSpace: 'nowrap',
-      }}>+{showcase.dividend}/wk</span>
+      }}>{Math.round(showcase.points)} pts</span>
     </HoverTooltip>
   )
 }
