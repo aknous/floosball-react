@@ -102,9 +102,9 @@ interface Candidate { key: string; name: string; currentLevel: number; targetLev
 interface LeagueTeam { id: number; name: string; city: string; abbr: string; color: string; appeal: number; levels: Record<string, number>; fanCount: number; marketTier: string }
 
 // ── small UI bits ─────────────────────────────────────────────────────────
-function FundChips({ onFund, balance, max }: { onFund: (amt: number) => void; balance: number; max: number }) {
+function FundChips({ onFund, balance, max, topGap = 8 }: { onFund: (amt: number) => void; balance: number; max: number; topGap?: number }) {
   return (
-    <div style={{ display: 'flex', gap: '5px', marginTop: '8px', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: '5px', marginTop: topGap, flexWrap: 'wrap' }}>
       {FUND_AMOUNTS.map(a => {
         const amt = Math.min(a, max)
         const disabled = balance < amt || max <= 0
@@ -231,7 +231,8 @@ const FacilitiesSection: React.FC = () => {
             ))}
           </div>
 
-          {/* season-end auto-deposit % */}
+          {/* Treasury funding: season-end auto-deposit % + direct contribution, one row.
+              Direct chips also count toward the patron rank + funding achievements. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.08em', color: '#94a3b8', fontWeight: 700, marginRight: '4px' }}>Season-end deposit</span>
             {[0, 10, 25, 50, 75, 100].map(p => (
@@ -241,14 +242,9 @@ const FacilitiesSection: React.FC = () => {
                 color: pct === p ? accent : '#cbd5e1',
               }}>{p}%</button>
             ))}
-            <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '4px' }}>of unspent Floobits, into the Treasury at season end</span>
-          </div>
-
-          {/* direct treasury contribution — funds the open pool now (also counts toward
-              the patron rank + funding achievements, same as upkeep/project chips). */}
-          <div>
-            <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.08em', color: '#94a3b8', fontWeight: 700 }}>Add to Treasury now</div>
-            <FundChips onFund={(amt) => contribute(amt, 'treasury')} balance={balance} max={Number.MAX_SAFE_INTEGER} />
+            <span style={{ width: '1px', height: '18px', background: '#334155', margin: '0 6px' }} />
+            <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.08em', color: '#94a3b8', fontWeight: 700, marginRight: '2px' }}>Add now</span>
+            <FundChips onFund={(amt) => contribute(amt, 'treasury')} balance={balance} max={Number.MAX_SAFE_INTEGER} topGap={0} />
           </div>
 
           {/* kanban: facilities | in progress | vote */}
