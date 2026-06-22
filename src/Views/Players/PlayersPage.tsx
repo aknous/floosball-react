@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { Stars } from '@/Components/Stars'
 import { useAuth } from '@/contexts/AuthContext'
-import HallOfFame from './HallOfFame'
 import ArchetypeBadge from '@/Components/ArchetypeBadge'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -11,15 +10,29 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const POSITIONS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'] as const
 type PositionFilter = typeof POSITIONS[number]
 
-type StatusFilter = 'active' | 'prospects' | 'fa' | 'retired' | 'hof' | 'followed'
+type StatusFilter = 'active' | 'prospects' | 'fa' | 'retired' | 'followed'
 const STATUS_TABS: { key: StatusFilter; label: string }[] = [
   { key: 'active',    label: 'Active' },
   { key: 'prospects', label: 'Prospects' },
   { key: 'fa',        label: 'Free Agents' },
   { key: 'retired',   label: 'Retired' },
-  { key: 'hof',       label: 'Hall of Fame' },
   { key: 'followed',  label: 'Followed' },
 ]
+
+// Outlined pill, matching the card-collection view/filter pills for consistency.
+const pillStyle = (active: boolean): React.CSSProperties => ({
+  padding: '5px 12px',
+  borderRadius: '6px',
+  border: `1px solid ${active ? '#3b82f6' : '#334155'}`,
+  backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'transparent',
+  color: active ? '#60a5fa' : '#94a3b8',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  transition: 'all 0.15s',
+  fontFamily: 'pressStart',
+  textTransform: 'capitalize' as const,
+})
 
 interface CurrentStats {
   fantasyPoints: number
@@ -123,11 +136,9 @@ export default function PlayersPage() {
   const [sortKey, setSortKey]   = useState<string>('fpt')
   const [sortAsc, setSortAsc]   = useState(false)
   const [loading, setLoading]   = useState(true)
+  const [search, setSearch]     = useState('')
 
   useEffect(() => {
-    // The Hall of Fame tab renders its own gallery (HallOfFame) off a dedicated
-    // endpoint, so skip the regular players fetch entirely for it.
-    if (status === 'hof') { setLoading(false); return }
     setLoading(true)
     let cancelled = false
     const run = async () => {
@@ -165,18 +176,20 @@ export default function PlayersPage() {
   const cols = COLS[position]
 
   const sorted = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const base = q ? players.filter(p => p.name.toLowerCase().includes(q)) : players
     if (sortKey === '__rating') {
-      return [...players].sort((a, b) => {
+      return [...base].sort((a, b) => {
         const diff = a.playerRating - b.playerRating
         return sortAsc ? diff : -diff
       })
     }
     const col = cols.find(c => c.key === sortKey) ?? cols[cols.length - 1]
-    return [...players].sort((a, b) => {
+    return [...base].sort((a, b) => {
       const diff = col.sortValue(a) - col.sortValue(b)
       return sortAsc ? diff : -diff
     })
-  }, [players, sortKey, sortAsc, cols])
+  }, [players, sortKey, sortAsc, cols, search])
 
   const handleSort = (key: string) => {
     if (key === sortKey) setSortAsc(a => !a)
@@ -192,7 +205,7 @@ export default function PlayersPage() {
     borderRight: '1px solid #1a2640',
   })
   const tdStyle: React.CSSProperties = {
-    fontSize: '15px', color: '#cbd5e1', padding: '7px 10px',
+    fontSize: '14px', color: '#cbd5e1', padding: '7px 10px',
     textAlign: 'right', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums',
     borderRight: '1px solid #1a2640',
   }
@@ -203,53 +216,66 @@ export default function PlayersPage() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f172a' }}>
 
-      {/* Header */}
-      <div style={{
-        borderBottom: '1px solid #1e293b', padding: '20px 24px',
-        background: 'linear-gradient(135deg, #1e293b50 0%, #0f172a 55%)',
-      }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-          <div style={{ fontSize: '22px', fontWeight: '700', color: '#e2e8f0' }}>Player Stats</div>
-          <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Season statistics · click a column header to sort</div>
-        </div>
-      </div>
-
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '20px 24px' }}>
 
         {/* Status tabs */}
-        <div style={{
-          display: 'flex', gap: '2px', marginBottom: '14px',
-          backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px', width: 'fit-content',
-        }}>
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
           {STATUS_TABS.map(tab => (
             <button key={tab.key} onClick={() => { setStatus(tab.key); setPosition('ALL'); setSortKey('fpt'); setSortAsc(false) }}
-              style={{
-                padding: '6px 14px', fontSize: '12px', fontWeight: '600', borderRadius: '6px',
-                border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                backgroundColor: status === tab.key ? '#1e293b' : 'transparent',
-                color: status === tab.key ? '#e2e8f0' : '#64748b',
-              }}>
+              style={pillStyle(status === tab.key)}>
               {tab.label}
             </button>
           ))}
         </div>
 
-        {status === 'hof' ? <HallOfFame /> : (<>
+        {(<>
 
         {/* Position tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #334155', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
           {POSITIONS.map(pos => (
             <button key={pos} onClick={() => handlePositionChange(pos)}
-              style={{
-                padding: '7px 14px', fontSize: '12px', fontWeight: '600',
-                color: position === pos ? '#e2e8f0' : '#64748b',
-                backgroundColor: position === pos ? '#1e293b' : 'transparent',
-                border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                borderBottom: position === pos ? '2px solid #3b82f6' : '2px solid transparent',
-              }}>
+              style={pillStyle(position === pos)}>
               {pos}
             </button>
           ))}
+        </div>
+
+        {/* Search by name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: '0 1 280px' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+              <circle cx="11" cy="11" r="7" stroke="#64748b" strokeWidth="2" />
+              <path d="M21 21l-4.3-4.3" stroke="#64748b" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search player by name"
+              style={{
+                width: '100%', padding: '8px 28px 8px 32px', fontSize: '13px',
+                backgroundColor: '#0f172a', color: '#e2e8f0',
+                border: '1px solid #334155', borderRadius: '8px', outline: 'none',
+              }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                aria-label="Clear search"
+                style={{
+                  position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
+                  fontSize: '16px', lineHeight: 1, padding: '0 4px',
+                }}
+              >x</button>
+            )}
+          </div>
+          {search.trim() && (
+            <span style={{ fontSize: '12px', color: '#64748b' }}>
+              {sorted.length} {sorted.length === 1 ? 'player' : 'players'}
+            </span>
+          )}
         </div>
 
         {/* Stats table */}
@@ -261,9 +287,6 @@ export default function PlayersPage() {
                   {/* Fixed left columns */}
                   <th style={{ ...thStyle('__rank'), textAlign: 'right', width: '32px' }}>#</th>
                   <th style={{ ...thStyle('__name'), textAlign: 'left', width: '200px' }}>Name</th>
-                  {position === 'ALL' && (
-                    <th style={{ ...thStyle('__pos'), textAlign: 'left', width: '40px' }}>Pos</th>
-                  )}
                   <th style={{ ...thStyle('__team'), textAlign: 'left', width: '60px' }}>Team</th>
                   <th style={{ ...thStyle('__rating'), textAlign: 'right', width: '80px', cursor: 'pointer', userSelect: 'none' }}
                     onClick={() => handleSort('__rating')}>
@@ -280,11 +303,11 @@ export default function PlayersPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6 + cols.length} style={{ padding: '32px', textAlign: 'center', color: '#475569', fontSize: '13px' }}>Loading…</td>
+                    <td colSpan={4 + cols.length} style={{ padding: '32px', textAlign: 'center', color: '#475569', fontSize: '13px' }}>Loading…</td>
                   </tr>
                 ) : sorted.length === 0 ? (
                   <tr>
-                    <td colSpan={6 + cols.length} style={{ padding: '32px', textAlign: 'center', color: '#475569', fontSize: '13px' }}>No players found</td>
+                    <td colSpan={4 + cols.length} style={{ padding: '32px', textAlign: 'center', color: '#475569', fontSize: '13px' }}>No players found</td>
                   </tr>
                 ) : (
                   sorted.map((player, idx) => (
@@ -299,20 +322,18 @@ export default function PlayersPage() {
                       <td style={{ padding: '7px 10px', borderRight: '1px solid #1a2640' }}>
                         <PlayerHoverCard playerId={player.id} playerName={player.name}>
                           <Link to={`/players/${player.id}`}
-                            style={{ fontSize: '15px', color: '#e2e8f0', textDecoration: 'none', display: 'block', whiteSpace: 'nowrap' }}>
+                            style={{ fontSize: '14px', color: '#e2e8f0', textDecoration: 'none', display: 'block', whiteSpace: 'nowrap' }}>
                             {player.name}
                           </Link>
                         </PlayerHoverCard>
                         <div style={{ marginTop: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {position === 'ALL' && (
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }}>{player.position}</span>
+                          )}
                           <Stars stars={player.ratingStars} size={11} />
                           <ArchetypeBadge archetype={player.archetype} size={13} />
                         </div>
                       </td>
-
-                      {/* Position (ALL view only) */}
-                      {position === 'ALL' && (
-                        <td style={{ ...tdStyle, textAlign: 'left', color: '#94a3b8', fontWeight: '600' }}>{player.position}</td>
-                      )}
 
                       {/* Team */}
                       <td style={{ padding: '7px 10px', borderRight: '1px solid #1a2640' }}>

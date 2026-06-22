@@ -28,6 +28,13 @@ const POSITIONS = [
   { value: 4, label: 'TE' },
   { value: 5, label: 'K' },
 ]
+const CLASSIFICATIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'mvp', label: 'MVP' },
+  { value: 'champion', label: 'Champion' },
+  { value: 'all_pro', label: 'All-Pro' },
+  { value: 'rookie', label: 'Rookie' },
+]
 
 // Server-side sort keys (must match the collection endpoint's `sort` param)
 const SORTS = [
@@ -66,6 +73,7 @@ const CardCollection: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [editionFilter, setEditionFilter] = useState('all')
   const [positionFilter, setPositionFilter] = useState(0)
+  const [classificationFilter, setClassificationFilter] = useState('all')
   const [activeOnly, setActiveOnly] = useState(false)
   const [sortBy, setSortBy] = useState<string>('recent')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
@@ -84,6 +92,9 @@ const CardCollection: React.FC = () => {
   const inVault = view === 'vault'
   // Native HTML5 drag doesn't work on touch, so reordering is desktop-only.
   const canReorder = inVault && sortBy === 'manual' && !isMobile
+  // Any filter narrowing the list — so an empty result reads as "no matches" rather
+  // than "your vault/collection is empty".
+  const hasActiveFilter = editionFilter !== 'all' || positionFilter > 0 || classificationFilter !== 'all' || activeOnly
 
   const fetchCards = useCallback(async () => {
     try {
@@ -92,6 +103,7 @@ const CardCollection: React.FC = () => {
       const params = new URLSearchParams()
       if (editionFilter !== 'all') params.set('edition', editionFilter)
       if (positionFilter > 0) params.set('position', String(positionFilter))
+      if (classificationFilter !== 'all') params.set('classification', classificationFilter)
       if (activeOnly) params.set('activeOnly', 'true')
       params.set('vaulted', inVault ? 'true' : 'false')
       params.set('sort', sortBy)
@@ -107,7 +119,7 @@ const CardCollection: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }, [getToken, editionFilter, positionFilter, activeOnly, sortBy, inVault])
+  }, [getToken, editionFilter, positionFilter, classificationFilter, activeOnly, sortBy, inVault])
 
   useEffect(() => { setLoading(true); fetchCards() }, [fetchCards])
 
@@ -258,10 +270,12 @@ const CardCollection: React.FC = () => {
       <>
       {/* collection / vault content */}
 
-      {/* Header */}
+      {/* Header — fixed min-height so the Collection-only "Combine" button (taller than
+          the title) doesn't change the row height and shift everything below when
+          switching between Collection and Vault. */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: '16px', flexWrap: 'wrap', gap: '8px',
+        marginBottom: '16px', flexWrap: 'wrap', gap: '8px', minHeight: '38px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
@@ -393,6 +407,14 @@ const CardCollection: React.FC = () => {
           </button>
         ))}
       </div>
+      {/* Classification filter */}
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+        {CLASSIFICATIONS.map(c => (
+          <button key={c.value} onClick={() => setClassificationFilter(c.value)} style={pillStyle(classificationFilter === c.value)}>
+            {c.label}
+          </button>
+        ))}
+      </div>
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' }}>
         {POSITIONS.map(p => (
           <button key={p.value} onClick={() => setPositionFilter(p.value)} style={pillStyle(positionFilter === p.value)}>
@@ -434,9 +456,11 @@ const CardCollection: React.FC = () => {
         </div>
       ) : cards.length === 0 ? (
         <div style={{ color: '#64748b', fontSize: '13px', padding: '40px 0', textAlign: 'center', lineHeight: 1.7 }}>
-          {inVault
-            ? 'Your Vault is empty. Vault cards from your collection to keep them forever and chase collection goals.'
-            : 'No cards found. Open packs in the Shop to get started!'}
+          {hasActiveFilter
+            ? 'No cards match these filters.'
+            : inVault
+              ? 'Your Vault is empty. Vault cards from your collection to keep them forever and chase collection goals.'
+              : 'No cards found. Open packs in the Shop to get started!'}
         </div>
       ) : (
         <>

@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import HallOfFame from '@/Views/Players/HallOfFame'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type ViewMode = 'seasons' | 'records' | 'user-records'
+type ViewMode = 'seasons' | 'records' | 'user-records' | 'hall-of-fame'
 
 interface SeasonSummary {
   seasonNumber: number
@@ -53,6 +54,20 @@ interface RecordsResponse {
   labels: Record<string, string>
 }
 
+// Outlined pill, matching the card-collection view/filter pills for consistency.
+const pillStyle = (active: boolean): React.CSSProperties => ({
+  padding: '5px 12px',
+  borderRadius: '6px',
+  border: `1px solid ${active ? '#3b82f6' : '#334155'}`,
+  backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'transparent',
+  color: active ? '#60a5fa' : '#94a3b8',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  transition: 'all 0.15s',
+  fontFamily: 'pressStart',
+})
+
 const HistoryPage: React.FC = () => {
   const isMobile = useIsMobile()
   const [mode, setMode] = useState<ViewMode>('seasons')
@@ -62,30 +77,17 @@ const HistoryPage: React.FC = () => {
       <div style={{ marginBottom: '16px' }}>
         <div style={{ fontSize: '22px', fontWeight: 700, color: '#e2e8f0' }}>History</div>
         <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>
-          Past champions, season standings, and the all-time record book
+          Past champions, the all-time record book, and the Hall of Fame
         </div>
       </div>
 
-      <div style={{
-        display: 'flex', gap: '2px', marginBottom: '14px',
-        backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px',
-        width: 'fit-content',
-      }}>
-        {(['seasons', 'records', 'user-records'] as ViewMode[]).map(m => (
-          <button
-            key={m}
-            onClick={() => setMode(m)}
-            style={{
-              padding: '6px 14px', fontSize: '12px', fontWeight: 600,
-              borderRadius: '6px', border: 'none', cursor: 'pointer',
-              backgroundColor: mode === m ? '#1e293b' : 'transparent',
-              color: mode === m ? '#e2e8f0' : '#64748b',
-              fontFamily: 'inherit',
-            }}
-          >
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
+        {(['seasons', 'records', 'user-records', 'hall-of-fame'] as ViewMode[]).map(m => (
+          <button key={m} onClick={() => setMode(m)} style={pillStyle(mode === m)}>
             {m === 'seasons' ? 'Seasons'
               : m === 'records' ? 'Record Book'
-              : 'Fantasy Records'}
+              : m === 'user-records' ? 'Fantasy Records'
+              : 'Hall of Fame'}
           </button>
         ))}
       </div>
@@ -93,6 +95,7 @@ const HistoryPage: React.FC = () => {
       {mode === 'seasons' && <SeasonsView isMobile={isMobile} />}
       {mode === 'records' && <RecordsView isMobile={isMobile} />}
       {mode === 'user-records' && <UserRecordsView isMobile={isMobile} />}
+      {mode === 'hall-of-fame' && <HallOfFame />}
     </div>
   )
 }
