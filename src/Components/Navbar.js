@@ -11,6 +11,7 @@ import { FavoriteTeamModal } from './Auth/FavoriteTeamModal'
 import { AuthModal } from './Auth/AuthModal'
 import ShopModal from './Shop/ShopModal'
 import CriticalityIndicator from './CriticalityIndicator'
+import HoverTooltip from './HoverTooltip'
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 const TrophySVG = () => (
@@ -295,6 +296,7 @@ export default function Navbar() {
   const [showTeamPicker, setShowTeamPicker] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showShop, setShowShop] = useState(false)
+  const [endowment, setEndowment] = useState(null)  // active income_boost powerup, or null
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const isMobile = useIsMobile()
@@ -466,6 +468,34 @@ export default function Navbar() {
     }
   }, [wsEvent, refetchRoster, refetchUser])
 
+  // Active Endowment (income_boost) indicator on the Floobits counter.
+  const fetchEndowment = useCallback(async () => {
+    try {
+      const tok = await getToken()
+      if (!tok) { setEndowment(null); return }
+      const res = await fetch(`${API_BASE}/shop/powerups/active`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      })
+      if (res.ok) {
+        const j = await res.json()
+        setEndowment((j.data?.active ?? []).find(p => p.slug === 'income_boost') || null)
+      }
+    } catch { /* silent */ }
+  }, [getToken])
+  useEffect(() => { fetchEndowment() }, [fetchEndowment])
+  useEffect(() => {
+    // Powerups can expire on week/season rollover; refresh the indicator then.
+    if (wsEvent && ['week_start', 'week_end', 'season_end', 'season_start'].includes(wsEvent.event)) {
+      fetchEndowment()
+    }
+  }, [wsEvent, fetchEndowment])
+  useEffect(() => {
+    // Refresh immediately when a powerup is purchased.
+    const handler = () => fetchEndowment()
+    window.addEventListener('floosball:shop-purchase', handler)
+    return () => window.removeEventListener('floosball:shop-purchase', handler)
+  }, [fetchEndowment])
+
   useEffect(() => {
     if (!isMobile) setMenuOpen(false)
   }, [isMobile])
@@ -632,12 +662,22 @@ export default function Navbar() {
                   </NavLink>
                 )}
                 {user?.floobits != null && (
-                  <button onClick={() => setShowShop(true)} style={{ background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '6px', backgroundColor: 'rgba(234,179,8,0.12)', fontFamily: 'inherit' }}>
-                    <span style={{ fontSize: '16px', fontWeight: '700', color: '#eab308' }}>
-                      {user.floobits.toLocaleString()}
-                    </span>
-                    <span style={{ fontSize: '13px', color: '#ca8a04' }}>F</span>
-                  </button>
+                  <HoverTooltip
+                    text={endowment ? `Endowment active — +${endowment.boostPercent ?? 25}% on all Floobit income${endowment.weeksRemaining ? ` · ${endowment.weeksRemaining}w left` : ''}` : undefined}
+                    color="#eab308"
+                  >
+                    <button onClick={() => setShowShop(true)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '6px', backgroundColor: 'rgba(234,179,8,0.12)', fontFamily: 'inherit', border: endowment ? '1px solid rgba(234,179,8,0.55)' : '1px solid transparent', boxShadow: endowment ? '0 0 9px rgba(234,179,8,0.35)' : 'none' }}>
+                      <span style={{ fontSize: '16px', fontWeight: '700', color: '#eab308' }}>
+                        {user.floobits.toLocaleString()}
+                      </span>
+                      <span style={{ fontSize: '13px', color: '#ca8a04' }}>F</span>
+                      {endowment && (
+                        <span style={{ fontSize: '9px', fontWeight: 800, color: '#1a1205', background: '#eab308', borderRadius: '4px', padding: '1px 5px', letterSpacing: '0.3px', lineHeight: 1.4 }}>
+                          +{endowment.boostPercent ?? 25}%
+                        </span>
+                      )}
+                    </button>
+                  </HoverTooltip>
                 )}
                 {userControls}
               </div>
@@ -709,8 +749,13 @@ export default function Navbar() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                       <span style={{ fontSize: '12px', color: '#94a3b8' }}>{displayName}</span>
                       {user.floobits != null && (
-                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#eab308' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#eab308', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                           {user.floobits.toLocaleString()} Floobits
+                          {endowment && (
+                            <span style={{ fontSize: '9px', fontWeight: 800, color: '#1a1205', background: '#eab308', borderRadius: '4px', padding: '1px 5px' }}>
+                              +{endowment.boostPercent ?? 25}% Endowment
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
