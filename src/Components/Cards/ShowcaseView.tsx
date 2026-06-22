@@ -526,7 +526,7 @@ const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
 
       <Heading>Classification</Heading>
       <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.45, marginBottom: '6px' }}>
-        The badges a card earns. These are the tags shown on it.
+        The CH / AP / MVP / Rookie tags shown on a card.
       </div>
       <div style={{ marginBottom: '14px' }}>
         {['rookie', 'all_pro', 'champion', 'mvp'].filter(c => c in sc.classification).map(c => (
