@@ -301,7 +301,7 @@ const ShowcaseView: React.FC = () => {
 
           <span style={{ flex: 1 }} />
 
-          {/* Floobit payout on the right, shown as the score x weekly-rate equation. */}
+          {/* Floobit payout on the right. */}
           <div style={{ textAlign: isMobile ? 'left' : 'right', minWidth: '150px' }}>
             <div style={{
               fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase',
@@ -311,9 +311,6 @@ const ShowcaseView: React.FC = () => {
               {data?.weeklyDividend ?? 0}F
             </div>
             <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '7px' }}>per week</div>
-            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
-              {showcaseScore} × {Math.round((data?.dividendRate ?? 0.13) * 100)}%
-            </div>
           </div>
         </div>
 
