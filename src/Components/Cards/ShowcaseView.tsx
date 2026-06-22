@@ -49,7 +49,7 @@ interface ShowcaseData {
   setBonus: number     // e.g. 0.45 → sets add +45%
   maxSetBonus: number  // cap on the summed set bonus (e.g. 1.5)
   dividendRate: number // weekly payout = rate × score × (1 + setBonus)
-  scoring: ScoringRules
+  scoring?: ScoringRules  // may be absent on an older backend payload
   activeSets: ShowcaseSet[]
   almostSets: AlmostSet[]
   sets: SetEntry[]
@@ -504,8 +504,10 @@ const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
   )
   return (
     <div>
+      {sc && (
+      <>
       <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.55, marginBottom: '14px' }}>
-        A card scores <span style={{ color: '#e2e8f0' }}>(edition + classification) × recency × tier</span>. Your showcase pays <span style={{ color: GOLD, fontWeight: 700 }}>{Math.round(data.dividendRate * 100)}%</span> of its total score every week.
+        A card scores <span style={{ color: '#e2e8f0' }}>(edition + classification) × recency × tier</span>. Your showcase pays <span style={{ color: GOLD, fontWeight: 700 }}>{Math.round((data.dividendRate ?? 0.13) * 100)}%</span> of its total score every week.
       </div>
 
       <Heading>Edition</Heading>
@@ -530,6 +532,8 @@ const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
         <Line label="Older" value={`×${sc.recencyFloor.toFixed(2)}`} />
         <Line label="Per upgrade level" value={`+${Math.round(sc.tierBonusPerLevel * 100)}%`} />
       </div>
+      </>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px' }}>
         <Heading>Set bonuses</Heading>
