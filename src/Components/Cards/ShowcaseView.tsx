@@ -17,10 +17,8 @@ interface SetEntry {
   key: string
   name: string
   req: string
-  bonus: number   // base bonus at all-Diamond quality (e.g. 0.5 → +50%)
+  bonus: number   // flat completion bonus (e.g. 0.5 → +50%)
   status: 'active' | 'almost' | 'locked'
-  tier?: string         // active: edition quality of the set
-  appliedBonus?: number // active: realized bonus after edition scaling
   need?: number         // almost/locked: cards still needed
   hint?: string         // almost: human hint
 }
@@ -553,14 +551,15 @@ const SetsPaytable: React.FC<{ sets: SetEntry[]; setBonus: number; maxSetBonus: 
                 <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '1px' }}>{s.req}</div>
                 {active && (
                   <div style={{ fontSize: '10px', color: GOLD, marginTop: '2px' }}>
-                    Active · {s.tier} · +{Math.round((s.appliedBonus ?? 0) * 100)}%
+                    Active
                   </div>
                 )}
                 {almost && (
                   <div style={{ fontSize: '10px', color: '#cbd5e1', marginTop: '2px' }}>{s.hint}</div>
                 )}
               </div>
-              {/* Base bonus (the advertised top value) */}
+              {/* Flat completion bonus — the set pays its full % whenever it's active,
+                  regardless of the editions in it (card quality is already in the base). */}
               <span style={{
                 fontSize: '12px', fontWeight: 800, fontFamily: 'pressStart', flexShrink: 0,
                 color: active ? GOLD : '#64748b',
