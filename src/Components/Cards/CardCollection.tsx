@@ -28,12 +28,18 @@ const POSITIONS = [
   { value: 4, label: 'TE' },
   { value: 5, label: 'K' },
 ]
+const CLASSIFICATIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'mvp', label: 'MVP' },
+  { value: 'champion', label: 'Champion' },
+  { value: 'all_pro', label: 'All-Pro' },
+  { value: 'rookie', label: 'Rookie' },
+]
 
 // Server-side sort keys (must match the collection endpoint's `sort` param)
 const SORTS = [
   { value: 'recent', label: 'Newest' },
   { value: 'rarity', label: 'Rarity' },
-  { value: 'classification', label: 'Classification' },
   { value: 'rating', label: 'Rating' },
   { value: 'tier', label: 'Tier' },
   { value: 'name', label: 'Name' },
@@ -67,6 +73,7 @@ const CardCollection: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [editionFilter, setEditionFilter] = useState('all')
   const [positionFilter, setPositionFilter] = useState(0)
+  const [classificationFilter, setClassificationFilter] = useState('all')
   const [activeOnly, setActiveOnly] = useState(false)
   const [sortBy, setSortBy] = useState<string>('recent')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
@@ -93,6 +100,7 @@ const CardCollection: React.FC = () => {
       const params = new URLSearchParams()
       if (editionFilter !== 'all') params.set('edition', editionFilter)
       if (positionFilter > 0) params.set('position', String(positionFilter))
+      if (classificationFilter !== 'all') params.set('classification', classificationFilter)
       if (activeOnly) params.set('activeOnly', 'true')
       params.set('vaulted', inVault ? 'true' : 'false')
       params.set('sort', sortBy)
@@ -108,7 +116,7 @@ const CardCollection: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }, [getToken, editionFilter, positionFilter, activeOnly, sortBy, inVault])
+  }, [getToken, editionFilter, positionFilter, classificationFilter, activeOnly, sortBy, inVault])
 
   useEffect(() => { setLoading(true); fetchCards() }, [fetchCards])
 
@@ -393,6 +401,14 @@ const CardCollection: React.FC = () => {
         {EDITIONS.map(e => (
           <button key={e} onClick={() => setEditionFilter(e)} style={pillStyle(editionFilter === e)}>
             {e}
+          </button>
+        ))}
+      </div>
+      {/* Classification filter */}
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+        {CLASSIFICATIONS.map(c => (
+          <button key={c.value} onClick={() => setClassificationFilter(c.value)} style={pillStyle(classificationFilter === c.value)}>
+            {c.label}
           </button>
         ))}
       </div>
