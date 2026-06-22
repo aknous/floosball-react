@@ -12,7 +12,7 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 interface ShowcaseSet { key: string; name: string }
 interface AlmostSet { key: string; name: string; need: number; hint: string }
-// Full paytable entry — every set with its live status.
+// Full paytable entry: every set with its live status.
 interface SetEntry {
   key: string
   name: string
@@ -204,7 +204,7 @@ const ShowcaseView: React.FC = () => {
         display: 'flex', gap: '16px', alignItems: 'flex-start',
         flexDirection: isMobile ? 'column' : 'row',
       }}>
-      {/* Display case — framed, lit, distinct from the plain collection grid */}
+      {/* Display case: framed, lit, distinct from the plain collection grid */}
       <div style={{
         position: 'relative', borderRadius: '16px', overflow: 'hidden',
         flex: 1, minWidth: 0,
@@ -214,7 +214,7 @@ const ShowcaseView: React.FC = () => {
         boxShadow: 'inset 0 2px 60px rgba(0,0,0,0.55), 0 12px 34px rgba(0,0,0,0.45)',
         opacity: saving ? 0.6 : 1, transition: 'opacity 0.15s',
       }}>
-        {/* Compact grade header — kept slim so the cards stay in the spotlight */}
+        {/* Compact grade header, kept slim so the cards stay in the spotlight */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap',
           marginBottom: '18px', paddingBottom: '14px',
@@ -235,7 +235,7 @@ const ShowcaseView: React.FC = () => {
               display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px',
             }}>
               <span style={{
-                fontSize: '10px', letterSpacing: '0.28em', color: 'rgba(251,191,36,0.75)',
+                fontSize: '11px', letterSpacing: '0.24em', color: 'rgba(251,191,36,0.92)',
                 fontWeight: 700, textTransform: 'uppercase', fontFamily: 'pressStart',
               }}>On Display</span>
               <HelpButton title="The Showcase" accent="#fbbf24">
@@ -267,37 +267,16 @@ const ShowcaseView: React.FC = () => {
                 </HelpSection>
               </HelpButton>
             </div>
-            <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.4 }}>
+            <div style={{ fontSize: '14px', color: '#e2e8f0', lineHeight: 1.45 }}>
               Pays <span style={{ color: GOLD, fontWeight: 700 }}>{data?.weeklyDividend ?? 0} Floobits</span> / week
             </div>
-            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
+            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
               {data?.slotCount ?? 0}/{data?.maxSlots ?? 8} featured
               {(data?.setBonus ?? 0) > 0 && (
-                <span style={{ color: GOLD }}> · sets +{Math.round((data?.setBonus ?? 0) * 100)}%</span>
+                <span style={{ color: GOLD, fontWeight: 600 }}> · sets +{Math.round((data?.setBonus ?? 0) * 100)}%</span>
               )}
               <span> · resets each season</span>
             </div>
-          </div>
-          <span style={{ flex: 1 }} />
-          {/* Active + Almost sets, compact */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '340px' }}>
-            {(data?.activeSets?.length ?? 0) > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', justifyContent: 'flex-end' }}>
-                {data!.activeSets.map(s => (
-                  <span key={s.key} style={{
-                    fontSize: '11px', color: GOLD, fontWeight: 700,
-                    background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)',
-                    borderRadius: '4px', padding: '2px 7px',
-                  }}>◆ {s.name}</span>
-                ))}
-              </div>
-            )}
-            {(data?.almostSets?.length ?? 0) > 0 && data!.almostSets.map(s => (
-              <span key={s.key} style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'right' }}>
-                <span style={{ color: '#64748b' }}>○</span> {s.name}
-                <span style={{ color: '#64748b' }}> — {s.hint}</span>
-              </span>
-            ))}
           </div>
         </div>
 
@@ -374,14 +353,20 @@ const ShowcaseView: React.FC = () => {
                     <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </div>
-                <span style={{ fontSize: '10px', letterSpacing: '0.14em' }}>FEATURE</span>
+                <span style={{ fontSize: '11px', letterSpacing: '0.14em' }}>FEATURE</span>
               </button>
             )
           ))}
         </div>
       </div>
 
-      {/* Standings — everyone with a featured showcase this season */}
+      {/* Sets: a vertical list placed on the LEFT on desktop (CSS order), opposite
+          the standings, so it isn't buried under the case and easy to miss. */}
+      {data && (
+        <SetsColumn sets={data.sets} setBonus={data.setBonus} maxSetBonus={data.maxSetBonus} isMobile={isMobile} />
+      )}
+
+      {/* Standings: everyone with a featured showcase this season */}
       <aside style={{
         width: isMobile ? '100%' : '270px', flexShrink: 0,
         borderRadius: '12px', border: '1px solid #1e293b',
@@ -392,7 +377,7 @@ const ShowcaseView: React.FC = () => {
           color: '#94a3b8', fontWeight: 700, fontFamily: 'pressStart', marginBottom: '12px',
         }}>Standings</div>
         {leaderboard.length === 0 ? (
-          <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.6 }}>
+          <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6 }}>
             No showcases yet. Be the first to put cards on display.
           </div>
         ) : (
@@ -412,15 +397,15 @@ const ShowcaseView: React.FC = () => {
                   onMouseLeave={(e) => { if (!entry.isCurrentUser) e.currentTarget.style.background = 'transparent' }}
                 >
                   <span style={{
-                    fontSize: '11px', color: '#64748b', fontWeight: 700,
+                    fontSize: '12px', color: '#94a3b8', fontWeight: 700,
                     width: '20px', flexShrink: 0, fontVariantNumeric: 'tabular-nums',
                   }}>{entry.rank}</span>
                   <span style={{
-                    flex: 1, minWidth: 0, fontSize: '12px',
-                    color: entry.isCurrentUser ? '#fbbf24' : '#cbd5e1', fontWeight: entry.isCurrentUser ? 700 : 400,
+                    flex: 1, minWidth: 0, fontSize: '13px',
+                    color: entry.isCurrentUser ? '#fbbf24' : '#e2e8f0', fontWeight: entry.isCurrentUser ? 700 : 400,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>{entry.username}</span>
-                  <span style={{ fontSize: '10px', color: '#64748b', flexShrink: 0 }}>{entry.cardCount}/8</span>
+                  <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>{entry.cardCount}/8</span>
                   <span style={{
                     width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -434,9 +419,6 @@ const ShowcaseView: React.FC = () => {
         )}
       </aside>
       </div>
-
-      {/* Sets paytable — every set, what it needs, and how it scores */}
-      {data && <SetsPaytable sets={data.sets} setBonus={data.setBonus} maxSetBonus={data.maxSetBonus} />}
 
       <ShowcasePickerModal
         open={pickerSlot !== null}
@@ -485,90 +467,86 @@ const CardDividend: React.FC<{ showcase: CardShowcaseBreakdown }> = ({ showcase 
   return (
     <HoverTooltip content={content} color="#fbbf24">
       <span style={{
-        fontSize: '10px', fontWeight: 700, color: GOLD, fontFamily: 'pressStart',
-        background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)',
-        borderRadius: '5px', padding: '2px 8px', whiteSpace: 'nowrap',
+        fontSize: '11px', fontWeight: 700, color: GOLD, fontFamily: 'pressStart',
+        background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)',
+        borderRadius: '5px', padding: '3px 9px', whiteSpace: 'nowrap',
       }}>+{showcase.dividend}/wk</span>
     </HoverTooltip>
   )
 }
 
-// The sets paytable — all "hands", their requirement, and how they score. Active
-// sets glow gold (with the realized bonus after edition scaling), almost-sets show
-// what they still need, locked sets sit muted. Sorted active → almost → locked.
-const SetsPaytable: React.FC<{ sets: SetEntry[]; setBonus: number; maxSetBonus: number }> = ({ sets, setBonus, maxSetBonus }) => {
+// The sets list: every "hand", its requirement, and the flat bonus it pays.
+// Rendered as a vertical sidebar to the LEFT of the case (desktop). Active sets glow
+// gold, almost-sets show what they still need, locked sets sit muted. Sorted active,
+// then almost, then locked.
+const SetsColumn: React.FC<{ sets: SetEntry[]; setBonus: number; maxSetBonus: number; isMobile: boolean }> = ({ sets, setBonus, maxSetBonus, isMobile }) => {
   const order = { active: 0, almost: 1, locked: 2 }
   const sorted = [...sets].sort((a, b) => order[a.status] - order[b.status] || b.bonus - a.bonus)
   const capped = setBonus >= maxSetBonus
   return (
-    <div style={{
-      marginTop: '16px', borderRadius: '12px', border: '1px solid #1e293b',
-      background: 'rgba(15,23,42,0.5)', padding: '16px 18px',
+    <aside style={{
+      order: isMobile ? 0 : -1,
+      width: isMobile ? '100%' : '252px', flexShrink: 0,
+      borderRadius: '12px', border: '1px solid #1e293b',
+      background: 'rgba(15,23,42,0.5)', padding: '14px 16px',
     }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
         <span style={{
           fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase',
-          color: '#94a3b8', fontWeight: 700, fontFamily: 'pressStart',
+          color: '#cbd5e1', fontWeight: 700, fontFamily: 'pressStart',
         }}>Sets</span>
-        <span style={{ fontSize: '11px', color: '#64748b' }}>
-          Group featured cards into sets to lift your dividend. A set pays its full bonus
-          only when its cards are all Diamonds; lower editions pay a fraction.
-        </span>
         <span style={{ flex: 1 }} />
-        <span style={{ fontSize: '11px', color: setBonus > 0 ? GOLD : '#64748b', fontWeight: 700 }}>
-          Sets {setBonus > 0 ? `+${Math.round(setBonus * 100)}%` : 'none'}
-          {capped && <span style={{ color: '#64748b', fontWeight: 400 }}> (max +{Math.round(maxSetBonus * 100)}%)</span>}
-        </span>
+        <span style={{
+          fontSize: '13px', fontWeight: 800, fontFamily: 'pressStart',
+          color: setBonus > 0 ? GOLD : '#94a3b8',
+        }}>{setBonus > 0 ? `+${Math.round(setBonus * 100)}%` : 'none'}</span>
       </div>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
-        gap: '8px',
-      }}>
+      <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '12px' }}>
+        Group featured cards into sets for a flat bonus on top of your dividend.
+        {capped && <span style={{ color: '#cbd5e1' }}> Maxed at +{Math.round(maxSetBonus * 100)}%.</span>}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
         {sorted.map(s => {
           const active = s.status === 'active'
           const almost = s.status === 'almost'
           const accent = active ? GOLD : almost ? '#94a3b8' : '#475569'
           return (
             <div key={s.key} style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              padding: '8px 10px', borderRadius: '8px',
-              background: active ? 'rgba(251,191,36,0.08)' : 'rgba(148,163,184,0.04)',
-              border: `1px solid ${active ? 'rgba(251,191,36,0.3)' : '#1e293b'}`,
-              opacity: s.status === 'locked' ? 0.7 : 1,
+              display: 'flex', alignItems: 'flex-start', gap: '10px',
+              padding: '9px 11px', borderRadius: '8px',
+              background: active ? 'rgba(251,191,36,0.10)' : 'rgba(148,163,184,0.05)',
+              border: `1px solid ${active ? 'rgba(251,191,36,0.35)' : '#23304a'}`,
+              opacity: s.status === 'locked' ? 0.85 : 1,
             }}>
               {/* Status marker */}
               <span style={{
-                width: '14px', height: '14px', borderRadius: '50%', flexShrink: 0,
-                border: `1.5px solid ${accent}`,
-                background: active ? accent : 'transparent',
+                width: '13px', height: '13px', borderRadius: '50%', flexShrink: 0, marginTop: '3px',
+                border: `2px solid ${accent}`, background: active ? accent : 'transparent',
               }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  fontSize: '12px', fontWeight: 700,
-                  color: active ? GOLD : s.status === 'locked' ? '#94a3b8' : '#cbd5e1',
-                }}>{s.name}</div>
-                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '1px' }}>{s.req}</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                  <span style={{
+                    flex: 1, fontSize: '13px', fontWeight: 700,
+                    color: active ? GOLD : s.status === 'locked' ? '#94a3b8' : '#e2e8f0',
+                  }}>{s.name}</span>
+                  <span style={{
+                    fontSize: '13px', fontWeight: 800, fontFamily: 'pressStart', flexShrink: 0,
+                    color: active ? GOLD : '#94a3b8',
+                  }}>+{Math.round(s.bonus * 100)}%</span>
+                </div>
+                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', lineHeight: 1.4 }}>{s.req}</div>
                 {active && (
-                  <div style={{ fontSize: '10px', color: GOLD, marginTop: '2px' }}>
-                    Active
-                  </div>
+                  <div style={{ fontSize: '11px', color: GOLD, fontWeight: 600, marginTop: '3px' }}>Active</div>
                 )}
                 {almost && (
-                  <div style={{ fontSize: '10px', color: '#cbd5e1', marginTop: '2px' }}>{s.hint}</div>
+                  <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '3px' }}>{s.hint}</div>
                 )}
               </div>
-              {/* Flat completion bonus — the set pays its full % whenever it's active,
-                  regardless of the editions in it (card quality is already in the base). */}
-              <span style={{
-                fontSize: '12px', fontWeight: 800, fontFamily: 'pressStart', flexShrink: 0,
-                color: active ? GOLD : '#64748b',
-              }}>+{Math.round(s.bonus * 100)}%</span>
             </div>
           )
         })}
       </div>
-    </div>
+    </aside>
   )
 }
 
