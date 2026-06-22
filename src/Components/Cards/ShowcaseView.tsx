@@ -86,6 +86,14 @@ const Corners: React.FC = () => {
   )
 }
 
+// Label/value row for the score hover breakdown.
+const ScoreRow: React.FC<{ label: string; value: string; gold?: boolean; strong?: boolean }> = ({ label, value, gold, strong }) => (
+  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px' }}>
+    <span style={{ color: strong ? '#e2e8f0' : '#94a3b8' }}>{label}</span>
+    <span style={{ color: gold ? GOLD : '#e2e8f0', fontWeight: (gold || strong) ? 700 : 400 }}>{value}</span>
+  </div>
+)
+
 const ShowcaseView: React.FC = () => {
   const { getToken } = useAuth()
   const isMobile = useIsMobile()
@@ -285,15 +293,19 @@ const ShowcaseView: React.FC = () => {
                 </HelpSection>
               </HelpButton>
             </div>
-            {/* Score (points total) + gap to the next grade, under the grade. */}
-            <div style={{ fontSize: '24px', fontWeight: 800, color: '#e2e8f0', fontFamily: 'pressStart', lineHeight: 1, marginTop: '7px' }}>
-              {showcaseScore}<span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, marginLeft: '5px' }}>pts</span>
-            </div>
-            {setBonus > 0 && (
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '5px' }}>
-                {baseScore} × <span style={{ color: GOLD, fontWeight: 700 }}>{(1 + setBonus).toFixed(2)}</span> sets = {showcaseScore}
+            {/* Score (points total) with a hover breakdown; gap to next grade below. */}
+            <HoverTooltip color="#fbbf24" content={
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left', minWidth: '170px', fontSize: '13px' }}>
+                <ScoreRow label="Card scores" value={`${baseScore}`} />
+                {setBonus > 0 && <ScoreRow label="Set bonus" value={`+${Math.round(setBonus * 100)}%`} gold />}
+                <div style={{ height: '1px', background: 'rgba(251,191,36,0.25)', margin: '3px 0' }} />
+                <ScoreRow label="Total score" value={`${showcaseScore}`} gold strong />
               </div>
-            )}
+            }>
+              <div style={{ fontSize: '24px', fontWeight: 800, color: '#e2e8f0', fontFamily: 'pressStart', lineHeight: 1, marginTop: '7px', cursor: 'help', display: 'inline-block' }}>
+                {showcaseScore}<span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, marginLeft: '5px' }}>pts</span>
+              </div>
+            </HoverTooltip>
             <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '5px' }}>
               {nextGrade
                 ? <span><span style={{ color: GOLD, fontWeight: 700 }}>{nextGrade.need}</span> to grade {nextGrade.grade}</span>
