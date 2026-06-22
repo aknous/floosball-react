@@ -102,20 +102,37 @@ interface Candidate { key: string; name: string; currentLevel: number; targetLev
 interface LeagueTeam { id: number; name: string; city: string; abbr: string; color: string; appeal: number; levels: Record<string, number>; fanCount: number; marketTier: string }
 
 // ── small UI bits ─────────────────────────────────────────────────────────
-function FundChips({ onFund, balance, max, topGap = 8 }: { onFund: (amt: number) => void; balance: number; max: number; topGap?: number }) {
+function FundChips({ onFund, balance, max, topGap = 8, allowCustom = false }: { onFund: (amt: number) => void; balance: number; max: number; topGap?: number; allowCustom?: boolean }) {
+  const [custom, setCustom] = useState('')
+  const customAmt = Math.min(parseInt(custom, 10) || 0, max, balance)
+  const submitCustom = () => { if (customAmt > 0) { onFund(customAmt); setCustom('') } }
+  const chipStyle = (disabled: boolean): React.CSSProperties => ({
+    fontSize: '12px', fontWeight: 700, borderRadius: '6px', padding: '3px 10px',
+    border: `1px solid ${disabled ? '#1e293b' : '#2f4a6b'}`, background: disabled ? 'transparent' : '#15293f',
+    color: disabled ? '#475569' : '#93c5fd',
+  })
   return (
-    <div style={{ display: 'flex', gap: '5px', marginTop: topGap, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: '5px', marginTop: topGap, flexWrap: 'wrap', alignItems: 'center' }}>
       {FUND_AMOUNTS.map(a => {
         const amt = Math.min(a, max)
         const disabled = balance < amt || max <= 0
         return (
-          <button key={a} className="facChip" onClick={() => !disabled && onFund(amt)} disabled={disabled} style={{
-            fontSize: '12px', fontWeight: 700, borderRadius: '6px', padding: '3px 10px',
-            border: `1px solid ${disabled ? '#1e293b' : '#2f4a6b'}`, background: disabled ? 'transparent' : '#15293f',
-            color: disabled ? '#475569' : '#93c5fd',
-          }}>+{a}</button>
+          <button key={a} className="facChip" onClick={() => !disabled && onFund(amt)} disabled={disabled} style={chipStyle(disabled)}>+{a}</button>
         )
       })}
+      {allowCustom && (
+        <>
+          <input
+            type="number" min={1} value={custom}
+            onChange={e => setCustom(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') submitCustom() }}
+            placeholder="Custom"
+            style={{ width: '74px', padding: '3px 8px', fontSize: '12px', fontFamily: 'inherit',
+              background: '#0f172a', color: '#e2e8f0', border: '1px solid #2f4a6b', borderRadius: '6px', outline: 'none' }}
+          />
+          <button className="facChip" disabled={customAmt <= 0} onClick={submitCustom} style={chipStyle(customAmt <= 0)}>Add</button>
+        </>
+      )}
     </div>
   )
 }
@@ -244,7 +261,7 @@ const FacilitiesSection: React.FC = () => {
             ))}
             <span style={{ width: '1px', height: '18px', background: '#334155', margin: '0 6px' }} />
             <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.08em', color: '#94a3b8', fontWeight: 700, marginRight: '2px' }}>Add now</span>
-            <FundChips onFund={(amt) => contribute(amt, 'treasury')} balance={balance} max={Number.MAX_SAFE_INTEGER} topGap={0} />
+            <FundChips onFund={(amt) => contribute(amt, 'treasury')} balance={balance} max={Number.MAX_SAFE_INTEGER} topGap={0} allowCustom />
           </div>
 
           {/* kanban: facilities | in progress | vote */}
