@@ -287,7 +287,6 @@ const ShowcaseView: React.FC = () => {
               {(data?.setBonus ?? 0) > 0 && (
                 <span style={{ color: GOLD, fontWeight: 600 }}> · sets +{Math.round((data?.setBonus ?? 0) * 100)}%</span>
               )}
-              <span> · resets each season</span>
             </div>
           </div>
         </div>
