@@ -281,7 +281,7 @@ export default function PlayersPage() {
         {/* Stats table */}
         <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: 'auto', borderCollapse: 'collapse' }}>
+            <table style={{ width: 'auto', minWidth: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
                   {/* Fixed left columns */}
@@ -303,11 +303,11 @@ export default function PlayersPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6 + cols.length} style={{ padding: '32px', textAlign: 'center', color: '#475569', fontSize: '13px' }}>Loading…</td>
+                    <td colSpan={4 + cols.length} style={{ padding: '32px', textAlign: 'center', color: '#475569', fontSize: '13px' }}>Loading…</td>
                   </tr>
                 ) : sorted.length === 0 ? (
                   <tr>
-                    <td colSpan={6 + cols.length} style={{ padding: '32px', textAlign: 'center', color: '#475569', fontSize: '13px' }}>No players found</td>
+                    <td colSpan={4 + cols.length} style={{ padding: '32px', textAlign: 'center', color: '#475569', fontSize: '13px' }}>No players found</td>
                   </tr>
                 ) : (
                   sorted.map((player, idx) => (
