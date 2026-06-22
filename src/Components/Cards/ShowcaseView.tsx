@@ -39,6 +39,7 @@ interface ScoringRules {
   recencyByAge: Record<string, number>
   recencyFloor: number
   tierBonusPerLevel: number
+  grades?: [string, number][]  // [grade, minScore], best first
 }
 interface ShowcaseData {
   slots: ShowcaseSlot[]
@@ -252,23 +253,20 @@ const ShowcaseView: React.FC = () => {
               }}>On Display</span>
               <HelpButton title="The Showcase" accent="#fbbf24">
                 <HelpSection title="Put your best on display">
-                  Feature up to 8 vaulted cards. Your lineup earns a grade from F to S.
-                </HelpSection>
-                <HelpSection title="Get paid every week">
-                  Your Showcase pays a Floobit dividend every week of the regular
-                  season, scaled by its score. A better display pays more. Build it up
-                  early and it pays all season; the Showcase clears for a fresh start
-                  next season.
+                  Feature up to 8 vaulted cards for a grade from F to S. Your Showcase
+                  pays you Floobits every week of the regular season, and the better it
+                  is, the more you earn. Set it early to earn all season. It resets each
+                  new season.
                 </HelpSection>
                 <HelpSection title="How scoring works">
                   <ScoringManual scoring={data?.scoring} dividendRate={data?.dividendRate} />
                   <div style={{ marginTop: '8px' }}>Hover any featured card for its exact breakdown.</div>
                 </HelpSection>
                 <HelpSection title="Build sets">
-                  Group cards into named sets to raise your dividend. One Club for six
-                  from a team, Diamond Vault for eight Diamonds, Full Spectrum for all
-                  four editions of one player, and more. The "Almost" hints show what
-                  you're close to. See the Sets panel for the full list.
+                  Group cards into named sets to earn more. One Club is six from a team,
+                  Diamond Vault is eight Diamonds, Full Spectrum is all four editions of
+                  one player, and more. The Sets tab lists every set and flags the ones
+                  you are close to completing.
                 </HelpSection>
                 <HelpSection title="Vault first">
                   Only vaulted cards can be featured. Vault a card, then add it here.
@@ -493,8 +491,9 @@ const ScoringManual: React.FC<{ scoring?: ScoringRules; dividendRate?: number }>
   if (!scoring) {
     return <span>A card scores from its edition, classification (the CH / AP / MVP / Rookie tags), recency, and upgrade tier.</span>
   }
+  const grades = scoring.grades
   const editionLabel: Record<string, string> = { base: 'Base', holographic: 'Holographic', prismatic: 'Prismatic', diamond: 'Diamond' }
-  const classLabel: Record<string, string> = { rookie: 'Rookie', all_pro: 'All-Pro (AP)', champion: 'Champion (CH)', mvp: 'MVP' }
+  const classLabel: Record<string, string> = { rookie: 'Rookie (R)', all_pro: 'All-Pro (AP)', champion: 'Champion (CH)', mvp: 'MVP' }
   const Group: React.FC<{ title: string; sub?: string; children: React.ReactNode }> = ({ title, sub, children }) => (
     <div style={{ marginBottom: '12px' }}>
       <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '14px', marginBottom: sub ? '1px' : '4px' }}>{title}</div>
@@ -528,8 +527,19 @@ const ScoringManual: React.FC<{ scoring?: ScoringRules; dividendRate?: number }>
           <Line key={k} label={k === '0' ? 'This season' : `${k} season${k === '1' ? '' : 's'} old`} value={`×${scoring.recencyByAge[k].toFixed(2)}`} />
         ))}
         <Line label="Older" value={`×${scoring.recencyFloor.toFixed(2)}`} />
-        <Line label="Per upgrade level" value={`+${Math.round(scoring.tierBonusPerLevel * 100)}%`} />
       </Group>
+      <Group title="Upgrade tier" sub="Upgraded cards score more">
+        {[1, 2, 3, 4].map(t => (
+          <Line key={t} label={`Tier ${t}`} value={`×${(1 + (t - 1) * scoring.tierBonusPerLevel).toFixed(2)}`} />
+        ))}
+      </Group>
+      {grades && grades.length > 0 && (
+        <Group title="Grade" sub="Your card scores added up, lifted by completed sets. The grade is the tier your total reaches; the weekly dividend scales with the score itself.">
+          {grades.map(([g, min], i) => (
+            <Line key={g} label={`Grade ${g}`} value={min > 0 ? `${min}+` : `below ${grades[i - 1]?.[1] ?? min}`} />
+          ))}
+        </Group>
+      )}
     </div>
   )
 }
