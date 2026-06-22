@@ -6,14 +6,15 @@ const GRADE_COLORS: Record<string, string> = {
 }
 const GOLD = '#fbbf24'
 
-interface ShowcaseResult { season: number; grade: string | null; payout: number }
+interface ShowcaseResult { season: number; grade: string | null; total: number; weeksPaid: number }
 
 interface ShowcaseResultModalProps {
   result: ShowcaseResult | null   // null = closed
   onClose: () => void
 }
 
-/** End-of-season recap: the grade your showcase earned and what it paid. */
+/** End-of-season recap: the grade your showcase finished on and the total
+ *  weekly dividends it paid across the season. */
 export default function ShowcaseResultModal({ result, onClose }: ShowcaseResultModalProps) {
   useEffect(() => {
     if (!result) return
@@ -62,10 +63,13 @@ export default function ShowcaseResultModal({ result, onClose }: ShowcaseResultM
         </div>
 
         <div style={{ fontSize: '13px', color: '#cbd5e1', marginBottom: '6px' }}>
-          Your collection graded <span style={{ color: gradeColor, fontWeight: 700 }}>{result.grade}</span>
+          Your collection finished <span style={{ color: gradeColor, fontWeight: 700 }}>{result.grade}</span>
         </div>
-        <div style={{ fontSize: '16px', fontWeight: 800, color: GOLD, marginBottom: '22px' }}>
-          +{result.payout} Floobits
+        <div style={{ fontSize: '16px', fontWeight: 800, color: GOLD, marginBottom: '6px' }}>
+          +{result.total} Floobits
+        </div>
+        <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '22px' }}>
+          paid across {result.weeksPaid} {result.weeksPaid === 1 ? 'week' : 'weeks'}
         </div>
 
         <button

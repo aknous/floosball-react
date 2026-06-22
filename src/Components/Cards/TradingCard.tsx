@@ -253,6 +253,16 @@ export interface CardData {
   // Pack-reveal only: how many of this effect the user already owns (non-vaulted).
   // >0 means keeping this card yields a same-effect duplicate (Level Up fuel).
   ownedEffectCount?: number
+  // Showcase-context only: this card's scoring breakdown + its Floobit share of
+  // the weekly dividend (attached by the showcase endpoints).
+  showcase?: {
+    editionPoints: number
+    classificationPoints: number
+    recency: number
+    tierMult: number
+    points: number
+    dividend: number
+  }
 }
 
 interface TradingCardProps {

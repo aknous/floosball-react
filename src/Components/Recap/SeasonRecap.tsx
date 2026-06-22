@@ -354,7 +354,7 @@ const ShowcaseLbCol: React.FC<{ rows: RecapShowcaseEntry[] }> = ({ rows }) => (
               <img src={`/avatars/${r.favoriteTeam.teamId}.png`} alt={r.favoriteTeam.teamAbbr} crossOrigin="anonymous" style={{ width: 16, height: 16, flexShrink: 0 }} />
             )}
             <span style={{ flex: 1, fontSize: '14px', color: '#cbd5e1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.username}</span>
-            <HoverTooltip text={`Grade ${r.grade} · ${r.cardCount} cards · ${r.estimatedPayout} Floobits payout`} color="#c084fc">
+            <HoverTooltip text={`Grade ${r.grade} · ${r.cardCount} cards · ${r.weeklyDividend} Floobits / week`} color="#c084fc">
               <span style={{ fontSize: '18px', fontWeight: 800, color: '#c084fc', minWidth: '22px', textAlign: 'right', display: 'inline-block' }}>{r.grade}</span>
             </HoverTooltip>
           </div>

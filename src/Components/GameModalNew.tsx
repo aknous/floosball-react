@@ -2589,12 +2589,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 // object flattens passing, so merge in its nested rushing block.
                 const qbRushRow = (p: any): StatRow | null =>
                   (p && p.rushing && p.rushing.carries > 0) ? rushRow({ ...p, ...p.rushing }) : null
+                // An RB that caught checkdowns/screens shows up in receiving too. The rb
+                // object flattens rushing, so merge in its nested receiving block.
+                const rbRcvRow = (p: any): StatRow | null =>
+                  (p && p.receiving && p.receiving.receptions > 0) ? rcvRow({ ...p, ...p.receiving }) : null
                 const homePassRows = compactRows([passRow(hp.qb)])
                 const awayPassRows = compactRows([passRow(ap.qb)])
                 const homeRushRows = compactRows([rushRow(hp.rb), qbRushRow(hp.qb)])
                 const awayRushRows = compactRows([rushRow(ap.rb), qbRushRow(ap.qb)])
-                const homeRcvRows = compactRows([rcvRow(hp.wr1), rcvRow(hp.wr2), rcvRow(hp.te)])
-                const awayRcvRows = compactRows([rcvRow(ap.wr1), rcvRow(ap.wr2), rcvRow(ap.te)])
+                const homeRcvRows = compactRows([rcvRow(hp.wr1), rcvRow(hp.wr2), rcvRow(hp.te), rbRcvRow(hp.rb)])
+                const awayRcvRows = compactRows([rcvRow(ap.wr1), rcvRow(ap.wr2), rcvRow(ap.te), rbRcvRow(ap.rb)])
                 const homeKRows = compactRows([kRow(hp.k)])
                 const awayKRows = compactRows([kRow(ap.k)])
 

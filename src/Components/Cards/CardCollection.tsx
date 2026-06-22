@@ -285,7 +285,7 @@ const CardCollection: React.FC = () => {
                 season instead.
               </HelpSection>
               <HelpSection title="Show them off">
-                Feature vaulted cards in your Showcase to earn a payout at season end.
+                Feature vaulted cards in your Showcase to earn a weekly Floobit dividend.
               </HelpSection>
               <HelpSection title="Arrange and remove">
                 Switch to Manual sort to drag cards into any order. Removing a card from

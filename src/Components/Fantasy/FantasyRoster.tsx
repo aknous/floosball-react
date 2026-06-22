@@ -49,10 +49,8 @@ interface ActivePowerup {
   expiring?: boolean
   overrideModifier?: string
   count?: number
-  scale?: number
-  exponent?: number
-  boostedScale?: number
-  boostedExponent?: number
+  boostMultiplier?: number
+  boostPercent?: number
 }
 
 const BASE_SLOTS = [
@@ -1291,7 +1289,7 @@ export const FantasyRoster: React.FC = () => {
         )
       })()}
 
-      {/* Active Endowment (income_boost) indicator — flatter FP→F curve */}
+      {/* Active Endowment (income_boost) indicator — +25% on all Floobit income */}
       {(() => {
         const boostPU = activePowerups.find(p => p.slug === 'income_boost')
         if (!boostPU) return null
@@ -1304,7 +1302,7 @@ export const FantasyRoster: React.FC = () => {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             <span style={{ fontWeight: '700' }}>
-              Endowment Active<span style={{ color: '#eab308', fontWeight: 400, fontSize: '11px' }}> · flatter F curve</span>
+              Endowment Active<span style={{ color: '#eab308', fontWeight: 400, fontSize: '11px' }}> · +25% on all income</span>
             </span>
             <span style={{
               fontSize: '10px',

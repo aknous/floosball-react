@@ -161,6 +161,7 @@ export const OffseasonPanel: React.FC = () => {
   const [faWindowEnd, setFaWindowEnd] = useState<number | null>(null)
   const [ballotModalOpen, setBallotModalOpen] = useState(false)
   const [existingBallot, setExistingBallot] = useState<number[] | null>(null)
+  const [existingPositionPriority, setExistingPositionPriority] = useState<number[] | null>(null)
   const [ballotSubmitting, setBallotSubmitting] = useState(false)
   const [gmResolvedEvents, setGmResolvedEvents] = useState<GmVoteResolvedEvent[]>([])
   const [faDirectives, setFaDirectives] = useState<GmFaDirectivePlayer[]>([])
@@ -301,7 +302,7 @@ export const OffseasonPanel: React.FC = () => {
     fetchScouting()
   }, [faWindowOpen, getToken])
 
-  const handleSubmitBallot = useCallback(async (rankings: number[]): Promise<GmFaBallotResponse | null> => {
+  const handleSubmitBallot = useCallback(async (rankings: number[], positionPriority: number[]): Promise<GmFaBallotResponse | null> => {
     const tok = await getToken()
     if (!tok) return null
     setBallotSubmitting(true)
@@ -309,7 +310,7 @@ export const OffseasonPanel: React.FC = () => {
       const res = await fetch(`${API_BASE}/gm/fa-ballot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-        body: JSON.stringify({ rankings }),
+        body: JSON.stringify({ rankings, positionPriority }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: 'Ballot submission failed' }))
@@ -319,6 +320,7 @@ export const OffseasonPanel: React.FC = () => {
       const json = await res.json()
       const data: GmFaBallotResponse = json.data ?? json
       setExistingBallot(data.rankings)
+      setExistingPositionPriority(Array.isArray(data.positionPriority) ? data.positionPriority : null)
       // Refresh balance
       const balRes = await fetch(`${API_BASE}/currency/balance`, {
         headers: { Authorization: `Bearer ${tok}` },
@@ -412,6 +414,7 @@ export const OffseasonPanel: React.FC = () => {
         // Restore FA pool + ballot + directives for rank markers
         if (data.faPool?.length > 0) setFaPool(data.faPool)
         if (data.existingBallot) setExistingBallot(data.existingBallot)
+        setExistingPositionPriority(Array.isArray(data.existingPositionPriority) ? data.existingPositionPriority : null)
         if (data.faDirectives?.length > 0) setFaDirectives(data.faDirectives)
         if (data.gmResolutions?.length > 0) {
           setGmResolvedEvents(data.gmResolutions as GmVoteResolvedEvent[])
@@ -1624,6 +1627,7 @@ export const OffseasonPanel: React.FC = () => {
         onSubmit={handleSubmitBallot}
         submitting={ballotSubmitting}
         existingBallot={existingBallot}
+        existingPositionPriority={existingPositionPriority}
       />
     </div>
   )

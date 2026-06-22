@@ -79,6 +79,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   const [faScoutingPlayers, setFaScoutingPlayers] = useState<ScoutingPlayer[]>([])
   const [faOpenSlots, setFaOpenSlots] = useState<OpenSlot[]>([])
   const [existingFaBallot, setExistingFaBallot] = useState<number[] | null>(null)
+  const [existingFaPriority, setExistingFaPriority] = useState<number[] | null>(null)
   const [faModalOpen, setFaModalOpen] = useState(false)
   const [faBallotSubmitting, setFaBallotSubmitting] = useState(false)
   const [faWindowEnd, setFaWindowEnd] = useState<number | null>(null)
@@ -165,6 +166,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
         const ofsJson = await ofsRes.json().catch(() => null)
         if (!cancelled && ofsJson) {
           if (ofsJson.existingBallot) setExistingFaBallot(ofsJson.existingBallot)
+          setExistingFaPriority(Array.isArray(ofsJson.existingPositionPriority) ? ofsJson.existingPositionPriority : null)
           if (ofsJson.faWindowEnd) setFaWindowEnd(ofsJson.faWindowEnd * 1000)
           const results = ofsJson.faVoteResults?.[teamAbbr]
           if (Array.isArray(results)) setTeamFaVotes(results)
@@ -226,7 +228,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
     return () => { cancelled = true }
   }, [isActive, getToken, gmVoteSignature, teamAbbr, teamId, refetchToken])
 
-  const handleSubmitFaBallot = useCallback(async (rankings: number[]) => {
+  const handleSubmitFaBallot = useCallback(async (rankings: number[], positionPriority: number[]) => {
     const tok = await getToken()
     if (!tok) return null
     setFaBallotSubmitting(true)
@@ -234,7 +236,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
       const res = await fetch(`${API_BASE}/gm/fa-ballot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-        body: JSON.stringify({ rankings }),
+        body: JSON.stringify({ rankings, positionPriority }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: 'Ballot submission failed' }))
@@ -244,6 +246,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
       const json = await res.json()
       const data = json.data ?? json
       setExistingFaBallot(data.rankings)
+      setExistingFaPriority(Array.isArray(data.positionPriority) ? data.positionPriority : null)
       const balRes = await fetch(`${API_BASE}/currency/balance`, { headers: { Authorization: `Bearer ${tok}` } })
       if (balRes.ok) {
         const bj = await balRes.json()
@@ -674,6 +677,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
               onSubmit={handleSubmitFaBallot}
               submitting={faBallotSubmitting}
               existingBallot={existingFaBallot}
+              existingPositionPriority={existingFaPriority}
               onClose={() => {}}
             />
           ) : (
@@ -1011,6 +1015,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           onSubmit={handleSubmitFaBallot}
           submitting={faBallotSubmitting}
           existingBallot={existingFaBallot}
+          existingPositionPriority={existingFaPriority}
         />
       )}
     </div>
