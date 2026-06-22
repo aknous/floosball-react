@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { Stars } from '@/Components/Stars'
 import { useAuth } from '@/contexts/AuthContext'
-import HallOfFame from './HallOfFame'
 import ArchetypeBadge from '@/Components/ArchetypeBadge'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -11,13 +10,12 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const POSITIONS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'] as const
 type PositionFilter = typeof POSITIONS[number]
 
-type StatusFilter = 'active' | 'prospects' | 'fa' | 'retired' | 'hof' | 'followed'
+type StatusFilter = 'active' | 'prospects' | 'fa' | 'retired' | 'followed'
 const STATUS_TABS: { key: StatusFilter; label: string }[] = [
   { key: 'active',    label: 'Active' },
   { key: 'prospects', label: 'Prospects' },
   { key: 'fa',        label: 'Free Agents' },
   { key: 'retired',   label: 'Retired' },
-  { key: 'hof',       label: 'Hall of Fame' },
   { key: 'followed',  label: 'Followed' },
 ]
 
@@ -126,9 +124,6 @@ export default function PlayersPage() {
   const [search, setSearch]     = useState('')
 
   useEffect(() => {
-    // The Hall of Fame tab renders its own gallery (HallOfFame) off a dedicated
-    // endpoint, so skip the regular players fetch entirely for it.
-    if (status === 'hof') { setLoading(false); return }
     setLoading(true)
     let cancelled = false
     const run = async () => {
@@ -231,7 +226,7 @@ export default function PlayersPage() {
           )})}
         </div>
 
-        {status === 'hof' ? <HallOfFame /> : (<>
+        {(<>
 
         {/* Position tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid #334155', marginBottom: '16px' }}>

@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import HallOfFame from '@/Views/Players/HallOfFame'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type ViewMode = 'seasons' | 'records' | 'user-records'
+type ViewMode = 'seasons' | 'records' | 'user-records' | 'hall-of-fame'
 
 interface SeasonSummary {
   seasonNumber: number
@@ -62,37 +63,44 @@ const HistoryPage: React.FC = () => {
       <div style={{ marginBottom: '16px' }}>
         <div style={{ fontSize: '22px', fontWeight: 700, color: '#e2e8f0' }}>History</div>
         <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>
-          Past champions, season standings, and the all-time record book
+          Past champions, the all-time record book, and the Hall of Fame
         </div>
       </div>
 
       <div style={{
-        display: 'flex', gap: '2px', marginBottom: '14px',
+        display: 'flex', gap: '2px', marginBottom: '14px', flexWrap: 'wrap',
         backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px',
         width: 'fit-content',
       }}>
-        {(['seasons', 'records', 'user-records'] as ViewMode[]).map(m => (
+        {(['seasons', 'records', 'user-records', 'hall-of-fame'] as ViewMode[]).map(m => {
+          const isActive = mode === m
+          return (
           <button
             key={m}
             onClick={() => setMode(m)}
+            onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = '#e2e8f0' }}
+            onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = '#94a3b8' }}
             style={{
-              padding: '6px 14px', fontSize: '12px', fontWeight: 600,
+              padding: '7px 16px', fontSize: '13px', fontWeight: isActive ? 700 : 600,
               borderRadius: '6px', border: 'none', cursor: 'pointer',
-              backgroundColor: mode === m ? '#1e293b' : 'transparent',
-              color: mode === m ? '#e2e8f0' : '#64748b',
+              backgroundColor: isActive ? '#3b82f6' : 'transparent',
+              color: isActive ? '#fff' : '#94a3b8',
+              boxShadow: isActive ? '0 1px 6px rgba(59,130,246,0.45)' : 'none',
               fontFamily: 'inherit',
             }}
           >
             {m === 'seasons' ? 'Seasons'
               : m === 'records' ? 'Record Book'
-              : 'Fantasy Records'}
+              : m === 'user-records' ? 'Fantasy Records'
+              : 'Hall of Fame'}
           </button>
-        ))}
+        )})}
       </div>
 
       {mode === 'seasons' && <SeasonsView isMobile={isMobile} />}
       {mode === 'records' && <RecordsView isMobile={isMobile} />}
       {mode === 'user-records' && <UserRecordsView isMobile={isMobile} />}
+      {mode === 'hall-of-fame' && <HallOfFame />}
     </div>
   )
 }
