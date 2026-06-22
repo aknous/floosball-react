@@ -33,6 +33,7 @@ const POSITIONS = [
 const SORTS = [
   { value: 'recent', label: 'Newest' },
   { value: 'rarity', label: 'Rarity' },
+  { value: 'classification', label: 'Classification' },
   { value: 'rating', label: 'Rating' },
   { value: 'tier', label: 'Tier' },
   { value: 'name', label: 'Name' },
@@ -258,10 +259,12 @@ const CardCollection: React.FC = () => {
       <>
       {/* collection / vault content */}
 
-      {/* Header */}
+      {/* Header — fixed min-height so the Collection-only "Combine" button (taller than
+          the title) doesn't change the row height and shift everything below when
+          switching between Collection and Vault. */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: '16px', flexWrap: 'wrap', gap: '8px',
+        marginBottom: '16px', flexWrap: 'wrap', gap: '8px', minHeight: '38px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
