@@ -282,9 +282,14 @@ const ShowcaseView: React.FC = () => {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? 'repeat(2, max-content)' : 'repeat(4, max-content)',
+          // auto-fit so the slots WRAP when the case is narrow (two sidebars squeeze it)
+          // instead of overflowing/clipping. Capped at 4 columns so it stays a tidy 4×2
+          // on wide screens.
+          gridTemplateColumns: `repeat(auto-fit, ${SLOT_DIMS[cardSize].w}px)`,
           gap: isMobile ? '16px' : '18px',
           justifyContent: 'center', justifyItems: 'center',
+          maxWidth: isMobile ? undefined : `${SLOT_DIMS[cardSize].w * 4 + 18 * 3}px`,
+          marginLeft: 'auto', marginRight: 'auto',
         }}>
           {(data?.slots ?? []).map(slot => (
             slot.card ? (
@@ -486,7 +491,7 @@ const SetsColumn: React.FC<{ sets: SetEntry[]; setBonus: number; maxSetBonus: nu
   return (
     <aside style={{
       order: isMobile ? 0 : -1,
-      width: isMobile ? '100%' : '252px', flexShrink: 0,
+      width: isMobile ? '100%' : '220px', flexShrink: 0,
       borderRadius: '12px', border: '1px solid #1e293b',
       background: 'rgba(15,23,42,0.5)', padding: '14px 16px',
     }}>
