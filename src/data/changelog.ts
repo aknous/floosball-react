@@ -12,6 +12,46 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.20.0',
+    date: '2026-06-22',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Facilities] Team Markets are now Facilities. Each team has facilities like Training and Recovery that level up and boost development, morale, and fatigue recovery. A team Treasury, funded by fans, carries Floobits between seasons and pays for upkeep and upgrades.',
+          '[Facilities] At season end the Treasury pays each facility\'s upkeep, then funds the active building project. A facility left unmaintained drops a level.',
+          '[Facilities] A season vote opens the next building project, and the winning facility upgrades over a season of funding. A league view shows every team\'s facility levels.',
+          '[Showcase] Your Showcase now pays a weekly Floobit dividend through the regular season, scaled by its score, instead of one payout at season end. Build it up early and it pays all season.',
+          '[Showcase] See exactly how a card scores. Hover any featured card for its breakdown of edition, classification, recency, and upgrade tier, and the help panel lays out the full point tables.',
+          '[Front Office] Free Agent ballots add a position priority list. Rank which open positions the team should fill first once the voted players run out.',
+          '[Achievements] Several new secret achievements to find.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Front Office] The Free Agent ballot is now ranked choice with no pass or fail threshold. Any votes resolve into a ranked list of targets the team pursues in order, and one resolution can sign several free agents when multiple slots are open.',
+          '[Economy] The Endowment powerup now adds 25% to everything going into the bank, including fantasy, prognostications, and Showcase dividends, not just fantasy. The Floobits counter shows when it is active.',
+          '[Sim] Running backs now catch checkdowns and screens, and appear in the receiving box score.',
+          '[Sim] Interception rates are tuned down, with a firmer cap on desperation deep balls late in a loss. Receiver fumbles are now tracked.',
+          '[Prognostications] The last Pick-Em labels now read Prognostication.',
+          '[Coaches] A retired player occasionally returns as a coach, reusing their name.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Cards] Champion card packs now tag the players who were on the team when it won the Floos Bowl, instead of whoever is on the roster now.',
+          '[Stats] Fixed career totals that were under-counting for some players.',
+          '[Front Office] Fixed fire-coach votes silently doing nothing. A crash was rolling back every fire that season.',
+          '[Sim] Fixed phantom player reactions appearing after a server resume.',
+          '[Players] A generated name now checks every player, including retired and Hall of Fame, so names stop getting reused.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.19.2',
     date: '2026-06-18',
     changes: [],
