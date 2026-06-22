@@ -16,12 +16,13 @@ const TX_LABELS: Record<string, string> = {
   weekly_fp_bonus: 'Weekly Earnings',
   leaderboard_season: 'Season Leaderboard',
   leaderboard_weekly: 'Weekly Leaderboard',
-  pickem_correct: 'Pick-Em Payout',
-  pickem_leaderboard_season: 'Pick-Em Season Prize',
-  pickem_leaderboard_weekly: 'Pick-Em Weekly Prize',
+  pickem_correct: 'Prognostication Payout',
+  pickem_leaderboard_season: 'Prognostication Season Prize',
+  pickem_leaderboard_weekly: 'Prognostication Weekly Prize',
   card_effect: 'Card Effect',
   admin_grant: 'Admin Grant',
   supporter_dividend: 'Supporter Dividend',
+  showcase_dividend: 'Showcase Dividend',
 }
 
 const txLabel = (slug: string) => TX_LABELS[slug] || slug.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())

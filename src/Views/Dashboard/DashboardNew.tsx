@@ -198,7 +198,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   const MOBILE_SECTIONS = ([
     { key: 'games', label: isOffseason ? 'Offseason' : 'Games', ref: gamesRef },
     { key: 'highlights', label: 'Highlights', ref: highlightsRef },
-    { key: 'pickem', label: 'Pick-Em', ref: pickemRef },
+    { key: 'pickem', label: 'Prognostications', ref: pickemRef },
     { key: 'standings', label: 'Standings', ref: standingsRef },
     { key: 'leaders', label: 'Leaders', ref: leadersRef },
   ] as const).filter(s => !isOffseason || s.key === 'games')
