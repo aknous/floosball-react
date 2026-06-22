@@ -260,19 +260,15 @@ const ShowcaseView: React.FC = () => {
                   early and it pays all season; the Showcase clears for a fresh start
                   next season.
                 </HelpSection>
-                <HelpSection title="See the math">
-                  Hover any featured card for its breakdown: edition, classification,
-                  recency, and upgrade tier all feed its share of the weekly dividend.
+                <HelpSection title="How scoring works">
+                  <ScoringManual scoring={data?.scoring} dividendRate={data?.dividendRate} />
+                  <div style={{ marginTop: '8px' }}>Hover any featured card for its exact breakdown.</div>
                 </HelpSection>
                 <HelpSection title="Build sets">
                   Group cards into named sets to raise your dividend. One Club for six
                   from a team, Diamond Vault for eight Diamonds, Full Spectrum for all
                   four editions of one player, and more. The "Almost" hints show what
-                  you're close to.
-                </HelpSection>
-                <HelpSection title="Newer pays more">
-                  Recent cards are worth more than old ones, so a fresh Showcase scores
-                  best. Upgraded cards score higher too.
+                  you're close to. See the Sets panel for the full list.
                 </HelpSection>
                 <HelpSection title="Vault first">
                   Only vaulted cards can be featured. Vault a card, then add it here.
@@ -474,7 +470,7 @@ const ShowcasePanel: React.FC<{
       display: 'flex', gap: '3px', marginBottom: '14px',
       background: 'rgba(15,23,42,0.6)', borderRadius: '8px', padding: '3px',
     }}>
-      <PanelTab label="Scoring" active={tab === 'sets'} onClick={() => setTab('sets')} />
+      <PanelTab label="Sets" active={tab === 'sets'} onClick={() => setTab('sets')} />
       <PanelTab label="Standings" active={tab === 'standings'} onClick={() => setTab('standings')} />
     </div>
     {tab === 'sets'
@@ -492,62 +488,62 @@ const PanelTab: React.FC<{ label: string; active: boolean; onClick: () => void }
   }}>{label}</button>
 )
 
-// The Sets tab: a scoring "manual" (how cards score) + the set bonuses. Plain reference.
-const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
-  const sc = data.scoring
-  const order = { active: 0, almost: 1, locked: 2 }
-  const sorted = [...data.sets].sort((a, b) => order[a.status] - order[b.status] || b.bonus - a.bonus)
+// The scoring "manual" (point tables) for the header help popup.
+const ScoringManual: React.FC<{ scoring?: ScoringRules; dividendRate?: number }> = ({ scoring, dividendRate }) => {
+  if (!scoring) {
+    return <span>A card scores from its edition, classification (the CH / AP / MVP / Rookie tags), recency, and upgrade tier.</span>
+  }
   const editionLabel: Record<string, string> = { base: 'Base', holographic: 'Holographic', prismatic: 'Prismatic', diamond: 'Diamond' }
   const classLabel: Record<string, string> = { rookie: 'Rookie', all_pro: 'All-Pro (AP)', champion: 'Champion (CH)', mvp: 'MVP' }
-  const Heading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#cbd5e1', fontWeight: 700, fontFamily: 'pressStart', margin: '0 0 7px' }}>{children}</div>
+  const Group: React.FC<{ title: string; sub?: string; children: React.ReactNode }> = ({ title, sub, children }) => (
+    <div style={{ marginBottom: '12px' }}>
+      <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '13px', marginBottom: sub ? '1px' : '4px' }}>{title}</div>
+      {sub && <div style={{ color: '#94a3b8', fontSize: '12px', marginBottom: '4px' }}>{sub}</div>}
+      {children}
+    </div>
   )
   const Line: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '12px', padding: '2px 0' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '13px', padding: '1px 0', lineHeight: 1.5 }}>
       <span style={{ color: '#94a3b8' }}>{label}</span>
       <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{value}</span>
     </div>
   )
   return (
     <div>
-      {sc && (
-      <>
-      <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.55, marginBottom: '14px' }}>
-        A card scores <span style={{ color: '#e2e8f0' }}>(edition + classification) × recency × tier</span>. Your showcase pays <span style={{ color: GOLD, fontWeight: 700 }}>{Math.round((data.dividendRate ?? 0.13) * 100)}%</span> of its total score every week.
+      <div style={{ marginBottom: '12px' }}>
+        A card scores <span style={{ color: '#e2e8f0' }}>(edition + classification) × recency × tier</span>. Your Showcase pays <span style={{ color: '#fbbf24', fontWeight: 700 }}>{Math.round((dividendRate ?? 0.13) * 100)}%</span> of its total score each week.
       </div>
-
-      <Heading>Edition</Heading>
-      <div style={{ marginBottom: '14px' }}>
-        {['base', 'holographic', 'prismatic', 'diamond'].filter(e => e in sc.edition).map(e => (
-          <Line key={e} label={editionLabel[e] || e} value={`+${sc.edition[e]} pts`} />
+      <Group title="Edition">
+        {['base', 'holographic', 'prismatic', 'diamond'].filter(e => e in scoring.edition).map(e => (
+          <Line key={e} label={editionLabel[e] || e} value={`+${scoring.edition[e]} pts`} />
         ))}
-      </div>
-
-      <Heading>Classification</Heading>
-      <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.45, marginBottom: '6px' }}>
-        The CH / AP / MVP / Rookie tags shown on a card.
-      </div>
-      <div style={{ marginBottom: '14px' }}>
-        {['rookie', 'all_pro', 'champion', 'mvp'].filter(c => c in sc.classification).map(c => (
-          <Line key={c} label={classLabel[c] || c} value={`+${sc.classification[c]} pts`} />
+      </Group>
+      <Group title="Classification" sub="The CH / AP / MVP / Rookie tags on a card">
+        {['rookie', 'all_pro', 'champion', 'mvp'].filter(c => c in scoring.classification).map(c => (
+          <Line key={c} label={classLabel[c] || c} value={`+${scoring.classification[c]} pts`} />
         ))}
-      </div>
-
-      <Heading>Recency</Heading>
-      <div style={{ marginBottom: '14px' }}>
-        {Object.keys(sc.recencyByAge).sort((a, b) => Number(a) - Number(b)).map(k => (
-          <Line key={k} label={k === '0' ? 'This season' : `${k} season${k === '1' ? '' : 's'} old`} value={`×${sc.recencyByAge[k].toFixed(2)}`} />
+      </Group>
+      <Group title="Recency" sub="Newer cards score more">
+        {Object.keys(scoring.recencyByAge).sort((a, b) => Number(a) - Number(b)).map(k => (
+          <Line key={k} label={k === '0' ? 'This season' : `${k} season${k === '1' ? '' : 's'} old`} value={`×${scoring.recencyByAge[k].toFixed(2)}`} />
         ))}
-        <Line label="Older" value={`×${sc.recencyFloor.toFixed(2)}`} />
-        <Line label="Per upgrade level" value={`+${Math.round(sc.tierBonusPerLevel * 100)}%`} />
-      </div>
-      </>
-      )}
+        <Line label="Older" value={`×${scoring.recencyFloor.toFixed(2)}`} />
+        <Line label="Per upgrade level" value={`+${Math.round(scoring.tierBonusPerLevel * 100)}%`} />
+      </Group>
+    </div>
+  )
+}
 
+// The Sets tab: just the set bonuses (the scoring rules live in the header help popup).
+const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
+  const order = { active: 0, almost: 1, locked: 2 }
+  const sorted = [...data.sets].sort((a, b) => order[a.status] - order[b.status] || b.bonus - a.bonus)
+  return (
+    <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px' }}>
-        <Heading>Set bonuses</Heading>
+        <span style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#cbd5e1', fontWeight: 700, fontFamily: 'pressStart' }}>Set bonuses</span>
         <span style={{ flex: 1 }} />
-        <span style={{ fontSize: '13px', fontWeight: 800, fontFamily: 'pressStart', color: data.setBonus > 0 ? GOLD : '#94a3b8', marginBottom: '7px' }}>{data.setBonus > 0 ? `+${Math.round(data.setBonus * 100)}%` : 'none'}</span>
+        <span style={{ fontSize: '13px', fontWeight: 800, fontFamily: 'pressStart', color: data.setBonus > 0 ? GOLD : '#94a3b8' }}>{data.setBonus > 0 ? `+${Math.round(data.setBonus * 100)}%` : 'none'}</span>
       </div>
       <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '10px' }}>
         Completed sets add a flat bonus on top of your score{data.setBonus >= data.maxSetBonus ? `, maxed at +${Math.round(data.maxSetBonus * 100)}%` : ''}.
