@@ -46,6 +46,7 @@ interface ShowcaseData {
   slotCount: number
   maxSlots: number
   grade: string
+  score: number
   weeklyDividend: number
   setBonus: number     // e.g. 0.45 → sets add +45%
   maxSetBonus: number  // cap on the summed set bonus (e.g. 1.5)
@@ -200,6 +201,14 @@ const ShowcaseView: React.FC = () => {
 
   const featuredIds = new Set((data?.slots ?? []).filter(s => s.card).map(s => s.card!.id))
   const gradeColor = GRADE_COLORS[data?.grade ?? 'F'] || '#94a3b8'
+  // Current score + the gap to the next grade up (the lowest threshold above the score).
+  const showcaseScore = Math.round(data?.score ?? 0)
+  const nextGrade = (() => {
+    const grades = data?.scoring?.grades
+    if (!grades) return null
+    const above = grades.filter(([, min]) => min > showcaseScore).sort((a, b) => a[1] - b[1])
+    return above.length ? { grade: above[0][0], need: Math.ceil(above[0][1] - showcaseScore) } : null
+  })()
   // Smaller cards so 4 fit across alongside the standings panel.
   const cardSize = 'sm' as const
 
@@ -275,6 +284,12 @@ const ShowcaseView: React.FC = () => {
             </div>
             <div style={{ fontSize: '15px', color: '#e2e8f0', lineHeight: 1.45 }}>
               Pays <span style={{ color: GOLD, fontWeight: 700 }}>{data?.weeklyDividend ?? 0} Floobits</span> / week
+            </div>
+            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px' }}>
+              Score <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{showcaseScore}</span>
+              {nextGrade
+                ? <span> · <span style={{ color: GOLD, fontWeight: 700 }}>{nextGrade.need}</span> to grade {nextGrade.grade}</span>
+                : <span> · top grade</span>}
             </div>
             <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px' }}>
               {data?.slotCount ?? 0}/{data?.maxSlots ?? 8} featured
