@@ -40,6 +40,7 @@ interface ShowcaseData {
   weeklyDividend: number
   setBonus: number     // e.g. 0.45 → sets add +45%
   maxSetBonus: number  // cap on the summed set bonus (e.g. 1.5)
+  dividendRate: number // weekly payout = rate × score × (1 + setBonus)
   activeSets: ShowcaseSet[]
   almostSets: AlmostSet[]
   sets: SetEntry[]
@@ -74,6 +75,17 @@ const Corners: React.FC = () => {
   )
 }
 
+// Header toggle chip for a side panel (Sets / Standings).
+const PanelToggle: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({ label, active, onClick }) => (
+  <button onClick={onClick} style={{
+    fontSize: '11px', fontWeight: 700, fontFamily: 'pressStart', cursor: 'pointer',
+    padding: '5px 11px', borderRadius: '6px', transition: 'all 0.12s',
+    color: active ? '#1a1205' : '#cbd5e1',
+    background: active ? GOLD : 'rgba(148,163,184,0.10)',
+    border: `1px solid ${active ? GOLD : '#334155'}`,
+  }}>{label}</button>
+)
+
 const ShowcaseView: React.FC = () => {
   const { getToken } = useAuth()
   const isMobile = useIsMobile()
@@ -86,6 +98,9 @@ const ShowcaseView: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderEntry[]>([])
   const [viewUserId, setViewUserId] = useState<number | null>(null)
   const [lastResult, setLastResult] = useState<{ season: number; grade: string | null; total: number; weeksPaid: number } | null>(null)
+  // Side panels are toggled off by default so the case shows a full 4-wide row.
+  const [showSets, setShowSets] = useState(false)
+  const [showStandings, setShowStandings] = useState(false)
 
   // End-of-season recap: show once per season (localStorage-dismissed).
   const fetchLastResult = useCallback(async () => {
@@ -201,7 +216,7 @@ const ShowcaseView: React.FC = () => {
       )}
 
       <div style={{
-        display: 'flex', gap: '16px', alignItems: 'flex-start',
+        display: 'flex', gap: '16px', alignItems: 'flex-start', justifyContent: 'center',
         flexDirection: isMobile ? 'column' : 'row',
       }}>
       {/* Display case: framed, lit, distinct from the plain collection grid */}
@@ -278,18 +293,23 @@ const ShowcaseView: React.FC = () => {
               <span> · resets each season</span>
             </div>
           </div>
+          <span style={{ flex: 1 }} />
+          {/* Toggle the side panels (default off → full 4-wide case) */}
+          {!isMobile && (
+            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              <PanelToggle label="Sets" active={showSets} onClick={() => setShowSets(v => !v)} />
+              <PanelToggle label="Standings" active={showStandings} onClick={() => setShowStandings(v => !v)} />
+            </div>
+          )}
         </div>
 
         <div style={{
           display: 'grid',
-          // auto-fit so the slots WRAP when the case is narrow (two sidebars squeeze it)
-          // instead of overflowing/clipping. Capped at 4 columns so it stays a tidy 4×2
-          // on wide screens.
-          gridTemplateColumns: `repeat(auto-fit, ${SLOT_DIMS[cardSize].w}px)`,
+          // Fixed 4-wide row (2 rows of 4). The case shows full-width by default; the
+          // side panels are toggled, so there's always room for all four across.
+          gridTemplateColumns: isMobile ? 'repeat(2, max-content)' : 'repeat(4, max-content)',
           gap: isMobile ? '16px' : '18px',
           justifyContent: 'center', justifyItems: 'center',
-          maxWidth: isMobile ? undefined : `${SLOT_DIMS[cardSize].w * 4 + 18 * 3}px`,
-          marginLeft: 'auto', marginRight: 'auto',
         }}>
           {(data?.slots ?? []).map(slot => (
             slot.card ? (
@@ -329,7 +349,7 @@ const ShowcaseView: React.FC = () => {
                   }} />
                 </div>
                 {/* Per-card weekly dividend + hover breakdown (transparency) */}
-                {slot.card.showcase && <CardDividend showcase={slot.card.showcase} />}
+                {slot.card.showcase && <CardDividend showcase={slot.card.showcase} setBonus={data?.setBonus ?? 0} rate={data?.dividendRate ?? 0.13} />}
               </div>
             ) : (
               <button
@@ -365,13 +385,14 @@ const ShowcaseView: React.FC = () => {
         </div>
       </div>
 
-      {/* Sets: a vertical list placed on the LEFT on desktop (CSS order), opposite
-          the standings, so it isn't buried under the case and easy to miss. */}
-      {data && (
+      {/* Sets: a vertical list on the LEFT on desktop (CSS order), opposite the
+          standings. Toggled via the header chip; always shown on mobile (stacked). */}
+      {(showSets || isMobile) && data && (
         <SetsColumn sets={data.sets} setBonus={data.setBonus} maxSetBonus={data.maxSetBonus} isMobile={isMobile} />
       )}
 
-      {/* Standings: everyone with a featured showcase this season */}
+      {/* Standings: toggled via the header chip; always shown on mobile (stacked). */}
+      {(showStandings || isMobile) && (
       <aside style={{
         width: isMobile ? '100%' : '270px', flexShrink: 0,
         borderRadius: '12px', border: '1px solid #1e293b',
@@ -423,6 +444,7 @@ const ShowcaseView: React.FC = () => {
           </div>
         )}
       </aside>
+      )}
       </div>
 
       <ShowcasePickerModal
@@ -450,23 +472,30 @@ interface CardShowcaseBreakdown {
   points: number
   dividend: number
 }
-const CardDividend: React.FC<{ showcase: CardShowcaseBreakdown }> = ({ showcase }) => {
-  const Row: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+const CardDividend: React.FC<{ showcase: CardShowcaseBreakdown; setBonus: number; rate: number }> = ({ showcase, setBonus, rate }) => {
+  const Row: React.FC<{ label: string; value: string; strong?: boolean }> = ({ label, value, strong }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '14px' }}>
-      <span style={{ color: '#94a3b8' }}>{label}</span>
-      <span style={{ color: '#e2e8f0' }}>{value}</span>
+      <span style={{ color: strong ? '#e2e8f0' : '#94a3b8' }}>{label}</span>
+      <span style={{ color: strong ? GOLD : '#e2e8f0', fontWeight: strong ? 700 : 400 }}>{value}</span>
     </div>
   )
+  const divider = <div style={{ height: '1px', background: 'rgba(251,191,36,0.25)', margin: '3px 0' }} />
   const content = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left', minWidth: '160px' }}>
-      <Row label="Edition" value={`+${showcase.editionPoints}`} />
+    // Walk the full chain so the F/week reconciles: points build a card score, then
+    // the set bonus + weekly rate convert it to Floobits.
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left', minWidth: '190px' }}>
+      <Row label="Edition" value={`+${showcase.editionPoints} pts`} />
       {showcase.classificationPoints > 0 && (
-        <Row label="Classification" value={`+${showcase.classificationPoints}`} />
+        <Row label="Classification" value={`+${showcase.classificationPoints} pts`} />
       )}
       <Row label="Recency" value={`×${showcase.recency.toFixed(2)}`} />
       {showcase.tierMult > 1 && <Row label="Upgrade tier" value={`×${showcase.tierMult.toFixed(2)}`} />}
-      <div style={{ height: '1px', background: 'rgba(251,191,36,0.25)', margin: '3px 0' }} />
-      <Row label="Pays" value={`${showcase.dividend} F / week`} />
+      {divider}
+      <Row label="Card score" value={`${Math.round(showcase.points)}`} strong />
+      {setBonus > 0 && <Row label="Set bonus" value={`×${(1 + setBonus).toFixed(2)}`} />}
+      <Row label="Weekly rate" value={`×${rate.toFixed(2)}`} />
+      {divider}
+      <Row label="Pays" value={`${showcase.dividend} F / week`} strong />
     </div>
   )
   return (
