@@ -54,6 +54,20 @@ interface RecordsResponse {
   labels: Record<string, string>
 }
 
+// Outlined pill, matching the card-collection view/filter pills for consistency.
+const pillStyle = (active: boolean): React.CSSProperties => ({
+  padding: '5px 12px',
+  borderRadius: '6px',
+  border: `1px solid ${active ? '#3b82f6' : '#334155'}`,
+  backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'transparent',
+  color: active ? '#60a5fa' : '#94a3b8',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  transition: 'all 0.15s',
+  fontFamily: 'pressStart',
+})
+
 const HistoryPage: React.FC = () => {
   const isMobile = useIsMobile()
   const [mode, setMode] = useState<ViewMode>('seasons')
@@ -67,34 +81,15 @@ const HistoryPage: React.FC = () => {
         </div>
       </div>
 
-      <div style={{
-        display: 'flex', gap: '2px', marginBottom: '14px', flexWrap: 'wrap',
-        backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px',
-        width: 'fit-content',
-      }}>
-        {(['seasons', 'records', 'user-records', 'hall-of-fame'] as ViewMode[]).map(m => {
-          const isActive = mode === m
-          return (
-          <button
-            key={m}
-            onClick={() => setMode(m)}
-            onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = '#e2e8f0' }}
-            onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = '#94a3b8' }}
-            style={{
-              padding: '7px 16px', fontSize: '13px', fontWeight: isActive ? 700 : 600,
-              borderRadius: '6px', border: 'none', cursor: 'pointer',
-              backgroundColor: isActive ? '#3b82f6' : 'transparent',
-              color: isActive ? '#fff' : '#94a3b8',
-              boxShadow: isActive ? '0 1px 6px rgba(59,130,246,0.45)' : 'none',
-              fontFamily: 'inherit',
-            }}
-          >
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
+        {(['seasons', 'records', 'user-records', 'hall-of-fame'] as ViewMode[]).map(m => (
+          <button key={m} onClick={() => setMode(m)} style={pillStyle(mode === m)}>
             {m === 'seasons' ? 'Seasons'
               : m === 'records' ? 'Record Book'
               : m === 'user-records' ? 'Fantasy Records'
               : 'Hall of Fame'}
           </button>
-        )})}
+        ))}
       </div>
 
       {mode === 'seasons' && <SeasonsView isMobile={isMobile} />}

@@ -19,6 +19,21 @@ const STATUS_TABS: { key: StatusFilter; label: string }[] = [
   { key: 'followed',  label: 'Followed' },
 ]
 
+// Outlined pill, matching the card-collection view/filter pills for consistency.
+const pillStyle = (active: boolean): React.CSSProperties => ({
+  padding: '5px 12px',
+  borderRadius: '6px',
+  border: `1px solid ${active ? '#3b82f6' : '#334155'}`,
+  backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'transparent',
+  color: active ? '#60a5fa' : '#94a3b8',
+  fontSize: '12px',
+  fontWeight: 600,
+  cursor: 'pointer',
+  transition: 'all 0.15s',
+  fontFamily: 'pressStart',
+  textTransform: 'capitalize' as const,
+})
+
 interface CurrentStats {
   fantasyPoints: number
   gamesPlayed: number
@@ -204,41 +219,22 @@ export default function PlayersPage() {
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '20px 24px' }}>
 
         {/* Status tabs */}
-        <div style={{
-          display: 'flex', gap: '2px', marginBottom: '14px',
-          backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px', width: 'fit-content',
-        }}>
-          {STATUS_TABS.map(tab => {
-            const isActive = status === tab.key
-            return (
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
+          {STATUS_TABS.map(tab => (
             <button key={tab.key} onClick={() => { setStatus(tab.key); setPosition('ALL'); setSortKey('fpt'); setSortAsc(false) }}
-              onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = '#e2e8f0' }}
-              onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = '#94a3b8' }}
-              style={{
-                padding: '7px 16px', fontSize: '13px', fontWeight: isActive ? 700 : 600, borderRadius: '6px',
-                border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                backgroundColor: isActive ? '#3b82f6' : 'transparent',
-                color: isActive ? '#fff' : '#94a3b8',
-                boxShadow: isActive ? '0 1px 6px rgba(59,130,246,0.45)' : 'none',
-              }}>
+              style={pillStyle(status === tab.key)}>
               {tab.label}
             </button>
-          )})}
+          ))}
         </div>
 
         {(<>
 
         {/* Position tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #334155', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
           {POSITIONS.map(pos => (
             <button key={pos} onClick={() => handlePositionChange(pos)}
-              style={{
-                padding: '7px 14px', fontSize: '12px', fontWeight: '600',
-                color: position === pos ? '#e2e8f0' : '#64748b',
-                backgroundColor: position === pos ? '#1e293b' : 'transparent',
-                border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                borderBottom: position === pos ? '2px solid #3b82f6' : '2px solid transparent',
-              }}>
+              style={pillStyle(position === pos)}>
               {pos}
             </button>
           ))}
