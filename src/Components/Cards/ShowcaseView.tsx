@@ -253,12 +253,10 @@ const ShowcaseView: React.FC = () => {
               }}>On Display</span>
               <HelpButton title="The Showcase" accent="#fbbf24">
                 <HelpSection title="Put your best on display">
-                  Feature up to 8 vaulted cards. Your lineup earns a grade from F to S.
-                </HelpSection>
-                <HelpSection title="Get paid every week">
-                  Your Showcase pays you Floobits every week of the regular season.
-                  The better it is, the more you earn. Set it early to earn all season.
-                  It resets each new season.
+                  Feature up to 8 vaulted cards for a grade from F to S. Your Showcase
+                  pays you Floobits every week of the regular season, and the better it
+                  is, the more you earn. Set it early to earn all season. It resets each
+                  new season.
                 </HelpSection>
                 <HelpSection title="How scoring works">
                   <ScoringManual scoring={data?.scoring} dividendRate={data?.dividendRate} />
