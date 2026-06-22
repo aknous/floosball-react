@@ -265,10 +265,10 @@ const ShowcaseView: React.FC = () => {
                   <div style={{ marginTop: '8px' }}>Hover any featured card for its exact breakdown.</div>
                 </HelpSection>
                 <HelpSection title="Build sets">
-                  Group cards into named sets to raise your dividend. One Club for six
-                  from a team, Diamond Vault for eight Diamonds, Full Spectrum for all
-                  four editions of one player, and more. The "Almost" hints show what
-                  you're close to. See the Sets panel for the full list.
+                  Group cards into named sets to earn more. One Club is six from a team,
+                  Diamond Vault is eight Diamonds, Full Spectrum is all four editions of
+                  one player, and more. The Sets tab lists every set and flags the ones
+                  you are close to completing.
                 </HelpSection>
                 <HelpSection title="Vault first">
                   Only vaulted cards can be featured. Vault a card, then add it here.
