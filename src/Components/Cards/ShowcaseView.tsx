@@ -311,12 +311,6 @@ const ShowcaseView: React.FC = () => {
                 ? <span><span style={{ color: GOLD, fontWeight: 700 }}>{nextGrade.need}</span> to grade {nextGrade.grade}</span>
                 : <span>top grade</span>}
             </div>
-            <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '5px' }}>
-              {data?.slotCount ?? 0}/{data?.maxSlots ?? 8} featured
-              {(data?.setBonus ?? 0) > 0 && (
-                <span style={{ color: GOLD, fontWeight: 600 }}> · sets +{Math.round((data?.setBonus ?? 0) * 100)}%</span>
-              )}
-            </div>
           </div>
 
           <span style={{ flex: 1 }} />
