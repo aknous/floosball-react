@@ -205,7 +205,7 @@ export default function PlayersPage() {
     borderRight: '1px solid #1a2640',
   })
   const tdStyle: React.CSSProperties = {
-    fontSize: '15px', color: '#cbd5e1', padding: '7px 10px',
+    fontSize: '14px', color: '#cbd5e1', padding: '7px 10px',
     textAlign: 'right', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums',
     borderRight: '1px solid #1a2640',
   }
@@ -281,7 +281,7 @@ export default function PlayersPage() {
         {/* Stats table */}
         <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: 'auto', minWidth: '100%', borderCollapse: 'collapse' }}>
+            <table style={{ width: 'auto', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
                   {/* Fixed left columns */}
@@ -325,7 +325,7 @@ export default function PlayersPage() {
                       <td style={{ padding: '7px 10px', borderRight: '1px solid #1a2640' }}>
                         <PlayerHoverCard playerId={player.id} playerName={player.name}>
                           <Link to={`/players/${player.id}`}
-                            style={{ fontSize: '15px', color: '#e2e8f0', textDecoration: 'none', display: 'block', whiteSpace: 'nowrap' }}>
+                            style={{ fontSize: '14px', color: '#e2e8f0', textDecoration: 'none', display: 'block', whiteSpace: 'nowrap' }}>
                             {player.name}
                           </Link>
                         </PlayerHoverCard>
