@@ -123,6 +123,7 @@ export default function PlayersPage() {
   const [sortKey, setSortKey]   = useState<string>('fpt')
   const [sortAsc, setSortAsc]   = useState(false)
   const [loading, setLoading]   = useState(true)
+  const [search, setSearch]     = useState('')
 
   useEffect(() => {
     // The Hall of Fame tab renders its own gallery (HallOfFame) off a dedicated
@@ -165,18 +166,20 @@ export default function PlayersPage() {
   const cols = COLS[position]
 
   const sorted = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const base = q ? players.filter(p => p.name.toLowerCase().includes(q)) : players
     if (sortKey === '__rating') {
-      return [...players].sort((a, b) => {
+      return [...base].sort((a, b) => {
         const diff = a.playerRating - b.playerRating
         return sortAsc ? diff : -diff
       })
     }
     const col = cols.find(c => c.key === sortKey) ?? cols[cols.length - 1]
-    return [...players].sort((a, b) => {
+    return [...base].sort((a, b) => {
       const diff = col.sortValue(a) - col.sortValue(b)
       return sortAsc ? diff : -diff
     })
-  }, [players, sortKey, sortAsc, cols])
+  }, [players, sortKey, sortAsc, cols, search])
 
   const handleSort = (key: string) => {
     if (key === sortKey) setSortAsc(a => !a)
@@ -250,6 +253,44 @@ export default function PlayersPage() {
               {pos}
             </button>
           ))}
+        </div>
+
+        {/* Search by name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: '0 1 280px' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+              <circle cx="11" cy="11" r="7" stroke="#64748b" strokeWidth="2" />
+              <path d="M21 21l-4.3-4.3" stroke="#64748b" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search player by name"
+              style={{
+                width: '100%', padding: '8px 28px 8px 32px', fontSize: '13px',
+                backgroundColor: '#0f172a', color: '#e2e8f0',
+                border: '1px solid #334155', borderRadius: '8px', outline: 'none',
+              }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                aria-label="Clear search"
+                style={{
+                  position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
+                  fontSize: '16px', lineHeight: 1, padding: '0 4px',
+                }}
+              >x</button>
+            )}
+          </div>
+          {search.trim() && (
+            <span style={{ fontSize: '12px', color: '#64748b' }}>
+              {sorted.length} {sorted.length === 1 ? 'player' : 'players'}
+            </span>
+          )}
         </div>
 
         {/* Stats table */}
