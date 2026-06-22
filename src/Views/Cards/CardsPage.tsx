@@ -27,13 +27,6 @@ const CardsPage: React.FC = () => {
         margin: '0 auto',
         padding: isMobile ? '16px' : '24px 16px',
       }}>
-        {/* Page header */}
-        <div style={{ marginBottom: '20px' }}>
-          <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
-            Collection
-          </h1>
-        </div>
-
         {/* Auth gate */}
         {!user && !authLoading && (
           <div style={{ fontSize: '14px', color: '#94a3b8', textAlign: 'center', padding: '60px 0' }}>
