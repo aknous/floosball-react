@@ -80,9 +80,10 @@ interface FaBallotModalProps {
   openSlots: OpenSlot[]
   scoutingPlayers: ScoutingPlayer[]
   faWindowEnd: number | null
-  onSubmit: (rankings: number[]) => Promise<any>
+  onSubmit: (rankings: number[], positionPriority: number[]) => Promise<any>
   submitting: boolean
   existingBallot?: number[] | null
+  existingPositionPriority?: number[] | null
   /** Render inline (in a tab) instead of as a modal overlay: no backdrop,
    *  portal, or close button. `visible`/`onClose` are ignored in this mode. */
   inline?: boolean
@@ -103,6 +104,11 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 const STAGE_RANK: Record<string, number> = {
   prime: 0, developing: 1, aging: 2, near_retirement: 3, retiring: 4,
 }
+
+// Position value (backend 1-5) → label, and the default fill-priority order
+// (skill positions first, kicker last — the common-sense fallback).
+const POS_NAME: Record<number, string> = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K' }
+const DEFAULT_POS_PRIORITY = [1, 3, 2, 4, 5]
 
 // All comparators sort "best first" (descending) so the toggle direction is
 // consistent across options. Players missing a value sink to the bottom.
@@ -132,9 +138,14 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
   onSubmit,
   submitting,
   existingBallot,
+  existingPositionPriority,
   inline = false,
 }) => {
   const [ranking, setRanking] = useState<number[]>([])
+  // Optional position fill-priority (full order of all 5 positions, 1=QB..5=K).
+  // Off by default → no preference → the draft falls back to best-rated.
+  const [priorityOn, setPriorityOn] = useState(false)
+  const [posPriority, setPosPriority] = useState<number[]>(DEFAULT_POS_PRIORITY)
   const [posFilter, setPosFilter] = useState<'ALL' | string>('ALL')
   const [sortBy, setSortBy] = useState<SortKey>('rating')
   const [timeLeft, setTimeLeft] = useState('')
@@ -173,6 +184,22 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
       setRanking([])
     }
   }, [visible, existingBallot, scoutingPlayers, openPositionSet])
+
+  // Initialize the position fill-priority from the saved ballot. A saved order
+  // turns the option on; any positions missing from it are appended so all 5
+  // are always present and reorderable.
+  useEffect(() => {
+    if (!visible) return
+    if (existingPositionPriority && existingPositionPriority.length > 0) {
+      const seen = new Set(existingPositionPriority)
+      const full = [...existingPositionPriority, ...DEFAULT_POS_PRIORITY.filter(p => !seen.has(p))]
+      setPosPriority(full)
+      setPriorityOn(true)
+    } else {
+      setPosPriority(DEFAULT_POS_PRIORITY)
+      setPriorityOn(false)
+    }
+  }, [visible, existingPositionPriority])
 
   // Countdown timer
   useEffect(() => {
@@ -248,9 +275,24 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
 
   const clearAll = useCallback(() => setRanking([]), [])
 
+  const movePosition = useCallback((posVal: number, direction: -1 | 1) => {
+    setPosPriority(prev => {
+      const idx = prev.indexOf(posVal)
+      if (idx < 0) return prev
+      const swapIdx = idx + direction
+      if (swapIdx < 0 || swapIdx >= prev.length) return prev
+      const next = prev.slice()
+      next[idx] = prev[swapIdx]
+      next[swapIdx] = prev[idx]
+      return next
+    })
+  }, [])
+
   const handleSubmit = async () => {
     if (ranking.length === 0) return
-    await onSubmit(ranking)
+    // Send the explicit order when enabled; [] = no preference (also clears a
+    // previously-saved order so disabling it actually takes effect).
+    await onSubmit(ranking, priorityOn ? posPriority : [])
   }
 
   const isUpdate = existingBallot && existingBallot.length > 0
@@ -323,6 +365,60 @@ const FaBallotModal: React.FC<FaBallotModalProps> = ({
                     {n > 1 && <span style={{ color: '#94a3b8' }}>×{n}</span>}
                   </span>
                 ))}
+              </div>
+            )}
+
+            {/* Position fill-priority (optional). Governs the fallback ONLY —
+                once your voted players are gone, the front office fills open
+                slots in this order instead of grabbing the best-rated player
+                (e.g. a kicker) regardless of position. */}
+            {openSlots.length > 0 && (
+              <div style={{ marginTop: '8px' }}>
+                <label style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
+                  fontSize: '12px', color: '#cbd5e1',
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={priorityOn}
+                    onChange={(e) => setPriorityOn(e.target.checked)}
+                    style={{ accentColor: '#f59e0b', cursor: 'pointer' }}
+                  />
+                  Set fill priority
+                  <span style={{ color: '#64748b' }}>— which position to take first once voted players run out</span>
+                </label>
+                {priorityOn && (
+                  <div style={{
+                    marginTop: '6px', display: 'flex', flexWrap: 'wrap', gap: '6px',
+                  }}>
+                    {posPriority.map((posVal, idx) => {
+                      const isOpen = openPositionSet.has(POS_NAME[posVal])
+                      return (
+                        <div key={posVal} style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '5px',
+                          padding: '3px 6px', borderRadius: '5px',
+                          background: '#0f172a', border: '1px solid #334155',
+                          opacity: isOpen ? 1 : 0.45,
+                        }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: idx === 0 ? '#f59e0b' : '#94a3b8', minWidth: '12px' }}>{idx + 1}.</span>
+                          <PositionChip position={POS_NAME[posVal]} />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                            <button onClick={() => movePosition(posVal, -1)} disabled={idx === 0}
+                              aria-label="Move up" style={{
+                                lineHeight: 0.7, fontSize: '9px', padding: '1px 3px', cursor: idx === 0 ? 'default' : 'pointer',
+                                background: 'transparent', border: 'none', color: idx === 0 ? '#475569' : '#94a3b8',
+                              }}>▲</button>
+                            <button onClick={() => movePosition(posVal, 1)} disabled={idx === posPriority.length - 1}
+                              aria-label="Move down" style={{
+                                lineHeight: 0.7, fontSize: '9px', padding: '1px 3px', cursor: idx === posPriority.length - 1 ? 'default' : 'pointer',
+                                background: 'transparent', border: 'none', color: idx === posPriority.length - 1 ? '#475569' : '#94a3b8',
+                              }}>▼</button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>

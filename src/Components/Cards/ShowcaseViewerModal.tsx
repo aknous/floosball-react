@@ -13,7 +13,7 @@ interface Slot { slotNumber: number; card: CardData | null }
 interface ViewerData {
   username: string
   grade: string
-  estimatedPayout: number
+  weeklyDividend: number
   activeSets: { key: string; name: string }[]
   slots: Slot[]
 }
