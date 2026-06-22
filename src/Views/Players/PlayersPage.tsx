@@ -213,17 +213,22 @@ export default function PlayersPage() {
           display: 'flex', gap: '2px', marginBottom: '14px',
           backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px', width: 'fit-content',
         }}>
-          {STATUS_TABS.map(tab => (
+          {STATUS_TABS.map(tab => {
+            const isActive = status === tab.key
+            return (
             <button key={tab.key} onClick={() => { setStatus(tab.key); setPosition('ALL'); setSortKey('fpt'); setSortAsc(false) }}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = '#e2e8f0' }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = '#94a3b8' }}
               style={{
-                padding: '6px 14px', fontSize: '12px', fontWeight: '600', borderRadius: '6px',
+                padding: '7px 16px', fontSize: '13px', fontWeight: isActive ? 700 : 600, borderRadius: '6px',
                 border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                backgroundColor: status === tab.key ? '#1e293b' : 'transparent',
-                color: status === tab.key ? '#e2e8f0' : '#64748b',
+                backgroundColor: isActive ? '#3b82f6' : 'transparent',
+                color: isActive ? '#fff' : '#94a3b8',
+                boxShadow: isActive ? '0 1px 6px rgba(59,130,246,0.45)' : 'none',
               }}>
               {tab.label}
             </button>
-          ))}
+          )})}
         </div>
 
         {status === 'hof' ? <HallOfFame /> : (<>
