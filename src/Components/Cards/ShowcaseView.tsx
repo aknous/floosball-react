@@ -475,7 +475,7 @@ const ShowcasePanel: React.FC<{
       display: 'flex', gap: '3px', marginBottom: '14px',
       background: 'rgba(15,23,42,0.6)', borderRadius: '8px', padding: '3px',
     }}>
-      <PanelTab label="Sets" active={tab === 'sets'} onClick={() => setTab('sets')} />
+      <PanelTab label="Scoring" active={tab === 'sets'} onClick={() => setTab('sets')} />
       <PanelTab label="Standings" active={tab === 'standings'} onClick={() => setTab('standings')} />
     </div>
     {tab === 'sets'
