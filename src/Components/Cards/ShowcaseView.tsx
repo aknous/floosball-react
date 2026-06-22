@@ -32,6 +32,14 @@ interface LeaderEntry {
   cardCount: number
   isCurrentUser: boolean
 }
+// The scoring "manual" — point tables, so the panel can render the rules.
+interface ScoringRules {
+  edition: Record<string, number>
+  classification: Record<string, number>
+  recencyByAge: Record<string, number>
+  recencyFloor: number
+  tierBonusPerLevel: number
+}
 interface ShowcaseData {
   slots: ShowcaseSlot[]
   slotCount: number
@@ -41,6 +49,7 @@ interface ShowcaseData {
   setBonus: number     // e.g. 0.45 → sets add +45%
   maxSetBonus: number  // cap on the summed set bonus (e.g. 1.5)
   dividendRate: number // weekly payout = rate × score × (1 + setBonus)
+  scoring: ScoringRules
   activeSets: ShowcaseSet[]
   almostSets: AlmostSet[]
   sets: SetEntry[]
@@ -75,17 +84,6 @@ const Corners: React.FC = () => {
   )
 }
 
-// Header toggle chip for a side panel (Sets / Standings).
-const PanelToggle: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({ label, active, onClick }) => (
-  <button onClick={onClick} style={{
-    fontSize: '11px', fontWeight: 700, fontFamily: 'pressStart', cursor: 'pointer',
-    padding: '5px 11px', borderRadius: '6px', transition: 'all 0.12s',
-    color: active ? '#1a1205' : '#cbd5e1',
-    background: active ? GOLD : 'rgba(148,163,184,0.10)',
-    border: `1px solid ${active ? GOLD : '#334155'}`,
-  }}>{label}</button>
-)
-
 const ShowcaseView: React.FC = () => {
   const { getToken } = useAuth()
   const isMobile = useIsMobile()
@@ -98,9 +96,8 @@ const ShowcaseView: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderEntry[]>([])
   const [viewUserId, setViewUserId] = useState<number | null>(null)
   const [lastResult, setLastResult] = useState<{ season: number; grade: string | null; total: number; weeksPaid: number } | null>(null)
-  // Side panels are toggled off by default so the case shows a full 4-wide row.
-  const [showSets, setShowSets] = useState(false)
-  const [showStandings, setShowStandings] = useState(false)
+  // One side panel that toggles between the scoring/sets guide and the standings.
+  const [panelTab, setPanelTab] = useState<'sets' | 'standings'>('sets')
 
   // End-of-season recap: show once per season (localStorage-dismissed).
   const fetchLastResult = useCallback(async () => {
@@ -293,14 +290,6 @@ const ShowcaseView: React.FC = () => {
               <span> · resets each season</span>
             </div>
           </div>
-          <span style={{ flex: 1 }} />
-          {/* Toggle the side panels (default off → full 4-wide case) */}
-          {!isMobile && (
-            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-              <PanelToggle label="Sets" active={showSets} onClick={() => setShowSets(v => !v)} />
-              <PanelToggle label="Standings" active={showStandings} onClick={() => setShowStandings(v => !v)} />
-            </div>
-          )}
         </div>
 
         <div style={{
@@ -385,65 +374,16 @@ const ShowcaseView: React.FC = () => {
         </div>
       </div>
 
-      {/* Sets: a vertical list on the LEFT on desktop (CSS order), opposite the
-          standings. Toggled via the header chip; always shown on mobile (stacked). */}
-      {(showSets || isMobile) && data && (
-        <SetsColumn sets={data.sets} setBonus={data.setBonus} maxSetBonus={data.maxSetBonus} isMobile={isMobile} />
-      )}
-
-      {/* Standings: toggled via the header chip; always shown on mobile (stacked). */}
-      {(showStandings || isMobile) && (
-      <aside style={{
-        width: isMobile ? '100%' : '270px', flexShrink: 0,
-        borderRadius: '12px', border: '1px solid #1e293b',
-        background: 'rgba(15,23,42,0.5)', padding: '14px 16px',
-      }}>
-        <div style={{
-          fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase',
-          color: '#94a3b8', fontWeight: 700, fontFamily: 'pressStart', marginBottom: '12px',
-        }}>Standings</div>
-        {leaderboard.length === 0 ? (
-          <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6 }}>
-            No showcases yet. Be the first to put cards on display.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {leaderboard.map(entry => {
-              const gc = GRADE_COLORS[entry.grade] || '#94a3b8'
-              return (
-                <div key={entry.userId}
-                  onClick={() => setViewUserId(entry.userId)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    padding: '6px 8px', borderRadius: '6px', cursor: 'pointer',
-                    background: entry.isCurrentUser ? 'rgba(251,191,36,0.1)' : 'transparent',
-                    border: entry.isCurrentUser ? '1px solid rgba(251,191,36,0.3)' : '1px solid transparent',
-                  }}
-                  onMouseEnter={(e) => { if (!entry.isCurrentUser) e.currentTarget.style.background = 'rgba(148,163,184,0.08)' }}
-                  onMouseLeave={(e) => { if (!entry.isCurrentUser) e.currentTarget.style.background = 'transparent' }}
-                >
-                  <span style={{
-                    fontSize: '12px', color: '#94a3b8', fontWeight: 700,
-                    width: '20px', flexShrink: 0, fontVariantNumeric: 'tabular-nums',
-                  }}>{entry.rank}</span>
-                  <span style={{
-                    flex: 1, minWidth: 0, fontSize: '13px',
-                    color: entry.isCurrentUser ? '#fbbf24' : '#e2e8f0', fontWeight: entry.isCurrentUser ? 700 : 400,
-                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}>{entry.username}</span>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>{entry.cardCount}/8</span>
-                  <span style={{
-                    width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: `1.5px solid ${gc}`, color: gc,
-                    fontSize: '12px', fontWeight: 800, fontFamily: 'pressStart',
-                  }}>{entry.grade}</span>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </aside>
+      {/* One side panel: tabs between the scoring/sets guide and the standings. */}
+      {data && (
+        <ShowcasePanel
+          tab={panelTab}
+          setTab={setPanelTab}
+          data={data}
+          leaderboard={leaderboard}
+          onViewUser={setViewUserId}
+          isMobile={isMobile}
+        />
       )}
       </div>
 
@@ -509,35 +449,95 @@ const CardDividend: React.FC<{ showcase: CardShowcaseBreakdown; setBonus: number
   )
 }
 
-// The sets list: every "hand", its requirement, and the flat bonus it pays.
-// Rendered as a vertical sidebar to the LEFT of the case (desktop). Active sets glow
-// gold, almost-sets show what they still need, locked sets sit muted. Sorted active,
-// then almost, then locked.
-const SetsColumn: React.FC<{ sets: SetEntry[]; setBonus: number; maxSetBonus: number; isMobile: boolean }> = ({ sets, setBonus, maxSetBonus, isMobile }) => {
-  const order = { active: 0, almost: 1, locked: 2 }
-  const sorted = [...sets].sort((a, b) => order[a.status] - order[b.status] || b.bonus - a.bonus)
-  const capped = setBonus >= maxSetBonus
-  return (
-    <aside style={{
-      order: isMobile ? 0 : -1,
-      width: isMobile ? '100%' : '220px', flexShrink: 0,
-      borderRadius: '12px', border: '1px solid #1e293b',
-      background: 'rgba(15,23,42,0.5)', padding: '14px 16px',
+// One side panel that toggles between the scoring/sets guide and the standings —
+// like the dashboard's prognostications/standings panel.
+const ShowcasePanel: React.FC<{
+  tab: 'sets' | 'standings'
+  setTab: (t: 'sets' | 'standings') => void
+  data: ShowcaseData
+  leaderboard: LeaderEntry[]
+  onViewUser: (id: number) => void
+  isMobile: boolean
+}> = ({ tab, setTab, data, leaderboard, onViewUser, isMobile }) => (
+  <aside style={{
+    width: isMobile ? '100%' : '280px', flexShrink: 0,
+    borderRadius: '12px', border: '1px solid #1e293b',
+    background: 'rgba(15,23,42,0.5)', padding: '14px 16px',
+  }}>
+    <div style={{
+      display: 'flex', gap: '3px', marginBottom: '14px',
+      background: 'rgba(15,23,42,0.6)', borderRadius: '8px', padding: '3px',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-        <span style={{
-          fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase',
-          color: '#cbd5e1', fontWeight: 700, fontFamily: 'pressStart',
-        }}>Sets</span>
-        <span style={{ flex: 1 }} />
-        <span style={{
-          fontSize: '13px', fontWeight: 800, fontFamily: 'pressStart',
-          color: setBonus > 0 ? GOLD : '#94a3b8',
-        }}>{setBonus > 0 ? `+${Math.round(setBonus * 100)}%` : 'none'}</span>
+      <PanelTab label="Sets" active={tab === 'sets'} onClick={() => setTab('sets')} />
+      <PanelTab label="Standings" active={tab === 'standings'} onClick={() => setTab('standings')} />
+    </div>
+    {tab === 'sets'
+      ? <SetsGuide data={data} />
+      : <StandingsList leaderboard={leaderboard} onViewUser={onViewUser} />}
+  </aside>
+)
+
+const PanelTab: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({ label, active, onClick }) => (
+  <button onClick={onClick} style={{
+    flex: 1, fontSize: '11px', fontWeight: 700, fontFamily: 'pressStart', cursor: 'pointer',
+    padding: '7px 0', borderRadius: '6px', border: 'none', transition: 'all 0.12s',
+    color: active ? '#1a1205' : '#94a3b8',
+    background: active ? GOLD : 'transparent',
+  }}>{label}</button>
+)
+
+// The Sets tab: a scoring "manual" (how cards score) + the set bonuses. Plain reference.
+const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
+  const sc = data.scoring
+  const order = { active: 0, almost: 1, locked: 2 }
+  const sorted = [...data.sets].sort((a, b) => order[a.status] - order[b.status] || b.bonus - a.bonus)
+  const editionLabel: Record<string, string> = { base: 'Base', holographic: 'Holographic', prismatic: 'Prismatic', diamond: 'Diamond' }
+  const classLabel: Record<string, string> = { rookie: 'Rookie', all_pro: 'All-Pro', champion: 'Champion', mvp: 'MVP' }
+  const Heading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div style={{ fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#cbd5e1', fontWeight: 700, fontFamily: 'pressStart', margin: '0 0 7px' }}>{children}</div>
+  )
+  const Line: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '12px', padding: '2px 0' }}>
+      <span style={{ color: '#94a3b8' }}>{label}</span>
+      <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{value}</span>
+    </div>
+  )
+  return (
+    <div>
+      <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.55, marginBottom: '14px' }}>
+        A card scores <span style={{ color: '#e2e8f0' }}>(edition + classification) × recency × tier</span>. Your showcase pays <span style={{ color: GOLD, fontWeight: 700 }}>{Math.round(data.dividendRate * 100)}%</span> of its total score every week.
       </div>
-      <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '12px' }}>
-        Group featured cards into sets for a flat bonus on top of your dividend.
-        {capped && <span style={{ color: '#cbd5e1' }}> Maxed at +{Math.round(maxSetBonus * 100)}%.</span>}
+
+      <Heading>Edition</Heading>
+      <div style={{ marginBottom: '14px' }}>
+        {['base', 'holographic', 'prismatic', 'diamond'].filter(e => e in sc.edition).map(e => (
+          <Line key={e} label={editionLabel[e] || e} value={`+${sc.edition[e]} pts`} />
+        ))}
+      </div>
+
+      <Heading>Classification</Heading>
+      <div style={{ marginBottom: '14px' }}>
+        {['rookie', 'all_pro', 'champion', 'mvp'].filter(c => c in sc.classification).map(c => (
+          <Line key={c} label={classLabel[c] || c} value={`+${sc.classification[c]} pts`} />
+        ))}
+      </div>
+
+      <Heading>Recency</Heading>
+      <div style={{ marginBottom: '14px' }}>
+        {Object.keys(sc.recencyByAge).sort((a, b) => Number(a) - Number(b)).map(k => (
+          <Line key={k} label={k === '0' ? 'This season' : `${k} season${k === '1' ? '' : 's'} old`} value={`×${sc.recencyByAge[k].toFixed(2)}`} />
+        ))}
+        <Line label="Older" value={`×${sc.recencyFloor.toFixed(2)}`} />
+        <Line label="Per upgrade level" value={`+${Math.round(sc.tierBonusPerLevel * 100)}%`} />
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px' }}>
+        <Heading>Set bonuses</Heading>
+        <span style={{ flex: 1 }} />
+        <span style={{ fontSize: '13px', fontWeight: 800, fontFamily: 'pressStart', color: data.setBonus > 0 ? GOLD : '#94a3b8', marginBottom: '7px' }}>{data.setBonus > 0 ? `+${Math.round(data.setBonus * 100)}%` : 'none'}</span>
+      </div>
+      <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '10px' }}>
+        Completed sets add a flat bonus on top of your score{data.setBonus >= data.maxSetBonus ? `, maxed at +${Math.round(data.maxSetBonus * 100)}%` : ''}.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
         {sorted.map(s => {
@@ -552,35 +552,56 @@ const SetsColumn: React.FC<{ sets: SetEntry[]; setBonus: number; maxSetBonus: nu
               border: `1px solid ${active ? 'rgba(251,191,36,0.35)' : '#23304a'}`,
               opacity: s.status === 'locked' ? 0.85 : 1,
             }}>
-              {/* Status marker */}
               <span style={{
                 width: '13px', height: '13px', borderRadius: '50%', flexShrink: 0, marginTop: '3px',
                 border: `2px solid ${accent}`, background: active ? accent : 'transparent',
               }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                  <span style={{
-                    flex: 1, fontSize: '13px', fontWeight: 700,
-                    color: active ? GOLD : s.status === 'locked' ? '#94a3b8' : '#e2e8f0',
-                  }}>{s.name}</span>
-                  <span style={{
-                    fontSize: '13px', fontWeight: 800, fontFamily: 'pressStart', flexShrink: 0,
-                    color: active ? GOLD : '#94a3b8',
-                  }}>+{Math.round(s.bonus * 100)}%</span>
+                  <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: active ? GOLD : s.status === 'locked' ? '#94a3b8' : '#e2e8f0' }}>{s.name}</span>
+                  <span style={{ fontSize: '13px', fontWeight: 800, fontFamily: 'pressStart', flexShrink: 0, color: active ? GOLD : '#94a3b8' }}>+{Math.round(s.bonus * 100)}%</span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', lineHeight: 1.4 }}>{s.req}</div>
-                {active && (
-                  <div style={{ fontSize: '11px', color: GOLD, fontWeight: 600, marginTop: '3px' }}>Active</div>
-                )}
-                {almost && (
-                  <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '3px' }}>{s.hint}</div>
-                )}
+                {active && <div style={{ fontSize: '11px', color: GOLD, fontWeight: 600, marginTop: '3px' }}>Active</div>}
+                {almost && <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '3px' }}>{s.hint}</div>}
               </div>
             </div>
           )
         })}
       </div>
-    </aside>
+    </div>
+  )
+}
+
+// The Standings tab: the showcase leaderboard.
+const StandingsList: React.FC<{ leaderboard: LeaderEntry[]; onViewUser: (id: number) => void }> = ({ leaderboard, onViewUser }) => {
+  if (leaderboard.length === 0) {
+    return <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.6 }}>No showcases yet. Be the first to put cards on display.</div>
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      {leaderboard.map(entry => {
+        const gc = GRADE_COLORS[entry.grade] || '#94a3b8'
+        return (
+          <div key={entry.userId}
+            onClick={() => onViewUser(entry.userId)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '6px 8px', borderRadius: '6px', cursor: 'pointer',
+              background: entry.isCurrentUser ? 'rgba(251,191,36,0.1)' : 'transparent',
+              border: entry.isCurrentUser ? '1px solid rgba(251,191,36,0.3)' : '1px solid transparent',
+            }}
+            onMouseEnter={(e) => { if (!entry.isCurrentUser) e.currentTarget.style.background = 'rgba(148,163,184,0.08)' }}
+            onMouseLeave={(e) => { if (!entry.isCurrentUser) e.currentTarget.style.background = 'transparent' }}
+          >
+            <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 700, width: '20px', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{entry.rank}</span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: '13px', color: entry.isCurrentUser ? '#fbbf24' : '#e2e8f0', fontWeight: entry.isCurrentUser ? 700 : 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{entry.username}</span>
+            <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>{entry.cardCount}/8</span>
+            <span style={{ width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${gc}`, color: gc, fontSize: '12px', fontWeight: 800, fontFamily: 'pressStart' }}>{entry.grade}</span>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
