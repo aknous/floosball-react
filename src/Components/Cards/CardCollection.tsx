@@ -92,6 +92,9 @@ const CardCollection: React.FC = () => {
   const inVault = view === 'vault'
   // Native HTML5 drag doesn't work on touch, so reordering is desktop-only.
   const canReorder = inVault && sortBy === 'manual' && !isMobile
+  // Any filter narrowing the list — so an empty result reads as "no matches" rather
+  // than "your vault/collection is empty".
+  const hasActiveFilter = editionFilter !== 'all' || positionFilter > 0 || classificationFilter !== 'all' || activeOnly
 
   const fetchCards = useCallback(async () => {
     try {
@@ -453,9 +456,11 @@ const CardCollection: React.FC = () => {
         </div>
       ) : cards.length === 0 ? (
         <div style={{ color: '#64748b', fontSize: '13px', padding: '40px 0', textAlign: 'center', lineHeight: 1.7 }}>
-          {inVault
-            ? 'Your Vault is empty. Vault cards from your collection to keep them forever and chase collection goals.'
-            : 'No cards found. Open packs in the Shop to get started!'}
+          {hasActiveFilter
+            ? 'No cards match these filters.'
+            : inVault
+              ? 'Your Vault is empty. Vault cards from your collection to keep them forever and chase collection goals.'
+              : 'No cards found. Open packs in the Shop to get started!'}
         </div>
       ) : (
         <>
