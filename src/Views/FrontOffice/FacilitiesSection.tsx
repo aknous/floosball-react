@@ -102,20 +102,37 @@ interface Candidate { key: string; name: string; currentLevel: number; targetLev
 interface LeagueTeam { id: number; name: string; city: string; abbr: string; color: string; appeal: number; levels: Record<string, number>; fanCount: number; marketTier: string }
 
 // ── small UI bits ─────────────────────────────────────────────────────────
-function FundChips({ onFund, balance, max }: { onFund: (amt: number) => void; balance: number; max: number }) {
+function FundChips({ onFund, balance, max, topGap = 8, allowCustom = false }: { onFund: (amt: number) => void; balance: number; max: number; topGap?: number; allowCustom?: boolean }) {
+  const [custom, setCustom] = useState('')
+  const customAmt = Math.min(parseInt(custom, 10) || 0, max, balance)
+  const submitCustom = () => { if (customAmt > 0) { onFund(customAmt); setCustom('') } }
+  const chipStyle = (disabled: boolean): React.CSSProperties => ({
+    fontSize: '12px', fontWeight: 700, borderRadius: '6px', padding: '3px 10px',
+    border: `1px solid ${disabled ? '#1e293b' : '#2f4a6b'}`, background: disabled ? 'transparent' : '#15293f',
+    color: disabled ? '#475569' : '#93c5fd',
+  })
   return (
-    <div style={{ display: 'flex', gap: '5px', marginTop: '8px', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: '5px', marginTop: topGap, flexWrap: 'wrap', alignItems: 'center' }}>
       {FUND_AMOUNTS.map(a => {
         const amt = Math.min(a, max)
         const disabled = balance < amt || max <= 0
         return (
-          <button key={a} className="facChip" onClick={() => !disabled && onFund(amt)} disabled={disabled} style={{
-            fontSize: '12px', fontWeight: 700, borderRadius: '6px', padding: '3px 10px',
-            border: `1px solid ${disabled ? '#1e293b' : '#2f4a6b'}`, background: disabled ? 'transparent' : '#15293f',
-            color: disabled ? '#475569' : '#93c5fd',
-          }}>+{a}</button>
+          <button key={a} className="facChip" onClick={() => !disabled && onFund(amt)} disabled={disabled} style={chipStyle(disabled)}>+{a}</button>
         )
       })}
+      {allowCustom && (
+        <>
+          <input
+            type="number" min={1} value={custom}
+            onChange={e => setCustom(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') submitCustom() }}
+            placeholder="Custom"
+            style={{ width: '74px', padding: '3px 8px', fontSize: '12px', fontFamily: 'inherit',
+              background: '#0f172a', color: '#e2e8f0', border: '1px solid #2f4a6b', borderRadius: '6px', outline: 'none' }}
+          />
+          <button className="facChip" disabled={customAmt <= 0} onClick={submitCustom} style={chipStyle(customAmt <= 0)}>Add</button>
+        </>
+      )}
     </div>
   )
 }
@@ -231,7 +248,8 @@ const FacilitiesSection: React.FC = () => {
             ))}
           </div>
 
-          {/* season-end auto-deposit % */}
+          {/* Treasury funding: season-end auto-deposit % + direct contribution, one row.
+              Direct chips also count toward the patron rank + funding achievements. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.08em', color: '#94a3b8', fontWeight: 700, marginRight: '4px' }}>Season-end deposit</span>
             {[0, 10, 25, 50, 75, 100].map(p => (
@@ -241,7 +259,9 @@ const FacilitiesSection: React.FC = () => {
                 color: pct === p ? accent : '#cbd5e1',
               }}>{p}%</button>
             ))}
-            <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '4px' }}>of unspent Floobits, into the Treasury at season end</span>
+            <span style={{ width: '1px', height: '18px', background: '#334155', margin: '0 6px' }} />
+            <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.08em', color: '#94a3b8', fontWeight: 700, marginRight: '2px' }}>Add now</span>
+            <FundChips onFund={(amt) => contribute(amt, 'treasury')} balance={balance} max={Number.MAX_SAFE_INTEGER} topGap={0} allowCustom />
           </div>
 
           {/* kanban: facilities | in progress | vote */}
@@ -275,7 +295,7 @@ const FacilitiesSection: React.FC = () => {
           <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.55, background: '#15202d', border: '1px solid #2c3a4d', borderRadius: '9px', padding: '12px 15px' }}>
             <b style={{ color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '.06em', fontSize: '11px' }}>How funding works</b>
             <div style={{ marginTop: '6px' }}>
-              Chip in to any facility's upkeep or an active project directly, or set a <span style={{ color: '#cbd5e1' }}>season-end deposit</span> above to funnel your leftover Floobits into the <span style={{ color: '#fbbf24' }}>Treasury</span>. When the season ends, the Treasury covers whatever's left in a waterfall: <span style={{ color: '#3b82f6', fontWeight: 700 }}>upkeep first</span> so no facility slips a level, then <span style={{ color: '#a78bfa', fontWeight: 700 }}>active projects</span> from oldest to newest. Unfunded upkeep drops a facility a level; fully funded projects get built.
+              Chip in to any facility's upkeep, an active project, or the <span style={{ color: '#fbbf24' }}>Treasury</span> directly, or set a <span style={{ color: '#cbd5e1' }}>season-end deposit</span> above to funnel your leftover Floobits into the Treasury at season end. When the season ends, the Treasury covers whatever's left in a waterfall: <span style={{ color: '#3b82f6', fontWeight: 700 }}>upkeep first</span> so no facility slips a level, then <span style={{ color: '#a78bfa', fontWeight: 700 }}>active projects</span> from oldest to newest. Unfunded upkeep drops a facility a level; fully funded projects get built.
             </div>
           </div>
         </>
