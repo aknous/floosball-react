@@ -224,6 +224,7 @@ export default function TeamPage() {
   const { id } = useParams<{ id: string }>()
   const { user, getToken, refetchUser } = useAuth()
   const [team, setTeam] = useState<TeamData | null>(null)
+  const [fanCount, setFanCount] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
   const [projectedFunding, setProjectedFunding] = useState<{ projectedAutoContributions: number, contributingFans: number, totalFans: number, nextSeasonProjectedFunding?: number, nextSeasonProjectedTier?: string, decayRate?: number } | null>(null)
@@ -307,6 +308,22 @@ export default function TeamPage() {
       .then(json => { if (json.success && json.data) setTeam(json.data) })
       .catch(err => console.error('Failed to fetch team:', err))
       .finally(() => setLoading(false))
+  }, [id])
+
+  // Fan count for the market badge — sourced from the league facilities feed
+  // (same per-team fanCount the Facilities tab uses).
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+    fetch(`${API_BASE}/league/facilities`)
+      .then(r => r.json())
+      .then(json => {
+        if (cancelled || !json?.success) return
+        const t = (json.data?.teams || []).find((x: { id: number; fanCount: number }) => x.id === Number(id))
+        if (t && typeof t.fanCount === 'number') setFanCount(t.fanCount)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
   }, [id])
 
   useEffect(() => {
@@ -469,14 +486,20 @@ export default function TeamPage() {
               {team.fundingTier && (() => {
                 const tc: Record<string, string> = { 'MEGA_MARKET': '#a78bfa', 'LARGE_MARKET': '#3b82f6', 'MID_MARKET': '#2dd4bf', 'SMALL_MARKET': '#f97316' }
                 const tl: Record<string, string> = { 'MEGA_MARKET': 'Mega Market', 'LARGE_MARKET': 'Large Market', 'MID_MARKET': 'Mid Market', 'SMALL_MARKET': 'Small Market' }
-                const te: Record<string, string[]> = {
-                  'MEGA_MARKET': ['Large boost to player development', 'Large boost to player morale', 'Massive reduction in fatigue buildup'],
-                  'LARGE_MARKET': ['Modest boost to player development', 'Small boost to player morale', 'Moderate reduction in fatigue buildup'],
-                  'MID_MARKET': ['No bonuses or penalties'],
-                  'SMALL_MARKET': ['Reduced player development', 'Lower player morale', 'Increased fatigue buildup'],
-                }
+                const mc = tc[team.fundingTier] || '#64748b'
+                const fanTip = fanCount != null
+                  ? `${fanCount.toLocaleString()} ${fanCount === 1 ? 'fan backs' : 'fans back'} this team. Market tier is set by fanbase size relative to the league.`
+                  : 'Market tier is set by fanbase size relative to the league.'
                 return (
-                  <TierBadge tier={team.fundingTier} label={tl[team.fundingTier] || team.fundingTier} color={tc[team.fundingTier] || '#64748b'} effects={te[team.fundingTier] || []} size="small" />
+                  <HoverTooltip content={fanTip} color={mc}>
+                    <span style={{
+                      fontSize: '11px', fontWeight: 700, color: mc,
+                      backgroundColor: `${mc}20`, border: `1px solid ${mc}40`,
+                      padding: '2px 8px', borderRadius: '4px',
+                    }}>
+                      {tl[team.fundingTier] || team.fundingTier}
+                    </span>
+                  </HoverTooltip>
                 )
               })()}
               {(team.floosbowlChampionships?.length ?? 0) > 0 && (
