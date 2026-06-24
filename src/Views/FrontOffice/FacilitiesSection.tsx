@@ -234,17 +234,23 @@ const FacilitiesSection: React.FC = () => {
             background: '#2c3a4d', border: '1px solid #334155', borderRadius: '12px', overflow: 'hidden',
             boxShadow: '0 8px 24px rgba(0,0,0,.4)' }}>
             {([
-              ['Market', TIER_SHORT[me?.marketTier || 'MID_MARKET'], tierColor, 'Fanbase size'],
-              ['Appeal', appealRank(data.appeal), '#34d399', 'Facility quality'],
-              ['Free Agency', `#${faRankOf(league, data.teamId)} pick`, '#2dd4bf', 'Draft slot'],
-              ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24', 'Project fund'],
-            ] as [string, string, string, string][]).map(([l, v, c, sub]) => (
-              <div key={l} style={{ background: '#1e293b', padding: '13px 15px' }}>
-                <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', fontWeight: 700 }}>{l}</div>
-                <div style={{ fontSize: '21px', fontWeight: 800, margin: '5px 0 2px', color: c,
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</div>
-                <div style={{ fontSize: '12px', color: '#94a3b8' }}>{sub}</div>
-              </div>
+              ['Market', TIER_SHORT[me?.marketTier || 'MID_MARKET'], tierColor, 'Fanbase size',
+                'How big your fanbase is compared to the rest of the league, from SMALL up to MEGA.'],
+              ['Appeal', appealRank(data.appeal), '#34d399', 'Facility quality',
+                'How strong your facilities are overall. Higher appeal makes the team more attractive to free agents.'],
+              ['Free Agency', `#${faRankOf(league, data.teamId)} pick`, '#2dd4bf', 'Draft slot',
+                'Where you pick in the free-agent draft. Set by your Appeal, so the best-equipped clubs draft first.'],
+              ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24', 'Project fund',
+                'Floobits your fanbase has banked. At season end it covers any facility upkeep and projects that are not already funded, upkeep first, then projects.'],
+            ] as [string, string, string, string, string][]).map(([l, v, c, sub, tip]) => (
+              <HoverTooltip key={l} content={tip} color={c}>
+                <div style={{ background: '#1e293b', padding: '13px 15px', height: '100%', boxSizing: 'border-box' }}>
+                  <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', fontWeight: 700 }}>{l}</div>
+                  <div style={{ fontSize: '21px', fontWeight: 800, margin: '5px 0 2px', color: c,
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8' }}>{sub}</div>
+                </div>
+              </HoverTooltip>
             ))}
           </div>
 

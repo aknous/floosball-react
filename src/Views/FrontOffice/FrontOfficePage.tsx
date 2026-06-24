@@ -86,19 +86,6 @@ interface TeamSummary {
   schedule: ScheduleEntry[]
 }
 
-const TIER_COLORS: Record<string, string> = {
-  MEGA_MARKET: '#a78bfa',
-  LARGE_MARKET: '#3b82f6',
-  MID_MARKET: '#2dd4bf',
-  SMALL_MARKET: '#f97316',
-}
-const TIER_LABELS: Record<string, string> = {
-  MEGA_MARKET: 'Mega Market',
-  LARGE_MARKET: 'Large Market',
-  MID_MARKET: 'Mid Market',
-  SMALL_MARKET: 'Small Market',
-}
-
 export default function FrontOfficePage() {
   const { user } = useAuth()
   const { seasonState } = useFloosball()
@@ -218,12 +205,7 @@ export default function FrontOfficePage() {
     return <div style={{ padding: '48px', color: '#94a3b8', textAlign: 'center' }}>Loading Front Office…</div>
   }
 
-  const tierColor = team.funding ? (TIER_COLORS[team.funding.tier] || '#64748b') : '#64748b'
-  const tierLabel = team.funding ? (TIER_LABELS[team.funding.tier] || team.funding.tier) : '—'
-
   // Tabs — only the selected tab's content renders, keeping the page focused.
-  // "My Team" is promoted to a persistent summary card above the tabs so tier
-  // and funding context stays visible regardless of which tab is active.
   const tabs: { id: SectionId; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'markets', label: 'Facilities' },
@@ -243,42 +225,6 @@ export default function FrontOfficePage() {
           { title: 'Accrue and claim', color: '#4ade80', body: 'Dividends pile up over the season. Claim them here whenever you like. A gold marker shows when there\'s something to collect.' },
         ]}
       />
-
-      {/* Header — compact team summary strip (team / record / tier / funding).
-          No page title or season line; the nav already provides the context. */}
-      <div style={{
-        backgroundColor: '#1e293b', borderRadius: '8px', padding: '10px 12px',
-        display: 'flex', flexWrap: 'wrap' as const, gap: '14px', alignItems: 'center',
-        marginBottom: '16px',
-      }}>
-        <img
-          src={`/avatars/${team.id}.png`}
-          alt={team.abbr}
-          style={{ width: '40px', height: '40px', flexShrink: 0 }}
-        />
-        <div style={{ flex: 1, minWidth: '200px' }}>
-          <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0' }}>
-            <Link to={`/team/${team.id}`} style={{ color: '#e2e8f0', textDecoration: 'none' }}>
-              {team.city} {team.name}
-            </Link>
-          </div>
-          <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>
-            {team.record?.wins}–{team.record?.losses}
-          </div>
-        </div>
-        <span style={{
-          fontSize: '14px', fontWeight: 700, color: tierColor,
-          backgroundColor: `${tierColor}20`, padding: '5px 12px', borderRadius: '4px',
-          border: `1px solid ${tierColor}40`,
-        }}>
-          {tierLabel}
-        </span>
-        {team.funding && (
-          <div style={{ fontSize: '16px', fontWeight: 700, color: '#fbbf24' }}>
-            {team.funding.effectiveFunding.toLocaleString()} F
-          </div>
-        )}
-      </div>
 
       {/* Tabs */}
       <div style={{
