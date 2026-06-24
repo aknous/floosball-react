@@ -235,13 +235,13 @@ const FacilitiesSection: React.FC = () => {
             boxShadow: '0 8px 24px rgba(0,0,0,.4)' }}>
             {([
               ['Market', TIER_SHORT[me?.marketTier || 'MID_MARKET'], tierColor, 'Fanbase size',
-                'How big your fanbase is compared to the rest of the league, from SMALL up to MEGA. A bigger market brings higher expectations on the team.'],
+                'How big your fanbase is compared to the rest of the league, from SMALL up to MEGA.'],
               ['Appeal', appealRank(data.appeal), '#34d399', 'Facility quality',
                 'How strong your facilities are overall. Higher appeal makes the team more attractive to free agents.'],
               ['Free Agency', `#${faRankOf(league, data.teamId)} pick`, '#2dd4bf', 'Draft slot',
                 'Where you pick in the free-agent draft. Set by your Appeal, so the best-equipped clubs draft first.'],
               ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24', 'Project fund',
-                'Floobits your fanbase has banked. Pays facility upkeep and funds new projects.'],
+                'Floobits your fanbase has banked. At season end it covers any facility upkeep and projects that are not already funded, upkeep first, then projects.'],
             ] as [string, string, string, string, string][]).map(([l, v, c, sub, tip]) => (
               <HoverTooltip key={l} content={tip} color={c}>
                 <div style={{ background: '#1e293b', padding: '13px 15px', height: '100%', boxSizing: 'border-box' }}>
