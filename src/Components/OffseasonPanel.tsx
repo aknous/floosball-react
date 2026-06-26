@@ -6,6 +6,7 @@ import { Stars, calcStars, DualStars } from './Stars'
 import PlayerHoverCard from './PlayerHoverCard'
 import PlayerLink from './PlayerLink'
 import FaBallotModal from './FrontOffice/FaBallotModal'
+import { appealRank } from '@/utils/facilities'
 import { Plaque, type Inductee } from '@/Views/Players/HallOfFame'
 import type { ScoutingPlayer, OpenSlot } from './FrontOffice/FaBallotModal'
 import type {
@@ -1094,16 +1095,17 @@ export const OffseasonPanel: React.FC = () => {
                         fontSize: '10px',
                         fontWeight: '700',
                         letterSpacing: '0.04em',
+                        textTransform: 'uppercase',
                         padding: '2px 6px',
                         borderRadius: '3px',
                         color: APPEAL_PILL.fg,
                         backgroundColor: APPEAL_PILL.bg,
                         flexShrink: 0,
                         display: 'inline-block',
-                        minWidth: '64px',
+                        minWidth: '78px',
                         textAlign: 'center',
                       }}>
-                        {team.appeal.toFixed(1)} APPEAL
+                        {appealRank(team.appeal)}
                       </span>
                     )}
                     <span style={{ fontSize: '10px', color: '#64748b', marginLeft: '2px' }}>
