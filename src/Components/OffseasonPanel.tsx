@@ -1070,20 +1070,6 @@ export const OffseasonPanel: React.FC = () => {
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {team.city ? `${team.city} ${team.name}` : team.name}
                       </span>
-                      {currentPhase === 'free_agency' && typeof team.appeal === 'number' && (
-                        <span style={{
-                          fontSize: '10px',
-                          fontWeight: '700',
-                          letterSpacing: '0.04em',
-                          padding: '2px 6px',
-                          borderRadius: '3px',
-                          color: APPEAL_PILL.fg,
-                          backgroundColor: APPEAL_PILL.bg,
-                          flexShrink: 0,
-                        }}>
-                          {team.appeal.toFixed(1)} APPEAL
-                        </span>
-                      )}
                     </span>
                     {isCurrent && (
                       <span style={{
@@ -1101,6 +1087,23 @@ export const OffseasonPanel: React.FC = () => {
                         border: '1px solid rgba(148,163,184,0.2)', padding: '3px 7px', borderRadius: '3px',
                       }}>
                         DONE
+                      </span>
+                    )}
+                    {currentPhase === 'free_agency' && typeof team.appeal === 'number' && (
+                      <span style={{
+                        fontSize: '10px',
+                        fontWeight: '700',
+                        letterSpacing: '0.04em',
+                        padding: '2px 6px',
+                        borderRadius: '3px',
+                        color: APPEAL_PILL.fg,
+                        backgroundColor: APPEAL_PILL.bg,
+                        flexShrink: 0,
+                        display: 'inline-block',
+                        minWidth: '64px',
+                        textAlign: 'center',
+                      }}>
+                        {team.appeal.toFixed(1)} APPEAL
                       </span>
                     )}
                     <span style={{ fontSize: '10px', color: '#64748b', marginLeft: '2px' }}>
