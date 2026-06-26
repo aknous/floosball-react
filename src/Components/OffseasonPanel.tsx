@@ -95,28 +95,13 @@ interface DraftTeam {
   id?: number
   color?: string
   complete?: boolean
-  fundingTier?: string
-  fundingTierRank?: number
+  appeal?: number
 }
 
-// Market tier badge config — matches MarketsSection pattern so the FA draft
-// order visibly reflects the MEGA-first sort (otherwise indistinguishable from
-// the old worst-first order when most teams share the same tier).
-const TIER_LABELS: Record<string, string> = {
-  MEGA_MARKET: 'MEGA',
-  LARGE_MARKET: 'LARGE',
-  MID_MARKET: 'MID',
-  SMALL_MARKET: 'SMALL',
-}
-// Match the canonical tier palette used by TeamPage's TierBadge so users
-// see the same colors here as on team detail pages: purple → blue → teal
-// → orange for MEGA → LARGE → MID → SMALL.
-const TIER_COLORS: Record<string, { fg: string; bg: string }> = {
-  MEGA_MARKET:  { fg: '#a78bfa', bg: 'rgba(167,139,250,0.18)' },
-  LARGE_MARKET: { fg: '#3b82f6', bg: 'rgba(59,130,246,0.18)' },
-  MID_MARKET:   { fg: '#2dd4bf', bg: 'rgba(45,212,191,0.15)' },
-  SMALL_MARKET: { fg: '#f97316', bg: 'rgba(249,115,22,0.18)' },
-}
+// FA draft order is by team APPEAL (facilities-derived) — the higher a team's
+// Appeal, the earlier it drafts free agents. No market-tier grouping anymore;
+// the board is a single Appeal-ranked list with an Appeal pill per team.
+const APPEAL_PILL = { fg: '#a78bfa', bg: 'rgba(167,139,250,0.15)' }
 
 interface RosterPlayer {
   id: number
@@ -758,24 +743,12 @@ export const OffseasonPanel: React.FC = () => {
   // Static order — no reordering, just highlight the "on the clock" team
   const cyclicOrder = draftOrder
 
-  // During FA phase the backend sends teams tier-sorted (MEGA-market first,
-  // then best-funded within tier). Group them so the UI can insert a header
-  // row per tier, making the signing priority visible.
-  const TIER_ORDER = ['MEGA_MARKET', 'LARGE_MARKET', 'MID_MARKET', 'SMALL_MARKET']
-  const teamGroups = useMemo(() => {
-    if (currentPhase !== 'free_agency') {
-      return [{ tier: null as string | null, teams: cyclicOrder }]
-    }
-    const byTier: Record<string, DraftTeam[]> = {}
-    for (const t of cyclicOrder) {
-      const key = t.fundingTier || 'MID_MARKET'
-      if (!byTier[key]) byTier[key] = []
-      byTier[key].push(t)
-    }
-    return TIER_ORDER
-      .filter(tier => byTier[tier]?.length > 0)
-      .map(tier => ({ tier, teams: byTier[tier] }))
-  }, [currentPhase, cyclicOrder])
+  // The backend sends teams Appeal-ranked (highest Appeal drafts first). Render
+  // a single flat list in that order — no market-tier grouping.
+  const teamGroups = useMemo(
+    () => [{ tier: null as string | null, teams: cyclicOrder }],
+    [cyclicOrder],
+  )
 
   const filteredAgents = posFilter === 'ALL'
     ? freeAgents
@@ -1029,29 +1002,6 @@ export const OffseasonPanel: React.FC = () => {
           ) : (
             teamGroups.map(group => (
               <React.Fragment key={group.tier ?? 'flat'}>
-                {group.tier && TIER_LABELS[group.tier] && (
-                  <div style={{
-                    padding: '8px 14px',
-                    backgroundColor: TIER_COLORS[group.tier].bg,
-                    borderBottom: '1px solid #0f172a',
-                    borderTop: '1px solid #0f172a',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}>
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: '800',
-                      letterSpacing: '0.08em',
-                      color: TIER_COLORS[group.tier].fg,
-                    }}>
-                      {TIER_LABELS[group.tier]} MARKET
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                      {group.teams.length} team{group.teams.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                )}
                 {group.teams.map((team, i) => {
               const isCurrent = team.abbr === currentTeamAbbr && !isComplete
               const isDone = completedTeams.has(team.abbr) || isComplete
@@ -1120,18 +1070,18 @@ export const OffseasonPanel: React.FC = () => {
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {team.city ? `${team.city} ${team.name}` : team.name}
                       </span>
-                      {team.fundingTier && TIER_LABELS[team.fundingTier] && (
+                      {currentPhase === 'free_agency' && typeof team.appeal === 'number' && (
                         <span style={{
                           fontSize: '10px',
                           fontWeight: '700',
-                          letterSpacing: '0.05em',
+                          letterSpacing: '0.04em',
                           padding: '2px 6px',
                           borderRadius: '3px',
-                          color: TIER_COLORS[team.fundingTier].fg,
-                          backgroundColor: TIER_COLORS[team.fundingTier].bg,
+                          color: APPEAL_PILL.fg,
+                          backgroundColor: APPEAL_PILL.bg,
                           flexShrink: 0,
                         }}>
-                          {TIER_LABELS[team.fundingTier]}
+                          {team.appeal.toFixed(1)} APPEAL
                         </span>
                       )}
                     </span>
