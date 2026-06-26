@@ -691,8 +691,7 @@ export interface FaDraftOrderUpdateEvent extends BaseWebSocketEvent {
     abbr: string
     id?: number
     color?: string
-    fundingTier?: string
-    fundingTierRank?: number
+    appeal?: number
   }>
 }
 

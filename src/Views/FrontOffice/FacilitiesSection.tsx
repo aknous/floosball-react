@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import HoverTooltip from '@/Components/HoverTooltip'
+import { appealRank } from '@/utils/facilities'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -337,17 +338,6 @@ const FacilitiesSection: React.FC = () => {
 function faRankOf(league: LeagueTeam[], teamId: number): number {
   const i = league.findIndex(t => t.id === teamId)
   return i >= 0 ? i + 1 : league.length
-}
-
-// Appeal (facility quality) as a named rank. Appeal = sum of the 5 facility
-// levels (0-25), so the per-facility average drives the band.
-function appealRank(appeal: number): string {
-  const avg = appeal / 5
-  if (avg >= 4.2) return 'Palatial'
-  if (avg >= 3.2) return 'Premier'
-  if (avg >= 2.2) return 'Modern'
-  if (avg >= 1.2) return 'Modest'
-  return 'Barebones'
 }
 
 function SectionHead({ title, hint, accent }: { title: string; hint: string; accent: string }) {

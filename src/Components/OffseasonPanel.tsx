@@ -6,7 +6,7 @@ import { Stars, calcStars, DualStars } from './Stars'
 import PlayerHoverCard from './PlayerHoverCard'
 import PlayerLink from './PlayerLink'
 import FaBallotModal from './FrontOffice/FaBallotModal'
-import { Plaque, type Inductee } from '@/Views/Players/HallOfFame'
+import { appealRank } from '@/utils/facilities'
 import type { ScoutingPlayer, OpenSlot } from './FrontOffice/FaBallotModal'
 import type {
   OffseasonStartEvent,
@@ -95,27 +95,18 @@ interface DraftTeam {
   id?: number
   color?: string
   complete?: boolean
-  fundingTier?: string
-  fundingTierRank?: number
+  appeal?: number
 }
 
-// Market tier badge config — matches MarketsSection pattern so the FA draft
-// order visibly reflects the MEGA-first sort (otherwise indistinguishable from
-// the old worst-first order when most teams share the same tier).
-const TIER_LABELS: Record<string, string> = {
-  MEGA_MARKET: 'MEGA',
-  LARGE_MARKET: 'LARGE',
-  MID_MARKET: 'MID',
-  SMALL_MARKET: 'SMALL',
-}
-// Match the canonical tier palette used by TeamPage's TierBadge so users
-// see the same colors here as on team detail pages: purple → blue → teal
-// → orange for MEGA → LARGE → MID → SMALL.
-const TIER_COLORS: Record<string, { fg: string; bg: string }> = {
-  MEGA_MARKET:  { fg: '#a78bfa', bg: 'rgba(167,139,250,0.18)' },
-  LARGE_MARKET: { fg: '#3b82f6', bg: 'rgba(59,130,246,0.18)' },
-  MID_MARKET:   { fg: '#2dd4bf', bg: 'rgba(45,212,191,0.15)' },
-  SMALL_MARKET: { fg: '#f97316', bg: 'rgba(249,115,22,0.18)' },
+// FA draft order is by team APPEAL (facilities-derived) — higher Appeal drafts
+// first. The board groups teams by facility tier (appealRank) with a colored
+// header per tier, highest tier first. Colors descend Palatial → Barebones.
+const RANK_COLORS: Record<string, { fg: string; bg: string }> = {
+  Palatial:  { fg: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
+  Premier:   { fg: '#a78bfa', bg: 'rgba(167,139,250,0.16)' },
+  Modern:    { fg: '#38bdf8', bg: 'rgba(56,189,248,0.15)' },
+  Modest:    { fg: '#2dd4bf', bg: 'rgba(45,212,191,0.14)' },
+  Barebones: { fg: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
 }
 
 interface RosterPlayer {
@@ -193,27 +184,6 @@ export const OffseasonPanel: React.FC = () => {
   const offseasonPhaseTargetTime = seasonState.offseasonPhaseTargetTime
   const [phaseCountdown, setPhaseCountdown] = useState('')
 
-  // Hall of Fame class for the just-ended season. The induction stamps each
-  // inductee's hofSeason at the training step (right after the FA draft, the
-  // moment HoF voting closes), so this turns non-empty exactly then. Refetched
-  // on phase changes + a slow interval so the panel appears without a reload.
-  const [hofClass, setHofClass] = useState<Inductee[]>([])
-  useEffect(() => {
-    let alive = true
-    const loadHof = () => {
-      fetch(`${API_BASE}/hall-of-fame`)
-        .then(r => r.json())
-        .then(json => {
-          if (!alive || !json.success) return
-          const all: Inductee[] = json.data?.inductees || []
-          setHofClass(all.filter(i => i.hofSeason === seasonState.seasonNumber))
-        })
-        .catch(() => {})
-    }
-    loadHof()
-    const id = setInterval(loadHof, 30000)
-    return () => { alive = false; clearInterval(id) }
-  }, [seasonState.seasonNumber, offseasonPhase])
   const [phaseLabel, setPhaseLabel] = useState('')
   useEffect(() => {
     const NEXT_LABEL: Record<string, string> = {
@@ -758,23 +728,21 @@ export const OffseasonPanel: React.FC = () => {
   // Static order — no reordering, just highlight the "on the clock" team
   const cyclicOrder = draftOrder
 
-  // During FA phase the backend sends teams tier-sorted (MEGA-market first,
-  // then best-funded within tier). Group them so the UI can insert a header
-  // row per tier, making the signing priority visible.
-  const TIER_ORDER = ['MEGA_MARKET', 'LARGE_MARKET', 'MID_MARKET', 'SMALL_MARKET']
+  // During FA the backend sends teams Appeal-ranked (highest first). Group
+  // consecutive teams by facility tier (appealRank) so the UI shows a header
+  // per tier — the draft order is preserved since rank is monotonic in Appeal.
   const teamGroups = useMemo(() => {
     if (currentPhase !== 'free_agency') {
       return [{ tier: null as string | null, teams: cyclicOrder }]
     }
-    const byTier: Record<string, DraftTeam[]> = {}
+    const groups: { tier: string | null; teams: DraftTeam[] }[] = []
     for (const t of cyclicOrder) {
-      const key = t.fundingTier || 'MID_MARKET'
-      if (!byTier[key]) byTier[key] = []
-      byTier[key].push(t)
+      const rank = typeof t.appeal === 'number' ? appealRank(t.appeal) : null
+      const last = groups[groups.length - 1]
+      if (last && last.tier === rank) last.teams.push(t)
+      else groups.push({ tier: rank, teams: [t] })
     }
-    return TIER_ORDER
-      .filter(tier => byTier[tier]?.length > 0)
-      .map(tier => ({ tier, teams: byTier[tier] }))
+    return groups
   }, [currentPhase, cyclicOrder])
 
   const filteredAgents = posFilter === 'ALL'
@@ -872,27 +840,6 @@ export const OffseasonPanel: React.FC = () => {
           </span>
         )}
       </div>
-
-      {/* Hall of Fame inductees — appears once voting closes (induction stamps
-          the class at the training step, right after the FA draft). Persists
-          through the rest of the offseason; clears when the next season starts
-          (the season number bumps and no class matches yet). */}
-      {hofClass.length > 0 && (
-        <div style={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '10px', padding: '16px', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' as const, marginBottom: '4px' }}>
-            <span style={{ fontSize: '16px', fontWeight: 800, color: '#fbbf24', letterSpacing: '0.02em' }}>Hall of Fame</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>
-              Class of Season {seasonState.seasonNumber}
-            </span>
-          </div>
-          <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '14px' }}>
-            This season's inductees, voted in by the fans.
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(236px, 1fr))', gap: '12px' }}>
-            {hofClass.map(p => <Plaque key={p.id} p={p} />)}
-          </div>
-        </div>
-      )}
 
       {/* GM: Favorite team on the clock banner */}
       {isFavoriteOnClock && (
@@ -1029,10 +976,10 @@ export const OffseasonPanel: React.FC = () => {
           ) : (
             teamGroups.map(group => (
               <React.Fragment key={group.tier ?? 'flat'}>
-                {group.tier && TIER_LABELS[group.tier] && (
+                {group.tier && RANK_COLORS[group.tier] && (
                   <div style={{
                     padding: '8px 14px',
-                    backgroundColor: TIER_COLORS[group.tier].bg,
+                    backgroundColor: RANK_COLORS[group.tier].bg,
                     borderBottom: '1px solid #0f172a',
                     borderTop: '1px solid #0f172a',
                     display: 'flex',
@@ -1043,9 +990,10 @@ export const OffseasonPanel: React.FC = () => {
                       fontSize: '11px',
                       fontWeight: '800',
                       letterSpacing: '0.08em',
-                      color: TIER_COLORS[group.tier].fg,
+                      textTransform: 'uppercase',
+                      color: RANK_COLORS[group.tier].fg,
                     }}>
-                      {TIER_LABELS[group.tier]} MARKET
+                      {group.tier} Facilities
                     </span>
                     <span style={{ fontSize: '11px', color: '#94a3b8' }}>
                       {group.teams.length} team{group.teams.length !== 1 ? 's' : ''}
@@ -1120,20 +1068,6 @@ export const OffseasonPanel: React.FC = () => {
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {team.city ? `${team.city} ${team.name}` : team.name}
                       </span>
-                      {team.fundingTier && TIER_LABELS[team.fundingTier] && (
-                        <span style={{
-                          fontSize: '10px',
-                          fontWeight: '700',
-                          letterSpacing: '0.05em',
-                          padding: '2px 6px',
-                          borderRadius: '3px',
-                          color: TIER_COLORS[team.fundingTier].fg,
-                          backgroundColor: TIER_COLORS[team.fundingTier].bg,
-                          flexShrink: 0,
-                        }}>
-                          {TIER_LABELS[team.fundingTier]}
-                        </span>
-                      )}
                     </span>
                     {isCurrent && (
                       <span style={{
