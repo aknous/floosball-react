@@ -37,6 +37,7 @@ import { SeasonWebSocketProvider } from './contexts/SeasonWebSocketContext'
 import { GamesProvider } from './contexts/GamesContext'
 import { AchievementsProvider } from './contexts/AchievementsContext'
 import { CoresStatusProvider } from './contexts/CoresStatusContext'
+import CriticalityGlitch from './Components/CriticalityGlitch'
 import AchievementUnlockedToast from './Components/AchievementUnlockedToast'
 import FloobitsReceivedToast from './Components/FloobitsReceivedToast'
 import PendingPackResumer from './Components/Cards/PendingPackResumer'
@@ -267,6 +268,7 @@ function App() {
               <GamesProvider>
                 <AchievementsProvider>
                   <CoresStatusProvider>
+                    <CriticalityGlitch />
                     <SidebarProvider>
                       <AuthGate />
                       <AchievementUnlockedToast />
