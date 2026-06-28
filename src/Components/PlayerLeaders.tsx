@@ -213,15 +213,10 @@ export const PlayerLeaders: React.FC<{ embedded?: boolean }> = ({ embedded = fal
                       fontSize: '14px',
                       color: player.awakened ? '#60a5fa' : '#e2e8f0',
                       textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      ...(player.awakened ? { fontWeight: 600, textShadow: '0 0 8px rgba(96,165,250,0.6), 0 0 16px rgba(96,165,250,0.35)' } : {}),
+                      ...(player.awakened ? { fontWeight: 600, textShadow: '0 0 10px rgba(96,165,250,0.95), 0 0 22px rgba(96,165,250,0.6), 0 0 34px rgba(96,165,250,0.32)' } : {}),
                     }}
                   >
                     {player.name}
-                    {player.awakened && (
-                      <span title="Awakened" style={{ marginLeft: '5px', fontSize: '10px', color: '#60a5fa', verticalAlign: 'middle' }}>
-                        ✦
-                      </span>
-                    )}
                     {isOnRoster && (
                       <span style={{ marginLeft: '5px', fontSize: '10px', fontWeight: '700', color: '#22c55e', verticalAlign: 'middle' }}>
                         FP
