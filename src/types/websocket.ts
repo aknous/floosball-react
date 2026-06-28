@@ -573,6 +573,9 @@ interface PlayerBase {
     forcedFumbles: number
     passBreakups: number
   }
+  // Live awakened charge — present only for players awakened in THIS game.
+  // `ready` = power meter full/charged right now (drives the gold name-glow).
+  chargeStatus?: { ready: boolean; power?: string }
 }
 
 export interface GameStats {

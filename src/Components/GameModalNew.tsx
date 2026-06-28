@@ -2149,10 +2149,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     position?: string | null; defensivePosition?: string | null;
                     ratingStars?: number; playerRating?: number;
                     mentalBreakdown?: MentalBreakdown;
+                    chargeStatus?: { ready: boolean; power?: string };
                   },
                   useDefPos?: boolean,
                 ) => {
                   const posLabel = useDefPos && p.defensivePosition ? p.defensivePosition : p.position
+                  // Charged/ready = an awakened player whose power meter is full
+                  // this game. Gold name-glow (live; clears when they discharge),
+                  // the counterpart to the blue awakened glow on the stat leaders.
+                  const isCharged = !!p.chargeStatus?.ready
                   return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                       {posLabel && (
@@ -2162,7 +2167,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       )}
                       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '1px' }}>
                         <PlayerHoverCard playerId={p.id} playerName={p.name}>
-                          <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{p.name}</span>
+                          <span style={{ fontSize: '14px', color: isCharged ? '#fbbf24' : '#e2e8f0', fontWeight: isCharged ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', ...(isCharged ? { textShadow: '0 0 9px rgba(251,191,36,0.7), 0 0 18px rgba(251,191,36,0.35)' } : {}) }}>
+                            {p.name}
+                            {isCharged && (
+                              <span title="Charged" style={{ marginLeft: '5px', fontSize: '10px', color: '#fbbf24', verticalAlign: 'middle' }}>
+                                ✦
+                              </span>
+                            )}
+                          </span>
                         </PlayerHoverCard>
                         {p.ratingStars != null && <Stars stars={p.ratingStars} size={11} />}
                       </div>
