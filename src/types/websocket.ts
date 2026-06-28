@@ -298,6 +298,17 @@ export interface PlayEvent {
   isMomentumShift?: boolean
   insights?: PlayInsights | null
   personalityEvent?: PersonalityEvent | null
+  // Awakened (L4) fire — present (non-null) only when a player used their signature power on this
+  // play. The description leads with "<powerName>: ..."; the UI gives the play an ethereal treatment
+  // and glows the power name.
+  awakenedFire?: {
+    playerId: number
+    playerName: string
+    power: string
+    powerName: string
+    situation: string
+    flavor: string
+  } | null
 }
 
 // Game Events
