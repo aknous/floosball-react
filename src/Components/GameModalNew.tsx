@@ -684,6 +684,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     {isGlitchL3 ? '◆◆ reality warped' : isGlitchL2 ? '◆ data corrupted' : '◇ aberration detected'}
                   </span>
                 )}
+                {hasAwakened && (
+                  <span style={{
+                    color: '#fde68a',
+                    fontWeight: 700,
+                    fontSize: '10px',
+                    letterSpacing: '1px',
+                    fontFamily: 'monospace',
+                    textShadow: '0 0 7px rgba(253,224,138,0.55)',
+                  }}>
+                    ✦ awakened power
+                  </span>
+                )}
               </div>
               {/* Right: result label + expand indicator */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
