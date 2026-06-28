@@ -679,18 +679,39 @@
   inset: 0;
   pointer-events: none;
   z-index: 9998;
+  overflow: hidden;
   background:
-    repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 3px),
-    radial-gradient(ellipse at 50% 42%, rgba(122,40,80,0.04) 30%, transparent 56%, rgba(91,33,122,0.22) 100%);
-  animation: criticality-jitter 4.5s steps(1, end) infinite;
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.10) 0, rgba(0,0,0,0.10) 1px, transparent 1px, transparent 3px),
+    radial-gradient(ellipse at 50% 38%, transparent 42%, rgba(96,30,130,0.34) 100%),
+    linear-gradient(rgba(120,28,84,0.12), rgba(58,20,116,0.14));
+  animation: criticality-flicker 3.4s steps(1, end) infinite;
 }
-@keyframes criticality-jitter {
-  0%, 88%, 100% { transform: translate(0, 0); opacity: 0.9; }
-  90% { transform: translate(-2px, 1px); opacity: 1; }
-  92% { transform: translate(2px, -2px); }
-  94% { transform: translate(-1px, 2px); opacity: 0.8; }
-  96% { transform: translate(2px, 1px); }
-  98% { transform: translate(-1px, -1px); opacity: 1; }
+/* a rolling horizontal glitch band that sweeps down the screen every few seconds */
+.criticality-overlay::before {
+  content: '';
+  position: absolute;
+  left: -2%;
+  right: -2%;
+  height: 16px;
+  background: linear-gradient(rgba(190,90,210,0), rgba(214,150,236,0.22), rgba(120,200,235,0.12), rgba(190,90,210,0));
+  mix-blend-mode: screen;
+  animation: criticality-band 5.5s linear infinite;
+}
+@keyframes criticality-flicker {
+  0%, 100% { opacity: 0.94; transform: translate(0, 0); }
+  46% { opacity: 1; }
+  47% { opacity: 0.66; transform: translate(-3px, 2px); }   /* a brief jolt */
+  48% { opacity: 1; transform: translate(3px, -2px); }
+  49% { transform: translate(0, 0); }
+  73% { opacity: 0.82; }
+  74% { opacity: 1; transform: translate(2px, 2px); }
+  75% { transform: translate(0, 0); }
+}
+@keyframes criticality-band {
+  0%, 64% { top: -6%; opacity: 0; }
+  66% { opacity: 1; }
+  86% { top: 104%; opacity: 1; }
+  88%, 100% { top: -6%; opacity: 0; }
 }
 
 /* ── Spectator cheer-bar payout ───────────────────────────────────────────

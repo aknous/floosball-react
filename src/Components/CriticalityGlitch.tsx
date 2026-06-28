@@ -8,10 +8,11 @@ import { useCoresStatus } from '../contexts/CoresStatusContext'
 // every couple of seconds then restore. All the feel lives in the constants below; iterate freely.
 //
 // Preview without a real event: append ?criticality=1 to the URL.
-const GLYPHS = '▓▒░█▌▐╳※╬#%&@'
-const FLIP_INTERVAL_MS = 2200   // gap between flip bursts
-const FLIP_HOLD_MS = 130        // how long a corrupted character holds before it restores
-const FLIP_NODES = 3            // text nodes corrupted per burst
+const GLYPHS = '█▓▒░╳╱╲▇▆※╬#@&%§¥'
+const FLIP_INTERVAL_MS = 900    // gap between flip bursts
+const FLIP_HOLD_MS = 220        // how long a corrupted character holds before it restores
+const FLIP_NODES = 6            // text nodes corrupted per burst
+const FLIP_CHARS_MAX = 2        // up to this many characters flipped per node
 
 const CriticalityGlitch: React.FC = () => {
   const { status } = useCoresStatus()
@@ -62,11 +63,16 @@ const CriticalityGlitch: React.FC = () => {
       for (let i = 0; i < Math.min(FLIP_NODES, nodes.length); i++) {
         const node = nodes[Math.floor(Math.random() * nodes.length)]
         const orig = node.textContent
-        if (!orig) continue
-        const idx = Math.floor(Math.random() * orig.length)
-        if (orig[idx] === ' ' || orig[idx] === '\n') continue
-        const g = GLYPHS[Math.floor(Math.random() * GLYPHS.length)]
-        const glitched = orig.slice(0, idx) + g + orig.slice(idx + 1)
+        if (!orig || orig.length < 2) continue
+        const chars = orig.split('')
+        const nFlips = 1 + Math.floor(Math.random() * FLIP_CHARS_MAX)
+        for (let j = 0; j < nFlips; j++) {
+          const idx = Math.floor(Math.random() * chars.length)
+          if (chars[idx] === ' ' || chars[idx] === '\n') continue
+          chars[idx] = GLYPHS[Math.floor(Math.random() * GLYPHS.length)]
+        }
+        const glitched = chars.join('')
+        if (glitched === orig) continue
         node.textContent = glitched
         timeouts.push(setTimeout(() => {
           // Restore only if nothing else (a React re-render) changed it meanwhile —
