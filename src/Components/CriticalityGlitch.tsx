@@ -2,17 +2,20 @@ import React, { useEffect } from 'react'
 import { useCoresStatus } from '../contexts/CoresStatusContext'
 
 // Site-wide Criticality glitch mode. When a Criticality is live (status.criticalityActive) the whole
-// app takes on an unstable cast: a faint wash + scanlines + an occasional jitter (the overlay), a
-// `criticality-active` class on <html> (a hook for per-element restyling), and brief character
-// corruption on random visible text. Tuned to be APPARENT but not annoying — a few characters flicker
-// every couple of seconds then restore. All the feel lives in the constants below; iterate freely.
+// app takes on an unstable cast: a violet wash + a breathing edge glow (the overlay), a
+// `criticality-active` class on <html>, and per-burst glitches — brief character corruption on random
+// visible text PLUS a few DISCRETE elements shifting a few px and glowing, then restoring (individual
+// objects glitch, not the whole window). Tuned to be apparent but not annoying — iterate via the
+// constants below.
 //
 // Preview without a real event: append ?criticality=1 to the URL.
 const GLYPHS = '█▓▒░╳╱╲▇▆※╬#@&%§¥'
-const FLIP_INTERVAL_MS = 900    // gap between flip bursts
-const FLIP_HOLD_MS = 220        // how long a corrupted character holds before it restores
-const FLIP_NODES = 6            // text nodes corrupted per burst
+const FLIP_INTERVAL_MS = 1000   // gap between glitch bursts
+const FLIP_HOLD_MS = 220        // how long a corrupted char / shifted element holds before restoring
+const FLIP_NODES = 4            // text nodes char-corrupted per burst
 const FLIP_CHARS_MAX = 2        // up to this many characters flipped per node
+const SHIFT_ELEMENTS = 4        // discrete elements that briefly shift + glow per burst
+const SHIFT_PX = 4              // max element shift distance (px) — small so layout/clicks barely move
 
 const CriticalityGlitch: React.FC = () => {
   const { status } = useCoresStatus()
@@ -78,6 +81,30 @@ const CriticalityGlitch: React.FC = () => {
           // Restore only if nothing else (a React re-render) changed it meanwhile —
           // avoids clobbering a live update with a stale value.
           if (node.textContent === glitched) node.textContent = orig
+        }, FLIP_HOLD_MS))
+      }
+      // Discrete element shifts — a few visible UI chunks jump a few px and glow, then restore, so
+      // INDIVIDUAL objects glitch out of place (not the whole window moving together). Skip oversized
+      // containers so it's small discrete pieces, not big blocks.
+      const parents = Array.from(new Set(
+        nodes.map(n => n.parentElement).filter((p): p is HTMLElement => !!p)
+      ))
+      for (let i = 0; i < Math.min(SHIFT_ELEMENTS, parents.length); i++) {
+        const el = parents[Math.floor(Math.random() * parents.length)]
+        if (el.dataset.critShift) continue
+        const box = el.getBoundingClientRect()
+        if (box.width > window.innerWidth * 0.6 || box.height > window.innerHeight * 0.5) continue
+        const dx = (Math.random() * 2 - 1) * SHIFT_PX
+        const dy = (Math.random() * 2 - 1) * SHIFT_PX * 0.6
+        const prevTransform = el.style.transform
+        const prevFilter = el.style.filter
+        el.dataset.critShift = '1'
+        el.style.transform = `${prevTransform} translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`.trim()
+        el.style.filter = `${prevFilter ? prevFilter + ' ' : ''}drop-shadow(0 0 7px rgba(202,104,232,0.85))`.trim()
+        timeouts.push(setTimeout(() => {
+          el.style.transform = prevTransform
+          el.style.filter = prevFilter
+          delete el.dataset.critShift
         }, FLIP_HOLD_MS))
       }
     }

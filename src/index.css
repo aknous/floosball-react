@@ -679,33 +679,14 @@
   inset: 0;
   pointer-events: none;
   z-index: 9998;
-  background:
-    radial-gradient(ellipse at 50% 38%, transparent 44%, rgba(96,30,130,0.30) 100%),
-    linear-gradient(rgba(120,28,84,0.11), rgba(58,20,116,0.13));
-  animation: criticality-flicker 3.6s ease-in-out infinite;
+  background: linear-gradient(rgba(120,28,84,0.08), rgba(58,20,116,0.11));
+  box-shadow: inset 0 0 140px 8px rgba(150,55,205,0.30);
+  animation: criticality-glow 3.4s ease-in-out infinite;
 }
-@keyframes criticality-flicker {
-  0%, 100% { opacity: 0.9; }
-  45% { opacity: 1; }
-  47% { opacity: 0.72; }   /* a brief signal dip */
-  49% { opacity: 1; }
-  76% { opacity: 0.86; }
-  78% { opacity: 1; }
-}
-/* Subtle, continuous content jitter — ~±0.8px, small enough that clicking is unaffected.
-   pointer targets barely move, but the whole screen reads as quietly unstable. */
-html.criticality-active #root {
-  animation: criticality-shake 0.5s steps(1, end) infinite;
-}
-@keyframes criticality-shake {
-  0%   { transform: translate(0.6px, -0.4px); }
-  14%  { transform: translate(-0.8px, 0.5px); }
-  28%  { transform: translate(0.7px, 0.6px); }
-  42%  { transform: translate(-0.5px, -0.7px); }
-  57%  { transform: translate(0.8px, -0.6px); }
-  71%  { transform: translate(-0.7px, 0.4px); }
-  85%  { transform: translate(0.5px, 0.7px); }
-  100% { transform: translate(-0.6px, -0.5px); }
+/* a breathing violet glow around the screen edges */
+@keyframes criticality-glow {
+  0%, 100% { box-shadow: inset 0 0 110px 6px rgba(146,52,200,0.22); opacity: 0.94; }
+  50%      { box-shadow: inset 0 0 190px 22px rgba(174,76,226,0.46); opacity: 1; }
 }
 
 /* ── Spectator cheer-bar payout ───────────────────────────────────────────
