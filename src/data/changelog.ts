@@ -12,6 +12,38 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.21.0',
+    date: '2026-06-29',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Facilities] A facility project that is fully funded now finishes and takes effect immediately during the season, instead of waiting for season end.',
+          '[Facilities] You can add to a team Treasury directly with quick-amount chips or a custom amount, any time during the season.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Sim] Late-game field goals are smarter. A team in range, trailing by a field goal or tied, now kicks the game-winning or tying field goal on the last realistic play instead of gambling the final snap on a touchdown. A sharp clock-management coach drains the clock to kick on the last snap; a poor or very aggressive one gambles for the touchdown more often.',
+          '[Sim] Interception rates stay balanced as the league ages. They were creeping up every season as players developed.',
+          '[Players] Player attitude is now a stable trait anchored to a player\'s disposition, so far fewer players read as toxic in the locker room.',
+          '[Sim] Receivers stretch for the first-down marker, and a stronger receiver is more likely to reach it.',
+          '[Players] A retired player\'s name is held out of the reuse pool for five seasons before it can be given to a new player.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Sim] Trimmed a turnover spike that hit in high-pressure, late-game situations.',
+          '[Front Office] Restored the Projected Free Agent Pool preview.',
+          '[Teams] A team\'s playoff-appearance history now comes from its actual playoff games, so a stale flag can no longer show a playoff run that did not happen.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.20.0',
     date: '2026-06-22',
     changes: [],

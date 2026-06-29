@@ -355,6 +355,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const result: any[] = []
     for (let i = 0; i < plays.length; i++) {
       const play = plays[i]
+      // A charge-status beat gets its OWN feed entry, just above the play that triggered it
+      // (the feed is newest-first, so the beat sits above its cause).
+      if (play.awakenedStatus?.text) {
+        result.push({ _type: 'awakened_status', text: play.awakenedStatus.text,
+          status: play.awakenedStatus.status, _key: `awk-${play.playNumber ?? i}` })
+      }
       result.push(play)
       const nextPlay = plays[i + 1]
       const isEvent = (p: any) => !!p.event || (!p.playResult && !!p.text) || !!p._type
@@ -436,6 +442,32 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             Drive
           </span>
           <div style={{ flex: 1, height: '1px', backgroundColor: '#1e3a5f' }} />
+        </div>
+      )
+    }
+
+    // Awakened charge-status beat — its own slim, ethereal gold entry in the feed.
+    if (play._type === 'awakened_status') {
+      const charged = play.status === 'fully_charged'
+      return (
+        <div key={play._key} style={{
+          borderBottom: '1px solid #334155',
+          padding: '7px 12px',
+          display: 'flex', alignItems: 'center', gap: '9px',
+          backgroundColor: charged ? 'rgba(253,224,138,0.07)' : 'rgba(253,224,138,0.035)',
+        }}>
+          <span style={{
+            flexShrink: 0, width: '7px', height: '7px', borderRadius: '50%',
+            backgroundColor: '#fde68a',
+            boxShadow: charged ? '0 0 10px 1px rgba(253,224,138,0.85)' : '0 0 6px rgba(253,224,138,0.55)',
+          }} />
+          <span style={{
+            fontSize: '12.5px', fontStyle: 'italic', color: '#fde68a',
+            fontWeight: charged ? 600 : 400, letterSpacing: '0.2px',
+            textShadow: charged ? '0 0 9px rgba(253,224,138,0.50)' : '0 0 6px rgba(253,224,138,0.30)',
+          }}>
+            {play.text}
+          </span>
         </div>
       )
     }
@@ -538,6 +570,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const isGlitchL2 = glitchLayer === 'personality'
     const isGlitchL3 = glitchLayer === 'signature'
     const glitchDelta = (play as any).glitchYardDelta as number | null | undefined
+    // Awakened (L4) fire — a player used their signature power. Styled ethereally (luminous, calm),
+    // distinct from the chaotic glitch effect. The description is "PowerName: ..." — the power name
+    // gets a glowing highlight below.
+    const awakenedFire = (play as any).awakenedFire as { playerName?: string; powerName?: string; situation?: string } | null | undefined
+    const hasAwakened = !!(awakenedFire && awakenedFire.powerName)
     // Pick a deterministic glitch variant (a/b/c) per play so the same
     // play always looks the same on re-render, but different anomaly
     // plays don't all use the identical effect.
@@ -564,7 +601,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       <div key={playKey} style={{ borderBottom: '1px solid #334155' }}>
         <div
           onClick={hasInsights ? () => setExpandedPlayKey(isExpanded ? null : playKey) : undefined}
-          className={hasGlitch ? (isGlitchL3 ? 'anomaly-row-l3' : isGlitchL2 ? 'anomaly-row-l2' : 'anomaly-row-l1') : undefined}
+          className={hasGlitch ? (isGlitchL3 ? 'anomaly-row-l3' : isGlitchL2 ? 'anomaly-row-l2' : 'anomaly-row-l1') : hasAwakened ? 'awakened-row' : undefined}
           style={{
             paddingBottom: '12px',
             paddingTop: '6px',
@@ -647,6 +684,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     {isGlitchL3 ? '◆◆ reality warped' : isGlitchL2 ? '◆ data corrupted' : '◇ aberration detected'}
                   </span>
                 )}
+                {hasAwakened && (
+                  <span style={{
+                    color: '#fde68a',
+                    fontWeight: 700,
+                    fontSize: '10px',
+                    letterSpacing: '1px',
+                    fontFamily: 'monospace',
+                    textShadow: '0 0 7px rgba(253,224,138,0.55)',
+                  }}>
+                    ✦ awakened power
+                  </span>
+                )}
               </div>
               {/* Right: result label + expand indicator */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -695,6 +744,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               {(() => {
                 const gt = (play as any).glitchText
                 const desc = play.description ?? ''
+                // Awakened fire — the description leads with "PowerName: ...". Give the power name a
+                // luminous glowing highlight, leave the rest as normal play text.
+                if (hasAwakened && awakenedFire?.powerName && desc.startsWith(awakenedFire.powerName + ':')) {
+                  const rest = desc.slice(awakenedFire.powerName.length + 1)
+                  return (<><span className="awakened-power-name">{awakenedFire.powerName}</span>{rest}</>)
+                }
                 const cleaned = gt && desc.includes(gt)
                   ? desc.replace(`\n${gt}`, '').replace(gt, '').trim()
                   : desc
@@ -1371,7 +1426,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               // OR any play the feed flags as a big WPA swing (isBigPlay).
               const isBigGain = (playType === 'RUN' || playType === 'PASS') && yardsGained >= 20
               const isMadeFg = playType === 'FIELDGOAL' && lastPlay?.playResult === 'Field Goal is Good'
-              const bigReaction = isTD
+              // An awakened power firing takes precedence on the field — a brilliant gold wash + the
+              // power name, signalling "a power was used" (the score still updates regardless).
+              const awakenedFire = (lastPlay as any)?.awakenedFire
+              const bigReaction = awakenedFire
+                ? { label: awakenedFire.powerName || 'AWAKENED', color: '#fde68a', kind: 'awakened' }
+                : isTD
                 ? { label: 'TOUCHDOWN', color: '#fbbf24', kind: 'td' }
                 : isTurnover
                   ? { label: 'TURNOVER', color: '#ef4444', kind: 'turnover' }
@@ -1511,7 +1571,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         flash-only (a double pulse) — no text. */}
                     {bigReaction && (
                       <rect key={`flash-${reactionKey}`}
-                        className={bigReaction.kind === 'big' ? 'fieldReactionFlash--pulse' : 'fieldReactionFlash'}
+                        className={bigReaction.kind === 'awakened' ? 'fieldReactionFlash--awaken' : bigReaction.kind === 'big' ? 'fieldReactionFlash--pulse' : 'fieldReactionFlash'}
                         x={0} y={0} width={FW} height={FH} fill={bigReaction.color} pointerEvents="none" />
                     )}
                     {bigReaction && bigReaction.kind !== 'big' && (
@@ -2089,10 +2149,20 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     position?: string | null; defensivePosition?: string | null;
                     ratingStars?: number; playerRating?: number;
                     mentalBreakdown?: MentalBreakdown;
+                    chargeStatus?: { ready: boolean; power?: string };
                   },
                   useDefPos?: boolean,
                 ) => {
                   const posLabel = useDefPos && p.defensivePosition ? p.defensivePosition : p.position
+                  // An awakened player in this game carries chargeStatus. Gold name-glow when their
+                  // meter is full this play (live; clears on discharge); otherwise blue — the same
+                  // "awakened" marker as the stat leaders. Non-awakened players have no chargeStatus.
+                  const isCharged = !!p.chargeStatus?.ready
+                  const isAwakened = !!p.chargeStatus && !isCharged
+                  const nameColor = isCharged ? '#fbbf24' : isAwakened ? '#60a5fa' : '#e2e8f0'
+                  const nameGlow = isCharged
+                    ? '0 0 11px rgba(251,191,36,0.95), 0 0 24px rgba(251,191,36,0.6), 0 0 36px rgba(251,191,36,0.32)'
+                    : isAwakened ? '0 0 10px rgba(96,165,250,0.95), 0 0 22px rgba(96,165,250,0.6), 0 0 34px rgba(96,165,250,0.32)' : undefined
                   return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                       {posLabel && (
@@ -2102,7 +2172,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       )}
                       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '1px' }}>
                         <PlayerHoverCard playerId={p.id} playerName={p.name}>
-                          <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{p.name}</span>
+                          <span title={isCharged ? 'Charged' : isAwakened ? 'Awakened' : undefined} style={{ fontSize: '14px', color: nameColor, fontWeight: isCharged ? 700 : isAwakened ? 600 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', ...(nameGlow ? { textShadow: nameGlow } : {}) }}>
+                            {p.name}
+                          </span>
                         </PlayerHoverCard>
                         {p.ratingStars != null && <Stars stars={p.ratingStars} size={11} />}
                       </div>

@@ -840,7 +840,9 @@ const AdminContent: React.FC<{
   const [settingsForm, setSettingsForm] = useState<{
     feedback_url: string; feedback_visible: boolean; survey_url: string; survey_visible: boolean; survey_text: string
     halftime_show_url: string; halftime_show_pause_seconds: string
-  }>({ feedback_url: '', feedback_visible: true, survey_url: '', survey_visible: false, survey_text: '', halftime_show_url: '', halftime_show_pause_seconds: '120' })
+    anomalies_enabled: boolean; criticality_enabled: boolean; awakened_powers_enabled: boolean; anomaly_intensity: string
+    awakened_involve_qb: string; awakened_involve_rb: string; awakened_involve_wr: string; awakened_involve_te: string; awakened_involve_k: string; awakened_def_fire_chance: string
+  }>({ feedback_url: '', feedback_visible: true, survey_url: '', survey_visible: false, survey_text: '', halftime_show_url: '', halftime_show_pause_seconds: '120', anomalies_enabled: false, criticality_enabled: false, awakened_powers_enabled: false, anomaly_intensity: 'normal', awakened_involve_qb: '16', awakened_involve_rb: '13', awakened_involve_wr: '5.5', awakened_involve_te: '5.5', awakened_involve_k: '0.5', awakened_def_fire_chance: '35' })
   const [settingsLoading, setSettingsLoading] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
@@ -860,6 +862,16 @@ const AdminContent: React.FC<{
         survey_text: data.survey_text || '',
         halftime_show_url: data.halftime_show_url || '',
         halftime_show_pause_seconds: data.halftime_show_pause_seconds || '120',
+        anomalies_enabled: data.anomalies_enabled === true || data.anomalies_enabled === 'true',
+        criticality_enabled: data.criticality_enabled === true || data.criticality_enabled === 'true',
+        awakened_powers_enabled: data.awakened_powers_enabled === true || data.awakened_powers_enabled === 'true',
+        anomaly_intensity: data.anomaly_intensity || 'normal',
+        awakened_involve_qb: data.awakened_involve_qb != null ? String(data.awakened_involve_qb) : '16',
+        awakened_involve_rb: data.awakened_involve_rb != null ? String(data.awakened_involve_rb) : '13',
+        awakened_involve_wr: data.awakened_involve_wr != null ? String(data.awakened_involve_wr) : '5.5',
+        awakened_involve_te: data.awakened_involve_te != null ? String(data.awakened_involve_te) : '5.5',
+        awakened_involve_k: data.awakened_involve_k != null ? String(data.awakened_involve_k) : '0.5',
+        awakened_def_fire_chance: data.awakened_def_fire_chance != null ? String(data.awakened_def_fire_chance) : '35',
       })
     } catch (e: any) {
       setSettingsError(e?.message || 'Failed to load settings')
@@ -2405,6 +2417,157 @@ const AdminContent: React.FC<{
             />
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
               How long the Floos Bowl holds at halftime so the show can play. Scheduled mode only.
+            </div>
+          </div>
+
+          <div style={{ paddingTop: '14px', borderTop: '1px solid #1e293b' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', margin: '0 0 4px 0' }}>
+              Anomaly System
+            </h3>
+            <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 12px 0' }}>
+              Master controls for the in-game glitches, the Criticality event, and awakened powers.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#cbd5e1', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={settingsForm.anomalies_enabled}
+                  onChange={e => setSettingsForm(s => ({ ...s, anomalies_enabled: e.target.checked }))}
+                  disabled={settingsLoading}
+                  style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                />
+                Anomalies (in-game glitches)
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#cbd5e1', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={settingsForm.criticality_enabled}
+                  onChange={e => setSettingsForm(s => ({ ...s, criticality_enabled: e.target.checked }))}
+                  disabled={settingsLoading}
+                  style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                />
+                Criticality
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#cbd5e1', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={settingsForm.awakened_powers_enabled}
+                  onChange={e => setSettingsForm(s => ({ ...s, awakened_powers_enabled: e.target.checked }))}
+                  disabled={settingsLoading}
+                  style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                />
+                Awakened powers
+              </label>
+            </div>
+
+            <div style={{ marginTop: '14px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>
+                Intensity
+              </label>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {(['low', 'normal', 'high', 'chaos'] as const).map(level => {
+                  const selected = settingsForm.anomaly_intensity === level
+                  const disabled = settingsLoading || !settingsForm.anomalies_enabled
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setSettingsForm(s => ({ ...s, anomaly_intensity: level }))}
+                      disabled={disabled}
+                      style={{
+                        padding: '6px 14px',
+                        fontSize: '12px', fontWeight: '600',
+                        textTransform: 'capitalize' as const,
+                        color: disabled ? '#64748b' : (selected ? '#ffffff' : '#cbd5e1'),
+                        backgroundColor: selected ? '#3b82f6' : '#0f172a',
+                        border: `1px solid ${selected ? '#3b82f6' : '#334155'}`,
+                        borderRadius: '4px',
+                        cursor: disabled ? 'default' : 'pointer',
+                        opacity: disabled && !selected ? 0.5 : 1,
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {level}
+                    </button>
+                  )
+                })}
+              </div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>
+                Glitch frequency (only applies when Anomalies are on).
+              </div>
+            </div>
+          </div>
+
+          <div style={{ paddingTop: '14px', borderTop: '1px solid #1e293b' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', margin: '0 0 4px 0' }}>
+              Awakened Powers
+            </h3>
+            <p style={{ fontSize: '11px', color: '#94a3b8', margin: '0 0 12px 0' }}>
+              Charge tuning — lower "touches to charge" = the power fires more often.
+            </p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+              {([
+                ['QB', 'awakened_involve_qb'],
+                ['RB', 'awakened_involve_rb'],
+                ['WR', 'awakened_involve_wr'],
+                ['TE', 'awakened_involve_te'],
+                ['K', 'awakened_involve_k'],
+              ] as const).map(([label, key]) => (
+                <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '88px' }}>
+                  <label style={{ fontSize: '12px', color: '#94a3b8' }}>{label}</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="1"
+                    value={settingsForm[key]}
+                    onChange={e => setSettingsForm(s => ({ ...s, [key]: e.target.value }))}
+                    disabled={settingsLoading}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      fontSize: '13px', color: '#e2e8f0',
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #334155', borderRadius: '4px',
+                      fontFamily: 'inherit',
+                      boxSizing: 'border-box' as const,
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>
+              Touches per game needed to charge the power.
+            </div>
+
+            <div style={{ marginTop: '14px' }}>
+              <label style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>
+                Defensive fire chance (%)
+              </label>
+              <input
+                type="number"
+                step="1"
+                min="0"
+                max="100"
+                value={settingsForm.awakened_def_fire_chance}
+                onChange={e => setSettingsForm(s => ({ ...s, awakened_def_fire_chance: e.target.value }))}
+                disabled={settingsLoading}
+                style={{
+                  width: '120px',
+                  padding: '8px 10px',
+                  fontSize: '13px', color: '#e2e8f0',
+                  backgroundColor: '#0f172a',
+                  border: '1px solid #334155', borderRadius: '4px',
+                  fontFamily: 'inherit',
+                  boxSizing: 'border-box' as const,
+                }}
+              />
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>
+                lower = more weighted toward offense
+              </div>
             </div>
           </div>
 

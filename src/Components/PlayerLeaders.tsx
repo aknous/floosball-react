@@ -57,6 +57,7 @@ interface Leader {
   ratingStars: number
   gamesPlayed: number
   statValue: number
+  awakened?: boolean
 }
 
 const formatStat = (value: number, category: string): string => {
@@ -208,7 +209,12 @@ export const PlayerLeaders: React.FC<{ embedded?: boolean }> = ({ embedded = fal
                 <PlayerHoverCard playerId={player.id} playerName={player.name}>
                   <Link
                     to={`/players/${player.id}`}
-                    style={{ fontSize: '14px', color: '#e2e8f0', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    style={{
+                      fontSize: '14px',
+                      color: player.awakened ? '#60a5fa' : '#e2e8f0',
+                      textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      ...(player.awakened ? { fontWeight: 600, textShadow: '0 0 10px rgba(96,165,250,0.95), 0 0 22px rgba(96,165,250,0.6), 0 0 34px rgba(96,165,250,0.32)' } : {}),
+                    }}
                   >
                     {player.name}
                     {isOnRoster && (
