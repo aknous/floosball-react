@@ -842,7 +842,7 @@ const AdminContent: React.FC<{
     halftime_show_url: string; halftime_show_pause_seconds: string
     anomalies_enabled: boolean; criticality_enabled: boolean; awakened_powers_enabled: boolean; anomaly_intensity: string
     awakened_involve_qb: string; awakened_involve_rb: string; awakened_involve_wr: string; awakened_involve_te: string; awakened_involve_k: string; awakened_def_fire_chance: string
-  }>({ feedback_url: '', feedback_visible: true, survey_url: '', survey_visible: false, survey_text: '', halftime_show_url: '', halftime_show_pause_seconds: '120', anomalies_enabled: false, criticality_enabled: false, awakened_powers_enabled: false, anomaly_intensity: 'normal', awakened_involve_qb: '31', awakened_involve_rb: '19', awakened_involve_wr: '5.8', awakened_involve_te: '5.5', awakened_involve_k: '1.7', awakened_def_fire_chance: '35' })
+  }>({ feedback_url: '', feedback_visible: true, survey_url: '', survey_visible: false, survey_text: '', halftime_show_url: '', halftime_show_pause_seconds: '120', anomalies_enabled: false, criticality_enabled: false, awakened_powers_enabled: false, anomaly_intensity: 'normal', awakened_involve_qb: '16', awakened_involve_rb: '13', awakened_involve_wr: '5.5', awakened_involve_te: '5.5', awakened_involve_k: '0.5', awakened_def_fire_chance: '35' })
   const [settingsLoading, setSettingsLoading] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
@@ -866,11 +866,11 @@ const AdminContent: React.FC<{
         criticality_enabled: data.criticality_enabled === true || data.criticality_enabled === 'true',
         awakened_powers_enabled: data.awakened_powers_enabled === true || data.awakened_powers_enabled === 'true',
         anomaly_intensity: data.anomaly_intensity || 'normal',
-        awakened_involve_qb: data.awakened_involve_qb != null ? String(data.awakened_involve_qb) : '31',
-        awakened_involve_rb: data.awakened_involve_rb != null ? String(data.awakened_involve_rb) : '19',
-        awakened_involve_wr: data.awakened_involve_wr != null ? String(data.awakened_involve_wr) : '5.8',
+        awakened_involve_qb: data.awakened_involve_qb != null ? String(data.awakened_involve_qb) : '16',
+        awakened_involve_rb: data.awakened_involve_rb != null ? String(data.awakened_involve_rb) : '13',
+        awakened_involve_wr: data.awakened_involve_wr != null ? String(data.awakened_involve_wr) : '5.5',
         awakened_involve_te: data.awakened_involve_te != null ? String(data.awakened_involve_te) : '5.5',
-        awakened_involve_k: data.awakened_involve_k != null ? String(data.awakened_involve_k) : '1.7',
+        awakened_involve_k: data.awakened_involve_k != null ? String(data.awakened_involve_k) : '0.5',
         awakened_def_fire_chance: data.awakened_def_fire_chance != null ? String(data.awakened_def_fire_chance) : '35',
       })
     } catch (e: any) {
