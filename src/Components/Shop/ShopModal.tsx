@@ -576,7 +576,11 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                 </div>
               )}
               {/* ── Daily Selection ── */}
-              {featured.length > 0 && (
+              {/* Gate on shopOpen, not featured.length: once a user buys out
+                  the whole selection the list is empty, but the reroll button
+                  lives in this block — so it must stay rendered so they can
+                  pay to refresh. */}
+              {shopOpen && (
                 <div style={{ marginBottom: '28px' }}>
                   <SectionHeader
                     title="Daily Selection"
@@ -585,6 +589,14 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   />
                   {!collapsed.featured && (
                     <>
+                      {featured.length === 0 ? (
+                        <div style={{
+                          color: '#94a3b8', fontSize: '11px', textAlign: 'center',
+                          padding: '8px 0 4px',
+                        }}>
+                          You&rsquo;ve cleared today&rsquo;s selection. Reroll for a fresh set.
+                        </div>
+                      ) : (
                       <div style={{
                         display: 'flex',
                         gap: isMobile ? '8px' : '14px',
@@ -644,6 +656,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                           )
                         })}
                       </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'center', marginTop: '12px' }}>
                         <button
                           onClick={handleReroll}
