@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { GameGridNew } from '@/Components/GameGridNew'
+import { ScoreboardWeekNav } from '@/Components/ScoreboardWeekNav'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { HighlightFeed } from '@/Components/HighlightFeed'
 import { OffseasonMain } from '@/Components/Recap/OffseasonMain'
@@ -137,6 +138,11 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   const { seasonState } = useFloosball()
   const { refetch } = useGames()
   const [selectedGameId, setSelectedGameId] = useState<number | null>(null)
+  // Scoreboard week navigation: null = live current week, a number = a viewed
+  // completed week. State lives here so the nav can sit in the "Games" header.
+  const currentWeek = seasonState?.currentWeek ?? 0
+  const [scoreWeek, setScoreWeek] = useState<number | null>(null)
+  useEffect(() => { setScoreWeek(null) }, [currentWeek])  // snap back to live when the week advances
   const [standingsView, setStandingsView] = useState<StandingsView>('standings')
   const [activeTab, setActiveTab] = useState<TabView>(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('dashboardTab') : null
@@ -306,9 +312,12 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             {/* Games / Offseason */}
             <section ref={gamesRef} data-tour="dashboard-games" style={{ marginBottom: '32px', scrollMarginTop: `${headerHeight + 42}px` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#cbd5e1' }}>
-                  {isOffseason ? 'Offseason' : 'Games'}
-                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#cbd5e1' }}>
+                    {isOffseason ? 'Offseason' : 'Games'}
+                  </h2>
+                  {!isOffseason && <ScoreboardWeekNav currentWeek={currentWeek} viewWeek={scoreWeek} onChange={setScoreWeek} />}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {nextGameCountdown && !isOffseason && (
                     <span style={{ fontSize: '14px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
@@ -318,7 +327,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                   <HelpButton onClick={helpButtonClick} size={24} />
                 </div>
               </div>
-              {isOffseason ? <OffseasonMain /> : <GameGridNew handleClick={handleGameClick} />}
+              {isOffseason ? <OffseasonMain /> : <GameGridNew handleClick={handleGameClick} viewWeek={scoreWeek} />}
             </section>
 
             {/* Right-panel sections — hidden in offseason; OffseasonMain above takes the body */}
@@ -375,9 +384,12 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             {/* Games / Offseason — full width */}
             <section data-tour="dashboard-games" style={{ marginBottom: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#cbd5e1' }}>
-                  {isOffseason ? 'Offseason' : 'Games'}
-                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <h2 style={{ fontSize: '18px', fontWeight: '600', color: '#cbd5e1' }}>
+                    {isOffseason ? 'Offseason' : 'Games'}
+                  </h2>
+                  {!isOffseason && <ScoreboardWeekNav currentWeek={currentWeek} viewWeek={scoreWeek} onChange={setScoreWeek} />}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {nextGameCountdown && !isOffseason && (
                     <span style={{ fontSize: '14px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
@@ -387,7 +399,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                   <HelpButton onClick={helpButtonClick} size={24} />
                 </div>
               </div>
-              {isOffseason ? <OffseasonMain /> : <GameGridNew handleClick={handleGameClick} />}
+              {isOffseason ? <OffseasonMain /> : <GameGridNew handleClick={handleGameClick} viewWeek={scoreWeek} />}
             </section>
 
             {/* Tabbed panel — full width (hidden in offseason; OffseasonMain takes the body) */}
@@ -456,7 +468,10 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
             ) : (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h2 style={{ fontSize: '20px', fontWeight: '600' }}>Games</h2>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <h2 style={{ fontSize: '20px', fontWeight: '600' }}>Games</h2>
+                    <ScoreboardWeekNav currentWeek={currentWeek} viewWeek={scoreWeek} onChange={setScoreWeek} />
+                  </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     {nextGameCountdown && (
                       <span style={{ fontSize: '14px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
@@ -466,7 +481,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
                     <HelpButton onClick={helpButtonClick} />
                   </div>
                 </div>
-                <GameGridNew handleClick={handleGameClick} />
+                <GameGridNew handleClick={handleGameClick} viewWeek={scoreWeek} />
               </>
             )}
           </div>
