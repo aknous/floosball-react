@@ -76,6 +76,13 @@ export interface EquationSummary {
   totalBonusFP: number
   multFactors: number[]
   handSynergies?: HandSynergies
+  // When a Criticality is active, the controlling Core's signature equation
+  // replaces the standard aggregator. The backend sends the resolved equation
+  // string (with values) + a template; the UI shows these instead of the
+  // standard (roster + FP) × FPx breakdown.
+  criticalityCore?: string | null
+  criticalityEquation?: string | null
+  criticalityEquationTemplate?: string | null
 }
 
 export interface ModifierInfo {

@@ -551,6 +551,32 @@ const PointsBreakdownPanel: React.FC<{
         const factors = eq!.multFactors ?? []
         const multProduct = factors.length > 0 ? factors.reduce((a, b) => a * b, 1) : 1
         const hasMult = factors.length > 0
+        // ── Criticality override ── A controlling Core's signature equation
+        // replaces the standard aggregator; show that instead of (roster+FP)×FPx.
+        const critCore = eq!.criticalityCore
+        const critEq = eq!.criticalityEquation
+        if (critCore && critEq) {
+          const coreName = critCore.charAt(0).toUpperCase() + critCore.slice(1)
+          return (
+            <>
+            {collapsibleHeader('formula', 'Week Score Total', `${(weekPlayerFP + weekCardBonus).toFixed(1)} pts`, '#f59e0b')}
+            {expanded['formula'] && (
+            <div style={{
+              marginTop: '4px', padding: '10px 12px',
+              backgroundColor: 'rgba(245,158,11,0.10)', borderRadius: '8px',
+              borderBottom: '2px solid rgba(245,158,11,0.5)',
+            }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.4px', color: '#f59e0b', marginBottom: '6px', textTransform: 'uppercase' }}>
+                Criticality &middot; {coreName}&rsquo;s Equation
+              </div>
+              <div style={{ fontSize: '12px', color: '#e2e8f0', fontFamily: 'monospace', lineHeight: '1.7', wordBreak: 'break-word' }}>
+                {critEq}
+              </div>
+            </div>
+            )}
+            </>
+          )
+        }
         return (
           <>
           {collapsibleHeader('formula', 'Week Score Total', `${(weekPlayerFP + weekCardBonus).toFixed(1)} pts`, '#818cf8')}
