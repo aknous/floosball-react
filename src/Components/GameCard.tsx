@@ -215,7 +215,21 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
       {(() => {
         const hasWP = homeWinProbability !== undefined && awayWinProbability !== undefined
         const showPicks = !!onPick
-        if (!hasWP && !showPicks) return null
+        // No win-prob and no picks (e.g. a past week's final game): render an
+        // INVISIBLE replica of the pick/WP row (same margins, padding, border,
+        // and a button-shaped element with the same box model) so the card is
+        // exactly the same height as a live card, just without the gauge.
+        if (!hasWP && !showPicks) {
+          return (
+            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #475569' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', visibility: 'hidden' }} aria-hidden="true">
+                <span style={{ padding: '2px 6px', border: '1px solid transparent', borderBottom: '2px solid transparent', fontSize: '15px', fontWeight: 700, lineHeight: 1.2 }}>&nbsp;</span>
+                <div style={{ flex: 1, height: '6px' }} />
+                <span style={{ padding: '2px 6px', border: '1px solid transparent', borderBottom: '2px solid transparent', fontSize: '15px', fontWeight: 700, lineHeight: 1.2 }}>&nbsp;</span>
+              </div>
+            </div>
+          )
+        }
 
         const homeWP = hasWP ? homeWinProbability! : 50
         const awayWP = hasWP ? awayWinProbability! : 50
