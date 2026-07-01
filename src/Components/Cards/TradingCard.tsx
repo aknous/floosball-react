@@ -461,7 +461,7 @@ const EditionBadge: React.FC<{
   )
 }
 
-function getBehaviorTag(card: CardData): keyof typeof BEHAVIOR_TAGS | null {
+export function getBehaviorTag(card: CardData): keyof typeof BEHAVIOR_TAGS | null {
   if (card.effectConfig?.isChanceEffect || card.effectConfig?.primary?.isChanceEffect) return 'chance'
   const cat = card.category || card.effectConfig?.category || ''
   if (cat === 'conditional') return 'conditional'

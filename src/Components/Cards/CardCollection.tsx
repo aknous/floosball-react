@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import TradingCard, { CardData } from './TradingCard'
+import TradingCard, { CardData, getBehaviorTag } from './TradingCard'
 import CombineModal from './CombineModal'
 import LevelUpModal from './LevelUpModal'
 import VaultConfirmModal from './VaultConfirmModal'
@@ -41,6 +41,13 @@ const OUTPUTS = [
   { value: 'fp', label: 'FP' },
   { value: 'mult', label: 'FPx' },
   { value: 'floobits', label: 'Floobits' },
+]
+// Effect-behavior filter (client-side; matches the on-card Chance/Conditional/Streak badge).
+const BEHAVIORS = [
+  { value: 'all', label: 'All' },
+  { value: 'chance', label: 'Chance' },
+  { value: 'conditional', label: 'Conditional' },
+  { value: 'streak', label: 'Streak' },
 ]
 
 // Server-side sort keys (must match the collection endpoint's `sort` param)
@@ -84,6 +91,7 @@ const CardCollection: React.FC = () => {
   const [activeOnly, setActiveOnly] = useState(false)
   const [equippedOnly, setEquippedOnly] = useState(false)
   const [outputFilter, setOutputFilter] = useState('all')
+  const [behaviorFilter, setBehaviorFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<string>('recent')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
@@ -103,7 +111,7 @@ const CardCollection: React.FC = () => {
   // Search + output narrow client-side (instant, no refetch); everything else is
   // server-side. Reorder needs display order == server order, so it's disabled
   // whenever a client-side narrowing is active.
-  const searchActive = search.trim() !== '' || outputFilter !== 'all'
+  const searchActive = search.trim() !== '' || outputFilter !== 'all' || behaviorFilter !== 'all'
   // Native HTML5 drag doesn't work on touch, so reordering is desktop-only.
   const canReorder = inVault && sortBy === 'manual' && !isMobile && !searchActive
   // Any filter narrowing the list — so an empty result reads as "no matches" rather
@@ -151,8 +159,11 @@ const CardCollection: React.FC = () => {
     if (outputFilter !== 'all') {
       list = list.filter(c => c.outputType === outputFilter)
     }
+    if (behaviorFilter !== 'all') {
+      list = list.filter(c => getBehaviorTag(c) === behaviorFilter)
+    }
     return list
-  }, [cards, search, outputFilter])
+  }, [cards, search, outputFilter, behaviorFilter])
 
   useEffect(() => { setLoading(true); fetchCards() }, [fetchCards])
 
@@ -161,7 +172,7 @@ const CardCollection: React.FC = () => {
   useEffect(() => {
     setSelectedIds(new Set())
     // Equipped/output only apply to the live collection; clear them entering the Vault.
-    if (view === 'vault') { setSortBy('manual'); setEquippedOnly(false); setOutputFilter('all') }
+    if (view === 'vault') { setSortBy('manual'); setEquippedOnly(false); setOutputFilter('all'); setBehaviorFilter('all') }
     else if (view === 'collection') setSortBy('recent')
   }, [view])
 
@@ -467,34 +478,40 @@ const CardCollection: React.FC = () => {
           )}
         </div>
       </div>
-      {/* Output-type + Classification on one line, divided (output is live-collection
-          only — vaulted cards drop their effect). */}
+      {/* Output-type | Behavior (live collection only — vaulted cards drop their effect). */}
+      {!inVault && (
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
+          {OUTPUTS.map(o => (
+            <button key={o.value} onClick={() => setOutputFilter(o.value)} style={pillStyle(outputFilter === o.value)}>
+              {o.label}
+            </button>
+          ))}
+          <span style={{ width: '1px', height: '20px', backgroundColor: '#334155', margin: '0 4px' }} />
+          {BEHAVIORS.map(b => (
+            <button key={b.value} onClick={() => setBehaviorFilter(b.value)} style={pillStyle(behaviorFilter === b.value)}>
+              {b.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {/* Classification | Position */}
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
-        {!inVault && (
-          <>
-            {OUTPUTS.map(o => (
-              <button key={o.value} onClick={() => setOutputFilter(o.value)} style={pillStyle(outputFilter === o.value)}>
-                {o.label}
-              </button>
-            ))}
-            <span style={{ width: '1px', height: '20px', backgroundColor: '#334155', margin: '0 4px' }} />
-          </>
-        )}
         {CLASSIFICATIONS.map(c => (
           <button key={c.value} onClick={() => setClassificationFilter(c.value)} style={pillStyle(classificationFilter === c.value)}>
             {c.label}
           </button>
         ))}
-      </div>
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' }}>
+        <span style={{ width: '1px', height: '20px', backgroundColor: '#334155', margin: '0 4px' }} />
         {POSITIONS.map(p => (
           <button key={p.value} onClick={() => setPositionFilter(p.value)} style={pillStyle(positionFilter === p.value)}>
             {p.label}
           </button>
         ))}
+      </div>
+      {/* Toggles (live collection only) + Sort */}
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' }}>
         {!inVault && (
           <>
-            <span style={{ width: '1px', height: '20px', backgroundColor: '#334155', margin: '0 4px' }} />
             <button onClick={() => setActiveOnly(!activeOnly)} style={pillStyle(activeOnly)}>
               Active Only
             </button>
