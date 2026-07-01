@@ -7,6 +7,7 @@ import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useCardProjection, CardProjection, projectionPillStyle } from '@/hooks/useCardProjection'
+import { CardFilterState, defaultCardFilterState, applyCardFilters, CardFilterControls } from './cardFilters'
 import PlayerAvatar from '@/Components/PlayerAvatar'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -142,9 +143,13 @@ const EquippedCardSlot: React.FC<{
 
       {canEdit && (
         <button
-          onClick={() => onUnequip(slotNum)}
+          onClick={(e) => { e.stopPropagation(); onUnequip(slotNum) }}
           style={{
             position: 'absolute', top: -6, right: -6,
+            // Above the card's leaked internal content (zIndex 3-5) so the whole
+            // red circle is clickable, not just the sliver off the card corner.
+            // Well below modal overlays (10002+) so it never punches through them.
+            zIndex: 30,
             width: '22px', height: '22px',
             borderRadius: '50%',
             backgroundColor: '#ef4444',
@@ -223,6 +228,8 @@ const CardEquipment: React.FC = () => {
   const [deckCards, setDeckCards] = useState<CardData[]>([])
   const [deckLoading, setDeckLoading] = useState(false)
   const deckFetchedRef = useRef(false)
+  const [deckFilters, setDeckFilters] = useState<CardFilterState>(defaultCardFilterState)
+  const patchDeckFilters = (patch: Partial<CardFilterState>) => setDeckFilters(f => ({ ...f, ...patch }))
 
   // Equipped-card projections keyed by slot. The picker modal fetches
   // its own slot-scoped candidate projections when it opens. The
@@ -451,21 +458,37 @@ const CardEquipment: React.FC = () => {
     .filter(Boolean)
   const canEdit = !isLocked && !saving
 
-  // Deck cards: exclude equipped, sort by match > edition > rating
-  const editionOrder: Record<string, number> = {
-    diamond: 0, prismatic: 1, holographic: 2, base: 3,
+  // Deck cards: exclude equipped, then filter + sort via the shared engine.
+  const equippableDeck = deckCards.filter(c => !equippedCardIds.includes(c.id))
+  const availableDeck = applyCardFilters(equippableDeck, deckFilters, fantasyPlayerIds)
+
+  // --- Inline equip: a card always drops into the first open slot — no slot
+  // selection. To replace, unequip a card first, then equip into the gap.
+  // Mobile keeps the modal (tap a slot to fill/replace that specific one). ---
+  const destinationSlot = (() => {
+    for (let i = 0; i < numSlots; i++) if (!displaySlots[i]) return i + 1
+    return null
+  })()
+  // Effects live in slots OTHER than the destination — used to grey out
+  // duplicate-effect picks in the grid.
+  const deckDuplicateEffects = new Set(
+    displaySlots
+      .filter((s, i) => s != null && (i + 1) !== destinationSlot)
+      .map(s => s!.card.effectName || '')
+      .filter(Boolean)
+  )
+
+  const handleSlotClick = (slotNum: number) => {
+    if (!canEdit) return
+    if (isMobile) { setPickerSlot(slotNum); return }  // mobile keeps the modal
+    setExpanded(true)  // desktop: just reveal the eligible grid, no targeting
   }
-  const availableDeck = deckCards
-    .filter(c => !equippedCardIds.includes(c.id))
-    .sort((a, b) => {
-      const aMatch = fantasyPlayerIds.has(a.playerId) ? 0 : 1
-      const bMatch = fantasyPlayerIds.has(b.playerId) ? 0 : 1
-      if (aMatch !== bMatch) return aMatch - bMatch
-      const ea = editionOrder[a.edition] ?? 99
-      const eb = editionOrder[b.edition] ?? 99
-      if (ea !== eb) return ea - eb
-      return b.playerRating - a.playerRating
-    })
+
+  const equipFromDeck = (card: CardData) => {
+    if (!canEdit || destinationSlot == null) return
+    if (card.effectName && deckDuplicateEffects.has(card.effectName)) return
+    handleEquip(card, destinationSlot)
+  }
 
   return (
     <div style={{
@@ -541,14 +564,16 @@ const CardEquipment: React.FC = () => {
               return (
                 <button
                   key={slotNum}
-                  onClick={(e) => { e.stopPropagation(); canEdit && setPickerSlot(slotNum) }}
+                  onClick={(e) => { e.stopPropagation(); handleSlotClick(slotNum) }}
                   disabled={!canEdit}
                   style={{
                     width: isMobile ? '100%' : 160, height: 50,
                     borderRadius: '8px',
-                    border: '2px dashed #334155', backgroundColor: 'transparent',
+                    border: `2px dashed ${destinationSlot === slotNum ? '#3b82f6' : '#334155'}`,
+                    backgroundColor: destinationSlot === slotNum ? 'rgba(59,130,246,0.10)' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#64748b', fontSize: '18px', fontFamily: 'pressStart',
+                    color: destinationSlot === slotNum ? '#60a5fa' : '#64748b',
+                    fontSize: '18px', fontFamily: 'pressStart',
                     cursor: canEdit ? 'pointer' : 'not-allowed',
                     opacity: isLocked ? 0.5 : 1,
                   }}
@@ -567,6 +592,7 @@ const CardEquipment: React.FC = () => {
             return (
               <div
                 key={slotNum}
+                onClick={() => handleSlotClick(slotNum)}
                 style={{
                   flex: isMobile ? '1 1 100%' : '1 1 0',
                   minWidth: isMobile ? undefined : 150,
@@ -577,6 +603,7 @@ const CardEquipment: React.FC = () => {
                   boxShadow: ed.glow ? `0 0 8px ${ed.glow}` : 'none',
                   position: 'relative',
                   display: 'flex', alignItems: 'center', gap: '10px',
+                  cursor: canEdit ? 'pointer' : 'default',
                 }}
               >
                 {/* Team avatar — visual identity for the equipped card */}
@@ -668,7 +695,9 @@ const CardEquipment: React.FC = () => {
         </div>
       )}
 
-      {/* Card slots — full view (expanded only) */}
+      {/* Card slots — full view (expanded only). On desktop the slot row is
+          sticky so it stays visible below the navbar while you scroll the
+          eligible grid — no scrolling back up to see your hand. */}
       {!expanded ? null : loading ? (
         <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', padding: '20px 0' }}>
           Loading card slots...
@@ -679,6 +708,17 @@ const CardEquipment: React.FC = () => {
           gap: isMobile ? '12px' : '8px',
           justifyContent: 'center',
           flexWrap: isMobile ? 'wrap' : 'nowrap',
+          ...(isMobile ? {} : {
+            position: 'sticky' as const,
+            top: 64,
+            zIndex: 5,
+            backgroundColor: '#1e293b',
+            marginLeft: -16, marginRight: -16,
+            paddingLeft: 16, paddingRight: 16,
+            paddingTop: 8, paddingBottom: 12,
+            borderBottom: '1px solid #334155',
+            boxShadow: '0 6px 8px -6px rgba(0,0,0,0.5)',
+          }),
         }}>
           {(() => {
             let firstCardTagged = false
@@ -691,7 +731,15 @@ const CardEquipment: React.FC = () => {
                 firstCardTagged = true
                 const proj = projectionBySlot.get(slotNum)
                 return (
-                  <div key={slotNum} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                  <div
+                    key={slotNum}
+                    onClick={() => handleSlotClick(slotNum)}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
+                      padding: '6px', borderRadius: '12px',
+                      cursor: isMobile && canEdit ? 'pointer' : 'default',
+                    }}
+                  >
                     <EquippedCardSlot
                       slot={slot}
                       slotNum={slotNum}
@@ -728,17 +776,18 @@ const CardEquipment: React.FC = () => {
                 )
               }
 
+              const isDest = destinationSlot === slotNum
               return (
                 <button
                   key={slotNum}
-                  onClick={() => canEdit && setPickerSlot(slotNum)}
+                  onClick={() => handleSlotClick(slotNum)}
                   disabled={!canEdit}
                   style={{
                     width: isMobile ? '100%' : 160,
                     height: 80,
                     borderRadius: '10px',
-                    border: '2px dashed #334155',
-                    backgroundColor: 'rgba(30,41,59,0.5)',
+                    border: `2px dashed ${isDest ? '#3b82f6' : '#334155'}`,
+                    backgroundColor: isDest ? 'rgba(59,130,246,0.12)' : 'rgba(30,41,59,0.5)',
                     display: 'flex', flexDirection: 'column',
                     alignItems: 'center', justifyContent: 'center',
                     gap: '4px',
@@ -748,8 +797,10 @@ const CardEquipment: React.FC = () => {
                     opacity: isLocked ? 0.5 : 1,
                   }}
                 >
-                  <span style={{ fontSize: '24px', color: '#64748b' }}>+</span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>Slot {slotNum}</span>
+                  <span style={{ fontSize: '24px', color: isDest ? '#60a5fa' : '#64748b' }}>+</span>
+                  <span style={{ fontSize: '12px', color: isDest ? '#60a5fa' : '#64748b' }}>
+                    {isDest ? 'Equips here' : `Slot ${slotNum}`}
+                  </span>
                 </button>
               )
             })
@@ -767,9 +818,17 @@ const CardEquipment: React.FC = () => {
           borderBottom: '2px solid rgba(99,102,241,0.5)',
         }}>
           <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5 }}>
-            {gamesActive
-              ? 'Games are in progress. Cards equipped now will activate next week.'
-              : 'Equip your cards for this week. They will auto-lock and activate when games start.'}
+            {expanded && canEdit
+              ? destinationSlot != null
+                ? isMobile
+                  ? `Tap a card's Equip button to fill slot ${destinationSlot}, or tap a slot to pick a card for it.`
+                  : `Click any card below to add it to the next open slot.`
+                : isMobile
+                  ? 'All slots are full. Tap a slot to replace a card.'
+                  : 'All slots are full. Unequip a card to make room.'
+              : gamesActive
+                ? 'Games are in progress. Cards equipped now will activate next week.'
+                : 'Equip your cards for this week. They will auto-lock and activate when games start.'}
           </div>
         </div>
       )}
@@ -784,17 +843,26 @@ const CardEquipment: React.FC = () => {
             <h4 style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
               Eligible Cards
               <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '400', marginLeft: '8px' }}>
-                {availableDeck.length}
+                {availableDeck.length}{availableDeck.length !== equippableDeck.length ? ` of ${equippableDeck.length}` : ''}
               </span>
             </h4>
           </div>
+          {!deckLoading && equippableDeck.length > 0 && (
+            <div style={{ marginBottom: '12px' }}>
+              <CardFilterControls state={deckFilters} onPatch={patchDeckFilters} />
+            </div>
+          )}
           {deckLoading ? (
             <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', padding: '16px 0' }}>
               Loading deck...
             </div>
-          ) : availableDeck.length === 0 ? (
+          ) : equippableDeck.length === 0 ? (
             <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', padding: '16px 0' }}>
               No eligible cards available. Open packs in the Shop!
+            </div>
+          ) : availableDeck.length === 0 ? (
+            <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', padding: '16px 0' }}>
+              No cards match your filters.
             </div>
           ) : (
             <div style={{
@@ -804,6 +872,13 @@ const CardEquipment: React.FC = () => {
               {availableDeck.map(card => {
                 const isMatch = fantasyPlayerIds.has(card.playerId)
                 const proj = browseCandidates.get(card.id)
+                // Only one of each effect can be equipped at once — grey out a
+                // card whose effect already sits in another (non-destination) slot.
+                const isDuplicate = !!card.effectName && deckDuplicateEffects.has(card.effectName)
+                const canEquip = canEdit && destinationSlot != null && !isDuplicate
+                const btnLabel = isDuplicate ? 'In use'
+                  : destinationSlot == null ? 'Slots full'
+                  : 'Equip'
                 return (
                   <div key={card.id} style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
@@ -812,8 +887,14 @@ const CardEquipment: React.FC = () => {
                     onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-4px)')}
                     onMouseLeave={e => (e.currentTarget.style.transform = 'none')}>
                     <div style={{ position: 'relative' }}>
-                      <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch ? (card.teamColor || '#ffffff') : undefined} staticGlow noHoverLift />
-                      {isMatch && (
+                      <div style={{
+                        opacity: isDuplicate ? 0.4 : 1,
+                        filter: isDuplicate ? 'grayscale(0.7)' : 'none',
+                        transition: 'opacity 0.15s, filter 0.15s',
+                      }}>
+                        <TradingCard card={{ ...card, isEquipped: false }} size="md" glowColor={isMatch && !isDuplicate ? (card.teamColor || '#ffffff') : undefined} staticGlow noHoverLift />
+                      </div>
+                      {isMatch && !isDuplicate && (
                         <div style={{
                           position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
                           fontSize: '8px', color: '#60a5fa', fontWeight: '700',
@@ -824,10 +905,38 @@ const CardEquipment: React.FC = () => {
                           MATCH
                         </div>
                       )}
+                      {isDuplicate && (
+                        <div style={{
+                          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                          fontSize: '10px', color: '#0f172a', fontWeight: '800',
+                          backgroundColor: '#fbbf24', padding: '5px 10px', borderRadius: '6px',
+                          border: '2px solid #f59e0b', whiteSpace: 'nowrap',
+                          textTransform: 'uppercase', letterSpacing: '0.5px', pointerEvents: 'none',
+                        }}>
+                          Equipped Elsewhere
+                        </div>
+                      )}
                     </div>
                     {proj && (
                       <ProjectionPill proj={proj} />
                     )}
+                    <button
+                      onClick={() => equipFromDeck(card)}
+                      disabled={!canEquip}
+                      title={isDuplicate
+                        ? 'This effect is already equipped in another slot'
+                        : destinationSlot == null ? 'Unequip a card to make room' : undefined}
+                      style={{
+                        backgroundColor: canEquip ? 'rgba(59,130,246,0.85)' : '#1e293b',
+                        border: `1px solid ${canEquip ? 'rgba(96,165,250,0.5)' : '#334155'}`,
+                        borderRadius: '6px', color: canEquip ? '#fff' : '#64748b',
+                        fontSize: '10px', fontWeight: '700', fontFamily: 'pressStart',
+                        padding: '5px 16px', cursor: canEquip ? 'pointer' : 'not-allowed',
+                        transition: 'background-color 0.15s',
+                      }}
+                    >
+                      {btnLabel}
+                    </button>
                   </div>
                 )
               })}

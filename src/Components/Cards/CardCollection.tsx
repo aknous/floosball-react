@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import TradingCard, { CardData } from './TradingCard'
 import CombineModal from './CombineModal'
 import LevelUpModal from './LevelUpModal'
@@ -34,6 +34,13 @@ const CLASSIFICATIONS = [
   { value: 'champion', label: 'Champion' },
   { value: 'all_pro', label: 'All-Pro' },
   { value: 'rookie', label: 'Rookie' },
+]
+// Output-type filter (client-side; matches the equip picker's Output row).
+const OUTPUTS = [
+  { value: 'all', label: 'All' },
+  { value: 'fp', label: 'FP' },
+  { value: 'mult', label: 'FPx' },
+  { value: 'floobits', label: 'Floobits' },
 ]
 
 // Server-side sort keys (must match the collection endpoint's `sort` param)
@@ -75,6 +82,9 @@ const CardCollection: React.FC = () => {
   const [positionFilter, setPositionFilter] = useState(0)
   const [classificationFilter, setClassificationFilter] = useState('all')
   const [activeOnly, setActiveOnly] = useState(false)
+  const [equippedOnly, setEquippedOnly] = useState(false)
+  const [outputFilter, setOutputFilter] = useState('all')
+  const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<string>('recent')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [selling, setSelling] = useState(false)
@@ -90,11 +100,15 @@ const CardCollection: React.FC = () => {
   const overlayRef = useRef<HTMLDivElement | null>(null)
 
   const inVault = view === 'vault'
+  // Search + output narrow client-side (instant, no refetch); everything else is
+  // server-side. Reorder needs display order == server order, so it's disabled
+  // whenever a client-side narrowing is active.
+  const searchActive = search.trim() !== '' || outputFilter !== 'all'
   // Native HTML5 drag doesn't work on touch, so reordering is desktop-only.
-  const canReorder = inVault && sortBy === 'manual' && !isMobile
+  const canReorder = inVault && sortBy === 'manual' && !isMobile && !searchActive
   // Any filter narrowing the list — so an empty result reads as "no matches" rather
   // than "your vault/collection is empty".
-  const hasActiveFilter = editionFilter !== 'all' || positionFilter > 0 || classificationFilter !== 'all' || activeOnly
+  const hasActiveFilter = editionFilter !== 'all' || positionFilter > 0 || classificationFilter !== 'all' || activeOnly || equippedOnly || searchActive
 
   const fetchCards = useCallback(async () => {
     try {
@@ -105,6 +119,7 @@ const CardCollection: React.FC = () => {
       if (positionFilter > 0) params.set('position', String(positionFilter))
       if (classificationFilter !== 'all') params.set('classification', classificationFilter)
       if (activeOnly) params.set('activeOnly', 'true')
+      if (equippedOnly && !inVault) params.set('equipped', 'true')
       params.set('vaulted', inVault ? 'true' : 'false')
       params.set('sort', sortBy)
       const res = await fetch(`${API_BASE}/cards/collection?${params}`, {
@@ -119,7 +134,25 @@ const CardCollection: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }, [getToken, editionFilter, positionFilter, classificationFilter, activeOnly, sortBy, inVault])
+  }, [getToken, editionFilter, positionFilter, classificationFilter, activeOnly, equippedOnly, sortBy, inVault])
+
+  // Client-side narrowing (search text + output type) over the fetched set —
+  // instant, and matches the equip picker's search behavior.
+  const displayedCards = useMemo(() => {
+    let list = cards
+    const q = search.trim().toLowerCase()
+    if (q) {
+      list = list.filter(c =>
+        c.playerName.toLowerCase().includes(q) ||
+        (c.displayName || '').toLowerCase().includes(q) ||
+        (c.effectName || '').toLowerCase().includes(q)
+      )
+    }
+    if (outputFilter !== 'all') {
+      list = list.filter(c => c.outputType === outputFilter)
+    }
+    return list
+  }, [cards, search, outputFilter])
 
   useEffect(() => { setLoading(true); fetchCards() }, [fetchCards])
 
@@ -127,7 +160,8 @@ const CardCollection: React.FC = () => {
   // order (Vault opens in manual/arrangeable order; Collection in newest-first).
   useEffect(() => {
     setSelectedIds(new Set())
-    if (view === 'vault') setSortBy('manual')
+    // Equipped/output only apply to the live collection; clear them entering the Vault.
+    if (view === 'vault') { setSortBy('manual'); setEquippedOnly(false); setOutputFilter('all') }
     else if (view === 'collection') setSortBy('recent')
   }, [view])
 
@@ -281,7 +315,7 @@ const CardCollection: React.FC = () => {
           <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
             {inVault ? 'The Vault' : 'Collection'}
             <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '400', marginLeft: '8px' }}>
-              {cards.length} {cards.length === 1 ? 'card' : 'cards'}
+              {displayedCards.length} {displayedCards.length === 1 ? 'card' : 'cards'}
             </span>
           </h2>
           {inVault && (
@@ -399,16 +433,53 @@ const CardCollection: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+      {/* Filters — edition pills on the left, search aligned right to fill the row */}
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
         {EDITIONS.map(e => (
           <button key={e} onClick={() => setEditionFilter(e)} style={pillStyle(editionFilter === e)}>
             {e}
           </button>
         ))}
+        <span style={{ flex: 1, minWidth: '12px' }} />
+        <div style={{ position: 'relative', flex: '0 1 280px', minWidth: '180px' }}>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search player or effect..."
+            style={{
+              width: '100%', padding: '7px 28px 7px 10px', fontSize: '12px',
+              fontFamily: 'inherit', backgroundColor: '#0f172a', color: '#e2e8f0',
+              border: '1px solid #334155', borderRadius: '6px', outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              style={{
+                position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', color: '#64748b', cursor: 'pointer',
+                fontSize: '14px', padding: '2px 6px', lineHeight: 1,
+              }}
+              aria-label="Clear search"
+            >x</button>
+          )}
+        </div>
       </div>
-      {/* Classification filter */}
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+      {/* Output-type + Classification on one line, divided (output is live-collection
+          only — vaulted cards drop their effect). */}
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
+        {!inVault && (
+          <>
+            {OUTPUTS.map(o => (
+              <button key={o.value} onClick={() => setOutputFilter(o.value)} style={pillStyle(outputFilter === o.value)}>
+                {o.label}
+              </button>
+            ))}
+            <span style={{ width: '1px', height: '20px', backgroundColor: '#334155', margin: '0 4px' }} />
+          </>
+        )}
         {CLASSIFICATIONS.map(c => (
           <button key={c.value} onClick={() => setClassificationFilter(c.value)} style={pillStyle(classificationFilter === c.value)}>
             {c.label}
@@ -426,6 +497,9 @@ const CardCollection: React.FC = () => {
             <span style={{ width: '1px', height: '20px', backgroundColor: '#334155', margin: '0 4px' }} />
             <button onClick={() => setActiveOnly(!activeOnly)} style={pillStyle(activeOnly)}>
               Active Only
+            </button>
+            <button onClick={() => setEquippedOnly(!equippedOnly)} style={pillStyle(equippedOnly)}>
+              Equipped
             </button>
           </>
         )}
@@ -454,7 +528,7 @@ const CardCollection: React.FC = () => {
         <div style={{ color: '#64748b', fontSize: '13px', padding: '40px 0', textAlign: 'center' }}>
           Loading {inVault ? 'vault' : 'collection'}...
         </div>
-      ) : cards.length === 0 ? (
+      ) : displayedCards.length === 0 ? (
         <div style={{ color: '#64748b', fontSize: '13px', padding: '40px 0', textAlign: 'center', lineHeight: 1.7 }}>
           {hasActiveFilter
             ? 'No cards match these filters.'
@@ -473,7 +547,7 @@ const CardCollection: React.FC = () => {
           display: 'flex', flexWrap: 'wrap', gap: '12px',
           justifyContent: isMobile ? 'center' : 'flex-start',
         }}>
-          {cards.map((card, idx) => (
+          {displayedCards.map((card, idx) => (
             <div
               key={card.id}
               draggable={canReorder}
