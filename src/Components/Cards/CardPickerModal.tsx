@@ -4,29 +4,11 @@ import TradingCard, { CardData } from './TradingCard'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { CandidateProjection, projectionPillStyle, useCardProjection } from '@/hooks/useCardProjection'
+import {
+  CardFilterState, defaultCardFilterState, applyCardFilters, CardFilterControls,
+} from './cardFilters'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
-
-// Position code → label
-const POSITION_LABELS: Record<number, string> = {
-  1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K',
-}
-type PositionFilter = 'all' | 1 | 2 | 3 | 4 | 5
-type EditionFilter = 'all' | 'base' | 'holographic' | 'prismatic' | 'diamond'
-type OutputFilter = 'all' | 'fp' | 'mult' | 'floobits'
-type ClassificationFilter = 'all' | 'mvp' | 'champion' | 'all_pro' | 'rookie'
-type SortMode = 'match' | 'rating' | 'edition'
-
-const EDITION_ORDER: Record<string, number> = {
-  diamond: 0, prismatic: 1, holographic: 2, base: 3,
-}
-const EDITION_LABELS: Record<EditionFilter, string> = {
-  all: 'All',
-  base: 'Base',
-  holographic: 'Holo',
-  prismatic: 'Prism',
-  diamond: 'Diamond',
-}
 
 const PickerCard: React.FC<{
   card: CardData
@@ -178,25 +160,12 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
   const isMobile = useIsMobile()
   const [cards, setCards] = useState<CardData[]>([])
   const [loading, setLoading] = useState(false)
-  const [query, setQuery] = useState('')
-  const [positionFilter, setPositionFilter] = useState<PositionFilter>('all')
-  const [editionFilter, setEditionFilter] = useState<EditionFilter>('all')
-  const [outputFilter, setOutputFilter] = useState<OutputFilter>('all')
-  const [classificationFilter, setClassificationFilter] = useState<ClassificationFilter>('all')
-  const [sortMode, setSortMode] = useState<SortMode>('match')
-  const [matchOnly, setMatchOnly] = useState(false)
+  const [filters, setFilters] = useState<CardFilterState>(defaultCardFilterState)
+  const patchFilters = (patch: Partial<CardFilterState>) => setFilters(f => ({ ...f, ...patch }))
 
   // Reset controls whenever the modal opens so previous filters don't stick
   useEffect(() => {
-    if (visible) {
-      setQuery('')
-      setPositionFilter('all')
-      setEditionFilter('all')
-      setOutputFilter('all')
-      setClassificationFilter('all')
-      setSortMode('match')
-      setMatchOnly(false)
-    }
+    if (visible) setFilters(defaultCardFilterState)
   }, [visible])
 
   useEffect(() => {
@@ -230,64 +199,12 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
     return () => window.removeEventListener('keydown', handler)
   }, [visible, onClose])
 
-  // Apply search + filters, then sort. useMemo so we don't recompute on
-  // every render — only when one of the inputs changes.
-  const displayed = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    let filtered = cards
-    if (q) {
-      filtered = filtered.filter(c =>
-        c.playerName.toLowerCase().includes(q) ||
-        (c.displayName || '').toLowerCase().includes(q) ||
-        (c.effectName || '').toLowerCase().includes(q)
-      )
-    }
-    if (positionFilter !== 'all') {
-      filtered = filtered.filter(c => c.position === positionFilter)
-    }
-    if (editionFilter !== 'all') {
-      filtered = filtered.filter(c => c.edition === editionFilter)
-    }
-    if (outputFilter !== 'all') {
-      filtered = filtered.filter(c => c.outputType === outputFilter)
-    }
-    if (classificationFilter !== 'all') {
-      filtered = filtered.filter(c =>
-        classificationFilter === 'rookie'
-          ? ((c.classification || '').includes('rookie') || c.isRookie)
-          : (c.classification || '').includes(classificationFilter)
-      )
-    }
-    if (matchOnly) {
-      filtered = filtered.filter(c => rosterPlayerIds.has(c.playerId))
-    }
-    const sorted = [...filtered]
-    switch (sortMode) {
-      case 'rating':
-        sorted.sort((a, b) => b.playerRating - a.playerRating)
-        break
-      case 'edition':
-        sorted.sort((a, b) => {
-          const ea = EDITION_ORDER[a.edition] ?? 99
-          const eb = EDITION_ORDER[b.edition] ?? 99
-          if (ea !== eb) return ea - eb
-          return b.playerRating - a.playerRating
-        })
-        break
-      case 'match':
-      default:
-        sorted.sort((a, b) => {
-          const aMatch = rosterPlayerIds.has(a.playerId) ? 0 : 1
-          const bMatch = rosterPlayerIds.has(b.playerId) ? 0 : 1
-          if (aMatch !== bMatch) return aMatch - bMatch
-          const ea = EDITION_ORDER[a.edition] ?? 99
-          const eb = EDITION_ORDER[b.edition] ?? 99
-          if (ea !== eb) return ea - eb
-          return b.playerRating - a.playerRating
-        })
-    }
-    return sorted
-  }, [cards, query, positionFilter, editionFilter, outputFilter, classificationFilter, sortMode, matchOnly, rosterPlayerIds])
+  // Apply search + filters, then sort (shared engine). useMemo so we only
+  // recompute when the cards, filter state, or roster change.
+  const displayed = useMemo(
+    () => applyCardFilters(cards, filters, rosterPlayerIds),
+    [cards, filters, rosterPlayerIds],
+  )
 
   if (!visible) return null
 
@@ -335,118 +252,8 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
             >x</button>
           </div>
 
-          {/* Search */}
-          <input
-            type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Search player or effect..."
-            style={{
-              width: '100%',
-              padding: '8px 10px',
-              fontSize: '12px',
-              fontFamily: 'inherit',
-              backgroundColor: '#0f172a',
-              color: '#e2e8f0',
-              border: '1px solid #334155',
-              borderRadius: '6px',
-              outline: 'none',
-              marginBottom: '10px',
-            }}
-          />
-
-          {/* Filter pill rows */}
-          <FilterRow
-            label="Position"
-            options={[
-              { value: 'all', label: 'All' },
-              { value: 1, label: 'QB' },
-              { value: 2, label: 'RB' },
-              { value: 3, label: 'WR' },
-              { value: 4, label: 'TE' },
-              { value: 5, label: 'K' },
-            ]}
-            value={positionFilter}
-            onChange={(v) => setPositionFilter(v as PositionFilter)}
-          />
-          <div style={{ height: '6px' }} />
-          <FilterRow
-            label="Edition"
-            options={(['all', 'base', 'holographic', 'prismatic', 'diamond'] as EditionFilter[]).map(e => ({
-              value: e,
-              label: EDITION_LABELS[e],
-            }))}
-            value={editionFilter}
-            onChange={(v) => setEditionFilter(v as EditionFilter)}
-          />
-          <div style={{ height: '6px' }} />
-          <FilterRow
-            label="Output"
-            options={[
-              { value: 'all', label: 'All' },
-              { value: 'fp', label: 'FP' },
-              { value: 'mult', label: 'FPx' },
-              { value: 'floobits', label: 'Floobits' },
-            ]}
-            value={outputFilter}
-            onChange={(v) => setOutputFilter(v as OutputFilter)}
-          />
-          <div style={{ height: '6px' }} />
-          <FilterRow
-            label="Class"
-            options={[
-              { value: 'all', label: 'All' },
-              { value: 'mvp', label: 'MVP' },
-              { value: 'champion', label: 'Champion' },
-              { value: 'all_pro', label: 'All-Pro' },
-              { value: 'rookie', label: 'Rookie' },
-            ]}
-            value={classificationFilter}
-            onChange={(v) => setClassificationFilter(v as ClassificationFilter)}
-          />
-
-          {/* Sort + match toggle row */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginTop: '10px', gap: '10px', flexWrap: 'wrap',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-                Sort
-              </span>
-              <select
-                value={sortMode}
-                onChange={e => setSortMode(e.target.value as SortMode)}
-                style={{
-                  padding: '4px 8px',
-                  fontSize: '11px',
-                  fontFamily: 'inherit',
-                  backgroundColor: '#0f172a',
-                  color: '#e2e8f0',
-                  border: '1px solid #334155',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  outline: 'none',
-                }}
-              >
-                <option value="match">Match first</option>
-                <option value="rating">Highest rated</option>
-                <option value="edition">Rarest first</option>
-              </select>
-            </div>
-            <label style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px',
-              fontSize: '11px', color: matchOnly ? '#60a5fa' : '#94a3b8', cursor: 'pointer',
-            }}>
-              <input
-                type="checkbox"
-                checked={matchOnly}
-                onChange={e => setMatchOnly(e.target.checked)}
-                style={{ cursor: 'pointer' }}
-              />
-              Match roster only
-            </label>
-          </div>
+          {/* Shared equip-side filter bar (search + pills + sort/match toggle) */}
+          <CardFilterControls state={filters} onPatch={patchFilters} />
         </div>
 
         {/* Card grid */}
@@ -484,54 +291,6 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
       </div>
     </div>,
     document.body
-  )
-}
-
-// Compact pill-row filter used for both Position and Edition. The active
-// option gets the accent color; inactive options fade into the panel.
-function FilterRow<T extends string | number>({
-  label, options, value, onChange,
-}: {
-  label: string
-  options: { value: T; label: string }[]
-  value: T
-  onChange: (v: T) => void
-}) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-      <span style={{
-        fontSize: '10px', color: '#94a3b8', fontWeight: 600,
-        textTransform: 'uppercase' as const, letterSpacing: '0.05em',
-        minWidth: '52px',
-      }}>
-        {label}
-      </span>
-      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-        {options.map(opt => {
-          const active = opt.value === value
-          return (
-            <button
-              key={String(opt.value)}
-              onClick={() => onChange(opt.value)}
-              style={{
-                padding: '3px 10px',
-                fontSize: '10px',
-                fontWeight: 700,
-                fontFamily: 'inherit',
-                border: `1px solid ${active ? '#3b82f6' : '#334155'}`,
-                backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'transparent',
-                color: active ? '#60a5fa' : '#94a3b8',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                transition: 'all 0.1s',
-              }}
-            >
-              {opt.label}
-            </button>
-          )
-        })}
-      </div>
-    </div>
   )
 }
 
