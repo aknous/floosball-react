@@ -1,5 +1,5 @@
 import React from 'react'
-import { CardData } from './TradingCard'
+import { CardData, getBehaviorTag } from './TradingCard'
 
 /**
  * Shared card-filtering primitives for the equip-side surfaces (the slot
@@ -16,6 +16,8 @@ export type PositionFilter = 'all' | 1 | 2 | 3 | 4 | 5
 export type EditionFilter = 'all' | 'base' | 'holographic' | 'prismatic' | 'diamond'
 export type OutputFilter = 'all' | 'fp' | 'mult' | 'floobits'
 export type ClassificationFilter = 'all' | 'mvp' | 'champion' | 'all_pro' | 'rookie'
+// Effect behavior — mirrors the on-card badge from TradingCard's getBehaviorTag.
+export type BehaviorFilter = 'all' | 'chance' | 'conditional' | 'streak'
 export type CardSortMode = 'match' | 'rating' | 'edition'
 
 export const POSITION_LABELS: Record<number, string> = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K' }
@@ -50,6 +52,12 @@ export const CLASSIFICATION_OPTIONS: { value: ClassificationFilter; label: strin
   { value: 'all_pro', label: 'All-Pro' },
   { value: 'rookie', label: 'Rookie' },
 ]
+export const BEHAVIOR_OPTIONS: { value: BehaviorFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'chance', label: 'Chance' },
+  { value: 'conditional', label: 'Conditional' },
+  { value: 'streak', label: 'Streak' },
+]
 
 export interface CardFilterState {
   search: string
@@ -57,13 +65,14 @@ export interface CardFilterState {
   edition: EditionFilter
   output: OutputFilter
   classification: ClassificationFilter
+  behavior: BehaviorFilter
   matchOnly: boolean
   sort: CardSortMode
 }
 
 export const defaultCardFilterState: CardFilterState = {
   search: '', position: 'all', edition: 'all', output: 'all',
-  classification: 'all', matchOnly: false, sort: 'match',
+  classification: 'all', behavior: 'all', matchOnly: false, sort: 'match',
 }
 
 /** Does a card pass the current filter state? (Sort is applied separately.) */
@@ -84,6 +93,7 @@ export function cardMatchesFilters(card: CardData, f: CardFilterState, rosterIds
       if (!(cls.includes('rookie') || card.isRookie)) return false
     } else if (!cls.includes(f.classification)) return false
   }
+  if (f.behavior !== 'all' && getBehaviorTag(card) !== f.behavior) return false
   if (f.matchOnly && !rosterIds.has(card.playerId)) return false
   return true
 }
@@ -132,37 +142,34 @@ export const filterPillStyle = (active: boolean): React.CSSProperties => ({
   transition: 'all 0.1s',
 })
 
-/** A labeled row of mutually-exclusive filter pills. */
-export function FilterPillRow<T extends string | number>({
-  label, options, value, onChange,
+/** A group of mutually-exclusive filter pills (unlabeled; delimit groups with
+ * FilterDivider so several fit on one line, like the Cards-page filters). */
+export function PillGroup<T extends string | number>({
+  options, value, onChange,
 }: {
-  label: string
   options: { value: T; label: string }[]
   value: T
   onChange: (v: T) => void
 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-      <span style={{
-        fontSize: '10px', color: '#94a3b8', fontWeight: 600,
-        textTransform: 'uppercase', letterSpacing: '0.05em', minWidth: '52px',
-      }}>
-        {label}
-      </span>
-      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-        {options.map(opt => (
-          <button
-            key={String(opt.value)}
-            onClick={() => onChange(opt.value)}
-            style={filterPillStyle(opt.value === value)}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
+    <>
+      {options.map(opt => (
+        <button
+          key={String(opt.value)}
+          onClick={() => onChange(opt.value)}
+          style={filterPillStyle(opt.value === value)}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </>
   )
 }
+
+/** Thin vertical separator between inline filter groups. */
+export const FilterDivider: React.FC = () => (
+  <span style={{ width: '1px', height: '20px', backgroundColor: '#334155', margin: '0 4px' }} />
+)
 
 /** Search input with a clear button, styled for the dark card surfaces. */
 export const CardSearchInput: React.FC<{
@@ -199,37 +206,65 @@ export const CardSearchInput: React.FC<{
 )
 
 /**
- * The full equip-side filter bar: search + position/edition/output/class rows
- * + a sort/match-only footer. Driven by a single CardFilterState; the parent
- * owns the state and calls applyCardFilters() to get the displayed list.
+ * The full equip-side filter bar, laid out compactly to mirror the Cards-page
+ * filters: several pill groups share a line, delimited by separators, so the
+ * bar takes 3 lines instead of one labeled row per group. Driven by a single
+ * CardFilterState; the parent owns the state and calls applyCardFilters().
  */
 export const CardFilterControls: React.FC<{
   state: CardFilterState
   onPatch: (patch: Partial<CardFilterState>) => void
   showSearch?: boolean
   showMatchToggle?: boolean
-}> = ({ state, onPatch, showSearch = true, showMatchToggle = true }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-    {showSearch && (
-      <CardSearchInput
-        value={state.search}
-        onChange={v => onPatch({ search: v })}
-        style={{ marginBottom: '4px' }}
-      />
-    )}
-    <FilterPillRow label="Position" options={POSITION_OPTIONS} value={state.position}
-      onChange={v => onPatch({ position: v })} />
-    <FilterPillRow label="Edition" options={EDITION_OPTIONS} value={state.edition}
-      onChange={v => onPatch({ edition: v })} />
-    <FilterPillRow label="Output" options={OUTPUT_OPTIONS} value={state.output}
-      onChange={v => onPatch({ output: v })} />
-    <FilterPillRow label="Class" options={CLASSIFICATION_OPTIONS} value={state.classification}
-      onChange={v => onPatch({ classification: v })} />
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      marginTop: '4px', gap: '10px', flexWrap: 'wrap',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+}> = ({ state, onPatch, showSearch = true, showMatchToggle = true }) => {
+  const rowStyle: React.CSSProperties = {
+    display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center',
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {/* Line 1: edition pills + inline search (right) */}
+      <div style={rowStyle}>
+        <PillGroup options={EDITION_OPTIONS} value={state.edition} onChange={v => onPatch({ edition: v })} />
+        {showSearch && (
+          <>
+            <span style={{ flex: 1, minWidth: '12px' }} />
+            <CardSearchInput
+              value={state.search}
+              onChange={v => onPatch({ search: v })}
+              style={{ flex: '0 1 240px', minWidth: '160px' }}
+            />
+          </>
+        )}
+      </div>
+      {/* Line 2: output | behavior */}
+      <div style={rowStyle}>
+        <PillGroup options={OUTPUT_OPTIONS} value={state.output} onChange={v => onPatch({ output: v })} />
+        <FilterDivider />
+        <PillGroup options={BEHAVIOR_OPTIONS} value={state.behavior} onChange={v => onPatch({ behavior: v })} />
+      </div>
+      {/* Line 3: class | position */}
+      <div style={rowStyle}>
+        <PillGroup options={CLASSIFICATION_OPTIONS} value={state.classification} onChange={v => onPatch({ classification: v })} />
+        <FilterDivider />
+        <PillGroup options={POSITION_OPTIONS} value={state.position} onChange={v => onPatch({ position: v })} />
+      </div>
+      {/* Line 4: match toggle + sort (right) */}
+      <div style={rowStyle}>
+        {showMatchToggle && (
+          <label style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            fontSize: '11px', color: state.matchOnly ? '#60a5fa' : '#94a3b8', cursor: 'pointer',
+          }}>
+            <input
+              type="checkbox"
+              checked={state.matchOnly}
+              onChange={e => onPatch({ matchOnly: e.target.checked })}
+              style={{ cursor: 'pointer' }}
+            />
+            Match roster only
+          </label>
+        )}
+        <span style={{ flex: 1, minWidth: '12px' }} />
         <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Sort
         </span>
@@ -247,20 +282,6 @@ export const CardFilterControls: React.FC<{
           <option value="edition">Rarest first</option>
         </select>
       </div>
-      {showMatchToggle && (
-        <label style={{
-          display: 'inline-flex', alignItems: 'center', gap: '6px',
-          fontSize: '11px', color: state.matchOnly ? '#60a5fa' : '#94a3b8', cursor: 'pointer',
-        }}>
-          <input
-            type="checkbox"
-            checked={state.matchOnly}
-            onChange={e => onPatch({ matchOnly: e.target.checked })}
-            style={{ cursor: 'pointer' }}
-          />
-          Match roster only
-        </label>
-      )}
     </div>
-  </div>
-)
+  )
+}
