@@ -126,6 +126,7 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {}
                 favTeamColor={favTeamColor}
                 favTeamId={favTeamId}
                 onClick={handleClick}
+                clickable={isLive}
                 userPick={pickEmGame?.userPick ?? null}
                 pickable={pickEmGame?.pickable ?? false}
                 pickCorrect={pickEmGame?.result?.correct ?? null}

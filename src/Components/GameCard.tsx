@@ -37,13 +37,16 @@ interface GameCardProps {
   favTeamColor?: string
   favTeamId?: number | null
   onClick: (gameId: number) => void
+  /** When false the card is inert (no modal). Used for past weeks, whose games
+   *  aren't in the live season state so the game modal can't resolve them. */
+  clickable?: boolean
   userPick?: number | null
   pickable?: boolean
   pickCorrect?: boolean | null
   onPick?: (teamId: number) => void
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, userPick, pickable, pickCorrect, onPick }) => {
+export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, clickable = true, userPick, pickable, pickCorrect, onPick }) => {
   const isComplete = status === 'Final'
   const isLive = status === 'Active' && (quarter ?? 0) > 0
   const isFinal = isComplete
@@ -92,7 +95,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
     borderRadius: '8px',
     padding: '12px',
     marginBottom: '12px',
-    cursor: 'pointer',
+    cursor: clickable ? 'pointer' : 'default',
     transition: 'all 0.2s',
     width: '100%',
     textAlign: 'left'
@@ -129,7 +132,15 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
   }
 
   return (
-    <div role="button" tabIndex={0} onClick={() => onClick(gameId)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(gameId) }} style={cardStyle}>
+    <div
+      {...(clickable ? {
+        role: 'button',
+        tabIndex: 0,
+        onClick: () => onClick(gameId),
+        onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') onClick(gameId) },
+      } : {})}
+      style={cardStyle}
+    >
       
       {/* Home Team */}
       <TeamHoverCard teamId={homeTeam.id}>
