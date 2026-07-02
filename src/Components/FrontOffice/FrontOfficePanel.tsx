@@ -722,15 +722,18 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
 
       {/* FA Pool Preview — lets fans see every player projected to be
           available this offseason so they can make informed cut/resign
-          decisions. Includes current free agents, walk-year players from
-          other teams, and cut-vote likely players. Always visible. */}
-      <div style={{ padding: '14px 14px 0' }}>
-        <FaPoolPreview
-          players={faScoutingPlayers}
-          positionFilter={poolPositionFilter}
-          onPositionFilter={setPoolPositionFilter}
-        />
-      </div>
+          decisions. Not shown in the Free Agent Ballot sub-tab (view === 'fa'),
+          where it lived redundantly — the pool now has its home on the roster
+          voting tab. Kept for the standalone team-page context. */}
+      {view !== 'fa' && (
+        <div style={{ padding: '14px 14px 0' }}>
+          <FaPoolPreview
+            players={faScoutingPlayers}
+            positionFilter={poolPositionFilter}
+            onPositionFilter={setPoolPositionFilter}
+          />
+        </div>
+      )}
 
       {/* Fan Vote Tallies — single overall priority list. Live during the
           voting window; once the offseason ballot resolves, the post-IRV
