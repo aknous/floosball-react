@@ -76,7 +76,11 @@ const CutPlayerCard: React.FC<CutPlayerCardProps> = ({
             const isUndoing = undoing === `cut_player:${p.id}`
             const cost = getCost(p.id)
             const myVotes = myVoteCount(p.id)
-            const isDisabled = globalDisabled || disabledIds.has(p.id) || balance < cost
+            // Budget/global lock both sides; a met threshold locks only the
+            // support side (opposing can still cancel it — disabledIds carries
+            // the threshold-met targets).
+            const baseDisabled = globalDisabled || balance < cost
+            const supportDisabled = disabledIds.has(p.id)
 
             return (
               <div key={p.id} style={{
@@ -130,7 +134,8 @@ const CutPlayerCard: React.FC<CutPlayerCardProps> = ({
                 <StanceControls
                   cost={cost}
                   stance={myStance(p.id)}
-                  baseDisabled={isDisabled}
+                  baseDisabled={baseDisabled}
+                  supportDisabled={supportDisabled}
                   voting={isVoting}
                   teamColor={teamColor}
                   supportLabel="Release"
