@@ -264,10 +264,13 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
     }
   }, [getToken, updateFloobits, refetchUser])
 
-  // Compute disabled vote targets based on user's vote counts
-  // Helper: per-target tally already meets/exceeds threshold (directive
-  // is guaranteed to pass, so further votes are wasteful and the backend
-  // rejects them).
+  // Helper: per-target net tally already meets/exceeds its pass threshold.
+  // When it does, only the SUPPORT side is wasteful — opposing can still drop
+  // the net back below the line (votes aren't resolved until the offseason), so
+  // these ids drive supportDisabled, NOT a full both-sides lock. (The old code
+  // greyed out the whole target here, which locked an opposing fan out of
+  // cancelling a passing directive — the exact bug on a 2-fan team where one
+  // yea already clears the ceil(2×0.5)=1 threshold.)
   const targetThresholdMet = (voteType: string, targetId: number): boolean => {
     const tally = gm.summary?.tallies.find(
       t => t.voteType === voteType && t.targetPlayerId === targetId
@@ -275,10 +278,8 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
     return !!tally && tally.threshold > 0 && tally.votes >= tally.threshold
   }
 
-  // One vote per target (the per-side lock lives in StanceControls). The only
-  // thing we still grey out here is a target whose directive has already met
-  // its pass threshold — further votes can't change the outcome and the spend
-  // would be wasted.
+  // Targets whose directive has met threshold — the support vote is redundant
+  // (greyed), the oppose vote stays open. Fed to each card as supportDisabled.
   const disabledCutIds = useMemo(() => {
     const ids = new Set<number>()
     gm.eligible?.rosteredPlayers.forEach(p => {
@@ -294,13 +295,6 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
     })
     return ids
   }, [gm.eligible, gm.summary])
-
-  const fireCoachDisabled = useMemo(() => {
-    // Fire votes are aggregated against a single target=null, so check the
-    // tally directly instead of going through targetThresholdMet.
-    const fireTally = gm.summary?.tallies.find(t => t.voteType === 'fire_coach')
-    return !!fireTally && fireTally.threshold > 0 && fireTally.votes >= fireTally.threshold
-  }, [gm.summary])
 
   // Hire is a plurality election with no pass threshold; the per-candidate
   // voted lock is handled by the Nominate button's selected state.
@@ -859,7 +853,7 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
                 onUndo={() => gm.undoVote('fire_coach')}
                 myVoteCount={myVotesOnTarget('fire_coach')}
                 lastCost={lastTargetCost('fire_coach')}
-                disabled={globalDisabled || fireCoachDisabled || balance < nextCostByType.fire_coach}
+                disabled={globalDisabled || balance < nextCostByType.fire_coach}
                 nextCost={nextCostByType.fire_coach}
                 thresholdMet={!!coachTally && coachTally.votes >= coachTally.threshold}
               />

@@ -159,6 +159,9 @@ interface StanceControlsProps {
   cost: number
   stance: 'yea' | 'nay' | null
   baseDisabled: boolean   // budget / global / can't-afford, applies to both sides
+  supportDisabled?: boolean // directive already meets its pass threshold — only
+                            // the SUPPORT side is wasteful; opposing can still
+                            // drop the net back below the line, so it stays open
   voting: boolean
   teamColor: string
   supportLabel: string    // the take-the-action verb (e.g. Release, Renew)
@@ -173,14 +176,14 @@ interface StanceControlsProps {
  * keep the two-tap confirm.
  */
 export const StanceControls: React.FC<StanceControlsProps> = ({
-  cost, stance, baseDisabled, voting, teamColor, supportLabel, opposeLabel, onVote,
+  cost, stance, baseDisabled, supportDisabled = false, voting, teamColor, supportLabel, opposeLabel, onVote,
 }) => {
   const voted = stance !== null
   return (
     <div style={{ display: 'flex', gap: '4px' }}>
       <VoteButton
         cost={cost}
-        disabled={baseDisabled || voted}
+        disabled={baseDisabled || voted || supportDisabled}
         selected={stance === 'yea'}
         voting={voting}
         onConfirm={() => onVote('yea')}
