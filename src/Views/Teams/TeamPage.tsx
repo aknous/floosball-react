@@ -261,14 +261,14 @@ export default function TeamPage() {
     {
       target: 'team-tab-funding',
       title: 'Funding',
-      content: 'Fund your team to improve their market tier and unlock offseason bonuses.',
+      content: 'Fund your team to build up its Facilities, which drive player development, morale, and fatigue recovery. Funding does not raise your market tier.',
       placement: 'bottom',
       onEnter: () => setActiveTab('funding'),
     },
     {
       target: 'team-funding-tier',
       title: 'Market Tier',
-      content: 'Your current market tier. Higher tiers grant better player development, morale boosts, and fatigue reduction during the offseason.',
+      content: "Your market tier reflects your team's fanbase size relative to the rest of the league. Player development, morale, and fatigue perks come from Facilities, not from this tier.",
       placement: 'bottom',
     },
     {
@@ -1093,10 +1093,10 @@ export default function TeamPage() {
             'SMALL_MARKET': 'Small Market',
           }
           const tierEffects: Record<string, string[]> = {
-            'MEGA_MARKET': ['Large boost to player development', 'Large boost to player morale', 'Massive reduction in fatigue buildup'],
-            'LARGE_MARKET': ['Modest boost to player development', 'Small boost to player morale', 'Moderate reduction in fatigue buildup'],
-            'MID_MARKET': ['No bonuses or penalties'],
-            'SMALL_MARKET': ['Reduced player development', 'Lower player morale', 'Increased fatigue buildup'],
+            'MEGA_MARKET': ["One of the league's largest fanbases"],
+            'LARGE_MARKET': ['A large, well-established fanbase'],
+            'MID_MARKET': ['A mid-sized fanbase, around the league average'],
+            'SMALL_MARKET': ['A smaller fanbase'],
           }
           const orderedTiers = ['SMALL_MARKET', 'MID_MARKET', 'LARGE_MARKET', 'MEGA_MARKET']
           const currentIdx = orderedTiers.indexOf(f.tier)
@@ -1533,18 +1533,17 @@ export default function TeamPage() {
           that influence play-calling and player growth.
         </GuideSection>
         <GuideSection title="Funding">
-          Fund your team to raise its market tier. Higher tiers grant offseason bonuses to player
-          development, morale, and fatigue recovery. Contribute Floobits directly or set an
-          auto-contribution percentage that donates from your unspent balance at season end.
-          Tiers lock at season start — mid-season contributions build toward next season.
-          50% of funding carries forward each season, so sustained contributions are needed to
-          maintain high tiers.
+          Fund your team to build up its Facilities. The Training Facility drives player
+          development, the Locker Room lifts morale, the Recovery Center speeds fatigue recovery,
+          and the Scouting Department sharpens rookie scouting. Contribute Floobits directly or set
+          an auto-contribution percentage that donates from your unspent balance at season end.
+          Facilities are fan-funded through the Treasury on the Facilities tab under Front Office.
         </GuideSection>
         <GuideSection title="Market Tiers">
-          Small Market: reduced development and morale, increased fatigue. Mid Market: baseline,
-          no bonuses or penalties. Large Market: modest development/morale boost, moderate fatigue
-          reduction. Mega Market: large development/morale boost, major fatigue reduction.
-          Thresholds: 500F (Mid), 1,000F (Large), 2,000F (Mega).
+          Market tier reflects your team's fanbase size relative to the rest of the league, from
+          Small Market up through Mid, Large, and Mega. It is a measure of following, not a source
+          of bonuses. Development, morale, and fatigue perks all come from your Facilities. Tiers
+          are relative to the league, so they shift as fanbases grow and shrink around you.
         </GuideSection>
         <GuideSection title="Schedule">
           Your full season schedule with past results and upcoming matchups. Each row shows the

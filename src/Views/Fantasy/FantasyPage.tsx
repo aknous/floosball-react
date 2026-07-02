@@ -587,7 +587,7 @@ const FantasyPage: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
             {[
               { label: 'Flat FP', desc: 'Unconditional bonus Fantasy Points each week', color: '#4ade80' },
-              { label: 'Multiplier', desc: 'Multiplies your total roster FP (e.g. 1.05x)', color: '#60a5fa' },
+              { label: 'Multiplier', desc: 'Multiplies your total FP: roster FP plus flat card bonuses (e.g. 1.05x)', color: '#60a5fa' },
               { label: 'Floobits', desc: 'Earns bonus Floobits currency each week', color: '#eab308' },
               { label: 'Conditional', desc: 'Triggers when the card player hits a stat threshold', color: '#60a5fa' },
               { label: 'Streak', desc: 'Grows stronger over consecutive weeks when its condition is met', color: '#fb923c' },
@@ -633,9 +633,10 @@ const FantasyPage: React.FC = () => {
           (15, 30, 45, ...). Your previous player's FP are banked and you begin earning with the replacement.
         </GuideSection>
         <GuideSection title="Modifiers">
-          Each week, a random modifier is applied to all fantasy players. Modifiers can amplify
-          scoring, add bonus Floobits, or introduce other twists. The active modifier is
-          displayed in the status bar above your roster.
+          Each week a random modifier changes how your equipped cards score: doubling multipliers,
+          tripling card Floobits, protecting streaks, treating all cards as matched, and other twists.
+          It has no effect if you have no cards equipped. The active modifier is displayed in the
+          status bar above your roster.
         </GuideSection>
         <GuideSection title="Leaderboard">
           Weekly and season leaderboard rankings determine Floobit payouts. Top finishers each

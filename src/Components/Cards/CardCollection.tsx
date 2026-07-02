@@ -372,8 +372,9 @@ const CardCollection: React.FC = () => {
                 keep its tier for good and feed it into your Showcase.
               </HelpSection>
               <HelpSection title="The Combine vs Level Up">
-                The Combine fuses cards into a higher edition. Level Up raises one card's
-                tier. Two different ways to spend duplicates.
+                The Combine sacrifices several cards to mint one new random card, and its
+                edition scales with the value you feed in. Level Up raises a single card's tier
+                by consuming a same-effect duplicate. Two different ways to spend extra cards.
               </HelpSection>
             </HelpButton>
           )}

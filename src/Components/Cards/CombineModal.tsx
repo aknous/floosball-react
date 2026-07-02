@@ -762,9 +762,10 @@ export default function CombineModal({ visible, onClose, onComplete }: CombineMo
           randomly assigned.
         </GuideSection>
         <GuideSection title="Tips">
-          Cards must be unequipped before they can be used in The Combine. Higher-edition cards
-          have greater sell value, which determines your result. Stack up low-value cards to
-          reach higher edition thresholds.
+          Cards must be unequipped before they can be used in The Combine. Each card contributes
+          its Combine value, shown on the value bar. Higher editions are worth more, and star cards
+          (Rookie, MVP, Champion, All-Pro) are worth extra beyond their sell price. Stack up cards to
+          reach the next edition threshold.
         </GuideSection>
       </HelpModal>
     </div>,
