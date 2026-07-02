@@ -25,7 +25,7 @@ const SECTION_GROUPS: SectionCategory[] = [
       { id: 'season-schedule', title: 'Season Schedule' },
       { id: 'prognosticate', title: 'Prognosticate' },
       { id: 'front-office', title: 'The Front Office' },
-      { id: 'team-funding', title: 'Team Funding' },
+      { id: 'team-funding', title: 'Facilities' },
       { id: 'prospects', title: 'Prospects & Rookie Draft' },
     ],
   },
@@ -572,7 +572,7 @@ const AboutPage: React.FC = () => {
             <p style={textStyle}>
               Floosball is a procedurally generated football simulation. Every team, player, coach, and game is
               generated from scratch with no real-world data. The engine runs full seasons with regular season
-              weeks, playoffs, and a championship game (the Floosbowl). Players have unique attributes that
+              weeks, playoffs, and a championship game (the Floos Bowl). Players have unique attributes that
               affect gameplay, coaches have distinct tendencies, and every play unfolds based on probabilities
               influenced by matchups, pressure, and game situation.
             </p>
@@ -697,10 +697,11 @@ const AboutPage: React.FC = () => {
               down and distance, play description, and a color-coded result badge.
             </p>
             {bulletList([
-              'Green badges: First Down, Touchdown, Field Goal',
+              'Blue badges: First Down',
+              'Green badges: Touchdown, Field Goal, Extra Point Good, 2-Pt conversion',
               'Red badges: Fumble, Interception, Turnover on Downs, Safety',
               'Orange badges: Sack',
-              'Amber badges: 4th Down stop, 2-Pt conversion failure',
+              'Amber badges: 4th Down stop, 2-Pt conversion failure, Missed Extra Point',
               'Gray badges: Punt, Missed Field Goal',
             ])}
             <p style={{ ...textStyle, marginTop: '6px', marginBottom: '10px' }}>
@@ -994,7 +995,9 @@ const AboutPage: React.FC = () => {
                 BIG PLAY
               </span>
               <span style={textStyle}>
-                An explosive play: long runs, deep passes, or huge gains.
+                A play that swings the game's win probability by a large margin (about 7% or more either way),
+                typically a big gain, score, or turnover at a pivotal moment. It's keyed to win-probability impact
+                rather than raw yardage.
               </span>
             </div>
             <div style={indicatorRow}>
@@ -1021,8 +1024,8 @@ const AboutPage: React.FC = () => {
               </span>
               <span style={textStyle}>
                 A team is on a hot streak with consecutive successful plays. Appears as a flame icon
-                next to the team name on game cards and as a tag in the highlights feed. The flame gets bigger
-                as the streak grows.
+                next to the team name on game cards and as a tag in the highlights feed. The flame glows brighter
+                and more intense as the streak grows.
               </span>
             </div>
           </Section>
@@ -1046,8 +1049,9 @@ const AboutPage: React.FC = () => {
                 UPSET ALERT
               </span>
               <span style={textStyle}>
-                A heavy underdog is winning. Triggers when a team that entered the game with less than a 35% chance of
-                winning takes the lead against a playoff-contending opponent.
+                A heavy underdog has taken command. Triggers from Q2 onward when a team that entered with less than
+                a 35% chance of winning has flipped to a 65% or better live win probability, against a favorite that
+                currently sits in a playoff spot (top half of its league).
               </span>
             </div>
           </Section>
@@ -1070,10 +1074,10 @@ const AboutPage: React.FC = () => {
             </p>
 
             {[
-              { day: 'Monday \u2013 Thursday', label: 'Regular Season', desc: '28 rounds of games played across 4 days (7 rounds per day). Each round kicks off on the hour from 11 AM to 5 PM. Every team plays a mix of intra-league and inter-league matchups.' },
-              { day: 'Thursday Evening', label: 'MVP Announcement', desc: 'After the final regular season round, the season MVP is announced based on cumulative performance ratings.' },
-              { day: 'Friday', label: 'Playoffs', desc: 'All playoff rounds are played on Friday: two rounds of playoff games, the league championships, and the Floosbowl. 6 teams per league qualify, with the top 2 seeds earning a first-round bye.' },
-              { day: 'Saturday', label: 'Retirements & Free Agency', desc: 'Players with expiring contracts and aging veterans retire. Hall of Fame inductions are made for eligible retirees. Then teams sign available free agents to fill roster gaps. Draft order goes from worst record to best, with the champion picking last.' },
+              { day: 'Monday \u2013 Thursday', label: 'Regular Season', desc: '28 rounds of games played across 4 days (7 rounds per day). Each round kicks off on the hour from 12 PM to 6 PM. Every team plays a mix of intra-league and inter-league matchups.' },
+              { day: 'Thursday Evening', label: 'MVP Announcement', desc: 'After the final regular season round, the season MVP is announced. MVP is decided by a fan vote: players are ranked into a shortlist by a performance and win-probability value metric, and fans vote for the winner (the metric serves as the tiebreaker and fallback if too few fans vote).' },
+              { day: 'Friday', label: 'Playoffs', desc: 'All playoff rounds are played on Friday: two rounds of playoff games, the league championships, and the Floos Bowl. 6 teams per league qualify, with the top 2 seeds earning a first-round bye.' },
+              { day: 'Saturday', label: 'Retirements & Free Agency', desc: 'Players with expiring contracts and aging veterans retire. Retirees become eligible for the Hall of Fame, where fans vote on inductions (with a points-based auto-induct for slam-dunk careers). Then teams sign available free agents to fill roster gaps. Draft order goes from worst record to best, with the champion picking last.' },
               { day: 'Sunday', label: 'Offseason & New Season', desc: 'Coaches train and develop their players. Players may improve, regress, or stay the same based on coaching ability. Performance ratings reset, team ratings are recalculated, and a new schedule is generated for the next season.' },
             ].map((item, i) => (
               <div key={i} style={{
@@ -1128,7 +1132,7 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>Weekly Rewards</p>
             <p style={textStyle}>
-              Points convert to Floobits at 2:1 at the end of each week. Score above the Clairvoyant
+              Points convert to Floobits at the end of each week. Score above the Clairvoyant
               threshold in a single week and you get a bonus payout on top of that.
             </p>
             <p style={textStyle}>
@@ -1154,33 +1158,33 @@ const AboutPage: React.FC = () => {
               'Hire Coach: nominate a replacement from the available coaching pool. Only matters if the fire vote ratifies',
               'Cut Player: release a rostered player to the FA pool',
               'Re-Sign Player: keep a walk-season player on the roster',
-              'Free Agent Requisition: rank up to 5 replacements (FAs or your own prospects) for each projected roster opening',
+              'Free Agent Requisition: rank up to 3 replacements (FAs or your own prospects) for each projected roster opening',
             ])}
 
-            <p style={labelStyle}>Costs and Limits</p>
+            <p style={labelStyle}>Costs</p>
             <p style={textStyle}>
-              Each directive costs Floobits. The cost doubles every time you vote against the same target,
-              so stacking votes gets expensive fast. Each season you can file up to 8 directives per type,
-              up to 5 against any single target, and 20 total. FA requisition ballots are a single flat cost.
+              Each directive costs a flat Floobit fee: Fire Coach 15F, and Cut, Re-Sign, and Hire 10F each.
+              The FA Requisition ballot is a single flat fee. You cast one vote per target (yea or nay); to
+              change your mind you withdraw and recast. There are no per-type, per-target, or per-season caps,
+              and no escalating cost.
             </p>
 
-            <p style={labelStyle}>Quorum and Ratification</p>
+            <p style={labelStyle}>Ratification</p>
             <p style={textStyle}>
-              Every motion needs a quorum of directives before the board will consider it. The quorum size
-              scales with how many fans on that team have voted at all this season. Once quorum is met,
-              there's a 45% base chance of ratification. The more directives stack up past quorum, the
-              higher that chance climbs, and at double the quorum, ratification is guaranteed. Ratified
-              motions take effect in the offseason.
+              A motion passes on its net vote (backing minus opposition). It needs net votes equal to a majority
+              of the team's fanbase: half the fans who backed the team when the Front Office locked in Week 22,
+              rounded up. Once that bar is cleared there's a 45% base chance of ratification, and that chance
+              climbs to a guaranteed pass at double the bar. Ratified motions take effect in the offseason.
               Motions that fall short either deny or expire without action.
             </p>
 
             <p style={labelStyle}>Free Agent Requisitions</p>
             <p style={textStyle}>
               FA requisitions use ranked-choice voting. For each roster slot that's projected to open,
-              you rank up to 5 candidates. The pool includes current free agents, projected walk-season
-              players from other teams, and your own pipeline prospects. If you rank a prospect above an
-              FA at the same slot, the team promotes that prospect instead of signing the FA. If your
-              ballot hits quorum and ratifies, those rankings drive the team's picks in the FA draft.
+              you rank up to 3 candidates (6 slots by 3 candidates is 18 total). The pool includes current
+              free agents, projected walk-season players from other teams, and your own pipeline prospects.
+              If you rank a prospect above an FA at the same slot, the team promotes that prospect instead of
+              signing the FA. Those rankings drive the team's picks in the FA draft.
             </p>
             <p style={textStyle}>
               With no ballot on file the team falls back to auto-logic: promote any prospect rated 70+
@@ -1200,97 +1204,50 @@ const AboutPage: React.FC = () => {
             ])}
           </Section>
 
-          {/* Team Funding */}
-          <Section id="team-funding" title="Team Funding">
+          {/* Facilities */}
+          <Section id="team-funding" title="Facilities">
             <p style={textStyle}>
-              Every team has a market tier. Your tier decides what bonuses (or penalties) your team gets
-              in the offseason: faster or slower player development, mood swings, and how quickly players
-              recover from fatigue. Fans back their favorite team by contributing Floobits either directly
-              during the season or automatically at season end.
+              Fans fund and shape their favorite team's facilities, the buildings that decide how well the
+              team develops players, keeps morale up, shakes off fatigue, and scouts rookies. Facilities
+              replace the old market-tier perks: your team's edge is whatever you and your fellow fans
+              actually build.
             </p>
 
-            <p style={labelStyle}>Market Tiers</p>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr',
-              gap: '2px 16px',
-              padding: '8px 10px',
-              margin: '4px 0 10px',
-              borderRadius: '6px',
-              backgroundColor: 'rgba(51,65,85,0.2)',
-              border: '1px solid #334155',
-            }}>
-              {[
-                { tier: 'Small Market', color: '#f97316', desc: 'Slower player development, lower morale, more fatigue' },
-                { tier: 'Mid Market', color: '#2dd4bf', desc: 'Baseline. No bonuses or penalties' },
-                { tier: 'Large Market', color: '#3b82f6', desc: 'Modest development boost, small morale boost, some fatigue reduction' },
-                { tier: 'Mega Market', color: '#a78bfa', desc: 'Big development boost, strong morale boost, major fatigue reduction' },
-              ].map(t => (
-                <React.Fragment key={t.tier}>
-                  <span style={{ color: t.color, fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>{t.tier}</span>
-                  <span style={{ ...textStyle, fontSize: '13px' }}>{t.desc}</span>
-                </React.Fragment>
-              ))}
-            </div>
-
-            <p style={labelStyle}>How Tiers Are Decided</p>
+            <p style={labelStyle}>The Five Facilities</p>
             <p style={textStyle}>
-              Tiers are relative. Your team's tier depends on how your funding stacks up against the rest
-              of the league, not a fixed Floobit target. The "fair share" is the total league funding
-              divided by the number of teams. Your team's tier comes from your ratio against that fair share:
+              Each facility levels from 0 to 5, with the real effects arriving around level 3.
             </p>
             {bulletList([
-              'Mega Market: 2× fair share or higher',
-              'Large Market: 1.15× up to 2× fair share',
-              'Mid Market: within 15% of fair share either way',
-              'Small Market: below 0.85× fair share',
-            ])}
-            <p style={textStyle}>
-              Climbing means out-contributing the rest of the league, not hitting a set number. As the
-              overall economy grows, the bar to reach Mega grows with it. Your tier reflects where you
-              actually stand today.
-            </p>
-
-            <p style={labelStyle}>What Makes Up Effective Funding</p>
-            <p style={textStyle}>
-              A team's effective funding is the sum of three things:
-            </p>
-            {bulletList([
-              'Baseline: a small amount every team gets at season start',
-              'Carry-forward: part of last season\'s effective funding rolls over automatically',
-              'Fan contributions: anything fans donate this season',
-            ])}
-            <p style={textStyle}>
-              Tiers lock at the start of each season using that season's starting effective funding.
-              Anything you contribute mid-season doesn't change the current tier. It builds toward next
-              season's locked value instead.
-            </p>
-
-            <p style={labelStyle}>How to Contribute</p>
-            <p style={textStyle}>
-              Two ways to give your favorite team money, both on the Markets tab of Team Management:
-            </p>
-            {bulletList([
-              'Direct contribution: spend Floobits now in chunks of 25 / 50 / 100 / 250',
-              'Season-end auto-contribution: pick a percentage of your unspent Floobits to donate automatically when the season ends. Set it to 0% if you want to keep everything',
+              'Training Facility: faster player development',
+              'Locker Room: higher player morale',
+              'Recovery Center: quicker fatigue recovery',
+              'Scouting Department: clearer rookie scouting',
+              'Stadium: home-field morale (new, effect coming in a later update)',
             ])}
 
-            <p style={labelStyle}>League Funding Chart</p>
+            <p style={labelStyle}>The Treasury and Upkeep</p>
             <p style={textStyle}>
-              The Markets tab shows a chart of every team in the league. Each team is a chip at its
-              current spot on the funding axis, connected by a line to a hollow ring at its projected
-              next-season position. Tier zones are labeled across the top. A team sitting in Large today
-              but projected to slide into Mid next season will show its chip in Large and its ring in Mid.
-              A second tab on the same chart swaps in fan totals, so you can see how many fans each team
-              has and how many are actually contributing.
+              Every facility has a per-season upkeep cost. Fans chip in Floobits three ways: straight to a
+              facility's upkeep, to an active upgrade project, or into the team Treasury. You can also set a
+              season-end auto-deposit, a percentage of your leftover Floobits that flows into the Treasury
+              automatically. Costs scale with the league's economy, so the bar rises as the league grows richer.
             </p>
 
-            <p style={labelStyle}>Projections</p>
+            <p style={labelStyle}>Projects</p>
             <p style={textStyle}>
-              The summary at the top also shows your team's projected next-season tier. The projection
-              takes into account every fan's current balance and auto-contribution setting across the
-              league. Other teams' fans contributing pushes the tier thresholds up too, so the projected
-              number is a snapshot that shifts as the league's total pool grows.
+              Raising a facility a level is a project. Fans vote on which project to chase next, then fund it.
+            </p>
+
+            <p style={labelStyle}>Season End</p>
+            <p style={textStyle}>
+              The Treasury pays out in order: upkeep first so no facility slips a level, then active projects,
+              oldest first. Any upkeep left unfunded drops that facility a level; fully funded projects get built.
+            </p>
+
+            <p style={labelStyle}>Appeal</p>
+            <p style={textStyle}>
+              Your facilities' combined level is your team's Appeal. Higher Appeal lets your team draft free
+              agents earlier in the offseason. Find it all on the Facilities tab under Front Office.
             </p>
           </Section>
 
@@ -1307,8 +1264,9 @@ const AboutPage: React.FC = () => {
               A new rookie class is generated at the start of every season and stays hidden until the
               Front Office opens in Week 22. From that point on, you can scout the class on the Front
               Office tab of Team Management. How accurately you can see each rookie's potential depends
-              on your team's coach scouting rating plus your team's funding tier. A Mega Market team with
-              a top scouting coach sees clearer projections than a Small Market team with a mediocre one.
+              on your coach's scouting rating plus your team's Scouting Department facility level. A top
+              scouting coach with a well-built Scouting Department sees clearer projections than a mediocre
+              coach with an undeveloped one.
             </p>
 
             <p style={labelStyle}>Rookie Draft</p>
@@ -1360,8 +1318,9 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>Roster</p>
             <p style={textStyle}>
-              Your roster has 6 required slots, one for each position. An optional 7th FLEX slot (any
-              position) can be unlocked with the Conscription power-up or by equipping a card with the Champion classification.
+              Your roster has 6 slots, one per position. You need at least 3 filled slots to lock a roster.
+              An optional 7th FLEX slot (any position) can be unlocked with the Conscription power-up or by
+              equipping a card with the Champion classification.
             </p>
             <RosterSlotVisual isMobile={isMobile} />
 
@@ -1424,9 +1383,10 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>Roster Swaps</p>
             <p style={textStyle}>
-              You get 1 free roster swap each week (or use the Dispensation power-up for an extra).
-              Swaps start at 15 Floobits, but each additional swap in the same slot costs 15 more
-              (15, 30, 45, ...) across the season. When you swap a player out, their FP are banked so you keep
+              You get 1 swap allowance each week (buy the Dispensation power-up for an extra). A swap requires
+              an available allowance and costs Floobits: the first swap in a slot is 15, and each additional
+              swap in that same slot costs 15 more (15, 30, 45, ...) across the season. Filling a slot you've
+              never touched is free. When you swap a player out, their FP are banked so you keep
               what they earned and start fresh with the replacement. Swaps are only available between games.
               Once games start for the week, your roster locks.
             </p>
@@ -1475,10 +1435,10 @@ const AboutPage: React.FC = () => {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
               {[
-                { name: 'Base', color: '#94a3b8', count: 31, desc: 'Simple, reliable effects. Flat FP bonuses, basic Floobit earnings, and straightforward conditionals. The backbone of any collection.' },
-                { name: 'Holographic', color: '#c4b5fd', count: 28, desc: 'Conditional and composition effects. Team-based bonuses, position matchup rewards, and loyalty programs that scale with roster synergy.' },
-                { name: 'Prismatic', color: '#f472b6', count: 33, desc: 'Chance-based and streak effects. High-risk/high-reward mechanics that grow over consecutive weeks, plus game-outcome bonuses.' },
-                { name: 'Diamond', color: '#a5f3fc', count: 12, desc: 'Synergy effects. Hand-shaping cards that boost your entire loadout, chain reactions, and build-around centerpieces.' },
+                { name: 'Base', color: '#94a3b8', count: 33, desc: 'Simple, reliable effects. Flat FP bonuses, basic Floobit earnings, and straightforward conditionals. The backbone of any collection.' },
+                { name: 'Holographic', color: '#c4b5fd', count: 45, desc: 'Conditional and composition effects. Team-based bonuses, position matchup rewards, and loyalty programs that scale with roster synergy.' },
+                { name: 'Prismatic', color: '#f472b6', count: 35, desc: 'Chance-based and streak effects. High-risk/high-reward mechanics that grow over consecutive weeks, plus game-outcome bonuses.' },
+                { name: 'Diamond', color: '#a5f3fc', count: 13, desc: 'Synergy effects. Hand-shaping cards that boost your entire loadout, chain reactions, and build-around centerpieces.' },
               ].map(e => (
                 <div key={e.name} style={{
                   padding: '8px 12px',
@@ -1552,9 +1512,9 @@ const AboutPage: React.FC = () => {
               { label: 'Flat FP', color: '#4ade80', desc: 'Adds a fixed amount of Fantasy Points to your weekly total, no conditions.', example: 'Freebie: +3 FP added every week regardless of player performance.' },
               { label: 'Multiplier', color: '#60a5fa', desc: 'Multiplies your total combined FP at the end of each week.', example: 'Big Deal: 1.03x multiplier on all FP. Stacks with other multipliers.' },
               { label: 'Floobits', color: '#eab308', desc: 'Earns bonus Floobits currency each week instead of (or in addition to) FP.', example: 'Allowance: earn 2 bonus Floobits every week.' },
-              { label: 'Conditional', color: '#a78bfa', desc: 'Triggers when the card\'s player hits a stat threshold during a game.', example: 'Showoff: triggers when the player throws 250+ passing yards, awarding bonus FP.' },
-              { label: 'Streak', color: '#f97316', desc: 'Grows stronger each consecutive week its condition is met. Resets on failure.', example: 'On Fire: starts at +4 FP, gains +1 FP each week the player scores a TD. Resets if they don\'t.' },
-              { label: 'Chance', color: '#38bdf8', desc: 'Rolls a probability check at the end of each week for a big payout.', example: 'Touchdown Jackpot: 25% chance each week to award a large FP bonus.' },
+              { label: 'Conditional', color: '#a78bfa', desc: 'Awards bonus FP all at once when a specific in-game condition is met.', example: 'Mismatch: bonus FP for each touchdown by your roster\'s chosen position, with an extra reward once they reach a set number of TDs.' },
+              { label: 'Streak', color: '#f97316', desc: 'Grows stronger each consecutive week its condition is met. Resets on failure.', example: 'On Fire: an FP multiplier that grows each consecutive week your roster\'s kicker makes a field goal, and resets otherwise.' },
+              { label: 'Chance', color: '#38bdf8', desc: 'Rolls a probability check each week for an enhanced payout on top of a guaranteed floor.', example: 'Scrappy: a guaranteed FP floor plus a chance at a bigger FP payout. The odds climb the more low-rated players you keep on your roster.' },
             ].map(c => (
               <div key={c.label} style={{
                 marginBottom: '12px',
@@ -1594,7 +1554,7 @@ const AboutPage: React.FC = () => {
             <p style={textStyle}>
               Equip up to 5 cards in any combination on the <Link to="/fantasy" style={linkStyle}>Fantasy</Link> page.
               Slots are not position-locked, so you can put any card in any slot. A 6th slot unlocks when you
-              equip a card with the MVP or Champion classification, or by using the Accession power-up.
+              equip a card with the MVP classification, or by using the Accession power-up.
             </p>
             <EquipmentSlotDiagram isMobile={isMobile} />
             {bulletList([
@@ -1610,7 +1570,8 @@ const AboutPage: React.FC = () => {
             <p style={{ ...textStyle, marginBottom: '14px' }}>
               Packs are the main way to get new cards. Three tiers are available in
               the <Link to="/dashboard" style={linkStyle}>Shop</Link>, plus rotating themed packs.
-              Every pack uses the same rarity odds. Higher tiers just give more cards at the same rates.
+              Most packs share the same rarity odds; higher tiers just give more cards. The Champion and
+              All-Pro prestige packs are the exception, guaranteeing at least one Holographic-or-better card.
             </p>
             <div style={{
               display: 'grid',
@@ -1618,9 +1579,9 @@ const AboutPage: React.FC = () => {
               gap: '8px',
             }}>
               {[
-                { name: 'Humble', price: 50, cards: 3, kept: 2, border: '#475569', bg: '#283548', accent: '#94a3b8' },
-                { name: 'Grand', price: 100, cards: 5, kept: 3, border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%)', accent: '#c4b5fd' },
-                { name: 'Exquisite', price: 150, cards: 7, kept: 4, border: '#67e8f9', bg: 'linear-gradient(135deg, #0c4a6e 0%, #155e75 100%)', accent: '#a5f3fc' },
+                { name: 'Humble', price: 40, cards: 3, kept: 2, border: '#475569', bg: '#283548', accent: '#94a3b8' },
+                { name: 'Grand', price: 70, cards: 5, kept: 3, border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%)', accent: '#c4b5fd' },
+                { name: 'Exquisite', price: 100, cards: 7, kept: 4, border: '#67e8f9', bg: 'linear-gradient(135deg, #0c4a6e 0%, #155e75 100%)', accent: '#a5f3fc' },
               ].map(p => (
                 <div key={p.name} style={{
                   padding: '12px 14px',
@@ -1638,8 +1599,10 @@ const AboutPage: React.FC = () => {
               ))}
             </div>
             <p style={{ ...textStyle, marginTop: '14px', fontSize: '12px', color: '#94a3b8' }}>
-              Themed packs (rotating in the Shop) cost 150 Floobits, reveal 3 and keep 2, with the same odds.
+              Themed packs (rotating in the Shop) cost 60 Floobits, reveal 3 and keep 2, with the same odds.
               Their value is the filter: only players at a specific position, or cards that pay a specific output type.
+              The once-per-season Champion and All-Pro prestige packs cost 85 Floobits, reveal 5 and keep 3, and
+              guarantee at least one Holographic-or-better card from last season's champion roster or All-Pro team.
             </p>
           </Section>
 
@@ -1761,16 +1724,17 @@ const AboutPage: React.FC = () => {
           {/* ── The Showcase ── */}
           <Section id="the-showcase" title="The Showcase">
             <p style={textStyle}>
-              The Showcase is where you put your best cards on display for a season-end Floobit payout. Feature
-              up to 8 vaulted cards on the Showcase tab of the <Link to="/cards" style={linkStyle}>Cards</Link> page.
+              The Showcase is where you put your best cards on display for a weekly Floobit dividend all season
+              long. Feature up to 8 vaulted cards on the Showcase tab of the <Link to="/cards" style={linkStyle}>Cards</Link> page.
             </p>
 
             <p style={labelStyle}>Grades and payout</p>
             <p style={textStyle}>
-              Your featured cards earn a grade from F to S. The grade pays out flat Floobits when the season
-              ends, then the Showcase clears for a fresh start. A better collection earns a better grade:
-              rarer editions, classifications (MVP, Champion, All-Pro), and higher tiers all push it up.
-              Newer cards are worth more than old ones.
+              Your featured cards earn a grade from F to S as a quick read on their quality — and, more
+              importantly, a Floobit dividend paid every regular-season week, scaled by how good your featured
+              cards are. A better collection earns a better grade and a bigger weekly dividend: rarer editions,
+              classifications (MVP, Champion, All-Pro), and higher tiers all push it up. Newer cards are worth
+              more than old ones.
             </p>
 
             <p style={labelStyle}>Sets</p>
@@ -1831,7 +1795,7 @@ const AboutPage: React.FC = () => {
                 { name: 'Conscription', price: 200, color: '#a78bfa', desc: 'Adds a FLEX roster slot (any position) for 4 weeks. Limit 2/season.' },
                 { name: 'Accession', price: 200, color: '#67e8f9', desc: 'Adds a 6th card equipment slot for 4 weeks. Limit 2/season.' },
                 { name: 'Patronage', price: 125, color: '#f472b6', desc: 'Boosts all chance card trigger rates by 10% for 3 weeks. Limit 2/season.' },
-                { name: 'Endowment', price: 100, color: '#fbbf24', desc: 'Increases Floobits received from weekly FP score. Limit 2/season.' },
+                { name: 'Endowment', price: 100, color: '#fbbf24', desc: '+25% on all Floobits you earn (fantasy, pick-em, showcase, supporter dividends) for 4 weeks. Limit 2/season.' },
               ].map(pu => (
                 <div key={pu.name} style={{
                   padding: '8px 12px',

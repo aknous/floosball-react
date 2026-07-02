@@ -993,27 +993,29 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
         </GuideSection>
         <GuideSection title="Quorum & Ratification">
           Coach hires are decided by simple plurality: whichever candidate receives the most
-          votes is hired. Other directives (fire coach, re-sign, cut) need vote totals that
-          meet or exceed the team's active fan count to ratify. The active fan count freezes
-          when the Front Office opens in Week {GM_ACTIVE_WEEK}, so late-arriving fans don't
-          shift the bar mid-vote.
+          votes is hired. Other directives (fire coach, re-sign, cut) need net votes (backing
+          minus opposition) that reach a majority of the team's active fan count: half the
+          fanbase, rounded up. The active fan count freezes when the Front Office opens in
+          Week {GM_ACTIVE_WEEK}, so late-arriving fans don't shift the bar mid-vote.
         </GuideSection>
         <GuideSection title="Resolution">
           All motions are resolved at the end of the season during the offseason proceedings.
-          Threshold votes (fire / re-sign / cut) pass when their tally meets or exceeds the
-          team's active fan count, otherwise the motion is denied. Hire votes go to whichever
-          candidate received the most votes.
+          Threshold votes (fire / re-sign / cut) pass when their net tally reaches a majority
+          of the team's active fan count (half, rounded up), otherwise the motion is denied.
+          Hire votes go to whichever candidate received the most votes.
         </GuideSection>
         <GuideSection title="Coaching Appointments">
           If a grievance against the head coach is ratified, the board may also nominate a
           preferred replacement from the available coaching pool. The nominee with the most
-          votes is appointed. If nobody nominates anyone, a coach is appointed at random.
+          votes is appointed. If nobody nominates anyone, the highest-rated candidate on the
+          slate is appointed by default.
         </GuideSection>
         <GuideSection title="Free Agent Requisitions">
-          Rank up to 5 replacements for projected roster openings — walk-season players, cut-vote
-          targets, and current prospects all appear on the same ballot. Submit any time once the
-          board convenes (Week {GM_ACTIVE_WEEK}). If the ballot achieves quorum and is ratified,
-          the front office will prioritize those names during the draft using ranked-choice voting.
+          Rank up to 3 replacements per projected roster opening (18 in all) — walk-season players,
+          cut-vote targets, and current prospects all appear on the same ballot. Submit any time once
+          the board convenes (Week {GM_ACTIVE_WEEK}). There's no pass/fail threshold: any ballot counts,
+          and the front office prioritizes those names during the draft using ranked-choice voting. If
+          your top pick is unavailable, the fans' next choice at that position is pursued.
         </GuideSection>
       </HelpModal>
 
