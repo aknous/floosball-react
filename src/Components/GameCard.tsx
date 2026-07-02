@@ -244,6 +244,12 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
 
         const homeWP = hasWP ? homeWinProbability! : 50
         const awayWP = hasWP ? awayWinProbability! : 50
+        // Displayed percentages: round one side and derive the other so the two
+        // always sum to 100. Rounding each independently showed 101% when both
+        // were x.5 (e.g. 50.5 + 49.5 -> 51% + 50%). Bar widths still use the exact
+        // (unrounded) values.
+        const homeWPtext = Math.round(homeWP)
+        const awayWPtext = 100 - homeWPtext
         const homeId = Number(homeTeam.id)
         const awayId = Number(awayTeam.id)
         const pickedHome = userPick === homeId
@@ -280,7 +286,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                   minWidth: '32px',
                   transition: 'all 0.5s ease',
                 }}>
-                  {homeWP.toFixed(0)}%
+                  {homeWPtext}%
                 </span>
                 <div style={{ flex: 1, height: '6px', display: 'flex' }}>
                   <div style={{
@@ -303,7 +309,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                   textAlign: 'right' as const,
                   transition: 'all 0.5s ease',
                 }}>
-                  {awayWP.toFixed(0)}%
+                  {awayWPtext}%
                 </span>
               </div>
             </div>
@@ -369,7 +375,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                     <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
                   </svg>
                 )}
-                {homeTeam.abbr}{hasWP ? ` ${homeWP.toFixed(0)}%` : ''}
+                {homeTeam.abbr}{hasWP ? ` ${homeWPtext}%` : ''}
               </div>
 
               {/* WP Bar */}
@@ -409,7 +415,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                   ...homePickStyle,
                 }}
               >
-                {hasWP ? `${awayWP.toFixed(0)}% ` : ''}{awayTeam.abbr}
+                {hasWP ? `${awayWPtext}% ` : ''}{awayTeam.abbr}
                 {pickedAway && isResolved && (
                   <svg viewBox="0 0 24 24" fill={pickCorrect ? '#22c55e' : '#ef4444'} style={{ width: '12px', height: '12px', flexShrink: 0 }}>
                     {pickCorrect ? (
