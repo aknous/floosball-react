@@ -837,22 +837,28 @@ const CompactPerf: React.FC<{ delta: number }> = ({ delta }) => {
   )
 }
 
-const PlayerRow: React.FC<{
+// Shared FA player row. Used interactively in the ballot (rank on click, hover
+// highlight, dimmed when the ballot is full) and in read-only mode for the
+// always-on Projected FA Pool preview. readOnly only changes cursor/hover/click,
+// never the visual layout — the two must stay pixel-identical.
+export const PlayerRow: React.FC<{
   player: ScoutingPlayer
-  canAddMore: boolean
-  onClick: () => void
-}> = ({ player: p, canAddMore, onClick }) => (
+  canAddMore?: boolean
+  onClick?: () => void
+  readOnly?: boolean
+  starSize?: number
+}> = ({ player: p, canAddMore = true, onClick, readOnly, starSize = 20 }) => (
   <div
-    onClick={onClick}
+    onClick={readOnly ? undefined : onClick}
     style={{
       padding: '8px 12px',
       borderRadius: '6px',
-      cursor: canAddMore ? 'pointer' : 'not-allowed',
+      cursor: readOnly ? 'default' : (canAddMore ? 'pointer' : 'not-allowed'),
       borderBottom: '1px solid #334155',
-      opacity: canAddMore ? 1 : 0.5,
+      opacity: readOnly ? 1 : (canAddMore ? 1 : 0.5),
     }}
-    onMouseEnter={(e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
-    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+    onMouseEnter={readOnly ? undefined : (e) => { if (canAddMore) e.currentTarget.style.backgroundColor = '#1e293b' }}
+    onMouseLeave={readOnly ? undefined : (e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
   >
     {/* Two columns so the right-hand signals (up to three stacked) don't inflate
         the name line: left holds name + rating on top and the stat line below;
@@ -868,7 +874,7 @@ const PlayerRow: React.FC<{
             </span>
           </PlayerHoverCard>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', flexShrink: 0, position: 'relative', top: '-1px' }}>
-            <Stars stars={calcStars(p.rating)} size={20} />
+            <Stars stars={calcStars(p.rating)} size={starSize} />
             <ArchetypeBadge archetype={p.archetype} size={14} />
           </span>
         </div>
