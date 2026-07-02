@@ -846,10 +846,14 @@ const PendingRewardsSection: React.FC<{
   // row once the user is at or above this count so they can choose
   // to trade a stashed pack for Floobits instead of opening it.
   const STASH_LIMIT = 1
-  // PendingReward rows are unclaimed by definition — the API filters out
-  // claimed_at != null. Count the pack rows directly.
-  const pendingPackCount = rewards.filter(r => r.kind === 'pack').length
-  const stashFull = pendingPackCount > STASH_LIMIT
+  // "Stash full" means the user is already HOLDING the cap's worth of packs
+  // for a future season — i.e. deferred rows (deferUntilSeason set). It must
+  // NOT count packs that are merely pending-and-openable this season: a user
+  // who earned two packs but stashed neither hasn't stashed anything, so the
+  // stash isn't full and "Save for Next Season" must stay available. Counting
+  // all pending packs was the bug ("stash full" with nothing stashed).
+  const stashedPackCount = rewards.filter(r => r.kind === 'pack' && r.deferUntilSeason != null).length
+  const stashFull = stashedPackCount >= STASH_LIMIT
   const [busyId, setBusyId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
