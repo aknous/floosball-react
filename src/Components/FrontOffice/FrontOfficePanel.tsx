@@ -9,7 +9,7 @@ import HireCoachCard from './HireCoachCard'
 import CutPlayerCard from './CutPlayerCard'
 import ResignPlayerCard from './ResignPlayerCard'
 import VoteResultsBanner from './VoteResultsBanner'
-import FaBallotModal, { ScoutingPlayer, OpenSlot, StatLine } from './FaBallotModal'
+import FaBallotModal, { ScoutingPlayer, OpenSlot, PlayerRow } from './FaBallotModal'
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 import { Stars, calcStars } from '@/Components/Stars'
 import PlayerLink from '@/Components/PlayerLink'
@@ -77,7 +77,6 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
   // FAs + current prospects. The same modal used during the offseason FA window,
   // surfaced here so fans can influence signings before the window closes.
   const [faScoutingPlayers, setFaScoutingPlayers] = useState<ScoutingPlayer[]>([])
-  const [poolPreviewOpen, setPoolPreviewOpen] = useState(false)
   const [poolPositionFilter, setPoolPositionFilter] = useState<'ALL' | 'QB' | 'RB' | 'WR' | 'TE' | 'K'>('ALL')
   const [faOpenSlots, setFaOpenSlots] = useState<OpenSlot[]>([])
   const [existingFaBallot, setExistingFaBallot] = useState<number[] | null>(null)
@@ -724,14 +723,14 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
       {/* FA Pool Preview — lets fans see every player projected to be
           available this offseason so they can make informed cut/resign
           decisions. Includes current free agents, walk-year players from
-          other teams, and cut-vote likely players. Collapsed by default. */}
-      <FaPoolPreview
-        players={faScoutingPlayers}
-        open={poolPreviewOpen}
-        onToggle={() => setPoolPreviewOpen(v => !v)}
-        positionFilter={poolPositionFilter}
-        onPositionFilter={setPoolPositionFilter}
-      />
+          other teams, and cut-vote likely players. Always visible. */}
+      <div style={{ padding: '14px 14px 0' }}>
+        <FaPoolPreview
+          players={faScoutingPlayers}
+          positionFilter={poolPositionFilter}
+          onPositionFilter={setPoolPositionFilter}
+        />
+      </div>
 
       {/* Fan Vote Tallies — single overall priority list. Live during the
           voting window; once the offseason ballot resolves, the post-IRV
@@ -822,6 +821,19 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
 
       {view !== 'fa' && (
       <div style={{ padding: '14px' }}>
+        {/* Projected FA Pool — prominent and always visible on the roster
+            voting tab so fans can weigh who's available before casting
+            cut/re-sign motions. Gated to view==='roster' so the standalone
+            team-page render (which also shows the non-roster block above)
+            doesn't duplicate it. */}
+        {view === 'roster' && (
+          <FaPoolPreview
+            players={faScoutingPlayers}
+            positionFilter={poolPositionFilter}
+            onPositionFilter={setPoolPositionFilter}
+          />
+        )}
+
         {/* Two-column layout: Coaching (left) | Roster (right) */}
         <div style={{
           display: 'grid',
@@ -1039,20 +1051,21 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
 }
 
 
-// Collapsible panel that lists every player projected to be available in
-// the upcoming FA draft: current free agents + walk-year players on other
-// teams + cut-vote likely players. Prospects are filtered out since they're
-// not really "available to sign" — they belong to their drafting team.
+// Always-on, prominent panel that lists every player projected to be available
+// in the upcoming FA draft: current free agents + walk-year players on other
+// teams + cut-vote likely players. Prospects are filtered out since they're not
+// really "available to sign" — they belong to their drafting team. Rows reuse
+// the exact FA-ballot PlayerRow (read-only) so the pool and the ballot match.
 const POOL_POSITIONS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K'] as const
 type PoolPosition = typeof POOL_POSITIONS[number]
 
 const FaPoolPreview: React.FC<{
   players: ScoutingPlayer[]
-  open: boolean
-  onToggle: () => void
   positionFilter: PoolPosition
   onPositionFilter: (pos: PoolPosition) => void
-}> = ({ players, open, onToggle, positionFilter, onPositionFilter }) => {
+}> = ({ players, positionFilter, onPositionFilter }) => {
+  // Collapsed by default so the roster voting controls stay above the fold.
+  const [open, setOpen] = React.useState(false)
   const pool = React.useMemo(
     () => players
       .filter(p => !p.isProspect)
@@ -1063,130 +1076,80 @@ const FaPoolPreview: React.FC<{
 
   const totalCount = players.filter(p => !p.isProspect).length
 
-  const sourceBadge = (p: ScoutingPlayer) => {
-    if (!p.isProjected) return { label: 'FA', color: '#22c55e' }
-    if (p.projectedReason === 'cut_vote') return { label: 'Cut Vote', color: '#ef4444' }
-    return { label: 'Walk Year', color: '#f59e0b' }
-  }
-
   return (
-    <div style={{ borderBottom: '1px solid #334155' }}>
+    <div style={{
+      backgroundColor: '#1e293b',
+      border: '1px solid #334155',
+      borderRadius: '8px',
+      overflow: 'hidden',
+      marginBottom: '20px',
+    }}>
+      {/* Header — click to expand/collapse (collapsed by default) */}
       <button
-        onClick={onToggle}
+        onClick={() => setOpen(v => !v)}
         style={{
           width: '100%',
-          padding: '10px 14px',
+          padding: '12px 14px',
+          borderBottom: open ? '1px solid #334155' : 'none',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
+          gap: '8px',
+          flexWrap: 'wrap' as const,
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          color: '#e2e8f0',
           textAlign: 'left' as const,
         }}
       >
-        <span>
-          <span style={{ fontSize: '12px', fontWeight: 700, color: '#e2e8f0' }}>
-            Projected FA Pool
-          </span>
-          <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: '8px' }}>
-            {totalCount} player{totalCount !== 1 ? 's' : ''} available this offseason
-          </span>
+        <span style={{ fontSize: '11px', color: '#94a3b8', width: '10px' }}>{open ? '▾' : '▸'}</span>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>
+          Projected FA Pool
         </span>
-        <span style={{ fontSize: '11px', color: '#94a3b8' }}>{open ? '▾' : '▸'}</span>
+        <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+          {totalCount} player{totalCount !== 1 ? 's' : ''} available this offseason
+        </span>
       </button>
-      {open && (
-        <div style={{ padding: '4px 14px 14px' }}>
-          {/* Position filter pills */}
-          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' as const, marginBottom: '10px' }}>
-            {POOL_POSITIONS.map(pos => {
-              const active = positionFilter === pos
-              return (
-                <button
-                  key={pos}
-                  onClick={() => onPositionFilter(pos)}
-                  style={{
-                    padding: '3px 10px',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    borderRadius: '3px',
-                    border: `1px solid ${active ? '#334155' : 'transparent'}`,
-                    backgroundColor: active ? '#1e293b' : 'transparent',
-                    color: active ? '#e2e8f0' : '#64748b',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {pos}
-                </button>
-              )
-            })}
-          </div>
 
-          {/* Player list */}
-          {pool.length === 0 ? (
-            <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' as const, padding: '8px 0' }}>
-              No players match this filter yet.
-            </div>
-          ) : (
-            <div style={{ maxHeight: '320px', overflowY: 'auto' as const, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              {pool.map(p => {
-                const badge = sourceBadge(p)
-                return (
-                  <div
-                    key={p.id}
-                    style={{
-                      padding: '6px 8px',
-                      borderRadius: '4px',
-                      backgroundColor: '#0f172a',
-                      fontSize: '12px',
-                    }}
-                  >
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: '32px 1fr auto 72px',
-                      gap: '10px',
-                      alignItems: 'center',
-                    }}>
-                      <span style={{ color: '#64748b', fontWeight: 600, fontVariantNumeric: 'tabular-nums' as const }}>
-                        {p.position}
-                      </span>
-                      <span style={{ color: '#e2e8f0' }}>
-                        {p.name}
-                        {p.currentTeam && (
-                          <span style={{ color: '#64748b', marginLeft: '6px', fontSize: '11px' }}>
-                            ({p.currentTeam})
-                          </span>
-                        )}
-                      </span>
-                      <span style={{
-                        fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em',
-                        color: badge.color, padding: '1px 6px', borderRadius: '3px',
-                        backgroundColor: `${badge.color}15`, border: `1px solid ${badge.color}40`,
-                        whiteSpace: 'nowrap' as const,
-                      }}>
-                        {badge.label}
-                      </span>
-                      <span style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <Stars stars={calcStars(p.rating)} size={11} />
-                      </span>
-                    </div>
-                    {p.stats ? (
-                      <div style={{
-                        marginTop: '4px',
-                        paddingLeft: '42px',
-                        fontSize: '11px',
-                        color: '#94a3b8',
-                      }}>
-                        <StatLine position={p.position} stats={p.stats} />
-                      </div>
-                    ) : null}
-                  </div>
-                )
-              })}
-            </div>
-          )}
+      {open && (
+      <div style={{ padding: '10px 14px 12px' }}>
+        {/* Position filter pills */}
+        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' as const, marginBottom: '8px' }}>
+          {POOL_POSITIONS.map(pos => {
+            const active = positionFilter === pos
+            return (
+              <button
+                key={pos}
+                onClick={() => onPositionFilter(pos)}
+                style={{
+                  padding: '3px 10px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  borderRadius: '3px',
+                  border: `1px solid ${active ? '#334155' : 'transparent'}`,
+                  backgroundColor: active ? '#0f172a' : 'transparent',
+                  color: active ? '#e2e8f0' : '#64748b',
+                  cursor: 'pointer',
+                }}
+              >
+                {pos}
+              </button>
+            )
+          })}
         </div>
+
+        {/* Player list — ballot-styled rows, read-only */}
+        {pool.length === 0 ? (
+          <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' as const, padding: '8px 0' }}>
+            No players match this filter yet.
+          </div>
+        ) : (
+          <div style={{ maxHeight: '360px', overflowY: 'auto' as const }}>
+            {pool.map(p => (
+              <PlayerRow key={p.id} player={p} readOnly starSize={13} />
+            ))}
+          </div>
+        )}
+      </div>
       )}
     </div>
   )
