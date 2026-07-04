@@ -49,7 +49,10 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
   const voted = myStance !== null
   const forSelected = myStance === 'yea'
   const oppSelected = myStance === 'nay'
-  const forDisabled = disabled || voted
+  // A met threshold only makes the SUPPORT (fire) vote wasteful; opposing can
+  // still pull the net back below the line, so it stays open (this is what lets
+  // a second fan on a tiny fanbase cancel a passing grievance).
+  const forDisabled = disabled || voted || thresholdMet
   const opposeDisabled = disabled || voted
 
   // Two-tap confirm for each side — mirrors VoteControls.VoteButton.
