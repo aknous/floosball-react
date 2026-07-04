@@ -5,6 +5,29 @@ interface PlayInsightsPanelProps {
   insights: PlayInsights
 }
 
+// Turn a raw backend key into a readable label as a fallback when no explicit
+// label exists — so a value like "hailMary" or "flea_flicker" never leaks to the
+// UI as-is. Known acronyms (FG, TD, RPO) stay uppercase.
+function humanize(key: string | null | undefined): string {
+  if (!key) return ''
+  return key
+    .replace(/_/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/\b(fg|td|rpo)\b/gi, m => m.toUpperCase())
+    .replace(/\b\w/g, c => c.toUpperCase())
+}
+
+// All fourth-down / clock decisions the backend can emit (both sections share it).
+const DECISION_LABELS: Record<string, string> = {
+  punt: 'Punt', fieldGoal: 'Field Goal', goForIt: 'Go For It',
+  kneel: 'Kneel', spike: 'Spike', timeout: 'Timeout',
+  hailMary: 'Hail Mary', pushForTD: 'Push for TD',
+  desperationFG: 'Desperation FG', endOfHalfFG: 'End-of-half FG',
+  gameWinningFG: 'Game-winning FG', setupGameWinningFG: 'Set up the FG',
+  setupFG: 'Set up the FG', deferFG: 'Play it safe', chargedLastPlayFG: 'Charged FG',
+  saveSnapTimeout: 'Save the clock',
+}
+
 // ── Shared visual helpers ──
 
 const SectionLabel: React.FC<{ label: string }> = ({ label }) => (
@@ -197,8 +220,49 @@ function coachMindLabel(v: number | null): string {
   return 'Limited'
 }
 
-const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCall?: string; tempo?: PlayInsights['tempo']; defense?: PlayInsights['defense'] }> = ({ data, playCall, tempo, defense }) => {
-  const callLabels: Record<string, string> = { run: 'Run', short: 'Short Pass', medium: 'Medium Pass', long: 'Long Pass' }
+// The play's design decision — the concept / RPO / trick called, and how it went.
+const CONCEPT_LABELS: Record<string, string> = {
+  draw: 'Draw', counter: 'Counter', sweep: 'Sweep', power: 'Power',
+  mesh: 'Mesh (crossers)', flood: 'Flood the zone', screen: 'Screen',
+  flea_flicker: 'Flea Flicker', statue: 'Statue of Liberty', reverse: 'Reverse',
+}
+const label = (k?: string) => (k ? (CONCEPT_LABELS[k] ?? humanize(k)) : '')
+
+const PlaybookRow: React.FC<{ pb: NonNullable<PlayInsights['playbook']> }> = ({ pb }) => {
+  let name = ''
+  let detail: { text: string; color: string } | null = null
+  const good = '#22c55e', bad = '#ef4444', neutral = '#94a3b8'
+  if (pb.kind === 'run_concept') {
+    name = label(pb.concept)
+    if (pb.telegraphed) detail = { text: 'telegraphed', color: bad }
+  } else if (pb.kind === 'pass_concept') {
+    const parts = [pb.playAction ? 'Play-action' : null, pb.passConcept ? label(pb.passConcept) : null].filter(Boolean)
+    name = parts.join(' + ') || 'Dropback'
+    if (pb.playAction) detail = pb.playActionWorked ? { text: 'fake bit', color: good } : { text: 'no bite', color: neutral }
+    else if (pb.passConcept) detail = pb.passConceptHit ? { text: 'beat the coverage', color: good } : { text: 'covered', color: neutral }
+  } else if (pb.kind === 'rpo') {
+    name = 'RPO'
+    detail = pb.correct
+      ? { text: `read ${pb.read} ✓`, color: good }
+      : { text: `misread (→ ${pb.read})`, color: bad }
+  } else if (pb.kind === 'trick') {
+    name = label(pb.name)
+    detail = pb.worked ? { text: 'worked!', color: good } : { text: 'blown up', color: bad }
+  }
+  if (!name) return null
+  const isTrick = pb.kind === 'trick'
+  return (
+    <Row label="Play Design" value={
+      <span>
+        <span style={{ color: isTrick ? '#eab308' : '#e2e8f0', fontWeight: isTrick ? 700 : 500 }}>{name}</span>
+        {detail && <span style={{ color: detail.color, fontSize: '11px', marginLeft: '6px' }}>{detail.text}</span>}
+      </span>
+    } />
+  )
+}
+
+const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCall?: string; tempo?: PlayInsights['tempo']; defense?: PlayInsights['defense']; playbook?: PlayInsights['playbook'] }> = ({ data, playCall, tempo, defense, playbook }) => {
+  const callLabels: Record<string, string> = { run: 'Run', short: 'Short Pass', medium: 'Medium Pass', long: 'Long Pass', deep: 'Deep Shot' }
   const tempoLabels: Record<string, string> = { hurryUp: 'Hurry-up', burnClock: 'Burn clock', neutral: 'Normal' }
   const tempoColors: Record<string, string> = { hurryUp: '#f59e0b', burnClock: '#06b6d4', neutral: '#94a3b8' }
   const gp = data.gameplan
@@ -213,10 +277,11 @@ const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCal
     <div>
       <SectionLabel label="Stratagem" />
       {playCall && (
-        <Row label="Play Call" value={callLabels[playCall] ?? playCall} color={playCallColors[playCall] ?? '#e2e8f0'} />
+        <Row label="Play Call" value={callLabels[playCall] ?? humanize(playCall)} color={playCallColors[playCall] ?? '#e2e8f0'} />
       )}
+      {playbook && <PlaybookRow pb={playbook} />}
       {tempo && (
-        <Row label="Tempo" value={tempoLabels[tempo.intent] ?? tempo.intent} color={tempoColors[tempo.intent] ?? '#e2e8f0'} />
+        <Row label="Tempo" value={tempoLabels[tempo.intent] ?? humanize(tempo.intent)} color={tempoColors[tempo.intent] ?? '#e2e8f0'} />
       )}
 
       {/* ── Offensive coach's gameplan ── */}
@@ -257,7 +322,7 @@ const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCal
             <Row label="Defensive Mind" value={coachMindLabel(def.coachDefMind)} color={def.coachDefMind != null ? attrColor(def.coachDefMind) : '#94a3b8'} />
             <Row label="Adaptability" value={coachMindLabel(def.coachAdapt)} color={def.coachAdapt != null ? attrColor(def.coachAdapt) : '#94a3b8'} />
             {defense?.coverageType && (
-              <Row label="Coverage" value={coverageLabels[defense.coverageType] ?? defense.coverageType} />
+              <Row label="Coverage" value={coverageLabels[defense.coverageType] ?? humanize(defense.coverageType)} />
             )}
           </div>
         )
@@ -273,15 +338,10 @@ const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCal
 }
 
 const FourthDownSection: React.FC<{ data: NonNullable<PlayInsights['fourthDown']> }> = ({ data }) => {
-  const decisionLabels: Record<string, string> = {
-    punt: 'Punt',
-    fieldGoal: 'Field Goal',
-    goForIt: 'Go For It',
-  }
   return (
     <div>
       <SectionLabel label="Fourth Down" />
-      <Row label="Decision" value={decisionLabels[data.decision] ?? data.decision} color={data.decision === 'goForIt' ? '#eab308' : '#e2e8f0'} />
+      <Row label="Decision" value={DECISION_LABELS[data.decision] ?? humanize(data.decision)} color={data.decision === 'goForIt' ? '#eab308' : '#e2e8f0'} />
       {data.inFgRange && (
         <Row label="FG Probability" value={
           <Gauge value={data.fgProbability} color={data.fgProbability >= 50 ? '#22c55e' : '#ef4444'} text={`${data.fgProbability.toFixed(0)}%`} />
@@ -579,16 +639,10 @@ const PlayersSection: React.FC<{ data: NonNullable<PlayInsights['players']> }> =
 )
 
 const ClockMgmtSection: React.FC<{ data: NonNullable<PlayInsights['clockMgmt']> }> = ({ data }) => {
-  const decisionLabels: Record<string, string> = {
-    kneel: 'Kneel',
-    spike: 'Spike',
-    timeout: 'Timeout',
-    desperationFG: 'Desperation FG',
-  }
   return (
     <div>
       <SectionLabel label="Clock Management" />
-      <Row label="Decision" value={decisionLabels[data.decision] ?? data.decision} />
+      <Row label="Decision" value={DECISION_LABELS[data.decision] ?? humanize(data.decision)} />
       <Row label="Rationale" value={data.reason} />
     </div>
   )
@@ -603,7 +657,7 @@ export const PlayInsightsPanel: React.FC<PlayInsightsPanelProps> = ({ insights }
   const rightSections: React.ReactNode[] = []
 
   if (insights.situation) leftSections.push(<SituationSection key="sit" data={insights.situation} />)
-  if (insights.coach) leftSections.push(<CoachSection key="coach" data={insights.coach} playCall={insights.playCall} tempo={insights.tempo} defense={insights.defense} />)
+  if (insights.coach) leftSections.push(<CoachSection key="coach" data={insights.coach} playCall={insights.playCall} tempo={insights.tempo} defense={insights.defense} playbook={insights.playbook} />)
   if (insights.fourthDown) leftSections.push(<FourthDownSection key="4th" data={insights.fourthDown} />)
   if (insights.clockMgmt) leftSections.push(<ClockMgmtSection key="clk" data={insights.clockMgmt} />)
 
