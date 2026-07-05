@@ -22,6 +22,8 @@ const CATEGORIES: Record<Position, { key: string; label: string }[]> = {
     { key: 'fantasy_points',      label: 'Fantasy Pts' },
     { key: 'rushing_yards',       label: 'Rush Yds' },
     { key: 'rushing_tds',         label: 'Rush TDs' },
+    { key: 'receptions',          label: 'Receptions' },
+    { key: 'receiving_yards',     label: 'Rec Yds' },
     { key: 'performance_rating',  label: 'Perf Rating' },
   ],
   WR:  [
