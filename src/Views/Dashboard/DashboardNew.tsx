@@ -71,7 +71,7 @@ const SubToggle: React.FC<{ tabs: readonly (readonly [string, string])[]; active
 )
 
 const STANDINGS_TABS = [['standings', 'Standings'], ['powerRankings', 'Power Rankings']] as const
-const PANEL_TABS = [['highlights', 'News'], ['pickem', 'Prognosticate'], ['standings', 'Standings'], ['leaders', 'Leaders']] as const
+const PANEL_TABS = [['highlights', 'League News'], ['pickem', 'Prognosticate'], ['standings', 'Standings'], ['leaders', 'Leaders']] as const
 
 const DASHBOARD_TOUR_STEPS: TutorialStep[] = [
   {
