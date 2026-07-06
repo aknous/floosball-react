@@ -231,15 +231,15 @@ const label = (k?: string) => (k ? (CONCEPT_LABELS[k] ?? humanize(k)) : '')
 const PlaybookRow: React.FC<{ pb: NonNullable<PlayInsights['playbook']> }> = ({ pb }) => {
   let name = ''
   let detail: { text: string; color: string } | null = null
-  const good = '#22c55e', bad = '#ef4444', neutral = '#94a3b8'
+  const good = '#22c55e', bad = '#ef4444'
   if (pb.kind === 'run_concept') {
     name = label(pb.concept)
     if (pb.telegraphed) detail = { text: 'telegraphed', color: bad }
   } else if (pb.kind === 'pass_concept') {
+    // Just the design name (Play-action / route concept) — the outcome suffix
+    // ("fake bit" / "no bite" / "beat the coverage" / "covered") crowded the row.
     const parts = [pb.playAction ? 'Play-action' : null, pb.passConcept ? label(pb.passConcept) : null].filter(Boolean)
     name = parts.join(' + ') || 'Dropback'
-    if (pb.playAction) detail = pb.playActionWorked ? { text: 'fake bit', color: good } : { text: 'no bite', color: neutral }
-    else if (pb.passConcept) detail = pb.passConceptHit ? { text: 'beat the coverage', color: good } : { text: 'covered', color: neutral }
   } else if (pb.kind === 'rpo') {
     name = 'RPO'
     detail = pb.correct
