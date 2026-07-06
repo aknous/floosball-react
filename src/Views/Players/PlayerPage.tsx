@@ -305,11 +305,12 @@ function QBStatsTable({ stats, career }: { stats: any[]; career: any }) {
 
 function RBStatsTable({ stats, career }: { stats: any[]; career: any }) {
   const r = career?.rushing ?? {}
+  const cRcv = career?.receiving ?? {}
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
         <tr>
-          {['Season', 'Team', 'Carr', 'Yds', 'YPC', 'TDs', 'FUM', 'Pts'].map(h => (
+          {['Season', 'Team', 'Carr', 'Yds', 'YPC', 'TDs', 'FUM', 'Rec', 'Rec Yds', 'Pts'].map(h => (
             <th key={h} style={thStyle}>{h}</th>
           ))}
         </tr>
@@ -323,6 +324,8 @@ function RBStatsTable({ stats, career }: { stats: any[]; career: any }) {
           <td style={careerTdStyle}>{r.ypc ?? '—'}</td>
           <td style={careerTdStyle}>{r.tds ?? '—'}</td>
           <td style={careerTdStyle}>{r.fumblesLost ?? '—'}</td>
+          <td style={careerTdStyle}>{cRcv.receptions ?? '—'}</td>
+          <td style={careerTdStyle}>{cRcv.yards ?? '—'}</td>
           <td style={careerTdStyle}>{career?.fantasyPoints?.toFixed(1) ?? '—'}</td>
         </tr>
         {stats?.map((s, idx) => (
@@ -337,6 +340,8 @@ function RBStatsTable({ stats, career }: { stats: any[]; career: any }) {
             <td style={tdStyle}>{s.rushing?.ypc ?? '—'}</td>
             <td style={tdStyle}>{s.rushing?.tds ?? '—'}</td>
             <td style={tdStyle}>{s.rushing?.fumblesLost ?? '—'}</td>
+            <td style={tdStyle}>{s.receiving?.receptions ?? '—'}</td>
+            <td style={tdStyle}>{s.receiving?.yards ?? '—'}</td>
             <td style={tdStyle}>{s.fantasyPoints?.toFixed(1) ?? '—'}</td>
           </tr>
         ))}

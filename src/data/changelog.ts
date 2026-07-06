@@ -12,6 +12,40 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.22.0',
+    date: '2026-07-05',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Sim] A real offensive playbook. Running backs run draw, counter, and sweep concepts; quarterbacks use play-action, route concepts, and run-pass options; and bold coaches occasionally dial up a trick play like a flea flicker, Statue of Liberty, or reverse. Whatever was called shows up in the Play Insights panel.',
+          '[Cards] New Rookie Pack, a card pack themed to the current season\'s rookie draft class.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Coaches] Coaches adapt their game plan mid-game instead of waiting for halftime, run the clock out better with a late lead, and call plays that reflect their run-pass balance and preferred passing depth.',
+          '[Dashboard] The Highlights tab is now League News. It shows game results and league headlines without the play-by-play.',
+          '[Cards] Card packs drop holographic and rarer cards a little more often.',
+          '[Cards] The Combine has an Active and Inactive filter to quickly find or skip prior-season cards.',
+          '[Players] A running back\'s receptions from checkdowns and screens now show on the player page and in the leaders.',
+          '[Sim] Rushing lines are more realistic. Trimmed the occasional 400-yard game while keeping a back\'s normal workload and yards per carry.',
+          '[Anomalies] During a Criticality the chaos now reaches every team, not just teams with awakened players, while awakened players still feel it most. Criticalities are also spaced further apart.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Cards] Rebalanced the Rookie Hype card. Its bonus per rookie was far too large, and is now capped and scaled sensibly.',
+          '[Awards] The Hall of Fame no longer enshrines a still-active player. A player who looked headed for retirement but re-signed can no longer be inducted while still playing.',
+          '[Anomalies] A team\'s fan attention now counts only active fans, so a large but dormant fanbase no longer powers up its players.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.21.0',
     date: '2026-06-29',
     changes: [],

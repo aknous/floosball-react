@@ -18,16 +18,6 @@ interface HighlightFeedProps {
 
 type TeamInfo = CurrentGame['homeTeam']
 
-interface PlayHighlight {
-  type: 'play'
-  gameId: number
-  sortKey: number
-  play: any
-  featuredTeam: TeamInfo
-  homeTeam: TeamInfo
-  awayTeam: TeamInfo
-}
-
 interface GameEndHighlight {
   type: 'game_end'
   gameId: number
@@ -36,14 +26,6 @@ interface GameEndHighlight {
   awayTeam: TeamInfo
   homeScore: number
   awayScore: number
-}
-
-interface GameStartHighlight {
-  type: 'game_start'
-  gameId: number
-  sortKey: number
-  homeTeam: TeamInfo
-  awayTeam: TeamInfo
 }
 
 interface LeagueNewsHighlight {
@@ -69,17 +51,7 @@ interface OffDayHighlight {
   text: string
 }
 
-type HighlightItem = PlayHighlight | GameEndHighlight | GameStartHighlight | LeagueNewsHighlight | OffDayHighlight
-
-const getBadge = (play: any): { label: string; color: string } | null => {
-  if (play.isTouchdown) return { label: 'TD', color: '#22c55e' }
-  if (play.isTurnover) return { label: 'TURNOVER', color: '#ef4444' }
-  if (play.scoreChange) {
-    if (play.playType === 'FieldGoal') return { label: 'FG', color: '#22c55e' }
-    return { label: 'SCORE', color: '#22c55e' }
-  }
-  return null
-}
+type HighlightItem = GameEndHighlight | LeagueNewsHighlight | OffDayHighlight
 
 // How often the personalized off-day endpoint is polled when no games are
 // live. Keep this above the per-quote duration to avoid stacking faster
@@ -232,8 +204,9 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
   }, [])
 
   // Are any games currently live? If so, don't poll for off-day quotes —
-  // the highlights feed is already busy with real plays. Watch the games
-  // map so the poll pauses/resumes on game-window transitions.
+  // off-day chatter is between-rounds flavor (players aren't playing), so it
+  // pauses while games run and the feed carries finals + league news instead.
+  // Watch the games map so the poll pauses/resumes on game-window transitions.
   const anyGameActive = useMemo(() => {
     for (const game of games.values()) {
       if (game.status === 'Active') return true
@@ -287,23 +260,12 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
     const items: HighlightItem[] = []
 
     games.forEach((game, gameId) => {
-      const { homeTeam, awayTeam, plays = [], status, homeScore, awayScore } = game
+      const { homeTeam, awayTeam, status, homeScore, awayScore } = game
 
-      // Game-start card — sits at the bottom (sortKey: 0, before any plays)
-      if (status === 'Active' || status === 'Final') {
-        items.push({
-          type: 'game_start',
-          gameId,
-          sortKey: 0,
-          homeTeam,
-          awayTeam,
-        })
-      }
-
-      // Game-end card — sortKey is when the game ended (epoch ms) so it sits
-      // naturally with other timestamped items in the feed. Pinning it to the
-      // top forever made off-day chatter from the next idle window stack
-      // underneath stale final scores.
+      // Game-end card — the only game event this feed carries (per-play highlights
+      // and kickoff cards were removed; this is a league news feed now). sortKey is
+      // when the game ended (epoch ms) so finals interleave naturally with news and
+      // off-day items rather than pinning to the top.
       if (status === 'Final') {
         const endedAt = (game as any)._endedAt
         items.push({
@@ -319,43 +281,6 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
           awayScore,
         })
       }
-
-      plays.forEach((play: any) => {
-        if (!play.playNumber) return
-
-        // Sideline cutaways are intentionally excluded from the global highlights
-        // feed (too chatty across many simultaneous games). They still appear in
-        // the per-game modal where they belong as flavor.
-        if (play.isSidelineCutaway) return
-
-        // PAT attempts now fire as their own play with scoreChange=true on a
-        // successful kick. The TD that preceded them is already a highlight,
-        // so featuring the XP separately would double-list the same scoring
-        // moment. Ditto 2-pt — its preceding TD is the highlight.
-        const pr = String(play.playResult ?? '')
-        if (pr === 'XP Good' || pr === 'XP No Good'
-            || pr === 'Touchdown, 2-Pt Good' || pr === 'Touchdown, 2-Pt No Good') return
-
-        if (!(play.isTouchdown || play.isTurnover || play.scoreChange)) return
-
-        // For turnovers (without TD), feature the defensive team — they benefited
-        const isTurnoverOnly = play.isTurnover && !play.isTouchdown
-        const featuredAbbr = isTurnoverOnly ? play.defensiveTeam : play.offensiveTeam
-        const featuredTeam = featuredAbbr === homeTeam.abbr ? homeTeam : awayTeam
-
-        items.push({
-          type: 'play',
-          gameId,
-          // Sort plays by _receivedAt (epoch ms) so they interleave correctly
-          // with off-day items (also epoch ms). Falls back to playNumber for
-          // plays that somehow lack a stamp (shouldn't happen in practice).
-          sortKey: play._receivedAt ?? play.playNumber,
-          play,
-          featuredTeam,
-          homeTeam,
-          awayTeam,
-        })
-      })
     })
 
     // Off-day chatter is filtered to players the user actually cares about:
@@ -376,7 +301,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
   if (highlights.length === 0) {
     return (
       <div style={{ color: '#94a3b8', fontSize: '14px', textAlign: 'center', padding: '20px 0' }}>
-        Waiting for highlights...
+        No league news yet.
       </div>
     )
   }
@@ -540,109 +465,9 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
           )
         }
 
-        if (item.type === 'game_start') {
-          const { homeTeam, awayTeam, gameId } = item
-          return (
-            <React.Fragment key={`start-${gameId}`}>
-              {separator}
-              <div
-                onClick={() => onPlayClick(gameId)}
-                style={{
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                  <img src={`/avatars/${homeTeam.id}.png`} alt={homeTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
-                  <span style={{ fontSize: '13px', color: '#94a3b8' }}>{homeTeam.abbr}</span>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', letterSpacing: '0.08em' }}>KICKOFF</span>
-                  <span style={{ fontSize: '13px', color: '#94a3b8' }}>{awayTeam.abbr}</span>
-                  <img src={`/avatars/${awayTeam.id}.png`} alt={awayTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
-                </div>
-              </div>
-            </React.Fragment>
-          )
-        }
-
-        // Play highlight
-        const { play, featuredTeam, homeTeam, awayTeam, gameId } = item
-        const badge = getBadge(play)
-        const hasScore = play.homeTeamScore != null && play.awayTeamScore != null
-
-        return (
-          <React.Fragment key={`play-${gameId}-${play.playNumber}`}>
-            {separator}
-            <div
-              onClick={() => onPlayClick(gameId)}
-              style={{
-                backgroundColor: `${featuredTeam.color}15`,
-                borderRadius: '6px',
-                padding: '10px 12px',
-                cursor: 'pointer',
-              }}
-            >
-            {/* Header: team dot + abbr + time | badge */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <img src={`/avatars/${featuredTeam.id}.png`} alt={featuredTeam.abbr} style={{ width: '16px', height: '16px', flexShrink: 0 }} />
-                <span style={{ fontSize: '12px', fontWeight: '700', color: '#94a3b8', letterSpacing: '0.04em' }}>
-                  {featuredTeam.abbr}
-                </span>
-                <span style={{ fontSize: '12px', color: '#94a3b8' }}>
-                  {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} {play.timeRemaining}
-                </span>
-              </div>
-              {badge && (
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  padding: '1px 7px',
-                  borderRadius: '3px',
-                  backgroundColor: `${badge.color}30`,
-                  color: badge.color,
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  flexShrink: 0,
-                }}>
-                  {badge.label}
-                </span>
-              )}
-            </div>
-
-            {/* Play description */}
-            <p style={{ fontSize: '13px', color: '#cbd5e1', margin: '0 0 4px 22px', lineHeight: '1.4' }}>
-              {play.description}
-            </p>
-
-            {/* Personality reaction (vibe or variant + optional quirk) */}
-            {play.personalityEvent && (() => {
-              const accent = personalityAccent(play.personalityEvent.personality)
-              return (
-                <p style={{
-                  fontSize: '13px',
-                  color: '#e2e8f0',
-                  fontStyle: 'italic',
-                  margin: '0 0 4px 22px',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  backgroundColor: `${accent}12`,
-                  borderLeft: `2px solid ${accent}`,
-                  lineHeight: '1.45',
-                }}>
-                  {play.personalityEvent.text}
-                </p>
-              )
-            })()}
-
-            {/* Score after the play */}
-            {hasScore && (
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '22px' }}>
-                {homeTeam.abbr} {play.homeTeamScore} · {awayTeam.abbr} {play.awayTeamScore}
-              </div>
-            )}
-            </div>
-          </React.Fragment>
-        )
+        // Only game_end, league_news, and off_day are rendered — all handled
+        // above. Anything else is ignored (defensive).
+        return null
       })}
     </div>
   )

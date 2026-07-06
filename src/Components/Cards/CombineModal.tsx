@@ -26,6 +26,9 @@ const editionSort: Record<string, number> = {
 
 type PositionFilter = 'all' | 1 | 2 | 3 | 4 | 5
 type EditionFilter = 'all' | 'base' | 'holographic' | 'prismatic' | 'diamond'
+// Inactive = a prior-season ("Expired") card — isActive is set only for cards
+// from the current season.
+type StatusFilter = 'all' | 'active' | 'inactive'
 type PickerSortMode = 'value_asc' | 'rating_desc' | 'rarest'
 
 const EDITION_PILL_LABELS: Record<EditionFilter, string> = {
@@ -54,6 +57,7 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
   const [query, setQuery] = useState('')
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all')
   const [editionFilter, setEditionFilter] = useState<EditionFilter>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [sortMode, setSortMode] = useState<PickerSortMode>('value_asc')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
@@ -72,6 +76,9 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
     }
     if (editionFilter !== 'all') {
       out = out.filter(c => c.edition === editionFilter)
+    }
+    if (statusFilter !== 'all') {
+      out = out.filter(c => (statusFilter === 'active' ? c.isActive : !c.isActive))
     }
     const sorted = [...out]
     switch (sortMode) {
@@ -96,7 +103,7 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
         })
     }
     return sorted
-  }, [cards, filter, query, positionFilter, editionFilter, sortMode])
+  }, [cards, filter, query, positionFilter, editionFilter, statusFilter, sortMode])
 
   const rawCount = filter ? cards.filter(filter).length : cards.length
 
@@ -181,6 +188,17 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
           }))}
           value={editionFilter}
           onChange={(v) => setEditionFilter(v as EditionFilter)}
+        />
+        <div style={{ height: '6px' }} />
+        <CombinePillRow
+          label="Status"
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 'active', label: 'Active' },
+            { value: 'inactive', label: 'Inactive' },
+          ]}
+          value={statusFilter}
+          onChange={(v) => setStatusFilter(v as StatusFilter)}
         />
         <div style={{
           display: 'flex', alignItems: 'center', gap: '6px', marginTop: '10px',

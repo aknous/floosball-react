@@ -26,7 +26,7 @@ interface PackType {
   dailyLimit: number | null
   remainingToday: number | null
   guaranteedRarity?: string | null
-  themeType?: 'position' | 'team' | 'output' | 'champion' | 'allpro' | null
+  themeType?: 'position' | 'team' | 'output' | 'rookie' | 'champion' | 'allpro' | null
   themeValue?: string | null
 }
 
@@ -94,6 +94,7 @@ const THEMED_PACK_COLORS: Record<string, { border: string; bg: string; accent: s
   output_fp:       { border: '#3b82f6', bg: 'linear-gradient(135deg, #172554 0%, #1e3a8a 100%)', accent: '#93c5fd' },
   output_fpx:      { border: '#db2777', bg: 'linear-gradient(135deg, #500724 0%, #831843 100%)', accent: '#f472b6' },
   output_floobits: { border: '#eab308', bg: 'linear-gradient(135deg, #422006 0%, #713f12 100%)', accent: '#facc15' },
+  rookie:   { border: '#2dd4bf', bg: 'linear-gradient(135deg, #042f2e 0%, #115e59 100%)', accent: '#5eead4' },
   champion: { border: '#f59e0b', bg: 'linear-gradient(135deg, #451a03 0%, #78350f 50%, #92400e 100%)', accent: '#fcd34d' },
   allpro:   { border: '#10b981', bg: 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%)', accent: '#6ee7b7' },
 }
@@ -104,6 +105,7 @@ const themedPackColors = (p: PackType) => {
     return THEMED_PACK_COLORS[key] || THEMED_PACK_COLORS.position
   }
   if (p.themeType === 'team') return THEMED_PACK_COLORS.team
+  if (p.themeType === 'rookie') return THEMED_PACK_COLORS.rookie
   if (p.themeType === 'champion') return THEMED_PACK_COLORS.champion
   if (p.themeType === 'allpro') return THEMED_PACK_COLORS.allpro
   return THEMED_PACK_COLORS.position
@@ -788,11 +790,13 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                           ? (pack.themeValue === 'fpx' ? 'FPx' : pack.themeValue === 'fp' ? 'FP' : 'Floobits')
                           : pack.themeType === 'team'
                             ? 'Team'
-                            : pack.themeType === 'champion'
-                              ? 'Champ'
-                              : pack.themeType === 'allpro'
-                                ? 'All-Pro'
-                                : null
+                            : pack.themeType === 'rookie'
+                              ? 'Rookie'
+                              : pack.themeType === 'champion'
+                                ? 'Champ'
+                                : pack.themeType === 'allpro'
+                                  ? 'All-Pro'
+                                  : null
 
                       return (
                         <div key={pack.id} style={{

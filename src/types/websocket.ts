@@ -239,6 +239,22 @@ export interface PlayInsightsTempo {
   finalSeconds: number   // Actual seconds consumed before the snap
 }
 
+// The play's design decision — which concept / RPO / trick was called and how it
+// turned out (set by the backend's _buildPlaybookInsight).
+export interface PlayInsightsPlaybook {
+  kind: 'run_concept' | 'pass_concept' | 'rpo' | 'trick'
+  concept?: string          // run_concept: draw | counter | sweep
+  telegraphed?: boolean     // run_concept: the deception was tipped
+  playAction?: boolean      // pass_concept
+  playActionWorked?: boolean
+  passConcept?: string      // pass_concept: mesh | flood | screen
+  passConceptHit?: boolean  // the concept beat the coverage
+  read?: 'run' | 'pass'     // rpo: which way the QB read it
+  correct?: boolean         // rpo: read correctly
+  name?: string             // trick: flea_flicker | statue | reverse
+  worked?: boolean          // trick / rpo payoff
+}
+
 export interface PlayInsights {
   situation?: PlayInsightsSituation
   coach?: PlayInsightsCoach
@@ -250,7 +266,8 @@ export interface PlayInsights {
   players?: PlayInsightsPlayer[]
   clockMgmt?: PlayInsightsClockMgmt
   tempo?: PlayInsightsTempo
-  playCall?: 'run' | 'short' | 'medium' | 'long'
+  playCall?: 'run' | 'short' | 'medium' | 'long' | 'deep'
+  playbook?: PlayInsightsPlaybook
 }
 
 // Personality reaction event fired on significant plays. Combines the
