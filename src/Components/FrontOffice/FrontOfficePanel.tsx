@@ -938,7 +938,47 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
               balance={balance}
               getCost={(playerId) => nextTargetCost('resign_player', playerId)}
               lastCost={(playerId) => lastTargetCost('resign_player', playerId)}
+              resignLimit={gm.eligible.resignPerOffseasonLimit ?? 2}
             />
+
+            {(gm.eligible.resignIneligiblePlayers?.length ?? 0) > 0 && (
+              <div style={{
+                background: '#1e293b',
+                border: '1px solid #334155',
+                borderLeft: '3px solid #64748b',
+                borderRadius: '6px',
+                padding: '14px 16px',
+              }}>
+                <div style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#94a3b8',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  marginBottom: '8px',
+                }}>
+                  Entering Free Agency
+                </div>
+                <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px' }}>
+                  These players have reached the re-sign limit and cannot be renewed. They enter free agency after this season.
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {gm.eligible.resignIneligiblePlayers!.map(p => (
+                    <div key={p.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '12px',
+                      color: '#cbd5e1',
+                      padding: '4px 0',
+                    }}>
+                      <span style={{ color: '#94a3b8', minWidth: '24px' }}>{p.position}</span>
+                      <span>{p.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <CutPlayerCard
               players={gm.eligible.rosteredPlayers.filter(p => p.termRemaining > 1 && !p.willRetire)}
@@ -1012,6 +1052,12 @@ const FrontOfficePanel: React.FC<FrontOfficePanelProps> = ({ teamId, teamAbbr, t
           Threshold votes (fire / re-sign / cut) pass when their net tally reaches a majority
           of the team's active fan count (half, rounded up), otherwise the motion is denied.
           Hire votes go to whichever candidate received the most votes.
+        </GuideSection>
+        <GuideSection title="Contract Renewals">
+          Each offseason your team may re-sign up to {gm.eligible?.resignPerOffseasonLimit ?? 2} expiring
+          players. When more clear the vote than that, the most-voted keep their spots. A player can only
+          be re-signed {(gm.eligible?.resignOnceLimit ?? 1) === 1 ? 'once' : `${gm.eligible?.resignOnceLimit} times`} before
+          they must enter free agency, so a core can't be held together forever.
         </GuideSection>
         <GuideSection title="Coaching Appointments">
           If a grievance against the head coach is ratified, the board may also nominate a

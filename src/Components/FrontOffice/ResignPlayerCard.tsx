@@ -20,6 +20,7 @@ interface ResignPlayerCardProps {
   balance: number
   getCost: (playerId: number) => number
   lastCost: (playerId: number) => number
+  resignLimit: number
 }
 
 const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
@@ -37,25 +38,37 @@ const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
   balance,
   getCost,
   lastCost,
+  resignLimit,
 }) => {
 
   const getTally = (playerId: number): GmVoteTally | undefined =>
     tallies.find(t => t.voteType === 'resign_player' && t.targetPlayerId === playerId)
 
+  // Only the most-voted players (up to the limit) that clear their threshold are
+  // actually re-signed. Mark those so fans can see who currently holds a spot.
+  const leadingIds = new Set<number>(
+    players
+      .map(p => ({ id: p.id, tally: getTally(p.id) }))
+      .filter(x => x.tally && x.tally.votes >= x.tally.threshold)
+      .sort((a, b) => (b.tally!.votes - a.tally!.votes))
+      .slice(0, resignLimit)
+      .map(x => x.id)
+  )
+
   return (
     <div style={{ flex: 1, minWidth: '240px' }}>
       <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         fontSize: '11px',
         fontWeight: '700',
         color: '#94a3b8',
         textTransform: 'uppercase',
         letterSpacing: '0.06em',
-        marginBottom: '10px',
+        marginBottom: '4px',
       }}>
-        <span>Contract Renewals</span>
+        Contract Renewals
+      </div>
+      <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px' }}>
+        Up to {resignLimit} can be re-signed. The most-voted keep their spots.
       </div>
 
       {players.length === 0 ? (
@@ -100,6 +113,17 @@ const ResignPlayerCard: React.FC<ResignPlayerCardProps> = ({
                   </span>
                 </PlayerHoverCard>
                 <Stars stars={calcStars(p.rating)} size={12} />
+                {leadingIds.has(p.id) && (
+                  <span style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    color: '#22c55e',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}>
+                    In line
+                  </span>
+                )}
                 <span style={{ flex: 1 }} />
 
                 {tally && (

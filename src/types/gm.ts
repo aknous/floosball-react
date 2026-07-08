@@ -51,6 +51,7 @@ export interface GmPlayerInfo {
   tier: string
   termRemaining: number
   willRetire?: boolean
+  resignCount?: number   // times this team has already re-signed the player
 }
 
 export interface GmEligibleTargets {
@@ -61,7 +62,12 @@ export interface GmEligibleTargets {
   coachCandidates: GmCoachInfo[]
   rosteredPlayers: GmPlayerInfo[]
   expiringPlayers: GmPlayerInfo[]
+  // Expiring players who have hit the re-sign limit: cannot be voted on,
+  // shown read-only, they enter free agency.
+  resignIneligiblePlayers?: GmPlayerInfo[]
   retiringPlayers?: GmPlayerInfo[]
+  resignOnceLimit?: number          // times a team may re-sign the same player
+  resignPerOffseasonLimit?: number  // max re-signs a team may make per offseason
 }
 
 export interface GmVoteTally {
