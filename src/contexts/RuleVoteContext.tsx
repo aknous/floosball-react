@@ -39,7 +39,10 @@ interface RuleVoteState {
 
 const RuleVoteContext = createContext<RuleVoteState | null>(null)
 
-const seenKey = (season: number, windowId: number) => `ruleVoteSeen_${season}_${windowId}`
+// Keyed on closesAt too, so a fresh sim (which resets season + the window's DB id)
+// never collides with a window the user already dismissed in a prior run.
+const seenKey = (season: number, windowId: number, closesAt: string | null) =>
+  `ruleVoteSeen_${season}_${windowId}_${closesAt ?? 'x'}`
 
 export const RuleVoteProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { getToken } = useAuth()
@@ -103,15 +106,15 @@ export const RuleVoteProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Auto-open the modal once per window, the first time a live vote is seen.
   useEffect(() => {
     if (!open || !votingOpen || windowId == null || !season) return
-    if (localStorage.getItem(seenKey(season, windowId))) return
+    if (localStorage.getItem(seenKey(season, windowId, closesAt))) return
     setModalOpen(true)
-  }, [open, votingOpen, windowId, season])
+  }, [open, votingOpen, windowId, season, closesAt])
 
   const openModal = useCallback(() => setModalOpen(true), [])
   const closeModal = useCallback(() => {
-    if (season && windowId != null) localStorage.setItem(seenKey(season, windowId), '1')
+    if (season && windowId != null) localStorage.setItem(seenKey(season, windowId, closesAt), '1')
     setModalOpen(false)
-  }, [season, windowId])
+  }, [season, windowId, closesAt])
 
   const castVote = useCallback(async (optionKey: string) => {
     const tok = await getToken().catch(() => null)
