@@ -16,6 +16,7 @@ import CheerBar from './CheerBar'
 import { GlitchedText } from './GlitchedText'
 import { effectiveAwayColor } from '@/utils/colors'
 import { formatScore } from '@/utils/formatScore'
+import { ordinal } from '@/utils/ordinal'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -551,8 +552,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const downText = isTwoPtPlay ? '2-Pt Try' :
       play.down && play.distance != null ?
         (play.distance === 'Goal' ?
-          `${['1st', '2nd', '3rd', '4th'][play.down - 1]} & Goal` :
-          `${['1st', '2nd', '3rd', '4th'][play.down - 1]} & ${play.distance}`)
+          `${ordinal(play.down)} & Goal` :
+          `${ordinal(play.down)} & ${play.distance}`)
         : null
 
     // Determine which team has possession for this play
@@ -1195,7 +1196,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 const yardLine = dYardLine
                 const yardsToEndzone = dYardsToEndzone
                 if (!down || !yardLine) return null
-                const downSuffix = ['1st', '2nd', '3rd', '4th'][down - 1]
+                const downSuffix = ordinal(down)
                 const showGoal = yardsToEndzone != null && distance != null && yardsToEndzone < distance
                 return (
                   <div style={{ fontSize: '12px', color: '#94a3b8' }}>
