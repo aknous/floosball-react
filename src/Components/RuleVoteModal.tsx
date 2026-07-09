@@ -92,6 +92,7 @@ const RuleVoteModal: React.FC = () => {
       <div style={{
         width: '100%', maxWidth: isMobile ? '100%' : '460px', maxHeight: '90vh',
         backgroundColor: '#1e293b',
+        fontFamily: 'pressStart, monospace',
         border: isMobile ? 'none' : `1px solid ${accent}55`,
         borderRadius: isMobile ? '14px 14px 0 0' : '14px',
         boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
