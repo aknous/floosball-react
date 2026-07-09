@@ -48,12 +48,9 @@ const RulebookIndicator: React.FC<{ compact?: boolean }> = ({ compact = false })
   }, [cancelClose])
   const togglePin = useCallback(() => {
     cancelClose()
-    // A vote is live — the pill's job is to relaunch it (the ruleset is glitching
-    // / about to change anyway). Hover still peeks the rules popover underneath.
-    if (rv.open) { rv.openModal(); return }
     if (pinnedRef.current) { setPinned(false); setOpen(false) }
     else { setPinned(true); setOpen(true); markSeen() }
-  }, [cancelClose, markSeen, rv])
+  }, [cancelClose, markSeen])
   const handleClose = useCallback(() => { cancelClose(); setPinned(false); setOpen(false) }, [cancelClose])
 
   const accent = '#e2e8f0'
