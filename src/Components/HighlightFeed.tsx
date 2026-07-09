@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { personalityAccent } from '@/utils/personality'
 import { coreColor } from '@/utils/coresVisual'
+import { formatScore } from '@/utils/formatScore'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -451,7 +452,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
                     </span>
                   </div>
                   <span style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', letterSpacing: '0.05em' }}>
-                    {homeScore} – {awayScore}
+                    {formatScore(homeScore)} – {formatScore(awayScore)}
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontSize: '14px', fontWeight: awayWon ? '700' : '400', color: awayWon ? '#e2e8f0' : '#94a3b8' }}>
