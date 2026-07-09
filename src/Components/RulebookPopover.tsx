@@ -100,15 +100,12 @@ const RuleRow: React.FC<{ meta: RuleMeta; value: any; def: any; changed: boolean
           {scramble()}
         </span>
       ) : (
-        <>
-          {changed && (
-            <span style={{ fontSize: '13px', color: '#94a3b8', textDecoration: 'line-through' }}>{meta.fmt(def)}</span>
-          )}
-          <span style={{
-            fontSize: '15px', fontWeight: 700,
-            color: changed ? CHANGED_COLOR : VALUE_COLOR,
-          }}>{meta.fmt(value)}</span>
-        </>
+        // Just the current value (amber when it's off its default). The old value
+        // isn't repeated here — the "what changed" strip above shows the transition.
+        <span style={{
+          fontSize: '15px', fontWeight: 700,
+          color: changed ? CHANGED_COLOR : VALUE_COLOR,
+        }}>{meta.fmt(value)}</span>
       )}
     </span>
   </div>
