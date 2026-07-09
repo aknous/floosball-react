@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useGames } from '@/contexts/GamesContext'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { useAuth } from '@/contexts/AuthContext'
+import { formatScore } from '@/utils/formatScore'
 
 const GameBar: React.FC = () => {
   const location = useLocation()
@@ -84,13 +85,13 @@ const GameBar: React.FC = () => {
       >
         <img src={`/avatars/${game.awayTeam.id}.png`} alt="" style={{ width: '16px', height: '16px', flexShrink: 0 }} />
         <span style={{ fontSize: '13px', fontWeight: '600', color: awayColor }}>{game.awayTeam.abbr}</span>
-        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', minWidth: '18px', textAlign: 'right' }}>{awayScore}</span>
+        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', minWidth: '18px', textAlign: 'right' }}>{formatScore(awayScore)}</span>
         {game.awayTeamPoss && isActive && <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#fff', flexShrink: 0 }} />}
 
         <span style={{ fontSize: '11px', color: '#475569' }}>-</span>
 
         {game.homeTeamPoss && isActive && <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#fff', flexShrink: 0 }} />}
-        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', minWidth: '18px', textAlign: 'left' }}>{homeScore}</span>
+        <span style={{ fontSize: '14px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', minWidth: '18px', textAlign: 'left' }}>{formatScore(homeScore)}</span>
         <span style={{ fontSize: '13px', fontWeight: '600', color: homeColor }}>{game.homeTeam.abbr}</span>
         <img src={`/avatars/${game.homeTeam.id}.png`} alt="" style={{ width: '16px', height: '16px', flexShrink: 0 }} />
 

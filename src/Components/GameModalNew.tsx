@@ -15,6 +15,7 @@ import RallyButton from './GameModal/RallyPanel'
 import CheerBar from './CheerBar'
 import { GlitchedText } from './GlitchedText'
 import { effectiveAwayColor } from '@/utils/colors'
+import { formatScore } from '@/utils/formatScore'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -852,7 +853,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             )}
             {play.scoreChange && play.homeTeamScore != null && (
               <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                {gameData.homeTeam.abbr} {play.homeTeamScore} – {play.awayTeamScore} {gameData.awayTeam.abbr}
+                {gameData.homeTeam.abbr} {formatScore(play.homeTeamScore)} – {formatScore(play.awayTeamScore)} {gameData.awayTeam.abbr}
               </div>
             )}
             {/* Reactions for the play itself — only on plays with a stable
@@ -1043,7 +1044,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={homeFlash ? 'score-updated' : ''}>
-                  {dHomeScore}
+                  {formatScore(dHomeScore)}
                 </div>
               </div>
 
@@ -1091,7 +1092,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={awayFlash ? 'score-updated' : ''}>
-                  {dAwayScore}
+                  {formatScore(dAwayScore)}
                 </div>
               </div>
 
@@ -1124,17 +1125,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     <tbody>
                       <tr>
                         <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{gameData.homeTeam.abbr}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.home.q1}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.home.q2}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.home.q3}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.home.q4}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.home.q1)}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.home.q2)}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.home.q3)}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.home.q4)}</td>
                       </tr>
                       <tr>
                         <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{gameData.awayTeam.abbr}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.away.q1}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.away.q2}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.away.q3}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.away.q4}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.away.q1)}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.away.q2)}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.away.q3)}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.away.q4)}</td>
                       </tr>
                     </tbody>
                   </table>

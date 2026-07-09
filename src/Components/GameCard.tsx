@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import TeamHoverCard from './TeamHoverCard'
 import { effectiveAwayColor } from '@/utils/colors'
+import { formatScore } from '@/utils/formatScore'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -177,7 +178,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             </div>
           </div>
           <div style={scoreStyle} className={homeFlash ? 'score-updated' : ''}>
-            {isLive || isFinal ? homeScore : '—'}
+            {isLive || isFinal ? formatScore(homeScore) : '—'}
           </div>
         </div>
       </TeamHoverCard>
@@ -217,7 +218,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             </div>
           </div>
           <div style={scoreStyle} className={awayFlash ? 'score-updated' : ''}>
-            {isLive || isFinal ? awayScore : '—'}
+            {isLive || isFinal ? formatScore(awayScore) : '—'}
           </div>
         </div>
       </TeamHoverCard>
