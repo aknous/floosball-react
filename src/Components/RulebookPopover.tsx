@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom'
+import { useRuleVote, fmtRuleValue } from '@/contexts/RuleVoteContext'
+import { CoreIcon, coreColor } from '@/utils/coresVisual'
 
 // Anchored popover for the league Rulebook. Mirrors CoresPopover's shell (portal
 // panel under a header button, Esc / outside-click dismiss, hover grace on the
@@ -15,12 +17,23 @@ const CHANGED_COLOR = '#f59e0b'   // amber — a rule the Cores have altered
 const VALUE_COLOR = '#e2e8f0'     // base rule value (neutral)
 const LABEL_COLOR = '#94a3b8'     // section labels, status tags, live/dormant glyphs
 
+interface LastChange {
+  field: string
+  label: string
+  kind: 'change' | 'revert'
+  core: string
+  from: number | boolean
+  to: number | boolean
+}
+
 interface RulesPayload {
   rules: Record<string, number | boolean>
   defaults: Record<string, number | boolean>
   mutable: string[]
   changed: string[]
   patchHistory: Array<Record<string, any>>
+  lastChange?: LastChange | null
+  changeCount?: number
 }
 
 // ─── Presentation metadata (frontend-owned; values come from the backend) ────
@@ -142,6 +155,7 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
   const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
   const [data, setData] = useState<RulesPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const rv = useRuleVote()
 
   useEffect(() => {
     let cancelled = false
@@ -231,6 +245,43 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
         {error && <div style={{ fontSize: 14, color: '#f87171', lineHeight: 1.6 }}>{error}</div>}
         {!data && !error && (
           <div style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.6 }}>Reading the rulebook...</div>
+        )}
+
+        {/* A live rule vote — call to action, colored by the Core running it */}
+        {rv.open && (
+          <button
+            onClick={() => { rv.openModal(); onClose() }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 9, width: '100%',
+              padding: '10px 12px', marginBottom: 14, borderRadius: 7, cursor: 'pointer',
+              background: `${coreColor(rv.core || undefined)}1c`,
+              border: `1px solid ${coreColor(rv.core || undefined)}`,
+              textAlign: 'left',
+            }}
+          >
+            <CoreIcon core={rv.core || undefined} color={coreColor(rv.core || undefined)} size={15} />
+            <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: coreColor(rv.core || undefined) }}>
+              {rv.coreDisplayName || 'The Cores'} {rv.kind === 'revert' ? 'wants to restore a rule' : 'wants to change a rule'}
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#e2e8f0' }}>Vote</span>
+          </button>
+        )}
+
+        {/* Most recent Cores-vote change */}
+        {data?.lastChange && (
+          <div style={{
+            padding: '9px 11px', marginBottom: 14, borderRadius: 7,
+            background: 'rgba(245,158,11,0.08)', borderLeft: `3px solid ${coreColor(data.lastChange.core)}`,
+          }}>
+            <span style={{ fontSize: 12, color: '#cbd5e1', lineHeight: 1.5 }}>
+              <span style={{ color: coreColor(data.lastChange.core), fontWeight: 700 }}>
+                {data.lastChange.core.charAt(0).toUpperCase() + data.lastChange.core.slice(1)}
+              </span>{' '}
+              {data.lastChange.kind === 'revert' ? 'restored' : 'changed'} {data.lastChange.label}:{' '}
+              <span style={{ color: '#94a3b8', textDecoration: 'line-through' }}>{fmtRuleValue(data.lastChange.from)}</span>{' → '}
+              <span style={{ color: CHANGED_COLOR, fontWeight: 700 }}>{fmtRuleValue(data.lastChange.to)}</span>
+            </span>
+          </div>
         )}
         {data && groups.map(group => (
           <div key={group.title} style={{ marginBottom: 18 }}>
