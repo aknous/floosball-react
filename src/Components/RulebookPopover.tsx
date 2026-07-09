@@ -2,6 +2,14 @@ import React, { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom'
 import { useRuleVote, fmtRuleValue } from '@/contexts/RuleVoteContext'
 import { CoreIcon, coreColor } from '@/utils/coresVisual'
+import { useCoresStatus } from '@/contexts/CoresStatusContext'
+
+// During a Criticality the rulebook is UNREADABLE — every game is on its own secret
+// randomized ruleset, so the values here scramble into glitch glyphs (flickering).
+const GLITCH_GLYPHS = '█▓▒░╳╱╲▇▆※╬#@&%§¥'
+const GLITCH_COLOR = '#c084fc'   // violet — the anomaly/criticality palette
+const scramble = (n = 3): string =>
+  Array.from({ length: n }, () => GLITCH_GLYPHS[Math.floor(Math.random() * GLITCH_GLYPHS.length)]).join('')
 
 // Anchored popover for the league Rulebook. Mirrors CoresPopover's shell (portal
 // panel under a header button, Esc / outside-click dismiss, hover grace on the
@@ -76,39 +84,48 @@ const ACTIVE_SCORING_MODEL = 'Additive'
 // what the game could become. Design lives in docs/SIM_EVOLUTION.md.
 const DORMANT_RULES = ['Contested Scoring', 'Drive Clock', 'Conversion Ladder', 'Sideline Goals']
 
-const RuleRow: React.FC<{ meta: RuleMeta; value: any; def: any; changed: boolean }> =
-  ({ meta, value, def, changed }) => (
+const RuleRow: React.FC<{ meta: RuleMeta; value: any; def: any; changed: boolean; glitched?: boolean }> =
+  ({ meta, value, def, changed, glitched }) => (
   <div style={{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
     padding: '8px 10px', borderRadius: '5px', backgroundColor: '#0f172a',
-    border: `1px solid ${changed ? '#78350f' : '#1e293b'}`,
+    border: `1px solid ${glitched ? '#4c1d95' : (changed ? '#78350f' : '#1e293b')}`,
   }}>
     <span style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: 1.5 }}>
       {meta.label}
     </span>
     <span style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
-      {changed && (
-        <span style={{ fontSize: '13px', color: '#94a3b8', textDecoration: 'line-through' }}>{meta.fmt(def)}</span>
+      {glitched ? (
+        <span style={{ fontSize: '15px', fontWeight: 700, color: GLITCH_COLOR, letterSpacing: '0.05em' }}>
+          {scramble()}
+        </span>
+      ) : (
+        <>
+          {changed && (
+            <span style={{ fontSize: '13px', color: '#94a3b8', textDecoration: 'line-through' }}>{meta.fmt(def)}</span>
+          )}
+          <span style={{
+            fontSize: '15px', fontWeight: 700,
+            color: changed ? CHANGED_COLOR : VALUE_COLOR,
+          }}>{meta.fmt(value)}</span>
+        </>
       )}
-      <span style={{
-        fontSize: '15px', fontWeight: 700,
-        color: changed ? CHANGED_COLOR : VALUE_COLOR,
-      }}>{meta.fmt(value)}</span>
     </span>
   </div>
 )
 
-const ScoringModelRow: React.FC<{ name: string }> = ({ name }) => (
+const ScoringModelRow: React.FC<{ name: string; glitched?: boolean }> = ({ name, glitched }) => (
   <div style={{
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '8px 10px', borderRadius: '5px',
-    backgroundColor: '#0f172a', border: '1px solid #1e293b',
+    backgroundColor: '#0f172a', border: `1px solid ${glitched ? '#4c1d95' : '#1e293b'}`,
   }}>
     <span style={{
-      width: 7, height: 7, borderRadius: '50%', backgroundColor: LABEL_COLOR, flexShrink: 0,
+      width: 7, height: 7, borderRadius: '50%',
+      backgroundColor: glitched ? GLITCH_COLOR : LABEL_COLOR, flexShrink: 0,
     }} />
-    <span style={{ minWidth: 0, flex: 1, fontSize: '15px', fontWeight: 700, color: '#cbd5e1' }}>
-      {name}
+    <span style={{ minWidth: 0, flex: 1, fontSize: '15px', fontWeight: 700, color: glitched ? GLITCH_COLOR : '#cbd5e1', letterSpacing: glitched ? '0.05em' : undefined }}>
+      {glitched ? scramble(6) : name}
     </span>
     <span style={{
       fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', flexShrink: 0,
@@ -156,6 +173,16 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
   const [data, setData] = useState<RulesPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
   const rv = useRuleVote()
+  const { status } = useCoresStatus()
+  const glitched = !!status.criticalityActive
+    || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('criticality') === '1')
+  // Flicker: re-render a few times a second so the scrambled values keep churning.
+  const [, setGlitchTick] = useState(0)
+  useEffect(() => {
+    if (!glitched) return
+    const id = setInterval(() => setGlitchTick(t => t + 1), 350)
+    return () => clearInterval(id)
+  }, [glitched])
 
   useEffect(() => {
     let cancelled = false
@@ -297,6 +324,7 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
                   value={data.rules[meta.key]}
                   def={data.defaults[meta.key]}
                   changed={changed.has(meta.key)}
+                  glitched={glitched}
                 />
               ))}
             </div>
@@ -311,7 +339,7 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
               textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
             }}>Scoring Model</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              <ScoringModelRow name={ACTIVE_SCORING_MODEL} />
+              <ScoringModelRow name={ACTIVE_SCORING_MODEL} glitched={glitched} />
             </div>
           </div>
         )}
