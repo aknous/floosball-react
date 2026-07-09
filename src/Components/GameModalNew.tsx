@@ -158,10 +158,18 @@ function isFieldBadgeResult(playResult: string): boolean {
     || playResult === 'Turnover On Downs' || playResult === 'Punt'
 }
 
-function getResultColor(playResult: string): string | null {
+function getResultColor(playResult: string, lastDown = 4): string | null {
   if (!playResult) return null
-  if (playResult === '2nd Down' || playResult === '3rd Down') return null
-  if (playResult === '1st Down') return '#3b82f6'
+  // Down-marker results ('1st Down' .. 'Nth Down'). downsPerSeries is a mutable
+  // rule, so color the ACTUAL last down amber (urgent), the first blue, the rest
+  // uncolored — instead of hardcoding 4th.
+  const downMatch = playResult.match(/^(\d+)(?:st|nd|rd|th) Down$/)
+  if (downMatch) {
+    const d = parseInt(downMatch[1], 10)
+    if (d === 1) return '#3b82f6'
+    if (d >= lastDown) return '#f59e0b'
+    return null
+  }
   // XP now fires as its own play (PlayResult.ExtraPointGood / ExtraPointNoGood).
   // Check XP first because 'XP Good' would otherwise match the legacy 'Touchdown'
   // include below if both ever co-occurred. 'Touchdown, XP is Good' / 'Touchdown,
@@ -174,7 +182,7 @@ function getResultColor(playResult: string): string | null {
   if (playResult === 'Safety') return '#ef4444'
   if (playResult.includes('2-Pt') && !playResult.includes('No Good')) return '#22c55e'
   if (playResult === 'Fumble' || playResult === 'Interception' || playResult === 'Turnover On Downs') return '#ef4444'
-  if (playResult === '4th Down' || playResult.includes('2-Pt No Good')) return '#f59e0b'
+  if (playResult.includes('2-Pt No Good')) return '#f59e0b'
   if (playResult === 'Punt' || playResult === 'Field Goal is No Good') return '#94a3b8'
   return '#64748b'
 }
@@ -185,6 +193,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   const [showHighlightsOnly, setShowHighlightsOnly] = useState(false)
   const [expandedPlayKey, setExpandedPlayKey] = useState<string | null>(null)
   const [expandedStatKey, setExpandedStatKey] = useState<string | null>(null)
+  // The league's current downs-per-series (a mutable rule) so the ACTUAL last down
+  // is colored urgent, not a hardcoded 4th.
+  const [lastDown, setLastDown] = useState(4)
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${API_BASE}/rules`).then(r => r.json())
+      .then(j => { if (!cancelled) setLastDown(Number(j?.data?.rules?.downsPerSeries) || 4) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const isMobile = useIsMobile()
   // Stats table has its own (higher) tight-layout breakpoint — the panel
   // is only ~60% of modal width on tablet/desktop, so a 900px landscape
@@ -704,7 +722,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 {(() => {
                   const sackColor = '#f97316'
                   const isSafety = play.playResult === 'Safety'
-                  const resultColor = play.playResult ? getResultColor(String(play.playResult)) : null
+                  const resultColor = play.playResult ? getResultColor(String(play.playResult), lastDown) : null
                   const badgeColor = isSafety ? resultColor : play.isSack ? sackColor : resultColor
                   const badgeLabel = isSafety ? 'Safety' : play.isSack ? 'SACK' : play.playResult
                   if (!badgeColor) return null
@@ -1600,7 +1618,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                           </p>
                         )}
                         {playResult && isFieldBadgeResult(String(playResult)) && (() => {
-                          const badgeColor = getResultColor(String(playResult)) ?? '#64748b'
+                          const badgeColor = getResultColor(String(playResult), lastDown) ?? '#64748b'
                           return (
                             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4px' }}>
                               <span style={{
