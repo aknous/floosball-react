@@ -140,9 +140,9 @@ const RuleVoteModal: React.FC = () => {
           {/* Options */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {options.map(o => optionRow(
-              o.field, o.label,
+              o.key, o.label,
               `${fmtRuleValue(o.current)} → ${fmtRuleValue(o.proposed)}`,
-              myPick === o.field, totals[o.field] ?? 0, () => castVote(o.field),
+              myPick === o.key, totals[o.key] ?? 0, () => castVote(o.key),
             ))}
             {optionRow(
               NONE_KEY,

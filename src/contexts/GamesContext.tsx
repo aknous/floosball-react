@@ -297,6 +297,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               yardsToFirstDown: gsEvt.distance ?? undefined,
               yardLine: gsEvt.yardLine ?? undefined,
               yardsToEndzone: gsEvt.yardsToEndzone ?? undefined,
+              driveClock: gsEvt.driveClock ?? null,
               homeWinProbability: gsEvt.homeWinProbability,
               awayWinProbability: gsEvt.awayWinProbability,
               homeTimeouts: gsEvt.homeTimeouts,

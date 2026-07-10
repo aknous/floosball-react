@@ -7,6 +7,16 @@ export interface BaseWebSocketEvent {
   timestamp: string
 }
 
+// Drive Clock — the current possession's shot clock (the Drive Clock rule).
+// `remaining` is seconds or plays per `unit`; present only while the rule is on.
+export interface DriveClockState {
+  remaining: number
+  unit: 'seconds' | 'plays'
+  reset: 'possession' | 'series'
+  limit: number
+  low: boolean
+}
+
 // Player statistics during a game
 export interface PlayerGameStats {
   playerId: string
@@ -465,6 +475,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   yardLine: string | null  // e.g., 'BAL 25'
   yardsToEndzone: number | null
   yardsToSafety: number | null
+  driveClock?: DriveClockState | null   // possession shot clock (Drive Clock rule); null when off
   isPossessionChange: boolean
   lastPlay: {
     playNumber: number

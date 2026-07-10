@@ -8,7 +8,8 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const POLL_MS = 30_000
 
 export interface RuleVoteOption {
-  field: string
+  key: string                         // the vote/tally key (a field, a preset key, or 'revert:<mechanic>')
+  field: string | null               // the scalar field, or null for a compound preset (e.g. Drive Clock)
   label: string
   current: number | boolean | string
   proposed: number | boolean | string

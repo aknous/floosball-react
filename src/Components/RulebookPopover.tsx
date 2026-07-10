@@ -80,10 +80,19 @@ const GROUPS: RuleGroup[] = [
 // engine is built and votable). A row with a live `true` flag renders as Active.
 const DORMANT_RULES: { name: string; field?: string }[] = [
   { name: 'Contested Scoring' },
-  { name: 'Drive Clock' },
+  { name: 'Drive Clock', field: 'driveClockEnabled' },
   { name: 'Conversion Ladder', field: 'conversionLadderEnabled' },
   { name: 'Sideline Goals' },
 ]
+
+// When the Drive Clock is on, summarise its live mode for the active row.
+function driveClockDetail(rules: any): string | undefined {
+  if (!rules?.driveClockEnabled) return undefined
+  const lim = rules.driveClockLimit
+  const unit = rules.driveClockUnit === 'plays' ? (lim === 1 ? 'play' : 'plays') : 'sec'
+  const reset = rules.driveClockReset === 'series' ? 'resets each 1st down' : 'whole drive'
+  return `${lim} ${unit}, ${reset}`
+}
 
 const RuleRow: React.FC<{ meta: RuleMeta; value: any; def: any; changed: boolean; glitched?: boolean }> =
   ({ meta, value, def, changed, glitched }) => (
@@ -137,7 +146,7 @@ const ScoringModelRow: React.FC<{ name: string; glitched?: boolean; changed?: bo
 // A dormant mechanic row. Once a mechanic is switched on (a Cores vote flips its
 // enable flag) it reads ACTIVE — an open lock, full opacity, amber label — instead
 // of the dimmed "Sealed".
-const DormantRuleRow: React.FC<{ name: string; active?: boolean }> = ({ name, active }) => (
+const DormantRuleRow: React.FC<{ name: string; active?: boolean; detail?: string }> = ({ name, active, detail }) => (
   <div style={{
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '8px 10px', borderRadius: '5px',
@@ -153,8 +162,13 @@ const DormantRuleRow: React.FC<{ name: string; active?: boolean }> = ({ name, ac
         <path d="M6 8V6a4 4 0 118 0v2h1a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V9a1 1 0 011-1h1zm2 0h4V6a2 2 0 10-4 0v2z" />
       </svg>
     )}
-    <span style={{ minWidth: 0, flex: 1, fontSize: '15px', fontWeight: 700, color: active ? CHANGED_COLOR : '#cbd5e1' }}>
-      {name}
+    <span style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <span style={{ fontSize: '15px', fontWeight: 700, color: active ? CHANGED_COLOR : '#cbd5e1' }}>
+        {name}
+      </span>
+      {active && detail && (
+        <span style={{ fontSize: '12px', color: '#94a3b8', marginTop: 1 }}>{detail}</span>
+      )}
     </span>
     <span style={{
       fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', flexShrink: 0,
@@ -364,10 +378,11 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
               textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
             }}>Dormant Rules</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {DORMANT_RULES.map(r => (
-                <DormantRuleRow key={r.name} name={r.name}
-                  active={!!(r.field && data.rules?.[r.field])} />
-              ))}
+              {DORMANT_RULES.map(r => {
+                const active = !!(r.field && data.rules?.[r.field])
+                const detail = r.name === 'Drive Clock' ? driveClockDetail(data.rules) : undefined
+                return <DormantRuleRow key={r.name} name={r.name} active={active} detail={detail} />
+              })}
             </div>
           </div>
         )}
