@@ -153,6 +153,7 @@ const ClockStateIcon: React.FC<{ stopped: boolean }> = ({ stopped }) => {
 /** Returns true for play results that warrant a badge in the field graphic (scores + turnovers). */
 function isFieldBadgeResult(playResult: string): boolean {
   return playResult.includes('Touchdown') || playResult.includes('2-Pt')
+    || playResult.includes('Conversion')
     || playResult === 'XP Good' || playResult === 'XP No Good'
     || playResult === 'Field Goal is Good' || playResult === 'Safety'
     || playResult === 'Fumble' || playResult === 'Interception'
@@ -182,8 +183,11 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
   if (playResult === 'Field Goal is Good') return '#22c55e'
   if (playResult === 'Safety') return '#ef4444'
   if (playResult.includes('2-Pt') && !playResult.includes('No Good')) return '#22c55e'
+  // Conversion Ladder — a higher-rung go-for-it try (from further out).
+  if (playResult.includes('Conversion') && !playResult.includes('No Good')) return '#22c55e'
   if (playResult === 'Fumble' || playResult === 'Interception' || playResult === 'Turnover On Downs') return '#ef4444'
   if (playResult.includes('2-Pt No Good')) return '#f59e0b'
+  if (playResult.includes('Conversion No Good')) return '#f59e0b'
   if (playResult === 'Punt' || playResult === 'Field Goal is No Good') return '#94a3b8'
   return '#64748b'
 }
