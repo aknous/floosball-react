@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react'
 import TeamHoverCard from './TeamHoverCard'
 import { effectiveAwayColor } from '@/utils/colors'
-import { formatScore } from '@/utils/formatScore'
+import { displayScore } from '@/utils/displayScore'
+import { useScoringModel } from '@/contexts/ScoringModelContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -51,6 +52,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
   const isComplete = status === 'Final'
   const isLive = status === 'Active' && (quarter ?? 0) > 0
   const isFinal = isComplete
+  const scoringModel = useScoringModel()
 
   // Away team's effective color for the WP meter: falls back to its secondary
   // when its primary is basically the same as home's, so the two halves of the
@@ -178,7 +180,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             </div>
           </div>
           <div style={scoreStyle} className={homeFlash ? 'score-updated' : ''}>
-            {isLive || isFinal ? formatScore(homeScore) : '—'}
+            {isLive || isFinal ? displayScore(homeScore, awayScore, scoringModel) : '—'}
           </div>
         </div>
       </TeamHoverCard>
@@ -218,7 +220,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             </div>
           </div>
           <div style={scoreStyle} className={awayFlash ? 'score-updated' : ''}>
-            {isLive || isFinal ? formatScore(awayScore) : '—'}
+            {isLive || isFinal ? displayScore(awayScore, homeScore, scoringModel) : '—'}
           </div>
         </div>
       </TeamHoverCard>

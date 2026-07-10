@@ -73,13 +73,7 @@ const GROUPS: RuleGroup[] = [
   ]},
 ]
 
-// ─── Scoring-model tease (not wired — pure foreshadowing) ─────────────────────
-// How score is KEPT is itself a rule. We show only the LIVE model — its presence
-// as a listed rule is the tease that it could be something else (the alternatives
-// stay unlisted). Design lives in docs/rule_mutation_future_ideas + SIM_EVOLUTION.
-const ACTIVE_SCORING_MODEL = 'Additive'
-
-// Dormant structural rules — mechanics the Cores could switch on, currently off.
+// ─── Dormant structural rules — mechanics the Cores could switch on, currently off.
 // Named (unlike the secret scoring models) so they read as an ominous roadmap of
 // what the game could become. Design lives in docs/SIM_EVOLUTION.md.
 const DORMANT_RULES = ['Contested Scoring', 'Drive Clock', 'Conversion Ladder', 'Sideline Goals']
@@ -111,17 +105,17 @@ const RuleRow: React.FC<{ meta: RuleMeta; value: any; def: any; changed: boolean
   </div>
 )
 
-const ScoringModelRow: React.FC<{ name: string; glitched?: boolean }> = ({ name, glitched }) => (
+const ScoringModelRow: React.FC<{ name: string; glitched?: boolean; changed?: boolean }> = ({ name, glitched, changed }) => (
   <div style={{
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '8px 10px', borderRadius: '5px',
-    backgroundColor: '#0f172a', border: `1px solid ${glitched ? '#4c1d95' : '#1e293b'}`,
+    backgroundColor: '#0f172a', border: `1px solid ${glitched ? '#4c1d95' : (changed ? '#78350f' : '#1e293b')}`,
   }}>
     <span style={{
       width: 7, height: 7, borderRadius: '50%',
-      backgroundColor: glitched ? GLITCH_COLOR : LABEL_COLOR, flexShrink: 0,
+      backgroundColor: glitched ? GLITCH_COLOR : (changed ? CHANGED_COLOR : LABEL_COLOR), flexShrink: 0,
     }} />
-    <span style={{ minWidth: 0, flex: 1, fontSize: '15px', fontWeight: 700, color: glitched ? GLITCH_COLOR : '#cbd5e1', letterSpacing: glitched ? '0.05em' : undefined }}>
+    <span style={{ minWidth: 0, flex: 1, fontSize: '15px', fontWeight: 700, color: glitched ? GLITCH_COLOR : (changed ? CHANGED_COLOR : '#cbd5e1'), letterSpacing: glitched ? '0.05em' : undefined }}>
       {glitched ? scramble(6) : name}
     </span>
     <span style={{
@@ -336,7 +330,11 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
               textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
             }}>Scoring Model</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              <ScoringModelRow name={ACTIVE_SCORING_MODEL} glitched={glitched} />
+              {(() => {
+                const model = String(data.rules?.scoringModel ?? 'additive')
+                const name = model.charAt(0).toUpperCase() + model.slice(1)
+                return <ScoringModelRow name={name} glitched={glitched} changed={model !== 'additive'} />
+              })()}
             </div>
           </div>
         )}

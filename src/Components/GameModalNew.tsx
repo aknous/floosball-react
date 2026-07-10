@@ -16,6 +16,7 @@ import CheerBar from './CheerBar'
 import { GlitchedText } from './GlitchedText'
 import { effectiveAwayColor } from '@/utils/colors'
 import { formatScore } from '@/utils/formatScore'
+import { displayScore, ScoringModel } from '@/utils/displayScore'
 import { ordinal } from '@/utils/ordinal'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -196,10 +197,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // The league's current downs-per-series (a mutable rule) so the ACTUAL last down
   // is colored urgent, not a hardcoded 4th.
   const [lastDown, setLastDown] = useState(4)
+  // The league's active score display model (additive / spread / share) — the same
+  // /api/rules fetch that drives the last-down color.
+  const [scoringModel, setScoringModel] = useState<ScoringModel>('additive')
   useEffect(() => {
     let cancelled = false
     fetch(`${API_BASE}/rules`).then(r => r.json())
-      .then(j => { if (!cancelled) setLastDown(Number(j?.data?.rules?.downsPerSeries) || 4) })
+      .then(j => {
+        if (cancelled) return
+        setLastDown(Number(j?.data?.rules?.downsPerSeries) || 4)
+        const m = j?.data?.rules?.scoringModel
+        if (m === 'additive' || m === 'spread' || m === 'share') setScoringModel(m)
+      })
       .catch(() => {})
     return () => { cancelled = true }
   }, [])
@@ -872,7 +881,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             )}
             {play.scoreChange && play.homeTeamScore != null && (
               <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                {gameData.homeTeam.abbr} {formatScore(play.homeTeamScore)} – {formatScore(play.awayTeamScore)} {gameData.awayTeam.abbr}
+                {gameData.homeTeam.abbr} {displayScore(play.homeTeamScore, play.awayTeamScore, scoringModel)} – {displayScore(play.awayTeamScore, play.homeTeamScore, scoringModel)} {gameData.awayTeam.abbr}
               </div>
             )}
             {/* Reactions for the play itself — only on plays with a stable
@@ -1063,7 +1072,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={homeFlash ? 'score-updated' : ''}>
-                  {formatScore(dHomeScore)}
+                  {displayScore(dHomeScore, dAwayScore, scoringModel)}
                 </div>
               </div>
 
@@ -1111,7 +1120,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={awayFlash ? 'score-updated' : ''}>
-                  {formatScore(dAwayScore)}
+                  {displayScore(dAwayScore, dHomeScore, scoringModel)}
                 </div>
               </div>
 

@@ -10,8 +10,8 @@ const POLL_MS = 30_000
 export interface RuleVoteOption {
   field: string
   label: string
-  current: number | boolean
-  proposed: number | boolean
+  current: number | boolean | string
+  proposed: number | boolean | string
 }
 
 interface RuleVoteState {
@@ -153,10 +153,12 @@ export function useRuleVote(): RuleVoteState {
   return ctx
 }
 
-// Display a rule value: booleans as On/Off, numbers trimmed of trailing zeros.
-export function fmtRuleValue(v: number | boolean | null | undefined): string {
+// Display a rule value: booleans as On/Off, string enums title-cased (a scoring
+// model 'spread' -> 'Spread'), numbers trimmed of trailing zeros.
+export function fmtRuleValue(v: number | boolean | string | null | undefined): string {
   if (typeof v === 'boolean') return v ? 'On' : 'Off'
   if (v == null) return '—'
+  if (typeof v === 'string') return v.charAt(0).toUpperCase() + v.slice(1)
   const n = Number(v)
   return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
 }

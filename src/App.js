@@ -39,6 +39,7 @@ import { GamesProvider } from './contexts/GamesContext'
 import { AchievementsProvider } from './contexts/AchievementsContext'
 import { CoresStatusProvider } from './contexts/CoresStatusContext'
 import { RuleVoteProvider } from './contexts/RuleVoteContext'
+import { ScoringModelProvider } from './contexts/ScoringModelContext'
 import CriticalityGlitch from './Components/CriticalityGlitch'
 import AchievementUnlockedToast from './Components/AchievementUnlockedToast'
 import FloobitsReceivedToast from './Components/FloobitsReceivedToast'
@@ -268,6 +269,7 @@ function App() {
         <AuthProvider>
           <SeasonWebSocketProvider>
             <FloosballProvider>
+             <ScoringModelProvider>
               <GamesProvider>
                 <AchievementsProvider>
                   <CoresStatusProvider>
@@ -284,6 +286,7 @@ function App() {
                   </CoresStatusProvider>
                 </AchievementsProvider>
               </GamesProvider>
+             </ScoringModelProvider>
             </FloosballProvider>
           </SeasonWebSocketProvider>
         </AuthProvider>
