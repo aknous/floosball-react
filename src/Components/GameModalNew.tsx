@@ -1240,9 +1240,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               {/* Drive Clock — the possession shot clock (only when the rule is on) */}
               {gameData.status === 'Active' && !replayActive && gameData.driveClock && (() => {
                 const dc = gameData.driveClock!
+                const s = Math.max(0, dc.remaining)
                 const val = dc.unit === 'plays'
-                  ? `${dc.remaining} ${dc.remaining === 1 ? 'play' : 'plays'} left`
-                  : `0:${String(Math.max(0, dc.remaining)).padStart(2, '0')}`
+                  ? `${s} ${s === 1 ? 'play' : 'plays'} left`
+                  : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
                 const color = dc.low ? '#f59e0b' : '#94a3b8'
                 return (
                   <div style={{ fontSize: '11px', color, fontWeight: 700, marginTop: '3px',

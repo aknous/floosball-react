@@ -8,7 +8,9 @@ export type ScoringModel = 'additive' | 'spread' | 'share'
 // Render one team's score under the active model, given its own score and the
 // opponent's:
 //   additive -> the team's cumulative points (today's behavior), e.g. "21"
-//   spread   -> the leader-centric margin: leader "+N", trailer "-N", tie "EVEN"
+//   spread   -> a SINGLE leader-centric readout: the leader shows "+N", the
+//               trailer shows nothing (blank), and a tie shows "EVEN". So the
+//               board reads "PHI +7" / (blank), not "+7" and "-7" on both sides.
 //   share    -> the team's percentage of total points scored, e.g. "60%" (tie/0-0 -> "50%")
 // Falls back to additive for an unknown model, so a new backend value never blanks
 // the scoreboard.
@@ -23,7 +25,7 @@ export function displayScore(
   if (model === 'spread') {
     const margin = t - o
     if (margin === 0) return 'EVEN'
-    return (margin > 0 ? '+' : '-') + formatScore(Math.abs(margin))
+    return margin > 0 ? `+${formatScore(margin)}` : ''   // only the leader carries the line
   }
 
   if (model === 'share') {
