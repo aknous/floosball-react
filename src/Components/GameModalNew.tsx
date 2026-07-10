@@ -157,7 +157,8 @@ function isFieldBadgeResult(playResult: string): boolean {
     || playResult === 'XP Good' || playResult === 'XP No Good'
     || playResult === 'Field Goal is Good' || playResult === 'Safety'
     || playResult === 'Fumble' || playResult === 'Interception'
-    || playResult === 'Turnover On Downs' || playResult === 'Punt'
+    || playResult === 'Turnover On Downs' || playResult === 'Drive Clock Expired'
+    || playResult === 'Punt'
 }
 
 function getResultColor(playResult: string, lastDown = 4): string | null {
@@ -186,6 +187,7 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
   // Conversion Ladder — a higher-rung go-for-it try (from further out).
   if (playResult.includes('Conversion') && !playResult.includes('No Good')) return '#22c55e'
   if (playResult === 'Fumble' || playResult === 'Interception' || playResult === 'Turnover On Downs') return '#ef4444'
+  if (playResult === 'Drive Clock Expired') return '#ef4444'   // a turnover — red, distinct badge text
   if (playResult.includes('2-Pt No Good')) return '#f59e0b'
   if (playResult.includes('Conversion No Good')) return '#f59e0b'
   if (playResult === 'Punt' || playResult === 'Field Goal is No Good') return '#94a3b8'

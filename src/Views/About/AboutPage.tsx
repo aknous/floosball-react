@@ -699,7 +699,7 @@ const AboutPage: React.FC = () => {
             {bulletList([
               'Blue badges: First Down',
               'Green badges: Touchdown, Field Goal, Extra Point Good, 2-Pt conversion',
-              'Red badges: Fumble, Interception, Turnover on Downs, Safety',
+              'Red badges: Fumble, Interception, Turnover on Downs, Drive Clock Expired, Safety',
               'Orange badges: Sack',
               'Amber badges: 4th Down stop, 2-Pt conversion failure, Missed Extra Point',
               'Gray badges: Punt, Missed Field Goal',
