@@ -491,6 +491,7 @@ export default function PlayerPage() {
   const [player, setPlayer] = useState<PlayerData | null>(null)
   const [ratingHistory, setRatingHistory] = useState<RatingPoint[]>([])
   const [ratingCeiling, setRatingCeiling] = useState<number | null>(null)
+  const [ratingExpected, setRatingExpected] = useState<number | null>(null)
   const [quotes, setQuotes] = useState<Array<{ text: string; event?: string; personality?: string; timestamp?: string }>>([])
   const [loading, setLoading] = useState(true)
   const [statsView, setStatsView] = useState<'offense' | 'defense'>('offense')
@@ -511,6 +512,7 @@ export default function PlayerPage() {
       if (playerRes?.success && playerRes.data) setPlayer(playerRes.data)
       if (historyRes?.success && historyRes.data?.history) setRatingHistory(historyRes.data.history)
       if (historyRes?.success) setRatingCeiling(historyRes.data?.ceiling ?? null)
+      if (historyRes?.success) setRatingExpected(historyRes.data?.expected ?? null)
       if (quotesRes?.success && Array.isArray(quotesRes.data)) setQuotes(quotesRes.data)
     }).finally(() => setLoading(false))
   }, [id])
@@ -987,7 +989,7 @@ export default function PlayerPage() {
                       justifyContent: 'center',
                       height: '280px',
                     }}>
-                      <RatingHistoryChart history={ratingHistory} teamColor={teamColor} ceiling={ratingCeiling} />
+                      <RatingHistoryChart history={ratingHistory} teamColor={teamColor} ceiling={ratingCeiling} expected={ratingExpected} />
                     </div>
                   )}
 
@@ -1293,7 +1295,7 @@ export default function PlayerPage() {
 // Full-size rating progression chart for the player page. Line chart with
 // endpoint dots and season labels on the x-axis, rating (60-100) on the y.
 // Colors by per-segment trend so climbs look green, declines red, flat gray.
-function RatingHistoryChart({ history, teamColor, ceiling }: { history: RatingPoint[]; teamColor: string; ceiling?: number | null }) {
+function RatingHistoryChart({ history, teamColor, ceiling, expected }: { history: RatingPoint[]; teamColor: string; ceiling?: number | null; expected?: number | null }) {
   const PAD_LEFT = 36
   const PAD_RIGHT = 12
   const PAD_TOP = 16
@@ -1310,6 +1312,7 @@ function RatingHistoryChart({ history, teamColor, ceiling }: { history: RatingPo
 
   const seasons = history.map(h => h.season)
   const ratings = history.map(h => h.rating)
+  const currentRating = ratings[ratings.length - 1]
   const minSeason = seasons[0]
   const maxSeason = seasons[seasons.length - 1]
   const seasonSpan = Math.max(1, maxSeason - minSeason)
@@ -1354,6 +1357,29 @@ function RatingHistoryChart({ history, teamColor, ceiling }: { history: RatingPo
           </text>
         </g>
       ))}
+
+      {/* Projected expected — dotted reference line at the rating the player
+          naturally develops into (full trueSkill). Only shown when it's a real
+          upward target above the current rating; teal to distinguish it from the
+          amber ceiling. Nudged down a touch if it would collide with the ceiling. */}
+      {expected != null && expected > 0 && expected > currentRating && (() => {
+        const ey = yFor(expected)
+        const cSep = ceiling != null && ceiling > 0 && Math.abs(yFor(ceiling) - ey) < 12
+        const labelY = ey < PAD_TOP + 14 ? ey + 14 : ey + (cSep ? 13 : -5)
+        return (
+          <g>
+            <line
+              x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT}
+              y1={ey} y2={ey}
+              stroke="#38bdf8" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.8}
+            />
+            <rect x={PAD_LEFT + 2} y={labelY - 10} width={72} height={13} rx={2} fill="#0f172a" opacity={0.9} />
+            <text x={PAD_LEFT + 6} y={labelY} fontSize="11" fill="#38bdf8" fontWeight={700} textAnchor="start">
+              Expected {Math.round(expected)}
+            </text>
+          </g>
+        )
+      })()}
 
       {/* Projected ceiling — dotted reference line at the player's top
           attainable rating (full potential). Label flips below the line when
