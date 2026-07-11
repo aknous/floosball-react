@@ -20,7 +20,8 @@ interface ScoutedRookie {
   rating: number
   tier: string | null
   longevity: number | null
-  potentials: Record<string, PotentialRange>
+  projectedExpected: PotentialRange | null
+  projectedCeiling: PotentialRange | null
   scoutingAccuracy: number
   scoutingRange: number
 }
@@ -50,7 +51,7 @@ function PotentialCell({ label, range }: { label: string; range: PotentialRange 
       : '—'
   const isExact = range.exact != null
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '14px' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '5px', fontSize: '14px' }}>
       <span style={{ color: '#94a3b8' }}>{label}</span>
       <span style={{
         color: isExact ? '#e2e8f0' : '#cbd5e1',
@@ -59,7 +60,7 @@ function PotentialCell({ label, range }: { label: string; range: PotentialRange 
       }}>
         {display}
       </span>
-    </div>
+    </span>
   )
 }
 
@@ -89,11 +90,12 @@ function RookieCard({
   slotCount: number
   readOnly?: boolean
 }) {
-  // Show only the overall skill ceiling — per-attribute potentials were more
-  // noise than signal for a single glance-and-vote decision. The sparkline on
-  // the prospect pipeline already tracks growth over time, and the ballot is
-  // a preference, not a detailed scouting report.
-  const skillCeiling = rookie.potentials['potentialSkillRating']
+  // Two overall projections: Expected (natural development, at trueSkill) and
+  // Ceiling (perfect development, at potential). Both scouting-blurred. These are
+  // the same numbers surfaced as markers on the drafted player's profile.
+  const projExpected = rookie.projectedExpected
+  const projCeiling = rookie.projectedCeiling
+  const hasProjection = !!(projExpected || projCeiling)
   const selected = voteOrder != null
 
   return (
@@ -118,9 +120,10 @@ function RookieCard({
         <Stars stars={calcStars(rookie.rating)} size={14} />
       </div>
 
-      {skillCeiling && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <PotentialCell label="Skill Ceiling" range={skillCeiling} />
+      {hasProjection && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px' }}>
+          {projExpected && <PotentialCell label="Expected" range={projExpected} />}
+          {projCeiling && <PotentialCell label="Ceiling" range={projCeiling} />}
         </div>
       )}
 
