@@ -213,7 +213,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         if (cancelled) return
         setLastDown(Number(j?.data?.rules?.downsPerSeries) || 4)
         const m = j?.data?.rules?.scoringModel
-        if (m === 'additive' || m === 'spread' || m === 'share') setScoringModel(m)
+        if (m === 'additive' || m === 'spread' || m === 'subtractive') setScoringModel(m)
       })
       .catch(() => {})
     return () => { cancelled = true }

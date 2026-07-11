@@ -21,7 +21,7 @@ export const ScoringModelProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const res = await fetch(`${API_BASE}/rules`, { cache: 'reload' })
         if (!res.ok) return
         const m = (await res.json())?.data?.rules?.scoringModel
-        if (!cancelled && (m === 'additive' || m === 'spread' || m === 'share')) setModel(m)
+        if (!cancelled && (m === 'additive' || m === 'spread' || m === 'subtractive')) setModel(m)
       } catch {
         /* leave the last-known model in place on a transient failure */
       }
