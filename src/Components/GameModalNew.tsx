@@ -1393,6 +1393,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               const playType = (lastPlay?.playType ?? '').toUpperCase()
               const isTD = !!lastPlay?.isTouchdown
               const isTurnover = !!lastPlay?.isTurnover
+              // Sideline Goals hoop shot — the last play was a throw at a hoop.
+              const isHoopShot = String(lastPlay?.playResult ?? '').includes('Sideline Hoop')
+              const hoopMade = lastPlay?.playResult === 'Sideline Hoop Good'
 
               // Which direction did the last play go?
               // Home team plays go right (+1), away team plays go left (-1)
@@ -1453,7 +1456,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               let playDash = 'none'
               let playEndX: number | null = null
 
-              if (playType === 'PUNT' && ballX != null && ballAbsYfl != null && Math.abs(yardsGained) >= 1) {
+              if (isHoopShot && ballX != null) {
+                // Hoop shot — arc from the ball up to the target hoop (midfield or the
+                // attacking end-zone pair), on the top sideline. Green make / grey miss.
+                const pair = (lastPlay as any)?.hoopPair
+                const hoopX = pair === 'endzone' ? (lastPlayDir === 1 ? toX(110) : toX(10)) : toX(60)
+                const hoopY = 12
+                const midPX = (ballX + hoopX) / 2
+                const peakY = hoopY - 24
+                playPath = `M${ballX},${midY} Q${midPX},${peakY} ${hoopX},${hoopY}`
+                playStroke = hoopMade ? '#22c55e' : '#94a3b8'   // green make / grey incompletion
+                playDash = '6,3'
+                playEndX = hoopX
+              } else if (playType === 'PUNT' && ballX != null && ballAbsYfl != null && Math.abs(yardsGained) >= 1) {
                 // Punt: draw arc forward from LOS to landing spot
                 const puntEndX = toX(ballAbsYfl + yardsGained * lastPlayDir)
                 const midPX = (ballX + puntEndX) / 2
@@ -1523,7 +1538,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               // The possession-change guard suppresses a stale run/pass
               // trajectory, but a kick's arc is the play itself and stays
               // meaningful even though possession flips after it.
-              if (!sameTeamHasBall && playType !== 'PUNT' && playType !== 'FIELDGOAL') playPath = null
+              if (!sameTeamHasBall && playType !== 'PUNT' && playType !== 'FIELDGOAL' && !isHoopShot) playPath = null
 
               // Arrowhead points toward the end of the play
               const arrowDir = playEndX != null && ballX != null ? (playEndX >= ballX ? 1 : -1) : lastPlayDir
