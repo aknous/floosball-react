@@ -159,6 +159,7 @@ function isFieldBadgeResult(playResult: string): boolean {
     || playResult === 'Fumble' || playResult === 'Interception'
     || playResult === 'Turnover On Downs' || playResult === 'Drive Clock Expired'
     || playResult.includes('Sideline Hoop') || playResult === 'Bust'
+    || playResult.includes('Contest') || playResult === 'Provisional Score'
     || playResult === 'Punt'
 }
 
@@ -192,6 +193,9 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
   if (playResult === 'Sideline Hoop Good') return '#22c55e'    // banked a point (drive continues)
   if (playResult === 'Sideline Hoop Miss') return '#94a3b8'    // just an incompletion (no turnover)
   if (playResult === 'Bust') return '#ef4444'                  // darts: overshot X, no points, turnover
+  if (playResult === 'Provisional Score') return '#f59e0b'     // contested: reached the end zone, contest pending
+  if (playResult === 'Contest Won') return '#22c55e'           // contested: the action banked the TD
+  if (playResult === 'Contest Stuff') return '#ef4444'         // contested: stuffed, no points
   if (playResult.includes('2-Pt No Good')) return '#f59e0b'
   if (playResult.includes('Conversion No Good')) return '#f59e0b'
   if (playResult === 'Punt' || playResult === 'Field Goal is No Good') return '#94a3b8'

@@ -79,7 +79,7 @@ const GROUPS: RuleGroup[] = [
 // Each dormant mechanic + the GameRules enable-flag that switches it on (once its
 // engine is built and votable). A row with a live `true` flag renders as Active.
 const DORMANT_RULES: { name: string; field?: string }[] = [
-  { name: 'Contested Scoring' },
+  { name: 'Contested Scoring', field: 'contestedScoringEnabled' },
   { name: 'Drive Clock', field: 'driveClockEnabled' },
   { name: 'Conversion Ladder', field: 'conversionLadderEnabled' },
   { name: 'Sideline Goals', field: 'sidelineGoalsEnabled' },
