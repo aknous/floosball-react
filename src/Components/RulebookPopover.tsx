@@ -344,7 +344,9 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               {(() => {
                 const fmt = String(data.rules?.gameFormat ?? 'standard')
-                const name = fmt === 'target' ? `First to ${data.rules?.targetScore ?? 30}` : 'Standard'
+                const name = fmt === 'target' ? `First to ${data.rules?.targetScore ?? 30}`
+                  : fmt === 'play_limit' ? `${data.rules?.playsPerQuarter ?? 30} Plays a Quarter`
+                  : 'Standard'
                 return <ScoringModelRow name={name} glitched={glitched} changed={fmt !== 'standard'} />
               })()}
             </div>

@@ -17,6 +17,14 @@ export interface DriveClockState {
   low: boolean
 }
 
+// play_limit game format: fixed plays per quarter (no game clock)
+export interface PlayLimitState {
+  active: boolean
+  playsPerQuarter: number
+  playsThisQuarter: number
+  playsRemaining: number
+}
+
 // Player statistics during a game
 export interface PlayerGameStats {
   playerId: string
@@ -476,6 +484,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   yardsToEndzone: number | null
   yardsToSafety: number | null
   driveClock?: DriveClockState | null   // possession shot clock (Drive Clock rule); null when off
+  playLimit?: PlayLimitState            // play_limit format: plays-per-quarter (no clock)
   isPossessionChange: boolean
   lastPlay: {
     playNumber: number

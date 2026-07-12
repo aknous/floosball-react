@@ -1211,17 +1211,24 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   <span>Final{gameData.isOvertime ? ' (OT)' : ''}</span>
                 ) : gameData.status === 'Active' ? (
                   <>
-                    <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.timeRemaining}`}</span>
-                    {(() => {
-                      // Mirror the per-play icon: derive current clock state
-                      // from the most recent real play. plays are newest-first.
-                      const latest = gameData.plays?.find((p: any) => !p.event && p.playResult != null)
-                      if (!latest) return null
-                      // Hide when the latest play scored — same noise gate as
-                      // the per-play row.
-                      if (latest.scoreChange) return null
-                      return <ClockStateIcon stopped={!!latest.clockStopped} />
-                    })()}
+                    {gameData.playLimit?.active ? (
+                      // play_limit: no clock — show plays remaining in the period
+                      <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.playLimit.playsRemaining} ${gameData.playLimit.playsRemaining === 1 ? 'play' : 'plays'} left`}</span>
+                    ) : (
+                      <>
+                        <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.timeRemaining}`}</span>
+                        {(() => {
+                          // Mirror the per-play icon: derive current clock state
+                          // from the most recent real play. plays are newest-first.
+                          const latest = gameData.plays?.find((p: any) => !p.event && p.playResult != null)
+                          if (!latest) return null
+                          // Hide when the latest play scored — same noise gate as
+                          // the per-play row.
+                          if (latest.scoreChange) return null
+                          return <ClockStateIcon stopped={!!latest.clockStopped} />
+                        })()}
+                      </>
+                    )}
                   </>
                 ) : (
                   <span>{gameData.status}</span>
@@ -1270,6 +1277,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </div>
                 )
               })()}
+              {/* Game format: play_limit (fixed plays per quarter, no clock) */}
+              {gameFormat === 'play_limit' && gameData.playLimit?.active && (
+                <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
+                              letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  {gameData.playLimit.playsPerQuarter} plays a quarter
+                </div>
+              )}
             </div>
 
             {/* "Field Position" header + replay/catch-up controls on one line,
