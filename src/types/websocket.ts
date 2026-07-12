@@ -44,6 +44,17 @@ export interface InningsState {
   triesPerInning: number
 }
 
+// frames game format: golf-style match play (win a frame = +1; most frames wins)
+export interface FramesState {
+  active: boolean
+  framesPerGame: number
+  currentFrame: number
+  framesWonHome: number
+  framesWonAway: number
+  frameHome: number   // points this frame
+  frameAway: number
+}
+
 // Player statistics during a game
 export interface PlayerGameStats {
   playerId: string
@@ -506,6 +517,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   playLimit?: PlayLimitState            // play_limit format: plays-per-quarter (no clock)
   chessClock?: ChessClockState          // chess_clock format: per-team offense budgets
   innings?: InningsState                // innings format: out-driven inning state
+  frames?: FramesState                  // frames format: match-play frame state
   isPossessionChange: boolean
   lastPlay: {
     playNumber: number

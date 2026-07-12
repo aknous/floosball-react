@@ -1298,6 +1298,22 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   {gameData.innings.inningsPerGame}-inning game
                 </div>
               )}
+              {/* Game format: frames (match play) — the match is frames won, not points */}
+              {gameFormat === 'frames' && gameData.frames?.active && gameData.status !== 'Scheduled' && (() => {
+                const fr = gameData.frames!
+                const n = (v: number) => (v === Math.floor(v) ? String(v) : v.toFixed(1))
+                return (
+                  <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
+                                letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    Frames {n(fr.framesWonHome)}&ndash;{n(fr.framesWonAway)}
+                    <span style={{ color: '#94a3b8', margin: '0 5px' }}>·</span>
+                    Frame {fr.currentFrame}/{fr.framesPerGame}
+                    {gameData.status === 'Active' && (
+                      <span style={{ color: '#94a3b8' }}> (this frame {fr.frameHome}&ndash;{fr.frameAway})</span>
+                    )}
+                  </div>
+                )
+              })()}
               {/* Game format: chess_clock — each team's remaining offense-time budget */}
               {gameFormat === 'chess_clock' && gameData.chessClock?.active && gameData.status !== 'Scheduled' && (() => {
                 const cc = gameData.chessClock!
