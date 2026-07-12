@@ -82,7 +82,7 @@ const DORMANT_RULES: { name: string; field?: string }[] = [
   { name: 'Contested Scoring' },
   { name: 'Drive Clock', field: 'driveClockEnabled' },
   { name: 'Conversion Ladder', field: 'conversionLadderEnabled' },
-  { name: 'Sideline Goals' },
+  { name: 'Sideline Goals', field: 'sidelineGoalsEnabled' },
 ]
 
 // When the Drive Clock is on, summarise its live mode for the active row.
