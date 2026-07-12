@@ -148,13 +148,13 @@ const RuleVoteModal: React.FC = () => {
             {multiSelect
               ? options.map(o => optionRow(
                   o.key, o.label,
-                  `${fmtRuleValue(o.current)} → ${fmtRuleValue(o.proposed)}`,
+                  o.description ?? `${fmtRuleValue(o.current)} → ${fmtRuleValue(o.proposed)}`,
                   myPicks.includes(o.key), totals[o.key] ?? 0, () => toggleRevert(o.key), true,
                 ))
               : (<>
                   {options.map(o => optionRow(
                     o.key, o.label,
-                    `${fmtRuleValue(o.current)} → ${fmtRuleValue(o.proposed)}`,
+                    o.description ?? `${fmtRuleValue(o.current)} → ${fmtRuleValue(o.proposed)}`,
                     myPick === o.key, totals[o.key] ?? 0, () => castVote(o.key),
                   ))}
                   {optionRow(
@@ -174,10 +174,10 @@ const RuleVoteModal: React.FC = () => {
             </div>
           )}
 
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '16px', lineHeight: 1.5 }}>
+          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '16px', lineHeight: 1.5 }}>
             {multiSelect
               ? 'Check every rule you want put back. Any rule approved on at least half the ballots is reverted before the day\'s games.'
-              : 'The most-voted option wins. The change takes effect before the day\'s games and lasts until it\'s voted back.'}
+              : 'The most-voted option wins, effective before the day\'s games. It lasts until it\'s voted back or the season ends, when all rules reset to standard.'}
           </div>
         </div>
       </div>

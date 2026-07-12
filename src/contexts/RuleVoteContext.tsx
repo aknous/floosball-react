@@ -11,8 +11,9 @@ export interface RuleVoteOption {
   key: string                         // the vote/tally key (a field, a preset key, or 'revert:<mechanic>')
   field: string | null               // the scalar field, or null for a compound preset (e.g. Drive Clock)
   label: string
-  current: number | boolean | string
-  proposed: number | boolean | string
+  current: number | boolean | string | null
+  proposed: number | boolean | string | null
+  description?: string                // a prose sub-line (game formats) shown instead of "current → proposed"
 }
 
 interface RuleVoteState {

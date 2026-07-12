@@ -68,8 +68,7 @@ const GROUPS: RuleGroup[] = [
     { key: 'safetyPoints', label: 'Safety', fmt: ptsFmt },
   ]},
   { title: 'Clock Stoppage', rules: [
-    { key: 'clockStopsOnIncompletePass', label: 'Incompletion', fmt: boolFmt },
-    { key: 'clockStopsOnOutOfBounds', label: 'Out of bounds', fmt: boolFmt },
+    { key: 'clockStopsOnDeadBall', label: 'Stops on dead balls', fmt: boolFmt },
   ]},
 ]
 
