@@ -190,7 +190,7 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
   if (playResult === 'Fumble' || playResult === 'Interception' || playResult === 'Turnover On Downs') return '#ef4444'
   if (playResult === 'Drive Clock Expired') return '#ef4444'   // a turnover — red, distinct badge text
   if (playResult === 'Sideline Hoop Good') return '#22c55e'    // banked a point (drive continues)
-  if (playResult === 'Sideline Hoop Miss') return '#ef4444'    // a turnover at the spot
+  if (playResult === 'Sideline Hoop Miss') return '#94a3b8'    // just an incompletion (no turnover)
   if (playResult.includes('2-Pt No Good')) return '#f59e0b'
   if (playResult.includes('Conversion No Good')) return '#f59e0b'
   if (playResult === 'Punt' || playResult === 'Field Goal is No Good') return '#94a3b8'
