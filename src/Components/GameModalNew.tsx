@@ -206,6 +206,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // The league's active score display model (additive / spread / share) — the same
   // /api/rules fetch that drives the last-down color.
   const [scoringModel, setScoringModel] = useState<ScoringModel>('additive')
+  // Active game format + target (win condition) — same /api/rules read.
+  const [gameFormat, setGameFormat] = useState<string>('standard')
+  const [targetScore, setTargetScore] = useState<number>(30)
   useEffect(() => {
     let cancelled = false
     fetch(`${API_BASE}/rules`).then(r => r.json())
@@ -214,6 +217,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         setLastDown(Number(j?.data?.rules?.downsPerSeries) || 4)
         const m = j?.data?.rules?.scoringModel
         if (m === 'additive' || m === 'spread' || m === 'subtractive') setScoringModel(m)
+        setGameFormat(String(j?.data?.rules?.gameFormat ?? 'standard'))
+        setTargetScore(Number(j?.data?.rules?.targetScore) || 30)
       })
       .catch(() => {})
     return () => { cancelled = true }
@@ -1251,6 +1256,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   <div style={{ fontSize: '11px', color, fontWeight: 700, marginTop: '3px',
                                 letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                     Drive Clock {val}
+                  </div>
+                )
+              })()}
+              {/* Game format: first-to-X target (win condition) */}
+              {gameFormat === 'target' && gameData.status !== 'Scheduled' && (() => {
+                const leader = Math.max(gameData.homeScore ?? 0, gameData.awayScore ?? 0)
+                const toGo = Math.max(0, targetScore - leader)
+                return (
+                  <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
+                                letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    First to {targetScore}{gameData.status === 'Active' && toGo > 0 ? ` · ${formatScore(toGo)} to go` : ''}
                   </div>
                 )
               })()}

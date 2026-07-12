@@ -370,6 +370,23 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
           </div>
         )}
 
+        {/* Game format — the win condition / how the game is played */}
+        {data && (
+          <div style={{ marginTop: 4, marginBottom: 18, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
+            <div style={{
+              fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
+              textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
+            }}>Game Format</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {(() => {
+                const fmt = String(data.rules?.gameFormat ?? 'standard')
+                const name = fmt === 'target' ? `First to ${data.rules?.targetScore ?? 30}` : 'Standard'
+                return <ScoringModelRow name={name} glitched={glitched} changed={fmt !== 'standard'} />
+              })()}
+            </div>
+          </div>
+        )}
+
         {/* Dormant rules — structural mechanics the Cores could switch on */}
         {data && (
           <div style={{ marginBottom: 4, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
