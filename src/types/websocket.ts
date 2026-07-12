@@ -34,6 +34,16 @@ export interface ChessClockState {
   awayLockedOut: boolean
 }
 
+// innings game format: baseball-style out-driven state (no game clock)
+export interface InningsState {
+  active: boolean
+  inning: number
+  half: 'top' | 'bottom'
+  outs: number
+  inningsPerGame: number
+  outsPerInning: number
+}
+
 // Player statistics during a game
 export interface PlayerGameStats {
   playerId: string
@@ -495,6 +505,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   driveClock?: DriveClockState | null   // possession shot clock (Drive Clock rule); null when off
   playLimit?: PlayLimitState            // play_limit format: plays-per-quarter (no clock)
   chessClock?: ChessClockState          // chess_clock format: per-team offense budgets
+  innings?: InningsState                // innings format: out-driven inning state
   isPossessionChange: boolean
   lastPlay: {
     playNumber: number

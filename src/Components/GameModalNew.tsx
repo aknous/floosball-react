@@ -1211,7 +1211,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   <span>Final{gameData.isOvertime ? ' (OT)' : ''}</span>
                 ) : gameData.status === 'Active' ? (
                   <>
-                    {gameData.playLimit?.active ? (
+                    {gameData.innings?.active ? (
+                      // innings: no clock — show inning, half, and outs
+                      <span>{`${gameData.innings.half === 'bottom' ? 'BOT' : 'TOP'} ${gameData.innings.inning}  •  ${gameData.innings.outs} ${gameData.innings.outs === 1 ? 'out' : 'outs'}`}</span>
+                    ) : gameData.playLimit?.active ? (
                       // play_limit: no clock — show plays remaining in the period
                       <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.playLimit.playsRemaining} ${gameData.playLimit.playsRemaining === 1 ? 'play' : 'plays'} left`}</span>
                     ) : gameData.chessClock?.active ? (
@@ -1286,6 +1289,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
                               letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                   {gameData.playLimit.playsPerQuarter} plays a quarter
+                </div>
+              )}
+              {/* Game format: innings (baseball-style, out-driven, no clock) */}
+              {gameFormat === 'innings' && gameData.innings?.active && (
+                <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
+                              letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  {gameData.innings.inningsPerGame}-inning game
                 </div>
               )}
               {/* Game format: chess_clock — each team's remaining offense-time budget */}
