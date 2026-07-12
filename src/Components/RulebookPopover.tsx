@@ -350,6 +350,7 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
                   : fmt === 'chess_clock' ? `Chess Clock (${ccMin}:00 each)`
                   : fmt === 'innings' ? `Innings (${data.rules?.inningsPerGame ?? 3}, try-driven)`
                   : fmt === 'frames' ? `Frames (${data.rules?.framesPerGame ?? 6}, match play)`
+                  : fmt === 'bust' ? `Darts (land on ${data.rules?.targetScore ?? 18})`
                   : 'Standard'
                 return <ScoringModelRow name={name} glitched={glitched} changed={fmt !== 'standard'} />
               })()}

@@ -158,7 +158,7 @@ function isFieldBadgeResult(playResult: string): boolean {
     || playResult === 'Field Goal is Good' || playResult === 'Safety'
     || playResult === 'Fumble' || playResult === 'Interception'
     || playResult === 'Turnover On Downs' || playResult === 'Drive Clock Expired'
-    || playResult.includes('Sideline Hoop')
+    || playResult.includes('Sideline Hoop') || playResult === 'Bust'
     || playResult === 'Punt'
 }
 
@@ -191,6 +191,7 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
   if (playResult === 'Drive Clock Expired') return '#ef4444'   // a turnover — red, distinct badge text
   if (playResult === 'Sideline Hoop Good') return '#22c55e'    // banked a point (drive continues)
   if (playResult === 'Sideline Hoop Miss') return '#94a3b8'    // just an incompletion (no turnover)
+  if (playResult === 'Bust') return '#ef4444'                  // darts: overshot X, no points, turnover
   if (playResult.includes('2-Pt No Good')) return '#f59e0b'
   if (playResult.includes('Conversion No Good')) return '#f59e0b'
   if (playResult === 'Punt' || playResult === 'Field Goal is No Good') return '#94a3b8'
@@ -1284,6 +1285,20 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
                                 letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                     First to {targetScore}{gameData.status === 'Active' && toGo > 0 ? ` · ${formatScore(toGo)} to go` : ''}
+                  </div>
+                )
+              })()}
+              {/* Game format: bust (darts — land EXACTLY on X; each team's "to go") */}
+              {gameFormat === 'bust' && gameData.status !== 'Scheduled' && (() => {
+                const hGo = Math.max(0, targetScore - (gameData.homeScore ?? 0))
+                const aGo = Math.max(0, targetScore - (gameData.awayScore ?? 0))
+                return (
+                  <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
+                                letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    Darts · land on {targetScore}
+                    {gameData.status === 'Active' && (
+                      <span style={{ color: '#94a3b8' }}> ({gameData.homeTeam?.abbr} needs {hGo} · {gameData.awayTeam?.abbr} needs {aGo})</span>
+                    )}
                   </div>
                 )
               })()}
