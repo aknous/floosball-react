@@ -29,9 +29,12 @@ interface RuleVoteState {
   options: RuleVoteOption[]
   totals: Record<string, number>
   myPick: string | null
+  multiSelect: boolean            // revert window: approve any subset (checkboxes)
+  myPicks: string[]               // revert window: the user's current selection set
   closesAt: string | null
   votingOpen: boolean
   castVote: (optionKey: string) => Promise<void>
+  toggleRevert: (optionKey: string) => Promise<void>  // revert window: flip one pick
   refetch: () => void
   modalOpen: boolean
   openModal: () => void
@@ -60,6 +63,8 @@ export const RuleVoteProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [options, setOptions] = useState<RuleVoteOption[]>([])
   const [totals, setTotals] = useState<Record<string, number>>({})
   const [myPick, setMyPick] = useState<string | null>(null)
+  const [multiSelect, setMultiSelect] = useState(false)
+  const [myPicks, setMyPicks] = useState<string[]>([])
   const [closesAt, setClosesAt] = useState<string | null>(null)
   const [votingOpen, setVotingOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -87,11 +92,14 @@ export const RuleVoteProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setOptions(d.options ?? [])
         setTotals(d.totals ?? {})
         setMyPick(d.myPick ?? null)
+        setMultiSelect(!!d.multiSelect)
+        setMyPicks(d.myPicks ?? [])
         setClosesAt(d.closesAt ?? null)
         setVotingOpen(!!d.votingOpen)
       } else {
         setWindowId(null); setKind(null); setCore(null); setOptions([])
-        setTotals({}); setMyPick(null); setClosesAt(null); setVotingOpen(false)
+        setTotals({}); setMyPick(null); setMultiSelect(false); setMyPicks([])
+        setClosesAt(null); setVotingOpen(false)
       }
     } finally {
       if (id === fetchId.current) setLoading(false)
@@ -140,10 +148,38 @@ export const RuleVoteProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [getToken, windowId, myPick, fetchBallot])
 
+  // Revert (multi-select approval): flip one option in the user's set and POST the
+  // full set. Optimistic on both the selection and the per-option approval totals.
+  const toggleRevert = useCallback(async (optionKey: string) => {
+    const tok = await getToken().catch(() => null)
+    if (!tok || windowId == null) return
+    const has = myPicks.includes(optionKey)
+    const next = has ? myPicks.filter(k => k !== optionKey) : [...myPicks, optionKey]
+    setMyPicks(next)
+    setTotals(prev => {
+      const t = { ...prev }
+      t[optionKey] = Math.max(0, (t[optionKey] ?? 0) + (has ? -1 : 1))
+      return t
+    })
+    const res = await fetch(`${API_BASE}/rules/vote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+      body: JSON.stringify({ optionKeys: next }),
+    })
+    if (res.ok) {
+      const d = (await res.json()).data
+      if (d?.totals) setTotals(d.totals)
+      if (d?.myPicks) setMyPicks(d.myPicks)
+    } else {
+      fetchBallot()
+    }
+  }, [getToken, windowId, myPicks, fetchBallot])
+
   const value: RuleVoteState = {
     loading, open, season, windowId, kind, core, coreDisplayName,
-    prompt, reactPick, reactNone, options, totals, myPick, closesAt, votingOpen,
-    castVote, refetch: fetchBallot, modalOpen, openModal, closeModal,
+    prompt, reactPick, reactNone, options, totals, myPick, multiSelect, myPicks,
+    closesAt, votingOpen, castVote, toggleRevert,
+    refetch: fetchBallot, modalOpen, openModal, closeModal,
   }
   return <RuleVoteContext.Provider value={value}>{children}</RuleVoteContext.Provider>
 }

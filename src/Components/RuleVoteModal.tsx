@@ -30,6 +30,7 @@ const RuleVoteModal: React.FC = () => {
   const {
     open, modalOpen, closeModal, kind, core, coreDisplayName,
     prompt, reactPick, reactNone, options, totals, myPick, votingOpen, castVote,
+    multiSelect, myPicks, toggleRevert,
   } = rv
   const accent = coreColor(core || undefined)
   const countdown = useCountdown(rv.closesAt)
@@ -45,11 +46,15 @@ const RuleVoteModal: React.FC = () => {
 
   const isRevert = kind === 'revert'
   const title = isRevert ? 'Rule Revert Vote' : 'Rule Change Vote'
-  const reaction = myPick == null ? null : (myPick === NONE_KEY ? reactNone : reactPick)
+  // Multi-select revert: reaction keys off "has any pick"; single-pick keys off myPick.
+  const reaction = multiSelect
+    ? (myPicks.length > 0 ? reactPick : reactNone)
+    : (myPick == null ? null : (myPick === NONE_KEY ? reactNone : reactPick))
   const noneVotes = totals[NONE_KEY] ?? 0
 
   const optionRow = (
-    key: string, label: string, sub: string | null, selected: boolean, count: number, onClick: () => void,
+    key: string, label: string, sub: string | null, selected: boolean, count: number,
+    onClick: () => void, checkbox: boolean = false,
   ) => (
     <button
       key={key}
@@ -65,7 +70,7 @@ const RuleVoteModal: React.FC = () => {
       }}
     >
       <span style={{
-        width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0,
+        width: '16px', height: '16px', borderRadius: checkbox ? '4px' : '50%', flexShrink: 0,
         border: `2px solid ${selected ? accent : '#475569'}`,
         background: selected ? accent : 'transparent',
       }} />
@@ -137,18 +142,26 @@ const RuleVoteModal: React.FC = () => {
             </div>
           )}
 
-          {/* Options */}
+          {/* Options — multi-select (revert) shows checkboxes and no "none" row;
+              the empty set already means "leave the rules as they are". */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {options.map(o => optionRow(
-              o.key, o.label,
-              `${fmtRuleValue(o.current)} → ${fmtRuleValue(o.proposed)}`,
-              myPick === o.key, totals[o.key] ?? 0, () => castVote(o.key),
-            ))}
-            {optionRow(
-              NONE_KEY,
-              isRevert ? 'Leave the rules as they are' : 'Change nothing',
-              null, myPick === NONE_KEY, noneVotes, () => castVote(NONE_KEY),
-            )}
+            {multiSelect
+              ? options.map(o => optionRow(
+                  o.key, o.label,
+                  `${fmtRuleValue(o.current)} → ${fmtRuleValue(o.proposed)}`,
+                  myPicks.includes(o.key), totals[o.key] ?? 0, () => toggleRevert(o.key), true,
+                ))
+              : (<>
+                  {options.map(o => optionRow(
+                    o.key, o.label,
+                    `${fmtRuleValue(o.current)} → ${fmtRuleValue(o.proposed)}`,
+                    myPick === o.key, totals[o.key] ?? 0, () => castVote(o.key),
+                  ))}
+                  {optionRow(
+                    NONE_KEY, 'Change nothing',
+                    null, myPick === NONE_KEY, noneVotes, () => castVote(NONE_KEY),
+                  )}
+                </>)}
           </div>
 
           {/* Core reaction to the live pick */}
@@ -162,7 +175,9 @@ const RuleVoteModal: React.FC = () => {
           )}
 
           <div style={{ fontSize: '11px', color: '#64748b', marginTop: '16px', lineHeight: 1.5 }}>
-            The most-voted option wins. The change takes effect before the day's games and lasts until it's voted back.
+            {multiSelect
+              ? 'Check every rule you want put back. Any rule approved on at least half the ballots is reverted before the day\'s games.'
+              : 'The most-voted option wins. The change takes effect before the day\'s games and lasts until it\'s voted back.'}
           </div>
         </div>
       </div>
