@@ -1214,6 +1214,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     {gameData.playLimit?.active ? (
                       // play_limit: no clock — show plays remaining in the period
                       <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.playLimit.playsRemaining} ${gameData.playLimit.playsRemaining === 1 ? 'play' : 'plays'} left`}</span>
+                    ) : gameData.chessClock?.active ? (
+                      // chess_clock: no shared clock — the two offense budgets (below)
+                      // carry the state; here just the period label.
+                      <span>{gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}</span>
                     ) : (
                       <>
                         <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.timeRemaining}`}</span>
@@ -1284,6 +1288,24 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   {gameData.playLimit.playsPerQuarter} plays a quarter
                 </div>
               )}
+              {/* Game format: chess_clock — each team's remaining offense-time budget */}
+              {gameFormat === 'chess_clock' && gameData.chessClock?.active && gameData.status !== 'Scheduled' && (() => {
+                const cc = gameData.chessClock!
+                const clk = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`
+                const side = (abbr: string, secs: number, locked: boolean) => (
+                  <span style={{ color: locked ? '#ef4444' : '#f59e0b', fontWeight: 700 }}>
+                    {abbr} {locked ? 'OUT' : clk(secs)}
+                  </span>
+                )
+                return (
+                  <div style={{ fontSize: '11px', marginTop: '3px', letterSpacing: '0.04em',
+                                textTransform: 'uppercase', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <span style={{ color: '#94a3b8' }}>Offense clock</span>
+                    {side(gameData.homeTeam?.abbr || 'HOME', cc.homeBudget, cc.homeLockedOut)}
+                    {side(gameData.awayTeam?.abbr || 'AWAY', cc.awayBudget, cc.awayLockedOut)}
+                  </div>
+                )
+              })()}
             </div>
 
             {/* "Field Position" header + replay/catch-up controls on one line,

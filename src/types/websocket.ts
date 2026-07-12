@@ -25,6 +25,15 @@ export interface PlayLimitState {
   playsRemaining: number
 }
 
+// chess_clock game format: per-team offense-time budget (seconds), lock-out flags
+export interface ChessClockState {
+  active: boolean
+  homeBudget: number
+  awayBudget: number
+  homeLockedOut: boolean
+  awayLockedOut: boolean
+}
+
 // Player statistics during a game
 export interface PlayerGameStats {
   playerId: string
@@ -485,6 +494,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   yardsToSafety: number | null
   driveClock?: DriveClockState | null   // possession shot clock (Drive Clock rule); null when off
   playLimit?: PlayLimitState            // play_limit format: plays-per-quarter (no clock)
+  chessClock?: ChessClockState          // chess_clock format: per-team offense budgets
   isPossessionChange: boolean
   lastPlay: {
     playNumber: number
