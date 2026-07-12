@@ -332,47 +332,11 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
             </span>
           </div>
         )}
-        {data && groups.map(group => (
-          <div key={group.title} style={{ marginBottom: 18 }}>
-            <div style={{
-              fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
-              textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
-            }}>{group.title}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {group.rules.map(meta => (
-                <RuleRow
-                  key={meta.key}
-                  meta={meta}
-                  value={data.rules[meta.key]}
-                  def={data.defaults[meta.key]}
-                  changed={changed.has(meta.key)}
-                  glitched={glitched}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
+        {/* ── Order: most significant / structural first, granular values last ── */}
 
-        {/* Scoring-model tease — the bigger lever: how score is KEPT is a rule too */}
+        {/* Game format — the win condition / how the game is played (most significant) */}
         {data && (
-          <div style={{ marginTop: 4, marginBottom: 18, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
-            <div style={{
-              fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
-              textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
-            }}>Scoring Model</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {(() => {
-                const model = String(data.rules?.scoringModel ?? 'additive')
-                const name = model.charAt(0).toUpperCase() + model.slice(1)
-                return <ScoringModelRow name={name} glitched={glitched} changed={model !== 'additive'} />
-              })()}
-            </div>
-          </div>
-        )}
-
-        {/* Game format — the win condition / how the game is played */}
-        {data && (
-          <div style={{ marginTop: 4, marginBottom: 18, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
+          <div style={{ marginBottom: 18 }}>
             <div style={{
               fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
               textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
@@ -389,7 +353,7 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
 
         {/* Dormant rules — structural mechanics the Cores could switch on */}
         {data && (
-          <div style={{ marginBottom: 4, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
+          <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
             <div style={{
               fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
               textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
@@ -401,6 +365,49 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
                 return <DormantRuleRow key={r.name} name={r.name} active={active} detail={detail} />
               })}
             </div>
+          </div>
+        )}
+
+        {/* Scoring model — how the running score is shown */}
+        {data && (
+          <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
+            <div style={{
+              fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
+              textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
+            }}>Scoring Model</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {(() => {
+                const model = String(data.rules?.scoringModel ?? 'additive')
+                const name = model.charAt(0).toUpperCase() + model.slice(1)
+                return <ScoringModelRow name={name} glitched={glitched} changed={model !== 'additive'} />
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* Scalar rule values (downs, scoring values, clock) — the granular tunables */}
+        {data && (
+          <div style={{ paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
+            {groups.map(group => (
+              <div key={group.title} style={{ marginBottom: 18 }}>
+                <div style={{
+                  fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
+                  textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
+                }}>{group.title}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {group.rules.map(meta => (
+                    <RuleRow
+                      key={meta.key}
+                      meta={meta}
+                      value={data.rules[meta.key]}
+                      def={data.defaults[meta.key]}
+                      changed={changed.has(meta.key)}
+                      glitched={glitched}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
