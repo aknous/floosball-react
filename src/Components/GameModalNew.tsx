@@ -1638,6 +1638,35 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       {(awayTeam.name || awayTeam.abbr).toUpperCase()}
                     </text>
 
+                    {/* Sideline Goals — the hoop pairs. Two per attacking direction:
+                        a midfield pair (~the 50) and a pair flanking the attacking end
+                        zone. Yellow = not attempted this drive, green = made, red =
+                        missed. The non-attacking end's hoops are dimmed (not in play). */}
+                    {!replayActive && gameData.sidelineGoals?.active && (() => {
+                      const sg = gameData.sidelineGoals!
+                      const col = (s: string) => s === 'made' ? '#22c55e' : s === 'missed' ? '#ef4444' : '#FFD700'
+                      const yTop = 12, yBot = FH - 12
+                      const midX = toX(60)
+                      const attackX = sg.attackingHome ? toX(110) : toX(10)
+                      const otherX = sg.attackingHome ? toX(10) : toX(110)
+                      const hoops = [
+                        { x: midX, y: yTop, c: col(sg.midfield), o: 0.95 },
+                        { x: midX, y: yBot, c: col(sg.midfield), o: 0.95 },
+                        { x: attackX, y: yTop, c: col(sg.endzone), o: 0.95 },
+                        { x: attackX, y: yBot, c: col(sg.endzone), o: 0.95 },
+                        { x: otherX, y: yTop, c: '#FFD700', o: 0.22 },
+                        { x: otherX, y: yBot, c: '#FFD700', o: 0.22 },
+                      ]
+                      return (
+                        <g>
+                          {hoops.map((h, i) => (
+                            <circle key={`hoop-${i}`} cx={h.x} cy={h.y} r={6.5}
+                              fill="none" stroke={h.c} strokeWidth={2.5} opacity={h.o} />
+                          ))}
+                        </g>
+                      )
+                    })()}
+
                     {/* First down marker */}
                     {firstDownX != null && firstDownX > EZW && firstDownX < FW - EZW && (
                       <line x1={firstDownX} y1={6} x2={firstDownX} y2={FH - 6}

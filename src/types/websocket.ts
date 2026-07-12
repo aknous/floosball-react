@@ -44,6 +44,14 @@ export interface InningsState {
   triesPerInning: number
 }
 
+// Sideline Goals mechanic: the two hoop pairs' state THIS drive (for the field graphic)
+export interface SidelineGoalsState {
+  active: boolean
+  midfield: 'open' | 'made' | 'missed'   // yellow / green / red
+  endzone: 'open' | 'made' | 'missed'
+  attackingHome: boolean                 // offense is driving toward the home (right) end zone
+}
+
 // frames game format: golf-style match play (win a frame = +1; most frames wins)
 export interface FramesState {
   active: boolean
@@ -514,6 +522,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   yardsToEndzone: number | null
   yardsToSafety: number | null
   driveClock?: DriveClockState | null   // possession shot clock (Drive Clock rule); null when off
+  sidelineGoals?: SidelineGoalsState | null  // Sideline Goals hoop state (this drive); null when off
   playLimit?: PlayLimitState            // play_limit format: plays-per-quarter (no clock)
   chessClock?: ChessClockState          // chess_clock format: per-team offense budgets
   innings?: InningsState                // innings format: out-driven inning state
