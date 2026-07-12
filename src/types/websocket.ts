@@ -34,14 +34,14 @@ export interface ChessClockState {
   awayLockedOut: boolean
 }
 
-// innings game format: baseball-style out-driven state (no game clock)
+// innings game format: baseball-style try-driven state (no game clock)
 export interface InningsState {
   active: boolean
   inning: number
   half: 'top' | 'bottom'
-  outs: number
+  tries: number
   inningsPerGame: number
-  outsPerInning: number
+  triesPerInning: number
 }
 
 // Player statistics during a game

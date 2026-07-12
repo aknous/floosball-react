@@ -1212,8 +1212,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 ) : gameData.status === 'Active' ? (
                   <>
                     {gameData.innings?.active ? (
-                      // innings: no clock — show inning, half, and outs
-                      <span>{`${gameData.innings.half === 'bottom' ? 'BOT' : 'TOP'} ${gameData.innings.inning}  •  ${gameData.innings.outs} ${gameData.innings.outs === 1 ? 'out' : 'outs'}`}</span>
+                      // innings: no clock — show inning, half, and tries
+                      <span>{`${gameData.innings.half === 'bottom' ? 'BOT' : 'TOP'} ${gameData.innings.inning}  •  ${gameData.innings.tries} ${gameData.innings.tries === 1 ? 'try' : 'tries'}`}</span>
                     ) : gameData.playLimit?.active ? (
                       // play_limit: no clock — show plays remaining in the period
                       <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.playLimit.playsRemaining} ${gameData.playLimit.playsRemaining === 1 ? 'play' : 'plays'} left`}</span>
