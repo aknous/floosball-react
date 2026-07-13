@@ -19,17 +19,17 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         label: 'New Features',
         items: [
-          '[Rules] The Cores now put rules up for a fan vote. Every so often one of them proposes a change to how the league plays, and the option with the most votes takes effect before that day\'s games. Rules reset to standard at the start of each new season, and you can see the current ruleset any time in the Rulebook.',
-          '[Rules] Alternate game formats can be voted in, each with its own scoreboard and play feed. Chess Clock gives each team a fixed budget of possession time, and once a team runs out it can\'t get the ball back. Innings splits the game into innings where each team gets a set number of tries, and the most points wins. Frames is match play: the game breaks into timed frames, you win a frame by outscoring your opponent in it, and whoever wins the most frames wins the game.',
-          '[Rules] Other changes the Cores can propose include more or fewer downs, a different distance to a first down, adjusted touchdown and field goal values, a per-drive play clock, a clock that never stops on dead balls, the Conversion Ladder (go for 3, 4, or 5 after a touchdown from further out), and different ways of displaying the score.',
+          '[Rules] The Cores now put rules up for a fan vote. The option with the most votes takes effect before that day\'s games, and rules reset to standard each new season. See the current ruleset any time in the Rulebook.',
+          '[Rules] Alternate game formats can be voted in, each with its own scoreboard and play feed: Chess Clock (each team has a possession-time budget, and once it runs out they can\'t get the ball back), Innings (a set number of tries per inning, most points wins), and Frames (match play split into timed frames, most frames won wins).',
+          '[Rules] Other proposable changes include more or fewer downs, the first-down distance, touchdown and field goal values, a per-drive play clock, a clock that never stops, the Conversion Ladder (go for 3, 4, or 5 after a touchdown), and how the score is displayed.',
           '[Players] Prospects and rookies now show Expected and Ceiling projections on their profile and in the rookie draft ballot, so you can weigh a safe pick against a boom-or-bust one.',
         ],
       },
       {
         label: 'Changes',
         items: [
-          '[Players] More parity across the league. Elite talent is rarer and more spread out, so fewer teams stockpile superstars. Rookies now enter below their eventual ability and grow into it over a couple of seasons, and a prospect\'s ceiling is a rare peak they only sometimes reach.',
-          '[Front Office] Re-signing a veteran is now driven entirely by fan votes. A team can re-sign at most two expiring players per offseason, and the most-voted keep their spots. Each player can be re-signed only once before they must test free agency, so dominant rosters break up over time instead of holding a core together forever.',
+          '[Players] More parity across the league. Elite talent is rarer and more spread out. Rookies now enter below their eventual ability and grow into it over a couple of seasons, and a prospect\'s ceiling is a rare peak they only sometimes reach.',
+          '[Front Office] A team can re-sign at most two expiring players per offseason, and the most-voted keep their spots. Each player can be re-signed only once before they must test free agency.',
           '[Teams] The two leagues were rebalanced so one is no longer perpetually stronger than the other. Teams were split evenly by their win percentage over the last couple of seasons.',
         ],
       },
