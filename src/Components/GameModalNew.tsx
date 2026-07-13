@@ -257,8 +257,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // as plays merge/arrive can't reset the guard. Reset on game switch below.
   const modalOpenedAtRef = useRef(Date.now())
   const gameData = frozenRef.current
-  // Formats with no real game clock — timeouts (a clock-management tool) are meaningless.
+  // Formats with no standard quarter clock display (each renders its own clock).
   const noClockFormat = gameFormat === 'innings' || gameFormat === 'play_limit' || gameFormat === 'chess_clock'
+  // Whether teams still have timeouts. Chess clock is time-based (game clock +
+  // possession budget) so teams DO call timeouts there; only the truly clock-less
+  // formats (innings / play_limit) have none.
+  const hasTimeouts = gameFormat !== 'innings' && gameFormat !== 'play_limit'
 
   // Effective away-team display color: when the two primaries are basically the
   // same, swap the away team to its secondary so they're distinguishable — but
@@ -1134,7 +1138,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               </div>
 
               {/* Home timeouts */}
-              {gameData.status === 'Active' && gameData.homeTimeouts != null && !noClockFormat && (
+              {gameData.status === 'Active' && gameData.homeTimeouts != null && hasTimeouts && (
                 <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingBottom: '8px' }}>
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{
@@ -1182,7 +1186,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               </div>
 
               {/* Away timeouts */}
-              {gameData.status === 'Active' && gameData.awayTimeouts != null && !noClockFormat && (
+              {gameData.status === 'Active' && gameData.awayTimeouts != null && hasTimeouts && (
                 <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingTop: '8px' }}>
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{
