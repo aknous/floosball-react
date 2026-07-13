@@ -95,7 +95,7 @@ const RuleVoteModal: React.FC = () => {
       onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
     >
       <div style={{
-        width: '100%', maxWidth: isMobile ? '100%' : '460px', maxHeight: '90vh',
+        width: '100%', maxWidth: isMobile ? '100%' : '560px', maxHeight: '90vh',
         backgroundColor: '#1e293b',
         fontFamily: 'pressStart, monospace',
         border: isMobile ? 'none' : `1px solid ${accent}55`,
