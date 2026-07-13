@@ -27,6 +27,7 @@ import { OnboardingModal } from './Components/Onboarding/OnboardingModal'
 import WelcomeModal from './Components/WelcomeModal'
 import FrontOfficeModal from './Components/FrontOfficeModal'
 import SurveyModal from './Components/SurveyModal'
+import RuleVoteModal from './Components/RuleVoteModal'
 import { Footer } from './Components/Footer'
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { useIsMobile } from './hooks/useIsMobile'
@@ -37,6 +38,8 @@ import { SeasonWebSocketProvider } from './contexts/SeasonWebSocketContext'
 import { GamesProvider } from './contexts/GamesContext'
 import { AchievementsProvider } from './contexts/AchievementsContext'
 import { CoresStatusProvider } from './contexts/CoresStatusContext'
+import { RuleVoteProvider } from './contexts/RuleVoteContext'
+import { ScoringModelProvider } from './contexts/ScoringModelContext'
 import CriticalityGlitch from './Components/CriticalityGlitch'
 import AchievementUnlockedToast from './Components/AchievementUnlockedToast'
 import FloobitsReceivedToast from './Components/FloobitsReceivedToast'
@@ -186,6 +189,7 @@ function AuthGate() {
       <WelcomeModal />
       <FrontOfficeModal />
       <SurveyModal />
+      <RuleVoteModal />
       <AppLayout />
     </>
   )
@@ -265,12 +269,15 @@ function App() {
         <AuthProvider>
           <SeasonWebSocketProvider>
             <FloosballProvider>
+             <ScoringModelProvider>
               <GamesProvider>
                 <AchievementsProvider>
                   <CoresStatusProvider>
                     <CriticalityGlitch />
                     <SidebarProvider>
-                      <AuthGate />
+                      <RuleVoteProvider>
+                        <AuthGate />
+                      </RuleVoteProvider>
                       <AchievementUnlockedToast />
                       <FloobitsReceivedToast />
                       <PendingPackResumer />
@@ -279,6 +286,7 @@ function App() {
                   </CoresStatusProvider>
                 </AchievementsProvider>
               </GamesProvider>
+             </ScoringModelProvider>
             </FloosballProvider>
           </SeasonWebSocketProvider>
         </AuthProvider>

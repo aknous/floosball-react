@@ -1,11 +1,15 @@
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import RulebookPopover from './RulebookPopover'
+import { useRuleVote } from '@/contexts/RuleVoteContext'
+import { coreColor } from '@/utils/coresVisual'
 
 // Header entry point for the league Rulebook, sitting beside the Cores indicator.
 // Interaction mirrors CriticalityIndicator: hover opens the popover (a peek),
 // click pins it open until you click again, press Esc, or click outside.
 
 const CLOSE_GRACE_MS = 220
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+const SEEN_KEY = 'rulesSeenChangeCount'
 
 const RulebookIndicator: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const [open, setOpen] = useState(false)
@@ -14,11 +18,30 @@ const RulebookIndicator: React.FC<{ compact?: boolean }> = ({ compact = false })
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pinnedRef = useRef(false)
 
+  // Notification dot: a live rule vote (colored by the Core), or a rule change
+  // the user hasn't looked at since (amber). Cleared once the popover is opened.
+  const rv = useRuleVote()
+  const [changeCount, setChangeCount] = useState<number | null>(null)
+  const [seenCount, setSeenCount] = useState<number>(() => Number(localStorage.getItem(SEEN_KEY) ?? 0))
+  useEffect(() => {
+    let cancelled = false
+    const load = () => fetch(`${API_BASE}/rules`).then(r => r.json())
+      .then(j => { if (!cancelled) setChangeCount(j?.data?.changeCount ?? 0) }).catch(() => {})
+    load()
+    const t = setInterval(load, 60_000)
+    return () => { cancelled = true; clearInterval(t) }
+  }, [])
+  const hasUnseenChange = changeCount != null && changeCount > seenCount
+  const markSeen = useCallback(() => {
+    if (changeCount != null) { localStorage.setItem(SEEN_KEY, String(changeCount)); setSeenCount(changeCount) }
+  }, [changeCount])
+  const dotColor = rv.open ? coreColor(rv.core || undefined) : (hasUnseenChange ? '#f59e0b' : null)
+
   const setPinned = (v: boolean) => { pinnedRef.current = v; setPinnedState(v) }
   const cancelClose = useCallback(() => {
     if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null }
   }, [])
-  const openNow = useCallback(() => { cancelClose(); setOpen(true) }, [cancelClose])
+  const openNow = useCallback(() => { cancelClose(); setOpen(true); markSeen() }, [cancelClose, markSeen])
   const scheduleClose = useCallback(() => {
     cancelClose()
     closeTimer.current = setTimeout(() => { if (!pinnedRef.current) setOpen(false) }, CLOSE_GRACE_MS)
@@ -26,8 +49,8 @@ const RulebookIndicator: React.FC<{ compact?: boolean }> = ({ compact = false })
   const togglePin = useCallback(() => {
     cancelClose()
     if (pinnedRef.current) { setPinned(false); setOpen(false) }
-    else { setPinned(true); setOpen(true) }
-  }, [cancelClose])
+    else { setPinned(true); setOpen(true); markSeen() }
+  }, [cancelClose, markSeen])
   const handleClose = useCallback(() => { cancelClose(); setPinned(false); setOpen(false) }, [cancelClose])
 
   const accent = '#e2e8f0'
@@ -62,6 +85,13 @@ const RulebookIndicator: React.FC<{ compact?: boolean }> = ({ compact = false })
           }}>
             Current Ruleset
           </span>
+        )}
+        {dotColor && !open && (
+          <span style={{
+            position: 'absolute', top: '1px', right: '1px',
+            width: '8px', height: '8px', borderRadius: '50%',
+            background: dotColor, boxShadow: '0 0 0 2px #0f172a',
+          }} />
         )}
       </button>
       {open && (

@@ -7,6 +7,69 @@ export interface BaseWebSocketEvent {
   timestamp: string
 }
 
+// Drive Clock — the current possession's shot clock (the Drive Clock rule).
+// `remaining` is seconds or plays per `unit`; present only while the rule is on.
+export interface DriveClockState {
+  remaining: number
+  unit: 'seconds' | 'plays'
+  reset: 'possession' | 'series'
+  limit: number
+  low: boolean
+}
+
+// play_limit game format: fixed plays per quarter (no game clock)
+export interface PlayLimitState {
+  active: boolean
+  playsPerQuarter: number
+  playsThisQuarter: number
+  playsRemaining: number
+}
+
+// chess_clock game format: per-team offense-time budget (seconds), lock-out flags
+export interface ChessClockState {
+  active: boolean
+  homeBudget: number
+  awayBudget: number
+  homeLockedOut: boolean
+  awayLockedOut: boolean
+}
+
+// innings game format: baseball-style try-driven state (no game clock)
+export interface InningsState {
+  active: boolean
+  inning: number
+  half: 'top' | 'bottom'
+  tries: number
+  inningsPerGame: number
+  triesPerInning: number
+  lineScore?: {
+    innings: number[]     // inning numbers played/in-progress (1..N)
+    home: number[]        // runs per inning (parallel to innings)
+    away: number[]
+  }
+}
+
+// Sideline Goals mechanic: the two hoop pairs' state THIS drive (for the field graphic)
+export interface SidelineGoalsState {
+  active: boolean
+  midfield: 'open' | 'made' | 'missed'   // yellow / green / red
+  endzone: 'open' | 'made' | 'missed'
+  attackingHome: boolean                 // offense is driving toward the home (right) end zone
+}
+
+// frames game format: golf-style match play (win a frame = +1; most frames wins)
+export interface FramesState {
+  active: boolean
+  framesPerGame: number
+  currentFrame: number
+  frameClock?: string   // time remaining in the current frame (M:SS)
+  framesWonHome: number
+  framesWonAway: number
+  frameHome: number   // points this frame
+  frameAway: number
+  frameResults?: { home: number; away: number; winner: 'home' | 'away' | 'tie' }[]  // completed frames
+}
+
 // Player statistics during a game
 export interface PlayerGameStats {
   playerId: string
@@ -465,6 +528,12 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   yardLine: string | null  // e.g., 'BAL 25'
   yardsToEndzone: number | null
   yardsToSafety: number | null
+  driveClock?: DriveClockState | null   // possession shot clock (Drive Clock rule); null when off
+  sidelineGoals?: SidelineGoalsState | null  // Sideline Goals hoop state (this drive); null when off
+  playLimit?: PlayLimitState            // play_limit format: plays-per-quarter (no clock)
+  chessClock?: ChessClockState          // chess_clock format: per-team offense budgets
+  innings?: InningsState                // innings format: out-driven inning state
+  frames?: FramesState                  // frames format: match-play frame state
   isPossessionChange: boolean
   lastPlay: {
     playNumber: number

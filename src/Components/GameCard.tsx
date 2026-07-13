@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react'
 import TeamHoverCard from './TeamHoverCard'
 import { effectiveAwayColor } from '@/utils/colors'
+import { displayScore } from '@/utils/displayScore'
+import { useScoringModel } from '@/contexts/ScoringModelContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -25,6 +27,8 @@ interface GameCardProps {
   awayScore?: number
   quarter?: number
   timeRemaining?: string
+  innings?: { active: boolean; inning: number; half: 'top' | 'bottom'; tries: number; triesPerInning: number }
+  frames?: { active: boolean; currentFrame: number; framesPerGame: number; frameClock?: string; framesWonHome: number; framesWonAway: number }
   status?: 'Scheduled' | 'Active' | 'Final'
   homeWinProbability?: number
   awayWinProbability?: number
@@ -46,10 +50,13 @@ interface GameCardProps {
   onPick?: (teamId: number) => void
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, clickable = true, userPick, pickable, pickCorrect, onPick }) => {
+const fmtFramesWon = (v: number): string => { const w = Math.floor(v); return (v - w >= 0.5) ? `${w > 0 ? w : ''}½` : `${w}` }
+
+export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, innings, frames, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, clickable = true, userPick, pickable, pickCorrect, onPick }) => {
   const isComplete = status === 'Final'
   const isLive = status === 'Active' && (quarter ?? 0) > 0
   const isFinal = isComplete
+  const scoringModel = useScoringModel()
 
   // Away team's effective color for the WP meter: falls back to its secondary
   // when its primary is basically the same as home's, so the two halves of the
@@ -177,7 +184,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             </div>
           </div>
           <div style={scoreStyle} className={homeFlash ? 'score-updated' : ''}>
-            {isLive || isFinal ? homeScore : '—'}
+            {(isLive || isFinal) ? (frames?.active ? fmtFramesWon(frames.framesWonHome) : displayScore(homeScore, awayScore, scoringModel)) : '—'}
           </div>
         </div>
       </TeamHoverCard>
@@ -217,7 +224,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             </div>
           </div>
           <div style={scoreStyle} className={awayFlash ? 'score-updated' : ''}>
-            {isLive || isFinal ? awayScore : '—'}
+            {(isLive || isFinal) ? (frames?.active ? fmtFramesWon(frames.framesWonAway) : displayScore(awayScore, homeScore, scoringModel)) : '—'}
           </div>
         </div>
       </TeamHoverCard>
@@ -454,9 +461,32 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
           </div>
         ) : isLive ? (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span>{(quarter ?? 0) > 4 ? 'OT' : `Q${quarter ?? 1}`}</span>
-            <span>•</span>
-            <span>{timeRemaining ?? '15:00'}</span>
+            {innings?.active ? (
+              // Innings: current inning + try pips (like baseball outs) instead of clock.
+              <>
+                <span>{`${innings.half === 'bottom' ? 'BOT' : 'TOP'} ${innings.inning}`}</span>
+                <span style={{ display: 'inline-flex', gap: '3px', alignItems: 'center' }}>
+                  {Array.from({ length: innings.triesPerInning }).map((_, i) => (
+                    <span key={i} style={{ width: '6px', height: '6px', borderRadius: '50%',
+                      backgroundColor: i < innings.tries ? '#f59e0b' : 'transparent',
+                      border: `1px solid ${i < innings.tries ? '#f59e0b' : '#64748b'}` }} />
+                  ))}
+                </span>
+              </>
+            ) : frames?.active ? (
+              // Frames: the frame + its clock (the score above is frames won).
+              <>
+                <span>{`Frame ${frames.currentFrame}`}</span>
+                <span>•</span>
+                <span>{frames.frameClock ?? timeRemaining ?? '10:00'}</span>
+              </>
+            ) : (
+              <>
+                <span>{(quarter ?? 0) > 4 ? 'OT' : `Q${quarter ?? 1}`}</span>
+                <span>•</span>
+                <span>{timeRemaining ?? '15:00'}</span>
+              </>
+            )}
             {isUpsetAlert && (
               <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
                 UPSET ALERT
