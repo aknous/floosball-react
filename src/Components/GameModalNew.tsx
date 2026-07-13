@@ -250,6 +250,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // as plays merge/arrive can't reset the guard. Reset on game switch below.
   const modalOpenedAtRef = useRef(Date.now())
   const gameData = frozenRef.current
+  // Formats with no real game clock — timeouts (a clock-management tool) are meaningless.
+  const noClockFormat = gameFormat === 'innings' || gameFormat === 'play_limit' || gameFormat === 'chess_clock'
 
   // Effective away-team display color: when the two primaries are basically the
   // same, swap the away team to its secondary so they're distinguishable — but
@@ -1109,7 +1111,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               </div>
 
               {/* Home timeouts */}
-              {gameData.status === 'Active' && gameData.homeTimeouts != null && (
+              {gameData.status === 'Active' && gameData.homeTimeouts != null && !noClockFormat && (
                 <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingBottom: '8px' }}>
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{
@@ -1157,7 +1159,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               </div>
 
               {/* Away timeouts */}
-              {gameData.status === 'Active' && gameData.awayTimeouts != null && (
+              {gameData.status === 'Active' && gameData.awayTimeouts != null && !noClockFormat && (
                 <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingTop: '8px' }}>
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{
@@ -1181,15 +1183,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 const blank = (k: number) => (
                   <td key={k} style={{ textAlign: 'center', padding: '4px 8px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>-</td>
                 )
-                const row = (side: 'home' | 'away', abbr: string, total: number) => (
+                const row = (side: 'home' | 'away', abbr: string) => (
                   <tr>
                     <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{abbr}</td>
                     {ls.innings.map((innNum, i) => {
-                      // home hasn't batted in the current inning while it's still the top half
-                      const homePending = side === 'home' && innNum === curInn && curHalf === 'top'
-                      return homePending ? blank(innNum) : cell(ls[side][i] ?? 0)
+                      // A team's inning cell is blank until it has batted: away bats the
+                      // top first (reached once we're at/after that inning), home bats the
+                      // bottom (reached only once we're past it, or in its bottom half).
+                      const reached = side === 'away'
+                        ? innNum <= curInn
+                        : (innNum < curInn || (innNum === curInn && curHalf === 'bottom'))
+                      return reached ? cell(ls[side][i] ?? 0) : blank(innNum)
                     })}
-                    <td style={{ textAlign: 'center', padding: '4px 8px 4px 14px', color: '#e2e8f0', fontWeight: 700, fontVariantNumeric: 'tabular-nums', borderLeft: '1px solid #334155' }}>{total}</td>
                   </tr>
                 )
                 return (
@@ -1201,12 +1206,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                           {ls.innings.map(n => (
                             <th key={n} style={{ textAlign: 'center', padding: '3px 8px', color: '#64748b', fontWeight: '500' }}>{n}</th>
                           ))}
-                          <th style={{ textAlign: 'center', padding: '3px 8px 3px 14px', color: '#94a3b8', fontWeight: '700', borderLeft: '1px solid #334155' }}>R</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {row('away', gameData.awayTeam.abbr, gameData.awayScore ?? 0)}
-                        {row('home', gameData.homeTeam.abbr, gameData.homeScore ?? 0)}
+                        {row('away', gameData.awayTeam.abbr)}
+                        {row('home', gameData.homeTeam.abbr)}
                       </tbody>
                     </table>
                   </div>
