@@ -357,23 +357,6 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
           </div>
         )}
 
-        {/* Dormant rules — structural mechanics the Cores could switch on */}
-        {data && (
-          <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
-            <div style={{
-              fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
-              textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
-            }}>Dormant Rules</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {DORMANT_RULES.map(r => {
-                const active = !!(r.field && data.rules?.[r.field])
-                const detail = r.name === 'Drive Clock' ? driveClockDetail(data.rules) : undefined
-                return <DormantRuleRow key={r.name} name={r.name} active={active} detail={detail} />
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Scoring model — how the running score is shown */}
         {data && (
           <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
@@ -416,6 +399,27 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
             ))}
           </div>
         )}
+
+        {/* Active mechanics — a dormant rule the Cores have switched on. Only surfaced
+            when one is actually active; hidden entirely otherwise. */}
+        {data && (() => {
+          const activeMechanics = DORMANT_RULES.filter(r => r.field && data.rules?.[r.field])
+          if (!activeMechanics.length) return null
+          return (
+            <div style={{ paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
+              <div style={{
+                fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
+                textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
+              }}>Active Mechanics</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {activeMechanics.map(r => {
+                  const detail = r.name === 'Drive Clock' ? driveClockDetail(data.rules) : undefined
+                  return <DormantRuleRow key={r.name} name={r.name} active={true} detail={detail} />
+                })}
+              </div>
+            </div>
+          )
+        })()}
       </div>
     </div>,
     document.body
