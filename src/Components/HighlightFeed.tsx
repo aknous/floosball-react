@@ -374,6 +374,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
             awakened:  'AWAKENED',
             cleansed:  'CLEANSED',
           }
+          const isRule = !isLore && item.category === 'rules'
           const isChamp = !isLore && item.text.includes('champions!')
           const isTopSeed = !isLore && (item.text.includes('top seed') || item.text.includes('#1 seed'))
           const isClinch = !isLore && item.text.includes('clinched')
@@ -381,6 +382,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
           const isAllPro = !isLore && item.text.includes('All-Pro')
           const borderColor = isAnomaly ? '#c084fc'
                               : isCores ? coreColor(item.core)
+                              : isRule ? '#2dd4bf'
                               : isChamp ? '#f59e0b'
                               : isMvp ? '#f59e0b'
                               : isAllPro ? '#a78bfa'
@@ -390,6 +392,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
           const coresLabel = (item.coreDisplayName ?? item.core ?? 'cores').toUpperCase()
           const label = isAnomaly ? (anomalyLabelMap[item.anomalyState ?? ''] ?? 'ANOMALY')
                         : isCores ? coresLabel
+                        : isRule ? 'RULE CHANGE'
                         : isChamp ? 'CHAMPION'
                         : isMvp ? 'MVP'
                         : isAllPro ? 'ALL-PRO'

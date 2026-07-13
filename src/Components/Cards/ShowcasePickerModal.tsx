@@ -14,9 +14,18 @@ const POSITIONS = [
   { value: 4, label: 'TE' },
   { value: 5, label: 'K' },
 ]
+const CLASSIFICATIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'rookie', label: 'Rookie' },
+  { value: 'mvp', label: 'MVP' },
+  { value: 'champion', label: 'Champion' },
+  { value: 'all_pro', label: 'All-Pro' },
+]
 const SORTS = [
+  { value: 'showcase', label: 'Showcase Value' },
   { value: 'rarity', label: 'Rarity' },
   { value: 'rating', label: 'Rating' },
+  { value: 'mint', label: 'Mint Season' },
   { value: 'recent', label: 'Newest' },
   { value: 'tier', label: 'Tier' },
   { value: 'name', label: 'Name' },
@@ -46,7 +55,9 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
   const [loading, setLoading] = useState(false)
   const [editionFilter, setEditionFilter] = useState('all')
   const [positionFilter, setPositionFilter] = useState(0)
-  const [sortBy, setSortBy] = useState<string>('rarity')
+  const [classFilter, setClassFilter] = useState('all')
+  const [seasonFilter, setSeasonFilter] = useState<number | 'all'>('all')
+  const [sortBy, setSortBy] = useState<string>('showcase')
 
   const fetchVaulted = useCallback(async () => {
     setLoading(true)
@@ -56,8 +67,10 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
       const params = new URLSearchParams()
       params.set('vaulted', 'true')
       params.set('sort', sortBy)
+      params.set('showcaseScore', 'true')  // attach each card's Showcase point value
       if (editionFilter !== 'all') params.set('edition', editionFilter)
       if (positionFilter > 0) params.set('position', String(positionFilter))
+      if (classFilter !== 'all') params.set('classification', classFilter)
       const res = await fetch(`${API_BASE}/cards/collection?${params}`, {
         headers: { Authorization: `Bearer ${tok}` },
       })
@@ -69,7 +82,7 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
     } finally {
       setLoading(false)
     }
-  }, [getToken, editionFilter, positionFilter, sortBy])
+  }, [getToken, editionFilter, positionFilter, classFilter, sortBy])
 
   useEffect(() => { if (open) fetchVaulted() }, [open, fetchVaulted])
 
@@ -80,9 +93,21 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
     return () => window.removeEventListener('keydown', h)
   }, [open, onClose])
 
+  // If the mint-season filter no longer matches any loaded card (e.g. after an
+  // edition/position/classification change narrowed the set), fall back to All.
+  useEffect(() => {
+    if (seasonFilter !== 'all' && !cards.some(c => c.seasonCreated === seasonFilter)) {
+      setSeasonFilter('all')
+    }
+  }, [cards, seasonFilter])
+
   if (!open) return null
 
-  const available = cards.filter(c => !excludeIds.has(c.id))
+  // Mint seasons present in the loaded set, newest first (drives the filter dropdown).
+  const seasons = Array.from(new Set(cards.map(c => c.seasonCreated))).sort((a, b) => b - a)
+  const available = cards.filter(c =>
+    !excludeIds.has(c.id) && (seasonFilter === 'all' || c.seasonCreated === seasonFilter)
+  )
 
   return ReactDOM.createPortal(
     <div
@@ -123,11 +148,29 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
               <button key={e} onClick={() => setEditionFilter(e)} style={pillStyle(editionFilter === e)}>{e}</button>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px', alignItems: 'center' }}>
             {POSITIONS.map(p => (
               <button key={p.value} onClick={() => setPositionFilter(p.value)} style={pillStyle(positionFilter === p.value)}>{p.label}</button>
             ))}
+          </div>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
+            {CLASSIFICATIONS.map(c => (
+              <button key={c.value} onClick={() => setClassFilter(c.value)} style={pillStyle(classFilter === c.value)}>{c.label}</button>
+            ))}
             <span style={{ flex: 1 }} />
+            <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'pressStart' }}>Season</span>
+            <select
+              value={String(seasonFilter)}
+              onChange={(e) => setSeasonFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+              style={{
+                padding: '4px 8px', borderRadius: '6px', border: '1px solid #334155',
+                backgroundColor: '#1e293b', color: '#cbd5e1', fontSize: '11px',
+                fontFamily: 'pressStart', cursor: 'pointer',
+              }}
+            >
+              <option value="all">All</option>
+              {seasons.map(s => <option key={s} value={s}>S{s}</option>)}
+            </select>
             <span style={{ fontSize: '11px', color: '#64748b', fontFamily: 'pressStart' }}>Sort</span>
             <select
               value={sortBy}
@@ -148,7 +191,7 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b', fontSize: '13px' }}>Loading…</div>
           ) : available.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#64748b', fontSize: '13px', lineHeight: 1.7 }}>
-              {editionFilter !== 'all' || positionFilter > 0
+              {editionFilter !== 'all' || positionFilter > 0 || classFilter !== 'all' || seasonFilter !== 'all'
                 ? 'No vaulted cards match these filters.'
                 : 'No vaulted cards available to feature. Vault cards from your collection first.'}
             </div>
@@ -158,11 +201,21 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
                 <div
                   key={card.id}
                   onClick={() => onPick(card)}
-                  style={{ cursor: 'pointer', borderRadius: '12px', transition: 'transform 0.12s' }}
+                  style={{ cursor: 'pointer', borderRadius: '12px', transition: 'transform 0.12s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)' }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'none' }}
                 >
                   <TradingCard card={card} size="sm" />
+                  {card.showcase && (
+                    <span style={{
+                      fontSize: '11px', fontFamily: 'pressStart', fontWeight: 700,
+                      color: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.12)',
+                      border: '1px solid rgba(251,191,36,0.35)', borderRadius: '6px',
+                      padding: '2px 8px', whiteSpace: 'nowrap',
+                    }}>
+                      {Math.round(card.showcase.points)} pts
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

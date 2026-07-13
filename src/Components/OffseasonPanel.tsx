@@ -6,7 +6,6 @@ import { Stars, calcStars, DualStars } from './Stars'
 import PlayerHoverCard from './PlayerHoverCard'
 import PlayerLink from './PlayerLink'
 import FaBallotModal from './FrontOffice/FaBallotModal'
-import { appealRank } from '@/utils/facilities'
 import type { ScoutingPlayer, OpenSlot } from './FrontOffice/FaBallotModal'
 import type {
   OffseasonStartEvent,
@@ -96,17 +95,6 @@ interface DraftTeam {
   color?: string
   complete?: boolean
   appeal?: number
-}
-
-// FA draft order is by team APPEAL (facilities-derived) — higher Appeal drafts
-// first. The board groups teams by facility tier (appealRank) with a colored
-// header per tier, highest tier first. Colors descend Palatial → Barebones.
-const RANK_COLORS: Record<string, { fg: string; bg: string }> = {
-  Palatial:  { fg: '#fbbf24', bg: 'rgba(251,191,36,0.15)' },
-  Premier:   { fg: '#a78bfa', bg: 'rgba(167,139,250,0.16)' },
-  Modern:    { fg: '#38bdf8', bg: 'rgba(56,189,248,0.15)' },
-  Modest:    { fg: '#2dd4bf', bg: 'rgba(45,212,191,0.14)' },
-  Barebones: { fg: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
 }
 
 interface RosterPlayer {
@@ -728,22 +716,13 @@ export const OffseasonPanel: React.FC = () => {
   // Static order — no reordering, just highlight the "on the clock" team
   const cyclicOrder = draftOrder
 
-  // During FA the backend sends teams Appeal-ranked (highest first). Group
-  // consecutive teams by facility tier (appealRank) so the UI shows a header
-  // per tier — the draft order is preserved since rank is monotonic in Appeal.
-  const teamGroups = useMemo(() => {
-    if (currentPhase !== 'free_agency') {
-      return [{ tier: null as string | null, teams: cyclicOrder }]
-    }
-    const groups: { tier: string | null; teams: DraftTeam[] }[] = []
-    for (const t of cyclicOrder) {
-      const rank = typeof t.appeal === 'number' ? appealRank(t.appeal) : null
-      const last = groups[groups.length - 1]
-      if (last && last.tier === rank) last.teams.push(t)
-      else groups.push({ tier: rank, teams: [t] })
-    }
-    return groups
-  }, [currentPhase, cyclicOrder])
+  // The board renders in the backend's draft order, which is worst-first
+  // (weakest teams by record pick first). No tier grouping — Appeal no longer
+  // determines the FA draft order.
+  const teamGroups = useMemo(
+    () => [{ tier: null as string | null, teams: cyclicOrder }],
+    [cyclicOrder]
+  )
 
   const filteredAgents = posFilter === 'ALL'
     ? freeAgents
@@ -976,30 +955,6 @@ export const OffseasonPanel: React.FC = () => {
           ) : (
             teamGroups.map(group => (
               <React.Fragment key={group.tier ?? 'flat'}>
-                {group.tier && RANK_COLORS[group.tier] && (
-                  <div style={{
-                    padding: '8px 14px',
-                    backgroundColor: RANK_COLORS[group.tier].bg,
-                    borderBottom: '1px solid #0f172a',
-                    borderTop: '1px solid #0f172a',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}>
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: '800',
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      color: RANK_COLORS[group.tier].fg,
-                    }}>
-                      {group.tier} Facilities
-                    </span>
-                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                      {group.teams.length} team{group.teams.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                )}
                 {group.teams.map((team, i) => {
               const isCurrent = team.abbr === currentTeamAbbr && !isComplete
               const isDone = completedTeams.has(team.abbr) || isComplete

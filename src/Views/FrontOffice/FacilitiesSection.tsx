@@ -238,9 +238,7 @@ const FacilitiesSection: React.FC = () => {
               ['Market', TIER_SHORT[me?.marketTier || 'MID_MARKET'], tierColor, 'Fanbase size',
                 'How big your fanbase is compared to the rest of the league, from SMALL up to MEGA.'],
               ['Appeal', appealRank(data.appeal), '#34d399', 'Facility quality',
-                'How strong your facilities are overall. Higher appeal makes the team more attractive to free agents.'],
-              ['Free Agency', `#${faRankOf(league, data.teamId)} pick`, '#2dd4bf', 'Draft slot',
-                'Where you pick in the free-agent draft. Set by your Appeal, so the best-equipped clubs draft first.'],
+                'How strong your facilities are overall, from your combined facility levels.'],
               ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24', 'Project fund',
                 'Floobits your fanbase has banked. At season end it covers any facility upkeep and projects that are not already funded, upkeep first, then projects.'],
             ] as [string, string, string, string, string][]).map(([l, v, c, sub, tip]) => (
@@ -322,7 +320,7 @@ const FacilitiesSection: React.FC = () => {
             )
           })}
           <span style={{ fontSize: '11.5px', color: '#7e93a8' }}>
-            {leagueTab === 'facilities' ? 'Best-equipped clubs draft free agents first' : 'How many fans each team has, which sets the Market tier'}
+            {leagueTab === 'facilities' ? 'How strong each team\'s facilities are across the league' : 'How many fans each team has, which sets the Market tier'}
           </span>
         </div>
         {leagueTab === 'facilities'
@@ -331,13 +329,6 @@ const FacilitiesSection: React.FC = () => {
       </section>
     </div>
   )
-}
-
-// league arrives already sorted in true FA draft order (appeal, then reverse
-// standings) from the backend, so the array index IS the FA pick.
-function faRankOf(league: LeagueTeam[], teamId: number): number {
-  const i = league.findIndex(t => t.id === teamId)
-  return i >= 0 ? i + 1 : league.length
 }
 
 function SectionHead({ title, hint, accent }: { title: string; hint: string; accent: string }) {
@@ -437,31 +428,31 @@ function BallotCard({ c, accent, selected, totalVotes, onVote }: { c: Candidate;
   )
 }
 
-// per-team facility power meters + FA pick, in true FA draft order
+// per-team facility power meters, ranked by facility quality (Appeal)
 function AppealGraph({ teams, catalog, favId }: { teams: LeagueTeam[]; catalog: Record<string, string>; favId: number | null }) {
   const keys = Object.keys(catalog)
+  const sorted = [...teams].sort((a, b) => b.appeal - a.appeal)
   return (
     <div style={{ background: '#0f172a', border: '1px solid #1d2c3e', borderRadius: '10px', padding: '6px 4px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 46px', gap: '12px', alignItems: 'center', padding: '5px 12px', borderBottom: '1px solid #1d2c3e' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '56px 1fr 64px', gap: '12px', alignItems: 'center', padding: '5px 12px', borderBottom: '1px solid #1d2c3e' }}>
         <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#7e93a8', fontWeight: 700 }}>Team</span>
         <span style={{ display: 'flex', gap: '4px' }}>
           {keys.map(k => <span key={k} style={{ flex: 1, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.04em', color: '#7e93a8', fontWeight: 700, textAlign: 'center' }}>{SHORT_FAC[k] || catalog[k]}</span>)}
         </span>
-        <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#2dd4bf', fontWeight: 700, textAlign: 'right' }}>FA Pick</span>
+        <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#34d399', fontWeight: 700, textAlign: 'right' }}>Appeal</span>
       </div>
-      {teams.map((t, idx) => {
+      {sorted.map((t) => {
         const isFav = t.id === favId
         const rc = t.color || TIER_COLOR[t.marketTier] || '#2dd4bf'
         const tip = (
           <div style={{ textAlign: 'left', fontSize: '13px', lineHeight: 1.6, fontFamily: 'pressStart, monospace' }}>
             <div style={{ fontWeight: 700, color: t.color, marginBottom: '4px' }}>{t.city} {t.name}</div>
             <div>Appeal: <strong>{appealRank(t.appeal)}</strong></div>
-            <div>Free agency: <strong>{`#${idx + 1} pick`}</strong></div>
             {keys.map(k => <div key={k}>{catalog[k]}: <strong>{t.levels[k] ? roman(t.levels[k]) : 'Not built'}</strong></div>)}
           </div>
         )
         return (
-          <Link key={t.id} to={`/team/${t.id}`} className="facRow" style={{ display: 'grid', gridTemplateColumns: '56px 1fr 46px', gap: '12px', alignItems: 'center', padding: '5px 12px', borderRadius: '4px', textDecoration: 'none',
+          <Link key={t.id} to={`/team/${t.id}`} className="facRow" style={{ display: 'grid', gridTemplateColumns: '56px 1fr 64px', gap: '12px', alignItems: 'center', padding: '5px 12px', borderRadius: '4px', textDecoration: 'none',
             background: isFav ? hex(t.color, 0.1) : 'transparent', boxShadow: isFav ? `inset 0 0 0 1px ${hex(t.color, 0.5)}` : 'none' }}>
             <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#cbd5e1' }}>{t.abbr}</span>
             <HoverTooltip content={tip} color={t.color}>
@@ -477,7 +468,7 @@ function AppealGraph({ teams, catalog, favId }: { teams: LeagueTeam[]; catalog: 
                 })}
               </span>
             </HoverTooltip>
-            <span style={{ fontSize: '13px', fontWeight: 800, color: '#2dd4bf', textAlign: 'right' }}>{`#${idx + 1}`}</span>
+            <span style={{ fontSize: '12px', fontWeight: 800, color: '#34d399', textAlign: 'right' }}>{appealRank(t.appeal)}</span>
           </Link>
         )
       })}
