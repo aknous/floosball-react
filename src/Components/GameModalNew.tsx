@@ -1364,6 +1364,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                                 alignItems: 'baseline', justifyContent: 'center' }}>
                     <span style={{ color: '#94a3b8' }}>Offense clock</span>
                     {side(gameData.homeTeam?.abbr || 'HOME', cc.homeBudget, cc.homeLockedOut)}
+                    <span style={{ color: '#475569' }}>•</span>
                     {side(gameData.awayTeam?.abbr || 'AWAY', cc.awayBudget, cc.awayLockedOut)}
                   </div>
                 )
