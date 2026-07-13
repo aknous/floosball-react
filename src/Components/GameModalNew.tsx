@@ -597,8 +597,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       // Chess-clock timeout: a team ran its offense budget to 0 — a notable turnover, so
       // give it a red accent (matches the clock going red) instead of the neutral grey.
       const isTimeout = play.event?._type === 'chess_timeout' || play._type === 'chess_timeout'
-      // Innings change (new at-bat) — a blue accent, like a new quarter/period marker.
-      const isInning = play.event?._type === 'inning' || play._type === 'inning'
+      // Innings change (new at-bat) or a frame change — a blue accent, like a period marker.
+      const isInning = ['inning', 'frame'].includes(play.event?._type) || ['inning', 'frame'].includes(play._type)
       const lineColor = isRally ? '#22c55e55' : isTimeout ? '#ef444455' : isInning ? '#3b82f655' : '#334155'
       const textColor = isRally ? '#86efac' : isTimeout ? '#fca5a5' : isInning ? '#93c5fd' : '#64748b'
       return (
