@@ -15,6 +15,9 @@ import RallyButton from './GameModal/RallyPanel'
 import CheerBar from './CheerBar'
 import { GlitchedText } from './GlitchedText'
 import { effectiveAwayColor } from '@/utils/colors'
+import { formatScore } from '@/utils/formatScore'
+import { displayScore, ScoringModel } from '@/utils/displayScore'
+import { ordinal } from '@/utils/ordinal'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -146,20 +149,39 @@ const ClockStateIcon: React.FC<{ stopped: boolean }> = ({ stopped }) => {
   )
 }
 
+/** Frames won can be fractional (½ for a halved frame) — render "2", "2½", "½". */
+function fmtFramesWon(v: number): string {
+  const whole = Math.floor(v)
+  const half = v - whole >= 0.5
+  return half ? `${whole > 0 ? whole : ''}½` : `${whole}`
+}
+
 /** Returns a consistent badge background color for any PlayResult string. */
 /** Returns true for play results that warrant a badge in the field graphic (scores + turnovers). */
 function isFieldBadgeResult(playResult: string): boolean {
   return playResult.includes('Touchdown') || playResult.includes('2-Pt')
+    || playResult.includes('Conversion')
     || playResult === 'XP Good' || playResult === 'XP No Good'
     || playResult === 'Field Goal is Good' || playResult === 'Safety'
     || playResult === 'Fumble' || playResult === 'Interception'
-    || playResult === 'Turnover On Downs' || playResult === 'Punt'
+    || playResult === 'Turnover On Downs' || playResult === 'Drive Clock Expired'
+    || playResult.includes('Sideline Hoop') || playResult === 'Bust'
+    || playResult.includes('Contest') || playResult === 'Provisional Score'
+    || playResult === 'Punt'
 }
 
-function getResultColor(playResult: string): string | null {
+function getResultColor(playResult: string, lastDown = 4): string | null {
   if (!playResult) return null
-  if (playResult === '2nd Down' || playResult === '3rd Down') return null
-  if (playResult === '1st Down') return '#3b82f6'
+  // Down-marker results ('1st Down' .. 'Nth Down'). downsPerSeries is a mutable
+  // rule, so color the ACTUAL last down amber (urgent), the first blue, the rest
+  // uncolored — instead of hardcoding 4th.
+  const downMatch = playResult.match(/^(\d+)(?:st|nd|rd|th) Down$/)
+  if (downMatch) {
+    const d = parseInt(downMatch[1], 10)
+    if (d === 1) return '#3b82f6'
+    if (d >= lastDown) return '#f59e0b'
+    return null
+  }
   // XP now fires as its own play (PlayResult.ExtraPointGood / ExtraPointNoGood).
   // Check XP first because 'XP Good' would otherwise match the legacy 'Touchdown'
   // include below if both ever co-occurred. 'Touchdown, XP is Good' / 'Touchdown,
@@ -171,8 +193,18 @@ function getResultColor(playResult: string): string | null {
   if (playResult === 'Field Goal is Good') return '#22c55e'
   if (playResult === 'Safety') return '#ef4444'
   if (playResult.includes('2-Pt') && !playResult.includes('No Good')) return '#22c55e'
+  // Conversion Ladder — a higher-rung go-for-it try (from further out).
+  if (playResult.includes('Conversion') && !playResult.includes('No Good')) return '#22c55e'
   if (playResult === 'Fumble' || playResult === 'Interception' || playResult === 'Turnover On Downs') return '#ef4444'
-  if (playResult === '4th Down' || playResult.includes('2-Pt No Good')) return '#f59e0b'
+  if (playResult === 'Drive Clock Expired') return '#ef4444'   // a turnover — red, distinct badge text
+  if (playResult === 'Sideline Hoop Good') return '#22c55e'    // banked a point (drive continues)
+  if (playResult === 'Sideline Hoop Miss') return '#94a3b8'    // just an incompletion (no turnover)
+  if (playResult === 'Bust') return '#ef4444'                  // darts: overshot X, no points, turnover
+  if (playResult === 'Provisional Score') return '#f59e0b'     // contested: reached the end zone, contest pending
+  if (playResult === 'Contest Won') return '#22c55e'           // contested: the action banked the TD
+  if (playResult === 'Contest Stuff') return '#ef4444'         // contested: stuffed, no points
+  if (playResult.includes('2-Pt No Good')) return '#f59e0b'
+  if (playResult.includes('Conversion No Good')) return '#f59e0b'
   if (playResult === 'Punt' || playResult === 'Field Goal is No Good') return '#94a3b8'
   return '#64748b'
 }
@@ -183,6 +215,29 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   const [showHighlightsOnly, setShowHighlightsOnly] = useState(false)
   const [expandedPlayKey, setExpandedPlayKey] = useState<string | null>(null)
   const [expandedStatKey, setExpandedStatKey] = useState<string | null>(null)
+  // The league's current downs-per-series (a mutable rule) so the ACTUAL last down
+  // is colored urgent, not a hardcoded 4th.
+  const [lastDown, setLastDown] = useState(4)
+  // The league's active score display model (additive / spread / share) — the same
+  // /api/rules fetch that drives the last-down color.
+  const [scoringModel, setScoringModel] = useState<ScoringModel>('additive')
+  // Active game format + target (win condition) — same /api/rules read.
+  const [gameFormat, setGameFormat] = useState<string>('standard')
+  const [targetScore, setTargetScore] = useState<number>(30)
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${API_BASE}/rules`).then(r => r.json())
+      .then(j => {
+        if (cancelled) return
+        setLastDown(Number(j?.data?.rules?.downsPerSeries) || 4)
+        const m = j?.data?.rules?.scoringModel
+        if (m === 'additive' || m === 'spread' || m === 'subtractive') setScoringModel(m)
+        setGameFormat(String(j?.data?.rules?.gameFormat ?? 'standard'))
+        setTargetScore(Number(j?.data?.rules?.targetScore) || 30)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
   const isMobile = useIsMobile()
   // Stats table has its own (higher) tight-layout breakpoint — the panel
   // is only ~60% of modal width on tablet/desktop, so a 900px landscape
@@ -202,6 +257,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // as plays merge/arrive can't reset the guard. Reset on game switch below.
   const modalOpenedAtRef = useRef(Date.now())
   const gameData = frozenRef.current
+  // Formats with no real game clock — timeouts (a clock-management tool) are meaningless.
+  const noClockFormat = gameFormat === 'innings' || gameFormat === 'play_limit' || gameFormat === 'chess_clock'
 
   // Effective away-team display color: when the two primaries are basically the
   // same, swap the away team to its secondary so they're distinguishable — but
@@ -501,8 +558,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             )}
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
-                <span>{play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}</span>
-                <span>•</span>
+                {play.inning != null ? (
+                  <><span>{`${play.inningHalf === 'bottom' ? 'BOT' : 'TOP'} ${play.inning}`}</span><span>•</span></>
+                ) : play.frame != null ? (
+                  <><span>{`Frame ${play.frame}`}</span><span>•</span></>
+                ) : (!noClockFormat && gameFormat !== 'frames') ? (
+                  <><span>{`${play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - ${play.timeRemaining}`}</span><span>•</span></>
+                ) : null}
                 <span style={{ color: '#cbd5e1', fontWeight: '500', letterSpacing: '0.04em' }}>SIDELINE</span>
               </div>
               <p style={{
@@ -532,12 +594,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       // WS-injected events use {event: {_type}}; REST-served events are
       // unwrapped so _type sits on the play itself — check both shapes.
       const isRally = play.event?._type === 'rally' || play._type === 'rally'
-      const lineColor = isRally ? '#22c55e55' : '#334155'
-      const textColor = isRally ? '#86efac' : '#64748b'
+      // Chess-clock timeout: a team ran its offense budget to 0 — a notable turnover, so
+      // give it a red accent (matches the clock going red) instead of the neutral grey.
+      const isTimeout = play.event?._type === 'chess_timeout' || play._type === 'chess_timeout'
+      // Innings change (new at-bat) or a frame change — a blue accent, like a period marker.
+      const isInning = ['inning', 'frame'].includes(play.event?._type) || ['inning', 'frame'].includes(play._type)
+      const lineColor = isRally ? '#22c55e55' : isTimeout ? '#ef444455' : isInning ? '#3b82f655' : '#334155'
+      const textColor = isRally ? '#86efac' : isTimeout ? '#fca5a5' : isInning ? '#93c5fd' : '#64748b'
       return (
         <div key={`${keyPrefix}-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
           <div style={{ flex: 1, height: '1px', backgroundColor: lineColor }} />
-          <span style={{ fontSize: '12px', color: textColor, fontWeight: '500', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <span style={{ fontSize: '12px', color: textColor, fontWeight: (isTimeout || isInning) ? '700' : '500', whiteSpace: 'nowrap', flexShrink: 0 }}>
             {eventText}
           </span>
           <div style={{ flex: 1, height: '1px', backgroundColor: lineColor }} />
@@ -550,8 +617,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const downText = isTwoPtPlay ? '2-Pt Try' :
       play.down && play.distance != null ?
         (play.distance === 'Goal' ?
-          `${['1st', '2nd', '3rd', '4th'][play.down - 1]} & Goal` :
-          `${['1st', '2nd', '3rd', '4th'][play.down - 1]} & ${play.distance}`)
+          `${ordinal(play.down)} & Goal` :
+          `${ordinal(play.down)} & ${play.distance}`)
         : null
 
     // Determine which team has possession for this play
@@ -643,12 +710,27 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               {/* Left: clock / situation */}
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}
-                  {/* Clock state — pause-in-circle when stopped, play-in-circle
-                      when running. Hidden on scoring plays since the score
-                      already conveys the clock will stop, and adding an icon
-                      there would just be noise. */}
-                  {!play.scoreChange && <ClockStateIcon stopped={!!play.clockStopped} />}
+                  {play.inning != null ? (
+                    // Innings: the clock loop is inert, so show the at-bat context instead
+                    // of a meaningless quarter/clock + start-stop icon.
+                    `${play.inningHalf === 'bottom' ? 'BOT' : 'TOP'} ${play.inning} · Try ${play.inningTry}${gameData.innings?.triesPerInning ? `/${gameData.innings.triesPerInning}` : ''}`
+                  ) : play.frame != null ? (
+                    // Frames: 10-min frames don't line up with quarters — show the frame +
+                    // time remaining in it.
+                    <>
+                      Frame {play.frame} - {play.frameClock}
+                      {!play.scoreChange && <ClockStateIcon stopped={!!play.clockStopped} />}
+                    </>
+                  ) : (
+                    <>
+                      {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}
+                      {/* Clock state — pause-in-circle when stopped, play-in-circle
+                          when running. Hidden on scoring plays since the score
+                          already conveys the clock will stop, and adding an icon
+                          there would just be noise. */}
+                      {!play.scoreChange && <ClockStateIcon stopped={!!play.clockStopped} />}
+                    </>
+                  )}
                 </span>
                 {downText && (
                   <>
@@ -702,9 +784,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 {(() => {
                   const sackColor = '#f97316'
                   const isSafety = play.playResult === 'Safety'
-                  const resultColor = play.playResult ? getResultColor(String(play.playResult)) : null
+                  const resultColor = play.playResult ? getResultColor(String(play.playResult), lastDown) : null
                   const badgeColor = isSafety ? resultColor : play.isSack ? sackColor : resultColor
-                  const badgeLabel = isSafety ? 'Safety' : play.isSack ? 'SACK' : play.playResult
+                  // Innings: a turnover on downs is a spent try with no score — label it
+                  // as a failed try, not the football "Turnover On Downs".
+                  const badgeLabel = isSafety ? 'Safety' : play.isSack ? 'SACK'
+                    : (gameFormat === 'innings' && play.playResult === 'Turnover On Downs') ? 'Try Over'
+                    : play.playResult
                   if (!badgeColor) return null
                   return (
                     <span style={{
@@ -852,7 +938,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             )}
             {play.scoreChange && play.homeTeamScore != null && (
               <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                {gameData.homeTeam.abbr} {play.homeTeamScore} – {play.awayTeamScore} {gameData.awayTeam.abbr}
+                {gameData.homeTeam.abbr} {displayScore(play.homeTeamScore, play.awayTeamScore, scoringModel)} – {displayScore(play.awayTeamScore, play.homeTeamScore, scoringModel)} {gameData.awayTeam.abbr}
               </div>
             )}
             {/* Reactions for the play itself — only on plays with a stable
@@ -1043,12 +1129,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={homeFlash ? 'score-updated' : ''}>
-                  {dHomeScore}
+                  {gameData.frames?.active ? fmtFramesWon(gameData.frames.framesWonHome) : displayScore(dHomeScore, dAwayScore, scoringModel)}
                 </div>
               </div>
 
               {/* Home timeouts */}
-              {gameData.status === 'Active' && gameData.homeTimeouts != null && (
+              {gameData.status === 'Active' && gameData.homeTimeouts != null && !noClockFormat && (
                 <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingBottom: '8px' }}>
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{
@@ -1091,12 +1177,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={awayFlash ? 'score-updated' : ''}>
-                  {dAwayScore}
+                  {gameData.frames?.active ? fmtFramesWon(gameData.frames.framesWonAway) : displayScore(dAwayScore, dHomeScore, scoringModel)}
                 </div>
               </div>
 
               {/* Away timeouts */}
-              {gameData.status === 'Active' && gameData.awayTimeouts != null && (
+              {gameData.status === 'Active' && gameData.awayTimeouts != null && !noClockFormat && (
                 <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingTop: '8px' }}>
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{
@@ -1108,8 +1194,97 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 </div>
               )}
 
-              {/* Quarter-by-quarter breakdown */}
-              {dQuarterScores && (
+              {/* Frame-by-frame line (match play) — points each team scored in each frame;
+                  the frame winner's cell is green (a halved frame is amber). */}
+              {gameData.frames?.active ? (() => {
+                const fr = gameData.frames!
+                const N = fr.framesPerGame
+                const done = fr.frameResults ?? []
+                const frameData = (i: number) => {   // i = 1..N
+                  if (i <= done.length) return { home: done[i - 1].home, away: done[i - 1].away, winner: done[i - 1].winner as string | null }
+                  if (i === done.length + 1 && i <= N) return { home: fr.frameHome, away: fr.frameAway, winner: null as string | null }  // in progress
+                  return null  // future frame
+                }
+                const cellColor = (side: 'home' | 'away', winner: string | null) => {
+                  if (winner == null) return '#cbd5e1'          // in-progress frame
+                  if (winner === 'tie') return '#f59e0b'         // halved
+                  return winner === side ? '#22c55e' : '#64748b' // won / lost
+                }
+                const rowFor = (side: 'home' | 'away', abbr: string) => (
+                  <tr>
+                    <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{abbr}</td>
+                    {Array.from({ length: N }).map((_, k) => {
+                      const d = frameData(k + 1)
+                      if (!d) return <td key={k} style={{ textAlign: 'center', padding: '4px 8px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>-</td>
+                      return <td key={k} style={{ textAlign: 'center', padding: '4px 8px', color: cellColor(side, d.winner), fontWeight: d.winner === side ? 700 : 500, fontVariantNumeric: 'tabular-nums' }}>{side === 'home' ? d.home : d.away}</td>
+                    })}
+                  </tr>
+                )
+                return (
+                  <div style={{ borderTop: '1px solid #334155', marginTop: '12px', paddingTop: '8px', overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left', padding: '3px 0', color: '#475569', fontWeight: '500', width: '48px' }}></th>
+                          {Array.from({ length: N }).map((_, k) => (
+                            <th key={k} style={{ textAlign: 'center', padding: '3px 8px', color: (k + 1) === fr.currentFrame ? '#94a3b8' : '#64748b', fontWeight: '500' }}>{k + 1}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rowFor('away', gameData.awayTeam.abbr)}
+                        {rowFor('home', gameData.homeTeam.abbr)}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              })() : null}
+
+              {/* Innings line score (baseball-style) — replaces the quarter breakdown for
+                  innings games. Away bats the top of each inning, home the bottom. */}
+              {gameData.innings?.active && gameData.innings.lineScore ? (() => {
+                const ls = gameData.innings.lineScore!
+                const curInn = gameData.innings!.inning
+                const curHalf = gameData.innings!.half
+                const cell = (v: number) => (
+                  <td key={Math.random()} style={{ textAlign: 'center', padding: '4px 8px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{v}</td>
+                )
+                const blank = (k: number) => (
+                  <td key={k} style={{ textAlign: 'center', padding: '4px 8px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>-</td>
+                )
+                const row = (side: 'home' | 'away', abbr: string) => (
+                  <tr>
+                    <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{abbr}</td>
+                    {ls.innings.map((innNum, i) => {
+                      // A team's inning cell is blank until it has batted: away bats the
+                      // top first (reached once we're at/after that inning), home bats the
+                      // bottom (reached only once we're past it, or in its bottom half).
+                      const reached = side === 'away'
+                        ? innNum <= curInn
+                        : (innNum < curInn || (innNum === curInn && curHalf === 'bottom'))
+                      return reached ? cell(ls[side][i] ?? 0) : blank(innNum)
+                    })}
+                  </tr>
+                )
+                return (
+                  <div style={{ borderTop: '1px solid #334155', marginTop: '12px', paddingTop: '8px', overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left', padding: '3px 0', color: '#475569', fontWeight: '500', width: '48px' }}></th>
+                          {ls.innings.map(n => (
+                            <th key={n} style={{ textAlign: 'center', padding: '3px 8px', color: '#64748b', fontWeight: '500' }}>{n}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {row('away', gameData.awayTeam.abbr)}
+                        {row('home', gameData.homeTeam.abbr)}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              })() : (dQuarterScores && !gameData.innings?.active && !gameData.frames?.active) ? (
                 <div style={{ borderTop: '1px solid #334155', marginTop: '12px', paddingTop: '8px' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
                     <thead>
@@ -1124,22 +1299,22 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     <tbody>
                       <tr>
                         <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{gameData.homeTeam.abbr}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.home.q1}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.home.q2}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.home.q3}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.home.q4}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.home.q1)}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.home.q2)}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.home.q3)}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.home.q4)}</td>
                       </tr>
                       <tr>
                         <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{gameData.awayTeam.abbr}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.away.q1}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.away.q2}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.away.q3}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{dQuarterScores.away.q4}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.away.q1)}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.away.q2)}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.away.q3)}</td>
+                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.away.q4)}</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-              )}
+              ) : null}
 
               {/* Rally buttons — one per team, side-by-side below the
                   scoreboard. Each is a "Cheer for <Team>" CTA that
@@ -1171,17 +1346,36 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   <span>Final{gameData.isOvertime ? ' (OT)' : ''}</span>
                 ) : gameData.status === 'Active' ? (
                   <>
-                    <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.timeRemaining}`}</span>
-                    {(() => {
-                      // Mirror the per-play icon: derive current clock state
-                      // from the most recent real play. plays are newest-first.
-                      const latest = gameData.plays?.find((p: any) => !p.event && p.playResult != null)
-                      if (!latest) return null
-                      // Hide when the latest play scored — same noise gate as
-                      // the per-play row.
-                      if (latest.scoreChange) return null
-                      return <ClockStateIcon stopped={!!latest.clockStopped} />
-                    })()}
+                    {gameData.innings?.active ? (
+                      // innings: no clock — show inning, half, and tries
+                      <span>{`${gameData.innings.half === 'bottom' ? 'BOT' : 'TOP'} ${gameData.innings.inning}  •  Try ${gameData.innings.tries + 1}`}</span>
+                    ) : gameData.frames?.active ? (
+                      // frames: 10-min frames don't line up with quarters — show the frame
+                      // + its clock (down/distance on its own row below).
+                      <span>{`Frame ${gameData.frames.currentFrame}  •  ${gameData.frames.frameClock ?? gameData.timeRemaining}`}</span>
+                    ) : gameData.playLimit?.active ? (
+                      // play_limit: no clock — show plays remaining in the period
+                      <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.playLimit.playsRemaining} ${gameData.playLimit.playsRemaining === 1 ? 'play' : 'plays'} left`}</span>
+                    ) : gameData.chessClock?.active ? (
+                      // chess_clock: the synthetic clock still tracks quarter progress, so
+                      // show quarter + time remaining like a normal game (down/distance on
+                      // its own row below; the two offense budgets below that).
+                      <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.timeRemaining}`}</span>
+                    ) : (
+                      <>
+                        <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.timeRemaining}`}</span>
+                        {(() => {
+                          // Mirror the per-play icon: derive current clock state
+                          // from the most recent real play. plays are newest-first.
+                          const latest = gameData.plays?.find((p: any) => !p.event && p.playResult != null)
+                          if (!latest) return null
+                          // Hide when the latest play scored — same noise gate as
+                          // the per-play row.
+                          if (latest.scoreChange) return null
+                          return <ClockStateIcon stopped={!!latest.clockStopped} />
+                        })()}
+                      </>
+                    )}
                   </>
                 ) : (
                   <span>{gameData.status}</span>
@@ -1194,13 +1388,85 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 const yardLine = dYardLine
                 const yardsToEndzone = dYardsToEndzone
                 if (!down || !yardLine) return null
-                const downSuffix = ['1st', '2nd', '3rd', '4th'][down - 1]
+                const downSuffix = ordinal(down)
                 const showGoal = yardsToEndzone != null && distance != null && yardsToEndzone < distance
                 return (
                   <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                     {showGoal ? `${downSuffix} & Goal` : `${downSuffix} & ${distance}`}
                     <span style={{ color: '#475569', margin: '0 6px' }}>•</span>
                     {yardLine}
+                  </div>
+                )
+              })()}
+              {/* Drive Clock — the possession shot clock (only when the rule is on) */}
+              {gameData.status === 'Active' && !replayActive && gameData.driveClock && (() => {
+                const dc = gameData.driveClock!
+                const s = Math.max(0, dc.remaining)
+                const val = dc.unit === 'plays'
+                  ? `${s} ${s === 1 ? 'play' : 'plays'} left`
+                  : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+                const color = dc.low ? '#f59e0b' : '#94a3b8'
+                return (
+                  <div style={{ fontSize: '11px', color, fontWeight: 700, marginTop: '3px',
+                                letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    Drive Clock {val}
+                  </div>
+                )
+              })()}
+              {/* Game format: first-to-X target (win condition) */}
+              {gameFormat === 'target' && gameData.status !== 'Scheduled' && (() => {
+                const leader = Math.max(gameData.homeScore ?? 0, gameData.awayScore ?? 0)
+                const toGo = Math.max(0, targetScore - leader)
+                return (
+                  <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
+                                letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    First to {targetScore}{gameData.status === 'Active' && toGo > 0 ? ` · ${formatScore(toGo)} to go` : ''}
+                  </div>
+                )
+              })()}
+              {/* Game format: bust (darts — land EXACTLY on X; each team's "to go") */}
+              {gameFormat === 'bust' && gameData.status !== 'Scheduled' && (() => {
+                const hGo = Math.max(0, targetScore - (gameData.homeScore ?? 0))
+                const aGo = Math.max(0, targetScore - (gameData.awayScore ?? 0))
+                return (
+                  <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
+                                letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    Darts · land on {targetScore}
+                    {gameData.status === 'Active' && (
+                      <span style={{ color: '#94a3b8' }}> ({gameData.homeTeam?.abbr} needs {hGo} · {gameData.awayTeam?.abbr} needs {aGo})</span>
+                    )}
+                  </div>
+                )
+              })()}
+              {/* Game format: play_limit (fixed plays per quarter, no clock) */}
+              {gameFormat === 'play_limit' && gameData.playLimit?.active && (
+                <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
+                              letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  {gameData.playLimit.playsPerQuarter} plays a quarter
+                </div>
+              )}
+              {/* Game format: frames (match play) — the match is frames won, not points */}
+              {/* Game format: chess_clock — each team's remaining offense-time budget */}
+              {gameFormat === 'chess_clock' && gameData.chessClock?.active && gameData.status !== 'Scheduled' && (() => {
+                const cc = gameData.chessClock!
+                const LOW_SECS = 60   // running low on the offense budget -> red
+                const clk = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`
+                const side = (abbr: string, secs: number, locked: boolean) => {
+                  const low = !locked && secs <= LOW_SECS
+                  return (
+                    <span style={{ color: locked || low ? '#ef4444' : '#f59e0b', fontWeight: 700, fontSize: '14px' }}>
+                      {abbr} {locked ? 'OUT' : clk(secs)}
+                    </span>
+                  )
+                }
+                return (
+                  <div style={{ fontSize: '11px', marginTop: '3px', letterSpacing: '0.04em',
+                                textTransform: 'uppercase', display: 'flex', gap: '8px',
+                                alignItems: 'baseline', justifyContent: 'center' }}>
+                    <span style={{ color: '#94a3b8' }}>Offense clock</span>
+                    {side(gameData.homeTeam?.abbr || 'HOME', cc.homeBudget, cc.homeLockedOut)}
+                    <span style={{ color: '#475569' }}>•</span>
+                    {side(gameData.awayTeam?.abbr || 'AWAY', cc.awayBudget, cc.awayLockedOut)}
                   </div>
                 )
               })()}
@@ -1262,6 +1528,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               const playType = (lastPlay?.playType ?? '').toUpperCase()
               const isTD = !!lastPlay?.isTouchdown
               const isTurnover = !!lastPlay?.isTurnover
+              // Sideline Goals hoop shot — the last play was a throw at a hoop.
+              const isHoopShot = String(lastPlay?.playResult ?? '').includes('Sideline Hoop')
+              const hoopMade = lastPlay?.playResult === 'Sideline Hoop Good'
 
               // Which direction did the last play go?
               // Home team plays go right (+1), away team plays go left (-1)
@@ -1322,7 +1591,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               let playDash = 'none'
               let playEndX: number | null = null
 
-              if (playType === 'PUNT' && ballX != null && ballAbsYfl != null && Math.abs(yardsGained) >= 1) {
+              if (isHoopShot && ballX != null) {
+                // Hoop shot — arc from the ball up to the target hoop (midfield or the
+                // attacking end-zone pair), on the top sideline. Green make / grey miss.
+                const pair = (lastPlay as any)?.hoopPair
+                const hoopX = pair === 'endzone' ? (lastPlayDir === 1 ? toX(110) : toX(10)) : toX(60)
+                const hoopY = 12
+                const midPX = (ballX + hoopX) / 2
+                const peakY = hoopY - 24
+                playPath = `M${ballX},${midY} Q${midPX},${peakY} ${hoopX},${hoopY}`
+                playStroke = hoopMade ? '#22c55e' : '#94a3b8'   // green make / grey incompletion
+                playDash = '6,3'
+                playEndX = hoopX
+              } else if (playType === 'PUNT' && ballX != null && ballAbsYfl != null && Math.abs(yardsGained) >= 1) {
                 // Punt: draw arc forward from LOS to landing spot
                 const puntEndX = toX(ballAbsYfl + yardsGained * lastPlayDir)
                 const midPX = (ballX + puntEndX) / 2
@@ -1392,7 +1673,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               // The possession-change guard suppresses a stale run/pass
               // trajectory, but a kick's arc is the play itself and stays
               // meaningful even though possession flips after it.
-              if (!sameTeamHasBall && playType !== 'PUNT' && playType !== 'FIELDGOAL') playPath = null
+              if (!sameTeamHasBall && playType !== 'PUNT' && playType !== 'FIELDGOAL' && !isHoopShot) playPath = null
 
               // Arrowhead points toward the end of the play
               const arrowDir = playEndX != null && ballX != null ? (playEndX >= ballX ? 1 : -1) : lastPlayDir
@@ -1507,6 +1788,35 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       {(awayTeam.name || awayTeam.abbr).toUpperCase()}
                     </text>
 
+                    {/* Sideline Goals — the hoop pairs. Two per attacking direction:
+                        a midfield pair (~the 50) and a pair flanking the attacking end
+                        zone. Yellow = not attempted this drive, green = made, red =
+                        missed. The non-attacking end's hoops are dimmed (not in play). */}
+                    {!replayActive && gameData.sidelineGoals?.active && (() => {
+                      const sg = gameData.sidelineGoals!
+                      const col = (s: string) => s === 'made' ? '#22c55e' : s === 'missed' ? '#ef4444' : '#FFD700'
+                      const yTop = 12, yBot = FH - 12
+                      const midX = toX(60)
+                      const attackX = sg.attackingHome ? toX(110) : toX(10)
+                      const otherX = sg.attackingHome ? toX(10) : toX(110)
+                      const hoops = [
+                        { x: midX, y: yTop, c: col(sg.midfield), o: 0.95 },
+                        { x: midX, y: yBot, c: col(sg.midfield), o: 0.95 },
+                        { x: attackX, y: yTop, c: col(sg.endzone), o: 0.95 },
+                        { x: attackX, y: yBot, c: col(sg.endzone), o: 0.95 },
+                        { x: otherX, y: yTop, c: '#FFD700', o: 0.22 },
+                        { x: otherX, y: yBot, c: '#FFD700', o: 0.22 },
+                      ]
+                      return (
+                        <g>
+                          {hoops.map((h, i) => (
+                            <circle key={`hoop-${i}`} cx={h.x} cy={h.y} r={6.5}
+                              fill="none" stroke={h.c} strokeWidth={2.5} opacity={h.o} />
+                          ))}
+                        </g>
+                      )
+                    })()}
+
                     {/* First down marker */}
                     {firstDownX != null && firstDownX > EZW && firstDownX < FW - EZW && (
                       <line x1={firstDownX} y1={6} x2={firstDownX} y2={FH - 6}
@@ -1598,7 +1908,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                           </p>
                         )}
                         {playResult && isFieldBadgeResult(String(playResult)) && (() => {
-                          const badgeColor = getResultColor(String(playResult)) ?? '#64748b'
+                          const badgeColor = getResultColor(String(playResult), lastDown) ?? '#64748b'
                           return (
                             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4px' }}>
                               <span style={{

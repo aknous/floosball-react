@@ -297,6 +297,15 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               yardsToFirstDown: gsEvt.distance ?? undefined,
               yardLine: gsEvt.yardLine ?? undefined,
               yardsToEndzone: gsEvt.yardsToEndzone ?? undefined,
+              driveClock: gsEvt.driveClock ?? null,
+              // Per-play format state (server-computed, doesn't derive from score/clock) —
+              // thread it through live so chess-clock budgets, play/inning/frame counters,
+              // and hoop state update as plays arrive instead of only on a refresh.
+              chessClock: gsEvt.chessClock ?? undefined,
+              playLimit: gsEvt.playLimit ?? undefined,
+              innings: gsEvt.innings ?? undefined,
+              frames: gsEvt.frames ?? undefined,
+              sidelineGoals: gsEvt.sidelineGoals ?? null,
               homeWinProbability: gsEvt.homeWinProbability,
               awayWinProbability: gsEvt.awayWinProbability,
               homeTimeouts: gsEvt.homeTimeouts,

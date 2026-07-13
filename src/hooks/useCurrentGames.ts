@@ -1,4 +1,4 @@
-import type { GameStats } from '@/types/websocket'
+import type { GameStats, DriveClockState, PlayLimitState, ChessClockState, InningsState, FramesState, SidelineGoalsState } from '@/types/websocket'
 export type { GameStats }
 
 export interface CurrentGame {
@@ -44,6 +44,12 @@ export interface CurrentGame {
   yardsToFirstDown?: number
   yardLine?: string  // e.g., "BAL 25"
   yardsToEndzone?: number
+  driveClock?: DriveClockState | null
+  sidelineGoals?: SidelineGoalsState | null
+  playLimit?: PlayLimitState
+  chessClock?: ChessClockState
+  innings?: InningsState
+  frames?: FramesState
   downText?: string
   status: 'Scheduled' | 'Active' | 'Final'
   homeScore: number
