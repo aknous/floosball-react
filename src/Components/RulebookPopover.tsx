@@ -1,5 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom'
+import { useRuleVote, fmtRuleValue } from '@/contexts/RuleVoteContext'
+import { CoreIcon, coreColor } from '@/utils/coresVisual'
+import { useCoresStatus } from '@/contexts/CoresStatusContext'
+
+// During a Criticality the rulebook is UNREADABLE — every game is on its own secret
+// randomized ruleset, so the values here scramble into glitch glyphs (flickering).
+const GLITCH_GLYPHS = '█▓▒░╳╱╲▇▆※╬#@&%§¥'
+const GLITCH_COLOR = '#c084fc'   // violet — the anomaly/criticality palette
+const scramble = (n = 3): string =>
+  Array.from({ length: n }, () => GLITCH_GLYPHS[Math.floor(Math.random() * GLITCH_GLYPHS.length)]).join('')
 
 // Anchored popover for the league Rulebook. Mirrors CoresPopover's shell (portal
 // panel under a header button, Esc / outside-click dismiss, hover grace on the
@@ -15,12 +25,23 @@ const CHANGED_COLOR = '#f59e0b'   // amber — a rule the Cores have altered
 const VALUE_COLOR = '#e2e8f0'     // base rule value (neutral)
 const LABEL_COLOR = '#94a3b8'     // section labels, status tags, live/dormant glyphs
 
+interface LastChange {
+  field: string
+  label: string
+  kind: 'change' | 'revert'
+  core: string
+  from: number | boolean
+  to: number | boolean
+}
+
 interface RulesPayload {
   rules: Record<string, number | boolean>
   defaults: Record<string, number | boolean>
   mutable: string[]
   changed: string[]
   patchHistory: Array<Record<string, any>>
+  lastChange?: LastChange | null
+  changeCount?: number
 }
 
 // ─── Presentation metadata (frontend-owned; values come from the backend) ────
@@ -47,55 +68,70 @@ const GROUPS: RuleGroup[] = [
     { key: 'safetyPoints', label: 'Safety', fmt: ptsFmt },
   ]},
   { title: 'Clock Stoppage', rules: [
-    { key: 'clockStopsOnIncompletePass', label: 'Incompletion', fmt: boolFmt },
-    { key: 'clockStopsOnOutOfBounds', label: 'Out of bounds', fmt: boolFmt },
+    { key: 'clockStopsOnDeadBall', label: 'Stops on dead balls', fmt: boolFmt },
   ]},
 ]
 
-// ─── Scoring-model tease (not wired — pure foreshadowing) ─────────────────────
-// How score is KEPT is itself a rule. We show only the LIVE model — its presence
-// as a listed rule is the tease that it could be something else (the alternatives
-// stay unlisted). Design lives in docs/rule_mutation_future_ideas + SIM_EVOLUTION.
-const ACTIVE_SCORING_MODEL = 'Additive'
-
-// Dormant structural rules — mechanics the Cores could switch on, currently off.
+// ─── Dormant structural rules — mechanics the Cores could switch on, currently off.
 // Named (unlike the secret scoring models) so they read as an ominous roadmap of
 // what the game could become. Design lives in docs/SIM_EVOLUTION.md.
-const DORMANT_RULES = ['Contested Scoring', 'Drive Clock', 'Conversion Ladder', 'Sideline Goals']
+// Each dormant mechanic + the GameRules enable-flag that switches it on (once its
+// engine is built and votable). A row with a live `true` flag renders as Active.
+const DORMANT_RULES: { name: string; field?: string }[] = [
+  { name: 'Contested Scoring', field: 'contestedScoringEnabled' },
+  { name: 'Drive Clock', field: 'driveClockEnabled' },
+  { name: 'Conversion Ladder', field: 'conversionLadderEnabled' },
+  { name: 'Sideline Goals', field: 'sidelineGoalsEnabled' },
+]
 
-const RuleRow: React.FC<{ meta: RuleMeta; value: any; def: any; changed: boolean }> =
-  ({ meta, value, def, changed }) => (
+// When the Drive Clock is on, summarise its live mode for the active row.
+function driveClockDetail(rules: any): string | undefined {
+  if (!rules?.driveClockEnabled) return undefined
+  const lim = rules.driveClockLimit
+  const unit = rules.driveClockUnit === 'plays' ? (lim === 1 ? 'play' : 'plays') : 'sec'
+  const reset = rules.driveClockReset === 'series' ? 'resets each 1st down' : 'whole drive'
+  return `${lim} ${unit}, ${reset}`
+}
+
+const RuleRow: React.FC<{ meta: RuleMeta; value: any; def: any; changed: boolean; glitched?: boolean }> =
+  ({ meta, value, def, changed, glitched }) => (
   <div style={{
     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
     padding: '8px 10px', borderRadius: '5px', backgroundColor: '#0f172a',
-    border: `1px solid ${changed ? '#78350f' : '#1e293b'}`,
+    border: `1px solid ${glitched ? '#4c1d95' : (changed ? '#78350f' : '#1e293b')}`,
   }}>
     <span style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: 1.5 }}>
       {meta.label}
     </span>
     <span style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
-      {changed && (
-        <span style={{ fontSize: '13px', color: '#94a3b8', textDecoration: 'line-through' }}>{meta.fmt(def)}</span>
+      {glitched ? (
+        <span style={{ fontSize: '15px', fontWeight: 700, color: GLITCH_COLOR, letterSpacing: '0.05em' }}>
+          {scramble()}
+        </span>
+      ) : (
+        // Just the current value (amber when it's off its default). The old value
+        // isn't repeated here — the "what changed" strip above shows the transition.
+        <span style={{
+          fontSize: '15px', fontWeight: 700,
+          color: changed ? CHANGED_COLOR : VALUE_COLOR,
+        }}>{meta.fmt(value)}</span>
       )}
-      <span style={{
-        fontSize: '15px', fontWeight: 700,
-        color: changed ? CHANGED_COLOR : VALUE_COLOR,
-      }}>{meta.fmt(value)}</span>
     </span>
   </div>
 )
 
-const ScoringModelRow: React.FC<{ name: string }> = ({ name }) => (
+const ScoringModelRow: React.FC<{ name: string; glitched?: boolean; changed?: boolean }> = ({ name, glitched, changed }) => (
   <div style={{
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '8px 10px', borderRadius: '5px',
-    backgroundColor: '#0f172a', border: '1px solid #1e293b',
+    backgroundColor: '#0f172a', border: `1px solid ${glitched ? '#4c1d95' : (changed ? '#78350f' : '#1e293b')}`,
   }}>
     <span style={{
-      width: 7, height: 7, borderRadius: '50%', backgroundColor: LABEL_COLOR, flexShrink: 0,
+      width: 7, height: 7, borderRadius: '50%',
+      backgroundColor: glitched ? GLITCH_COLOR : (changed ? CHANGED_COLOR : LABEL_COLOR), flexShrink: 0,
     }} />
-    <span style={{ minWidth: 0, flex: 1, fontSize: '15px', fontWeight: 700, color: '#cbd5e1' }}>
-      {name}
+    <span style={{ minWidth: 0, flex: 1, fontSize: '15px', fontWeight: 700, color: glitched ? GLITCH_COLOR : (changed ? CHANGED_COLOR : '#cbd5e1'), letterSpacing: glitched ? '0.05em' : undefined }}>
+      {glitched ? scramble(6) : name}
     </span>
     <span style={{
       fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', flexShrink: 0,
@@ -106,23 +142,38 @@ const ScoringModelRow: React.FC<{ name: string }> = ({ name }) => (
   </div>
 )
 
-const DormantRuleRow: React.FC<{ name: string }> = ({ name }) => (
+// A dormant mechanic row. Once a mechanic is switched on (a Cores vote flips its
+// enable flag) it reads ACTIVE — an open lock, full opacity, amber label — instead
+// of the dimmed "Sealed".
+const DormantRuleRow: React.FC<{ name: string; active?: boolean; detail?: string }> = ({ name, active, detail }) => (
   <div style={{
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '8px 10px', borderRadius: '5px',
-    backgroundColor: '#0f172a', border: '1px solid #1e293b', opacity: 0.62,
+    backgroundColor: '#0f172a',
+    border: `1px solid ${active ? '#78350f' : '#1e293b'}`, opacity: active ? 1 : 0.62,
   }}>
-    <svg width="12" height="12" viewBox="0 0 20 20" fill="#94a3b8" style={{ flexShrink: 0 }}>
-      <path d="M6 8V6a4 4 0 118 0v2h1a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V9a1 1 0 011-1h1zm2 0h4V6a2 2 0 10-4 0v2z" />
-    </svg>
-    <span style={{ minWidth: 0, flex: 1, fontSize: '15px', fontWeight: 700, color: '#cbd5e1' }}>
-      {name}
+    {active ? (
+      <svg width="12" height="12" viewBox="0 0 20 20" fill={CHANGED_COLOR} style={{ flexShrink: 0 }}>
+        <path d="M10 2a4 4 0 00-4 4v2H5a1 1 0 00-1 1v7a1 1 0 001 1h10a1 1 0 001-1V9a1 1 0 00-1-1H8V6a2 2 0 114 0 1 1 0 102 0 4 4 0 00-4-4z" />
+      </svg>
+    ) : (
+      <svg width="12" height="12" viewBox="0 0 20 20" fill="#94a3b8" style={{ flexShrink: 0 }}>
+        <path d="M6 8V6a4 4 0 118 0v2h1a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V9a1 1 0 011-1h1zm2 0h4V6a2 2 0 10-4 0v2z" />
+      </svg>
+    )}
+    <span style={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <span style={{ fontSize: '15px', fontWeight: 700, color: active ? CHANGED_COLOR : '#cbd5e1' }}>
+        {name}
+      </span>
+      {active && detail && (
+        <span style={{ fontSize: '12px', color: '#94a3b8', marginTop: 1 }}>{detail}</span>
+      )}
     </span>
     <span style={{
       fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', flexShrink: 0,
-      textTransform: 'uppercase', color: '#94a3b8',
+      textTransform: 'uppercase', color: active ? CHANGED_COLOR : '#94a3b8',
     }}>
-      Sealed
+      {active ? 'Active' : 'Sealed'}
     </span>
   </div>
 )
@@ -142,6 +193,17 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
   const [pos, setPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
   const [data, setData] = useState<RulesPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const rv = useRuleVote()
+  const { status } = useCoresStatus()
+  const glitched = !!status.criticalityActive
+    || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('criticality') === '1')
+  // Flicker: re-render a few times a second so the scrambled values keep churning.
+  const [, setGlitchTick] = useState(0)
+  useEffect(() => {
+    if (!glitched) return
+    const id = setInterval(() => setGlitchTick(t => t + 1), 350)
+    return () => clearInterval(id)
+  }, [glitched])
 
   useEffect(() => {
     let cancelled = false
@@ -232,51 +294,131 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
         {!data && !error && (
           <div style={{ fontSize: 14, color: '#94a3b8', lineHeight: 1.6 }}>Reading the rulebook...</div>
         )}
-        {data && groups.map(group => (
-          <div key={group.title} style={{ marginBottom: 18 }}>
+
+        {/* A live rule vote — call to action, colored by the Core running it */}
+        {rv.open && (
+          <button
+            onClick={() => { rv.openModal(); onClose() }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 9, width: '100%',
+              padding: '10px 12px', marginBottom: 14, borderRadius: 7, cursor: 'pointer',
+              background: `${coreColor(rv.core || undefined)}1c`,
+              border: `1px solid ${coreColor(rv.core || undefined)}`,
+              textAlign: 'left',
+            }}
+          >
+            <CoreIcon core={rv.core || undefined} color={coreColor(rv.core || undefined)} size={15} />
+            <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: coreColor(rv.core || undefined) }}>
+              {rv.coreDisplayName || 'The Cores'} {rv.kind === 'revert' ? 'wants to restore a rule' : 'wants to change a rule'}
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#e2e8f0' }}>Vote</span>
+          </button>
+        )}
+
+        {/* Most recent Cores-vote change */}
+        {data?.lastChange && (
+          <div style={{
+            padding: '9px 11px', marginBottom: 14, borderRadius: 7,
+            background: 'rgba(245,158,11,0.08)', borderLeft: `3px solid ${coreColor(data.lastChange.core)}`,
+          }}>
+            <span style={{ fontSize: 12, color: '#cbd5e1', lineHeight: 1.5 }}>
+              <span style={{ color: coreColor(data.lastChange.core), fontWeight: 700 }}>
+                {data.lastChange.core.charAt(0).toUpperCase() + data.lastChange.core.slice(1)}
+              </span>{' '}
+              {data.lastChange.kind === 'revert' ? 'restored' : 'changed'} {data.lastChange.label}:{' '}
+              <span style={{ color: '#94a3b8', textDecoration: 'line-through' }}>{fmtRuleValue(data.lastChange.from)}</span>{' → '}
+              <span style={{ color: CHANGED_COLOR, fontWeight: 700 }}>{fmtRuleValue(data.lastChange.to)}</span>
+            </span>
+          </div>
+        )}
+        {/* ── Order: most significant / structural first, granular values last ── */}
+
+        {/* Game format — the win condition / how the game is played (most significant) */}
+        {data && (
+          <div style={{ marginBottom: 18 }}>
             <div style={{
               fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
               textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
-            }}>{group.title}</div>
+            }}>Game Format</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {group.rules.map(meta => (
-                <RuleRow
-                  key={meta.key}
-                  meta={meta}
-                  value={data.rules[meta.key]}
-                  def={data.defaults[meta.key]}
-                  changed={changed.has(meta.key)}
-                />
-              ))}
+              {(() => {
+                const fmt = String(data.rules?.gameFormat ?? 'standard')
+                const name = fmt === 'target' ? `First to ${data.rules?.targetScore ?? 30}`
+                  : fmt === 'play_limit' ? `${data.rules?.playsPerQuarter ?? 30} Plays a Quarter`
+                  : fmt === 'chess_clock' ? 'Chess Clock'
+                  : fmt === 'innings' ? 'Innings'
+                  : fmt === 'frames' ? 'Frames'
+                  : fmt === 'bust' ? 'Darts'
+                  : 'Standard'
+                return <ScoringModelRow name={name} glitched={glitched} changed={fmt !== 'standard'} />
+              })()}
             </div>
           </div>
-        ))}
+        )}
 
-        {/* Scoring-model tease — the bigger lever: how score is KEPT is a rule too */}
+        {/* Scoring model — how the running score is shown */}
         {data && (
-          <div style={{ marginTop: 4, marginBottom: 18, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
+          <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
             <div style={{
               fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
               textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
             }}>Scoring Model</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              <ScoringModelRow name={ACTIVE_SCORING_MODEL} />
+              {(() => {
+                const model = String(data.rules?.scoringModel ?? 'additive')
+                const name = model.charAt(0).toUpperCase() + model.slice(1)
+                return <ScoringModelRow name={name} glitched={glitched} changed={model !== 'additive'} />
+              })()}
             </div>
           </div>
         )}
 
-        {/* Dormant rules — structural mechanics the Cores could switch on */}
+        {/* Scalar rule values (downs, scoring values, clock) — the granular tunables */}
         {data && (
-          <div style={{ marginBottom: 4, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
-            <div style={{
-              fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
-              textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
-            }}>Dormant Rules</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {DORMANT_RULES.map(name => <DormantRuleRow key={name} name={name} />)}
-            </div>
+          <div style={{ paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
+            {groups.map(group => (
+              <div key={group.title} style={{ marginBottom: 18 }}>
+                <div style={{
+                  fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
+                  textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
+                }}>{group.title}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {group.rules.map(meta => (
+                    <RuleRow
+                      key={meta.key}
+                      meta={meta}
+                      value={data.rules[meta.key]}
+                      def={data.defaults[meta.key]}
+                      changed={changed.has(meta.key)}
+                      glitched={glitched}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
+
+        {/* Active mechanics — a dormant rule the Cores have switched on. Only surfaced
+            when one is actually active; hidden entirely otherwise. */}
+        {data && (() => {
+          const activeMechanics = DORMANT_RULES.filter(r => r.field && data.rules?.[r.field])
+          if (!activeMechanics.length) return null
+          return (
+            <div style={{ paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
+              <div style={{
+                fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
+                textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
+              }}>Active Mechanics</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {activeMechanics.map(r => {
+                  const detail = r.name === 'Drive Clock' ? driveClockDetail(data.rules) : undefined
+                  return <DormantRuleRow key={r.name} name={r.name} active={true} detail={detail} />
+                })}
+              </div>
+            </div>
+          )
+        })()}
       </div>
     </div>,
     document.body

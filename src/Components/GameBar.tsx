@@ -3,8 +3,11 @@ import { useLocation } from 'react-router-dom'
 import { useGames } from '@/contexts/GamesContext'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { useAuth } from '@/contexts/AuthContext'
+import { displayScore } from '@/utils/displayScore'
+import { useScoringModel } from '@/contexts/ScoringModelContext'
 
 const GameBar: React.FC = () => {
+  const scoringModel = useScoringModel()
   const location = useLocation()
   const { games, refetch } = useGames()
   const { user } = useAuth()
@@ -61,8 +64,9 @@ const GameBar: React.FC = () => {
         ? (game.quarter === 5 ? 'OT' : game.isHalftime ? 'Half' : `Q${game.quarter}`)
         : 'Soon'
 
-    const awayScore = isActive || isFinal ? game.awayScore : '—'
-    const homeScore = isActive || isFinal ? game.homeScore : '—'
+    const showScores = isActive || isFinal
+    const awayScore = showScores ? displayScore(game.awayScore, game.homeScore, scoringModel) : '—'
+    const homeScore = showScores ? displayScore(game.homeScore, game.awayScore, scoringModel) : '—'
 
     return (
       <button
