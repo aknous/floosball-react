@@ -27,6 +27,7 @@ interface GameCardProps {
   awayScore?: number
   quarter?: number
   timeRemaining?: string
+  innings?: { active: boolean; inning: number; half: 'top' | 'bottom'; tries: number; triesPerInning: number }
   status?: 'Scheduled' | 'Active' | 'Final'
   homeWinProbability?: number
   awayWinProbability?: number
@@ -48,7 +49,7 @@ interface GameCardProps {
   onPick?: (teamId: number) => void
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, clickable = true, userPick, pickable, pickCorrect, onPick }) => {
+export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, innings, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, clickable = true, userPick, pickable, pickCorrect, onPick }) => {
   const isComplete = status === 'Final'
   const isLive = status === 'Active' && (quarter ?? 0) > 0
   const isFinal = isComplete
@@ -457,9 +458,25 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
           </div>
         ) : isLive ? (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span>{(quarter ?? 0) > 4 ? 'OT' : `Q${quarter ?? 1}`}</span>
-            <span>•</span>
-            <span>{timeRemaining ?? '15:00'}</span>
+            {innings?.active ? (
+              // Innings: current inning + try pips (like baseball outs) instead of clock.
+              <>
+                <span>{`${innings.half === 'bottom' ? 'BOT' : 'TOP'} ${innings.inning}`}</span>
+                <span style={{ display: 'inline-flex', gap: '3px', alignItems: 'center' }}>
+                  {Array.from({ length: innings.triesPerInning }).map((_, i) => (
+                    <span key={i} style={{ width: '6px', height: '6px', borderRadius: '50%',
+                      backgroundColor: i < innings.tries ? '#f59e0b' : 'transparent',
+                      border: `1px solid ${i < innings.tries ? '#f59e0b' : '#64748b'}` }} />
+                  ))}
+                </span>
+              </>
+            ) : (
+              <>
+                <span>{(quarter ?? 0) > 4 ? 'OT' : `Q${quarter ?? 1}`}</span>
+                <span>•</span>
+                <span>{timeRemaining ?? '15:00'}</span>
+              </>
+            )}
             {isUpsetAlert && (
               <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
                 UPSET ALERT

@@ -114,6 +114,7 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {}
                 awayScore={game.awayScore}
                 quarter={game.quarter}
                 timeRemaining={game.timeRemaining}
+                innings={game.innings}
                 status={game.status}
                 homeWinProbability={game.homeWinProbability}
                 awayWinProbability={game.awayWinProbability}

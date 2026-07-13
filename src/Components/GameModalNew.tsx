@@ -549,7 +549,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             )}
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
-                <span>{play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}</span>
+                <span>{play.inning != null ? `${play.inningHalf === 'bottom' ? 'BOT' : 'TOP'} ${play.inning}` : `${play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - ${play.timeRemaining}`}</span>
                 <span>•</span>
                 <span style={{ color: '#cbd5e1', fontWeight: '500', letterSpacing: '0.04em' }}>SIDELINE</span>
               </div>
@@ -583,12 +583,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       // Chess-clock timeout: a team ran its offense budget to 0 — a notable turnover, so
       // give it a red accent (matches the clock going red) instead of the neutral grey.
       const isTimeout = play.event?._type === 'chess_timeout' || play._type === 'chess_timeout'
-      const lineColor = isRally ? '#22c55e55' : isTimeout ? '#ef444455' : '#334155'
-      const textColor = isRally ? '#86efac' : isTimeout ? '#fca5a5' : '#64748b'
+      // Innings change (new at-bat) — a blue accent, like a new quarter/period marker.
+      const isInning = play.event?._type === 'inning' || play._type === 'inning'
+      const lineColor = isRally ? '#22c55e55' : isTimeout ? '#ef444455' : isInning ? '#3b82f655' : '#334155'
+      const textColor = isRally ? '#86efac' : isTimeout ? '#fca5a5' : isInning ? '#93c5fd' : '#64748b'
       return (
         <div key={`${keyPrefix}-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
           <div style={{ flex: 1, height: '1px', backgroundColor: lineColor }} />
-          <span style={{ fontSize: '12px', color: textColor, fontWeight: isTimeout ? '700' : '500', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <span style={{ fontSize: '12px', color: textColor, fontWeight: (isTimeout || isInning) ? '700' : '500', whiteSpace: 'nowrap', flexShrink: 0 }}>
             {eventText}
           </span>
           <div style={{ flex: 1, height: '1px', backgroundColor: lineColor }} />
@@ -694,12 +696,20 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               {/* Left: clock / situation */}
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}
-                  {/* Clock state — pause-in-circle when stopped, play-in-circle
-                      when running. Hidden on scoring plays since the score
-                      already conveys the clock will stop, and adding an icon
-                      there would just be noise. */}
-                  {!play.scoreChange && <ClockStateIcon stopped={!!play.clockStopped} />}
+                  {play.inning != null ? (
+                    // Innings: the clock loop is inert, so show the at-bat context instead
+                    // of a meaningless quarter/clock + start-stop icon.
+                    `${play.inningHalf === 'bottom' ? 'BOT' : 'TOP'} ${play.inning} · Try ${play.inningTry}${gameData.innings?.triesPerInning ? `/${gameData.innings.triesPerInning}` : ''}`
+                  ) : (
+                    <>
+                      {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}
+                      {/* Clock state — pause-in-circle when stopped, play-in-circle
+                          when running. Hidden on scoring plays since the score
+                          already conveys the clock will stop, and adding an icon
+                          there would just be noise. */}
+                      {!play.scoreChange && <ClockStateIcon stopped={!!play.clockStopped} />}
+                    </>
+                  )}
                 </span>
                 {downText && (
                   <>
@@ -1159,8 +1169,49 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 </div>
               )}
 
-              {/* Quarter-by-quarter breakdown */}
-              {dQuarterScores && (
+              {/* Innings line score (baseball-style) — replaces the quarter breakdown for
+                  innings games. Away bats the top of each inning, home the bottom. */}
+              {gameData.innings?.active && gameData.innings.lineScore ? (() => {
+                const ls = gameData.innings.lineScore!
+                const curInn = gameData.innings!.inning
+                const curHalf = gameData.innings!.half
+                const cell = (v: number) => (
+                  <td key={Math.random()} style={{ textAlign: 'center', padding: '4px 8px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{v}</td>
+                )
+                const blank = (k: number) => (
+                  <td key={k} style={{ textAlign: 'center', padding: '4px 8px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>-</td>
+                )
+                const row = (side: 'home' | 'away', abbr: string, total: number) => (
+                  <tr>
+                    <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{abbr}</td>
+                    {ls.innings.map((innNum, i) => {
+                      // home hasn't batted in the current inning while it's still the top half
+                      const homePending = side === 'home' && innNum === curInn && curHalf === 'top'
+                      return homePending ? blank(innNum) : cell(ls[side][i] ?? 0)
+                    })}
+                    <td style={{ textAlign: 'center', padding: '4px 8px 4px 14px', color: '#e2e8f0', fontWeight: 700, fontVariantNumeric: 'tabular-nums', borderLeft: '1px solid #334155' }}>{total}</td>
+                  </tr>
+                )
+                return (
+                  <div style={{ borderTop: '1px solid #334155', marginTop: '12px', paddingTop: '8px', overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left', padding: '3px 0', color: '#475569', fontWeight: '500', width: '48px' }}></th>
+                          {ls.innings.map(n => (
+                            <th key={n} style={{ textAlign: 'center', padding: '3px 8px', color: '#64748b', fontWeight: '500' }}>{n}</th>
+                          ))}
+                          <th style={{ textAlign: 'center', padding: '3px 8px 3px 14px', color: '#94a3b8', fontWeight: '700', borderLeft: '1px solid #334155' }}>R</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {row('away', gameData.awayTeam.abbr, gameData.awayScore ?? 0)}
+                        {row('home', gameData.homeTeam.abbr, gameData.homeScore ?? 0)}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              })() : (dQuarterScores && !gameData.innings?.active) ? (
                 <div style={{ borderTop: '1px solid #334155', marginTop: '12px', paddingTop: '8px' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
                     <thead>
@@ -1190,7 +1241,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     </tbody>
                   </table>
                 </div>
-              )}
+              ) : null}
 
               {/* Rally buttons — one per team, side-by-side below the
                   scoreboard. Each is a "Cheer for <Team>" CTA that
@@ -1315,13 +1366,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
                               letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                   {gameData.playLimit.playsPerQuarter} plays a quarter
-                </div>
-              )}
-              {/* Game format: innings (baseball-style, out-driven, no clock) */}
-              {gameFormat === 'innings' && gameData.innings?.active && (
-                <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
-                              letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                  {gameData.innings.inningsPerGame}-inning game
                 </div>
               )}
               {/* Game format: frames (match play) — the match is frames won, not points */}

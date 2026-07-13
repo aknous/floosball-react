@@ -42,6 +42,11 @@ export interface InningsState {
   tries: number
   inningsPerGame: number
   triesPerInning: number
+  lineScore?: {
+    innings: number[]     // inning numbers played/in-progress (1..N)
+    home: number[]        // runs per inning (parallel to innings)
+    away: number[]
+  }
 }
 
 // Sideline Goals mechanic: the two hoop pairs' state THIS drive (for the field graphic)
