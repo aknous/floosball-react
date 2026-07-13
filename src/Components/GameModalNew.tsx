@@ -1349,6 +1349,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     {gameData.innings?.active ? (
                       // innings: no clock — show inning, half, and tries
                       <span>{`${gameData.innings.half === 'bottom' ? 'BOT' : 'TOP'} ${gameData.innings.inning}  •  Try ${gameData.innings.tries + 1}`}</span>
+                    ) : gameData.frames?.active ? (
+                      // frames: 10-min frames don't line up with quarters — show the frame
+                      // + its clock (down/distance on its own row below).
+                      <span>{`Frame ${gameData.frames.currentFrame}  •  ${gameData.frames.frameClock ?? gameData.timeRemaining}`}</span>
                     ) : gameData.playLimit?.active ? (
                       // play_limit: no clock — show plays remaining in the period
                       <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.playLimit.playsRemaining} ${gameData.playLimit.playsRemaining === 1 ? 'play' : 'plays'} left`}</span>
@@ -1442,14 +1446,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 </div>
               )}
               {/* Game format: frames (match play) — the match is frames won, not points */}
-              {gameFormat === 'frames' && gameData.frames?.active && gameData.status !== 'Scheduled' && (
-                // The frames-won total is the main scoreboard now, and the per-frame points
-                // are the line score below — the header just marks which frame is live.
-                <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
-                              letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                  Frame {gameData.frames.currentFrame}/{gameData.frames.framesPerGame}
-                </div>
-              )}
               {/* Game format: chess_clock — each team's remaining offense-time budget */}
               {gameFormat === 'chess_clock' && gameData.chessClock?.active && gameData.status !== 'Scheduled' && (() => {
                 const cc = gameData.chessClock!

@@ -62,6 +62,7 @@ export interface FramesState {
   active: boolean
   framesPerGame: number
   currentFrame: number
+  frameClock?: string   // time remaining in the current frame (M:SS)
   framesWonHome: number
   framesWonAway: number
   frameHome: number   // points this frame

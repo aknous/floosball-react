@@ -28,6 +28,7 @@ interface GameCardProps {
   quarter?: number
   timeRemaining?: string
   innings?: { active: boolean; inning: number; half: 'top' | 'bottom'; tries: number; triesPerInning: number }
+  frames?: { active: boolean; currentFrame: number; framesPerGame: number; frameClock?: string; framesWonHome: number; framesWonAway: number }
   status?: 'Scheduled' | 'Active' | 'Final'
   homeWinProbability?: number
   awayWinProbability?: number
@@ -49,7 +50,9 @@ interface GameCardProps {
   onPick?: (teamId: number) => void
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, innings, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, clickable = true, userPick, pickable, pickCorrect, onPick }) => {
+const fmtFramesWon = (v: number): string => { const w = Math.floor(v); return (v - w >= 0.5) ? `${w > 0 ? w : ''}½` : `${w}` }
+
+export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, innings, frames, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, clickable = true, userPick, pickable, pickCorrect, onPick }) => {
   const isComplete = status === 'Final'
   const isLive = status === 'Active' && (quarter ?? 0) > 0
   const isFinal = isComplete
@@ -181,7 +184,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             </div>
           </div>
           <div style={scoreStyle} className={homeFlash ? 'score-updated' : ''}>
-            {isLive || isFinal ? displayScore(homeScore, awayScore, scoringModel) : '—'}
+            {(isLive || isFinal) ? (frames?.active ? fmtFramesWon(frames.framesWonHome) : displayScore(homeScore, awayScore, scoringModel)) : '—'}
           </div>
         </div>
       </TeamHoverCard>
@@ -221,7 +224,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             </div>
           </div>
           <div style={scoreStyle} className={awayFlash ? 'score-updated' : ''}>
-            {isLive || isFinal ? displayScore(awayScore, homeScore, scoringModel) : '—'}
+            {(isLive || isFinal) ? (frames?.active ? fmtFramesWon(frames.framesWonAway) : displayScore(awayScore, homeScore, scoringModel)) : '—'}
           </div>
         </div>
       </TeamHoverCard>
@@ -469,6 +472,13 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                       border: `1px solid ${i < innings.tries ? '#f59e0b' : '#64748b'}` }} />
                   ))}
                 </span>
+              </>
+            ) : frames?.active ? (
+              // Frames: the frame + its clock (the score above is frames won).
+              <>
+                <span>{`Frame ${frames.currentFrame}`}</span>
+                <span>•</span>
+                <span>{frames.frameClock ?? timeRemaining ?? '10:00'}</span>
               </>
             ) : (
               <>
