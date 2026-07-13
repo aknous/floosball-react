@@ -75,10 +75,10 @@ const RuleVoteModal: React.FC = () => {
         background: selected ? accent : 'transparent',
       }} />
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: 'block', fontSize: '13px', color: '#e2e8f0', fontWeight: 600 }}>{label}</span>
-        {sub && <span style={{ display: 'block', fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{sub}</span>}
+        <span style={{ display: 'block', fontSize: '15px', color: '#e2e8f0', fontWeight: 600 }}>{label}</span>
+        {sub && <span style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginTop: '3px' }}>{sub}</span>}
       </span>
-      <span style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: 700, minWidth: '54px', textAlign: 'right' }}>
+      <span style={{ fontSize: '13px', color: '#cbd5e1', fontWeight: 700, minWidth: '54px', textAlign: 'right' }}>
         {count} {count === 1 ? 'vote' : 'votes'}
       </span>
     </button>
@@ -134,7 +134,7 @@ const RuleVoteModal: React.FC = () => {
           {/* Core prompt (the ask) */}
           {prompt && (
             <div style={{
-              fontSize: '13px', color: '#e2e8f0', lineHeight: 1.6, fontStyle: 'italic',
+              fontSize: '14px', color: '#e2e8f0', lineHeight: 1.6, fontStyle: 'italic',
               padding: '11px 13px', borderRadius: '8px', marginBottom: '16px',
               background: `${accent}14`, borderLeft: `3px solid ${accent}`,
             }}>
@@ -170,11 +170,11 @@ const RuleVoteModal: React.FC = () => {
               marginTop: '16px', display: 'flex', alignItems: 'flex-start', gap: '9px',
             }}>
               <CoreIcon core={core || undefined} color={accent} size={15} />
-              <span style={{ fontSize: '13px', color: accent, lineHeight: 1.5, fontStyle: 'italic' }}>{reaction}</span>
+              <span style={{ fontSize: '14px', color: accent, lineHeight: 1.5, fontStyle: 'italic' }}>{reaction}</span>
             </div>
           )}
 
-          <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '16px', lineHeight: 1.5 }}>
+          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '16px', lineHeight: 1.5 }}>
             {multiSelect
               ? 'Check every rule you want put back. Any rule approved on at least half the ballots is reverted before the day\'s games.'
               : 'The most-voted option wins, effective before the day\'s games. It lasts until it\'s voted back or the season ends, when all rules reset to standard.'}
