@@ -1348,15 +1348,20 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               {/* Game format: chess_clock — each team's remaining offense-time budget */}
               {gameFormat === 'chess_clock' && gameData.chessClock?.active && gameData.status !== 'Scheduled' && (() => {
                 const cc = gameData.chessClock!
+                const LOW_SECS = 60   // running low on the offense budget -> red
                 const clk = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`
-                const side = (abbr: string, secs: number, locked: boolean) => (
-                  <span style={{ color: locked ? '#ef4444' : '#f59e0b', fontWeight: 700 }}>
-                    {abbr} {locked ? 'OUT' : clk(secs)}
-                  </span>
-                )
+                const side = (abbr: string, secs: number, locked: boolean) => {
+                  const low = !locked && secs <= LOW_SECS
+                  return (
+                    <span style={{ color: locked || low ? '#ef4444' : '#f59e0b', fontWeight: 700, fontSize: '14px' }}>
+                      {abbr} {locked ? 'OUT' : clk(secs)}
+                    </span>
+                  )
+                }
                 return (
                   <div style={{ fontSize: '11px', marginTop: '3px', letterSpacing: '0.04em',
-                                textTransform: 'uppercase', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                textTransform: 'uppercase', display: 'flex', gap: '8px',
+                                alignItems: 'baseline', justifyContent: 'center' }}>
                     <span style={{ color: '#94a3b8' }}>Offense clock</span>
                     {side(gameData.homeTeam?.abbr || 'HOME', cc.homeBudget, cc.homeLockedOut)}
                     {side(gameData.awayTeam?.abbr || 'AWAY', cc.awayBudget, cc.awayLockedOut)}
