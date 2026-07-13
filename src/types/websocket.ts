@@ -66,6 +66,7 @@ export interface FramesState {
   framesWonAway: number
   frameHome: number   // points this frame
   frameAway: number
+  frameResults?: { home: number; away: number; winner: 'home' | 'away' | 'tie' }[]  // completed frames
 }
 
 // Player statistics during a game

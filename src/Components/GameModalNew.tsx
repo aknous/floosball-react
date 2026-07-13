@@ -149,6 +149,13 @@ const ClockStateIcon: React.FC<{ stopped: boolean }> = ({ stopped }) => {
   )
 }
 
+/** Frames won can be fractional (½ for a halved frame) — render "2", "2½", "½". */
+function fmtFramesWon(v: number): string {
+  const whole = Math.floor(v)
+  const half = v - whole >= 0.5
+  return half ? `${whole > 0 ? whole : ''}½` : `${whole}`
+}
+
 /** Returns a consistent badge background color for any PlayResult string. */
 /** Returns true for play results that warrant a badge in the field graphic (scores + turnovers). */
 function isFieldBadgeResult(playResult: string): boolean {
@@ -553,7 +560,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
                 {play.inning != null ? (
                   <><span>{`${play.inningHalf === 'bottom' ? 'BOT' : 'TOP'} ${play.inning}`}</span><span>•</span></>
-                ) : !noClockFormat ? (
+                ) : play.frame != null ? (
+                  <><span>{`Frame ${play.frame}`}</span><span>•</span></>
+                ) : (!noClockFormat && gameFormat !== 'frames') ? (
                   <><span>{`${play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - ${play.timeRemaining}`}</span><span>•</span></>
                 ) : null}
                 <span style={{ color: '#cbd5e1', fontWeight: '500', letterSpacing: '0.04em' }}>SIDELINE</span>
@@ -705,6 +714,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     // Innings: the clock loop is inert, so show the at-bat context instead
                     // of a meaningless quarter/clock + start-stop icon.
                     `${play.inningHalf === 'bottom' ? 'BOT' : 'TOP'} ${play.inning} · Try ${play.inningTry}${gameData.innings?.triesPerInning ? `/${gameData.innings.triesPerInning}` : ''}`
+                  ) : play.frame != null ? (
+                    // Frames: 10-min frames don't line up with quarters — show the frame +
+                    // time remaining in it.
+                    <>
+                      Frame {play.frame} - {play.frameClock}
+                      {!play.scoreChange && <ClockStateIcon stopped={!!play.clockStopped} />}
+                    </>
                   ) : (
                     <>
                       {play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - {play.timeRemaining}
@@ -1113,7 +1129,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={homeFlash ? 'score-updated' : ''}>
-                  {displayScore(dHomeScore, dAwayScore, scoringModel)}
+                  {gameData.frames?.active ? fmtFramesWon(gameData.frames.framesWonHome) : displayScore(dHomeScore, dAwayScore, scoringModel)}
                 </div>
               </div>
 
@@ -1161,7 +1177,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={awayFlash ? 'score-updated' : ''}>
-                  {displayScore(dAwayScore, dHomeScore, scoringModel)}
+                  {gameData.frames?.active ? fmtFramesWon(gameData.frames.framesWonAway) : displayScore(dAwayScore, dHomeScore, scoringModel)}
                 </div>
               </div>
 
@@ -1177,6 +1193,52 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   ))}
                 </div>
               )}
+
+              {/* Frame-by-frame line (match play) — points each team scored in each frame;
+                  the frame winner's cell is green (a halved frame is amber). */}
+              {gameData.frames?.active ? (() => {
+                const fr = gameData.frames!
+                const N = fr.framesPerGame
+                const done = fr.frameResults ?? []
+                const frameData = (i: number) => {   // i = 1..N
+                  if (i <= done.length) return { home: done[i - 1].home, away: done[i - 1].away, winner: done[i - 1].winner as string | null }
+                  if (i === done.length + 1 && i <= N) return { home: fr.frameHome, away: fr.frameAway, winner: null as string | null }  // in progress
+                  return null  // future frame
+                }
+                const cellColor = (side: 'home' | 'away', winner: string | null) => {
+                  if (winner == null) return '#cbd5e1'          // in-progress frame
+                  if (winner === 'tie') return '#f59e0b'         // halved
+                  return winner === side ? '#22c55e' : '#64748b' // won / lost
+                }
+                const rowFor = (side: 'home' | 'away', abbr: string) => (
+                  <tr>
+                    <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{abbr}</td>
+                    {Array.from({ length: N }).map((_, k) => {
+                      const d = frameData(k + 1)
+                      if (!d) return <td key={k} style={{ textAlign: 'center', padding: '4px 8px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>-</td>
+                      return <td key={k} style={{ textAlign: 'center', padding: '4px 8px', color: cellColor(side, d.winner), fontWeight: d.winner === side ? 700 : 500, fontVariantNumeric: 'tabular-nums' }}>{side === 'home' ? d.home : d.away}</td>
+                    })}
+                  </tr>
+                )
+                return (
+                  <div style={{ borderTop: '1px solid #334155', marginTop: '12px', paddingTop: '8px', overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ textAlign: 'left', padding: '3px 0', color: '#475569', fontWeight: '500', width: '48px' }}></th>
+                          {Array.from({ length: N }).map((_, k) => (
+                            <th key={k} style={{ textAlign: 'center', padding: '3px 8px', color: (k + 1) === fr.currentFrame ? '#94a3b8' : '#64748b', fontWeight: '500' }}>{k + 1}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rowFor('away', gameData.awayTeam.abbr)}
+                        {rowFor('home', gameData.homeTeam.abbr)}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              })() : null}
 
               {/* Innings line score (baseball-style) — replaces the quarter breakdown for
                   innings games. Away bats the top of each inning, home the bottom. */}
@@ -1222,7 +1284,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     </table>
                   </div>
                 )
-              })() : (dQuarterScores && !gameData.innings?.active) ? (
+              })() : (dQuarterScores && !gameData.innings?.active && !gameData.frames?.active) ? (
                 <div style={{ borderTop: '1px solid #334155', marginTop: '12px', paddingTop: '8px' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
                     <thead>
@@ -1380,21 +1442,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 </div>
               )}
               {/* Game format: frames (match play) — the match is frames won, not points */}
-              {gameFormat === 'frames' && gameData.frames?.active && gameData.status !== 'Scheduled' && (() => {
-                const fr = gameData.frames!
-                const n = (v: number) => (v === Math.floor(v) ? String(v) : v.toFixed(1))
-                return (
-                  <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
-                                letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                    Frames {n(fr.framesWonHome)}&ndash;{n(fr.framesWonAway)}
-                    <span style={{ color: '#94a3b8', margin: '0 5px' }}>·</span>
-                    Frame {fr.currentFrame}/{fr.framesPerGame}
-                    {gameData.status === 'Active' && (
-                      <span style={{ color: '#94a3b8' }}> (this frame {fr.frameHome}&ndash;{fr.frameAway})</span>
-                    )}
-                  </div>
-                )
-              })()}
+              {gameFormat === 'frames' && gameData.frames?.active && gameData.status !== 'Scheduled' && (
+                // The frames-won total is the main scoreboard now, and the per-frame points
+                // are the line score below — the header just marks which frame is live.
+                <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
+                              letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  Frame {gameData.frames.currentFrame}/{gameData.frames.framesPerGame}
+                </div>
+              )}
               {/* Game format: chess_clock — each team's remaining offense-time budget */}
               {gameFormat === 'chess_clock' && gameData.chessClock?.active && gameData.status !== 'Scheduled' && (() => {
                 const cc = gameData.chessClock!
