@@ -551,8 +551,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             )}
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>
-                <span>{play.inning != null ? `${play.inningHalf === 'bottom' ? 'BOT' : 'TOP'} ${play.inning}` : `${play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - ${play.timeRemaining}`}</span>
-                <span>•</span>
+                {play.inning != null ? (
+                  <><span>{`${play.inningHalf === 'bottom' ? 'BOT' : 'TOP'} ${play.inning}`}</span><span>•</span></>
+                ) : !noClockFormat ? (
+                  <><span>{`${play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - ${play.timeRemaining}`}</span><span>•</span></>
+                ) : null}
                 <span style={{ color: '#cbd5e1', fontWeight: '500', letterSpacing: '0.04em' }}>SIDELINE</span>
               </div>
               <p style={{
@@ -767,7 +770,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   const isSafety = play.playResult === 'Safety'
                   const resultColor = play.playResult ? getResultColor(String(play.playResult), lastDown) : null
                   const badgeColor = isSafety ? resultColor : play.isSack ? sackColor : resultColor
-                  const badgeLabel = isSafety ? 'Safety' : play.isSack ? 'SACK' : play.playResult
+                  // Innings: a turnover on downs is a spent try with no score — label it
+                  // as a failed try, not the football "Turnover On Downs".
+                  const badgeLabel = isSafety ? 'Safety' : play.isSack ? 'SACK'
+                    : (gameFormat === 'innings' && play.playResult === 'Turnover On Downs') ? 'Try Over'
+                    : play.playResult
                   if (!badgeColor) return null
                   return (
                     <span style={{
