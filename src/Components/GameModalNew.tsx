@@ -1226,9 +1226,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       // play_limit: no clock — show plays remaining in the period
                       <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.playLimit.playsRemaining} ${gameData.playLimit.playsRemaining === 1 ? 'play' : 'plays'} left`}</span>
                     ) : gameData.chessClock?.active ? (
-                      // chess_clock: no shared clock — the two offense budgets (below)
-                      // carry the state; here just the period label.
-                      <span>{gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}</span>
+                      // chess_clock: no shared clock (the two offense budgets below carry
+                      // the state), so put the period + down & distance on one line rather
+                      // than leaving a lonely "Q2" above the down/distance row.
+                      <span>
+                        {gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}
+                        {dDown && dYardLine && (() => {
+                          const showGoal = dYardsToEndzone != null && dDistance != null && dYardsToEndzone < dDistance
+                          const dd = showGoal ? `${ordinal(dDown)} & Goal` : `${ordinal(dDown)} & ${dDistance}`
+                          return <span style={{ color: '#94a3b8', fontWeight: 500 }}>{`  •  ${dd}  •  ${dYardLine}`}</span>
+                        })()}
+                      </span>
                     ) : (
                       <>
                         <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.timeRemaining}`}</span>
@@ -1249,8 +1257,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   <span>{gameData.status}</span>
                 )}
               </div>
-              {/* Row 2: down & distance (active games + replay) */}
-              {(gameData.status === 'Active' || replayActive) && (() => {
+              {/* Row 2: down & distance (active games + replay). Chess clock folds this
+                  into Row 1 above (it has no shared clock filling that line). */}
+              {(gameData.status === 'Active' || replayActive) && !gameData.chessClock?.active && (() => {
                 const down = dDown
                 const distance = dDistance
                 const yardLine = dYardLine
