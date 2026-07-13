@@ -580,12 +580,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       // WS-injected events use {event: {_type}}; REST-served events are
       // unwrapped so _type sits on the play itself — check both shapes.
       const isRally = play.event?._type === 'rally' || play._type === 'rally'
-      const lineColor = isRally ? '#22c55e55' : '#334155'
-      const textColor = isRally ? '#86efac' : '#64748b'
+      // Chess-clock timeout: a team ran its offense budget to 0 — a notable turnover, so
+      // give it a red accent (matches the clock going red) instead of the neutral grey.
+      const isTimeout = play.event?._type === 'chess_timeout' || play._type === 'chess_timeout'
+      const lineColor = isRally ? '#22c55e55' : isTimeout ? '#ef444455' : '#334155'
+      const textColor = isRally ? '#86efac' : isTimeout ? '#fca5a5' : '#64748b'
       return (
         <div key={`${keyPrefix}-${index}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 0' }}>
           <div style={{ flex: 1, height: '1px', backgroundColor: lineColor }} />
-          <span style={{ fontSize: '12px', color: textColor, fontWeight: '500', whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <span style={{ fontSize: '12px', color: textColor, fontWeight: isTimeout ? '700' : '500', whiteSpace: 'nowrap', flexShrink: 0 }}>
             {eventText}
           </span>
           <div style={{ flex: 1, height: '1px', backgroundColor: lineColor }} />
