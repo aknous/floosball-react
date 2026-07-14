@@ -616,10 +616,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       )
     }
     
-    // Regular play rendering
+    // Regular play rendering. A post-TD conversion (2-pt or a Conversion-Ladder rung)
+    // shows an "Npt Try" label in place of down & distance — mirroring the 2-pt try —
+    // driven by the serialized conversionPoints (falls back to the old 2-Pt detection
+    // for plays simulated before that field existed).
+    const convPts = (play as any).conversionPoints
     const isTwoPtPlay = String(play.playResult ?? '').includes('2-Pt')
-    const downText = isTwoPtPlay ? '2-Pt Try' :
-      play.down && play.distance != null ?
+    const downText = convPts != null ? `${convPts}pt Try`
+      : isTwoPtPlay ? '2pt Try'
+      : play.down && play.distance != null ?
         (play.distance === 'Goal' ?
           `${ordinal(play.down)} & Goal` :
           `${ordinal(play.down)} & ${play.distance}`)
