@@ -1464,12 +1464,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               {/* Game format: chess_clock — each team's remaining offense-time budget */}
               {gameFormat === 'chess_clock' && gameData.chessClock?.active && gameData.status !== 'Scheduled' && (() => {
                 const cc = gameData.chessClock!
-                const LOW_SECS = 60   // running low on the offense budget -> red
+                // Offense-budget health: green (plenty) -> yellow (getting low) -> red
+                // (running out / locked out).
+                const LOW_SECS = 60    // under a minute of budget -> red
+                const HIGH_SECS = 300  // over 5 min of budget -> green
                 const clk = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`
                 const side = (abbr: string, secs: number, locked: boolean) => {
-                  const low = !locked && secs <= LOW_SECS
+                  const color = locked || secs <= LOW_SECS ? '#ef4444'     // red
+                    : secs <= HIGH_SECS ? '#f59e0b'                        // yellow
+                    : '#22c55e'                                            // green
                   return (
-                    <span style={{ color: locked || low ? '#ef4444' : '#f59e0b', fontWeight: 700, fontSize: '14px' }}>
+                    <span style={{ color, fontWeight: 700, fontSize: '14px' }}>
                       {abbr} {locked ? 'OUT' : clk(secs)}
                     </span>
                   )
