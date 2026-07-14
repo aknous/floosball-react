@@ -797,8 +797,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   const badgeColor = isSafety ? resultColor : play.isSack ? sackColor : resultColor
                   // Innings: a turnover on downs is a spent try with no score — label it
                   // as a failed try, not the football "Turnover On Downs".
+                  // Post-TD conversions (2-pt or any Conversion-Ladder rung) badge by their
+                  // rung: "N-Pt Good" / "N-Pt No Good" (the shared 'Conversion Good' value
+                  // carries no points, so drive it off conversionPoints).
+                  const convPts = (play as any).conversionPoints
                   const badgeLabel = isSafety ? 'Safety' : play.isSack ? 'SACK'
                     : (gameFormat === 'innings' && play.playResult === 'Turnover On Downs') ? 'Try Over'
+                    : convPts != null
+                      ? `${convPts}-Pt ${String(play.playResult ?? '').includes('No Good') ? 'No Good' : 'Good'}`
                     : play.playResult
                   if (!badgeColor) return null
                   return (
@@ -1937,6 +1943,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         )}
                         {playResult && isFieldBadgeResult(String(playResult)) && (() => {
                           const badgeColor = getResultColor(String(playResult), lastDown) ?? '#64748b'
+                          // Conversions badge by rung: "N-Pt Good/No Good" (driven by conversionPoints).
+                          const convPts = (lastPlay as any)?.conversionPoints
+                          const fieldBadgeLabel = convPts != null
+                            ? `${convPts}-Pt ${String(playResult).includes('No Good') ? 'No Good' : 'Good'}`
+                            : playResult
                           return (
                             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4px' }}>
                               <span style={{
@@ -1950,7 +1961,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                                 textTransform: 'uppercase',
                                 fontFamily: 'pressStart, monospace',
                               }}>
-                                {playResult}
+                                {fieldBadgeLabel}
                               </span>
                             </div>
                           )
