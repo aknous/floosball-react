@@ -165,7 +165,7 @@ function isFieldBadgeResult(playResult: string): boolean {
     || playResult === 'Field Goal is Good' || playResult === 'Safety'
     || playResult === 'Fumble' || playResult === 'Interception'
     || playResult === 'Turnover On Downs' || playResult === 'Drive Clock Expired'
-    || playResult.includes('Sideline Hoop') || playResult === 'Bust'
+    || playResult.includes('Sideline Goal') || playResult === 'Bust'
     || playResult.includes('Contest') || playResult === 'Provisional Score'
     || playResult === 'Punt'
 }
@@ -197,8 +197,8 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
   if (playResult.includes('Conversion') && !playResult.includes('No Good')) return '#22c55e'
   if (playResult === 'Fumble' || playResult === 'Interception' || playResult === 'Turnover On Downs') return '#ef4444'
   if (playResult === 'Drive Clock Expired') return '#ef4444'   // a turnover — red, distinct badge text
-  if (playResult === 'Sideline Hoop Good') return '#22c55e'    // banked a point (drive continues)
-  if (playResult === 'Sideline Hoop Miss') return '#94a3b8'    // just an incompletion (no turnover)
+  if (playResult === 'Sideline Goal Good') return '#22c55e'    // banked a point (drive continues)
+  if (playResult === 'Sideline Goal Miss') return '#94a3b8'    // just an incompletion (no turnover)
   if (playResult === 'Bust') return '#ef4444'                  // darts: overshot X, no points, turnover
   if (playResult === 'Provisional Score') return '#f59e0b'     // contested: reached the end zone, contest pending
   if (playResult === 'Contest Won') return '#22c55e'           // contested: the action banked the TD
@@ -616,10 +616,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       )
     }
     
-    // Regular play rendering
+    // Regular play rendering. A post-TD conversion (2-pt or a Conversion-Ladder rung)
+    // shows an "Npt Try" label in place of down & distance — mirroring the 2-pt try —
+    // driven by the serialized conversionPoints (falls back to the old 2-Pt detection
+    // for plays simulated before that field existed).
+    const convPts = (play as any).conversionPoints
     const isTwoPtPlay = String(play.playResult ?? '').includes('2-Pt')
-    const downText = isTwoPtPlay ? '2-Pt Try' :
-      play.down && play.distance != null ?
+    const downText = convPts != null ? `${convPts}pt Try`
+      : isTwoPtPlay ? '2pt Try'
+      : play.down && play.distance != null ?
         (play.distance === 'Goal' ?
           `${ordinal(play.down)} & Goal` :
           `${ordinal(play.down)} & ${play.distance}`)
@@ -792,8 +797,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   const badgeColor = isSafety ? resultColor : play.isSack ? sackColor : resultColor
                   // Innings: a turnover on downs is a spent try with no score — label it
                   // as a failed try, not the football "Turnover On Downs".
+                  // Post-TD conversions (2-pt or any Conversion-Ladder rung) badge by their
+                  // rung: "N-Pt Good" / "N-Pt No Good" (the shared 'Conversion Good' value
+                  // carries no points, so drive it off conversionPoints).
+                  const convPts = (play as any).conversionPoints
                   const badgeLabel = isSafety ? 'Safety' : play.isSack ? 'SACK'
                     : (gameFormat === 'innings' && play.playResult === 'Turnover On Downs') ? 'Try Over'
+                    : convPts != null
+                      ? `${convPts}-Pt ${String(play.playResult ?? '').includes('No Good') ? 'No Good' : 'Good'}`
                     : play.playResult
                   if (!badgeColor) return null
                   return (
@@ -1533,8 +1544,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               const isTD = !!lastPlay?.isTouchdown
               const isTurnover = !!lastPlay?.isTurnover
               // Sideline Goals hoop shot — the last play was a throw at a hoop.
-              const isHoopShot = String(lastPlay?.playResult ?? '').includes('Sideline Hoop')
-              const hoopMade = lastPlay?.playResult === 'Sideline Hoop Good'
+              const isHoopShot = String(lastPlay?.playResult ?? '').includes('Sideline Goal')
+              const hoopMade = lastPlay?.playResult === 'Sideline Goal Good'
 
               // Which direction did the last play go?
               // Home team plays go right (+1), away team plays go left (-1)
@@ -1796,8 +1807,27 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         a midfield pair (~the 50) and a pair flanking the attacking end
                         zone. Yellow = not attempted this drive, green = made, red =
                         missed. The non-attacking end's hoops are dimmed (not in play). */}
-                    {!replayActive && gameData.sidelineGoals?.active && (() => {
-                      const sg = gameData.sidelineGoals!
+                    {gameData.sidelineGoals?.active && (() => {
+                      // Live: the current-drive state from the backend. In REPLAY that state
+                      // reflects the LATEST drive, not the replayed moment — so derive the pair
+                      // state + attacking direction from the cursor's own drive (the contiguous
+                      // run of same-offense plays up to the cursor). Without this the goals were
+                      // hidden entirely in replay.
+                      let sg = gameData.sidelineGoals!
+                      if (replayActive && lastPlay) {
+                        let mid: 'open' | 'made' | 'missed' = 'open'
+                        let ez: 'open' | 'made' | 'missed' = 'open'
+                        for (const p of realPlays) {
+                          if (p.offensiveTeam !== lastPlay.offensiveTeam) break   // reached the prior drive
+                          const pr = String(p.playResult ?? '')
+                          if (pr.includes('Sideline Goal')) {
+                            const res: 'made' | 'missed' = pr === 'Sideline Goal Good' ? 'made' : 'missed'
+                            if ((p as any).hoopPair === 'endzone') { if (ez === 'open') ez = res }
+                            else if (mid === 'open') mid = res
+                          }
+                        }
+                        sg = { active: true, midfield: mid, endzone: ez, attackingHome: lastPlayDir === 1 }
+                      }
                       const col = (s: string) => s === 'made' ? '#22c55e' : s === 'missed' ? '#ef4444' : '#FFD700'
                       const yTop = 12, yBot = FH - 12
                       const midX = toX(60)
@@ -1913,6 +1943,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         )}
                         {playResult && isFieldBadgeResult(String(playResult)) && (() => {
                           const badgeColor = getResultColor(String(playResult), lastDown) ?? '#64748b'
+                          // Conversions badge by rung: "N-Pt Good/No Good" (driven by conversionPoints).
+                          const convPts = (lastPlay as any)?.conversionPoints
+                          const fieldBadgeLabel = convPts != null
+                            ? `${convPts}-Pt ${String(playResult).includes('No Good') ? 'No Good' : 'Good'}`
+                            : playResult
                           return (
                             <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4px' }}>
                               <span style={{
@@ -1926,7 +1961,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                                 textTransform: 'uppercase',
                                 fontFamily: 'pressStart, monospace',
                               }}>
-                                {playResult}
+                                {fieldBadgeLabel}
                               </span>
                             </div>
                           )

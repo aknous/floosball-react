@@ -153,8 +153,10 @@ const DormantRuleRow: React.FC<{ name: string; active?: boolean; detail?: string
     border: `1px solid ${active ? '#78350f' : '#1e293b'}`, opacity: active ? 1 : 0.62,
   }}>
     {active ? (
+      // Active = unsealed: a checkmark, NOT a padlock (an open padlock still reads as
+      // "locked" next to the Active label).
       <svg width="12" height="12" viewBox="0 0 20 20" fill={CHANGED_COLOR} style={{ flexShrink: 0 }}>
-        <path d="M10 2a4 4 0 00-4 4v2H5a1 1 0 00-1 1v7a1 1 0 001 1h10a1 1 0 001-1V9a1 1 0 00-1-1H8V6a2 2 0 114 0 1 1 0 102 0 4 4 0 00-4-4z" />
+        <path fillRule="evenodd" clipRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
       </svg>
     ) : (
       <svg width="12" height="12" viewBox="0 0 20 20" fill="#94a3b8" style={{ flexShrink: 0 }}>
