@@ -165,7 +165,7 @@ function isFieldBadgeResult(playResult: string): boolean {
     || playResult === 'Field Goal is Good' || playResult === 'Safety'
     || playResult === 'Fumble' || playResult === 'Interception'
     || playResult === 'Turnover On Downs' || playResult === 'Drive Clock Expired'
-    || playResult.includes('Sideline Hoop') || playResult === 'Bust'
+    || playResult.includes('Sideline Goal') || playResult === 'Bust'
     || playResult.includes('Contest') || playResult === 'Provisional Score'
     || playResult === 'Punt'
 }
@@ -197,8 +197,8 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
   if (playResult.includes('Conversion') && !playResult.includes('No Good')) return '#22c55e'
   if (playResult === 'Fumble' || playResult === 'Interception' || playResult === 'Turnover On Downs') return '#ef4444'
   if (playResult === 'Drive Clock Expired') return '#ef4444'   // a turnover — red, distinct badge text
-  if (playResult === 'Sideline Hoop Good') return '#22c55e'    // banked a point (drive continues)
-  if (playResult === 'Sideline Hoop Miss') return '#94a3b8'    // just an incompletion (no turnover)
+  if (playResult === 'Sideline Goal Good') return '#22c55e'    // banked a point (drive continues)
+  if (playResult === 'Sideline Goal Miss') return '#94a3b8'    // just an incompletion (no turnover)
   if (playResult === 'Bust') return '#ef4444'                  // darts: overshot X, no points, turnover
   if (playResult === 'Provisional Score') return '#f59e0b'     // contested: reached the end zone, contest pending
   if (playResult === 'Contest Won') return '#22c55e'           // contested: the action banked the TD
@@ -1533,8 +1533,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               const isTD = !!lastPlay?.isTouchdown
               const isTurnover = !!lastPlay?.isTurnover
               // Sideline Goals hoop shot — the last play was a throw at a hoop.
-              const isHoopShot = String(lastPlay?.playResult ?? '').includes('Sideline Hoop')
-              const hoopMade = lastPlay?.playResult === 'Sideline Hoop Good'
+              const isHoopShot = String(lastPlay?.playResult ?? '').includes('Sideline Goal')
+              const hoopMade = lastPlay?.playResult === 'Sideline Goal Good'
 
               // Which direction did the last play go?
               // Home team plays go right (+1), away team plays go left (-1)
@@ -1809,8 +1809,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         for (const p of realPlays) {
                           if (p.offensiveTeam !== lastPlay.offensiveTeam) break   // reached the prior drive
                           const pr = String(p.playResult ?? '')
-                          if (pr.includes('Sideline Hoop')) {
-                            const res: 'made' | 'missed' = pr === 'Sideline Hoop Good' ? 'made' : 'missed'
+                          if (pr.includes('Sideline Goal')) {
+                            const res: 'made' | 'missed' = pr === 'Sideline Goal Good' ? 'made' : 'missed'
                             if ((p as any).hoopPair === 'endzone') { if (ez === 'open') ez = res }
                             else if (mid === 'open') mid = res
                           }
