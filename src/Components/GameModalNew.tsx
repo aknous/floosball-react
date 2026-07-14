@@ -1796,8 +1796,27 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         a midfield pair (~the 50) and a pair flanking the attacking end
                         zone. Yellow = not attempted this drive, green = made, red =
                         missed. The non-attacking end's hoops are dimmed (not in play). */}
-                    {!replayActive && gameData.sidelineGoals?.active && (() => {
-                      const sg = gameData.sidelineGoals!
+                    {gameData.sidelineGoals?.active && (() => {
+                      // Live: the current-drive state from the backend. In REPLAY that state
+                      // reflects the LATEST drive, not the replayed moment — so derive the pair
+                      // state + attacking direction from the cursor's own drive (the contiguous
+                      // run of same-offense plays up to the cursor). Without this the goals were
+                      // hidden entirely in replay.
+                      let sg = gameData.sidelineGoals!
+                      if (replayActive && lastPlay) {
+                        let mid: 'open' | 'made' | 'missed' = 'open'
+                        let ez: 'open' | 'made' | 'missed' = 'open'
+                        for (const p of realPlays) {
+                          if (p.offensiveTeam !== lastPlay.offensiveTeam) break   // reached the prior drive
+                          const pr = String(p.playResult ?? '')
+                          if (pr.includes('Sideline Hoop')) {
+                            const res: 'made' | 'missed' = pr === 'Sideline Hoop Good' ? 'made' : 'missed'
+                            if ((p as any).hoopPair === 'endzone') { if (ez === 'open') ez = res }
+                            else if (mid === 'open') mid = res
+                          }
+                        }
+                        sg = { active: true, midfield: mid, endzone: ez, attackingHome: lastPlayDir === 1 }
+                      }
                       const col = (s: string) => s === 'made' ? '#22c55e' : s === 'missed' ? '#ef4444' : '#FFD700'
                       const yTop = 12, yBot = FH - 12
                       const midX = toX(60)
