@@ -201,8 +201,7 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
   if (playResult === 'Sideline Goal Miss') return '#94a3b8'    // just an incompletion (no turnover)
   if (playResult === 'Bust') return '#ef4444'                  // darts: overshot X, no points, turnover
   if (playResult === 'Provisional Score') return '#f59e0b'     // contested: reached the end zone, contest pending
-  if (playResult === 'Contest Won') return '#22c55e'           // contested: the action banked the TD
-  if (playResult === 'Contest Stuff') return '#ef4444'         // contested: stuffed, no points
+  if (playResult === 'Contest Lost') return '#ef4444'          // contested: stuffed, no points (won contests emit 'Touchdown')
   if (playResult.includes('2-Pt No Good')) return '#f59e0b'
   if (playResult.includes('Conversion No Good')) return '#f59e0b'
   if (playResult === 'Punt' || playResult === 'Field Goal is No Good') return '#94a3b8'
@@ -257,6 +256,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // as plays merge/arrive can't reset the guard. Reset on game switch below.
   const modalOpenedAtRef = useRef(Date.now())
   const gameData = frozenRef.current
+  // Prefer THIS game's own downs-per-series (Criticality chaos can set it to 3 or 5,
+  // differing from the season-wide /api/rules value) so the true last down is colored
+  // urgent, not a hardcoded 4th. Falls back to the /api/rules value for older payloads.
+  const effectiveLastDown = Number((gameData as any)?.downsPerSeries) || lastDown
   // Formats with no standard quarter clock display (each renders its own clock).
   const noClockFormat = gameFormat === 'innings' || gameFormat === 'play_limit' || gameFormat === 'chess_clock'
   // Whether teams still have timeouts. Chess clock is time-based (game clock +
@@ -398,12 +401,23 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   const cycleReplaySpeed = () => setReplaySpeed(s => (s === 1 ? 2 : s === 2 ? 4 : 1))
 
   // Plays with WP data, in chronological order (oldest first), for the chart
+  // No-clock formats (innings / frames) never advance the game clock, so every play
+  // arrives with quarter=1 and a frozen timeRemaining — the elapsed-time x-axis would
+  // collapse every point to 0. Detect them per-game and bucket by play ordinal instead,
+  // with the period count/labels coming from the format (innings / frames), not Q1-Q4.
+  const wpPeriods = gameData?.frames?.active
+    ? (gameData.frames.framesPerGame || 6)
+    : gameData?.innings?.active
+      ? (gameData.innings.lineScore?.innings?.length || gameData.innings.inningsPerGame || 3)
+      : 0
+  const wpNoClock = wpPeriods > 0
+
   const wpPlays = useMemo(() => {
     return (displayPlays as any[])
-      .filter(p => !p.event && p.homeWinProbability != null && p.quarter && p.timeRemaining)
+      .filter(p => !p.event && p.homeWinProbability != null && (wpNoClock || (p.quarter && p.timeRemaining)))
       .slice()
       .reverse()
-  }, [displayPlays])
+  }, [displayPlays, wpNoClock])
 
   const isHighlightPlay = (play: any) =>
     !play._type && !play.event && !play.text &&
@@ -435,8 +449,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     return result
   }, [displayPlays])
 
+  // Each point's x is a "section position" in [0, numSections]: one section per period
+  // (quarter/OT for clock formats, inning/frame for no-clock). Clock formats map elapsed
+  // seconds -> section; no-clock formats spread plays evenly by ordinal across the periods.
   const chartPoints = useMemo(() => {
-    const pts: { elapsed: number; wp: number }[] = [{ elapsed: 0, wp: 50 }]
+    const pts: { pos: number; wp: number }[] = [{ pos: 0, wp: 50 }]
+    if (wpNoClock) {
+      const n = wpPlays.length
+      wpPlays.forEach((p: any, i: number) => {
+        pts.push({ pos: n <= 0 ? 0 : ((i + 1) / n) * wpPeriods, wp: p.homeWinProbability })
+      })
+      return pts
+    }
     let prevElapsed = 0
     let otOffset = 0
     wpPlays.forEach((p: any) => {
@@ -452,10 +476,36 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         elapsed = 3600 + otOffset + (600 - remaining)
       }
       prevElapsed = elapsed
-      pts.push({ elapsed, wp: p.homeWinProbability })
+      pts.push({ pos: elapsed <= 3600 ? elapsed / 900 : 4 + (elapsed - 3600) / 600, wp: p.homeWinProbability })
     })
     return pts
-  }, [wpPlays])
+  }, [wpPlays, wpNoClock, wpPeriods])
+
+  // Shared x-axis descriptor: how many equal-width sections, where the dividers fall
+  // (in section units), the period labels, and which divider is the thicker
+  // regulation/OT boundary. Derived once so wpSegments and the axis render agree.
+  const wpAxis = useMemo(() => {
+    if (wpNoClock) {
+      const n = Math.max(1, wpPeriods)
+      const prefix = gameData?.frames?.active ? 'F' : 'In'
+      return {
+        numSections: n,
+        dividers: Array.from({ length: n - 1 }, (_, i) => i + 1),
+        labels: Array.from({ length: n }, (_, i) => `${prefix}${i + 1}`),
+        bigDivider: -1,
+      }
+    }
+    const lastPos = chartPoints.length ? chartPoints[chartPoints.length - 1].pos : 0
+    const numOT = lastPos > 4 ? Math.ceil(lastPos - 4) : 0
+    return {
+      numSections: 4 + numOT,
+      dividers: [1, 2, 3, ...(numOT > 0 ? [4] : []),
+        ...Array.from({ length: Math.max(0, numOT - 1) }, (_, i) => 4 + (i + 1))],
+      labels: ['Q1', 'Q2', 'Q3', 'Q4',
+        ...Array.from({ length: numOT }, (_, i) => numOT === 1 ? 'OT' : `OT${i + 1}`)],
+      bigDivider: 4,
+    }
+  }, [chartPoints, wpNoClock, wpPeriods, gameData?.frames?.active])
 
   const prevHomeScore = useRef(dHomeScore)
   const prevAwayScore = useRef(dAwayScore)
@@ -793,7 +843,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 {(() => {
                   const sackColor = '#f97316'
                   const isSafety = play.playResult === 'Safety'
-                  const resultColor = play.playResult ? getResultColor(String(play.playResult), lastDown) : null
+                  const resultColor = play.playResult ? getResultColor(String(play.playResult), effectiveLastDown) : null
                   const badgeColor = isSafety ? resultColor : play.isSack ? sackColor : resultColor
                   // Innings: a turnover on downs is a spent try with no score — label it
                   // as a failed try, not the football "Turnover On Downs".
@@ -987,23 +1037,20 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const homeColor = gameData?.homeTeam.color ?? '#fff'
     const awayColor = awayDisplayColor
     const W = 800, H = 140
-    const lastElapsed = chartPoints[chartPoints.length - 1].elapsed
-    const numOTPeriods = lastElapsed > 3600 ? Math.ceil((lastElapsed - 3600) / 600) : 0
-    const numSections = 4 + numOTPeriods
-    // Equal visual width per period (each quarter = 1 section, each OT period = 1 section)
-    const toSection = (e: number) => e <= 3600 ? e / 900 : 4 + (e - 3600) / 600
-    const toX = (e: number) => (toSection(e) / numSections) * W
+    const numSections = Math.max(1, wpAxis.numSections)
+    // Equal visual width per section (chartPoints already carry a section position)
+    const toX = (pos: number) => (pos / numSections) * W
     const toY = (wp: number) => H - (wp / 100) * H
     const segments: { pts: string; color: string }[] = []
     let curColor = chartPoints[0].wp >= 50 ? homeColor : awayColor
-    let curPts: [number, number][] = [[toX(chartPoints[0].elapsed), toY(chartPoints[0].wp)]]
+    let curPts: [number, number][] = [[toX(chartPoints[0].pos), toY(chartPoints[0].wp)]]
     for (let i = 0; i < chartPoints.length - 1; i++) {
       const p1 = chartPoints[i], p2 = chartPoints[i + 1]
-      const x2 = toX(p2.elapsed), y2 = toY(p2.wp)
+      const x2 = toX(p2.pos), y2 = toY(p2.wp)
       const col2 = p2.wp >= 50 ? homeColor : awayColor
       if (col2 !== curColor) {
         const t = (50 - p1.wp) / (p2.wp - p1.wp)
-        const xc = toX(p1.elapsed) + t * (x2 - toX(p1.elapsed))
+        const xc = toX(p1.pos) + t * (x2 - toX(p1.pos))
         curPts.push([xc, H / 2])
         segments.push({ pts: curPts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' '), color: curColor })
         curColor = col2
@@ -1014,7 +1061,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     }
     segments.push({ pts: curPts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' '), color: curColor })
     return segments
-  }, [chartPoints, gameData?.homeTeam.color, awayDisplayColor])
+  }, [chartPoints, wpAxis, gameData?.homeTeam.color, awayDisplayColor])
 
   // Momentum indicator (matches GameCard logic)
   const isLive = gameData?.status === 'Active'
@@ -1947,7 +1994,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                           </p>
                         )}
                         {playResult && isFieldBadgeResult(String(playResult)) && (() => {
-                          const badgeColor = getResultColor(String(playResult), lastDown) ?? '#64748b'
+                          const badgeColor = getResultColor(String(playResult), effectiveLastDown) ?? '#64748b'
                           // Conversions badge by rung: "N-Pt Good/No Good" (driven by conversionPoints).
                           const convPts = (lastPlay as any)?.conversionPoints
                           const fieldBadgeLabel = convPts != null
@@ -1985,16 +2032,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               const homeSecondary = gameData.homeTeam.secondaryColor
               const awaySecondary = gameData.awayTeam.secondaryColor
               const W = 800, H = 140
-              const lastElapsed = chartPoints[chartPoints.length - 1].elapsed
-              const numOTPeriods = lastElapsed > 3600 ? Math.ceil((lastElapsed - 3600) / 600) : 0
-              const numSections = 4 + numOTPeriods
-              const toSection = (e: number) => e <= 3600 ? e / 900 : 4 + (e - 3600) / 600
-              const toX = (e: number) => (toSection(e) / numSections) * W
-              const dividerTimes = [900, 1800, 2700,
-                ...(numOTPeriods > 0 ? [3600] : []),
-                ...Array.from({ length: numOTPeriods - 1 }, (_, i) => 3600 + (i + 1) * 600)]
-              const quarterLabels = ['Q1', 'Q2', 'Q3', 'Q4',
-                ...Array.from({ length: numOTPeriods }, (_, i) => numOTPeriods === 1 ? 'OT' : `OT${i + 1}`)]
+              const numSections = Math.max(1, wpAxis.numSections)
+              const toX = (pos: number) => (pos / numSections) * W
+              const dividerTimes = wpAxis.dividers
+              const quarterLabels = wpAxis.labels
+              const bigDivider = wpAxis.bigDivider
               return (
                 <div style={{ padding: '12px 16px' }}>
                   <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '8px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
@@ -2011,7 +2053,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       <rect x={0} y={0} width={W} height={H / 2} fill={homeColor} fillOpacity={0.15} />
                       <rect x={0} y={H / 2} width={W} height={H / 2} fill={awayColor} fillOpacity={0.15} />
                       {dividerTimes.map((t, i) => (
-                        <line key={i} x1={toX(t)} y1={0} x2={toX(t)} y2={H} stroke="#1e293b" strokeWidth={t === 3600 && numOTPeriods > 0 ? 3.5 : 2.5} />
+                        <line key={i} x1={toX(t)} y1={0} x2={toX(t)} y2={H} stroke="#1e293b" strokeWidth={t === bigDivider ? 3.5 : 2.5} />
                       ))}
                       <line x1={0} y1={H / 2} x2={W} y2={H / 2} stroke="rgba(255,255,255,0.15)" strokeWidth={1} strokeDasharray="6,4" />
                       {wpSegments.map((seg, i) => (
