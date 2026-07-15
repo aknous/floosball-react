@@ -251,15 +251,23 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const mergePlay = (list: any[], cand: any): any[] => {
               if (!cand) return list
               const hasInt = cand.playNumber != null && Number.isInteger(cand.playNumber)
-              if (hasInt && cand.description) {
-                const idx = list.findIndex((p: any) => (
-                  p.playNumber === cand.playNumber
-                  && p.description === cand.description
-                  && !p.isSidelineCutaway
-                ))
+              if (hasInt) {
+                // A real play's identity is its integer playNumber ALONE. The same play
+                // is re-emitted around quarter/halftime boundaries and turnovers —
+                // sometimes with an empty or shifting description — so keying dedup on
+                // playNumber+description let those re-sends slip through and STACK (the
+                // pre-halftime play appearing 5x in a live game). Replace the existing
+                // entry (newest data wins) instead of appending. Fractional playNumbers
+                // (cutaways +0.5, contest beats +0.9) are non-integer, so they're
+                // excluded here and unaffected.
+                const idx = list.findIndex((p: any) => p.playNumber === cand.playNumber && !p.isSidelineCutaway)
                 if (idx !== -1) {
                   const copy = list.slice()
-                  copy[idx] = { ...copy[idx], ...cand }
+                  const merged = { ...copy[idx], ...cand }
+                  // Don't let a sparser re-send blank out already-good fields.
+                  if (!cand.description && copy[idx].description) merged.description = copy[idx].description
+                  if (!cand.playResult && copy[idx].playResult) merged.playResult = copy[idx].playResult
+                  copy[idx] = merged
                   return copy
                 }
               } else if (cand.description) {
