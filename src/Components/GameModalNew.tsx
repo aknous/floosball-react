@@ -1298,6 +1298,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         {rowFor('home', gameData.homeTeam.abbr)}
                       </tbody>
                     </table>
+                    {fr.tiebreak?.decidedByPoints && (() => {
+                      const tb = fr.tiebreak!
+                      const winTeam = tb.winner === 'home' ? gameData.homeTeam : gameData.awayTeam
+                      const isDone = gameData.status === 'Final'
+                      return (
+                        <div style={{ marginTop: '8px', fontSize: '12px', color: '#f59e0b', fontWeight: 600, lineHeight: 1.5 }}>
+                          {`Frames level ${fmtFramesWon(fr.framesWonHome)}-${fmtFramesWon(fr.framesWonAway)} — ${isDone ? 'won' : 'leading'} on total points, ${winTeam.abbr} ${Math.max(tb.homePoints, tb.awayPoints)}-${Math.min(tb.homePoints, tb.awayPoints)}`}
+                        </div>
+                      )
+                    })()}
                   </div>
                 )
               })() : null}

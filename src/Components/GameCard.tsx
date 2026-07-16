@@ -28,7 +28,7 @@ interface GameCardProps {
   quarter?: number
   timeRemaining?: string
   innings?: { active: boolean; inning: number; half: 'top' | 'bottom'; tries: number; triesPerInning: number }
-  frames?: { active: boolean; currentFrame: number; framesPerGame: number; frameClock?: string; framesWonHome: number; framesWonAway: number }
+  frames?: { active: boolean; currentFrame: number; framesPerGame: number; frameClock?: string; framesWonHome: number; framesWonAway: number; tiebreak?: { decidedByPoints: boolean; homePoints: number; awayPoints: number; winner: 'home' | 'away' } | null }
   status?: 'Scheduled' | 'Active' | 'Final'
   homeWinProbability?: number
   awayWinProbability?: number
@@ -474,12 +474,19 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                 </span>
               </>
             ) : frames?.active ? (
-              // Frames: the frame + its clock (the score above is frames won).
-              <>
-                <span>{`Frame ${frames.currentFrame}`}</span>
-                <span>•</span>
-                <span>{frames.frameClock ?? timeRemaining ?? '10:00'}</span>
-              </>
+              // Frames: the frame + its clock (the score above is frames won). When the
+              // frames are level, note the points tiebreak so a "3-3" doesn't read as a tie.
+              frames.tiebreak?.decidedByPoints ? (
+                <span style={{ color: '#f59e0b', fontWeight: 700, letterSpacing: '0.03em' }}>
+                  {`LEVEL • ${(frames.tiebreak.winner === 'home' ? homeTeam : awayTeam).abbr} ${isFinal ? 'wins' : 'leads'} on points`}
+                </span>
+              ) : (
+                <>
+                  <span>{`Frame ${frames.currentFrame}`}</span>
+                  <span>•</span>
+                  <span>{frames.frameClock ?? timeRemaining ?? '10:00'}</span>
+                </>
+              )
             ) : (
               <>
                 <span>{(quarter ?? 0) > 4 ? 'OT' : `Q${quarter ?? 1}`}</span>
