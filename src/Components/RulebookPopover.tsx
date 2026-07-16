@@ -327,9 +327,13 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
               <span style={{ color: coreColor(data.lastChange.core), fontWeight: 700 }}>
                 {data.lastChange.core.charAt(0).toUpperCase() + data.lastChange.core.slice(1)}
               </span>{' '}
-              {data.lastChange.kind === 'revert' ? 'restored' : 'changed'} {data.lastChange.label}:{' '}
-              <span style={{ color: '#94a3b8', textDecoration: 'line-through' }}>{fmtRuleValue(data.lastChange.from)}</span>{' → '}
-              <span style={{ color: CHANGED_COLOR, fontWeight: 700 }}>{fmtRuleValue(data.lastChange.to)}</span>
+              {data.lastChange.kind === 'revert' ? 'restored' : 'changed'} {data.lastChange.label}
+              {/* A multi-rule revert has no single from→to — just name what was put back. */}
+              {data.lastChange.from != null && data.lastChange.to != null && (<>
+                {': '}
+                <span style={{ color: '#94a3b8', textDecoration: 'line-through' }}>{fmtRuleValue(data.lastChange.from)}</span>{' → '}
+                <span style={{ color: CHANGED_COLOR, fontWeight: 700 }}>{fmtRuleValue(data.lastChange.to)}</span>
+              </>)}
             </span>
           </div>
         )}
