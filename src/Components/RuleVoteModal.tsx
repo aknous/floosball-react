@@ -46,11 +46,11 @@ const RuleVoteModal: React.FC = () => {
 
   const isRevert = kind === 'revert'
   const title = isRevert ? 'Rule Revert Vote' : 'Rule Change Vote'
-  // Multi-select revert: reaction keys off "has any RULE pick" (keep-all counts as no
-  // revert); single-pick keys off myPick.
+  // Multi-select revert: a rule pick -> positive; the Keep-all pick -> negative; no
+  // selection yet -> no reaction. Single-pick keys off myPick.
   const revertPicks = myPicks.filter(k => k !== NONE_KEY)
   const reaction = multiSelect
-    ? (revertPicks.length > 0 ? reactPick : reactNone)
+    ? (revertPicks.length > 0 ? reactPick : (myPicks.includes(NONE_KEY) ? reactNone : null))
     : (myPick == null ? null : (myPick === NONE_KEY ? reactNone : reactPick))
   const noneVotes = totals[NONE_KEY] ?? 0
 
