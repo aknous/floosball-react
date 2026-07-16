@@ -46,9 +46,11 @@ const RuleVoteModal: React.FC = () => {
 
   const isRevert = kind === 'revert'
   const title = isRevert ? 'Rule Revert Vote' : 'Rule Change Vote'
-  // Multi-select revert: reaction keys off "has any pick"; single-pick keys off myPick.
+  // Multi-select revert: reaction keys off "has any RULE pick" (keep-all counts as no
+  // revert); single-pick keys off myPick.
+  const revertPicks = myPicks.filter(k => k !== NONE_KEY)
   const reaction = multiSelect
-    ? (myPicks.length > 0 ? reactPick : reactNone)
+    ? (revertPicks.length > 0 ? reactPick : reactNone)
     : (myPick == null ? null : (myPick === NONE_KEY ? reactNone : reactPick))
   const noneVotes = totals[NONE_KEY] ?? 0
 
@@ -142,15 +144,23 @@ const RuleVoteModal: React.FC = () => {
             </div>
           )}
 
-          {/* Options — multi-select (revert) shows checkboxes and no "none" row;
-              the empty set already means "leave the rules as they are". */}
+          {/* Options — multi-select (revert) shows rule checkboxes plus an explicit
+              "Keep all rules" ballot (mutually exclusive with the reverts) so the
+              leave-it-alone camp counts toward the approval threshold. */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {multiSelect
-              ? options.map(o => optionRow(
-                  o.key, o.label,
-                  o.description ?? `${fmtRuleValue(o.current)} → ${fmtRuleValue(o.proposed)}`,
-                  myPicks.includes(o.key), totals[o.key] ?? 0, () => toggleRevert(o.key), true,
-                ))
+              ? (<>
+                  {options.map(o => optionRow(
+                    o.key, o.label,
+                    o.description ?? `${fmtRuleValue(o.current)} → ${fmtRuleValue(o.proposed)}`,
+                    myPicks.includes(o.key), totals[o.key] ?? 0, () => toggleRevert(o.key), true,
+                  ))}
+                  {optionRow(
+                    NONE_KEY, 'Keep all rules as they are',
+                    'Vote to leave every rule in place',
+                    myPicks.includes(NONE_KEY), noneVotes, () => toggleRevert(NONE_KEY), true,
+                  )}
+                </>)
               : (<>
                   {options.map(o => optionRow(
                     o.key, o.label,
@@ -176,7 +186,7 @@ const RuleVoteModal: React.FC = () => {
 
           <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '16px', lineHeight: 1.5 }}>
             {multiSelect
-              ? 'Check every rule you want put back. Any rule approved on at least half the ballots is reverted before the day\'s games.'
+              ? 'Check every rule you want put back, or vote to keep them all. A rule is reverted only if at least half of everyone who votes approves putting it back.'
               : 'The most-voted option wins, effective before the day\'s games. It lasts until it\'s voted back or the season ends, when all rules reset to standard.'}
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const POLL_MS = 30_000
+const NONE_KEY = 'none'   // the keep-everything ballot key (revert vote)
 
 export interface RuleVoteOption {
   key: string                         // the vote/tally key (a field, a preset key, or 'revert:<mechanic>')
@@ -150,18 +151,29 @@ export const RuleVoteProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [getToken, windowId, myPick, fetchBallot])
 
   // Revert (multi-select approval): flip one option in the user's set and POST the
-  // full set. Optimistic on both the selection and the per-option approval totals.
+  // full set. The 'none' option is a KEEP-EVERYTHING vote — mutually exclusive with the
+  // rule picks (choosing a rule clears keep-all, and vice versa). Optimistic on both the
+  // selection and the per-option approval totals (diffed old vs new so a cleared option
+  // is decremented too).
   const toggleRevert = useCallback(async (optionKey: string) => {
     const tok = await getToken().catch(() => null)
     if (!tok || windowId == null) return
     const has = myPicks.includes(optionKey)
-    const next = has ? myPicks.filter(k => k !== optionKey) : [...myPicks, optionKey]
-    setMyPicks(next)
+    let next: string[]
+    if (optionKey === NONE_KEY) {
+      next = has ? [] : [NONE_KEY]                       // keep-all replaces every rule pick
+    } else {
+      const base = myPicks.filter(k => k !== NONE_KEY)   // a rule pick clears keep-all
+      next = has ? base.filter(k => k !== optionKey) : [...base, optionKey]
+    }
     setTotals(prev => {
       const t = { ...prev }
-      t[optionKey] = Math.max(0, (t[optionKey] ?? 0) + (has ? -1 : 1))
+      const before = new Set(myPicks), after = new Set(next)
+      before.forEach(k => { if (!after.has(k)) t[k] = Math.max(0, (t[k] ?? 1) - 1) })
+      after.forEach(k => { if (!before.has(k)) t[k] = (t[k] ?? 0) + 1 })
       return t
     })
+    setMyPicks(next)
     const res = await fetch(`${API_BASE}/rules/vote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
