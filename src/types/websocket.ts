@@ -68,6 +68,14 @@ export interface FramesState {
   frameHome: number   // points this frame
   frameAway: number
   frameResults?: { home: number; away: number; winner: 'home' | 'away' | 'tie' }[]  // completed frames
+  // Set only when frames are LEVEL and total points break the deadlock (winner decided
+  // on points, not frames). null otherwise. Lets the UI explain a "3-3" frames result.
+  tiebreak?: {
+    decidedByPoints: boolean
+    homePoints: number
+    awayPoints: number
+    winner: 'home' | 'away'
+  } | null
 }
 
 // Player statistics during a game
