@@ -100,7 +100,7 @@ interface Facility { key: string; name: string; level: number; maxLevel: number;
 interface Project { id: number; facilityKey: string; kind: string; targetLevel: number; cost: number; funded: number }
 interface TeamFacilities { teamId: number; treasury: number; appeal: number; shareUnit: number; facilities: Facility[]; projects: Project[] }
 interface Candidate { key: string; name: string; currentLevel: number; targetLevel: number; kind: string; cost: number; upkeep: number; votes: number }
-interface LeagueTeam { id: number; name: string; city: string; abbr: string; color: string; appeal: number; levels: Record<string, number>; fanCount: number; marketTier: string }
+interface LeagueTeam { id: number; name: string; city: string; abbr: string; color: string; appeal: number; levels: Record<string, number>; fanCount: number; activeFanCount?: number; marketTier: string }
 
 // ── small UI bits ─────────────────────────────────────────────────────────
 function FundChips({ onFund, balance, max, topGap = 8, allowCustom = false }: { onFund: (amt: number) => void; balance: number; max: number; topGap?: number; allowCustom?: boolean }) {
@@ -482,12 +482,23 @@ function FanGraph({ teams, favId }: { teams: LeagueTeam[]; favId: number | null 
   const maxFans = Math.max(1, ...sorted.map(t => t.fanCount))
   return (
     <div style={{ background: '#0f172a', border: '1px solid #1d2c3e', borderRadius: '10px', padding: '8px 6px' }}>
+      <div style={{ display: 'flex', gap: '14px', alignItems: 'center', padding: '2px 12px 8px', fontSize: '11px', color: '#94a3b8', fontWeight: 700, letterSpacing: '.04em' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ display: 'inline-block', width: '14px', height: '9px', borderRadius: '2px', background: '#64748b' }} /> Active this season
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ display: 'inline-block', width: '14px', height: '9px', borderRadius: '2px', background: hex('#64748b', 0.28) }} /> Total fans
+        </span>
+      </div>
       {sorted.map(t => {
         const isFav = t.id === favId
+        const active = Math.min(t.fanCount, t.activeFanCount ?? 0)
+        const activePct = t.fanCount > 0 ? (active / t.fanCount) * 100 : 0
         const tip = (
           <div style={{ textAlign: 'left', fontSize: '13px', lineHeight: 1.6, fontFamily: 'pressStart, monospace' }}>
             <div style={{ fontWeight: 700, color: t.color, marginBottom: '4px' }}>{t.city} {t.name}</div>
-            <div>Fans: <strong>{t.fanCount.toLocaleString()}</strong></div>
+            <div>Total fans: <strong>{t.fanCount.toLocaleString()}</strong></div>
+            <div>Active this season: <strong>{active.toLocaleString()}</strong></div>
             <div>Market: <strong style={{ color: TIER_COLOR[t.marketTier] }}>{TIER_SHORT[t.marketTier]}</strong></div>
           </div>
         )
@@ -497,7 +508,10 @@ function FanGraph({ teams, favId }: { teams: LeagueTeam[]; favId: number | null 
             <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#cbd5e1' }}>{t.abbr}</span>
             <HoverTooltip content={tip} color={t.color}>
               <span style={{ display: 'block', height: '11px' }}>
-                <span style={{ display: 'block', height: '100%', width: `${(t.fanCount / maxFans) * 100}%`, background: t.color, borderRadius: '3px', minWidth: '2px' }} />
+                {/* faint bar = TOTAL fans; the solid inner fill = ACTIVE fans this season */}
+                <span style={{ display: 'block', height: '100%', width: `${(t.fanCount / maxFans) * 100}%`, background: hex(t.color, 0.28), borderRadius: '3px', minWidth: '2px' }}>
+                  <span style={{ display: 'block', height: '100%', width: `${activePct}%`, background: t.color, borderRadius: '3px', minWidth: active > 0 ? '2px' : '0' }} />
+                </span>
               </span>
             </HoverTooltip>
             <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#94a3b8', textAlign: 'right' }}>{t.fanCount}</span>
