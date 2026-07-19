@@ -104,17 +104,6 @@ const Lineup: React.FC = () => {
         </div>
       )}
 
-      {lineup.locked && (
-        <div style={{ textAlign: 'center', fontSize: 10, color: '#64748b', marginTop: 12 }}>
-          Lineup is locked — cards lock when games start.
-        </div>
-      )}
-      {!lineup.hasFlex && (
-        <div style={{ textAlign: 'center', fontSize: 10, color: '#64748b', marginTop: 8 }}>
-          Equip an MVP card or the Accession power-up to unlock the FLEX slot.
-        </div>
-      )}
-
       <CardPickerModal
         visible={!!pickerSlot}
         onClose={() => setPickerSlot(null)}

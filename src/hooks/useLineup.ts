@@ -106,7 +106,13 @@ export function useLineup(): UseLineupResult {
   useEffect(() => {
     const handler = () => fetchLineup()
     window.addEventListener('floosball:shop-purchase', handler)
-    return () => window.removeEventListener('floosball:shop-purchase', handler)
+    // Keep other useLineup instances (e.g. the scoring preview) in sync when any
+    // one of them equips — `put` dispatches 'cards-equipped' after a successful PUT.
+    window.addEventListener('cards-equipped', handler)
+    return () => {
+      window.removeEventListener('floosball:shop-purchase', handler)
+      window.removeEventListener('cards-equipped', handler)
+    }
   }, [fetchLineup])
 
   // Any locked equipped card means the whole lineup is frozen for the week.
