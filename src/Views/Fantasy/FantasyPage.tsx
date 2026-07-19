@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { FantasyRoster } from '@/Components/Fantasy/FantasyRoster'
+import Lineup from '@/Components/Fantasy/Lineup'
 import { FantasyLeaderboard } from '@/Components/Fantasy/FantasyLeaderboard'
-import CardEquipment from '@/Components/Cards/CardEquipment'
 import ShopModal from '@/Components/Shop/ShopModal'
 import HoverTooltip from '@/Components/HoverTooltip'
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
@@ -519,24 +518,14 @@ const FantasyPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Card slots — full width at top */}
+            {/* Fusion: one position-locked lineup (equipped cards ARE the roster) */}
             <div data-tour="fantasy-cards">
-              <CardEquipment />
+              <Lineup />
             </div>
 
-            {/* Roster + Leaderboard side by side */}
-            <div style={{
-              display: 'flex',
-              flexDirection: isMobile ? 'column' : 'row',
-              gap: '12px',
-              alignItems: 'start',
-            }}>
-              <div data-tour="fantasy-roster" style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
-                <FantasyRoster />
-              </div>
-              <div data-tour="fantasy-leaderboard" style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
-                <FantasyLeaderboard />
-              </div>
+            {/* Leaderboard */}
+            <div data-tour="fantasy-leaderboard" style={{ minWidth: 0 }}>
+              <FantasyLeaderboard />
             </div>
           </>
         )}
