@@ -192,64 +192,69 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
         padding: isMobile ? '5px 0' : '6px 0', fontSize: isMobile ? '11px' : '12px',
         borderBottom: '1px solid rgba(51,65,85,0.4)',
       }}>
-        {/* Left: slot · player · player FP */}
-        <span style={{ width: isMobile ? 30 : 38, color: '#64748b', fontWeight: 700, fontSize: isMobile ? '10px' : '11px', flexShrink: 0 }}>
-          {opts.slot}
-        </span>
-        {opts.teamId != null
-          ? <img src={`/avatars/${opts.teamId}.png`} alt={opts.teamAbbr || ''} style={teamAvatarStyle} />
-          : <span style={teamAvatarPlaceholderStyle} />}
-        <span style={{
-          flex: '1 1 0', minWidth: 0, color: opts.muted ? '#64748b' : '#e2e8f0', fontWeight: 600,
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          fontStyle: opts.muted ? 'italic' : 'normal',
-        }}>
-          {opts.playerName}
-        </span>
-        <span style={{
-          color: opts.muted ? '#64748b' : '#22c55e', fontWeight: 700,
-          minWidth: isMobile ? 34 : 42, textAlign: 'right', flexShrink: 0,
-          fontVariantNumeric: 'tabular-nums' as const,
-        }}>
-          {opts.playerFP != null ? `+${opts.playerFP.toFixed(0)}` : '—'}
-        </span>
+        {/* Left group (fixed 50% so the divider aligns across every row):
+            slot · player · player FP */}
+        <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ width: isMobile ? 30 : 38, color: '#64748b', fontWeight: 700, fontSize: isMobile ? '10px' : '11px', flexShrink: 0 }}>
+            {opts.slot}
+          </span>
+          {opts.teamId != null
+            ? <img src={`/avatars/${opts.teamId}.png`} alt={opts.teamAbbr || ''} style={teamAvatarStyle} />
+            : <span style={teamAvatarPlaceholderStyle} />}
+          <span style={{
+            flex: '1 1 0', minWidth: 0, color: opts.muted ? '#64748b' : '#e2e8f0', fontWeight: 600,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            fontStyle: opts.muted ? 'italic' : 'normal',
+          }}>
+            {opts.playerName}
+          </span>
+          <span style={{
+            color: opts.muted ? '#64748b' : '#22c55e', fontWeight: 700,
+            minWidth: isMobile ? 34 : 42, textAlign: 'right', flexShrink: 0,
+            fontVariantNumeric: 'tabular-nums' as const,
+          }}>
+            {opts.playerFP != null ? `+${opts.playerFP.toFixed(0)}` : '—'}
+          </span>
+        </div>
 
         {/* Divider */}
-        <span style={{ width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(71,85,105,0.5)', flexShrink: 0, margin: '0 2px' }} />
+        <span style={{ width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(71,85,105,0.5)', flexShrink: 0 }} />
 
-        {/* Right: effect name · effect output */}
-        {opts.hasEffectSource ? (
-          <>
-            {opts.edition && (
-              <span style={{ color: EDITION_COLORS[opts.edition] ?? '#94a3b8', fontWeight: 700, fontSize: '10px', flexShrink: 0, minWidth: 32 }}>
-                {EDITION_SHORT[opts.edition] ?? opts.edition}
-              </span>
-            )}
-            <span style={{
-              flex: '1 1 0', minWidth: 0, color: effectColor, fontWeight: opts.matched ? 700 : 400,
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {label ? (
-                <HoverTooltip text={opts.detail || ''} color={effectColor}>
-                  <span>{label}</span>
-                </HoverTooltip>
-              ) : <span style={{ color: '#64748b' }}>No effect</span>}
-            </span>
-            <TierTag tier={opts.tier} />
-            {outputParts.length > 0 ? (
+        {/* Right group (fixed 50%): effect name · effect output */}
+        <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {opts.hasEffectSource ? (
+            <>
+              {opts.edition && (
+                <span style={{ color: EDITION_COLORS[opts.edition] ?? '#94a3b8', fontWeight: 700, fontSize: '10px', flexShrink: 0, minWidth: 32 }}>
+                  {EDITION_SHORT[opts.edition] ?? opts.edition}
+                </span>
+              )}
               <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700,
-                fontSize: isMobile ? '11px' : '12px', flexShrink: 0, fontVariantNumeric: 'tabular-nums' as const,
+                flex: '1 1 0', minWidth: 0, color: effectColor, fontWeight: opts.matched ? 700 : 400,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
-                {outputParts.map((p, i) => <span key={i} style={{ color: p.color }}>{p.str}</span>)}
+                {label ? (
+                  <HoverTooltip text={opts.detail || ''} color={effectColor}>
+                    <span>{label}</span>
+                  </HoverTooltip>
+                ) : <span style={{ color: '#64748b' }}>No effect</span>}
               </span>
-            ) : (
-              <span style={{ color: '#64748b', fontSize: '10px', flexShrink: 0 }}>—</span>
-            )}
-          </>
-        ) : (
-          <span style={{ flex: '1 1 0', color: '#64748b', fontSize: '10px' }}>—</span>
-        )}
+              <TierTag tier={opts.tier} />
+              {outputParts.length > 0 ? (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: 700,
+                  fontSize: isMobile ? '11px' : '12px', flexShrink: 0, fontVariantNumeric: 'tabular-nums' as const,
+                }}>
+                  {outputParts.map((p, i) => <span key={i} style={{ color: p.color }}>{p.str}</span>)}
+                </span>
+              ) : (
+                <span style={{ color: '#64748b', fontSize: '10px', flexShrink: 0 }}>—</span>
+              )}
+            </>
+          ) : (
+            <span style={{ flex: '1 1 0', color: '#64748b', fontSize: '10px' }}>—</span>
+          )}
+        </div>
       </div>
     )
   }
