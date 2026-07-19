@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import TradingCard from '@/Components/Cards/TradingCard'
 import CardPickerModal from '@/Components/Cards/CardPickerModal'
+import { PointsBreakdownPanel } from '@/Components/Fantasy/FantasyRoster'
 import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, SLOT_POSITION, SLOT_ORDINAL, EquippedEntry } from '@/hooks/useLineup'
 import { useFantasySnapshot, CardBreakdownEntry } from '@/hooks/useFantasySnapshot'
 import { useAuth } from '@/contexts/AuthContext'
@@ -26,11 +27,11 @@ const ScoreLine: React.FC<{ weekFP?: number; bonus?: CardBreakdownEntry; noEffec
     }
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, minHeight: 30, justifyContent: 'center' }}>
-      <div style={{ fontSize: 14, fontWeight: 800, color: '#eaf1ff', fontVariantNumeric: 'tabular-nums' }}>
-        {(weekFP ?? 0).toFixed(1)}<span style={{ color: '#94a3b8', fontSize: 8, marginLeft: 1 }}>FP</span>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, minHeight: 32, justifyContent: 'center' }}>
+      <div style={{ fontSize: 16, fontWeight: 800, color: '#eaf1ff', fontVariantNumeric: 'tabular-nums' }}>
+        {(weekFP ?? 0).toFixed(1)}<span style={{ color: '#94a3b8', fontSize: 9, marginLeft: 2 }}>FP</span>
       </div>
-      <div style={{ fontSize: 9, fontWeight: 700 }}>{bonusEl}</div>
+      <div style={{ fontSize: 10, fontWeight: 700 }}>{bonusEl}</div>
     </div>
   )
 }
@@ -41,6 +42,19 @@ const Lineup: React.FC = () => {
   const snap = useFantasySnapshot(user?.id)
   const myEntry = snap.myEntry
   const [pickerSlot, setPickerSlot] = useState<LineupSlot | null>(null)
+  const [viewMode, setViewMode] = useState<'roster' | 'breakdown'>('roster')
+
+  // Tutorial hooks (mirror the old FantasyRoster event contract).
+  useEffect(() => {
+    const showRoster = () => setViewMode('roster')
+    const showBreakdown = () => setViewMode('breakdown')
+    window.addEventListener('floosball:show-roster', showRoster)
+    window.addEventListener('floosball:show-breakdown', showBreakdown)
+    return () => {
+      window.removeEventListener('floosball:show-roster', showRoster)
+      window.removeEventListener('floosball:show-breakdown', showBreakdown)
+    }
+  }, [])
 
   const slots: LineupSlot[] = [...BASE_SLOTS, ...(lineup.hasFlex ? [FLEX_SLOT] : [])]
   const equipped = Object.values(lineup.bySlot).filter((e): e is EquippedEntry => Boolean(e))
@@ -51,50 +65,69 @@ const Lineup: React.FC = () => {
   const bonusBySlotNumber: Record<number, CardBreakdownEntry> = {}
   for (const b of myEntry?.cardBreakdowns ?? []) bonusBySlotNumber[b.slotNumber] = b
 
+  // Show the Roster / Breakdown toggle once there's a score to explain.
+  const hasScoring = snap.gamesActive || lineup.locked || (myEntry?.weekTotal ?? 0) > 0
+  const showBreakdown = hasScoring && viewMode === 'breakdown'
+
+  const playerSummaries = (myEntry?.players ?? []).map(p => ({
+    playerName: p.playerName,
+    position: p.position || p.slot,
+    weekFP: p.weekFP,
+  }))
+
   return (
     <div style={{ fontFamily: 'pressStart' }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 20px',
-        padding: '12px 4px', marginBottom: 6,
-      }}>
-        <div><div style={hdrK}>Week</div><div style={hdrV}>{snap.week || '—'}</div></div>
-        {snap.modifier && (
-          <div style={{
-            fontSize: 10, letterSpacing: '.06em', textTransform: 'uppercase', padding: '4px 9px',
-            borderRadius: 999, border: '1px solid #233149', color: '#94a3b8', background: '#0e1826',
-          }}>Modifier · {snap.modifier.displayName}</div>
-        )}
-        <div style={{ flex: 1 }} />
-        {myEntry && (
-          <>
-            <div><div style={hdrK}>Rank</div><div style={hdrV}>{myEntry.rank}</div></div>
-            <div><div style={hdrK}>Week total</div>
-              <div style={{ ...hdrV, fontSize: 22, color: '#4ade80', fontWeight: 800 }}>
-                {myEntry.weekTotal.toFixed(1)} FP
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
       {lineup.error && (
         <div style={{ color: '#f87171', fontSize: 11, padding: '4px 4px 10px' }}>{lineup.error}</div>
       )}
 
-      {/* Rail */}
-      {lineup.loading ? (
+      {/* Roster / Breakdown tab bar — only when there's scoring to show */}
+      {hasScoring && (
+        <div data-tour="fantasy-breakdown" style={{ display: 'flex', justifyContent: 'center', gap: 4, marginBottom: 10 }}>
+          {(['roster', 'breakdown'] as const).map(v => (
+            <button
+              key={v}
+              onClick={() => setViewMode(v)}
+              style={{
+                padding: '5px 18px', borderRadius: 6, fontSize: 12, fontWeight: 600,
+                fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', border: 'none',
+                backgroundColor: viewMode === v ? 'rgba(167,139,250,0.15)' : 'transparent',
+                color: viewMode === v ? '#a78bfa' : '#64748b',
+              }}
+            >
+              {v === 'roster' ? 'Roster' : 'Breakdown'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Breakdown view */}
+      {showBreakdown && myEntry ? (
+        <PointsBreakdownPanel
+          playerSummaries={playerSummaries}
+          breakdowns={myEntry.cardBreakdowns}
+          equationSummary={myEntry.equationSummary}
+          weekPlayerFP={myEntry.weekPlayerFP}
+          weekCardBonus={myEntry.weekCardBonus}
+          seasonEarnedFP={myEntry.seasonEarnedFP}
+          seasonCardBonus={myEntry.seasonCardBonus}
+          seasonTotal={myEntry.seasonTotal}
+          modifier={snap.modifier}
+        />
+      ) : lineup.loading ? (
         <div style={{ color: '#64748b', fontSize: 12, padding: 24, textAlign: 'center' }}>Loading your lineup…</div>
       ) : (
-        <div style={{ display: 'flex', gap: 11, flexWrap: 'wrap', justifyContent: 'center' }}>
+        /* Roster rail */
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
           {slots.map(slot => {
             const entry = lineup.bySlot[slot]
             const canEdit = !lineup.gamesActive && !lineup.locked && !lineup.saving
             const bonus = entry ? bonusBySlotNumber[entry.slotNumber] : undefined
             const noEffect = entry?.card.edition === 'standard'
             return (
-              <div key={slot} style={{ width: 116, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
-                <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: '.13em', textTransform: 'uppercase', color: '#94a3b8', display: 'flex', gap: 4 }}>
+              <div key={slot} data-tour={slot === 'QB' ? 'fantasy-card-read' : undefined}
+                   style={{ width: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.13em', textTransform: 'uppercase', color: '#94a3b8', display: 'flex', gap: 4 }}>
                   {slot}{slot === FLEX_SLOT && <span style={{ color: '#fbbf24' }}>◇</span>}
                 </div>
 
@@ -103,7 +136,7 @@ const Lineup: React.FC = () => {
                     <div style={{ cursor: canEdit ? 'pointer' : 'default' }}
                          onClick={() => canEdit && setPickerSlot(slot)}
                          title={canEdit ? 'Change card' : undefined}>
-                      <TradingCard card={entry.card} size="xs" noHoverLift />
+                      <TradingCard card={entry.card} size="sm" noHoverLift />
                     </div>
                     {canEdit && (
                       <button onClick={(e) => { e.stopPropagation(); lineup.unequip(slot) }}
@@ -116,8 +149,8 @@ const Lineup: React.FC = () => {
                     onClick={() => canEdit && setPickerSlot(slot)}
                     disabled={!canEdit}
                     style={{ ...emptyCard, cursor: canEdit ? 'pointer' : 'default' }}>
-                    <div style={{ fontSize: 22, color: '#94a3b8', lineHeight: 1 }}>+</div>
-                    <div style={{ fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase', color: '#94a3b8', marginTop: 6 }}>Add {slot}</div>
+                    <div style={{ fontSize: 30, color: '#94a3b8', lineHeight: 1 }}>+</div>
+                    <div style={{ fontSize: 10, letterSpacing: '.08em', textTransform: 'uppercase', color: '#94a3b8', marginTop: 8 }}>Add {slot}</div>
                   </button>
                 )}
 
@@ -128,12 +161,12 @@ const Lineup: React.FC = () => {
         </div>
       )}
 
-      {lineup.locked && (
+      {lineup.locked && !showBreakdown && (
         <div style={{ textAlign: 'center', fontSize: 10, color: '#64748b', marginTop: 12 }}>
           Lineup is locked — cards lock when games start.
         </div>
       )}
-      {!lineup.hasFlex && (
+      {!lineup.hasFlex && !showBreakdown && (
         <div style={{ textAlign: 'center', fontSize: 10, color: '#64748b', marginTop: 8 }}>
           Equip an MVP card or the Accession power-up to unlock the FLEX slot.
         </div>
@@ -160,15 +193,14 @@ const Lineup: React.FC = () => {
   )
 }
 
-const hdrK: React.CSSProperties = { fontSize: 9, letterSpacing: '.13em', textTransform: 'uppercase', color: '#64748b', fontWeight: 700 }
-const hdrV: React.CSSProperties = { fontSize: 14, color: '#fff', fontVariantNumeric: 'tabular-nums' }
 const clearBtn: React.CSSProperties = {
-  position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%',
-  border: '1px solid #475569', background: '#0f172a', color: '#cbd5e1', fontSize: 12, lineHeight: 1,
+  position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%',
+  border: '1px solid #475569', background: '#0f172a', color: '#cbd5e1', fontSize: 13, lineHeight: 1,
   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, zIndex: 4,
 }
 const emptyCard: React.CSSProperties = {
-  width: 105, height: 178, borderRadius: 12, border: '2px dashed #33445c', background: '#0e1622',
+  width: 160, height: 270, borderRadius: 12, border: '2px dashed #33445c', background: '#0e1622',
+  boxSizing: 'border-box',
   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
 }
 

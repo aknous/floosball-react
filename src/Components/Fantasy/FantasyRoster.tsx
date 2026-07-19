@@ -132,7 +132,7 @@ interface PlayerSummary {
 }
 
 
-const PointsBreakdownPanel: React.FC<{
+export const PointsBreakdownPanel: React.FC<{
   playerSummaries: PlayerSummary[]
   breakdowns: CardBreakdownEntry[]
   equationSummary?: EquationSummary
