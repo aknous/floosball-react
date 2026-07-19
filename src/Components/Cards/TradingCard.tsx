@@ -1045,7 +1045,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
               fontSize: card.playerName.length > 18 ? d.nameFont - 4
                 : card.playerName.length > 14 ? d.nameFont - 2
                 : d.nameFont,
-              fontWeight: '800', color: '#fff', textTransform: 'uppercase',
+              fontWeight: '800', color: '#fff',
               lineHeight: 1.05, maxWidth: '100%', wordBreak: 'break-word',
               textShadow: '0 1px 4px rgba(0,0,0,0.5)',
             }}>
@@ -1325,29 +1325,6 @@ const TradingCard: React.FC<TradingCardProps> = ({
               {card.tierNote}
             </div>
           )}
-
-          {/* Roster match section */}
-          <div style={{
-            fontSize: d.font - 2, color: '#cbd5e1',
-            lineHeight: 1.8, textAlign: 'center',
-            borderTop: `1px solid ${edStyle.borderColor}40`,
-            paddingTop: '6px',
-          }}>
-            <div style={{ color: '#e2e8f0', fontWeight: '700', marginBottom: '6px' }}>
-              Roster Match
-            </div>
-            <div>
-              If {card.playerName} is on your fantasy roster:
-            </div>
-            <div style={{ color: edStyle.labelColor }}>
-              - Effect boosted to <span style={{ color: '#60a5fa' }}>1.5x</span>
-            </div>
-            {card.effectConfig?.conditional && (
-              <div style={{ color: edStyle.labelColor }}>
-                - <span style={{ color: TYPE_COLORS.fp }}>+{card.effectConfig.conditional.bonus} FP</span> for {card.effectConfig.conditional.label}
-              </div>
-            )}
-          </div>
 
         </div>
       )}
