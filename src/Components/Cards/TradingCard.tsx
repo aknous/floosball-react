@@ -1090,6 +1090,26 @@ const TradingCard: React.FC<TradingCardProps> = ({
           </div>
           )}
 
+          {/* Standard (no-effect) print: reserve the footer's space so the nameplate
+              lands at the same height as effect cards. minHeight ≈ a typical
+              two-line effect footer; a muted label marks it as effect-free. */}
+          {!isVaulted && edition === 'standard' && (
+          <div style={{
+            padding: `${d.pad - 2}px ${d.pad + 18}px`,
+            minHeight: 2 * (d.pad - 2) + Math.round(d.font * 2.3),
+            boxSizing: 'border-box',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            textAlign: 'center', position: 'relative', zIndex: 3, flexShrink: 0,
+          }}>
+            <div style={{
+              fontSize: d.font - 2, color: edStyle.labelColor, opacity: 0.65,
+              letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700,
+            }}>
+              No Effect
+            </div>
+          </div>
+          )}
+
           {/* Sell value / expired / equipped badges */}
           {(showSellValue || (!card.isActive && !card.vaulted) || card.isEquipped) && (
             <div style={{
