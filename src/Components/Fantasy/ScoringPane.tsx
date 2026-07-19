@@ -4,14 +4,17 @@ import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, EquippedEntry } from '@/hooks/useLineup'
 import { useCardProjection, CardProjection } from '@/hooks/useCardProjection'
 import { useAuth } from '@/contexts/AuthContext'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const TYPE_COLORS = { fp: '#4ade80', mult: '#f472b6', floobits: '#eab308' }
 
 // The always-on scoring pane. Once games are live it shows the full live
 // breakdown; before kickoff it shows a projection that fills in dynamically as
 // cards are equipped (each row is a fielded player + that card's effect).
+// Wrapped in the same card shell as the leaderboard so the two panes match.
 export const ScoringPane: React.FC = () => {
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const snap = useFantasySnapshot(user?.id)
   const myEntry = snap.myEntry
 
@@ -26,8 +29,18 @@ export const ScoringPane: React.FC = () => {
   }))
 
   return (
-    <div>
-      <div style={sectionTitle}>Scoring</div>
+    <div style={cardStyleFn(isMobile)}>
+      {/* Header — mirrors the leaderboard header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+        <div>
+          <div style={{ fontSize: '16px', fontWeight: 700, color: '#f1f5f9' }}>Scoring</div>
+          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+            {hasScoring ? 'Live this week' : 'Projected this week'}
+            {snap.week ? ` — Week ${snap.week}` : ''}
+          </div>
+        </div>
+      </div>
+
       {hasScoring && myEntry ? (
         <PointsBreakdownPanel
           playerSummaries={playerSummaries}
@@ -46,6 +59,15 @@ export const ScoringPane: React.FC = () => {
     </div>
   )
 }
+
+// Same shell the leaderboard uses (FantasyLeaderboard.cardStyleFn) so the two
+// dashboard columns read as siblings.
+const cardStyleFn = (mobile: boolean): React.CSSProperties => ({
+  backgroundColor: '#1e293b',
+  borderRadius: '14px',
+  border: '1px solid #334155',
+  padding: mobile ? '12px' : '24px',
+})
 
 // Pre-lock projection built from the live lineup + card projection. Updates the
 // moment a card is equipped (both hooks refetch on the 'cards-equipped' event).
@@ -133,10 +155,6 @@ const LineupScoringPreview: React.FC = () => {
   )
 }
 
-const sectionTitle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase',
-  color: '#94a3b8', marginBottom: 8,
-}
 const panel: React.CSSProperties = {
   backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: 10, padding: '10px 14px',
 }

@@ -1,15 +1,21 @@
 import React, { useState } from 'react'
 import TradingCard from '@/Components/Cards/TradingCard'
 import CardPickerModal from '@/Components/Cards/CardPickerModal'
+import { FavoriteTeamPanel } from '@/Components/Fantasy/FavoriteTeamPanel'
+import { PlayerGameStatStrip } from '@/Components/Fantasy/PlayerGameStatStrip'
 import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, SLOT_POSITION, SLOT_ORDINAL, EquippedEntry } from '@/hooks/useLineup'
 import { useFantasySnapshot, CardBreakdownEntry } from '@/hooks/useFantasySnapshot'
 import { useAuth } from '@/contexts/AuthContext'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const EMPTY_ROSTER_IDS: Set<number> = new Set()
 
 const OUTPUT_COLORS: Record<string, string> = {
   fp: '#4ade80', mult: '#f472b6', floobits: '#eab308',
 }
+
+// CardTemplate.position (1-based) → the position label the game-stats strip uses.
+const POSITION_LABEL: Record<number, string> = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K' }
 
 // The per-slot scoring line: the fielded player's week FP + that card's effect result.
 const ScoreLine: React.FC<{ weekFP?: number; bonus?: CardBreakdownEntry; noEffect: boolean }>
@@ -39,10 +45,12 @@ const ScoreLine: React.FC<{ weekFP?: number; bonus?: CardBreakdownEntry; noEffec
 // in one row, each card showing the fielded player's week FP + its card bonus.
 const Lineup: React.FC = () => {
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const lineup = useLineup()
   const snap = useFantasySnapshot(user?.id)
   const myEntry = snap.myEntry
   const [pickerSlot, setPickerSlot] = useState<LineupSlot | null>(null)
+  const [statsSlot, setStatsSlot] = useState<LineupSlot | null>(null)
 
   const slots: LineupSlot[] = [...BASE_SLOTS, ...(lineup.hasFlex ? [FLEX_SLOT] : [])]
   const equipped = Object.values(lineup.bySlot).filter((e): e is EquippedEntry => Boolean(e))
@@ -51,6 +59,10 @@ const Lineup: React.FC = () => {
   for (const p of myEntry?.players ?? []) weekFPBySlot[p.slot] = p.weekFP
   const bonusBySlotNumber: Record<number, CardBreakdownEntry> = {}
   for (const b of myEntry?.cardBreakdowns ?? []) bonusBySlotNumber[b.slotNumber] = b
+
+  // Game stats can be inspected once the lineup is locked (games running/played).
+  const canViewStats = lineup.locked || lineup.gamesActive || snap.gamesActive
+  const statsEntry = statsSlot ? lineup.bySlot[statsSlot] : undefined
 
   return (
     <div style={{ fontFamily: 'pressStart' }}>
@@ -76,9 +88,12 @@ const Lineup: React.FC = () => {
 
                 {entry ? (
                   <div style={{ position: 'relative' }}>
-                    <div style={{ cursor: canEdit ? 'pointer' : 'default' }}
-                         onClick={() => canEdit && setPickerSlot(slot)}
-                         title={canEdit ? 'Change card' : undefined}>
+                    <div style={{ cursor: (canEdit || canViewStats) ? 'pointer' : 'default' }}
+                         onClick={() => {
+                           if (canEdit) setPickerSlot(slot)
+                           else if (canViewStats) setStatsSlot(s => s === slot ? null : slot)
+                         }}
+                         title={canEdit ? 'Change card' : canViewStats ? 'View game stats' : undefined}>
                       <TradingCard card={entry.card} size="sm" noHoverLift />
                     </div>
                     {canEdit && (
@@ -101,6 +116,26 @@ const Lineup: React.FC = () => {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Tapped player's game stats (locked lineup) */}
+      {statsSlot && statsEntry && (
+        <div style={{ marginTop: 12 }}>
+          <PlayerGameStatStrip
+            playerName={statsEntry.card.playerName}
+            positionLabel={POSITION_LABEL[statsEntry.card.position] ?? statsSlot}
+            stats={myEntry?.playerGameStats?.[statsEntry.playerId] ?? null}
+            onClose={() => setStatsSlot(null)}
+          />
+        </div>
+      )}
+
+      {/* Favorite team — record, streak, playoff position */}
+      {myEntry?.favoriteTeamData && (
+        <div style={{ marginTop: 14 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>Your Team</div>
+          <FavoriteTeamPanel ft={myEntry.favoriteTeamData} isMobile={isMobile} />
         </div>
       )}
 
