@@ -63,6 +63,9 @@ const BASE_SLOTS = [
 ]
 const FLEX_SLOT = { key: 'FLEX', label: 'FLEX', position: 'FLEX' }
 
+// Signed FP (1 decimal): "+12.0", "0.0", "-1.0" (never "+-1.0").
+const fmtSignedFP1 = (n: number) => `${n > 0 ? '+' : ''}${n.toFixed(1)}`
+
 // Canonical FP-type colors used everywhere in the breakdown
 const TYPE_COLORS = {
   fp: '#4ade80',       // FP — green
@@ -238,7 +241,7 @@ export const PointsBreakdownPanel: React.FC<{
       padding: '10px 14px', marginTop: '0px',
     }}>
       {/* This Week — Player FP */}
-      {collapsibleHeader('playerFP', 'Roster Week Total', `+${weekPlayerFP.toFixed(1)}`, '#22c55e', true)}
+      {collapsibleHeader('playerFP', 'Roster Week Total', fmtSignedFP1(weekPlayerFP), '#22c55e', true)}
       {expanded['playerFP'] && (
         <>
           {playerSummaries.filter(p => p.position !== '').map((p, i) => (
@@ -247,14 +250,14 @@ export const PointsBreakdownPanel: React.FC<{
                 <span style={{ color: '#cbd5e1', fontSize: '11px', fontWeight: '700', flexShrink: 0, width: '22px' }}>{p.position}</span>
                 <span style={{ color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.playerName}</span>
               </div>
-              <span style={{ flexShrink: 0, color: '#22c55e', fontWeight: '600' }}>
-                +{p.weekFP.toFixed(1)}
+              <span style={{ flexShrink: 0, color: p.weekFP < 0 ? '#ef4444' : '#22c55e', fontWeight: '600' }}>
+                {fmtSignedFP1(p.weekFP)}
               </span>
             </div>
           ))}
           <div style={sectionTotalStyle}>
             <span style={{ color: '#cbd5e1' }}>Roster FP</span>
-            <span style={{ color: '#22c55e' }}>+{weekPlayerFP.toFixed(1)}</span>
+            <span style={{ color: weekPlayerFP < 0 ? '#ef4444' : '#22c55e' }}>{fmtSignedFP1(weekPlayerFP)}</span>
           </div>
         </>
       )}
