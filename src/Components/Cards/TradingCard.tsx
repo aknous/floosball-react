@@ -1034,12 +1034,17 @@ const TradingCard: React.FC<TradingCardProps> = ({
 
           </div>
 
-          {/* Nameplate band — the player's name as a bold, edition-tinted banner */}
+          {/* Nameplate band — the player's name as a bold, edition-tinted banner.
+              Fixed minHeight (sized for the largest font) so a shrunk long-name
+              font doesn't collapse the band; name is vertically centered. */}
           <div style={{
             padding: `${d.pad - 3}px ${d.pad}px`,
+            minHeight: Math.round(d.nameFont * 1.25) + 2 * (d.pad - 3),
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: `linear-gradient(90deg, ${edStyle.borderColor}30, rgba(5,8,14,0.5))`,
             borderTop: `1px solid ${edStyle.borderColor}55`,
             textAlign: 'center', position: 'relative', zIndex: 3, flexShrink: 0,
+            boxSizing: 'border-box',
           }}>
             <div style={{
               fontSize: card.playerName.length > 18 ? d.nameFont - 4
@@ -1325,6 +1330,51 @@ const TradingCard: React.FC<TradingCardProps> = ({
               {card.tierNote}
             </div>
           )}
+
+          {/* Season stats — the player's production for this card's season, same
+              data the vaulted back shows (fills the space Roster Match vacated). */}
+          <div style={{ marginTop: 'auto', paddingTop: '6px' }}>
+            <div style={{
+              fontSize: d.font - 4, fontWeight: 700, color: '#94a3b8',
+              textTransform: 'uppercase', letterSpacing: '0.06em',
+              textAlign: 'center', marginBottom: '5px',
+            }}>
+              Season {card.playerStats?.season ?? card.seasonCreated} Stats
+            </div>
+            {card.playerStats ? (
+              <>
+                <div style={{
+                  textAlign: 'center',
+                  borderTop: `1px solid ${edStyle.borderColor}40`,
+                  borderBottom: `1px solid ${edStyle.borderColor}40`,
+                  padding: '5px 0', marginBottom: '5px',
+                }}>
+                  <div style={{ fontSize: d.font, fontWeight: 700, color: TYPE_COLORS.fp }}>
+                    {card.playerStats.fantasyPoints}
+                  </div>
+                  <div style={{ fontSize: d.font - 4, color: '#94a3b8' }}>Fantasy Points</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  {card.playerStats.lines.map((ln, i) => (
+                    <div key={i} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                      fontSize: d.font - 2,
+                    }}>
+                      <span style={{ color: '#94a3b8' }}>{ln.label}</span>
+                      <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{ln.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{
+                fontSize: d.font - 2, color: '#64748b', textAlign: 'center',
+                lineHeight: 1.5, padding: '4px 0',
+              }}>
+                No stats recorded yet
+              </div>
+            )}
+          </div>
 
         </div>
       )}

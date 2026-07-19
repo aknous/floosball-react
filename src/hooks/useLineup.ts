@@ -8,7 +8,7 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 // Fusion: equipped cards ARE the fantasy roster. Position-locked slots.
 export const BASE_SLOTS = ['QB', 'RB', 'WR1', 'WR2', 'TE', 'K'] as const
-export const FLEX_SLOT = 'FLEX'
+export const FLEX_SLOT = 'FLEX' as const
 export type LineupSlot = typeof BASE_SLOTS[number] | typeof FLEX_SLOT
 
 // slot -> the 1-based CardTemplate.position it accepts (FLEX = any).
