@@ -2,9 +2,8 @@ import React, { useState } from 'react'
 import TradingCard from '@/Components/Cards/TradingCard'
 import CardPickerModal from '@/Components/Cards/CardPickerModal'
 import { FavoriteTeamPanel } from '@/Components/Fantasy/FavoriteTeamPanel'
-import { PlayerGameStatStrip } from '@/Components/Fantasy/PlayerGameStatStrip'
 import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, SLOT_POSITION, SLOT_ORDINAL, EquippedEntry } from '@/hooks/useLineup'
-import { useFantasySnapshot, CardBreakdownEntry } from '@/hooks/useFantasySnapshot'
+import { useFantasySnapshot, CardBreakdownEntry, PlayerGameStats } from '@/hooks/useFantasySnapshot'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -14,8 +13,31 @@ const OUTPUT_COLORS: Record<string, string> = {
   fp: '#4ade80', mult: '#f472b6', floobits: '#eab308',
 }
 
-// CardTemplate.position (1-based) → the position label the game-stats strip uses.
+// CardTemplate.position (1-based) → position label.
 const POSITION_LABEL: Record<number, string> = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K' }
+
+// This week's game line as one compact, glanceable string per position.
+function compactStatLine(stats: PlayerGameStats | null | undefined, pos: string): string | null {
+  if (!stats) return null
+  if (pos === 'QB') {
+    const p = stats.passing ?? {}
+    const base = `${p.comp ?? 0}/${p.att ?? 0} · ${p.yards ?? 0} yd · ${p.tds ?? 0} TD`
+    return (p.ints ?? 0) ? `${base} · ${p.ints} INT` : base
+  }
+  if (pos === 'RB') {
+    const r = stats.rushing ?? {}
+    return `${r.carries ?? 0} car · ${r.yards ?? 0} yd · ${r.tds ?? 0} TD`
+  }
+  if (pos === 'WR' || pos === 'TE') {
+    const rc = stats.receiving ?? {}
+    return `${rc.receptions ?? 0}/${rc.targets ?? 0} rec · ${rc.yards ?? 0} yd · ${rc.tds ?? 0} TD`
+  }
+  if (pos === 'K') {
+    const k = stats.kicking ?? {}
+    return `${k.fgs ?? 0}/${k.fgAtt ?? 0} FG · ${k.longest ?? 0} yd`
+  }
+  return null
+}
 
 // The per-slot scoring line: the fielded player's week FP + that card's effect result.
 const ScoreLine: React.FC<{ weekFP?: number; bonus?: CardBreakdownEntry; noEffect: boolean }>
@@ -50,7 +72,6 @@ const Lineup: React.FC = () => {
   const snap = useFantasySnapshot(user?.id)
   const myEntry = snap.myEntry
   const [pickerSlot, setPickerSlot] = useState<LineupSlot | null>(null)
-  const [statsSlot, setStatsSlot] = useState<LineupSlot | null>(null)
 
   const slots: LineupSlot[] = [...BASE_SLOTS, ...(lineup.hasFlex ? [FLEX_SLOT] : [])]
   const equipped = Object.values(lineup.bySlot).filter((e): e is EquippedEntry => Boolean(e))
@@ -59,10 +80,6 @@ const Lineup: React.FC = () => {
   for (const p of myEntry?.players ?? []) weekFPBySlot[p.slot] = p.weekFP
   const bonusBySlotNumber: Record<number, CardBreakdownEntry> = {}
   for (const b of myEntry?.cardBreakdowns ?? []) bonusBySlotNumber[b.slotNumber] = b
-
-  // Game stats can be inspected once the lineup is locked (games running/played).
-  const canViewStats = lineup.locked || lineup.gamesActive || snap.gamesActive
-  const statsEntry = statsSlot ? lineup.bySlot[statsSlot] : undefined
 
   return (
     <div style={{ fontFamily: 'pressStart' }}>
@@ -88,12 +105,9 @@ const Lineup: React.FC = () => {
 
                 {entry ? (
                   <div style={{ position: 'relative' }}>
-                    <div style={{ cursor: (canEdit || canViewStats) ? 'pointer' : 'default' }}
-                         onClick={() => {
-                           if (canEdit) setPickerSlot(slot)
-                           else if (canViewStats) setStatsSlot(s => s === slot ? null : slot)
-                         }}
-                         title={canEdit ? 'Change card' : canViewStats ? 'View game stats' : undefined}>
+                    <div style={{ cursor: canEdit ? 'pointer' : 'default' }}
+                         onClick={() => canEdit && setPickerSlot(slot)}
+                         title={canEdit ? 'Change card' : undefined}>
                       <TradingCard card={entry.card} size="sm" noHoverLift />
                     </div>
                     {canEdit && (
@@ -113,21 +127,18 @@ const Lineup: React.FC = () => {
                 )}
 
                 <ScoreLine weekFP={weekFPBySlot[slot]} bonus={bonus} noEffect={noEffect} />
+
+                {/* This week's game line, always at a glance once the player has played */}
+                {entry && (() => {
+                  const line = compactStatLine(
+                    myEntry?.playerGameStats?.[entry.playerId],
+                    POSITION_LABEL[entry.card.position] ?? '',
+                  )
+                  return line ? <div style={statLineStyle}>{line}</div> : null
+                })()}
               </div>
             )
           })}
-        </div>
-      )}
-
-      {/* Tapped player's game stats (locked lineup) */}
-      {statsSlot && statsEntry && (
-        <div style={{ marginTop: 12 }}>
-          <PlayerGameStatStrip
-            playerName={statsEntry.card.playerName}
-            positionLabel={POSITION_LABEL[statsEntry.card.position] ?? statsSlot}
-            stats={myEntry?.playerGameStats?.[statsEntry.playerId] ?? null}
-            onClose={() => setStatsSlot(null)}
-          />
         </div>
       )}
 
@@ -160,6 +171,10 @@ const Lineup: React.FC = () => {
   )
 }
 
+const statLineStyle: React.CSSProperties = {
+  fontSize: 10, color: '#94a3b8', textAlign: 'center', lineHeight: 1.35,
+  maxWidth: 156, fontVariantNumeric: 'tabular-nums', marginTop: -2,
+}
 const clearBtn: React.CSSProperties = {
   position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%',
   border: '1px solid #475569', background: '#0f172a', color: '#cbd5e1', fontSize: 13, lineHeight: 1,
