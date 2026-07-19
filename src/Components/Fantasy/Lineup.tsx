@@ -102,11 +102,8 @@ const Lineup: React.FC = () => {
 
                 {entry ? (
                   <div style={{ position: 'relative' }}>
-                    <div style={{ cursor: canEdit ? 'pointer' : 'default' }}
-                         onClick={() => canEdit && setPickerSlot(slot)}
-                         title={canEdit ? 'Change card' : undefined}>
-                      <TradingCard card={entry.card} size="sm" noHoverLift />
-                    </div>
+                    {/* Card click flips it (front/back). Equipping is a separate control. */}
+                    <TradingCard card={entry.card} size="sm" noHoverLift />
                     {canEdit && (
                       <button onClick={(e) => { e.stopPropagation(); lineup.unequip(slot) }}
                         aria-label={`Clear ${slot}`}
@@ -121,6 +118,10 @@ const Lineup: React.FC = () => {
                     <div style={{ fontSize: 30, color: '#94a3b8', lineHeight: 1 }}>+</div>
                     <div style={{ fontSize: 10, letterSpacing: '.08em', textTransform: 'uppercase', color: '#94a3b8', marginTop: 8 }}>Add {slot}</div>
                   </button>
+                )}
+
+                {entry && canEdit && (
+                  <button onClick={() => setPickerSlot(slot)} style={changeBtn}>Change</button>
                 )}
 
                 <ScoreLine weekFP={weekFPBySlot[slot]} bonus={bonus} noEffect={noEffect} />
@@ -163,6 +164,11 @@ const Lineup: React.FC = () => {
 const statLineStyle: React.CSSProperties = {
   fontSize: 10, color: '#94a3b8', textAlign: 'center', lineHeight: 1.35,
   maxWidth: 156, fontVariantNumeric: 'tabular-nums', marginTop: -2,
+}
+const changeBtn: React.CSSProperties = {
+  padding: '4px 14px', borderRadius: 6, border: '1px solid #3b4d68',
+  background: 'rgba(59,130,246,0.12)', color: '#93c5fd', fontSize: 10, fontWeight: 700,
+  letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', fontFamily: 'pressStart',
 }
 const clearBtn: React.CSSProperties = {
   position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%',
