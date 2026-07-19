@@ -15,6 +15,11 @@ export type LineupSlot = typeof BASE_SLOTS[number] | typeof FLEX_SLOT
 export const SLOT_POSITION: Record<string, number | null> = {
   QB: 1, RB: 2, WR1: 3, WR2: 3, TE: 4, K: 5, FLEX: null,
 }
+// slot -> stable display/order ordinal (mirrors backend SLOT_TO_ORDINAL); used as
+// the projection replace_slot when picking a card for a slot.
+export const SLOT_ORDINAL: Record<string, number> = {
+  QB: 1, RB: 2, WR1: 3, WR2: 4, TE: 5, K: 6, FLEX: 7,
+}
 
 export interface EquippedEntry {
   slot: LineupSlot
