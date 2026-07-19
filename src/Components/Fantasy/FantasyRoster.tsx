@@ -668,7 +668,7 @@ export const PointsBreakdownPanel: React.FC<{
  * before games start. Collapsed by default to keep the Base Payout total
  * at eye level; click to expand the per-card breakdown.
  */
-const ProjectedWeekSummary: React.FC = () => {
+export const ProjectedWeekSummary: React.FC = () => {
   const { equipped, loading } = useCardProjection(false)
   const [open, setOpen] = useState(false)
   if (loading || !equipped) return null

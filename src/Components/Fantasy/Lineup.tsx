@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import TradingCard from '@/Components/Cards/TradingCard'
 import CardPickerModal from '@/Components/Cards/CardPickerModal'
-import { PointsBreakdownPanel } from '@/Components/Fantasy/FantasyRoster'
 import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, SLOT_POSITION, SLOT_ORDINAL, EquippedEntry } from '@/hooks/useLineup'
 import { useFantasySnapshot, CardBreakdownEntry } from '@/hooks/useFantasySnapshot'
 import { useAuth } from '@/contexts/AuthContext'
@@ -36,44 +35,22 @@ const ScoreLine: React.FC<{ weekFP?: number; bonus?: CardBreakdownEntry; noEffec
   )
 }
 
+// The position-locked lineup rail: all slots (QB/RB/WR1/WR2/TE/K + optional FLEX)
+// in one row, each card showing the fielded player's week FP + its card bonus.
 const Lineup: React.FC = () => {
   const { user } = useAuth()
   const lineup = useLineup()
   const snap = useFantasySnapshot(user?.id)
   const myEntry = snap.myEntry
   const [pickerSlot, setPickerSlot] = useState<LineupSlot | null>(null)
-  const [viewMode, setViewMode] = useState<'roster' | 'breakdown'>('roster')
-
-  // Tutorial hooks (mirror the old FantasyRoster event contract).
-  useEffect(() => {
-    const showRoster = () => setViewMode('roster')
-    const showBreakdown = () => setViewMode('breakdown')
-    window.addEventListener('floosball:show-roster', showRoster)
-    window.addEventListener('floosball:show-breakdown', showBreakdown)
-    return () => {
-      window.removeEventListener('floosball:show-roster', showRoster)
-      window.removeEventListener('floosball:show-breakdown', showBreakdown)
-    }
-  }, [])
 
   const slots: LineupSlot[] = [...BASE_SLOTS, ...(lineup.hasFlex ? [FLEX_SLOT] : [])]
   const equipped = Object.values(lineup.bySlot).filter((e): e is EquippedEntry => Boolean(e))
 
-  // Scoring lookups from the snapshot.
   const weekFPBySlot: Record<string, number> = {}
   for (const p of myEntry?.players ?? []) weekFPBySlot[p.slot] = p.weekFP
   const bonusBySlotNumber: Record<number, CardBreakdownEntry> = {}
   for (const b of myEntry?.cardBreakdowns ?? []) bonusBySlotNumber[b.slotNumber] = b
-
-  // Show the Roster / Breakdown toggle once there's a score to explain.
-  const hasScoring = snap.gamesActive || lineup.locked || (myEntry?.weekTotal ?? 0) > 0
-  const showBreakdown = hasScoring && viewMode === 'breakdown'
-
-  const playerSummaries = (myEntry?.players ?? []).map(p => ({
-    playerName: p.playerName,
-    position: p.position || p.slot,
-    weekFP: p.weekFP,
-  }))
 
   return (
     <div style={{ fontFamily: 'pressStart' }}>
@@ -81,43 +58,9 @@ const Lineup: React.FC = () => {
         <div style={{ color: '#f87171', fontSize: 11, padding: '4px 4px 10px' }}>{lineup.error}</div>
       )}
 
-      {/* Roster / Breakdown tab bar — only when there's scoring to show */}
-      {hasScoring && (
-        <div data-tour="fantasy-breakdown" style={{ display: 'flex', justifyContent: 'center', gap: 4, marginBottom: 10 }}>
-          {(['roster', 'breakdown'] as const).map(v => (
-            <button
-              key={v}
-              onClick={() => setViewMode(v)}
-              style={{
-                padding: '5px 18px', borderRadius: 6, fontSize: 12, fontWeight: 600,
-                fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s', border: 'none',
-                backgroundColor: viewMode === v ? 'rgba(167,139,250,0.15)' : 'transparent',
-                color: viewMode === v ? '#a78bfa' : '#64748b',
-              }}
-            >
-              {v === 'roster' ? 'Roster' : 'Breakdown'}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Breakdown view */}
-      {showBreakdown && myEntry ? (
-        <PointsBreakdownPanel
-          playerSummaries={playerSummaries}
-          breakdowns={myEntry.cardBreakdowns}
-          equationSummary={myEntry.equationSummary}
-          weekPlayerFP={myEntry.weekPlayerFP}
-          weekCardBonus={myEntry.weekCardBonus}
-          seasonEarnedFP={myEntry.seasonEarnedFP}
-          seasonCardBonus={myEntry.seasonCardBonus}
-          seasonTotal={myEntry.seasonTotal}
-          modifier={snap.modifier}
-        />
-      ) : lineup.loading ? (
+      {lineup.loading ? (
         <div style={{ color: '#64748b', fontSize: 12, padding: 24, textAlign: 'center' }}>Loading your lineup…</div>
       ) : (
-        /* Roster rail */
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
           {slots.map(slot => {
             const entry = lineup.bySlot[slot]
@@ -161,12 +104,12 @@ const Lineup: React.FC = () => {
         </div>
       )}
 
-      {lineup.locked && !showBreakdown && (
+      {lineup.locked && (
         <div style={{ textAlign: 'center', fontSize: 10, color: '#64748b', marginTop: 12 }}>
           Lineup is locked — cards lock when games start.
         </div>
       )}
-      {!lineup.hasFlex && !showBreakdown && (
+      {!lineup.hasFlex && (
         <div style={{ textAlign: 'center', fontSize: 10, color: '#64748b', marginTop: 8 }}>
           Equip an MVP card or the Accession power-up to unlock the FLEX slot.
         </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import Lineup from '@/Components/Fantasy/Lineup'
+import { ScoringPane } from '@/Components/Fantasy/ScoringPane'
 import { FantasyLeaderboard } from '@/Components/Fantasy/FantasyLeaderboard'
 import ShopModal from '@/Components/Shop/ShopModal'
 import HoverTooltip from '@/Components/HoverTooltip'
@@ -393,9 +394,9 @@ const FantasyPage: React.FC = () => {
       fontFamily: 'pressStart',
     }}>
       <div style={{
-        maxWidth: '1100px',
+        maxWidth: seasonOver ? '1100px' : '1280px',
         margin: '0 auto',
-        padding: isMobile ? '10px' : '14px 16px',
+        padding: isMobile ? '10px' : '14px 20px',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
@@ -518,14 +519,24 @@ const FantasyPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Fusion: one position-locked lineup (equipped cards ARE the roster) */}
+            {/* Fusion dashboard: the position-locked lineup rail on top (equipped
+                cards ARE the roster), then scoring + leaderboard side by side. */}
             <div data-tour="fantasy-cards">
               <Lineup />
             </div>
 
-            {/* Leaderboard */}
-            <div data-tour="fantasy-leaderboard" style={{ minWidth: 0 }}>
-              <FantasyLeaderboard />
+            <div style={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              gap: '16px',
+              alignItems: 'flex-start',
+            }}>
+              <div data-tour="fantasy-breakdown" style={{ flex: isMobile ? undefined : '1 1 0', width: isMobile ? '100%' : undefined, minWidth: 0 }}>
+                <ScoringPane />
+              </div>
+              <div data-tour="fantasy-leaderboard" style={{ flex: isMobile ? undefined : '1 1 0', width: isMobile ? '100%' : undefined, minWidth: 0 }}>
+                <FantasyLeaderboard />
+              </div>
             </div>
           </>
         )}
