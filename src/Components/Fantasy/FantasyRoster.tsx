@@ -94,6 +94,7 @@ function getBreakdownBehavior(b: CardBreakdownEntry): keyof typeof BEHAVIOR_TAGS
 }
 
 const EDITION_SHORT: Record<string, string> = {
+  standard: 'STND',
   base: 'BASE',
   holographic: 'HOLO',
   prismatic: 'PRSM',

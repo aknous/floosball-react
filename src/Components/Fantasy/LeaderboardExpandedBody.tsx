@@ -56,11 +56,15 @@ interface Props {
 const cardCache = new Map<string, EquippedCardEntry[]>()
 
 const EDITION_SHORT: Record<string, string> = {
+  standard: 'STND',
   base: 'BASE',
   holographic: 'HOLO',
   prismatic: 'PRSM',
   diamond: 'DMND',
 }
+
+// Signed FP: "+12", "0", "-1" (never "+-1").
+const fmtSignedFP = (n: number) => `${n > 0 ? '+' : ''}${n.toFixed(0)}`
 
 const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
 // Small gold tier chip — only shown for upgraded cards (tier 2+).
@@ -209,11 +213,11 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
             {opts.playerName}
           </span>
           <span style={{
-            color: opts.muted ? '#64748b' : '#22c55e', fontWeight: 700,
+            color: opts.muted ? '#64748b' : ((opts.playerFP ?? 0) < 0 ? '#ef4444' : '#22c55e'), fontWeight: 700,
             minWidth: isMobile ? 34 : 42, textAlign: 'right', flexShrink: 0,
             fontVariantNumeric: 'tabular-nums' as const,
           }}>
-            {opts.playerFP != null ? `+${opts.playerFP.toFixed(0)}` : '—'}
+            {opts.playerFP != null ? fmtSignedFP(opts.playerFP) : '—'}
           </span>
         </div>
 
