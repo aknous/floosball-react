@@ -459,7 +459,8 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                       {projByTemplateId.get(card.templateId) && (
                         <ProjectionPillInline proj={projByTemplateId.get(card.templateId)!} />
                       )}
-                      {(card.ownedEffectCount ?? 0) > 0 && (
+                      {/* No-effect (standard) cards can't be upgraded, so the owned count is moot */}
+                      {card.edition !== 'standard' && (card.ownedEffectCount ?? 0) > 0 && (
                         <span
                           style={{
                             fontSize: '10px', fontFamily: 'pressStart', fontWeight: 600,

@@ -621,7 +621,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                   card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
                                   size="sm"
                                 />
-                                {(card.ownedEffectCount ?? 0) > 0 && (
+                                {/* No-effect (standard) cards can't be upgraded, so the owned count is moot */}
+                                {card.edition !== 'standard' && (card.ownedEffectCount ?? 0) > 0 && (
                                   <span style={{
                                     position: 'absolute', top: '4px', left: '50%', transform: 'translateX(-50%)',
                                     fontSize: isMobile ? '9px' : '10px', fontFamily: 'pressStart', fontWeight: 600,
