@@ -1,11 +1,9 @@
 import React, { useState } from 'react'
 import TradingCard from '@/Components/Cards/TradingCard'
 import CardPickerModal from '@/Components/Cards/CardPickerModal'
-import { FavoriteTeamPanel } from '@/Components/Fantasy/FavoriteTeamPanel'
 import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, SLOT_POSITION, SLOT_ORDINAL, EquippedEntry } from '@/hooks/useLineup'
 import { useFantasySnapshot, CardBreakdownEntry, PlayerGameStats } from '@/hooks/useFantasySnapshot'
 import { useAuth } from '@/contexts/AuthContext'
-import { useIsMobile } from '@/hooks/useIsMobile'
 
 const EMPTY_ROSTER_IDS: Set<number> = new Set()
 
@@ -67,7 +65,6 @@ const ScoreLine: React.FC<{ weekFP?: number; bonus?: CardBreakdownEntry; noEffec
 // in one row, each card showing the fielded player's week FP + its card bonus.
 const Lineup: React.FC = () => {
   const { user } = useAuth()
-  const isMobile = useIsMobile()
   const lineup = useLineup()
   const snap = useFantasySnapshot(user?.id)
   const myEntry = snap.myEntry
@@ -139,14 +136,6 @@ const Lineup: React.FC = () => {
               </div>
             )
           })}
-        </div>
-      )}
-
-      {/* Favorite team — record, streak, playoff position */}
-      {myEntry?.favoriteTeamData && (
-        <div style={{ marginTop: 14 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>Your Team</div>
-          <FavoriteTeamPanel ft={myEntry.favoriteTeamData} isMobile={isMobile} />
         </div>
       )}
 
