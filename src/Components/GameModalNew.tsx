@@ -456,8 +456,37 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const pts: { pos: number; wp: number }[] = [{ pos: 0, wp: 50 }]
     if (wpNoClock) {
       const n = wpPlays.length
+      // Innings: position each play at its ACTUAL at-bat progress (completed innings +
+      // half + try), so the line stops at the current inning. The old ordinal spread
+      // mapped the last play to the full axis, so a game in inning 2 ran into inning 3.
+      // Plays share a try bucket (a try = one drive), so spread them within the try's
+      // width to keep the line advancing smoothly. Frames (no `inning`) keep the ordinal
+      // spread. Mirrors the backend InningsFormat.adjustGameProgress.
+      const triesPer = gameData?.innings?.triesPerInning || 3
+      const tryWidth = 0.5 / triesPer
+      const bucketOf = (p: any): number | null => {
+        if (p.inning == null) return null
+        const halfFrac = p.inningHalf === 'bottom' ? 0.5 : 0
+        const tryFrac = Math.max(0, (p.inningTry || 1) - 1) * tryWidth
+        return (p.inning - 1) + halfFrac + tryFrac
+      }
+      const counts = new Map<number, number>()
+      wpPlays.forEach((p: any) => {
+        const b = bucketOf(p)
+        if (b != null) counts.set(b, (counts.get(b) || 0) + 1)
+      })
+      const seen = new Map<number, number>()
       wpPlays.forEach((p: any, i: number) => {
-        pts.push({ pos: n <= 0 ? 0 : ((i + 1) / n) * wpPeriods, wp: p.homeWinProbability })
+        const b = bucketOf(p)
+        if (b == null) {
+          pts.push({ pos: n <= 0 ? 0 : ((i + 1) / n) * wpPeriods, wp: p.homeWinProbability })
+          return
+        }
+        const k = seen.get(b) || 0
+        seen.set(b, k + 1)
+        const total = counts.get(b) || 1
+        const frac = total > 1 ? (k + 1) / total : 1
+        pts.push({ pos: Math.min(b + frac * tryWidth, wpPeriods), wp: p.homeWinProbability })
       })
       return pts
     }
@@ -479,7 +508,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       pts.push({ pos: elapsed <= 3600 ? elapsed / 900 : 4 + (elapsed - 3600) / 600, wp: p.homeWinProbability })
     })
     return pts
-  }, [wpPlays, wpNoClock, wpPeriods])
+  }, [wpPlays, wpNoClock, wpPeriods, gameData?.innings?.triesPerInning])
 
   // Shared x-axis descriptor: how many equal-width sections, where the dividers fall
   // (in section units), the period labels, and which divider is the thicker
