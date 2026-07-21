@@ -413,10 +413,24 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   const wpNoClock = wpPeriods > 0
 
   const wpPlays = useMemo(() => {
-    return (displayPlays as any[])
+    const chronological = (displayPlays as any[])
       .filter(p => !p.event && p.homeWinProbability != null && (wpNoClock || (p.quarter && p.timeRemaining)))
       .slice()
       .reverse()
+    // Order by playNumber, not by arrival. The feed list is newest-first by INSERTION,
+    // and a play can land out of position: the backend re-emits a play at quarter
+    // boundaries / turnovers, and an unmatched re-send is prepended (mergePlay) — so an
+    // OLD play can sit at the head of the list. Reversed, that plotted a low playNumber
+    // after high ones and the line jumped backwards. Sorting makes the chart independent
+    // of arrival order and of the REST/WS merge. Fractional playNumbers (cutaways +0.5,
+    // contest beats +0.9) sort naturally beside the play they belong to; if any entry
+    // lacks a number, leave the order alone rather than sort against undefined.
+    if (chronological.some(p => typeof p.playNumber !== 'number')) return chronological
+    const sorted = chronological.sort((a, b) => a.playNumber - b.playNumber)
+    // A re-send that slipped past the merge leaves two entries for one play; plotted,
+    // that's two points at the same x and a vertical spike. Keep the last (the sort is
+    // stable, so for equal playNumbers that's the most recently received copy).
+    return sorted.filter((p, i) => i === sorted.length - 1 || sorted[i + 1].playNumber !== p.playNumber)
   }, [displayPlays, wpNoClock])
 
   const isHighlightPlay = (play: any) =>
