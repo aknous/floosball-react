@@ -1696,9 +1696,22 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               const sameTeamHasBall = !lastPlay || lastPlay.offensiveTeam === dPossession
 
               // Start of last play: move backwards from current ball in play direction
-              const startAbsYfl = ballAbsYfl != null && lastPlay != null
-                ? ballAbsYfl - yardsGained * lastPlayDir
-                : null
+              // Normally the ball sits at the END of the play, so the start is the ball
+              // walked back by the yards gained. A TOUCHDOWN breaks that: under Contested
+              // Scoring the TD is credited on the CONTEST beat, which gains no yards of
+              // its own (the yardage belonged to the provisional play before it), so
+              // every scoring play reports yardsGained 0. Walking back from the end zone
+              // by 0 collapsed the trajectory onto the goal line. Anchor a score on the
+              // play's OWN line of scrimmage instead — exact, and independent of whether
+              // yardsGained survived the contest.
+              const losYteOfPlay = lastPlay ? deriveYardsToEndzone(lastPlay) : null
+              const startAbsYfl = (() => {
+                if (ballAbsYfl == null || lastPlay == null) return null
+                if (isTD && losYteOfPlay != null) {
+                  return lastPlayDir === 1 ? 110 - losYteOfPlay : 10 + losYteOfPlay
+                }
+                return ballAbsYfl - yardsGained * lastPlayDir
+              })()
               const startX = startAbsYfl != null ? toX(startAbsYfl) : null
 
               // First down marker: the line to gain, measured from the line of
