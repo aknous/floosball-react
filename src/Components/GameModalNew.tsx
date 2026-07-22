@@ -1211,6 +1211,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 </span>
               </div>
             )}
+            {/* Divider — only when BOTH sides are present, so it never floats next
+                to a single element (no cheer bar off a live game, no count when
+                signed out). */}
+            {viewerCount != null && viewerCount > 0 && isLive && (
+              <div style={{
+                width: '1px', height: '18px', backgroundColor: '#334155', flexShrink: 0
+              }} />
+            )}
             {isLive && (
               <CheerBar
                 gameId={gameId}
