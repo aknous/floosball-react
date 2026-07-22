@@ -1646,7 +1646,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               const yardsGained = lastPlay?.yardsGained ?? 0
               // playType = play category: Run, Pass, FieldGoal, Punt, Kneel, Spike
               const playType = (lastPlay?.playType ?? '').toUpperCase()
-              const isTD = !!lastPlay?.isTouchdown
+              // Contested Scoring beat 1: the ball REACHED the end zone but the TD is
+              // not banked until the contest resolves, so isTouchdown is still false
+              // on this play. For drawing purposes the ball got there, so it anchors
+              // like a touchdown — otherwise the trajectory stopped short of the goal
+              // line on a play the feed calls a provisional score.
+              const isProvisional = !!(lastPlay as any)?.isProvisionalScore
+                || lastPlay?.playResult === 'Provisional Score'
+              const isTD = !!lastPlay?.isTouchdown || isProvisional
               const isTurnover = !!lastPlay?.isTurnover
               // Sideline Goals hoop shot — the last play was a throw at a hoop.
               const isHoopShot = String(lastPlay?.playResult ?? '').includes('Sideline Goal')
