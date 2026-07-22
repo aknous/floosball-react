@@ -107,6 +107,14 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             plays: mergedPlays,
             gameStats: gameData.gameStats ?? game.gameStats,
             matchupPreview: gameData.matchupPreview ?? game.matchupPreview,
+            // Per-format box-score state (innings line score, frames results, chess-clock
+            // budgets). This used to arrive ONLY on live game_state events, so a refresh
+            // or opening a finished game rendered an empty breakdown. The detail endpoint
+            // now returns it; keep whatever we already have if the fetch doesn't carry it.
+            innings: gameData.innings ?? (game as any).innings,
+            frames: gameData.frames ?? (game as any).frames,
+            chessClock: gameData.chessClock ?? (game as any).chessClock,
+            playLimit: gameData.playLimit ?? (game as any).playLimit,
             // Persist the reactions aggregate so reopening the modal shows
             // existing reactions instead of an empty bucket. WS updates
             // continue to merge in over this baseline.

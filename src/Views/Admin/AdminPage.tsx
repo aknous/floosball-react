@@ -472,6 +472,57 @@ const AdminContent: React.FC<{
     }
   }
 
+  // Discord name submissions awaiting review
+  type NameSubmission = {
+    id: number; name: string; status: string
+    submittedBy: string | null; createdAt: string | null
+  }
+  const [subs, setSubs] = useState<NameSubmission[]>([])
+  const [subCounts, setSubCounts] = useState<Record<string, number>>({})
+  const [subFilter, setSubFilter] = useState<'pending' | 'approved' | 'rejected'>('pending')
+  const [subsError, setSubsError] = useState<string | null>(null)
+  const [subsBusy, setSubsBusy] = useState(false)
+
+  const fetchSubmissions = React.useCallback(async (status = subFilter) => {
+    setSubsError(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/names/submissions?status=${status}`, {
+        headers: await buildHeaders(),
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      const data = await res.json()
+      setSubs(data.submissions || [])
+      setSubCounts(data.counts || {})
+    } catch (e: any) {
+      setSubsError(e.message)
+    }
+    // buildHeaders is stable for a given auth state; subFilter is passed explicitly
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subFilter])
+
+  const reviewSubmissions = async (ids: number[], action: 'approve' | 'reject') => {
+    if (!ids.length) return
+    setSubsBusy(true)
+    setSubsError(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/names/submissions/review`, {
+        method: 'POST', headers: await buildHeaders(), body: JSON.stringify({ ids, action }),
+      })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      const data = await res.json()
+      // A name taken while it sat in the queue stays pending — surface that rather than
+      // letting the row silently disappear.
+      if (data.unavailable?.length) {
+        setSubsError(`No longer available (left pending): ${data.unavailable.join(', ')}`)
+      }
+      await fetchSubmissions(subFilter)
+    } catch (e: any) {
+      setSubsError(e.message)
+    } finally {
+      setSubsBusy(false)
+    }
+  }
+
   // Player creation
   const [position, setPosition] = useState('QB')
   const [tier, setTier] = useState('Random')
@@ -777,6 +828,14 @@ const AdminContent: React.FC<{
 
   type Section = 'monitor' | 'analytics' | 'achievements' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users' | 'settings'
   const [activeSection, setActiveSection] = useState<Section>('monitor')
+
+  // Load the Discord submission queue lazily — only when the Names tab is open, and
+  // again whenever the status filter changes. (Declared here rather than beside the
+  // other name state because it reads activeSection.)
+  React.useEffect(() => {
+    if (activeSection === 'names') fetchSubmissions(subFilter)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection, subFilter])
 
   // Auto-refresh monitor every 30s when active
   useEffect(() => {
@@ -1829,6 +1888,103 @@ const AdminContent: React.FC<{
         {namesError && (
           <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{namesError}</div>
         )}
+
+        {/* Discord suggestions — these do NOT enter the pool until approved here. */}
+        <div style={{ borderTop: '1px solid #334155', marginTop: '24px', paddingTop: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '700' }}>
+              Submitted from Discord
+              {subCounts.pending ? (
+                <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: '600',
+                  color: '#0f172a', background: '#f59e0b', borderRadius: '10px', padding: '2px 8px' }}>
+                  {subCounts.pending} pending
+                </span>
+              ) : null}
+            </h2>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {(['pending', 'approved', 'rejected'] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => setSubFilter(s)}
+                  style={{
+                    ...btnStyle,
+                    padding: '4px 10px', fontSize: '12px', textTransform: 'capitalize',
+                    background: subFilter === s ? '#334155' : 'transparent',
+                    color: subFilter === s ? '#e2e8f0' : '#94a3b8',
+                  }}
+                >
+                  {s}{subCounts[s] != null ? ` (${subCounts[s]})` : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '12px' }}>
+            Names suggested with <code>/name</code> by Discord-linked users. Approving adds the
+            name to the pool with the same checks as adding it above. Rejected names are kept on
+            record so they can't be resubmitted.
+          </p>
+
+          {subFilter === 'pending' && subs.length > 1 && (
+            <button
+              onClick={() => reviewSubmissions(subs.map(s => s.id), 'approve')}
+              disabled={subsBusy}
+              style={{ ...btnStyle, marginBottom: '10px', opacity: subsBusy ? 0.5 : 1 }}
+            >
+              Approve all {subs.length}
+            </button>
+          )}
+
+          {subs.length === 0 ? (
+            <div style={{ fontSize: '13px', color: '#94a3b8' }}>
+              No {subFilter} submissions.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {subs.map(s => (
+                <div key={s.id} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  gap: '12px', padding: '8px 10px', background: '#1e293b', borderRadius: '6px',
+                }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600' }}>{s.name}</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                      {s.submittedBy || 'unknown'}
+                      {s.createdAt ? ` · ${new Date(s.createdAt).toLocaleDateString()}` : ''}
+                    </div>
+                  </div>
+                  {s.status === 'pending' ? (
+                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                      <button
+                        onClick={() => reviewSubmissions([s.id], 'approve')}
+                        disabled={subsBusy}
+                        style={{ ...btnStyle, padding: '4px 12px', fontSize: '12px',
+                          background: '#16a34a', opacity: subsBusy ? 0.5 : 1 }}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => reviewSubmissions([s.id], 'reject')}
+                        disabled={subsBusy}
+                        style={{ ...btnStyle, padding: '4px 12px', fontSize: '12px',
+                          background: '#7f1d1d', opacity: subsBusy ? 0.5 : 1 }}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: '12px', color: s.status === 'approved' ? '#22c55e' : '#f87171',
+                      textTransform: 'capitalize', flexShrink: 0 }}>
+                      {s.status}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {subsError && (
+            <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{subsError}</div>
+          )}
+        </div>
       </div>}
 
       {/* Create Players */}
