@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useGames } from '@/contexts/GamesContext'
+import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { XIcon } from '@heroicons/react/solid'
 import PlayerHoverCard from './PlayerHoverCard'
 import TeamHoverCard from './TeamHoverCard'
@@ -582,6 +583,27 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     modalOpenedAtRef.current = Date.now()
     fetchGamePlays(gameId)
   }, [gameId, fetchGamePlays])
+
+  // ── Viewer count ────────────────────────────────────────────────────────
+  // Tell the server this game is open so it can count watchers, and clear it on
+  // close. The count is per DISTINCT USER, so this viewer's own tabs collapse to
+  // one and a signed-out visitor isn't counted.
+  const { subscribe: subscribeSeason, watchGame } = useSeasonWebSocket()
+  const [viewerCount, setViewerCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    watchGame(gameId)
+    return () => { watchGame(null) }
+  }, [gameId, watchGame])
+
+  useEffect(() => {
+    setViewerCount(null)   // don't carry a count across a game switch
+    return subscribeSeason((msg: any) => {
+      if (msg?.event === 'viewer_count' && String(msg.gameId) === String(gameId)) {
+        setViewerCount(Number(msg.count) || 0)
+      }
+    })
+  }, [gameId, subscribeSeason])
 
   // Helper function to render a play or event message
   const renderPlay = (play: any, keyPrefix: string, index: number) => {
@@ -1201,6 +1223,24 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
             {/* Scores */}
             <div style={{ padding: '16px', backgroundColor: '#1e293b' }}>
+
+              {/* Watching now. Hidden at 0 — that only happens signed out, and an
+                  empty count reads worse than no badge at all. */}
+              {viewerCount != null && viewerCount > 0 && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  paddingBottom: '10px', color: '#94a3b8', fontSize: '12px'
+                }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                       style={{ width: '14px', height: '14px', flexShrink: 0 }}>
+                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                    {viewerCount} watching
+                  </span>
+                </div>
+              )}
 
               {/* Home team — outer flex row holds RallyButton and score
                   OUTSIDE the TeamHoverCard wrapper so hovering the
