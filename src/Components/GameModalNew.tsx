@@ -1190,18 +1190,38 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           borderBottom: '1px solid #334155',
           flexShrink: 0
         }}>
-          {/* Cheer bar lives in the existing header row (live games only) so it
-              adds no height and never pushes the body / WP graph down. */}
-          {isLive ? (
-            <CheerBar
-              gameId={gameId}
-              isLive={isLive}
-              playCount={(gameData?.plays as any[])?.filter((p: any) => !p.event && !p.isSidelineCutaway).length ?? 0}
-              score={(gameData?.homeScore ?? 0) + (gameData?.awayScore ?? 0)}
-              bigPlayCount={(gameData?.plays as any[])?.filter((p: any) => p.isBigPlay && !p.isSidelineCutaway).length ?? 0}
-              compact
-            />
-          ) : <div />}
+          {/* Left side of the header, opposite the close button: the watching count,
+              then the cheer bar. The cheer bar lives in this existing row (live games
+              only) so it adds no height and never pushes the body / WP graph down. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+            {/* Watching now. Hidden at 0 — that only happens signed out, and an empty
+                count reads worse than no badge at all. */}
+            {viewerCount != null && viewerCount > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                color: '#94a3b8', fontSize: '12px', flexShrink: 0
+              }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                     style={{ width: '14px', height: '14px', flexShrink: 0 }}>
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {viewerCount} watching
+                </span>
+              </div>
+            )}
+            {isLive && (
+              <CheerBar
+                gameId={gameId}
+                isLive={isLive}
+                playCount={(gameData?.plays as any[])?.filter((p: any) => !p.event && !p.isSidelineCutaway).length ?? 0}
+                score={(gameData?.homeScore ?? 0) + (gameData?.awayScore ?? 0)}
+                bigPlayCount={(gameData?.plays as any[])?.filter((p: any) => p.isBigPlay && !p.isSidelineCutaway).length ?? 0}
+                compact
+              />
+            )}
+          </div>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
             <XIcon style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
           </button>
@@ -1223,24 +1243,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
             {/* Scores */}
             <div style={{ padding: '16px', backgroundColor: '#1e293b' }}>
-
-              {/* Watching now. Hidden at 0 — that only happens signed out, and an
-                  empty count reads worse than no badge at all. */}
-              {viewerCount != null && viewerCount > 0 && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                  paddingBottom: '10px', color: '#94a3b8', fontSize: '12px'
-                }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                       style={{ width: '14px', height: '14px', flexShrink: 0 }}>
-                    <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                  <span style={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {viewerCount} watching
-                  </span>
-                </div>
-              )}
 
               {/* Home team — outer flex row holds RallyButton and score
                   OUTSIDE the TeamHoverCard wrapper so hovering the
