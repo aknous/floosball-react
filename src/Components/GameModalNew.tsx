@@ -1651,6 +1651,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               // Sideline Goals hoop shot — the last play was a throw at a hoop.
               const isHoopShot = String(lastPlay?.playResult ?? '').includes('Sideline Goal')
               const hoopMade = lastPlay?.playResult === 'Sideline Goal Good'
+              // Post-TD conversion — the 2-pt try or any higher Conversion-Ladder rung.
+              // conversionPoints is set for every rung (2/3/4/5); the playResult check
+              // covers replayed rows that predate that field.
+              const convResult = String(lastPlay?.playResult ?? '')
+              const isConversion = (lastPlay as any)?.conversionPoints != null
+                || convResult.includes('Conversion') || convResult.includes('-Pt')
+              const conversionMade = isConversion && !convResult.includes('No Good')
 
               // Which direction did the last play go?
               // Home team plays go right (+1), away team plays go left (-1)
@@ -1752,6 +1759,32 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   playStroke = fgGood ? '#4ade80' : '#ef4444'  // miss = turnover
                   playDash = '5,4'
                   playEndX = fgEndX
+                }
+              } else if (isConversion && lastPlay) {
+                // A conversion is snapped from its rung's distance (2-pt from the 2, up
+                // to the 5-pt rung from the 15) and game state is NOT advanced past that
+                // snap — yardsToEndzone still reports the line of scrimmage when this
+                // renders. The generic branch below assumes the ball sits at the END of
+                // the play and derives the start as ball-minus-yards-gained, which drew
+                // the try a full rung-distance BEHIND its actual LOS. Barely visible on a
+                // 2-pt, obvious on the 5-pt from the 15. Anchor on the play's own LOS and
+                // run forward to the goal line on a make, or to where it died on a miss.
+                const losYte = deriveYardsToEndzone(lastPlay)
+                const losAbs = losYte != null
+                  ? (lastPlayDir === 1 ? 110 - losYte : 10 + losYte)
+                  : ballAbsYfl
+                const convStartX = losAbs != null ? toX(losAbs) : ballX
+                const endAbs = conversionMade
+                  ? (lastPlayDir === 1 ? 110 : 10)
+                  : (losAbs != null ? losAbs + yardsGained * lastPlayDir : null)
+                const convEndX = endAbs != null ? toX(endAbs) : convStartX
+                if (convStartX != null && convEndX != null) {
+                  const midPX = (convStartX + convEndX) / 2
+                  const arcH = Math.min(Math.abs(convEndX - convStartX) * 0.35, 45)
+                  playPath = `M${convStartX},${midY} Q${midPX},${midY - arcH} ${convEndX},${midY}`
+                  playStroke = conversionMade ? '#22c55e' : '#f59e0b'
+                  playDash = '7,3'
+                  playEndX = convEndX
                 }
               } else if (ballX != null && startX != null && Math.abs(yardsGained) >= 1) {
                 const midPX = (startX + ballX) / 2
