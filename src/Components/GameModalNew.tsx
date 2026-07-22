@@ -1646,7 +1646,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               const yardsGained = lastPlay?.yardsGained ?? 0
               // playType = play category: Run, Pass, FieldGoal, Punt, Kneel, Spike
               const playType = (lastPlay?.playType ?? '').toUpperCase()
-              const isTD = !!lastPlay?.isTouchdown
+              // Contested Scoring beat 1: the ball REACHED the end zone but the TD is
+              // not banked until the contest resolves, so isTouchdown is still false
+              // on this play. For drawing purposes the ball got there, so it anchors
+              // like a touchdown — otherwise the trajectory stopped short of the goal
+              // line on a play the feed calls a provisional score.
+              const isProvisional = !!(lastPlay as any)?.isProvisionalScore
+                || lastPlay?.playResult === 'Provisional Score'
+              const isTD = !!lastPlay?.isTouchdown || isProvisional
               const isTurnover = !!lastPlay?.isTurnover
               // Sideline Goals hoop shot — the last play was a throw at a hoop.
               const isHoopShot = String(lastPlay?.playResult ?? '').includes('Sideline Goal')
@@ -1689,9 +1696,22 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               const sameTeamHasBall = !lastPlay || lastPlay.offensiveTeam === dPossession
 
               // Start of last play: move backwards from current ball in play direction
-              const startAbsYfl = ballAbsYfl != null && lastPlay != null
-                ? ballAbsYfl - yardsGained * lastPlayDir
-                : null
+              // Normally the ball sits at the END of the play, so the start is the ball
+              // walked back by the yards gained. A TOUCHDOWN breaks that: under Contested
+              // Scoring the TD is credited on the CONTEST beat, which gains no yards of
+              // its own (the yardage belonged to the provisional play before it), so
+              // every scoring play reports yardsGained 0. Walking back from the end zone
+              // by 0 collapsed the trajectory onto the goal line. Anchor a score on the
+              // play's OWN line of scrimmage instead — exact, and independent of whether
+              // yardsGained survived the contest.
+              const losYteOfPlay = lastPlay ? deriveYardsToEndzone(lastPlay) : null
+              const startAbsYfl = (() => {
+                if (ballAbsYfl == null || lastPlay == null) return null
+                if (isTD && losYteOfPlay != null) {
+                  return lastPlayDir === 1 ? 110 - losYteOfPlay : 10 + losYteOfPlay
+                }
+                return ballAbsYfl - yardsGained * lastPlayDir
+              })()
               const startX = startAbsYfl != null ? toX(startAbsYfl) : null
 
               // First down marker: the line to gain, measured from the line of

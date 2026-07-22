@@ -41,6 +41,10 @@ export interface CurrentGame {
   }
   possession?: string  // Team ID that has possession
   down?: number
+  // Per-game downs-per-series — Criticality chaos can set this to 3 or 5, so it
+  // differs from the season-wide /api/rules value and the UI needs the game's own
+  // to know which down is the last (do-or-die) one.
+  downsPerSeries?: number
   yardsToFirstDown?: number
   yardLine?: string  // e.g., "BAL 25"
   yardsToEndzone?: number
