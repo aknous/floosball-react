@@ -1193,7 +1193,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           {/* Left side of the header, opposite the close button: the watching count,
               then the cheer bar. The cheer bar lives in this existing row (live games
               only) so it adds no height and never pushes the body / WP graph down. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '28px', minWidth: 0 }}>
             {/* Watching now. Hidden at 0 — that only happens signed out, and an empty
                 count reads worse than no badge at all. */}
             {viewerCount != null && viewerCount > 0 && (
