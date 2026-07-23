@@ -107,6 +107,14 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             plays: mergedPlays,
             gameStats: gameData.gameStats ?? game.gameStats,
             matchupPreview: gameData.matchupPreview ?? game.matchupPreview,
+            // Per-format box-score state (innings line score, frames results, chess-clock
+            // budgets). This used to arrive ONLY on live game_state events, so a refresh
+            // or opening a finished game rendered an empty breakdown. The detail endpoint
+            // now returns it; keep whatever we already have if the fetch doesn't carry it.
+            innings: gameData.innings ?? (game as any).innings,
+            frames: gameData.frames ?? (game as any).frames,
+            chessClock: gameData.chessClock ?? (game as any).chessClock,
+            playLimit: gameData.playLimit ?? (game as any).playLimit,
             // Persist the reactions aggregate so reopening the modal shows
             // existing reactions instead of an empty bucket. WS updates
             // continue to merge in over this baseline.
@@ -302,6 +310,11 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               quarter: gsEvt.quarter,
               timeRemaining: gsEvt.timeRemaining,
               down: gsEvt.down ?? undefined,
+              // Per-game downs-per-series. Criticality chaos can set this to 3 or 5,
+              // differing from the season-wide /api/rules value. This merge is an
+              // explicit allowlist, so omitting it dropped the field on every update
+              // and the feed coloured 4th down as the do-or-die down in a 5-down game.
+              downsPerSeries: (gsEvt as any).downsPerSeries ?? (curGame as any).downsPerSeries,
               yardsToFirstDown: gsEvt.distance ?? undefined,
               yardLine: gsEvt.yardLine ?? undefined,
               yardsToEndzone: gsEvt.yardsToEndzone ?? undefined,

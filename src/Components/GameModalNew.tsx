@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useGames } from '@/contexts/GamesContext'
+import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { XIcon } from '@heroicons/react/solid'
 import PlayerHoverCard from './PlayerHoverCard'
 import TeamHoverCard from './TeamHoverCard'
@@ -413,10 +414,24 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   const wpNoClock = wpPeriods > 0
 
   const wpPlays = useMemo(() => {
-    return (displayPlays as any[])
+    const chronological = (displayPlays as any[])
       .filter(p => !p.event && p.homeWinProbability != null && (wpNoClock || (p.quarter && p.timeRemaining)))
       .slice()
       .reverse()
+    // Order by playNumber, not by arrival. The feed list is newest-first by INSERTION,
+    // and a play can land out of position: the backend re-emits a play at quarter
+    // boundaries / turnovers, and an unmatched re-send is prepended (mergePlay) — so an
+    // OLD play can sit at the head of the list. Reversed, that plotted a low playNumber
+    // after high ones and the line jumped backwards. Sorting makes the chart independent
+    // of arrival order and of the REST/WS merge. Fractional playNumbers (cutaways +0.5,
+    // contest beats +0.9) sort naturally beside the play they belong to; if any entry
+    // lacks a number, leave the order alone rather than sort against undefined.
+    if (chronological.some(p => typeof p.playNumber !== 'number')) return chronological
+    const sorted = chronological.sort((a, b) => a.playNumber - b.playNumber)
+    // A re-send that slipped past the merge leaves two entries for one play; plotted,
+    // that's two points at the same x and a vertical spike. Keep the last (the sort is
+    // stable, so for equal playNumbers that's the most recently received copy).
+    return sorted.filter((p, i) => i === sorted.length - 1 || sorted[i + 1].playNumber !== p.playNumber)
   }, [displayPlays, wpNoClock])
 
   const isHighlightPlay = (play: any) =>
@@ -456,8 +471,37 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const pts: { pos: number; wp: number }[] = [{ pos: 0, wp: 50 }]
     if (wpNoClock) {
       const n = wpPlays.length
+      // Innings: position each play at its ACTUAL at-bat progress (completed innings +
+      // half + try), so the line stops at the current inning. The old ordinal spread
+      // mapped the last play to the full axis, so a game in inning 2 ran into inning 3.
+      // Plays share a try bucket (a try = one drive), so spread them within the try's
+      // width to keep the line advancing smoothly. Frames (no `inning`) keep the ordinal
+      // spread. Mirrors the backend InningsFormat.adjustGameProgress.
+      const triesPer = gameData?.innings?.triesPerInning || 3
+      const tryWidth = 0.5 / triesPer
+      const bucketOf = (p: any): number | null => {
+        if (p.inning == null) return null
+        const halfFrac = p.inningHalf === 'bottom' ? 0.5 : 0
+        const tryFrac = Math.max(0, (p.inningTry || 1) - 1) * tryWidth
+        return (p.inning - 1) + halfFrac + tryFrac
+      }
+      const counts = new Map<number, number>()
+      wpPlays.forEach((p: any) => {
+        const b = bucketOf(p)
+        if (b != null) counts.set(b, (counts.get(b) || 0) + 1)
+      })
+      const seen = new Map<number, number>()
       wpPlays.forEach((p: any, i: number) => {
-        pts.push({ pos: n <= 0 ? 0 : ((i + 1) / n) * wpPeriods, wp: p.homeWinProbability })
+        const b = bucketOf(p)
+        if (b == null) {
+          pts.push({ pos: n <= 0 ? 0 : ((i + 1) / n) * wpPeriods, wp: p.homeWinProbability })
+          return
+        }
+        const k = seen.get(b) || 0
+        seen.set(b, k + 1)
+        const total = counts.get(b) || 1
+        const frac = total > 1 ? (k + 1) / total : 1
+        pts.push({ pos: Math.min(b + frac * tryWidth, wpPeriods), wp: p.homeWinProbability })
       })
       return pts
     }
@@ -479,7 +523,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       pts.push({ pos: elapsed <= 3600 ? elapsed / 900 : 4 + (elapsed - 3600) / 600, wp: p.homeWinProbability })
     })
     return pts
-  }, [wpPlays, wpNoClock, wpPeriods])
+  }, [wpPlays, wpNoClock, wpPeriods, gameData?.innings?.triesPerInning])
 
   // Shared x-axis descriptor: how many equal-width sections, where the dividers fall
   // (in section units), the period labels, and which divider is the thicker
@@ -539,6 +583,27 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     modalOpenedAtRef.current = Date.now()
     fetchGamePlays(gameId)
   }, [gameId, fetchGamePlays])
+
+  // ── Viewer count ────────────────────────────────────────────────────────
+  // Tell the server this game is open so it can count watchers, and clear it on
+  // close. The count is per DISTINCT USER, so this viewer's own tabs collapse to
+  // one and a signed-out visitor isn't counted.
+  const { subscribe: subscribeSeason, watchGame } = useSeasonWebSocket()
+  const [viewerCount, setViewerCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    watchGame(gameId)
+    return () => { watchGame(null) }
+  }, [gameId, watchGame])
+
+  useEffect(() => {
+    setViewerCount(null)   // don't carry a count across a game switch
+    return subscribeSeason((msg: any) => {
+      if (msg?.event === 'viewer_count' && String(msg.gameId) === String(gameId)) {
+        setViewerCount(Number(msg.count) || 0)
+      }
+    })
+  }, [gameId, subscribeSeason])
 
   // Helper function to render a play or event message
   const renderPlay = (play: any, keyPrefix: string, index: number) => {
@@ -1125,18 +1190,46 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           borderBottom: '1px solid #334155',
           flexShrink: 0
         }}>
-          {/* Cheer bar lives in the existing header row (live games only) so it
-              adds no height and never pushes the body / WP graph down. */}
-          {isLive ? (
-            <CheerBar
-              gameId={gameId}
-              isLive={isLive}
-              playCount={(gameData?.plays as any[])?.filter((p: any) => !p.event && !p.isSidelineCutaway).length ?? 0}
-              score={(gameData?.homeScore ?? 0) + (gameData?.awayScore ?? 0)}
-              bigPlayCount={(gameData?.plays as any[])?.filter((p: any) => p.isBigPlay && !p.isSidelineCutaway).length ?? 0}
-              compact
-            />
-          ) : <div />}
+          {/* Left side of the header, opposite the close button: the watching count,
+              then the cheer bar. The cheer bar lives in this existing row (live games
+              only) so it adds no height and never pushes the body / WP graph down. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '28px', minWidth: 0 }}>
+            {/* Watching now. Hidden at 0 — that only happens signed out, and an empty
+                count reads worse than no badge at all. */}
+            {viewerCount != null && viewerCount > 0 && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                color: '#94a3b8', fontSize: '12px', flexShrink: 0
+              }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                     style={{ width: '14px', height: '14px', flexShrink: 0 }}>
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {viewerCount} watching
+                </span>
+              </div>
+            )}
+            {/* Divider — only when BOTH sides are present, so it never floats next
+                to a single element (no cheer bar off a live game, no count when
+                signed out). */}
+            {viewerCount != null && viewerCount > 0 && isLive && (
+              <div style={{
+                width: '1px', height: '18px', backgroundColor: '#334155', flexShrink: 0
+              }} />
+            )}
+            {isLive && (
+              <CheerBar
+                gameId={gameId}
+                isLive={isLive}
+                playCount={(gameData?.plays as any[])?.filter((p: any) => !p.event && !p.isSidelineCutaway).length ?? 0}
+                score={(gameData?.homeScore ?? 0) + (gameData?.awayScore ?? 0)}
+                bigPlayCount={(gameData?.plays as any[])?.filter((p: any) => p.isBigPlay && !p.isSidelineCutaway).length ?? 0}
+                compact
+              />
+            )}
+          </div>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
             <XIcon style={{ width: '20px', height: '20px', color: '#94a3b8' }} />
           </button>
@@ -1603,11 +1696,25 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               const yardsGained = lastPlay?.yardsGained ?? 0
               // playType = play category: Run, Pass, FieldGoal, Punt, Kneel, Spike
               const playType = (lastPlay?.playType ?? '').toUpperCase()
-              const isTD = !!lastPlay?.isTouchdown
+              // Contested Scoring beat 1: the ball REACHED the end zone but the TD is
+              // not banked until the contest resolves, so isTouchdown is still false
+              // on this play. For drawing purposes the ball got there, so it anchors
+              // like a touchdown — otherwise the trajectory stopped short of the goal
+              // line on a play the feed calls a provisional score.
+              const isProvisional = !!(lastPlay as any)?.isProvisionalScore
+                || lastPlay?.playResult === 'Provisional Score'
+              const isTD = !!lastPlay?.isTouchdown || isProvisional
               const isTurnover = !!lastPlay?.isTurnover
               // Sideline Goals hoop shot — the last play was a throw at a hoop.
               const isHoopShot = String(lastPlay?.playResult ?? '').includes('Sideline Goal')
               const hoopMade = lastPlay?.playResult === 'Sideline Goal Good'
+              // Post-TD conversion — the 2-pt try or any higher Conversion-Ladder rung.
+              // conversionPoints is set for every rung (2/3/4/5); the playResult check
+              // covers replayed rows that predate that field.
+              const convResult = String(lastPlay?.playResult ?? '')
+              const isConversion = (lastPlay as any)?.conversionPoints != null
+                || convResult.includes('Conversion') || convResult.includes('-Pt')
+              const conversionMade = isConversion && !convResult.includes('No Good')
 
               // Which direction did the last play go?
               // Home team plays go right (+1), away team plays go left (-1)
@@ -1639,9 +1746,22 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               const sameTeamHasBall = !lastPlay || lastPlay.offensiveTeam === dPossession
 
               // Start of last play: move backwards from current ball in play direction
-              const startAbsYfl = ballAbsYfl != null && lastPlay != null
-                ? ballAbsYfl - yardsGained * lastPlayDir
-                : null
+              // Normally the ball sits at the END of the play, so the start is the ball
+              // walked back by the yards gained. A TOUCHDOWN breaks that: under Contested
+              // Scoring the TD is credited on the CONTEST beat, which gains no yards of
+              // its own (the yardage belonged to the provisional play before it), so
+              // every scoring play reports yardsGained 0. Walking back from the end zone
+              // by 0 collapsed the trajectory onto the goal line. Anchor a score on the
+              // play's OWN line of scrimmage instead — exact, and independent of whether
+              // yardsGained survived the contest.
+              const losYteOfPlay = lastPlay ? deriveYardsToEndzone(lastPlay) : null
+              const startAbsYfl = (() => {
+                if (ballAbsYfl == null || lastPlay == null) return null
+                if (isTD && losYteOfPlay != null) {
+                  return lastPlayDir === 1 ? 110 - losYteOfPlay : 10 + losYteOfPlay
+                }
+                return ballAbsYfl - yardsGained * lastPlayDir
+              })()
               const startX = startAbsYfl != null ? toX(startAbsYfl) : null
 
               // First down marker: the line to gain, measured from the line of
@@ -1709,6 +1829,32 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   playStroke = fgGood ? '#4ade80' : '#ef4444'  // miss = turnover
                   playDash = '5,4'
                   playEndX = fgEndX
+                }
+              } else if (isConversion && lastPlay) {
+                // A conversion is snapped from its rung's distance (2-pt from the 2, up
+                // to the 5-pt rung from the 15) and game state is NOT advanced past that
+                // snap — yardsToEndzone still reports the line of scrimmage when this
+                // renders. The generic branch below assumes the ball sits at the END of
+                // the play and derives the start as ball-minus-yards-gained, which drew
+                // the try a full rung-distance BEHIND its actual LOS. Barely visible on a
+                // 2-pt, obvious on the 5-pt from the 15. Anchor on the play's own LOS and
+                // run forward to the goal line on a make, or to where it died on a miss.
+                const losYte = deriveYardsToEndzone(lastPlay)
+                const losAbs = losYte != null
+                  ? (lastPlayDir === 1 ? 110 - losYte : 10 + losYte)
+                  : ballAbsYfl
+                const convStartX = losAbs != null ? toX(losAbs) : ballX
+                const endAbs = conversionMade
+                  ? (lastPlayDir === 1 ? 110 : 10)
+                  : (losAbs != null ? losAbs + yardsGained * lastPlayDir : null)
+                const convEndX = endAbs != null ? toX(endAbs) : convStartX
+                if (convStartX != null && convEndX != null) {
+                  const midPX = (convStartX + convEndX) / 2
+                  const arcH = Math.min(Math.abs(convEndX - convStartX) * 0.35, 45)
+                  playPath = `M${convStartX},${midY} Q${midPX},${midY - arcH} ${convEndX},${midY}`
+                  playStroke = conversionMade ? '#22c55e' : '#f59e0b'
+                  playDash = '7,3'
+                  playEndX = convEndX
                 }
               } else if (ballX != null && startX != null && Math.abs(yardsGained) >= 1) {
                 const midPX = (startX + ballX) / 2

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, ReactNode } from 'react'
+import React, { createContext, useContext, useCallback, useEffect, useRef, ReactNode } from 'react'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { useAuth } from '@/contexts/AuthContext'
 import type { GameWebSocketEvent, SeasonWebSocketEvent } from '@/types/websocket'
@@ -11,6 +11,9 @@ interface SeasonWebSocketContextType {
   error: Event | null
   drainEvents: () => AnyEvent[]
   subscribe: (handler: (message: AnyEvent) => void) => () => void
+  /** Tell the server which game this client has open, for viewer counts.
+   *  Pass null when closing. Safe to call before the socket connects. */
+  watchGame: (gameId: string | number | null) => void
 }
 
 const SeasonWebSocketContext = createContext<SeasonWebSocketContextType | undefined>(undefined)
@@ -19,6 +22,9 @@ export const SeasonWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chi
   const { data: event, connected, error, drainEvents, subscribe, send } = useWebSocket<AnyEvent>('/season')
   const { user } = useAuth()
   const identifiedRef = useRef(false)
+  // The game this client has open. Kept in a ref so it can be re-sent after a
+  // reconnect — the server forgets viewers when the socket drops.
+  const watchingRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (connected && user?.id && !identifiedRef.current) {
@@ -30,8 +36,23 @@ export const SeasonWebSocketProvider: React.FC<{ children: ReactNode }> = ({ chi
     }
   }, [connected, user?.id, send])
 
+  // Re-announce the open game after a reconnect, otherwise this viewer silently
+  // stops being counted for the rest of the session.
+  useEffect(() => {
+    if (connected && watchingRef.current) {
+      send({ type: 'watch', gameId: watchingRef.current })
+    }
+  }, [connected, send])
+
+  const watchGame = useCallback((gameId: string | number | null) => {
+    const id = gameId == null ? null : String(gameId)
+    if (watchingRef.current === id) return
+    watchingRef.current = id
+    send(id ? { type: 'watch', gameId: id } : { type: 'unwatch' })
+  }, [send])
+
   return (
-    <SeasonWebSocketContext.Provider value={{ event, connected, error, drainEvents, subscribe }}>
+    <SeasonWebSocketContext.Provider value={{ event, connected, error, drainEvents, subscribe, watchGame }}>
       {children}
     </SeasonWebSocketContext.Provider>
   )
