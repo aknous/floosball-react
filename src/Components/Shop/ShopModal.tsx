@@ -162,7 +162,7 @@ const ShopProjectionPill: React.FC<{ proj: TemplateProjection }> = ({ proj }) =>
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
-  const { user, getToken, updateFloobits, refetchRoster } = useAuth()
+  const { user, getToken, updateFloobits } = useAuth()
   const { seasonState } = useFloosball()
   const isMobile = useIsMobile()
   const contentRef = useRef<HTMLDivElement>(null)

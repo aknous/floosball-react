@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { PointsBreakdownPanel } from '@/Components/Fantasy/FantasyRoster'
+import { PointsBreakdownPanel } from '@/Components/Fantasy/PointsBreakdownPanel'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, EquippedEntry } from '@/hooks/useLineup'
 import { useCardProjection, CardProjection } from '@/hooks/useCardProjection'

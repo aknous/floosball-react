@@ -286,7 +286,7 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
 
 export default function Navbar() {
   const { seasonState, lastEvent } = useFloosball()
-  const { user, logout, getToken, fantasyRoster, refetchRoster, refetchUser } = useAuth()
+  const { user, logout, getToken, fantasyLineupLocked, refetchLineup, refetchUser } = useAuth()
   const getTokenRef = useRef(getToken)
   getTokenRef.current = getToken
   const { event: wsEvent } = useSeasonWebSocket()
@@ -454,7 +454,7 @@ export default function Navbar() {
 
   // Fantasy points from snapshot (single source of truth)
   const { myEntry } = useFantasySnapshot(user?.id)
-  const fantasyPoints = fantasyRoster?.isLocked && myEntry
+  const fantasyPoints = fantasyLineupLocked && myEntry
     ? { weekPoints: (myEntry.weekPlayerFP ?? 0) + (myEntry.weekCardBonus ?? 0), seasonTotal: myEntry.seasonTotal }
     : null
 
@@ -462,12 +462,12 @@ export default function Navbar() {
   useEffect(() => {
     if (!wsEvent) return
     if (wsEvent.event === 'game_start' || wsEvent.event === 'game_end' || wsEvent.event === 'season_end' || wsEvent.event === 'week_start' || wsEvent.event === 'week_end') {
-      refetchRoster()
+      refetchLineup()
     }
     if (wsEvent.event === 'game_end' || wsEvent.event === 'week_end' || wsEvent.event === 'season_end') {
       refetchUser()
     }
-  }, [wsEvent, refetchRoster, refetchUser])
+  }, [wsEvent, refetchLineup, refetchUser])
 
   // Active Endowment (income_boost) indicator on the Floobits counter.
   const fetchEndowment = useCallback(async () => {
