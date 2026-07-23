@@ -7,7 +7,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { useTemplateProjections, projectionPillStyle, TemplateProjection } from '@/hooks/useCardProjection'
 import {
   GiCardDraw, GiCrownCoin, GiGemChain, GiCrystalShine,
-  GiSwapBag, GiMagicSwirl, GiFlexibleStar, GiCardPlay, GiPerspectiveDiceSixFacesRandom,
+  GiMagicSwirl, GiCardPlay, GiPerspectiveDiceSixFacesRandom,
   GiQueenCrown,
 } from 'react-icons/gi'
 
@@ -67,10 +67,11 @@ interface ShopModalProps {
 
 // ─── Styling ──────────────────────────────────────────────────────────────────
 
+// extra_swap (Dispensation) + temp_flex (Conscription) retired in the fantasy/cards
+// fusion — the backend no longer offers them, so no style/icon needed.
+const POWERUP_DEFAULT_STYLE = { accent: '#94a3b8' }
 const POWERUP_STYLES: Record<string, { accent: string }> = {
-  extra_swap: { accent: '#22c55e' },
   modifier_nullifier: { accent: '#eab308' },
-  temp_flex: { accent: '#a78bfa' },
   temp_card_slot: { accent: '#67e8f9' },
   fortunes_favor: { accent: '#f472b6' },
   income_boost: { accent: '#fbbf24' },
@@ -119,9 +120,7 @@ const PACK_ICONS: Record<string, React.ComponentType<{ size?: number; color?: st
 }
 
 const POWERUP_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
-  extra_swap: GiSwapBag,
   modifier_nullifier: GiMagicSwirl,
-  temp_flex: GiFlexibleStar,
   temp_card_slot: GiCardPlay,
   fortunes_favor: GiQueenCrown,
   income_boost: GiCrownCoin,
@@ -309,8 +308,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         const pj = await puRes.json()
         setPowerups(pj.data?.items ?? [])
       }
-      // If swap purchased, refresh roster so swap count updates immediately
-      if (slug === 'extra_swap') refetchRoster()
       // Signal all fantasy snapshot hooks to refetch (updates modifier badge, etc.)
       window.dispatchEvent(new Event('floosball:shop-purchase'))
     } catch {
@@ -923,7 +920,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                     margin: '0 auto',
                   }}>
                     {powerups.map(pu => {
-                      const style = POWERUP_STYLES[pu.slug] || POWERUP_STYLES.extra_swap
+                      const style = POWERUP_STYLES[pu.slug] || POWERUP_DEFAULT_STYLE
                       const canAfford = balance >= pu.price
                       const canBuy = pu.available && canAfford && pu.purchased < pu.limit && shopOpen
                       const isBuying = buying === pu.slug

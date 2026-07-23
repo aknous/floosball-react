@@ -18,7 +18,7 @@ const FANTASY_TOUR_STEPS: TutorialStep[] = [
   {
     target: 'fantasy-roster',
     title: 'Your Roster',
-    content: 'These are your players. You draft 5 positions — QB, RB, WR, TE, and K. They earn Fantasy Points from their real game stats each week. Tap a player to see their stats or swap them out between game rounds.',
+    content: 'These are your players. You field 5 positions — QB, RB, WR, TE, and K — by equipping a card for each. They earn Fantasy Points from their real game stats each week. Tap a player to see their stats or change your lineup between game rounds.',
     placement: 'top',
     onEnter: () => window.dispatchEvent(new Event('floosball:show-roster')),
   },
@@ -74,8 +74,8 @@ const FANTASY_TOUR_STEPS: TutorialStep[] = [
   },
   {
     target: 'fantasy-gameinfo',
-    title: 'Weekly Modifier & Swaps',
-    content: 'These badges show the active weekly modifier and available roster swaps. Each week has a random modifier that changes how scoring works. Hover a badge for details.',
+    title: 'Weekly Modifier',
+    content: 'This badge shows the active weekly modifier. Each week has a random modifier that changes how scoring works. Hover it for details.',
     placement: 'bottom',
   },
   {
@@ -165,43 +165,6 @@ const MODIFIER_STYLES: Record<string, { color: string; icon: React.ReactNode }> 
   )},
 }
 
-// Swaps badge. The day's modifiers render via DayModifierBadge (active chip
-// + click-to-expand dropdown) alongside this in the status bar.
-function GameInfoBar() {
-  const { fantasyRoster } = useAuth()
-
-  const swapsAvailable = (fantasyRoster?.swapsAvailable ?? 0) + (fantasyRoster?.purchasedSwaps ?? 0)
-  const isLocked = fantasyRoster?.isLocked ?? false
-
-  if (!isLocked || swapsAvailable <= 0) return null
-
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',
-    }}>
-      {isLocked && swapsAvailable > 0 && (
-        <HoverTooltip text={`${swapsAvailable} roster swap${swapsAvailable !== 1 ? 's' : ''} available between games`} color="#38bdf8">
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '5px',
-            padding: '5px 10px', borderRadius: '6px',
-            backgroundColor: 'rgba(56,189,248,0.12)',
-            cursor: 'default',
-          }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 3l4 4-4 4" />
-              <path d="M20 7H4" />
-              <path d="M8 21l-4-4 4-4" />
-              <path d="M4 17h16" />
-            </svg>
-            <span style={{ fontSize: '11px', fontWeight: '600', color: '#38bdf8' }}>
-              {swapsAvailable} Swap{swapsAvailable !== 1 ? 's' : ''}
-            </span>
-          </div>
-        </HoverTooltip>
-      )}
-    </div>
-  )
-}
 
 // The active weekly modifier as a compact chip; click to reveal the rest of
 // the day's slate (so users can plan cards/rosters ahead) without crowding the
@@ -434,12 +397,11 @@ const FantasyPage: React.FC = () => {
           </>
         ) : (
           <>
-            {/* Status bar: countdown + modifier badge + swaps + actions */}
+            {/* Status bar: countdown + modifier badge + actions */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <div data-tour="fantasy-countdown"><LockCountdown /></div>
               <div data-tour="fantasy-gameinfo" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <DayModifierBadge />
-                <GameInfoBar />
               </div>
               <div style={{ flex: 1 }} />
               {/* Actions + help grouped so the ? never orphans onto its own row */}
@@ -623,14 +585,9 @@ const FantasyPage: React.FC = () => {
           all-or-nothing — if the condition is met, you receive the full effect; otherwise,
           nothing. Unlike streak cards, there is no carryover between weeks.
         </GuideSection>
-        <GuideSection title="Match Bonus">
-          When a card's player is also on your fantasy roster, the card's primary effect
-          receives a 1.5x boost.
-        </GuideSection>
-        <GuideSection title="Roster Swaps">
-          Your roster swap replenishes each week. Between game rounds, you can swap one player
-          for a new one starting at 15 Floobits. Each additional swap in the same slot costs 15 more
-          (15, 30, 45, ...). Your previous player's FP are banked and you begin earning with the replacement.
+        <GuideSection title="Changing Your Lineup">
+          Your lineup is your equipped cards — each card fields its player at that position.
+          Swap a card for another between game rounds, free; lineups lock while games are live.
         </GuideSection>
         <GuideSection title="Modifiers">
           Each week a random modifier changes how your equipped cards score: doubling multipliers,
