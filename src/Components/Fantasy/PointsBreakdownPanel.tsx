@@ -404,8 +404,8 @@ export const PointsBreakdownPanel: React.FC<{
             const hasChance = syn.chance.count > 0
             const hasStreak = syn.streak.count > 1
             const hasMatch = syn.match.count > 0
-            const hasDreamTeam = (syn.dreamTeam?.count ?? 0) >= 2
-            if (!hasChance && !hasStreak && !hasMatch && !hasDreamTeam) return null
+            const hasStack = (syn.stack?.size ?? 0) >= 2
+            if (!hasChance && !hasStreak && !hasMatch && !hasStack) return null
             const synStyle = { ...divider, padding: '6px 0 4px 0' }
             const labelStyle = { color: '#94a3b8', fontSize: '11px' as const }
             const valStyle = { fontSize: '11px' as const, fontWeight: '600' as const }
@@ -447,10 +447,13 @@ export const PointsBreakdownPanel: React.FC<{
                     <span style={{ ...valStyle, color: '#60a5fa' }}>{syn.match.count}/{syn.match.total} matched · 1.5x each</span>
                   </div>
                 )}
-                {hasDreamTeam && (
+                {hasStack && (
                   <div style={{ ...rowStyle }}>
-                    <span style={labelStyle}>Dream Team · {syn.dreamTeam!.count} All-Pros</span>
-                    <span style={{ ...valStyle, color: '#fbbf24' }}>+{(syn.dreamTeam!.bonus * 100).toFixed(0)}% FPx</span>
+                    <span style={labelStyle}>
+                      {syn.stack!.champions >= syn.stack!.size ? 'Dynasty' : 'Team Stack'} · {syn.stack!.size} same-team
+                      {syn.stack!.champions > 0 ? ` (${syn.stack!.champions} champ${syn.stack!.champions !== 1 ? 's' : ''})` : ''}
+                    </span>
+                    <span style={{ ...valStyle, color: '#fbbf24' }}>+{(syn.stack!.bonus * 100).toFixed(0)}% FPx</span>
                   </div>
                 )}
               </div>

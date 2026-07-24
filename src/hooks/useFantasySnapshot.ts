@@ -73,10 +73,11 @@ export interface HandSynergies {
     count: number
     total: number
   }
-  // Dream Team — the All-Pro set bonus: how many All-Pro cards were fielded and
-  // the lineup-wide FPx delta they granted (0 below 2).
-  dreamTeam?: {
-    count: number
+  // Team stacking: the largest same-team group fielded, how many are Champions
+  // (which amplify the stack), and the lineup-wide FPx delta (0 below a 2-stack).
+  stack?: {
+    size: number
+    champions: number
     bonus: number
   }
 }
