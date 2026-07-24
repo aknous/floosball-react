@@ -295,6 +295,10 @@ interface TradingCardProps {
   // 'used' = grant already consumed. Undefined for non-equipped cards or
   // non-All-Pro cards — badge renders normally.
   apSwapState?: 'active' | 'used'
+  // The depicted player's live week FP, for the FP power-bar gate. When provided
+  // (scoring/lineup context) the card shows a live fill + active/OFF state; when
+  // omitted (collection/shop) it shows the static requirement only.
+  gateFP?: number
 }
 
 const SIZES = {
@@ -767,8 +771,42 @@ const DiamondEdgeShimmer: React.FC = () => (
   </div>
 )
 
+// FP power-bar gate. The depicted player's weekly FP must clear a position
+// threshold for the card's effect to fire (inverse cards run it in reverse:
+// active WHILE under the threshold). With a live `playerFP` (lineup/scoring),
+// it renders a fill + current/threshold + ON/OFF; without one (collection/shop)
+// it shows the static requirement.
+const GateBar: React.FC<{
+  threshold: number; inverse: boolean; playerFP?: number; font: number; mutedColor: string
+}> = ({ threshold, inverse, playerFP, font, mutedColor }) => {
+  if (!threshold || threshold <= 0) return null
+  const chipFont = Math.max(8, font - 4)
+  if (playerFP == null) {
+    return (
+      <div style={{ marginTop: 3, fontSize: chipFont, color: mutedColor, opacity: 0.85, fontWeight: 600 }}>
+        {inverse ? `Active under ${threshold} FP` : `Unlocks at ${threshold} FP`}
+      </div>
+    )
+  }
+  const active = inverse ? playerFP < threshold : playerFP >= threshold
+  // Normal bars ramp up toward the threshold; inverse bars start full and empty.
+  const raw = inverse ? (threshold - playerFP) / threshold : playerFP / threshold
+  const pct = Math.max(0, Math.min(1, raw)) * 100
+  const color = active ? '#22c55e' : '#64748b'
+  return (
+    <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+      <div style={{ width: '85%', height: 4, backgroundColor: 'rgba(148,163,184,0.20)', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', backgroundColor: color, transition: 'width 0.2s' }} />
+      </div>
+      <span style={{ fontSize: chipFont, color, fontWeight: 600, letterSpacing: '0.02em' }}>
+        {playerFP.toFixed(0)} / {threshold} FP{active ? '' : ' · OFF'}
+      </span>
+    </div>
+  )
+}
+
 const TradingCard: React.FC<TradingCardProps> = ({
-  card, size = 'md', selected = false, onSelect, onClick, onLevelUp, onTrash, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState,
+  card, size = 'md', selected = false, onSelect, onClick, onLevelUp, onTrash, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState, gateFP,
 }) => {
   const [hovered, setHovered] = useState(false)
   const [flipped, setFlipped] = useState(false)
@@ -788,6 +826,13 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const effectTagline = card.tagline || card.effectConfig?.tagline || ''
   const effectTooltip = card.tooltip || card.effectConfig?.tooltip || ''
   const effectDetail = card.detail || card.effectConfig?.detail || ''
+  // FP power-bar gate: {threshold, inverse} frozen into the effect config at mint.
+  // `gateOff` is true only in a live scoring context (gateFP known) where the
+  // depicted player hasn't met the bar this week — the effect scores nothing.
+  const gate: { threshold?: number; inverse?: boolean } | undefined = card.effectConfig?.gate
+  const gateThreshold = gate?.threshold ?? 0
+  const gateOff = gateThreshold > 0 && gateFP != null &&
+    (gate?.inverse ? gateFP >= gateThreshold : gateFP < gateThreshold)
   const category = card.category || card.effectConfig?.category || ''
   const categoryColor = CATEGORY_COLORS[category] || '#94a3b8'
   const outputType = card.outputType || card.effectConfig?.outputType || ''
@@ -1067,23 +1112,36 @@ const TradingCard: React.FC<TradingCardProps> = ({
             position: 'relative', zIndex: 3,
             flexShrink: 0,
           }}>
-            {effectDisplayName && (
-              <div style={{ marginBottom: '2px' }}>
-                <EffectNameBadge
-                  name={effectDisplayName}
-                  tooltip={behaviorTag ? `${effectTooltip}\n\n${behaviorTag.tooltip}` : effectTooltip}
-                  color={outputTypeColor}
-                  fontSize={d.font - 1}
-                />
-              </div>
-            )}
-            {effectTagline && (
-              <div style={{
-                fontSize: d.font - 3, color: edStyle.labelColor,
-                lineHeight: 1.3,
-              }}>
-                {colorizeEffectText(effectTagline, edStyle.labelColor)}
-              </div>
+            {/* Effect name + tagline dim when the power bar isn't met this week
+                (the effect scores nothing); the bar itself stays lit as the "why". */}
+            <div style={{ opacity: gateOff ? 0.4 : 1 }}>
+              {effectDisplayName && (
+                <div style={{ marginBottom: '2px' }}>
+                  <EffectNameBadge
+                    name={effectDisplayName}
+                    tooltip={behaviorTag ? `${effectTooltip}\n\n${behaviorTag.tooltip}` : effectTooltip}
+                    color={outputTypeColor}
+                    fontSize={d.font - 1}
+                  />
+                </div>
+              )}
+              {effectTagline && (
+                <div style={{
+                  fontSize: d.font - 3, color: edStyle.labelColor,
+                  lineHeight: 1.3,
+                }}>
+                  {colorizeEffectText(effectTagline, edStyle.labelColor)}
+                </div>
+              )}
+            </div>
+            {gate && (
+              <GateBar
+                threshold={gateThreshold}
+                inverse={!!gate.inverse}
+                playerFP={gateFP}
+                font={d.font}
+                mutedColor={edStyle.labelColor}
+              />
             )}
             {/* tierNote intentionally not shown on the front (badge covers tier);
                 it appears on the back/detail only. */}

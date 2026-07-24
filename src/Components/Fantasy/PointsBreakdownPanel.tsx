@@ -320,6 +320,15 @@ export const PointsBreakdownPanel: React.FC<{
                       {effectLabel}
                     </span>
                   </HoverTooltip>
+                  {b.gateActive === false && (
+                    <HoverTooltip text={`Power bar not met${b.gateThreshold ? ` (needs ${b.gateThreshold} FP)` : ''} — this card's effect scored nothing this week.`} color="#94a3b8">
+                      <span style={{
+                        fontSize: '9px', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.04em',
+                        background: 'rgba(148,163,184,0.14)', border: '1px solid rgba(148,163,184,0.3)',
+                        borderRadius: '3px', padding: '0 4px', flexShrink: 0,
+                      }}>GATE</span>
+                    </HoverTooltip>
+                  )}
                   {(b.tier ?? 1) >= 2 && (
                     <span style={{
                       fontSize: '9px', fontWeight: 800, color: '#fbbf24',
@@ -395,7 +404,8 @@ export const PointsBreakdownPanel: React.FC<{
             const hasChance = syn.chance.count > 0
             const hasStreak = syn.streak.count > 1
             const hasMatch = syn.match.count > 0
-            if (!hasChance && !hasStreak && !hasMatch) return null
+            const hasDreamTeam = (syn.dreamTeam?.count ?? 0) >= 2
+            if (!hasChance && !hasStreak && !hasMatch && !hasDreamTeam) return null
             const synStyle = { ...divider, padding: '6px 0 4px 0' }
             const labelStyle = { color: '#94a3b8', fontSize: '11px' as const }
             const valStyle = { fontSize: '11px' as const, fontWeight: '600' as const }
@@ -435,6 +445,12 @@ export const PointsBreakdownPanel: React.FC<{
                   <div style={{ ...rowStyle }}>
                     <span style={labelStyle}>Match bonus</span>
                     <span style={{ ...valStyle, color: '#60a5fa' }}>{syn.match.count}/{syn.match.total} matched · 1.5x each</span>
+                  </div>
+                )}
+                {hasDreamTeam && (
+                  <div style={{ ...rowStyle }}>
+                    <span style={labelStyle}>Dream Team · {syn.dreamTeam!.count} All-Pros</span>
+                    <span style={{ ...valStyle, color: '#fbbf24' }}>+{(syn.dreamTeam!.bonus * 100).toFixed(0)}% FPx</span>
                   </div>
                 )}
               </div>

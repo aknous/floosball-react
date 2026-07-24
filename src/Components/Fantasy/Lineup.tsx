@@ -102,8 +102,9 @@ const Lineup: React.FC = () => {
 
                 {entry ? (
                   <div style={{ position: 'relative' }}>
-                    {/* Card click flips it (front/back). Equipping is a separate control. */}
-                    <TradingCard card={entry.card} size="sm" noHoverLift />
+                    {/* Card click flips it (front/back). Equipping is a separate control.
+                        gateFP = the depicted player's week FP, driving the live power bar. */}
+                    <TradingCard card={entry.card} size="sm" noHoverLift gateFP={weekFPBySlot[slot]} />
                     {canEdit && (
                       <button onClick={(e) => { e.stopPropagation(); lineup.unequip(slot) }}
                         aria-label={`Clear ${slot}`}
