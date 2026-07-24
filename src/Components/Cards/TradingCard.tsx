@@ -58,36 +58,45 @@ export const EDITION_STYLES: Record<string, {
   rarity: string
   glowColor?: string
 }> = {
+  // Sub-base "no-effect" print — the plain floor card that just fields the player
+  // for their FP. Flattest/mattest treatment, no foil (see edition FX gating).
+  standard: {
+    borderColor: '#414a5c',
+    bgGradient: 'linear-gradient(140deg, #2b3242 0%, #232a36 60%, #2a313f 100%)',
+    labelColor: '#8895a9',
+    label: 'Standard',
+    rarity: 'No Effect',
+  },
   base: {
-    borderColor: '#475569',
-    bgGradient: 'linear-gradient(135deg, #334155 0%, #283548 50%, #334155 100%)',
-    labelColor: '#94a3b8',
+    borderColor: '#5b6b83',
+    bgGradient: 'linear-gradient(140deg, #3a475c 0%, #28303f 55%, #333d4f 100%)',
+    labelColor: '#aebacd',
     label: 'Base',
     rarity: 'Common',
   },
   holographic: {
     borderColor: '#a78bfa',
-    bgGradient: 'linear-gradient(135deg, #1e1b4b 0%, #2e1065 50%, #1e1b4b 100%)',
+    bgGradient: 'linear-gradient(140deg, #241a5e 0%, #3a1673 48%, #221a52 100%)',
     labelColor: '#c4b5fd',
     label: 'Holographic',
     rarity: 'Uncommon',
-    glowColor: 'rgba(167,139,250,0.15)',
+    glowColor: 'rgba(167,139,250,0.35)',
   },
   prismatic: {
-    borderColor: '#db2777',
-    bgGradient: 'linear-gradient(135deg, #2e1065 0%, #701a3e 40%, #1e3a5f 70%, #064e3b 100%)',
-    labelColor: '#f472b6',
+    borderColor: '#ec4899',
+    bgGradient: 'linear-gradient(140deg, #3a1173 0%, #8a1f52 38%, #1e3a5f 70%, #075e4b 100%)',
+    labelColor: '#f9a8d4',
     label: 'Prismatic',
     rarity: 'Rare',
-    glowColor: 'rgba(219,39,119,0.3)',
+    glowColor: 'rgba(236,72,153,0.4)',
   },
   diamond: {
     borderColor: '#67e8f9',
-    bgGradient: 'linear-gradient(135deg, #0c4a6e 0%, #155e75 35%, #1e3a5f 65%, #0e7490 100%)',
+    bgGradient: 'linear-gradient(140deg, #0c4a6e 0%, #136a86 38%, #1e3a5f 68%, #0e7490 100%)',
     labelColor: '#a5f3fc',
     label: 'Diamond',
     rarity: 'Ultra-Rare',
-    glowColor: 'rgba(103,232,249,0.35)',
+    glowColor: 'rgba(103,232,249,0.45)',
   },
 }
 
@@ -136,25 +145,28 @@ const CLASSIFICATION_CONFIG: Record<string, {
   borderColor: string
   tooltip: string
 }> = {
+  // Solid deep-jewel fills with near-white ink — legible on any edition (incl.
+  // MVP on the diamond). `bgColor` is the fill, `color` the ink, `borderColor` a
+  // subtle light rim.
   rookie: {
-    label: 'Rookie', abbr: 'R', color: '#fbbf24',
-    bgColor: 'rgba(251,191,36,0.15)', borderColor: 'rgba(251,191,36,0.3)',
+    label: 'Rookie', abbr: 'R', color: '#f8fafc',
+    bgColor: '#a16207', borderColor: 'rgba(255,255,255,0.2)',
     tooltip: 'Rookie — Sells for 2x Floobits',
   },
   mvp: {
-    label: 'MVP', abbr: 'MVP', color: '#3b82f6',
-    bgColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.3)',
-    tooltip: 'MVP — +1 card equip slot',
+    label: 'MVP', abbr: 'MVP', color: '#f8fafc',
+    bgColor: '#2563eb', borderColor: 'rgba(255,255,255,0.2)',
+    tooltip: 'MVP — unlocks the FLEX lineup slot',
   },
   champion: {
-    label: 'Champion', abbr: 'CH', color: '#f59e0b',
-    bgColor: 'rgba(245,158,11,0.15)', borderColor: 'rgba(245,158,11,0.3)',
-    tooltip: 'Champion — +1 FLEX roster spot',
+    label: 'Champion', abbr: 'CH', color: '#f8fafc',
+    bgColor: '#c2410c', borderColor: 'rgba(255,255,255,0.2)',
+    tooltip: 'Champion — prior-season title winner',
   },
   all_pro: {
-    label: 'All-Pro', abbr: 'AP', color: '#a78bfa',
-    bgColor: 'rgba(167,139,250,0.15)', borderColor: 'rgba(167,139,250,0.3)',
-    tooltip: 'All-Pro — +1 roster swap when equipped, refreshes each game day',
+    label: 'All-Pro', abbr: 'AP', color: '#f8fafc',
+    bgColor: '#7c3aed', borderColor: 'rgba(255,255,255,0.2)',
+    tooltip: 'All-Pro — prior-season All-Pro selection',
   },
 }
 
@@ -283,6 +295,10 @@ interface TradingCardProps {
   // 'used' = grant already consumed. Undefined for non-equipped cards or
   // non-All-Pro cards — badge renders normally.
   apSwapState?: 'active' | 'used'
+  // The depicted player's live week FP, for the FP power-bar gate. When provided
+  // (scoring/lineup context) the card shows a live fill + active/OFF state; when
+  // omitted (collection/shop) it shows the static requirement only.
+  gateFP?: number
 }
 
 const SIZES = {
@@ -353,9 +369,10 @@ const ClassificationBadge: React.FC<{
         onMouseEnter={handleEnter}
         onMouseLeave={() => setShow(false)}
         style={{
-          fontSize, fontWeight: '700', color,
-          backgroundColor: bgColor, padding: '1px 5px',
-          borderRadius: '3px', border: `1px solid ${borderColor}`,
+          fontSize, fontWeight: '800', color,
+          backgroundColor: bgColor, padding: '2px 5px',
+          borderRadius: '4px', border: `1px solid ${borderColor}`,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.22)',
           cursor: 'default',
           opacity: badgeOpacity,
           display: 'inline-flex', alignItems: 'center', gap: '3px',
@@ -754,8 +771,42 @@ const DiamondEdgeShimmer: React.FC = () => (
   </div>
 )
 
+// FP power-bar gate. The depicted player's weekly FP must clear a position
+// threshold for the card's effect to fire (inverse cards run it in reverse:
+// active WHILE under the threshold). With a live `playerFP` (lineup/scoring),
+// it renders a fill + current/threshold + ON/OFF; without one (collection/shop)
+// it shows the static requirement.
+const GateBar: React.FC<{
+  threshold: number; inverse: boolean; playerFP?: number; font: number; mutedColor: string
+}> = ({ threshold, inverse, playerFP, font, mutedColor }) => {
+  if (!threshold || threshold <= 0) return null
+  const chipFont = Math.max(8, font - 4)
+  if (playerFP == null) {
+    return (
+      <div style={{ marginTop: 3, fontSize: chipFont, color: mutedColor, opacity: 0.85, fontWeight: 600 }}>
+        {inverse ? `Active under ${threshold} FP` : `Unlocks at ${threshold} FP`}
+      </div>
+    )
+  }
+  const active = inverse ? playerFP < threshold : playerFP >= threshold
+  // Normal bars ramp up toward the threshold; inverse bars start full and empty.
+  const raw = inverse ? (threshold - playerFP) / threshold : playerFP / threshold
+  const pct = Math.max(0, Math.min(1, raw)) * 100
+  const color = active ? '#22c55e' : '#64748b'
+  return (
+    <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
+      <div style={{ width: '85%', height: 4, backgroundColor: 'rgba(148,163,184,0.20)', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', backgroundColor: color, transition: 'width 0.2s' }} />
+      </div>
+      <span style={{ fontSize: chipFont, color, fontWeight: 600, letterSpacing: '0.02em' }}>
+        {playerFP.toFixed(0)} / {threshold} FP{active ? '' : ' · OFF'}
+      </span>
+    </div>
+  )
+}
+
 const TradingCard: React.FC<TradingCardProps> = ({
-  card, size = 'md', selected = false, onSelect, onClick, onLevelUp, onTrash, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState,
+  card, size = 'md', selected = false, onSelect, onClick, onLevelUp, onTrash, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState, gateFP,
 }) => {
   const [hovered, setHovered] = useState(false)
   const [flipped, setFlipped] = useState(false)
@@ -775,6 +826,13 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const effectTagline = card.tagline || card.effectConfig?.tagline || ''
   const effectTooltip = card.tooltip || card.effectConfig?.tooltip || ''
   const effectDetail = card.detail || card.effectConfig?.detail || ''
+  // FP power-bar gate: {threshold, inverse} frozen into the effect config at mint.
+  // `gateOff` is true only in a live scoring context (gateFP known) where the
+  // depicted player hasn't met the bar this week — the effect scores nothing.
+  const gate: { threshold?: number; inverse?: boolean } | undefined = card.effectConfig?.gate
+  const gateThreshold = gate?.threshold ?? 0
+  const gateOff = gateThreshold > 0 && gateFP != null &&
+    (gate?.inverse ? gateFP >= gateThreshold : gateFP < gateThreshold)
   const category = card.category || card.effectConfig?.category || ''
   const categoryColor = CATEGORY_COLORS[category] || '#94a3b8'
   const outputType = card.outputType || card.effectConfig?.outputType || ''
@@ -804,12 +862,16 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const glowConfig = GLOW_CONFIGS[edition]
   const hasGlow = !!glowConfig
 
+  // Depth: a top light-sheen over the edition gradient + inset highlight/vignette
+  // so the card reads as a physical print rather than a flat panel.
+  const depthInset = 'inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -34px 54px -22px rgba(0,0,0,0.55), '
+
   const containerStyle: React.CSSProperties = {
     width: d.width,
     height: d.height,
     borderRadius: '12px',
     border: `2px solid ${selected ? '#3b82f6' : edStyle.borderColor}`,
-    background: edStyle.bgGradient,
+    background: `radial-gradient(120% 70% at 50% -10%, rgba(255,255,255,0.10), transparent 60%), ${edStyle.bgGradient}`,
     fontFamily: 'pressStart',
     cursor: 'pointer',
     position: 'relative',
@@ -818,7 +880,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
     flexDirection: 'column',
     transition: 'transform 0.15s, box-shadow 0.25s',
     transform: !noHoverLift && hovered ? 'translateY(-4px)' : 'none',
-    boxShadow: tier4Ring + (selected
+    boxShadow: depthInset + tier4Ring + (selected
       ? '0 0 0 2px #3b82f6, 0 4px 20px rgba(59,130,246,0.3)'
       : hasGlow && hovered
         ? `0 0 12px ${glowConfig.color}, 0 0 28px ${glowConfig.softColor}, 0 4px 20px ${glowConfig.color}`
@@ -1003,60 +1065,106 @@ const TradingCard: React.FC<TradingCardProps> = ({
               {posLabel}
             </span>
 
-            {/* Stars (colored by tier) */}
+            {/* Stars — filled (tier color) over a faint 5-track so quality reads at a glance */}
             <div style={{ display: 'flex', gap: '2px', marginBottom: '2px', justifyContent: 'center' }}>
-              {Array.from({ length: stars }, (_, i) => (
+              {Array.from({ length: 5 }, (_, i) => (
                 <span key={i} style={{
                   fontSize: d.starSize,
-                  color: tierColor,
+                  color: i < stars ? tierColor : '#1e3a52',
                 }}>
                   ★
                 </span>
               ))}
             </div>
 
-            {/* Player name — shrink font for long names to avoid clipping */}
+          </div>
+
+          {/* Nameplate band — the player's name as a bold, edition-tinted banner.
+              Fixed minHeight (sized for the largest font) so a shrunk long-name
+              font doesn't collapse the band; name is vertically centered. */}
+          <div style={{
+            padding: `${d.pad - 3}px ${d.pad}px`,
+            minHeight: Math.round(d.nameFont * 1.25) + 2 * (d.pad - 3),
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `linear-gradient(90deg, ${edStyle.borderColor}30, rgba(5,8,14,0.5))`,
+            borderTop: `1px solid ${edStyle.borderColor}55`,
+            textAlign: 'center', position: 'relative', zIndex: 3, flexShrink: 0,
+            boxSizing: 'border-box',
+          }}>
             <div style={{
               fontSize: card.playerName.length > 18 ? d.nameFont - 4
                 : card.playerName.length > 14 ? d.nameFont - 2
                 : d.nameFont,
-              fontWeight: '700', color: '#e2e8f0',
-              lineHeight: 1.3, maxWidth: '100%',
-              wordBreak: 'break-word',
+              fontWeight: '800', color: '#fff',
+              lineHeight: 1.05, maxWidth: '100%', wordBreak: 'break-word',
+              textShadow: '0 1px 4px rgba(0,0,0,0.5)',
             }}>
               {card.playerName}
             </div>
           </div>
 
-          {/* Effect footer — hidden on vaulted cards (effect is gone). */}
-          {!isVaulted && (
+          {/* Effect footer — hidden on vaulted (effect gone) and on the sub-base
+              "standard" (no-effect) print, which just fields the player for their FP. */}
+          {!isVaulted && edition !== 'standard' && (
           <div style={{
             padding: `${d.pad - 2}px ${d.pad + 18}px`,
-            borderTop: `1px solid ${edStyle.borderColor}40`,
             textAlign: 'center',
             position: 'relative', zIndex: 3,
             flexShrink: 0,
           }}>
-            {effectDisplayName && (
-              <div style={{ marginBottom: '2px' }}>
-                <EffectNameBadge
-                  name={effectDisplayName}
-                  tooltip={behaviorTag ? `${effectTooltip}\n\n${behaviorTag.tooltip}` : effectTooltip}
-                  color={outputTypeColor}
-                  fontSize={d.font - 1}
-                />
-              </div>
-            )}
-            {effectTagline && (
-              <div style={{
-                fontSize: d.font - 3, color: edStyle.labelColor,
-                lineHeight: 1.3,
-              }}>
-                {colorizeEffectText(effectTagline, edStyle.labelColor)}
-              </div>
+            {/* Effect name + tagline dim when the power bar isn't met this week
+                (the effect scores nothing); the bar itself stays lit as the "why". */}
+            <div style={{ opacity: gateOff ? 0.4 : 1 }}>
+              {effectDisplayName && (
+                <div style={{ marginBottom: '2px' }}>
+                  <EffectNameBadge
+                    name={effectDisplayName}
+                    tooltip={behaviorTag ? `${effectTooltip}\n\n${behaviorTag.tooltip}` : effectTooltip}
+                    color={outputTypeColor}
+                    fontSize={d.font - 1}
+                  />
+                </div>
+              )}
+              {effectTagline && (
+                <div style={{
+                  fontSize: d.font - 3, color: edStyle.labelColor,
+                  lineHeight: 1.3,
+                }}>
+                  {colorizeEffectText(effectTagline, edStyle.labelColor)}
+                </div>
+              )}
+            </div>
+            {gate && (
+              <GateBar
+                threshold={gateThreshold}
+                inverse={!!gate.inverse}
+                playerFP={gateFP}
+                font={d.font}
+                mutedColor={edStyle.labelColor}
+              />
             )}
             {/* tierNote intentionally not shown on the front (badge covers tier);
                 it appears on the back/detail only. */}
+          </div>
+          )}
+
+          {/* Standard (no-effect) print: reserve the footer's space so the nameplate
+              lands at the same height as effect cards. minHeight ≈ a typical
+              two-line effect footer; a muted label marks it as effect-free. */}
+          {!isVaulted && edition === 'standard' && (
+          <div style={{
+            padding: `${d.pad - 2}px ${d.pad + 18}px`,
+            minHeight: 2 * (d.pad - 2) + Math.round(d.font * 2.3),
+            boxSizing: 'border-box',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            textAlign: 'center', position: 'relative', zIndex: 3, flexShrink: 0,
+          }}>
+            <div style={{
+              fontSize: d.font - 2, color: edStyle.labelColor, opacity: 0.65,
+              letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700,
+            }}>
+              No Effect
+            </div>
           </div>
           )}
 
@@ -1301,25 +1409,47 @@ const TradingCard: React.FC<TradingCardProps> = ({
             </div>
           )}
 
-          {/* Roster match section */}
-          <div style={{
-            fontSize: d.font - 2, color: '#cbd5e1',
-            lineHeight: 1.8, textAlign: 'center',
-            borderTop: `1px solid ${edStyle.borderColor}40`,
-            paddingTop: '6px',
-          }}>
-            <div style={{ color: '#e2e8f0', fontWeight: '700', marginBottom: '6px' }}>
-              Roster Match
+          {/* Season stats — the player's production for this card's season, same
+              data the vaulted back shows (fills the space Roster Match vacated). */}
+          <div style={{ marginTop: 'auto', paddingTop: '6px' }}>
+            <div style={{
+              fontSize: d.font - 4, fontWeight: 700, color: '#94a3b8',
+              textTransform: 'uppercase', letterSpacing: '0.06em',
+              textAlign: 'center', marginBottom: '5px',
+            }}>
+              Season {card.playerStats?.season ?? card.seasonCreated} Stats
             </div>
-            <div>
-              If {card.playerName} is on your fantasy roster:
-            </div>
-            <div style={{ color: edStyle.labelColor }}>
-              - Effect boosted to <span style={{ color: '#60a5fa' }}>1.5x</span>
-            </div>
-            {card.effectConfig?.conditional && (
-              <div style={{ color: edStyle.labelColor }}>
-                - <span style={{ color: TYPE_COLORS.fp }}>+{card.effectConfig.conditional.bonus} FP</span> for {card.effectConfig.conditional.label}
+            {card.playerStats ? (
+              <>
+                <div style={{
+                  textAlign: 'center',
+                  borderTop: `1px solid ${edStyle.borderColor}40`,
+                  borderBottom: `1px solid ${edStyle.borderColor}40`,
+                  padding: '5px 0', marginBottom: '5px',
+                }}>
+                  <div style={{ fontSize: d.font, fontWeight: 700, color: TYPE_COLORS.fp }}>
+                    {card.playerStats.fantasyPoints}
+                  </div>
+                  <div style={{ fontSize: d.font - 4, color: '#94a3b8' }}>Fantasy Points</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  {card.playerStats.lines.map((ln, i) => (
+                    <div key={i} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                      fontSize: d.font - 2,
+                    }}>
+                      <span style={{ color: '#94a3b8' }}>{ln.label}</span>
+                      <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{ln.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{
+                fontSize: d.font - 2, color: '#64748b', textAlign: 'center',
+                lineHeight: 1.5, padding: '4px 0',
+              }}>
+                No stats recorded yet
               </div>
             )}
           </div>

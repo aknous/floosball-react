@@ -216,7 +216,11 @@ export const CardFilterControls: React.FC<{
   onPatch: (patch: Partial<CardFilterState>) => void
   showSearch?: boolean
   showMatchToggle?: boolean
-}> = ({ state, onPatch, showSearch = true, showMatchToggle = true }) => {
+  // Fusion slot-scoped picker: the position is fixed by the slot, and the
+  // match bonus is retired — so hide the position pills and the match sort.
+  showPosition?: boolean
+  showMatchSort?: boolean
+}> = ({ state, onPatch, showSearch = true, showMatchToggle = true, showPosition = true, showMatchSort = true }) => {
   const rowStyle: React.CSSProperties = {
     display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center',
   }
@@ -245,8 +249,12 @@ export const CardFilterControls: React.FC<{
       {/* Line 3: class | position */}
       <div style={rowStyle}>
         <PillGroup options={CLASSIFICATION_OPTIONS} value={state.classification} onChange={v => onPatch({ classification: v })} />
-        <FilterDivider />
-        <PillGroup options={POSITION_OPTIONS} value={state.position} onChange={v => onPatch({ position: v })} />
+        {showPosition && (
+          <>
+            <FilterDivider />
+            <PillGroup options={POSITION_OPTIONS} value={state.position} onChange={v => onPatch({ position: v })} />
+          </>
+        )}
       </div>
       {/* Line 4: match toggle + sort (right) */}
       <div style={rowStyle}>
@@ -277,7 +285,7 @@ export const CardFilterControls: React.FC<{
             borderRadius: '4px', cursor: 'pointer', outline: 'none',
           }}
         >
-          <option value="match">Match first</option>
+          {showMatchSort && <option value="match">Match first</option>}
           <option value="rating">Highest rated</option>
           <option value="edition">Rarest first</option>
         </select>

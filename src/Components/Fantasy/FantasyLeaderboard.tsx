@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { PlayerLeaders } from '@/Components/PlayerLeaders'
 import { LeaderboardExpandedBody } from './LeaderboardExpandedBody'
 import type { SnapshotEntry } from '@/hooks/useFantasySnapshot'
 
@@ -45,7 +44,7 @@ interface WeekData {
   entries: WeeklyEntry[]
 }
 
-type ViewMode = 'season' | 'weekly' | 'players'
+type ViewMode = 'season' | 'weekly'
 
 export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonOnly = false }) => {
   const isMobile = useIsMobile()
@@ -152,22 +151,12 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
             <button onClick={() => { setMode('weekly'); setExpandedUserId(null) }} style={toggleStyle(mode === 'weekly')}>
               Weekly
             </button>
-            <button onClick={() => { setMode('players'); setExpandedUserId(null) }} style={toggleStyle(mode === 'players')}>
-              Players
-            </button>
           </div>
         )}
       </div>
 
-      {/* Players view */}
-      {mode === 'players' && (
-        <div style={{ marginTop: '4px' }}>
-          <PlayerLeaders />
-        </div>
-      )}
-
       {/* Prize table toggle + user leaderboard content */}
-      {mode !== 'players' && <>
+      <>
       <div
         onClick={() => setShowPrizes(p => !p)}
         style={{
@@ -471,7 +460,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
           </div>
         )
       )}
-      </>}
+      </>
     </div>
   )
 }

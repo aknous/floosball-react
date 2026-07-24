@@ -1381,22 +1381,11 @@ const AboutPage: React.FC = () => {
               ))}
             </div>
 
-            <p style={labelStyle}>Roster Swaps</p>
+            <p style={labelStyle}>Changing Your Lineup</p>
             <p style={textStyle}>
-              You get 1 swap allowance each week (buy the Dispensation power-up for an extra). A swap requires
-              an available allowance and costs Floobits: the first swap in a slot is 15, and each additional
-              swap in that same slot costs 15 more (15, 30, 45, ...) across the season. Filling a slot you've
-              never touched is free. When you swap a player out, their FP are banked so you keep
-              what they earned and start fresh with the replacement. Swaps are only available between games.
-              Once games start for the week, your roster locks.
-            </p>
-            <p style={textStyle}>
-              When equipped, an All-Pro card grants an additional roster swap that refreshes once per
-              game day. A game day is one of the four 7-week segments of the regular season (weeks 1–7,
-              8–14, 15–21, 22–28). The card's badge shows whether its swap is still available. A green
-              dot means unused; a dim badge with a gray dot means you've already spent it this game
-              day. The badge resets when the next game day begins, so an All-Pro card you keep
-              equipped grants a new swap roughly every 7 weeks.
+              Your lineup is your equipped cards — each card fields its player at that position. You can
+              change any card for another in your collection between game rounds, for free. Once games
+              start for the week, your lineup locks until the next unlock window.
             </p>
 
             <p style={labelStyle}>Participation Reward</p>

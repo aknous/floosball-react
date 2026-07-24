@@ -16,12 +16,19 @@ const PickerCard: React.FC<{
   // Effect is already equipped in another slot — only one of each effect
   // can be equipped at a time, so this card can't be picked.
   isDuplicateEffect?: boolean
+  // Fusion: this card's player is already fielded in another slot (no player
+  // can fill two slots), so it can't be picked.
+  isDuplicatePlayer?: boolean
   onSelect: (card: CardData) => void
   projection?: CandidateProjection
-}> = ({ card, isMatch, isDuplicateEffect, onSelect, projection }) => {
+}> = ({ card, isMatch, isDuplicateEffect, isDuplicatePlayer, onSelect, projection }) => {
   const [hovered, setHovered] = useState(false)
   const style = projection ? projectionPillStyle(projection) : null
-  const disabled = !!isDuplicateEffect
+  const disabled = !!isDuplicateEffect || !!isDuplicatePlayer
+  const badgeText = isDuplicatePlayer ? 'In Lineup' : 'Equipped Elsewhere'
+  const disabledTitle = isDuplicatePlayer
+    ? 'This player is already in your lineup'
+    : 'This effect is already equipped in another slot'
   return (
     <div
       style={{
@@ -75,7 +82,7 @@ const PickerCard: React.FC<{
             textTransform: 'uppercase' as const,
             pointerEvents: 'none' as const,
           }}>
-            Equipped Elsewhere
+            {badgeText}
           </div>
         )}
       </div>
@@ -110,7 +117,7 @@ const PickerCard: React.FC<{
       <button
         onClick={() => !disabled && onSelect(card)}
         disabled={disabled}
-        title={disabled ? "This effect is already equipped in another slot" : undefined}
+        title={disabled ? disabledTitle : undefined}
         style={{
           backgroundColor: disabled ? '#1e293b' : 'rgba(59,130,246,0.85)',
           border: `1px solid ${disabled ? '#334155' : 'rgba(96,165,250,0.5)'}`,
@@ -139,20 +146,34 @@ interface CardPickerModalProps {
   // ELSEWHERE" + disabled Equip button, so the no-duplicate rule is
   // visible at choose-time instead of via a 400 on save.
   excludeEffectNames?: string[]
+  // Fusion: user_card players already fielded in other slots — no player can
+  // fill two slots, so these render disabled ("In Lineup").
+  excludePlayerIds?: number[]
   rosterPlayerIds: Set<number>
   // Slot the picker is scoped to. Candidate projections are computed
   // as if each card replaced whatever currently occupies this slot —
   // so FPx chain changes, chance-synergy changes, and straight-swap
   // deltas all land accurately.
   targetSlot?: number | null
+  // Fusion position-locked picker: restrict to a position (1-based; null/undef =
+  // any, e.g. FLEX), label the header with the slot, and drop the match/position
+  // controls that don't apply.
+  position?: number | null
+  slotLabel?: string
+  slotScoped?: boolean
 }
 
 const CardPickerModal: React.FC<CardPickerModalProps> = ({
-  visible, onClose, onSelect, excludeCardIds, excludeEffectNames, rosterPlayerIds, targetSlot,
+  visible, onClose, onSelect, excludeCardIds, excludeEffectNames, excludePlayerIds,
+  rosterPlayerIds, targetSlot, position, slotLabel, slotScoped,
 }) => {
   const excludedEffectSet = useMemo(
     () => new Set(excludeEffectNames ?? []),
     [excludeEffectNames],
+  )
+  const excludedPlayerSet = useMemo(
+    () => new Set(excludePlayerIds ?? []),
+    [excludePlayerIds],
   )
   const { getToken } = useAuth()
   // Only fetch candidate projections while the modal is actually open.
@@ -163,10 +184,11 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
   const [filters, setFilters] = useState<CardFilterState>(defaultCardFilterState)
   const patchFilters = (patch: Partial<CardFilterState>) => setFilters(f => ({ ...f, ...patch }))
 
-  // Reset controls whenever the modal opens so previous filters don't stick
+  // Reset controls whenever the modal opens so previous filters don't stick.
+  // Slot-scoped (fusion) pickers default to highest-rated since match sort is gone.
   useEffect(() => {
-    if (visible) setFilters(defaultCardFilterState)
-  }, [visible])
+    if (visible) setFilters({ ...defaultCardFilterState, sort: slotScoped ? 'rating' : 'match' })
+  }, [visible, slotScoped])
 
   useEffect(() => {
     if (!visible) return
@@ -175,7 +197,8 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
       try {
         const tok = await getToken()
         if (!tok) return
-        const res = await fetch(`${API_BASE}/cards/collection?activeOnly=true&vaulted=false`, {
+        const posParam = position != null ? `&position=${position}` : ''
+        const res = await fetch(`${API_BASE}/cards/collection?activeOnly=true&vaulted=false&equipped=false${posParam}`, {
           headers: { Authorization: `Bearer ${tok}` },
         })
         if (!res.ok) return
@@ -190,7 +213,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
     }
     fetchCards()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, getToken, excludeCardIds.join(',')])
+  }, [visible, getToken, excludeCardIds.join(','), position])
 
   useEffect(() => {
     if (!visible) return
@@ -239,7 +262,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <div>
               <div style={{ fontSize: '16px', fontWeight: '700', color: '#f1f5f9', marginBottom: '2px' }}>
-                Select Card
+                {slotLabel ? `Fill ${slotLabel}` : 'Select Card'}
               </div>
               <div style={{ fontSize: '10px', color: '#94a3b8' }}>
                 {displayed.length} of {totalCount} cards
@@ -252,8 +275,14 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
             >x</button>
           </div>
 
-          {/* Shared equip-side filter bar (search + pills + sort/match toggle) */}
-          <CardFilterControls state={filters} onPatch={patchFilters} />
+          {/* Shared equip-side filter bar (search + pills + sort/match toggle).
+              Slot-scoped fusion pickers drop the position + match controls. */}
+          <CardFilterControls
+            state={filters} onPatch={patchFilters}
+            showPosition={!slotScoped}
+            showMatchToggle={!slotScoped}
+            showMatchSort={!slotScoped}
+          />
         </div>
 
         {/* Card grid */}
@@ -275,11 +304,14 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
             }}>
               {displayed.map(card => {
                 const isMatch = rosterPlayerIds.has(card.playerId)
-                const isDuplicateEffect = !!card.effectName && excludedEffectSet.has(card.effectName)
+                const isDuplicatePlayer = excludedPlayerSet.has(card.playerId)
+                const isDuplicateEffect = !!card.effectName && card.effectName !== 'none'
+                  && excludedEffectSet.has(card.effectName)
                 return (
                   <PickerCard
                     key={card.id} card={card} isMatch={isMatch}
                     isDuplicateEffect={isDuplicateEffect}
+                    isDuplicatePlayer={isDuplicatePlayer}
                     onSelect={onSelect}
                     projection={candidatesByUserCardId.get(card.id)}
                   />

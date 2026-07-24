@@ -46,6 +46,10 @@ export interface CardBreakdownEntry {
   isChanceEffect?: boolean
   streakActive?: boolean | null
   streakCount?: number
+  // FP power-bar gate: null = ungated, true = the depicted player cleared the bar
+  // (effect fired), false = bar not met (effect scored nothing this week).
+  gateActive?: boolean | null
+  gateThreshold?: number
 }
 
 export interface ChanceAmplifier {
@@ -68,6 +72,13 @@ export interface HandSynergies {
   match: {
     count: number
     total: number
+  }
+  // Team stacking: the largest same-team group fielded, how many are Champions
+  // (which amplify the stack), and the lineup-wide FPx delta (0 below a 2-stack).
+  stack?: {
+    size: number
+    champions: number
+    bonus: number
   }
 }
 
@@ -332,6 +343,8 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
               isChanceEffect: cb.isChanceEffect ?? false,
               streakActive: cb.streakActive ?? null,
               streakCount: cb.streakCount ?? 0,
+              gateActive: cb.gateActive ?? null,
+              gateThreshold: cb.gateThreshold ?? 0,
             })),
             equationSummary: e.equationSummary ?? existing?.equationSummary ?? undefined,
             favoriteTeamData: e.favoriteTeamData ?? existing?.favoriteTeamData ?? null,
