@@ -1424,7 +1424,7 @@ const AboutPage: React.FC = () => {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
               {[
-                { name: 'Base', color: '#94a3b8', count: 33, desc: 'Simple, reliable effects. Flat FP bonuses, basic Floobit earnings, and straightforward conditionals. The backbone of any collection.' },
+                { name: 'Metallic', color: '#9aabc4', count: 33, desc: 'Simple, reliable effects. Flat FP bonuses, basic Floobit earnings, and straightforward conditionals. The backbone of any collection.' },
                 { name: 'Holographic', color: '#c4b5fd', count: 45, desc: 'Conditional and composition effects. Team-based bonuses, position matchup rewards, and loyalty programs that scale with roster synergy.' },
                 { name: 'Prismatic', color: '#f472b6', count: 35, desc: 'Chance-based and streak effects. High-risk/high-reward mechanics that grow over consecutive weeks, plus game-outcome bonuses.' },
                 { name: 'Diamond', color: '#a5f3fc', count: 13, desc: 'Synergy effects. Hand-shaping cards that boost your entire loadout, chain reactions, and build-around centerpieces.' },
@@ -1619,7 +1619,7 @@ const AboutPage: React.FC = () => {
                 { edition: 'Diamond', threshold: '300+', color: '#a5f3fc' },
                 { edition: 'Prismatic', threshold: '175 – 299', color: '#f472b6' },
                 { edition: 'Holographic', threshold: '50 – 174', color: '#c4b5fd' },
-                { edition: 'Base', threshold: '0 – 49', color: '#94a3b8' },
+                { edition: 'Metallic', threshold: '0 – 49', color: '#9aabc4' },
               ].map(t => (
                 <div key={t.edition} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '11px', fontWeight: '700', color: t.color, minWidth: '85px' }}>

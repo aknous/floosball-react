@@ -64,15 +64,20 @@ export const EDITION_STYLES: Record<string, {
     borderColor: '#414a5c',
     bgGradient: 'linear-gradient(140deg, #2b3242 0%, #232a36 60%, #2a313f 100%)',
     labelColor: '#8895a9',
-    label: 'Standard',
-    rarity: 'No Effect',
-  },
-  base: {
-    borderColor: '#5b6b83',
-    bgGradient: 'linear-gradient(140deg, #3a475c 0%, #28303f 55%, #333d4f 100%)',
-    labelColor: '#aebacd',
     label: 'Base',
+    rarity: 'Basic',
+  },
+  // Metallic (slug 'base') — the first effect tier. Brushed-steel treatment with a
+  // cool silver sheen band + a slow light sweep (see edition FX gating), a clear rung
+  // above the flat no-effect floor print (slug 'standard', shown as "Base") but below
+  // the rainbow Holographic.
+  base: {
+    borderColor: '#8a9bb4',
+    bgGradient: 'linear-gradient(140deg, #2c3441 0%, #38414f 30%, #434c5b 45%, #313945 60%, #3a4350 82%, #272d38 100%)',
+    labelColor: '#c3cedd',
+    label: 'Metallic',
     rarity: 'Common',
+    glowColor: 'rgba(154,171,196,0.24)',
   },
   holographic: {
     borderColor: '#a78bfa',
@@ -102,6 +107,12 @@ export const EDITION_STYLES: Record<string, {
 
 const POSITION_LABELS: Record<number, string> = {
   1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K',
+}
+
+// Per-position accent (QB/RB/WR/TE/K) — the position badge now reads at a glance since
+// the fusion lineup is position-locked.
+const POSITION_COLORS: Record<number, string> = {
+  1: '#f59e0b', 2: '#22c55e', 3: '#38bdf8', 4: '#a78bfa', 5: '#fb7185',
 }
 
 // Category colors for the effect badge
@@ -302,10 +313,10 @@ interface TradingCardProps {
 }
 
 const SIZES = {
-  xs: { width: 105, height: 178, font: 9, nameFont: 11, avatar: 50, pad: 6, starSize: 16 },
-  sm: { width: 160, height: 270, font: 12, nameFont: 14, avatar: 76, pad: 8, starSize: 22 },
-  md: { width: 200, height: 340, font: 14, nameFont: 17, avatar: 100, pad: 12, starSize: 28 },
-  lg: { width: 260, height: 430, font: 16, nameFont: 20, avatar: 128, pad: 16, starSize: 34 },
+  xs: { width: 105, height: 178, font: 9, nameFont: 11, avatar: 46, pad: 6, starSize: 17 },
+  sm: { width: 160, height: 270, font: 12, nameFont: 14, avatar: 66, pad: 8, starSize: 24 },
+  md: { width: 200, height: 340, font: 14, nameFont: 17, avatar: 84, pad: 12, starSize: 31 },
+  lg: { width: 260, height: 430, font: 16, nameFont: 20, avatar: 110, pad: 16, starSize: 38 },
 }
 
 // Tier badge (hexagon) dimensions per card size. Pinned just under the header
@@ -616,6 +627,12 @@ const SHIMMER_CONFIGS: Record<string, {
   duration: string
   opacity: number
 }> = {
+  // Metallic: a slow, restrained silver light-sweep — a metal glint, no color.
+  base: {
+    gradient: 'linear-gradient(105deg, transparent 42%, rgba(203,213,225,0.035) 47%, rgba(255,255,255,0.08) 50%, rgba(203,213,225,0.035) 53%, transparent 58%)',
+    duration: '6.5s',
+    opacity: 0.7,
+  },
   holographic: {
     gradient: 'linear-gradient(105deg, transparent 35%, rgba(167,139,250,0.06) 45%, rgba(255,255,255,0.08) 50%, rgba(167,139,250,0.06) 55%, transparent 65%)',
     duration: '4.5s',
@@ -771,40 +788,6 @@ const DiamondEdgeShimmer: React.FC = () => (
   </div>
 )
 
-// FP power-bar gate. The depicted player's weekly FP must clear a position
-// threshold for the card's effect to fire (inverse cards run it in reverse:
-// active WHILE under the threshold). With a live `playerFP` (lineup/scoring),
-// it renders a fill + current/threshold + ON/OFF; without one (collection/shop)
-// it shows the static requirement.
-const GateBar: React.FC<{
-  threshold: number; inverse: boolean; playerFP?: number; font: number; mutedColor: string
-}> = ({ threshold, inverse, playerFP, font, mutedColor }) => {
-  if (!threshold || threshold <= 0) return null
-  const chipFont = Math.max(8, font - 4)
-  if (playerFP == null) {
-    return (
-      <div style={{ marginTop: 3, fontSize: chipFont, color: mutedColor, opacity: 0.85, fontWeight: 600 }}>
-        {inverse ? `Active under ${threshold} FP` : `Unlocks at ${threshold} FP`}
-      </div>
-    )
-  }
-  const active = inverse ? playerFP < threshold : playerFP >= threshold
-  // Normal bars ramp up toward the threshold; inverse bars start full and empty.
-  const raw = inverse ? (threshold - playerFP) / threshold : playerFP / threshold
-  const pct = Math.max(0, Math.min(1, raw)) * 100
-  const color = active ? '#22c55e' : '#64748b'
-  return (
-    <div style={{ marginTop: 4, display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center' }}>
-      <div style={{ width: '85%', height: 4, backgroundColor: 'rgba(148,163,184,0.20)', borderRadius: 2, overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', backgroundColor: color, transition: 'width 0.2s' }} />
-      </div>
-      <span style={{ fontSize: chipFont, color, fontWeight: 600, letterSpacing: '0.02em' }}>
-        {playerFP.toFixed(0)} / {threshold} FP{active ? '' : ' · OFF'}
-      </span>
-    </div>
-  )
-}
-
 const TradingCard: React.FC<TradingCardProps> = ({
   card, size = 'md', selected = false, onSelect, onClick, onLevelUp, onTrash, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState, gateFP,
 }) => {
@@ -822,6 +805,12 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const edStyle = EDITION_STYLES[card.edition] || EDITION_STYLES.base
   const d = SIZES[size]
   const posLabel = POSITION_LABELS[card.position] || '??'
+  // Fixed footer height so EVERY card front has identical geometry regardless of how many
+  // lines its tagline wraps to — the effect footer and the standard/no-effect placeholder
+  // both pin to this. Sized for the worst case (effect-name line + a two-line tagline);
+  // the footer vertically CENTERS its content, so a one-line tagline gets balanced padding
+  // top and bottom instead of a gap dumped at the card's bottom edge.
+  const footerReserve = Math.max(6, d.pad - 5) + Math.max(4, d.pad - 7) + Math.round((d.font + 1) * 1.35) + 2 + Math.round((d.font - 3) * 1.3) * 2
   const effectDisplayName = card.displayName || card.effectConfig?.displayName || ''
   const effectTagline = card.tagline || card.effectConfig?.tagline || ''
   const effectTooltip = card.tooltip || card.effectConfig?.tooltip || ''
@@ -950,6 +939,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
       )}
 
       {/* Edition FX overlays */}
+      {edition === 'base' && <ShimmerOverlay edition={edition} />}
       {edition === 'holographic' && <ShimmerOverlay edition={edition} />}
       {edition === 'prismatic' && <><HoloBackgroundOverlay /><HoloEdgeShimmer /></>}
       {edition === 'diamond' && <><DiamondEdgeShimmer /><SparkleOverlay /></>}
@@ -1020,7 +1010,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
       {!flipped && (
         <>
           <div style={{
-            flex: 1, display: 'flex', flexDirection: 'column',
+            flex: '0 1 auto', display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
             padding: `${d.pad}px`,
             textAlign: 'center',
@@ -1055,28 +1045,34 @@ const TradingCard: React.FC<TradingCardProps> = ({
                 />
               ) : null}
             </div>
+          </div>
 
-            {/* Position badge */}
-            <span style={{
-              fontSize: d.font - 1, fontWeight: '800', color: '#94a3b8',
-              backgroundColor: 'rgba(255,255,255,0.06)', padding: '2px 6px',
-              borderRadius: '4px',
-            }}>
-              {posLabel}
-            </span>
+          {/* Flexible spacer — splits the leftover vertical space so the identity group
+              floats in the middle instead of packing under the logo. */}
+          <div style={{ flex: 1, minHeight: 0 }} />
 
-            {/* Stars — filled (tier color) over a faint 5-track so quality reads at a glance */}
-            <div style={{ display: 'flex', gap: '2px', marginBottom: '2px', justifyContent: 'center' }}>
-              {Array.from({ length: 5 }, (_, i) => (
-                <span key={i} style={{
-                  fontSize: d.starSize,
-                  color: i < stars ? tierColor : '#1e3a52',
+          {/* Position — colored tag centered directly above the name */}
+          <div style={{
+            display: 'flex', justifyContent: 'center',
+            padding: `0 ${d.pad}px ${Math.max(2, d.pad - 6)}px`,
+            flexShrink: 0, position: 'relative', zIndex: 3,
+          }}>
+            {(() => {
+              const posColor = POSITION_COLORS[card.position] || '#94a3b8'
+              return (
+                <span style={{
+                  fontSize: d.font, fontWeight: 800, color: '#f8fafc',
+                  letterSpacing: '0.08em',
+                  background: `linear-gradient(135deg, ${hexToRgba(posColor, 0.9)}, ${hexToRgba(posColor, 0.6)})`,
+                  border: `1px solid ${hexToRgba(posColor, 0.9)}`,
+                  borderRadius: '5px', padding: '1px 10px',
+                  boxShadow: `0 0 8px ${hexToRgba(posColor, 0.3)}`,
+                  textShadow: '0 1px 2px rgba(0,0,0,0.5)',
                 }}>
-                  ★
+                  {posLabel}
                 </span>
-              ))}
-            </div>
-
+              )
+            })()}
           </div>
 
           {/* Nameplate band — the player's name as a bold, edition-tinted banner.
@@ -1103,11 +1099,34 @@ const TradingCard: React.FC<TradingCardProps> = ({
             </div>
           </div>
 
+          {/* Quality stars — centered on their own row (position lives in the header). */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px',
+            padding: `2px ${d.pad}px`,
+            flexShrink: 0, position: 'relative', zIndex: 3,
+          }}>
+            {Array.from({ length: 5 }, (_, i) => (
+              <span key={i} style={{
+                fontSize: d.starSize, lineHeight: 1,
+                color: i < stars ? tierColor : '#4d5a6e',
+              }}>
+                ★
+              </span>
+            ))}
+          </div>
+
+          {/* Flexible spacer — pushes the fixed footer to the bottom, balancing the
+              space above the identity group. */}
+          <div style={{ flex: 1, minHeight: 0 }} />
+
           {/* Effect footer — hidden on vaulted (effect gone) and on the sub-base
               "standard" (no-effect) print, which just fields the player for their FP. */}
           {!isVaulted && edition !== 'standard' && (
           <div style={{
-            padding: `${d.pad - 2}px ${d.pad + 18}px`,
+            padding: `${Math.max(6, d.pad - 5)}px ${d.pad + 18}px ${Math.max(4, d.pad - 7)}px`,
+            height: footerReserve, boxSizing: 'border-box', overflow: 'hidden',
+            display: 'flex', flexDirection: 'column', justifyContent: 'center',
+            borderTop: `1px solid ${edStyle.borderColor}40`,
             textAlign: 'center',
             position: 'relative', zIndex: 3,
             flexShrink: 0,
@@ -1121,7 +1140,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
                     name={effectDisplayName}
                     tooltip={behaviorTag ? `${effectTooltip}\n\n${behaviorTag.tooltip}` : effectTooltip}
                     color={outputTypeColor}
-                    fontSize={d.font - 1}
+                    fontSize={d.font + 1}
                   />
                 </div>
               )}
@@ -1129,43 +1148,32 @@ const TradingCard: React.FC<TradingCardProps> = ({
                 <div style={{
                   fontSize: d.font - 3, color: edStyle.labelColor,
                   lineHeight: 1.3,
+                  // Natural height, clamped to two lines. The footer's fixed height +
+                  // vertical centering keeps every card's geometry identical, so this
+                  // no longer needs a rigid two-line box.
+                  overflow: 'hidden',
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                 }}>
                   {colorizeEffectText(effectTagline, edStyle.labelColor)}
                 </div>
               )}
             </div>
-            {gate && (
-              <GateBar
-                threshold={gateThreshold}
-                inverse={!!gate.inverse}
-                playerFP={gateFP}
-                font={d.font}
-                mutedColor={edStyle.labelColor}
-              />
-            )}
-            {/* tierNote intentionally not shown on the front (badge covers tier);
-                it appears on the back/detail only. */}
+            {/* The FP power bar renders BELOW the card body (not here) so it can't
+                compress the footer. tierNote intentionally not shown on the front. */}
           </div>
           )}
 
           {/* Standard (no-effect) print: reserve the footer's space so the nameplate
               lands at the same height as effect cards. minHeight ≈ a typical
-              two-line effect footer; a muted label marks it as effect-free. */}
+              two-line effect footer; left intentionally empty (no "No Effect" label). */}
           {!isVaulted && edition === 'standard' && (
           <div style={{
             padding: `${d.pad - 2}px ${d.pad + 18}px`,
-            minHeight: 2 * (d.pad - 2) + Math.round(d.font * 2.3),
+            minHeight: footerReserve,
             boxSizing: 'border-box',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            textAlign: 'center', position: 'relative', zIndex: 3, flexShrink: 0,
-          }}>
-            <div style={{
-              fontSize: d.font - 2, color: edStyle.labelColor, opacity: 0.65,
-              letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700,
-            }}>
-              No Effect
-            </div>
-          </div>
+            borderTop: `1px solid ${edStyle.borderColor}40`,
+            position: 'relative', zIndex: 3, flexShrink: 0,
+          }} />
           )}
 
           {/* Sell value / expired / equipped badges */}

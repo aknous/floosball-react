@@ -48,7 +48,7 @@ const EDITION_COLORS: Record<string, { color: string; bg: string }> = {
 }
 
 const EDITION_LABELS: Record<string, string> = {
-  standard: 'STND', base: 'BASE', holographic: 'HOLO', prismatic: 'PRSM',
+  standard: 'BASE', base: 'MTLC', holographic: 'HOLO', prismatic: 'PRSM',
   diamond: 'DIAMOND',
 }
 

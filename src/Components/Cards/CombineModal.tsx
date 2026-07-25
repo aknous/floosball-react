@@ -33,7 +33,7 @@ type PickerSortMode = 'value_asc' | 'rating_desc' | 'rarest'
 
 const EDITION_PILL_LABELS: Record<EditionFilter, string> = {
   all: 'All',
-  base: 'Base',
+  base: 'Metallic',
   holographic: 'Holo',
   prismatic: 'Prism',
   diamond: 'Diamond',

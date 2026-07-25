@@ -20,6 +20,8 @@ const EMPTY_DRAG_IMG = typeof Image !== 'undefined' ? (() => {
 })() : null
 
 const EDITIONS = ['all', 'base', 'holographic', 'prismatic', 'diamond'] as const
+// Display label for the edition filter pills (slug 'base' now shows as "Metallic").
+const EDITION_FILTER_LABELS: Record<string, string> = { all: 'all', base: 'metallic', holographic: 'holographic', prismatic: 'prismatic', diamond: 'diamond' }
 const POSITIONS = [
   { value: 0, label: 'All' },
   { value: 1, label: 'QB' },
@@ -449,7 +451,7 @@ const CardCollection: React.FC = () => {
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
         {EDITIONS.map(e => (
           <button key={e} onClick={() => setEditionFilter(e)} style={pillStyle(editionFilter === e)}>
-            {e}
+            {EDITION_FILTER_LABELS[e] ?? e}
           </button>
         ))}
         <span style={{ flex: 1, minWidth: '12px' }} />

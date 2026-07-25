@@ -56,8 +56,8 @@ interface Props {
 const cardCache = new Map<string, EquippedCardEntry[]>()
 
 const EDITION_SHORT: Record<string, string> = {
-  standard: 'STND',
-  base: 'BASE',
+  standard: 'BASE',
+  base: 'MTLC',
   holographic: 'HOLO',
   prismatic: 'PRSM',
   diamond: 'DMND',

@@ -40,7 +40,8 @@ const OUTPUT_TYPE_COLORS: Record<string, string> = {
 }
 
 const EDITION_LABEL_COLORS: Record<string, string> = {
-  base: '#94a3b8',
+  standard: '#8895a9',
+  base: '#c3cedd',
   holographic: '#c4b5fd',
   prismatic: '#f472b6',
   diamond: '#a5f3fc',
@@ -49,7 +50,8 @@ const EDITION_LABEL_COLORS: Record<string, string> = {
 const EDITION_MINI: Record<string, {
   border: string; bg: string; label: string; glow?: string
 }> = {
-  base: { border: '#475569', bg: 'linear-gradient(135deg, #334155, #283548, #334155)', label: 'Base' },
+  standard: { border: '#414a5c', bg: 'linear-gradient(135deg, #2b3242, #232a36, #2a313f)', label: 'Base' },
+  base: { border: '#8a9bb4', bg: 'linear-gradient(135deg, #38414f, #313945, #434c5b)', label: 'Metallic', glow: 'rgba(154,171,196,0.18)' },
   holographic: { border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b, #2e1065, #1e1b4b)', label: 'Holo', glow: 'rgba(167,139,250,0.2)' },
   prismatic: { border: '#db2777', bg: 'linear-gradient(135deg, #2e1065, #701a3e, #1e3a5f, #064e3b)', label: 'Prismatic', glow: 'rgba(219,39,119,0.25)' },
   diamond: { border: '#67e8f9', bg: 'linear-gradient(135deg, #0c4a6e, #155e75, #1e3a5f, #0e7490)', label: 'Diamond', glow: 'rgba(103,232,249,0.3)' },

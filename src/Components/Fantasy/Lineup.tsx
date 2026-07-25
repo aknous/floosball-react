@@ -2,8 +2,10 @@ import React, { useState } from 'react'
 import TradingCard from '@/Components/Cards/TradingCard'
 import CardPickerModal from '@/Components/Cards/CardPickerModal'
 import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, SLOT_POSITION, SLOT_ORDINAL, EquippedEntry } from '@/hooks/useLineup'
-import { useFantasySnapshot, CardBreakdownEntry, PlayerGameStats } from '@/hooks/useFantasySnapshot'
+import { useFantasySnapshot, CardBreakdownEntry } from '@/hooks/useFantasySnapshot'
 import { useAuth } from '@/contexts/AuthContext'
+import HoverTooltip from '@/Components/HoverTooltip'
+import { gateTooltipText } from './gateMeter'
 
 const EMPTY_ROSTER_IDS: Set<number> = new Set()
 
@@ -11,52 +13,63 @@ const OUTPUT_COLORS: Record<string, string> = {
   fp: '#4ade80', mult: '#f472b6', floobits: '#eab308',
 }
 
-// CardTemplate.position (1-based) → position label.
-const POSITION_LABEL: Record<number, string> = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K' }
 
-// This week's game line as one compact, glanceable string per position.
-function compactStatLine(stats: PlayerGameStats | null | undefined, pos: string): string | null {
-  if (!stats) return null
-  if (pos === 'QB') {
-    const p = stats.passing ?? {}
-    const base = `${p.comp ?? 0}/${p.att ?? 0} · ${p.yards ?? 0} yd · ${p.tds ?? 0} TD`
-    return (p.ints ?? 0) ? `${base} · ${p.ints} INT` : base
-  }
-  if (pos === 'RB') {
-    const r = stats.rushing ?? {}
-    return `${r.carries ?? 0} car · ${r.yards ?? 0} yd · ${r.tds ?? 0} TD`
-  }
-  if (pos === 'WR' || pos === 'TE') {
-    const rc = stats.receiving ?? {}
-    return `${rc.receptions ?? 0}/${rc.targets ?? 0} rec · ${rc.yards ?? 0} yd · ${rc.tds ?? 0} TD`
-  }
-  if (pos === 'K') {
-    const k = stats.kicking ?? {}
-    return `${k.fgs ?? 0}/${k.fgAtt ?? 0} FG · ${k.longest ?? 0} yd`
-  }
-  return null
-}
+// The per-slot performance block: the fielded player's week FP with a thin gate bar
+// (its COLOR is the on/off signal — no text label), and the effect result on one line
+// (the gated-off state folds into it). Fixed height so all slots line up.
+const PerfBlock: React.FC<{
+  weekFP?: number
+  gate?: { threshold?: number; inverse?: boolean }
+  bonus?: CardBreakdownEntry
+  noEffect: boolean
+}> = ({ weekFP, gate, bonus, noEffect }) => {
+  const fp = weekFP ?? 0
+  const thr = gate?.threshold ?? 0
+  const gated = thr > 0
+  const on = !gated || (gate?.inverse ? fp < thr : fp >= thr)
+  const raw = gate?.inverse ? (thr - fp) / thr : fp / thr
+  const pct = Math.max(0, Math.min(1, raw)) * 100
 
-// The per-slot scoring line: the fielded player's week FP + that card's effect result.
-const ScoreLine: React.FC<{ weekFP?: number; bonus?: CardBreakdownEntry; noEffect: boolean }>
-  = ({ weekFP, bonus, noEffect }) => {
-  let bonusEl: React.ReactNode = <span style={{ color: '#64748b' }}>no effect</span>
-  if (!noEffect && bonus) {
-    if (bonus.floobitsEarned > 0) {
-      bonusEl = <span style={{ color: OUTPUT_COLORS.floobits }}>+{bonus.floobitsEarned} Floobits</span>
-    } else if (bonus.totalFP > 0) {
-      const c = OUTPUT_COLORS[bonus.outputType] || OUTPUT_COLORS.fp
-      bonusEl = <span style={{ color: c }}>+{bonus.totalFP.toFixed(1)} {bonus.outputType === 'mult' ? 'FPx' : 'FP'}</span>
-    } else {
-      bonusEl = <span style={{ color: '#64748b' }}>—</span>
-    }
+  // Result line: the card's effect output this week. FPx cards show their multiplier
+  // delta, FP/Floobits cards their flat add. No-effect (standard) cards show nothing;
+  // anything that produced no output (incl. gated off) shows a muted "—".
+  let result: React.ReactNode = null
+  if (noEffect) {
+    result = null
+  } else if (bonus && bonus.floobitsEarned > 0) {
+    result = <span style={{ color: OUTPUT_COLORS.floobits }}>+{bonus.floobitsEarned} Floobits</span>
+  } else if (bonus && bonus.primaryMult > 1) {
+    result = <span style={{ color: OUTPUT_COLORS.mult }}>+{(bonus.primaryMult - 1).toFixed(2)} FPx</span>
+  } else if (bonus && bonus.totalFP > 0) {
+    result = <span style={{ color: OUTPUT_COLORS.fp }}>+{bonus.totalFP.toFixed(1)} FP</span>
+  } else {
+    result = <span style={{ color: '#64748b' }}>—</span>
   }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, minHeight: 32, justifyContent: 'center' }}>
-      <div style={{ fontSize: 16, fontWeight: 800, color: '#eaf1ff', fontVariantNumeric: 'tabular-nums' }}>
-        {(weekFP ?? 0).toFixed(1)}<span style={{ color: '#94a3b8', fontSize: 9, marginLeft: 2 }}>FP</span>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+      <div style={{ fontSize: 19, fontWeight: 800, color: on ? '#eaf1ff' : '#93a1b8', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+        {fp.toFixed(1)}<span style={{ color: '#94a3b8', fontSize: 10, marginLeft: 3 }}>FP</span>
       </div>
-      <div style={{ fontSize: 10, fontWeight: 700 }}>{bonusEl}</div>
+      {/* Gate bar — reserved height (even with no gate) keeps slots aligned. */}
+      <div style={{ height: 9, width: '78%', display: 'flex', alignItems: 'center' }}>
+        {gated && (
+          <HoverTooltip
+            text={gateTooltipText({
+              playerFP: fp, threshold: thr, active: on, inverse: gate?.inverse,
+              isChance: bonus?.isChanceEffect, chancePct: bonus?.chanceThreshold, chanceTriggered: bonus?.chanceTriggered,
+            })}
+            color={on ? '#22c55e' : '#64748b'}
+            style={{ display: 'block', width: '100%' }}
+          >
+            <div style={{ width: '100%', height: 9, backgroundColor: 'rgba(148,163,184,0.22)', borderRadius: 5, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.15)', cursor: 'help' }}>
+              <div style={{ width: `${pct}%`, height: '100%', backgroundColor: on ? '#22c55e' : '#64748b', borderRadius: 5, transition: 'width 0.2s' }} />
+            </div>
+          </HoverTooltip>
+        )}
+      </div>
+      {/* Reserved height so no-effect slots (empty here) still line up. */}
+      <div style={{ fontSize: 12, fontWeight: 700, minHeight: 15 }}>{result}</div>
     </div>
   )
 }
@@ -125,16 +138,7 @@ const Lineup: React.FC = () => {
                   <button onClick={() => setPickerSlot(slot)} style={changeBtn}>Change</button>
                 )}
 
-                <ScoreLine weekFP={weekFPBySlot[slot]} bonus={bonus} noEffect={noEffect} />
-
-                {/* This week's game line, always at a glance once the player has played */}
-                {entry && (() => {
-                  const line = compactStatLine(
-                    myEntry?.playerGameStats?.[entry.playerId],
-                    POSITION_LABEL[entry.card.position] ?? '',
-                  )
-                  return line ? <div style={statLineStyle}>{line}</div> : null
-                })()}
+                <PerfBlock weekFP={weekFPBySlot[slot]} gate={entry?.card.effectConfig?.gate} bonus={bonus} noEffect={noEffect} />
               </div>
             )
           })}
@@ -162,10 +166,6 @@ const Lineup: React.FC = () => {
   )
 }
 
-const statLineStyle: React.CSSProperties = {
-  fontSize: 10, color: '#94a3b8', textAlign: 'center', lineHeight: 1.35,
-  maxWidth: 156, fontVariantNumeric: 'tabular-nums', marginTop: -2,
-}
 const changeBtn: React.CSSProperties = {
   padding: '4px 14px', borderRadius: 6, border: '1px solid #3b4d68',
   background: 'rgba(59,130,246,0.12)', color: '#93c5fd', fontSize: 10, fontWeight: 700,

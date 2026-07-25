@@ -34,7 +34,7 @@ export const POSITION_OPTIONS: { value: PositionFilter; label: string }[] = [
 ]
 export const EDITION_OPTIONS: { value: EditionFilter; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'base', label: 'Base' },
+  { value: 'base', label: 'Metallic' },
   { value: 'holographic', label: 'Holo' },
   { value: 'prismatic', label: 'Prism' },
   { value: 'diamond', label: 'Diamond' },

@@ -535,7 +535,7 @@ const ScoringManual: React.FC<{ scoring?: ScoringRules; dividendRate?: number }>
     return <span>A card scores from its edition, classification (the CH / AP / MVP / Rookie tags), recency, and upgrade tier.</span>
   }
   const grades = scoring.grades
-  const editionLabel: Record<string, string> = { base: 'Base', holographic: 'Holographic', prismatic: 'Prismatic', diamond: 'Diamond' }
+  const editionLabel: Record<string, string> = { base: 'Metallic', holographic: 'Holographic', prismatic: 'Prismatic', diamond: 'Diamond' }
   const classLabel: Record<string, string> = { rookie: 'Rookie (R)', all_pro: 'All-Pro (AP)', champion: 'Champion (CH)', mvp: 'MVP' }
   const Group: React.FC<{ title: string; sub?: string; children: React.ReactNode }> = ({ title, sub, children }) => (
     <div style={{ marginBottom: '12px' }}>
