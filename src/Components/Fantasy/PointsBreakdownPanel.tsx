@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { GateMeter } from './gateMeter'
+import { positionColor } from '@/Components/Cards/positionColors'
 import type { CardBreakdownEntry, EquationSummary, ModifierInfo } from '@/hooks/useFantasySnapshot'
 
 // The card-scoring breakdown panel. Rendered by ScoringPane on the fantasy page.
@@ -111,7 +112,7 @@ const RosterCardRow: React.FC<{
   const idRow = (
     <div style={{ ...ROW_STYLE, alignItems: 'center', gap: '6px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
-        <span style={{ color: '#cbd5e1', fontSize: '11px', fontWeight: '700', flexShrink: 0, width: '22px' }}>{position}</span>
+        <span style={{ color: positionColor(position), fontSize: '11px', fontWeight: '700', flexShrink: 0, width: '22px' }}>{position}</span>
         {hasEffect && (
           <span style={{ color: edColor, fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>{edTag}</span>
         )}
@@ -123,7 +124,7 @@ const RosterCardRow: React.FC<{
                 {effectLabel}
               </span>
             </HoverTooltip>
-            {(b!.gateThreshold ?? 0) > 0 && b!.gateActive != null && (
+            {(((b!.gateThreshold ?? 0) > 0 && b!.gateActive != null) || b!.isChanceEffect) && (
               <GateMeter
                 threshold={b!.gateThreshold ?? 0}
                 active={b!.gateActive === true}
@@ -492,7 +493,7 @@ export const PointsBreakdownPanel: React.FC<{
                       {syn.stack!.champions >= syn.stack!.size ? 'Dynasty' : 'Team Stack'} · {syn.stack!.size} same-team
                       {syn.stack!.champions > 0 ? ` (${syn.stack!.champions} champ${syn.stack!.champions !== 1 ? 's' : ''})` : ''}
                     </span>
-                    <span style={{ ...valStyle, color: '#fbbf24' }}>+{(syn.stack!.bonus * 100).toFixed(0)}% FPx</span>
+                    <span style={{ ...valStyle, color: '#fbbf24' }}>+{syn.stack!.bonus.toFixed(2)} FPx</span>
                   </div>
                 )}
               </div>

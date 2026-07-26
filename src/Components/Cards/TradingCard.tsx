@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import ReactDOM from 'react-dom'
 import { calcStars, STAR_COLORS } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { POSITION_COLORS } from '@/Components/Cards/positionColors'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -109,11 +110,6 @@ const POSITION_LABELS: Record<number, string> = {
   1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K',
 }
 
-// Per-position accent (QB/RB/WR/TE/K) — the position badge now reads at a glance since
-// the fusion lineup is position-locked.
-const POSITION_COLORS: Record<number, string> = {
-  1: '#f59e0b', 2: '#22c55e', 3: '#38bdf8', 4: '#a78bfa', 5: '#fb7185',
-}
 
 // Category colors for the effect badge
 const CATEGORY_COLORS: Record<string, string> = {
@@ -162,22 +158,22 @@ const CLASSIFICATION_CONFIG: Record<string, {
   rookie: {
     label: 'Rookie', abbr: 'R', color: '#f8fafc',
     bgColor: '#a16207', borderColor: 'rgba(255,255,255,0.2)',
-    tooltip: 'Rookie — Sells for 2x Floobits',
+    tooltip: 'Rookie: sells for 2x Floobits',
   },
   mvp: {
     label: 'MVP', abbr: 'MVP', color: '#f8fafc',
     bgColor: '#2563eb', borderColor: 'rgba(255,255,255,0.2)',
-    tooltip: 'MVP — unlocks the FLEX lineup slot',
+    tooltip: 'MVP: unlocks the FLEX lineup slot',
   },
   champion: {
     label: 'Champion', abbr: 'CH', color: '#f8fafc',
     bgColor: '#c2410c', borderColor: 'rgba(255,255,255,0.2)',
-    tooltip: 'Champion — prior-season title winner',
+    tooltip: 'Champion: boosts your FPx when stacked with same-team cards',
   },
   all_pro: {
     label: 'All-Pro', abbr: 'AP', color: '#f8fafc',
     bgColor: '#7c3aed', borderColor: 'rgba(255,255,255,0.2)',
-    tooltip: 'All-Pro — prior-season All-Pro selection',
+    tooltip: 'All-Pro: lowers its FP power-bar threshold',
   },
 }
 
@@ -258,7 +254,10 @@ export interface CardData {
   tagline?: string
   tooltip?: string
   detail?: string
+  gateText?: string          // the FP power-bar requirement, shown on its own line
+  validPositions?: number[]  // positions this effect can transplant onto (1-5)
   sellValue: number
+  combineValue?: number      // classification-aware value used by The Combine / picker sort
   isActive: boolean
   isEquipped?: boolean
   vaulted?: boolean  // permanently in the Vault — can't equip/sell/combine
@@ -815,6 +814,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
   const effectTagline = card.tagline || card.effectConfig?.tagline || ''
   const effectTooltip = card.tooltip || card.effectConfig?.tooltip || ''
   const effectDetail = card.detail || card.effectConfig?.detail || ''
+  const gateText = card.gateText || card.effectConfig?.gateText || ''
   // FP power-bar gate: {threshold, inverse} frozen into the effect config at mint.
   // `gateOff` is true only in a live scoring context (gateFP known) where the
   // depicted player hasn't met the bar this week — the effect scores nothing.
@@ -1404,6 +1404,16 @@ const TradingCard: React.FC<TradingCardProps> = ({
               lineHeight: 1.6, textAlign: 'center',
             }}>
               {colorizeEffectText(effectDetail, '#cbd5e1')}
+            </div>
+          )}
+
+          {/* FP power-bar requirement — its own line, tied to the green power bar */}
+          {gateText && (
+            <div style={{
+              fontSize: d.font - 2, color: '#7fd8a0', fontStyle: 'italic',
+              lineHeight: 1.4, textAlign: 'center', marginTop: '2px',
+            }}>
+              {gateText}
             </div>
           )}
 

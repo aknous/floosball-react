@@ -5,7 +5,8 @@ import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, SLOT_POSITION, SLOT_ORDIN
 import { useFantasySnapshot, CardBreakdownEntry } from '@/hooks/useFantasySnapshot'
 import { useAuth } from '@/contexts/AuthContext'
 import HoverTooltip from '@/Components/HoverTooltip'
-import { gateTooltipText } from './gateMeter'
+import { gateTooltipText, gateFill, gateBarColor } from './gateMeter'
+import { positionColor } from '@/Components/Cards/positionColors'
 
 const EMPTY_ROSTER_IDS: Set<number> = new Set()
 
@@ -25,10 +26,17 @@ const PerfBlock: React.FC<{
 }> = ({ weekFP, gate, bonus, noEffect }) => {
   const fp = weekFP ?? 0
   const thr = gate?.threshold ?? 0
-  const gated = thr > 0
-  const on = !gated || (gate?.inverse ? fp < thr : fp >= thr)
-  const raw = gate?.inverse ? (thr - fp) / thr : fp / thr
-  const pct = Math.max(0, Math.min(1, raw)) * 100
+  const isChance = Boolean(bonus?.isChanceEffect)
+  // Chance cards show a probability bar (fill = trigger odds) instead of an on/off gate.
+  const gated = thr > 0 || isChance
+  const meterOpts = {
+    playerFP: fp, threshold: thr, active: gate?.inverse ? fp < thr : fp >= thr, inverse: gate?.inverse,
+    isChance, chancePct: bonus?.chanceThreshold, chanceTriggered: bonus?.chanceTriggered,
+  }
+  // The FP number always counts (base pays regardless); the bar carries the on/off or odds signal.
+  const on = isChance ? true : meterOpts.active
+  const pct = gateFill(meterOpts) * 100
+  const barColor = gateBarColor(meterOpts)
 
   // Result line: the card's effect output this week. FPx cards show their multiplier
   // delta, FP/Floobits cards their flat add. No-effect (standard) cards show nothing;
@@ -47,23 +55,20 @@ const PerfBlock: React.FC<{
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
       <div style={{ fontSize: 19, fontWeight: 800, color: on ? '#eaf1ff' : '#93a1b8', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
         {fp.toFixed(1)}<span style={{ color: '#94a3b8', fontSize: 10, marginLeft: 3 }}>FP</span>
       </div>
-      {/* Gate bar — reserved height (even with no gate) keeps slots aligned. */}
-      <div style={{ height: 9, width: '78%', display: 'flex', alignItems: 'center' }}>
+      {/* Gate / chance bar — reserved height (even with no bar) keeps slots aligned. */}
+      <div style={{ height: 9, width: '80%', display: 'flex', alignItems: 'center' }}>
         {gated && (
           <HoverTooltip
-            text={gateTooltipText({
-              playerFP: fp, threshold: thr, active: on, inverse: gate?.inverse,
-              isChance: bonus?.isChanceEffect, chancePct: bonus?.chanceThreshold, chanceTriggered: bonus?.chanceTriggered,
-            })}
-            color={on ? '#22c55e' : '#64748b'}
+            text={gateTooltipText(meterOpts)}
+            color={barColor}
             style={{ display: 'block', width: '100%' }}
           >
             <div style={{ width: '100%', height: 9, backgroundColor: 'rgba(148,163,184,0.22)', borderRadius: 5, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.15)', cursor: 'help' }}>
-              <div style={{ width: `${pct}%`, height: '100%', backgroundColor: on ? '#22c55e' : '#64748b', borderRadius: 5, transition: 'width 0.2s' }} />
+              <div style={{ width: `${pct}%`, height: '100%', backgroundColor: barColor, borderRadius: 5, transition: 'width 0.2s' }} />
             </div>
           </HoverTooltip>
         )}
@@ -106,10 +111,11 @@ const Lineup: React.FC = () => {
             const canEdit = !lineup.gamesActive && !lineup.locked && !lineup.saving
             const bonus = entry ? bonusBySlotNumber[entry.slotNumber] : undefined
             const noEffect = entry?.card.edition === 'standard'
+            const slotColor = slot === FLEX_SLOT ? '#fbbf24' : positionColor(SLOT_POSITION[slot])
             return (
               <div key={slot} data-tour={slot === 'QB' ? 'fantasy-card-read' : undefined}
                    style={{ width: 160, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.13em', textTransform: 'uppercase', color: '#94a3b8', display: 'flex', gap: 4 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: slotColor, textShadow: `0 0 10px ${slotColor}55`, display: 'flex', gap: 4 }}>
                   {slot}{slot === FLEX_SLOT && <span style={{ color: '#fbbf24' }}>◇</span>}
                 </div>
 
@@ -128,9 +134,9 @@ const Lineup: React.FC = () => {
                   <button
                     onClick={() => canEdit && setPickerSlot(slot)}
                     disabled={!canEdit}
-                    style={{ ...emptyCard, cursor: canEdit ? 'pointer' : 'default' }}>
-                    <div style={{ fontSize: 30, color: '#94a3b8', lineHeight: 1 }}>+</div>
-                    <div style={{ fontSize: 10, letterSpacing: '.08em', textTransform: 'uppercase', color: '#94a3b8', marginTop: 8 }}>Add {slot}</div>
+                    style={{ ...emptyCard, borderColor: `${slotColor}66`, cursor: canEdit ? 'pointer' : 'default' }}>
+                    <div style={{ fontSize: 30, color: slotColor, lineHeight: 1 }}>+</div>
+                    <div style={{ fontSize: 10, letterSpacing: '.08em', textTransform: 'uppercase', color: slotColor, marginTop: 8 }}>Add {slot}</div>
                   </button>
                 )}
 
