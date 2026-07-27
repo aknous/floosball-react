@@ -446,8 +446,16 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
       {/* Status Bar */}
       <div style={statusStyle}>
         {isFinal ? (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span>Final {(quarter ?? 0) > 4 ? '(OT)' : ''}</span>
+            {/* Frames decided on the points tiebreak: the score above shows a level frames
+                count (e.g. 3-3), so name the winner or it reads as a silent tie. Matches the
+                note the live card and the game modal show. */}
+            {frames?.tiebreak?.decidedByPoints && (
+              <span style={{ color: '#f59e0b', fontWeight: 700, letterSpacing: '0.03em' }}>
+                {`LEVEL • ${(frames.tiebreak.winner === 'home' ? homeTeam : awayTeam).abbr} wins on points`}
+              </span>
+            )}
             {isUpsetAlert && (
               <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
                 UPSET
