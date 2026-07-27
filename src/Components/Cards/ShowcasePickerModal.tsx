@@ -5,7 +5,7 @@ import TradingCard, { CardData } from './TradingCard'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-const EDITIONS = ['all', 'base', 'holographic', 'prismatic', 'diamond'] as const
+const EDITIONS = ['all', 'metallic', 'holographic', 'prismatic', 'diamond'] as const
 const POSITIONS = [
   { value: 0, label: 'All' },
   { value: 1, label: 'QB' },

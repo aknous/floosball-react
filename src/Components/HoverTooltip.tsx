@@ -6,11 +6,14 @@ interface HoverTooltipProps {
   content?: React.ReactNode
   color?: string
   children: React.ReactNode
+  // Optional style merged onto the wrapping span (e.g. to let the trigger fill a
+  // flex/block container instead of shrinking to its content width).
+  style?: React.CSSProperties
 }
 
 const MARGIN = 8
 
-const HoverTooltip: React.FC<HoverTooltipProps> = ({ text, content, color = '#94a3b8', children }) => {
+const HoverTooltip: React.FC<HoverTooltipProps> = ({ text, content, color = '#94a3b8', children, style }) => {
   const [show, setShow] = useState(false)
   const [anchor, setAnchor] = useState({ cx: 0, top: 0, bottom: 0 })
   // Position is resolved after the tooltip mounts (so we can measure it and
@@ -42,7 +45,7 @@ const HoverTooltip: React.FC<HoverTooltipProps> = ({ text, content, color = '#94
   }, [show, anchor])
 
   return (
-    <span ref={ref} onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)} style={{ cursor: hasContent ? 'help' : undefined }}>
+    <span ref={ref} onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)} style={{ cursor: hasContent ? 'help' : undefined, ...style }}>
       {children}
       {show && hasContent && ReactDOM.createPortal(
         <div ref={tipRef} style={{

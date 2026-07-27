@@ -261,7 +261,7 @@ const PlaybookRow: React.FC<{ pb: NonNullable<PlayInsights['playbook']> }> = ({ 
   )
 }
 
-const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCall?: string; tempo?: PlayInsights['tempo']; defense?: PlayInsights['defense']; playbook?: PlayInsights['playbook'] }> = ({ data, playCall, tempo, defense, playbook }) => {
+const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCall?: string; checkedDown?: boolean; tempo?: PlayInsights['tempo']; defense?: PlayInsights['defense']; playbook?: PlayInsights['playbook'] }> = ({ data, playCall, checkedDown, tempo, defense, playbook }) => {
   const callLabels: Record<string, string> = { run: 'Run', short: 'Short Pass', medium: 'Medium Pass', long: 'Long Pass', deep: 'Deep Shot' }
   const tempoLabels: Record<string, string> = { hurryUp: 'Hurry-up', burnClock: 'Burn clock', neutral: 'Normal' }
   const tempoColors: Record<string, string> = { hurryUp: '#f59e0b', burnClock: '#06b6d4', neutral: '#94a3b8' }
@@ -277,7 +277,14 @@ const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCal
     <div>
       <SectionLabel label="Stratagem" />
       {playCall && (
-        <Row label="Play Call" value={callLabels[playCall] ?? humanize(playCall)} color={playCallColors[playCall] ?? '#e2e8f0'} />
+        <Row label="Play Call" color={playCallColors[playCall] ?? '#e2e8f0'} value={
+          <>
+            {callLabels[playCall] ?? humanize(playCall)}
+            {checkedDown && (
+              <span style={{ color: '#94a3b8', fontSize: '11px', marginLeft: '6px' }}>→ checkdown</span>
+            )}
+          </>
+        } />
       )}
       {playbook && <PlaybookRow pb={playbook} />}
       {tempo && (
@@ -504,6 +511,7 @@ const PassSection: React.FC<{ data: NonNullable<PlayInsights['pass']> }> = ({ da
           intPct={data.intProbability ?? 0}
           dropPct={data.dropProbability ?? 0}
           outcomeRoll={data.outcomeRoll}
+          outcome={data.outcome}
         />
       </div>
     )}
@@ -516,7 +524,8 @@ const PassSection: React.FC<{ data: NonNullable<PlayInsights['pass']> }> = ({ da
 /** Stacked probability bar matching backend zone order: INT | Catch | Drop | Incomplete. */
 const ProbabilityBar: React.FC<{
   catchPct: number; intPct: number; dropPct: number; outcomeRoll?: number
-}> = ({ catchPct, intPct, dropPct, outcomeRoll }) => {
+  outcome?: 'int' | 'catch' | 'drop' | 'incomplete'
+}> = ({ catchPct, intPct, dropPct, outcomeRoll, outcome }) => {
   const incompletePct = Math.max(0, 100 - catchPct - intPct - dropPct)
   // Backend roll order: INT → Catch → Drop → Incomplete
   const zones = [
@@ -526,9 +535,13 @@ const ProbabilityBar: React.FC<{
     { label: 'Incomplete', pct: incompletePct, color: '#475569' },
   ].filter(z => z.pct > 0)
 
-  // Determine which zone the outcome landed in (matches backend order)
-  let outcomeLabel: string | null = null
-  if (outcomeRoll != null) {
+  // Prefer the engine's ACTUAL resolved outcome — the probabilities here are
+  // rounded for display, so re-deriving the label from them + the roll can drift
+  // at a boundary and contradict the play-by-play. Fall back to the re-derivation
+  // only for older payloads that predate the `outcome` field.
+  const OUTCOME_LABEL = { int: 'INT', catch: 'Catch', drop: 'Drop', incomplete: 'Incomplete' } as const
+  let outcomeLabel: string | null = outcome ? OUTCOME_LABEL[outcome] : null
+  if (outcomeLabel == null && outcomeRoll != null) {
     if (outcomeRoll <= intPct) outcomeLabel = 'INT'
     else if (outcomeRoll <= intPct + catchPct) outcomeLabel = 'Catch'
     else if (outcomeRoll <= intPct + catchPct + dropPct) outcomeLabel = 'Drop'
@@ -657,7 +670,7 @@ export const PlayInsightsPanel: React.FC<PlayInsightsPanelProps> = ({ insights }
   const rightSections: React.ReactNode[] = []
 
   if (insights.situation) leftSections.push(<SituationSection key="sit" data={insights.situation} />)
-  if (insights.coach) leftSections.push(<CoachSection key="coach" data={insights.coach} playCall={insights.playCall} tempo={insights.tempo} defense={insights.defense} playbook={insights.playbook} />)
+  if (insights.coach) leftSections.push(<CoachSection key="coach" data={insights.coach} playCall={insights.playCall} checkedDown={insights.pass?.checkedDown} tempo={insights.tempo} defense={insights.defense} playbook={insights.playbook} />)
   if (insights.fourthDown) leftSections.push(<FourthDownSection key="4th" data={insights.fourthDown} />)
   if (insights.clockMgmt) leftSections.push(<ClockMgmtSection key="clk" data={insights.clockMgmt} />)
 

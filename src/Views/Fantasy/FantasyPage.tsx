@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { FantasyRoster } from '@/Components/Fantasy/FantasyRoster'
+import Lineup from '@/Components/Fantasy/Lineup'
+import { ScoringPane } from '@/Components/Fantasy/ScoringPane'
 import { FantasyLeaderboard } from '@/Components/Fantasy/FantasyLeaderboard'
-import CardEquipment from '@/Components/Cards/CardEquipment'
 import ShopModal from '@/Components/Shop/ShopModal'
 import HoverTooltip from '@/Components/HoverTooltip'
 import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
+import FantasyFusionIntroModal from '@/Components/Fantasy/FantasyFusionIntroModal'
+import { isFeatureSeen, markFeatureSeen, FEATURE_FANTASY_FUSION } from '@/utils/featureAnnounce'
 import TutorialOverlay from '@/Components/Tutorial/TutorialOverlay'
 import TourPrompt from '@/Components/Tutorial/TourPrompt'
 import { useTutorial, TutorialStep } from '@/Components/Tutorial/useTutorial'
@@ -18,14 +20,14 @@ const FANTASY_TOUR_STEPS: TutorialStep[] = [
   {
     target: 'fantasy-roster',
     title: 'Your Roster',
-    content: 'These are your players. You draft 5 positions — QB, RB, WR, TE, and K. They earn Fantasy Points from their real game stats each week. Tap a player to see their stats or swap them out between game rounds.',
+    content: 'These are your players. You field six lineup slots, one card each: QB, RB, two WR, TE, and K. They earn Fantasy Points from their real game stats each week. Tap a card to see stats or change your lineup between game rounds.',
     placement: 'top',
     onEnter: () => window.dispatchEvent(new Event('floosball:show-roster')),
   },
   {
     target: 'fantasy-breakdown',
     title: 'Score Breakdown',
-    content: 'Once games start, switch to the Breakdown tab to see exactly how your weekly score is calculated — player FP, each card effect with its equation, and your combined total.',
+    content: 'Once games start, switch to the Breakdown tab to see exactly how your weekly score is calculated: player FP, each card effect with its equation, and your combined total.',
     placement: 'top',
     onEnter: () => window.dispatchEvent(new Event('floosball:show-breakdown')),
     onLeave: () => window.dispatchEvent(new Event('floosball:show-roster')),
@@ -40,7 +42,7 @@ const FANTASY_TOUR_STEPS: TutorialStep[] = [
   {
     target: 'fantasy-card-read',
     title: 'Card Front',
-    content: 'The front shows the player name, team, and their star rating. More stars means stronger effects. The effect name and type badge are at the bottom — color tells you what it produces.',
+    content: 'The front shows the player name, team, and their star rating. More stars means stronger effects. The effect name and type badge are at the bottom; color tells you what it produces.',
     placement: 'right',
     onEnter: () => {
       window.dispatchEvent(new Event('floosball:mock-card'))
@@ -67,15 +69,15 @@ const FANTASY_TOUR_STEPS: TutorialStep[] = [
   {
     target: 'fantasy-countdown',
     title: 'Lock Countdown',
-    content: 'This is the lock timer. Your roster and cards lock when games begin. Make all your changes before this hits zero — once locked, no edits until the next unlock window.',
+    content: 'This is the lock timer. Your roster and cards lock when games begin. Make all your changes before this hits zero. Once locked, no edits until the next unlock window.',
     placement: 'bottom',
     onEnter: () => window.dispatchEvent(new Event('floosball:mock-countdown')),
     onLeave: () => window.dispatchEvent(new Event('floosball:unmock-countdown')),
   },
   {
     target: 'fantasy-gameinfo',
-    title: 'Weekly Modifier & Swaps',
-    content: 'These badges show the active weekly modifier and available roster swaps. Each week has a random modifier that changes how scoring works. Hover a badge for details.',
+    title: 'Weekly Modifier',
+    content: 'This badge shows the active weekly modifier. Each week has a random modifier that changes how scoring works. Hover it for details.',
     placement: 'bottom',
   },
   {
@@ -165,43 +167,6 @@ const MODIFIER_STYLES: Record<string, { color: string; icon: React.ReactNode }> 
   )},
 }
 
-// Swaps badge. The day's modifiers render via DayModifierBadge (active chip
-// + click-to-expand dropdown) alongside this in the status bar.
-function GameInfoBar() {
-  const { fantasyRoster } = useAuth()
-
-  const swapsAvailable = (fantasyRoster?.swapsAvailable ?? 0) + (fantasyRoster?.purchasedSwaps ?? 0)
-  const isLocked = fantasyRoster?.isLocked ?? false
-
-  if (!isLocked || swapsAvailable <= 0) return null
-
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',
-    }}>
-      {isLocked && swapsAvailable > 0 && (
-        <HoverTooltip text={`${swapsAvailable} roster swap${swapsAvailable !== 1 ? 's' : ''} available between games`} color="#38bdf8">
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '5px',
-            padding: '5px 10px', borderRadius: '6px',
-            backgroundColor: 'rgba(56,189,248,0.12)',
-            cursor: 'default',
-          }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 3l4 4-4 4" />
-              <path d="M20 7H4" />
-              <path d="M8 21l-4-4 4-4" />
-              <path d="M4 17h16" />
-            </svg>
-            <span style={{ fontSize: '11px', fontWeight: '600', color: '#38bdf8' }}>
-              {swapsAvailable} Swap{swapsAvailable !== 1 ? 's' : ''}
-            </span>
-          </div>
-        </HoverTooltip>
-      )}
-    </div>
-  )
-}
 
 // The active weekly modifier as a compact chip; click to reveal the rest of
 // the day's slate (so users can plan cards/rosters ahead) without crowding the
@@ -383,6 +348,7 @@ const FantasyPage: React.FC = () => {
   const { seasonState } = useFloosball()
   const [showShop, setShowShop] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [showFusionIntro, setShowFusionIntro] = useState(() => !isFeatureSeen(FEATURE_FANTASY_FUSION))
   const tour = useTutorial({ tourId: 'fantasy', steps: FANTASY_TOUR_STEPS })
 
   const seasonOver = seasonState.regularSeasonOver || seasonState.seasonComplete
@@ -394,9 +360,9 @@ const FantasyPage: React.FC = () => {
       fontFamily: 'pressStart',
     }}>
       <div style={{
-        maxWidth: '1100px',
+        maxWidth: seasonOver ? '1100px' : '1280px',
         margin: '0 auto',
-        padding: isMobile ? '10px' : '14px 16px',
+        padding: isMobile ? '10px' : '14px 20px',
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
@@ -434,12 +400,11 @@ const FantasyPage: React.FC = () => {
           </>
         ) : (
           <>
-            {/* Status bar: countdown + modifier badge + swaps + actions */}
+            {/* Status bar: countdown + modifier badge + actions */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <div data-tour="fantasy-countdown"><LockCountdown /></div>
               <div data-tour="fantasy-gameinfo" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <DayModifierBadge />
-                <GameInfoBar />
               </div>
               <div style={{ flex: 1 }} />
               {/* Actions + help grouped so the ? never orphans onto its own row */}
@@ -519,22 +484,22 @@ const FantasyPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Card slots — full width at top */}
+            {/* Fusion dashboard: the position-locked lineup rail on top (equipped
+                cards ARE the roster), then scoring + leaderboard side by side. */}
             <div data-tour="fantasy-cards">
-              <CardEquipment />
+              <Lineup />
             </div>
 
-            {/* Roster + Leaderboard side by side */}
             <div style={{
               display: 'flex',
               flexDirection: isMobile ? 'column' : 'row',
-              gap: '12px',
-              alignItems: 'start',
+              gap: '16px',
+              alignItems: 'flex-start',
             }}>
-              <div data-tour="fantasy-roster" style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
-                <FantasyRoster />
+              <div data-tour="fantasy-breakdown" style={{ flex: isMobile ? undefined : '1 1 0', width: isMobile ? '100%' : undefined, minWidth: 0 }}>
+                <ScoringPane />
               </div>
-              <div data-tour="fantasy-leaderboard" style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
+              <div data-tour="fantasy-leaderboard" style={{ flex: isMobile ? undefined : '1 1 0', width: isMobile ? '100%' : undefined, minWidth: 0 }}>
                 <FantasyLeaderboard />
               </div>
             </div>
@@ -544,6 +509,12 @@ const FantasyPage: React.FC = () => {
 
       {/* Shop modal */}
       {!seasonOver && <ShopModal isOpen={showShop} onClose={() => setShowShop(false)} />}
+
+      {/* First-visit fusion announcement */}
+      <FantasyFusionIntroModal
+        isOpen={showFusionIntro}
+        onClose={() => { markFeatureSeen(FEATURE_FANTASY_FUSION); setShowFusionIntro(false) }}
+      />
 
       {/* Help modal */}
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} title="Fantasy Floosball">
@@ -567,19 +538,23 @@ const FantasyPage: React.FC = () => {
             Take the Tour
           </button>
         </div>
-        <GuideSection title="Your Roster">
-          Draft 5 players — one QB, RB, WR, TE, and K — each season. You earn Fantasy Points (FP)
-          based on their live in-game performance. Your FP update in real time as games are played.
+        <GuideSection title="Your Lineup">
+          Your equipped cards are your lineup: one card per position (QB, RB, WR, WR, TE, K). Each
+          card fields its real player, and that player's live Fantasy Points (FP) power the card.
+          Your FP update in real time as games are played.
+        </GuideSection>
+        <GuideSection title="The Power Bar">
+          Every card has an FP bar. Its effect turns on once the player fills the bar that week
+          (clears their position's FP threshold). A benched player never fills it, so the effect
+          stays off.
         </GuideSection>
         <GuideSection title="Scoring">
-          Your total weekly FP is calculated as: (roster FP + card bonus FP) multiplied by any
-          multiplier bonuses from equipped cards. The weekly modifier (shown in the status bar)
-          can also affect your score.
+          Your total weekly FP is: (roster FP + card bonus FP) multiplied by any multiplier bonuses
+          from active cards. The weekly modifier (shown in the status bar) can also affect your score.
         </GuideSection>
-        <GuideSection title="Trading Cards">
-          Equip up to 5 cards in any combination — slots are not position-locked. Card effects
-          are calculated each week alongside your roster. Cards lock when your roster locks at
-          the start of each game round.
+        <GuideSection title="Swapping Cards">
+          Change any card for another in your collection between game rounds, for free. Cards lock
+          when your lineup locks at the start of each game round.
         </GuideSection>
         <GuideSection title="Card Effect Types">
           Cards can have any effect regardless of the player's position. Effects fall into
@@ -591,7 +566,7 @@ const FantasyPage: React.FC = () => {
               { label: 'Floobits', desc: 'Earns bonus Floobits currency each week', color: '#eab308' },
               { label: 'Conditional', desc: 'Triggers when the card player hits a stat threshold', color: '#60a5fa' },
               { label: 'Streak', desc: 'Grows stronger over consecutive weeks when its condition is met', color: '#fb923c' },
-              { label: 'Chance', desc: 'Probability-based bonus that rolls at the end of each week', color: '#c084fc' },
+              { label: 'Chance', desc: 'The power bar is your trigger odds; a floor always pays, the bar is your shot at the enhanced payout', color: '#c084fc' },
             ].map(c => (
               <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ color: c.color, fontWeight: '600', fontSize: '11px', minWidth: '80px' }}>
@@ -606,35 +581,30 @@ const FantasyPage: React.FC = () => {
           Streak cards carry a counter that grows each week the streak condition is met (e.g.
           the card's player's team wins, your roster scores a TD, a kicker makes a 35+ yard
           FG). If the condition is not met, the streak resets. The card's bonus scales with
-          the streak count — longer streaks yield larger rewards. Equipping multiple streak
+          the streak count, so longer streaks yield larger rewards. Equipping multiple streak
           cards provides a synergy bonus: each additional active streak contributes extra
           growth to the others.
         </GuideSection>
         <GuideSection title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Chance Cards <span style={{ fontSize: '10px', color: '#c084fc', backgroundColor: '#c084fc18', padding: '1px 5px', borderRadius: '3px', border: '1px solid #c084fc40', fontWeight: '600' }}>CHC</span></span>}>
-          Chance cards have a base probability of triggering each week. Some scale their odds
-          with game context (e.g. more underperforming roster players increases the chance).
-          The roll is resolved after games complete. Equipping multiple chance cards provides
-          an innate synergy — each additional chance card slightly boosts the odds of every
-          other chance card in your hand.
+          A chance card's power bar is its trigger odds. The bar fills from the card player's FP
+          plus the card's own condition (struggling roster players, the player's own yardage, and
+          so on). A guaranteed floor always pays; the fuller the bar, the better your odds at the
+          enhanced payout. The roll resolves after games complete. Equipping multiple chance cards
+          adds an innate synergy that lifts every chance card's odds.
         </GuideSection>
         <GuideSection title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Conditional Cards <span style={{ fontSize: '10px', color: '#60a5fa', backgroundColor: '#60a5fa18', padding: '1px 5px', borderRadius: '3px', border: '1px solid #60a5fa40', fontWeight: '600' }}>CND</span></span>}>
           Conditional cards trigger their bonus when a specific stat threshold is met during a
           game (e.g. a QB throws for 250+ yards, a RB rushes for 100+ yards). The bonus is
-          all-or-nothing — if the condition is met, you receive the full effect; otherwise,
+          all-or-nothing: if the condition is met you receive the full effect, otherwise
           nothing. Unlike streak cards, there is no carryover between weeks.
         </GuideSection>
-        <GuideSection title="Match Bonus">
-          When a card's player is also on your fantasy roster, the card's primary effect
-          receives a 1.5x boost.
-        </GuideSection>
-        <GuideSection title="Roster Swaps">
-          Your roster swap replenishes each week. Between game rounds, you can swap one player
-          for a new one starting at 15 Floobits. Each additional swap in the same slot costs 15 more
-          (15, 30, 45, ...). Your previous player's FP are banked and you begin earning with the replacement.
+        <GuideSection title="Changing Your Lineup">
+          Your lineup is your equipped cards; each card fields its player at that position.
+          Swap a card for another between game rounds, free. Lineups lock while games are live.
         </GuideSection>
         <GuideSection title="Modifiers">
           Each week a random modifier changes how your equipped cards score: doubling multipliers,
-          tripling card Floobits, protecting streaks, treating all cards as matched, and other twists.
+          tripling card Floobits, protecting streaks, boosting chance odds, and other twists.
           It has no effect if you have no cards equipped. The active modifier is displayed in the
           status bar above your roster.
         </GuideSection>

@@ -17,15 +17,15 @@ const BLENDER_THRESHOLDS = [
   { min: 300, edition: 'diamond' },
   { min: 175, edition: 'prismatic' },
   { min: 50, edition: 'holographic' },
-  { min: 0, edition: 'base' },
+  { min: 0, edition: 'metallic' },
 ]
 
 const editionSort: Record<string, number> = {
-  diamond: 0, prismatic: 1, holographic: 2, base: 3,
+  diamond: 0, prismatic: 1, holographic: 2, metallic: 3,
 }
 
 type PositionFilter = 'all' | 1 | 2 | 3 | 4 | 5
-type EditionFilter = 'all' | 'base' | 'holographic' | 'prismatic' | 'diamond'
+type EditionFilter = 'all' | 'metallic' | 'holographic' | 'prismatic' | 'diamond'
 // Inactive = a prior-season ("Expired") card — isActive is set only for cards
 // from the current season.
 type StatusFilter = 'all' | 'active' | 'inactive'
@@ -33,7 +33,7 @@ type PickerSortMode = 'value_asc' | 'rating_desc' | 'rarest'
 
 const EDITION_PILL_LABELS: Record<EditionFilter, string> = {
   all: 'All',
-  base: 'Base',
+  metallic: 'Metallic',
   holographic: 'Holo',
   prismatic: 'Prism',
   diamond: 'Diamond',
@@ -182,7 +182,7 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
         <div style={{ height: '6px' }} />
         <CombinePillRow
           label="Edition"
-          options={(['all', 'base', 'holographic', 'prismatic', 'diamond'] as EditionFilter[]).map(e => ({
+          options={(['all', 'metallic', 'holographic', 'prismatic', 'diamond'] as EditionFilter[]).map(e => ({
             value: e,
             label: EDITION_PILL_LABELS[e],
           }))}

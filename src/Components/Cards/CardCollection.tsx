@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import TradingCard, { CardData, getBehaviorTag } from './TradingCard'
 import CombineModal from './CombineModal'
+import TransplantModal from './TransplantModal'
 import LevelUpModal from './LevelUpModal'
 import VaultConfirmModal from './VaultConfirmModal'
 import TrashConfirmModal from './TrashConfirmModal'
@@ -19,7 +20,9 @@ const EMPTY_DRAG_IMG = typeof Image !== 'undefined' ? (() => {
   return img
 })() : null
 
-const EDITIONS = ['all', 'base', 'holographic', 'prismatic', 'diamond'] as const
+const EDITIONS = ['all', 'metallic', 'holographic', 'prismatic', 'diamond'] as const
+// Display label for the edition filter pills (the floor 'base' print isn't filterable).
+const EDITION_FILTER_LABELS: Record<string, string> = { all: 'all', metallic: 'metallic', holographic: 'holographic', prismatic: 'prismatic', diamond: 'diamond' }
 const POSITIONS = [
   { value: 0, label: 'All' },
   { value: 1, label: 'QB' },
@@ -98,6 +101,7 @@ const CardCollection: React.FC = () => {
   const [selling, setSelling] = useState(false)
   const [currentSeason, setCurrentSeason] = useState(0)
   const [showCombine, setShowCombine] = useState(false)
+  const [showTransplant, setShowTransplant] = useState(false)
   const [levelUpCard, setLevelUpCard] = useState<CardData | null>(null)
   const [vaultCards, setVaultCards] = useState<CardData[]>([])
   const [trashTarget, setTrashTarget] = useState<CardData | null>(null)
@@ -409,6 +413,28 @@ const CardCollection: React.FC = () => {
               The Combine
             </button>
           )}
+          {!inVault && (
+            <button
+              onClick={() => setShowTransplant(true)}
+              style={{
+                padding: '8px 16px', borderRadius: '8px',
+                background: 'rgba(167,139,250,0.15)',
+                border: 'none',
+                color: '#c4b5fd', fontSize: '12px', fontWeight: '700',
+                cursor: 'pointer', fontFamily: 'pressStart',
+                display: 'flex', alignItems: 'center', gap: '8px',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(167,139,250,0.28)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(167,139,250,0.15)' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M4 12h6M14 12h6" stroke="#c4b5fd" strokeWidth="2" strokeLinecap="round" />
+                <path d="M10 8l4 8M14 8l-4 8" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              The Transplant
+            </button>
+          )}
           {!inVault && selectedIds.size > 0 && (
             <>
               <button
@@ -449,7 +475,7 @@ const CardCollection: React.FC = () => {
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px', alignItems: 'center' }}>
         {EDITIONS.map(e => (
           <button key={e} onClick={() => setEditionFilter(e)} style={pillStyle(editionFilter === e)}>
-            {e}
+            {EDITION_FILTER_LABELS[e] ?? e}
           </button>
         ))}
         <span style={{ flex: 1, minWidth: '12px' }} />
@@ -598,6 +624,12 @@ const CardCollection: React.FC = () => {
       <CombineModal
         visible={showCombine}
         onClose={() => setShowCombine(false)}
+        onComplete={() => fetchCards()}
+      />
+
+      <TransplantModal
+        visible={showTransplant}
+        onClose={() => setShowTransplant(false)}
         onComplete={() => fetchCards()}
       />
 

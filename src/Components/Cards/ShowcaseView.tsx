@@ -66,7 +66,7 @@ const GOLD = '#fbbf24'
 
 // Spotlight halo behind a featured card, tinted by edition.
 const EDITION_HALO: Record<string, string> = {
-  base: 'rgba(148,163,184,0.30)',
+  metallic: 'rgba(148,163,184,0.30)',
   holographic: 'rgba(167,139,250,0.42)',
   prismatic: 'rgba(244,114,182,0.48)',
   diamond: 'rgba(103,232,249,0.52)',
@@ -353,7 +353,7 @@ const ShowcaseView: React.FC = () => {
                 {/* Spotlight halo (edition-tinted) */}
                 <div style={{
                   position: 'absolute', inset: '-14px', borderRadius: '24px', zIndex: 0,
-                  background: `radial-gradient(ellipse at 50% 40%, ${EDITION_HALO[slot.card.edition] || EDITION_HALO.base}, transparent 70%)`,
+                  background: `radial-gradient(ellipse at 50% 40%, ${EDITION_HALO[slot.card.edition] || EDITION_HALO.metallic}, transparent 70%)`,
                   filter: 'blur(12px)', pointerEvents: 'none',
                 }} />
                 <div style={{ position: 'relative', zIndex: 1 }}>
@@ -535,7 +535,7 @@ const ScoringManual: React.FC<{ scoring?: ScoringRules; dividendRate?: number }>
     return <span>A card scores from its edition, classification (the CH / AP / MVP / Rookie tags), recency, and upgrade tier.</span>
   }
   const grades = scoring.grades
-  const editionLabel: Record<string, string> = { base: 'Base', holographic: 'Holographic', prismatic: 'Prismatic', diamond: 'Diamond' }
+  const editionLabel: Record<string, string> = { metallic: 'Metallic', holographic: 'Holographic', prismatic: 'Prismatic', diamond: 'Diamond' }
   const classLabel: Record<string, string> = { rookie: 'Rookie (R)', all_pro: 'All-Pro (AP)', champion: 'Champion (CH)', mvp: 'MVP' }
   const Group: React.FC<{ title: string; sub?: string; children: React.ReactNode }> = ({ title, sub, children }) => (
     <div style={{ marginBottom: '12px' }}>
@@ -556,7 +556,7 @@ const ScoringManual: React.FC<{ scoring?: ScoringRules; dividendRate?: number }>
         A card scores <span style={{ color: '#e2e8f0' }}>(edition + classification) × recency × tier</span>. Your Showcase pays <span style={{ color: '#fbbf24', fontWeight: 700 }}>{Math.round((dividendRate ?? 0.13) * 100)}%</span> of its total score each week.
       </div>
       <Group title="Edition">
-        {['base', 'holographic', 'prismatic', 'diamond'].filter(e => e in scoring.edition).map(e => (
+        {['metallic', 'holographic', 'prismatic', 'diamond'].filter(e => e in scoring.edition).map(e => (
           <Line key={e} label={editionLabel[e] || e} value={`+${scoring.edition[e]} pts`} />
         ))}
       </Group>

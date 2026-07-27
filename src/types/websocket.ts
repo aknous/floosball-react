@@ -246,6 +246,14 @@ export interface PlayInsightsPass {
   intProbability?: number
   dropProbability?: number
   outcomeRoll?: number
+  // The ACTUAL resolved outcome from the engine — authoritative over any
+  // re-derivation from the (rounded) probabilities + roll, which can drift at a
+  // boundary and disagree with the play-by-play.
+  outcome?: 'int' | 'catch' | 'drop' | 'incomplete'
+  // The QB targeted a receiver shallower than the called concept (e.g. a deep
+  // shot where the deep was covered and the QB took the open checkdown), so the
+  // air-yards land below what the play call implies.
+  checkedDown?: boolean
   airYards?: number
   yac?: number
 }

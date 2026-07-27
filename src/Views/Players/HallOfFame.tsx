@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Stars } from '@/Components/Stars'
 import PlayerLink from '@/Components/PlayerLink'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { GiStarMedal, GiLaurelsTrophy, GiStarsStack, GiLaurelCrown } from 'react-icons/gi'
@@ -98,7 +97,8 @@ export const Plaque: React.FC<{ p: Inductee }> = ({ p }) => {
           </div>
         )}
 
-        {/* position + name, rating under */}
+        {/* position + name. No star rating: late-career rating drops mean players can enter
+            the Hall at 1 star, which misrepresents their career. */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
             <span style={{
@@ -108,7 +108,6 @@ export const Plaque: React.FC<{ p: Inductee }> = ({ p }) => {
             <PlayerLink playerId={p.id} playerName={p.name}
               style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0', lineHeight: 1.2 }} />
           </div>
-          <div style={{ marginTop: '4px' }}><Stars stars={p.ratingStars} size={12} /></div>
         </div>
 
         {/* award badges */}

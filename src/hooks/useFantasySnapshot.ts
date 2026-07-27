@@ -18,6 +18,7 @@ export interface SnapshotPlayer {
 
 export interface CardBreakdownEntry {
   slotNumber: number
+  playerId: number
   playerName: string
   edition: string
   tier?: number
@@ -44,8 +45,16 @@ export interface CardBreakdownEntry {
   playerStatLine: string
   equation: string
   isChanceEffect?: boolean
+  chanceThreshold?: number   // trigger probability (0-100) for chance cards
+  chanceTriggered?: boolean  // did the chance roll fire this week
   streakActive?: boolean | null
   streakCount?: number
+  // FP power-bar gate: null = ungated, true = the depicted player cleared the bar
+  // (effect fired), false = bar not met (effect scored nothing this week).
+  gateActive?: boolean | null
+  gateThreshold?: number
+  gateInverse?: boolean       // inverse gate — active WHILE under the threshold
+  gateAllPro?: boolean        // All-Pro card: its bar is lowered 30%
 }
 
 export interface ChanceAmplifier {
@@ -68,6 +77,13 @@ export interface HandSynergies {
   match: {
     count: number
     total: number
+  }
+  // Team stacking: the largest same-team group fielded, how many are Champions
+  // (which amplify the stack), and the lineup-wide FPx delta (0 below a 2-stack).
+  stack?: {
+    size: number
+    champions: number
+    bonus: number
   }
 }
 
@@ -304,8 +320,9 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
             })),
             cardBreakdowns: (e.cardBreakdowns ?? []).map((cb: any) => ({
               slotNumber: cb.slotNumber ?? 0,
+              playerId: cb.playerId ?? 0,
               playerName: cb.playerName ?? '',
-              edition: cb.edition ?? 'base',
+              edition: cb.edition ?? 'metallic',
               tier: cb.tier ?? 1,
               effectName: cb.effectName ?? '',
               displayName: cb.displayName ?? '',
@@ -330,8 +347,14 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
               playerStatLine: cb.playerStatLine ?? '',
               equation: cb.equation ?? '',
               isChanceEffect: cb.isChanceEffect ?? false,
+              chanceThreshold: cb.chanceThreshold ?? 0,
+              chanceTriggered: cb.chanceTriggered ?? false,
               streakActive: cb.streakActive ?? null,
               streakCount: cb.streakCount ?? 0,
+              gateActive: cb.gateActive ?? null,
+              gateThreshold: cb.gateThreshold ?? 0,
+              gateInverse: cb.gateInverse ?? false,
+              gateAllPro: cb.gateAllPro ?? false,
             })),
             equationSummary: e.equationSummary ?? existing?.equationSummary ?? undefined,
             favoriteTeamData: e.favoriteTeamData ?? existing?.favoriteTeamData ?? null,

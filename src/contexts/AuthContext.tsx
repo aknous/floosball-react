@@ -21,46 +21,21 @@ export interface AuthUser {
   followedPlayerIds: number[]
 }
 
-export interface FantasyRosterPlayer {
-  slot: string
-  playerId: number
-  playerName: string
-  position: string
-  teamId: number | null
-  teamName: string
-  teamAbbr: string
-  teamColor: string
-  ratingStars: number
-  fatigue: number
-  pointsAtLock: number
-  seasonFantasyPoints: number
-  currentFantasyPoints: number
-  earnedPoints: number
-}
-
-export interface FantasyRosterData {
-  id: number
-  season: number
-  isLocked: boolean
-  lockedAt: string | null
-  totalPoints: number
-  cardBonusPoints: number
-  swapsAvailable: number
-  purchasedSwaps: number
-  players: FantasyRosterPlayer[]
-}
-
 interface AuthContextType {
   user: AuthUser | null
   getToken: () => Promise<string | null>
   loading: boolean
   betaBlocked: boolean
+  // Player IDs depicted by the user's equipped cards (fusion: the equipped
+  // lineup IS the fantasy roster). Drives roster-match highlighting across the
+  // app (card equipment, player leaders, highlight feed).
   fantasyPlayerIds: Set<number>
   followedPlayerIds: Set<number>
-  fantasyRoster: FantasyRosterData | null
+  // True when any equipped card is locked (games running → lineup frozen).
+  fantasyLineupLocked: boolean
   logout: () => void
   setFavoriteTeam: (teamId: number) => Promise<void>
-  refetchRoster: () => Promise<void>
+  refetchLineup: () => Promise<void>
   refetchUser: () => Promise<void>
   updateFloobits: (balance: number) => void
   followPlayer: (playerId: number) => Promise<void>
@@ -77,7 +52,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [appUser, setAppUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [betaBlocked, setBetaBlocked] = useState(false)
-  const [fantasyRoster, setFantasyRoster] = useState<FantasyRosterData | null>(null)
+  const [fantasyPlayerIds, setFantasyPlayerIds] = useState<Set<number>>(new Set())
+  const [fantasyLineupLocked, setFantasyLineupLocked] = useState(false)
 
   // Wrap Clerk's getToken so consumers get null when not signed in
   const getFreshToken = useCallback(async (): Promise<string | null> => {
@@ -85,24 +61,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return await getTokenRef.current()
   }, [isSignedIn])
 
-  // Derive fantasyPlayerIds from roster data
-  const fantasyPlayerIds = React.useMemo(() => {
-    if (!fantasyRoster?.players) return new Set<number>()
-    return new Set(fantasyRoster.players.map(p => p.playerId))
-  }, [fantasyRoster])
-
-  // Fetch fantasy roster from REST (no polling — called once + on events)
-  const refetchRoster = useCallback(async () => {
+  // Fetch the equipped lineup (fusion: equipped cards ARE the fantasy roster) and
+  // derive the depicted-player set + locked state. No polling — called once + on
+  // events. Superseded the deleted /fantasy/roster endpoint.
+  const refetchLineup = useCallback(async () => {
     try {
       const tok = await getTokenRef.current()
       if (!tok) return
-      const res = await fetch(`${API_BASE}/fantasy/roster`, {
+      const res = await fetch(`${API_BASE}/cards/equipped`, {
         headers: { Authorization: `Bearer ${tok}` },
       })
       if (!res.ok) return
       const json = await res.json()
-      const roster = json?.data?.roster || json?.roster
-      setFantasyRoster(roster ?? null)
+      const equipped: Array<{ playerId: number; locked?: boolean }> = json?.data?.equippedCards ?? []
+      setFantasyPlayerIds(new Set(equipped.map(e => e.playerId).filter((id): id is number => id != null)))
+      setFantasyLineupLocked(equipped.some(e => e.locked))
     } catch {
       // silent
     }
@@ -126,14 +99,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [])
 
-  // When Clerk auth state changes, fetch/create local user profile + roster
+  // When Clerk auth state changes, fetch/create local user profile + lineup
   const didFetchRef = useRef(false)
   useEffect(() => {
     if (!isLoaded) return
     if (!isSignedIn) {
       didFetchRef.current = false
       setAppUser(null)
-      setFantasyRoster(null)
+      setFantasyPlayerIds(new Set())
+      setFantasyLineupLocked(false)
       setBetaBlocked(false)
       setLoading(false)
       return
@@ -142,26 +116,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     didFetchRef.current = true
     setLoading(true)
     refetchUser().finally(() => setLoading(false))
-    refetchRoster()
-  }, [isSignedIn, isLoaded, refetchUser, refetchRoster])
+    refetchLineup()
+  }, [isSignedIn, isLoaded, refetchUser, refetchLineup])
 
-  // Refresh roster on card equip/unequip — All-Pro cards add/remove a swap
-  // and Champion cards toggle FLEX availability, both of which affect the
-  // roster state surfaced through this context. Listening here keeps every
-  // consumer (FantasyPage page-header swap count, FantasyRoster panel,
-  // anywhere else that reads fantasyRoster) in sync without each having to
-  // wire its own listener.
+  // Refresh the lineup on card equip/unequip so every consumer (roster-match
+  // highlighting, the locked indicator) stays in sync without each wiring its
+  // own listener. useLineup.put dispatches 'cards-equipped' after a PUT.
   useEffect(() => {
     if (!isSignedIn) return
-    const handler = () => { refetchRoster() }
+    const handler = () => { refetchLineup() }
     window.addEventListener('cards-equipped', handler)
     return () => window.removeEventListener('cards-equipped', handler)
-  }, [isSignedIn, refetchRoster])
+  }, [isSignedIn, refetchLineup])
 
   const logout = useCallback(() => {
     signOut()
     setAppUser(null)
-    setFantasyRoster(null)
+    setFantasyPlayerIds(new Set())
+    setFantasyLineupLocked(false)
   }, [signOut])
 
   const updateFloobits = useCallback((balance: number) => {
@@ -234,7 +206,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider value={{
       user: appUser, getToken: getFreshToken, loading, betaBlocked, fantasyPlayerIds,
       followedPlayerIds,
-      fantasyRoster, logout, setFavoriteTeam, refetchRoster, refetchUser, updateFloobits,
+      fantasyLineupLocked, logout, setFavoriteTeam, refetchLineup, refetchUser, updateFloobits,
       followPlayer, unfollowPlayer,
     }}>
       {children}

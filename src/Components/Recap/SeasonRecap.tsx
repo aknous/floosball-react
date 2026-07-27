@@ -240,7 +240,8 @@ const ResultsTab: React.FC<{ awards: RecapAwards; standings: RecapLeagueStanding
                 {lg.standings.map((t, i) => {
                   const isBowl = champId === t.teamId
                   const isLeague = leagueChampions.includes(t.teamId)
-                  const diff = t.pointDiff ?? (t.pointsFor - t.pointsAgainst)
+                  // Scores can be fractional, so clean float-accumulation drift to 1 decimal.
+                  const diff = Math.round((t.pointDiff ?? (t.pointsFor - t.pointsAgainst)) * 10) / 10
                   const diffColor = diff > 0 ? '#4ade80' : diff < 0 ? '#f87171' : '#94a3b8'
                   return (
                     <div key={t.teamId} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px', borderRadius: '6px', backgroundColor: i % 2 ? 'transparent' : '#162231' }}>
