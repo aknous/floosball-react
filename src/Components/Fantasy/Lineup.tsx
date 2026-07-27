@@ -5,6 +5,7 @@ import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, SLOT_POSITION, SLOT_ORDIN
 import { useFantasySnapshot, CardBreakdownEntry } from '@/hooks/useFantasySnapshot'
 import { useAuth } from '@/contexts/AuthContext'
 import HoverTooltip from '@/Components/HoverTooltip'
+import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { gateTooltipText, gateFill, gateBarColor, AP_ACCENT } from './gateMeter'
 import { positionColor } from '@/Components/Cards/positionColors'
 
@@ -137,8 +138,12 @@ const Lineup: React.FC = () => {
                 {entry ? (
                   <div style={{ position: 'relative' }}>
                     {/* Card click flips it (front/back). Equipping is a separate control.
-                        gateFP = the depicted player's week FP, driving the live power bar. */}
-                    <TradingCard card={entry.card} size="sm" noHoverLift gateFP={weekFPBySlot[slot]} glowColor={stackGlow} />
+                        gateFP = the depicted player's week FP, driving the live power bar.
+                        Hovering surfaces the depicted player's detail card — incl. the
+                        over/under-performance indicator (season production vs rating). */}
+                    <PlayerHoverCard playerId={entry.playerId} playerName={entry.card.playerName}>
+                      <TradingCard card={entry.card} size="sm" noHoverLift gateFP={weekFPBySlot[slot]} glowColor={stackGlow} />
+                    </PlayerHoverCard>
                     {canEdit && (
                       <button onClick={(e) => { e.stopPropagation(); lineup.unequip(slot) }}
                         aria-label={`Clear ${slot}`}
