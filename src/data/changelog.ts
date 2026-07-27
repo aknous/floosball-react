@@ -32,7 +32,6 @@ export const CHANGELOG: ChangelogEntry[] = [
           '[Cards] Editions renamed for clarity: the plain no-effect card is Base, and the first effect tier is Metallic. Your free starter pack is a full lineup of Base cards.',
           '[Fantasy] Cards whose players share a real team glow in the team color and stack for a lineup-wide bonus, so building around a team pays off. The slot picker can filter to cards that match the teams already in your lineup.',
           '[Cards] Retired a handful of cards that only paid off when your roster or favorite team did poorly, which no longer fit the new scoring.',
-          '[Awards] Hall of Fame plaques no longer show a star rating, since players who decline late in their careers were entering at a low one.',
         ],
       },
       {
