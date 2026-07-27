@@ -161,11 +161,14 @@ interface CardPickerModalProps {
   position?: number | null
   slotLabel?: string
   slotScoped?: boolean
+  // Teams of cards already in the lineup — enables a "same team as lineup" filter so users
+  // can build the same-team stack (the team-color glow + team-stacking FPx synergy).
+  equippedTeamIds?: Set<number>
 }
 
 const CardPickerModal: React.FC<CardPickerModalProps> = ({
   visible, onClose, onSelect, excludeCardIds, excludeEffectNames, excludePlayerIds,
-  rosterPlayerIds, targetSlot, position, slotLabel, slotScoped,
+  rosterPlayerIds, targetSlot, position, slotLabel, slotScoped, equippedTeamIds,
 }) => {
   const excludedEffectSet = useMemo(
     () => new Set(excludeEffectNames ?? []),
@@ -183,11 +186,12 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
   const [loading, setLoading] = useState(false)
   const [filters, setFilters] = useState<CardFilterState>(defaultCardFilterState)
   const patchFilters = (patch: Partial<CardFilterState>) => setFilters(f => ({ ...f, ...patch }))
+  const [myTeamsOnly, setMyTeamsOnly] = useState(false)
 
   // Reset controls whenever the modal opens so previous filters don't stick.
   // Slot-scoped (fusion) pickers default to highest-rated since match sort is gone.
   useEffect(() => {
-    if (visible) setFilters({ ...defaultCardFilterState, sort: slotScoped ? 'rating' : 'match' })
+    if (visible) { setMyTeamsOnly(false); setFilters({ ...defaultCardFilterState, sort: slotScoped ? 'rating' : 'match' }) }
   }, [visible, slotScoped])
 
   useEffect(() => {
@@ -224,10 +228,13 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
 
   // Apply search + filters, then sort (shared engine). useMemo so we only
   // recompute when the cards, filter state, or roster change.
-  const displayed = useMemo(
-    () => applyCardFilters(cards, filters, rosterPlayerIds),
-    [cards, filters, rosterPlayerIds],
-  )
+  const displayed = useMemo(() => {
+    let list = applyCardFilters(cards, filters, rosterPlayerIds)
+    if (myTeamsOnly && equippedTeamIds && equippedTeamIds.size) {
+      list = list.filter(c => c.teamId != null && equippedTeamIds.has(c.teamId))
+    }
+    return list
+  }, [cards, filters, rosterPlayerIds, myTeamsOnly, equippedTeamIds])
 
   if (!visible) return null
 
@@ -283,6 +290,22 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
             showMatchToggle={!slotScoped}
             showMatchSort={!slotScoped}
           />
+          {equippedTeamIds && equippedTeamIds.size > 0 && (
+            <button
+              onClick={() => setMyTeamsOnly(v => !v)}
+              style={{
+                marginTop: '8px', fontSize: '10px', fontWeight: '700', fontFamily: 'pressStart',
+                padding: '5px 11px', borderRadius: '6px', cursor: 'pointer',
+                border: `1px solid ${myTeamsOnly ? '#38bdf8' : '#475569'}`,
+                backgroundColor: myTeamsOnly ? 'rgba(56,189,248,0.16)' : 'transparent',
+                color: myTeamsOnly ? '#7dd3fc' : '#94a3b8',
+                display: 'flex', alignItems: 'center', gap: '6px',
+              }}
+            >
+              <span style={{ fontSize: '12px' }}>◈</span>
+              Same team as lineup
+            </button>
+          )}
         </div>
 
         {/* Card grid */}

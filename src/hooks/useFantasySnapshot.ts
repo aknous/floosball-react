@@ -54,6 +54,7 @@ export interface CardBreakdownEntry {
   gateActive?: boolean | null
   gateThreshold?: number
   gateInverse?: boolean       // inverse gate — active WHILE under the threshold
+  gateAllPro?: boolean        // All-Pro card: its bar is lowered 30%
 }
 
 export interface ChanceAmplifier {
@@ -353,6 +354,7 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
               gateActive: cb.gateActive ?? null,
               gateThreshold: cb.gateThreshold ?? 0,
               gateInverse: cb.gateInverse ?? false,
+              gateAllPro: cb.gateAllPro ?? false,
             })),
             equationSummary: e.equationSummary ?? existing?.equationSummary ?? undefined,
             favoriteTeamData: e.favoriteTeamData ?? existing?.favoriteTeamData ?? null,

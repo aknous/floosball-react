@@ -5,7 +5,7 @@ import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, SLOT_POSITION, SLOT_ORDIN
 import { useFantasySnapshot, CardBreakdownEntry } from '@/hooks/useFantasySnapshot'
 import { useAuth } from '@/contexts/AuthContext'
 import HoverTooltip from '@/Components/HoverTooltip'
-import { gateTooltipText, gateFill, gateBarColor } from './gateMeter'
+import { gateTooltipText, gateFill, gateBarColor, AP_ACCENT } from './gateMeter'
 import { positionColor } from '@/Components/Cards/positionColors'
 
 const EMPTY_ROSTER_IDS: Set<number> = new Set()
@@ -20,7 +20,7 @@ const OUTPUT_COLORS: Record<string, string> = {
 // (the gated-off state folds into it). Fixed height so all slots line up.
 const PerfBlock: React.FC<{
   weekFP?: number
-  gate?: { threshold?: number; inverse?: boolean }
+  gate?: { threshold?: number; inverse?: boolean; allPro?: boolean }
   bonus?: CardBreakdownEntry
   noEffect: boolean
 }> = ({ weekFP, gate, bonus, noEffect }) => {
@@ -31,10 +31,9 @@ const PerfBlock: React.FC<{
   const gated = thr > 0 || isChance
   const meterOpts = {
     playerFP: fp, threshold: thr, active: gate?.inverse ? fp < thr : fp >= thr, inverse: gate?.inverse,
+    allPro: gate?.allPro,
     isChance, chancePct: bonus?.chanceThreshold, chanceTriggered: bonus?.chanceTriggered,
   }
-  // The FP number always counts (base pays regardless); the bar carries the on/off or odds signal.
-  const on = isChance ? true : meterOpts.active
   const pct = gateFill(meterOpts) * 100
   const barColor = gateBarColor(meterOpts)
 
@@ -56,7 +55,9 @@ const PerfBlock: React.FC<{
 
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-      <div style={{ fontSize: 19, fontWeight: 800, color: on ? '#eaf1ff' : '#93a1b8', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+      {/* The player's FP always counts toward the weekly total (the bar only gates the card
+          EFFECT, not the base FP), so it stays bright regardless of the bar state. */}
+      <div style={{ fontSize: 19, fontWeight: 800, color: '#eaf1ff', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
         {fp.toFixed(1)}<span style={{ color: '#94a3b8', fontSize: 10, marginLeft: 3 }}>FP</span>
       </div>
       {/* Gate / chance bar — reserved height (even with no bar) keeps slots aligned. */}
@@ -67,7 +68,7 @@ const PerfBlock: React.FC<{
             color={barColor}
             style={{ display: 'block', width: '100%' }}
           >
-            <div style={{ width: '100%', height: 9, backgroundColor: 'rgba(148,163,184,0.22)', borderRadius: 5, overflow: 'hidden', border: '1px solid rgba(148,163,184,0.15)', cursor: 'help' }}>
+            <div style={{ width: '100%', height: 9, backgroundColor: 'rgba(148,163,184,0.22)', borderRadius: 5, overflow: 'hidden', border: `1px solid ${gate?.allPro ? AP_ACCENT : 'rgba(148,163,184,0.15)'}`, cursor: 'help' }}>
               <div style={{ width: `${pct}%`, height: '100%', backgroundColor: barColor, borderRadius: 5, transition: 'width 0.2s' }} />
             </div>
           </HoverTooltip>
@@ -104,6 +105,8 @@ const Lineup: React.FC = () => {
     const t = e.card.teamId
     if (t != null) teamCounts[t] = (teamCounts[t] || 0) + 1
   }
+  // Teams already in the lineup — lets the slot picker filter to same-team cards.
+  const equippedTeamIds = new Set(Object.keys(teamCounts).map(Number))
 
   return (
     <div style={{ fontFamily: 'pressStart' }}>
@@ -179,6 +182,7 @@ const Lineup: React.FC = () => {
         slotLabel={pickerSlot ?? undefined}
         slotScoped
         targetSlot={pickerSlot ? SLOT_ORDINAL[pickerSlot] : null}
+        equippedTeamIds={equippedTeamIds}
       />
     </div>
   )

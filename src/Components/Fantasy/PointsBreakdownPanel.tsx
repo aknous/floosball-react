@@ -130,6 +130,7 @@ const RosterCardRow: React.FC<{
                 active={b!.gateActive === true}
                 playerFP={playerFP}
                 inverse={b!.gateInverse}
+                allPro={b!.gateAllPro}
                 isChance={b!.isChanceEffect}
                 chancePct={b!.chanceThreshold}
                 chanceTriggered={b!.chanceTriggered}
