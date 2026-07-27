@@ -151,7 +151,6 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
           <span style={{ width: '1px', height: '20px', backgroundColor: '#475569', flexShrink: 0 }} />
           <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600 }}>
             {displayScore(teamPts, oppPts, scoringModel)}
-            <span style={{ fontSize: '10px', color: '#64748b', marginLeft: '2px' }}>pts</span>
           </span>
         </span>
       )
