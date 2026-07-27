@@ -156,7 +156,7 @@ const LineupScoringPreview: React.FC = () => {
             </span>
           </div>
           <div style={{ fontSize: 10, color: '#64748b', marginTop: 8, lineHeight: 1.5 }}>
-            Projected from season averages and ELO. Live scoring — with each card's exact effect — takes over once this week's games start.
+            Projected from season averages and ELO. Live scoring, with each card's exact effect, takes over once this week's games start.
           </div>
         </div>
       )}
