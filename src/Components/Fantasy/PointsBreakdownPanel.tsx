@@ -42,8 +42,8 @@ function getBreakdownBehavior(b: CardBreakdownEntry): keyof typeof BEHAVIOR_TAGS
 }
 
 const EDITION_SHORT: Record<string, string> = {
-  standard: 'BASE',
-  base: 'MTLC',
+  base: 'BASE',
+  metallic: 'MTLC',
   holographic: 'HOLO',
   prismatic: 'PRSM',
   diamond: 'DMND',
@@ -52,7 +52,7 @@ const EDITION_SHORT: Record<string, string> = {
 const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
 
 const EDITION_COLORS: Record<string, string> = {
-  base: '#94a3b8',
+  metallic: '#94a3b8',
   holographic: '#c4b5fd',
   prismatic: '#f472b6',
   diamond: '#67e8f9',

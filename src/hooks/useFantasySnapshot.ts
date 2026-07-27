@@ -321,7 +321,7 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
               slotNumber: cb.slotNumber ?? 0,
               playerId: cb.playerId ?? 0,
               playerName: cb.playerName ?? '',
-              edition: cb.edition ?? 'base',
+              edition: cb.edition ?? 'metallic',
               tier: cb.tier ?? 1,
               effectName: cb.effectName ?? '',
               displayName: cb.displayName ?? '',

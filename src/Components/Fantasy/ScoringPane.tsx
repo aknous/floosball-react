@@ -97,7 +97,7 @@ const LineupScoringPreview: React.FC = () => {
 
   const effectChip = (entry: EquippedEntry | undefined): React.ReactNode => {
     if (!entry) return <span style={{ color: '#475569' }}>—</span>
-    if (entry.card.edition === 'standard') return <span style={{ color: '#64748b' }}>No effect</span>
+    if (entry.card.edition === 'base') return <span style={{ color: '#64748b' }}>No effect</span>
     const p = projBySlot.get(entry.slotNumber)
     if (p) {
       if (p.projectedFloobits > 0) return <span style={{ color: TYPE_COLORS.floobits }}>+{p.projectedFloobits} Floobits</span>

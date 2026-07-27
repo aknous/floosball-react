@@ -15,13 +15,13 @@ interface TransplantModalProps {
 }
 
 const EDITION_LABEL: Record<string, string> = {
-  base: 'Metallic', holographic: 'Holographic', prismatic: 'Prismatic', diamond: 'Diamond',
+  metallic: 'Metallic', holographic: 'Holographic', prismatic: 'Prismatic', diamond: 'Diamond',
 }
 const POS_LABEL: Record<number, string> = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K' }
 
 const effectLabel = (c: CardData) => c.displayName || c.effectName || 'Effect'
 const isEffectBearing = (c: CardData) =>
-  c.edition !== 'standard' && !!c.effectName && c.effectName !== 'none' && !c.vaulted && !c.isEquipped
+  c.edition !== 'base' && !!c.effectName && c.effectName !== 'none' && !c.vaulted && !c.isEquipped
 
 const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onComplete }) => {
   const { getToken } = useAuth()
@@ -136,7 +136,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
 
   // Apply the picker's filter + sort controls to the current pool.
   const cardVal = (c: CardData) => c.combineValue || c.sellValue || 0
-  const editionRank: Record<string, number> = { diamond: 0, prismatic: 1, holographic: 2, base: 3, standard: 4 }
+  const editionRank: Record<string, number> = { diamond: 0, prismatic: 1, holographic: 2, metallic: 3, base: 4 }
   const q = query.trim().toLowerCase()
   const shown = pool
     .filter(c => !q || c.playerName.toLowerCase().includes(q) || (c.displayName || '').toLowerCase().includes(q) || (c.effectName || '').toLowerCase().includes(q))

@@ -96,6 +96,15 @@ const Lineup: React.FC = () => {
   const bonusBySlotNumber: Record<number, CardBreakdownEntry> = {}
   for (const b of myEntry?.cardBreakdowns ?? []) bonusBySlotNumber[b.slotNumber] = b
 
+  // Same-team stacks: when 2+ equipped cards depict players from the same real team, they
+  // glow in that team's color (the fusion successor to the old match-bonus glow, and the
+  // visual cue for the team-stacking FPx synergy).
+  const teamCounts: Record<number, number> = {}
+  for (const e of equipped) {
+    const t = e.card.teamId
+    if (t != null) teamCounts[t] = (teamCounts[t] || 0) + 1
+  }
+
   return (
     <div style={{ fontFamily: 'pressStart' }}>
       {lineup.error && (
@@ -110,7 +119,10 @@ const Lineup: React.FC = () => {
             const entry = lineup.bySlot[slot]
             const canEdit = !lineup.gamesActive && !lineup.locked && !lineup.saving
             const bonus = entry ? bonusBySlotNumber[entry.slotNumber] : undefined
-            const noEffect = entry?.card.edition === 'standard'
+            const noEffect = entry?.card.edition === 'base'
+            const stackTeamId = entry?.card.teamId
+            const stackGlow = stackTeamId != null && teamCounts[stackTeamId] >= 2
+              ? (entry!.card.teamColor ?? undefined) : undefined
             const slotColor = slot === FLEX_SLOT ? '#fbbf24' : positionColor(SLOT_POSITION[slot])
             return (
               <div key={slot} data-tour={slot === 'QB' ? 'fantasy-card-read' : undefined}
@@ -123,7 +135,7 @@ const Lineup: React.FC = () => {
                   <div style={{ position: 'relative' }}>
                     {/* Card click flips it (front/back). Equipping is a separate control.
                         gateFP = the depicted player's week FP, driving the live power bar. */}
-                    <TradingCard card={entry.card} size="sm" noHoverLift gateFP={weekFPBySlot[slot]} />
+                    <TradingCard card={entry.card} size="sm" noHoverLift gateFP={weekFPBySlot[slot]} glowColor={stackGlow} />
                     {canEdit && (
                       <button onClick={(e) => { e.stopPropagation(); lineup.unequip(slot) }}
                         aria-label={`Clear ${slot}`}

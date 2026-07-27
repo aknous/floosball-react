@@ -294,7 +294,7 @@ interface PlayerSearchResult {
 }
 
 const EDITION_COLORS_MAP: Record<string, string> = {
-  base: '#94a3b8', holographic: '#bae6fd',
+  metallic: '#94a3b8', holographic: '#bae6fd',
   prismatic: '#f9a8d4', diamond: '#a5f3fc',
 }
 
@@ -1282,7 +1282,7 @@ const AdminContent: React.FC<{
           }
 
           const editionColors: Record<string, string> = {
-            base: '#94a3b8', holographic: '#bae6fd', prismatic: '#f9a8d4', diamond: '#a5f3fc',
+            metallic: '#94a3b8', holographic: '#bae6fd', prismatic: '#f9a8d4', diamond: '#a5f3fc',
           }
           const tierColors: Record<string, string> = {
             MEGA_MARKET: '#a78bfa', LARGE_MARKET: '#3b82f6', MID_MARKET: '#2dd4bf', SMALL_MARKET: '#f97316',
@@ -1415,7 +1415,7 @@ const AdminContent: React.FC<{
                   <div style={statLabel}>Total Cards</div>
                   <div style={statValue}>{cards.totalCards.toLocaleString()}</div>
                 </div>
-                {['base', 'holographic', 'prismatic', 'diamond'].map(ed => (
+                {['metallic', 'holographic', 'prismatic', 'diamond'].map(ed => (
                   <div key={ed} style={statBox}>
                     <div style={statLabel}>{ed}</div>
                     <div style={{ ...statValue, color: editionColors[ed] || '#e2e8f0', fontSize: '18px' }}>
@@ -2122,7 +2122,7 @@ const AdminContent: React.FC<{
           <div>
             <div style={labelStyle}>Edition</div>
             <select value={cardEdition} onChange={e => { setCardEdition(e.target.value); setCardEffect('') }} style={selectStyle}>
-              {(cardOptions?.editions ?? ['base', 'holographic', 'prismatic', 'diamond']).map(ed => (
+              {(cardOptions?.editions ?? ['metallic', 'holographic', 'prismatic', 'diamond']).map(ed => (
                 <option key={ed} value={ed} style={{ color: EDITION_COLORS_MAP[ed] }}>{ed.toUpperCase()}</option>
               ))}
             </select>

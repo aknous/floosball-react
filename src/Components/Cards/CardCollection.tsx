@@ -20,9 +20,9 @@ const EMPTY_DRAG_IMG = typeof Image !== 'undefined' ? (() => {
   return img
 })() : null
 
-const EDITIONS = ['all', 'base', 'holographic', 'prismatic', 'diamond'] as const
-// Display label for the edition filter pills (slug 'base' now shows as "Metallic").
-const EDITION_FILTER_LABELS: Record<string, string> = { all: 'all', base: 'metallic', holographic: 'holographic', prismatic: 'prismatic', diamond: 'diamond' }
+const EDITIONS = ['all', 'metallic', 'holographic', 'prismatic', 'diamond'] as const
+// Display label for the edition filter pills (the floor 'base' print isn't filterable).
+const EDITION_FILTER_LABELS: Record<string, string> = { all: 'all', metallic: 'metallic', holographic: 'holographic', prismatic: 'prismatic', diamond: 'diamond' }
 const POSITIONS = [
   { value: 0, label: 'All' },
   { value: 1, label: 'QB' },

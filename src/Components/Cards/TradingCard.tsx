@@ -59,20 +59,20 @@ export const EDITION_STYLES: Record<string, {
   rarity: string
   glowColor?: string
 }> = {
-  // Sub-base "no-effect" print — the plain floor card that just fields the player
-  // for their FP. Flattest/mattest treatment, no foil (see edition FX gating).
-  standard: {
+  // 'base' — the "no-effect" floor print that just fields the player for their FP.
+  // Flattest/mattest treatment, no foil (see edition FX gating). Shown as "Base".
+  base: {
     borderColor: '#414a5c',
     bgGradient: 'linear-gradient(140deg, #2b3242 0%, #232a36 60%, #2a313f 100%)',
     labelColor: '#8895a9',
     label: 'Base',
     rarity: 'Basic',
   },
-  // Metallic (slug 'base') — the first effect tier. Brushed-steel treatment with a
+  // Metallic (slug 'metallic') — the first effect tier. Brushed-steel treatment with a
   // cool silver sheen band + a slow light sweep (see edition FX gating), a clear rung
-  // above the flat no-effect floor print (slug 'standard', shown as "Base") but below
-  // the rainbow Holographic.
-  base: {
+  // above the flat no-effect floor print ('base', shown as "Base") but below the
+  // rainbow Holographic.
+  metallic: {
     borderColor: '#8a9bb4',
     bgGradient: 'linear-gradient(140deg, #2c3441 0%, #38414f 30%, #434c5b 45%, #313945 60%, #3a4350 82%, #272d38 100%)',
     labelColor: '#c3cedd',
@@ -627,7 +627,7 @@ const SHIMMER_CONFIGS: Record<string, {
   opacity: number
 }> = {
   // Metallic: a slow, restrained silver light-sweep — a metal glint, no color.
-  base: {
+  metallic: {
     gradient: 'linear-gradient(105deg, transparent 42%, rgba(203,213,225,0.035) 47%, rgba(255,255,255,0.08) 50%, rgba(203,213,225,0.035) 53%, transparent 58%)',
     duration: '6.5s',
     opacity: 0.7,
@@ -939,7 +939,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
       )}
 
       {/* Edition FX overlays */}
-      {edition === 'base' && <ShimmerOverlay edition={edition} />}
+      {edition === 'metallic' && <ShimmerOverlay edition={edition} />}
       {edition === 'holographic' && <ShimmerOverlay edition={edition} />}
       {edition === 'prismatic' && <><HoloBackgroundOverlay /><HoloEdgeShimmer /></>}
       {edition === 'diamond' && <><DiamondEdgeShimmer /><SparkleOverlay /></>}
@@ -1120,8 +1120,8 @@ const TradingCard: React.FC<TradingCardProps> = ({
           <div style={{ flex: 1, minHeight: 0 }} />
 
           {/* Effect footer — hidden on vaulted (effect gone) and on the sub-base
-              "standard" (no-effect) print, which just fields the player for their FP. */}
-          {!isVaulted && edition !== 'standard' && (
+              "base" (no-effect) print, which just fields the player for their FP. */}
+          {!isVaulted && edition !== 'base' && (
           <div style={{
             padding: `${Math.max(6, d.pad - 5)}px ${d.pad + 18}px ${Math.max(4, d.pad - 7)}px`,
             height: footerReserve, boxSizing: 'border-box', overflow: 'hidden',
@@ -1166,7 +1166,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           {/* Standard (no-effect) print: reserve the footer's space so the nameplate
               lands at the same height as effect cards. minHeight ≈ a typical
               two-line effect footer; left intentionally empty (no "No Effect" label). */}
-          {!isVaulted && edition === 'standard' && (
+          {!isVaulted && edition === 'base' && (
           <div style={{
             padding: `${d.pad - 2}px ${d.pad + 18}px`,
             minHeight: footerReserve,
