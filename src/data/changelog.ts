@@ -12,6 +12,38 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.24.0',
+    date: '2026-07-27',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Fantasy] Fantasy and your cards are now one game. Your equipped cards are your lineup, one per position, and each fields its real player. That player\'s weekly Fantasy Points power the card, so choosing a card is choosing who to field.',
+          '[Cards] Every effect card has an FP power bar. The effect turns on once the depicted player fills the bar for the week, and the player\'s points always count toward your total either way. Rarer cards need a higher bar, so their bigger effects are a bigger gamble.',
+          '[Cards] Effect Transplant lets you move an effect onto the card you want, on any card of the same edition (position-specific effects stay on matching positions). Find it on the Cards page.',
+          '[Cards] Several new card effects, including the Diamond Captain, which boosts your other cards the further their players clear their bars.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Cards] Chance cards reworked. The power bar is now your trigger odds, filled by the depicted player\'s points plus the card\'s own condition. A guaranteed floor always pays, and a fuller bar means a better shot at the bigger payout.',
+          '[Cards] Editions renamed for clarity: the plain no-effect card is Base, and the first effect tier is Metallic. Your free starter pack is a full lineup of Base cards.',
+          '[Fantasy] Cards whose players share a real team glow in the team color and stack for a lineup-wide bonus, so building around a team pays off. The slot picker can filter to cards that match the teams already in your lineup.',
+          '[Cards] Retired a handful of cards that only paid off when your roster or favorite team did poorly, which no longer fit the new scoring.',
+          '[Awards] Hall of Fame plaques no longer show a star rating, since players who decline late in their careers were entering at a low one.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Recap] The Season Recap final standings no longer show a point differential with a long trail of extra decimal places.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.23.0',
     date: '2026-07-13',
     changes: [],
