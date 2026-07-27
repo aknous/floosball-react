@@ -142,14 +142,17 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
   // points still decide a tie and are the real box score — so render both, per team, as a
   // two-stat line: [frames won] | [actual points]. Every other format's big number already
   // IS the points, so it renders alone.
-  const renderScoreCell = (teamFramesWon: number | undefined, teamPts: number | null | undefined, oppPts: number | null | undefined): React.ReactNode => {
+  const renderScoreCell = (side: 'home' | 'away', teamFramesWon: number | undefined, teamPts: number | null | undefined, oppPts: number | null | undefined): React.ReactNode => {
     if (!(isLive || isFinal)) return '—'
     if (frames?.active) {
+      // Frames level, points break it (or lead it live): highlight the leading team's point
+      // total in green so the tie-decider reads straight off the box score.
+      const pointsWinner = frames.tiebreak?.decidedByPoints && frames.tiebreak.winner === side
       return (
         <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
           <span>{fmtFramesWon(teamFramesWon ?? 0)}</span>
           <span style={{ width: '1px', height: '20px', backgroundColor: '#475569', flexShrink: 0 }} />
-          <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600 }}>
+          <span style={{ fontSize: '13px', color: pointsWinner ? '#22c55e' : '#94a3b8', fontWeight: pointsWinner ? 800 : 600 }}>
             {displayScore(teamPts, oppPts, scoringModel)}
           </span>
         </span>
@@ -204,7 +207,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             </div>
           </div>
           <div style={scoreStyle} className={homeFlash ? 'score-updated' : ''}>
-            {renderScoreCell(frames?.framesWonHome, homeScore, awayScore)}
+            {renderScoreCell('home', frames?.framesWonHome, homeScore, awayScore)}
           </div>
         </div>
       </TeamHoverCard>
@@ -244,7 +247,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             </div>
           </div>
           <div style={scoreStyle} className={awayFlash ? 'score-updated' : ''}>
-            {renderScoreCell(frames?.framesWonAway, awayScore, homeScore)}
+            {renderScoreCell('away', frames?.framesWonAway, awayScore, homeScore)}
           </div>
         </div>
       </TeamHoverCard>
@@ -468,14 +471,8 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
         {isFinal ? (
           <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span>Final {(quarter ?? 0) > 4 ? '(OT)' : ''}</span>
-            {/* Frames decided on the points tiebreak: the score above shows a level frames
-                count (e.g. 3-3), so name the winner or it reads as a silent tie. Matches the
-                note the live card and the game modal show. */}
-            {frames?.tiebreak?.decidedByPoints && (
-              <span style={{ color: '#f59e0b', fontWeight: 700, letterSpacing: '0.03em' }}>
-                {`LEVEL • ${(frames.tiebreak.winner === 'home' ? homeTeam : awayTeam).abbr} wins on points`}
-              </span>
-            )}
+            {/* A frames tie decided on points is shown by highlighting the winning team's
+                point total in the box score above — no footer note needed. */}
             {isUpsetAlert && (
               <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
                 UPSET
@@ -504,18 +501,14 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             ) : frames?.active ? (
               // Frames: the frame + its clock (the score above is frames won). In points-
               // decided OT show the live OT clock (frames + points were level, so it's
-              // standard overtime, not a 7th frame); otherwise, when the frames are level,
-              // note the points tiebreak so a "3-3" doesn't read as a tie.
+              // standard overtime, not a 7th frame). A level-frames points lead is shown by
+              // highlighting the leader's point total in the box score above, not here.
               frames.overtime ? (
                 <>
                   <span>OT</span>
                   <span>•</span>
                   <span>{timeRemaining ?? '10:00'}</span>
                 </>
-              ) : frames.tiebreak?.decidedByPoints ? (
-                <span style={{ color: '#f59e0b', fontWeight: 700, letterSpacing: '0.03em' }}>
-                  {`LEVEL • ${(frames.tiebreak.winner === 'home' ? homeTeam : awayTeam).abbr} ${isFinal ? 'wins' : 'leads'} on points`}
-                </span>
               ) : (
                 <>
                   <span>{`Frame ${frames.currentFrame}`}</span>
