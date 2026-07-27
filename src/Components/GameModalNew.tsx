@@ -340,6 +340,28 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // off the cursor play; otherwise straight from the live snapshot.
   const dHomeScore = replayActive && replayCursor ? (replayCursor.homeTeamScore ?? 0) : gameData?.homeScore
   const dAwayScore = replayActive && replayCursor ? (replayCursor.awayTeamScore ?? 0) : gameData?.awayScore
+
+  // Frames scoreboard cell: [frames won] | [actual points], matching the game card. When the
+  // frames are level and points decide it, the leader's point total is highlighted green (no
+  // separate tie note). Every other format's big number already IS the points.
+  const renderModalScore = (side: 'home' | 'away', teamPts: number | null | undefined, oppPts: number | null | undefined): React.ReactNode => {
+    const fr = gameData?.frames
+    if (fr?.active) {
+      const pointsWinner = fr.tiebreak?.decidedByPoints && fr.tiebreak.winner === side
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+          <span>{fmtFramesWon(side === 'home' ? fr.framesWonHome : fr.framesWonAway)}</span>
+          <span style={{ width: '1px', height: '26px', backgroundColor: '#475569', flexShrink: 0 }} />
+          {/* Fixed-width, LEFT-aligned: the total hugs the divider, 1- vs 2-digit reserves
+              the same space so the frames score stays put. */}
+          <span style={{ display: 'inline-block', minWidth: '28px', textAlign: 'left', fontSize: '19px', color: pointsWinner ? '#22c55e' : '#94a3b8', fontWeight: pointsWinner ? 800 : 600 }}>
+            {displayScore(teamPts, oppPts, scoringModel)}
+          </span>
+        </span>
+      )
+    }
+    return displayScore(teamPts, oppPts, scoringModel)
+  }
   const dQuarter = replayActive && replayCursor ? replayCursor.quarter : gameData?.quarter
   const dClock = replayActive && replayCursor ? replayCursor.timeRemaining : gameData?.timeRemaining
   const dPossession = replayActive && replayCursor ? replayCursor.offensiveTeam : gameData?.possession
@@ -1286,7 +1308,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={homeFlash ? 'score-updated' : ''}>
-                  {gameData.frames?.active ? fmtFramesWon(gameData.frames.framesWonHome) : displayScore(dHomeScore, dAwayScore, scoringModel)}
+                  {renderModalScore('home', dHomeScore, dAwayScore)}
                 </div>
               </div>
 
@@ -1334,7 +1356,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={awayFlash ? 'score-updated' : ''}>
-                  {gameData.frames?.active ? fmtFramesWon(gameData.frames.framesWonAway) : displayScore(dAwayScore, dHomeScore, scoringModel)}
+                  {renderModalScore('away', dAwayScore, dHomeScore)}
                 </div>
               </div>
 
@@ -1393,16 +1415,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         {rowFor('home', gameData.homeTeam.abbr)}
                       </tbody>
                     </table>
-                    {fr.tiebreak?.decidedByPoints && (() => {
-                      const tb = fr.tiebreak!
-                      const winTeam = tb.winner === 'home' ? gameData.homeTeam : gameData.awayTeam
-                      const isDone = gameData.status === 'Final'
-                      return (
-                        <div style={{ marginTop: '8px', fontSize: '12px', color: '#f59e0b', fontWeight: 600, lineHeight: 1.5 }}>
-                          {`Frames level ${fmtFramesWon(fr.framesWonHome)}-${fmtFramesWon(fr.framesWonAway)} — ${isDone ? 'won' : 'leading'} on total points, ${winTeam.abbr} ${Math.max(tb.homePoints, tb.awayPoints)}-${Math.min(tb.homePoints, tb.awayPoints)}`}
-                        </div>
-                      )
-                    })()}
+                    {/* A frames tie decided on points is shown by highlighting the winning
+                        team's point total in the scoreboard above — no note here. */}
                   </div>
                 )
               })() : null}

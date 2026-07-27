@@ -149,10 +149,12 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
       // total in green so the tie-decider reads straight off the box score.
       const pointsWinner = frames.tiebreak?.decidedByPoints && frames.tiebreak.winner === side
       return (
-        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
           <span>{fmtFramesWon(teamFramesWon ?? 0)}</span>
           <span style={{ width: '1px', height: '20px', backgroundColor: '#475569', flexShrink: 0 }} />
-          <span style={{ fontSize: '13px', color: pointsWinner ? '#22c55e' : '#94a3b8', fontWeight: pointsWinner ? 800 : 600 }}>
+          {/* Fixed-width, LEFT-aligned so the total hugs the divider but a 1- vs 2-digit total
+              still reserves the same space (the frames score never shifts). */}
+          <span style={{ display: 'inline-block', minWidth: '24px', textAlign: 'left', fontSize: '16px', color: pointsWinner ? '#22c55e' : '#94a3b8', fontWeight: pointsWinner ? 800 : 600 }}>
             {displayScore(teamPts, oppPts, scoringModel)}
           </span>
         </span>
