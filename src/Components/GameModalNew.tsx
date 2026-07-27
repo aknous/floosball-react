@@ -499,9 +499,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       // Plays share a try bucket (a try = one drive), so spread them within the try's
       // width to keep the line advancing smoothly. Frames (no `inning`) keep the ordinal
       // spread. Mirrors the backend InningsFormat.adjustGameProgress.
+      const isFrames = !!gameData?.frames?.active
       const triesPer = gameData?.innings?.triesPerInning || 3
       const tryWidth = 0.5 / triesPer
+      // Width a bucket's plays spread across: a FULL frame section for frames, one try for
+      // innings. Frames were previously spread by ordinal across the WHOLE axis, so even a
+      // handful of early plays ran the line all the way across the graph — bucket by the
+      // play's frame instead, so the line stays in the current frame and stops there.
+      const spreadWidth = isFrames ? 1 : tryWidth
       const bucketOf = (p: any): number | null => {
+        if (isFrames) return p.frame != null ? (p.frame - 1) : null
         if (p.inning == null) return null
         const halfFrac = p.inningHalf === 'bottom' ? 0.5 : 0
         const tryFrac = Math.max(0, (p.inningTry || 1) - 1) * tryWidth
@@ -523,7 +530,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         seen.set(b, k + 1)
         const total = counts.get(b) || 1
         const frac = total > 1 ? (k + 1) / total : 1
-        pts.push({ pos: Math.min(b + frac * tryWidth, wpPeriods), wp: p.homeWinProbability })
+        pts.push({ pos: Math.min(b + frac * spreadWidth, wpPeriods), wp: p.homeWinProbability })
       })
       return pts
     }
@@ -545,7 +552,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       pts.push({ pos: elapsed <= 3600 ? elapsed / 900 : 4 + (elapsed - 3600) / 600, wp: p.homeWinProbability })
     })
     return pts
-  }, [wpPlays, wpNoClock, wpPeriods, gameData?.innings?.triesPerInning])
+  }, [wpPlays, wpNoClock, wpPeriods, gameData?.innings?.triesPerInning, gameData?.frames?.active])
 
   // Shared x-axis descriptor: how many equal-width sections, where the dividers fall
   // (in section units), the period labels, and which divider is the thicker
