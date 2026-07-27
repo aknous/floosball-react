@@ -286,7 +286,7 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
 
 export default function Navbar() {
   const { seasonState, lastEvent } = useFloosball()
-  const { user, logout, getToken, fantasyLineupLocked, refetchLineup, refetchUser } = useAuth()
+  const { user, logout, getToken, refetchLineup, refetchUser } = useAuth()
   const getTokenRef = useRef(getToken)
   getTokenRef.current = getToken
   const { event: wsEvent } = useSeasonWebSocket()
@@ -452,9 +452,12 @@ export default function Navbar() {
     }
   }, [lastEvent])
 
-  // Fantasy points from snapshot (single source of truth)
+  // Fantasy points from snapshot (single source of truth). FP always counts, so keep the
+  // header counter visible whenever the user has a fantasy entry this season — not only while
+  // games are live. The old fantasyLineupLocked gate hid it between slots even though the
+  // week's banked FP (and the season total) are still there.
   const { myEntry } = useFantasySnapshot(user?.id)
-  const fantasyPoints = fantasyLineupLocked && myEntry
+  const fantasyPoints = myEntry
     ? { weekPoints: (myEntry.weekPlayerFP ?? 0) + (myEntry.weekCardBonus ?? 0), seasonTotal: myEntry.seasonTotal }
     : null
 

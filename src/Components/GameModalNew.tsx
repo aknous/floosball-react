@@ -681,7 +681,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   <><span>{`${play.inningHalf === 'bottom' ? 'BOT' : 'TOP'} ${play.inning}`}</span><span>•</span></>
                 ) : play.frame != null ? (
                   <><span>{`Frame ${play.frame}`}</span><span>•</span></>
-                ) : (!noClockFormat && gameFormat !== 'frames') ? (
+                ) : !noClockFormat ? (
+                  // Frames OT plays carry no frame (standard points-decided OT), so they land
+                  // here and show the OT/quarter clock like any clock format.
                   <><span>{`${play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - ${play.timeRemaining}`}</span><span>•</span></>
                 ) : null}
                 <span style={{ color: '#cbd5e1', fontWeight: '500', letterSpacing: '0.04em' }}>SIDELINE</span>
@@ -1516,8 +1518,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       <span>{`${gameData.innings.half === 'bottom' ? 'BOT' : 'TOP'} ${gameData.innings.inning}  •  Try ${gameData.innings.tries + 1}`}</span>
                     ) : gameData.frames?.active ? (
                       // frames: 10-min frames don't line up with quarters — show the frame
-                      // + its clock (down/distance on its own row below).
-                      <span>{`Frame ${gameData.frames.currentFrame}  •  ${gameData.frames.frameClock ?? gameData.timeRemaining}`}</span>
+                      // + its clock (down/distance on its own row below). Level frames +
+                      // level points go to standard points-decided OT: show the OT clock,
+                      // not a frozen "Frame 6 / 10:00" (elapsed caps at regulation in OT).
+                      gameData.frames.overtime ? (
+                        <span>{`OT  •  ${gameData.timeRemaining}`}</span>
+                      ) : (
+                        <span>{`Frame ${gameData.frames.currentFrame}  •  ${gameData.frames.frameClock ?? gameData.timeRemaining}`}</span>
+                      )
                     ) : gameData.playLimit?.active ? (
                       // play_limit: no clock — show plays remaining in the period
                       <span>{`${gameData.quarter > 4 ? 'OT' : `Q${gameData.quarter}`}  •  ${gameData.playLimit.playsRemaining} ${gameData.playLimit.playsRemaining === 1 ? 'play' : 'plays'} left`}</span>
