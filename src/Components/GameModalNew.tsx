@@ -423,17 +423,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   }
   const cycleReplaySpeed = () => setReplaySpeed(s => (s === 1 ? 2 : s === 2 ? 4 : 1))
 
-  // Plays with WP data, in chronological order (oldest first), for the chart
-  // No-clock formats (innings / frames) never advance the game clock, so every play
-  // arrives with quarter=1 and a frozen timeRemaining — the elapsed-time x-axis would
-  // collapse every point to 0. Detect them per-game and bucket by play ordinal instead,
-  // with the period count/labels coming from the format (innings / frames), not Q1-Q4.
-  const wpPeriods = gameData?.frames?.active
-    ? (gameData.frames.framesPerGame || 6)
-    : gameData?.innings?.active
-      ? (gameData.innings.lineScore?.innings?.length || gameData.innings.inningsPerGame || 3)
-      : 0
+  // Plays with WP data, in chronological order (oldest first), for the chart.
+  // Innings is the only truly CLOCKLESS format (its clock loop is inert, so every play arrives
+  // quarter=1 with a frozen timeRemaining) — bucket its plays by at-bat ordinal. Frames RUNS
+  // the game clock (quarters advance normally), so it's just the standard elapsed x-axis split
+  // into framesPerGame sections instead of 4 quarters.
+  const framesClock = !!gameData?.frames?.active
+  const wpPeriods = gameData?.innings?.active
+    ? (gameData.innings.lineScore?.innings?.length || gameData.innings.inningsPerGame || 3)
+    : 0
   const wpNoClock = wpPeriods > 0
+  // Clock-based regulation sections: frames split regulation into framesPerGame; standard = 4.
+  const regSections = framesClock ? (gameData!.frames!.framesPerGame || 6) : 4
+  const sectionSecs = 3600 / regSections
 
   const wpPlays = useMemo(() => {
     const chronological = (displayPlays as any[])
@@ -499,16 +501,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       // Plays share a try bucket (a try = one drive), so spread them within the try's
       // width to keep the line advancing smoothly. Frames (no `inning`) keep the ordinal
       // spread. Mirrors the backend InningsFormat.adjustGameProgress.
-      const isFrames = !!gameData?.frames?.active
       const triesPer = gameData?.innings?.triesPerInning || 3
       const tryWidth = 0.5 / triesPer
-      // Width a bucket's plays spread across: a FULL frame section for frames, one try for
-      // innings. Frames were previously spread by ordinal across the WHOLE axis, so even a
-      // handful of early plays ran the line all the way across the graph — bucket by the
-      // play's frame instead, so the line stays in the current frame and stops there.
-      const spreadWidth = isFrames ? 1 : tryWidth
       const bucketOf = (p: any): number | null => {
-        if (isFrames) return p.frame != null ? (p.frame - 1) : null
         if (p.inning == null) return null
         const halfFrac = p.inningHalf === 'bottom' ? 0.5 : 0
         const tryFrac = Math.max(0, (p.inningTry || 1) - 1) * tryWidth
@@ -530,7 +525,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         seen.set(b, k + 1)
         const total = counts.get(b) || 1
         const frac = total > 1 ? (k + 1) / total : 1
-        pts.push({ pos: Math.min(b + frac * spreadWidth, wpPeriods), wp: p.homeWinProbability })
+        pts.push({ pos: Math.min(b + frac * tryWidth, wpPeriods), wp: p.homeWinProbability })
       })
       return pts
     }
@@ -549,18 +544,22 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         elapsed = 3600 + otOffset + (600 - remaining)
       }
       prevElapsed = elapsed
-      pts.push({ pos: elapsed <= 3600 ? elapsed / 900 : 4 + (elapsed - 3600) / 600, wp: p.homeWinProbability })
+      // Map regulation elapsed to [0, regSections] (a section per quarter, or per frame in
+      // frames), then OT sections after. A clinched frames game simply stops early here — the
+      // line ends where the game did, leaving the later frame sections empty (as it should).
+      pts.push({ pos: elapsed <= 3600 ? elapsed / sectionSecs : regSections + (elapsed - 3600) / 600, wp: p.homeWinProbability })
     })
     return pts
-  }, [wpPlays, wpNoClock, wpPeriods, gameData?.innings?.triesPerInning, gameData?.frames?.active])
+  }, [wpPlays, wpNoClock, wpPeriods, gameData?.innings?.triesPerInning, sectionSecs, regSections])
 
   // Shared x-axis descriptor: how many equal-width sections, where the dividers fall
   // (in section units), the period labels, and which divider is the thicker
   // regulation/OT boundary. Derived once so wpSegments and the axis render agree.
   const wpAxis = useMemo(() => {
     if (wpNoClock) {
+      // Innings only (frames is clock-based below).
       const n = Math.max(1, wpPeriods)
-      const prefix = gameData?.frames?.active ? 'F' : 'In'
+      const prefix = 'In'
       return {
         numSections: n,
         dividers: Array.from({ length: n - 1 }, (_, i) => i + 1),
@@ -568,17 +567,26 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         bigDivider: -1,
       }
     }
+    // Clock-based: regSections regulation sections (4 quarters, or framesPerGame frames), then
+    // any OT sections. Frames label F1..Fn; standard Q1..Q4. The thick divider marks the
+    // regulation/OT boundary.
     const lastPos = chartPoints.length ? chartPoints[chartPoints.length - 1].pos : 0
-    const numOT = lastPos > 4 ? Math.ceil(lastPos - 4) : 0
+    const numOT = lastPos > regSections ? Math.ceil(lastPos - regSections) : 0
+    const prefix = framesClock ? 'F' : 'Q'
     return {
-      numSections: 4 + numOT,
-      dividers: [1, 2, 3, ...(numOT > 0 ? [4] : []),
-        ...Array.from({ length: Math.max(0, numOT - 1) }, (_, i) => 4 + (i + 1))],
-      labels: ['Q1', 'Q2', 'Q3', 'Q4',
-        ...Array.from({ length: numOT }, (_, i) => numOT === 1 ? 'OT' : `OT${i + 1}`)],
-      bigDivider: 4,
+      numSections: regSections + numOT,
+      dividers: [
+        ...Array.from({ length: regSections - 1 }, (_, i) => i + 1),
+        ...(numOT > 0 ? [regSections] : []),
+        ...Array.from({ length: Math.max(0, numOT - 1) }, (_, i) => regSections + (i + 1)),
+      ],
+      labels: [
+        ...Array.from({ length: regSections }, (_, i) => `${prefix}${i + 1}`),
+        ...Array.from({ length: numOT }, (_, i) => numOT === 1 ? 'OT' : `OT${i + 1}`),
+      ],
+      bigDivider: regSections,
     }
-  }, [chartPoints, wpNoClock, wpPeriods, gameData?.frames?.active])
+  }, [chartPoints, wpNoClock, wpPeriods, regSections, framesClock])
 
   const prevHomeScore = useRef(dHomeScore)
   const prevAwayScore = useRef(dAwayScore)
