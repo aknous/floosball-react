@@ -139,19 +139,20 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
   }
 
   // A team's score cell. In frames the big number is FRAMES WON (the result), but the actual
-  // points still decide a tie and are the real box score — so surface them beneath, per team,
-  // reading like a two-stat line (frames · points). Every other format's big number already
-  // IS the points, so it renders alone.
+  // points still decide a tie and are the real box score — so surface them beside it, per
+  // team, reading like a two-stat line (points · frames). The frames-won result stays big on
+  // the right where scores normally sit. Every other format's big number already IS the
+  // points, so it renders alone.
   const renderScoreCell = (teamFramesWon: number | undefined, teamPts: number | null | undefined, oppPts: number | null | undefined): React.ReactNode => {
     if (!(isLive || isFinal)) return '—'
     if (frames?.active) {
       return (
-        <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1 }}>
-          <span>{fmtFramesWon(teamFramesWon ?? 0)}</span>
-          <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600, marginTop: '4px' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '8px' }}>
+          <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 600 }}>
             {displayScore(teamPts, oppPts, scoringModel)}
             <span style={{ fontSize: '10px', color: '#64748b', marginLeft: '2px' }}>pts</span>
           </span>
+          <span>{fmtFramesWon(teamFramesWon ?? 0)}</span>
         </span>
       )
     }
