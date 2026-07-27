@@ -28,7 +28,7 @@ interface GameCardProps {
   quarter?: number
   timeRemaining?: string
   innings?: { active: boolean; inning: number; half: 'top' | 'bottom'; tries: number; triesPerInning: number }
-  frames?: { active: boolean; currentFrame: number; framesPerGame: number; frameClock?: string; framesWonHome: number; framesWonAway: number; tiebreak?: { decidedByPoints: boolean; homePoints: number; awayPoints: number; winner: 'home' | 'away' } | null }
+  frames?: { active: boolean; overtime?: boolean; currentFrame: number; framesPerGame: number; frameClock?: string; framesWonHome: number; framesWonAway: number; tiebreak?: { decidedByPoints: boolean; homePoints: number; awayPoints: number; winner: 'home' | 'away' } | null }
   status?: 'Scheduled' | 'Active' | 'Final'
   homeWinProbability?: number
   awayWinProbability?: number
@@ -446,8 +446,16 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
       {/* Status Bar */}
       <div style={statusStyle}>
         {isFinal ? (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span>Final {(quarter ?? 0) > 4 ? '(OT)' : ''}</span>
+            {/* Frames decided on the points tiebreak: the score above shows a level frames
+                count (e.g. 3-3), so name the winner or it reads as a silent tie. Matches the
+                note the live card and the game modal show. */}
+            {frames?.tiebreak?.decidedByPoints && (
+              <span style={{ color: '#f59e0b', fontWeight: 700, letterSpacing: '0.03em' }}>
+                {`LEVEL • ${(frames.tiebreak.winner === 'home' ? homeTeam : awayTeam).abbr} wins on points`}
+              </span>
+            )}
             {isUpsetAlert && (
               <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
                 UPSET
@@ -474,9 +482,17 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                 </span>
               </>
             ) : frames?.active ? (
-              // Frames: the frame + its clock (the score above is frames won). When the
-              // frames are level, note the points tiebreak so a "3-3" doesn't read as a tie.
-              frames.tiebreak?.decidedByPoints ? (
+              // Frames: the frame + its clock (the score above is frames won). In points-
+              // decided OT show the live OT clock (frames + points were level, so it's
+              // standard overtime, not a 7th frame); otherwise, when the frames are level,
+              // note the points tiebreak so a "3-3" doesn't read as a tie.
+              frames.overtime ? (
+                <>
+                  <span>OT</span>
+                  <span>•</span>
+                  <span>{timeRemaining ?? '10:00'}</span>
+                </>
+              ) : frames.tiebreak?.decidedByPoints ? (
                 <span style={{ color: '#f59e0b', fontWeight: 700, letterSpacing: '0.03em' }}>
                   {`LEVEL • ${(frames.tiebreak.winner === 'home' ? homeTeam : awayTeam).abbr} ${isFinal ? 'wins' : 'leads'} on points`}
                 </span>

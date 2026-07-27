@@ -58,10 +58,21 @@ const GameBar: React.FC = () => {
     const awayColor = game.awayTeam.color || '#64748b'
     const isFavGame = favTeamId !== null && (Number(game.homeTeam.id) === favTeamId || Number(game.awayTeam.id) === favTeamId)
 
+    // Format-aware period label. Innings/frames games carry their own state; standard (and
+    // chess-clock/play-limit, which still use quarters) fall back to Q/Half/OT. F/OT only
+    // applies to a standard overtime, so guard it off for the alternate formats.
+    const isAltFormat = !!(game.innings || game.frames)
+    // Frames with level frames + level points go to standard (points-decided) OT, flagged
+    // by frames.overtime — show OT, not a frozen "Frame 6".
+    const framesOT = !!game.frames?.overtime
     const statusText = isFinal
-      ? (game.quarter && game.quarter > 4 ? 'F/OT' : 'F')
+      ? ((framesOT || (!isAltFormat && game.quarter && game.quarter > 4)) ? 'F/OT' : 'F')
       : isActive
-        ? (game.quarter === 5 ? 'OT' : game.isHalftime ? 'Half' : `Q${game.quarter}`)
+        ? (game.innings?.active
+            ? `${game.innings.half === 'bottom' ? 'BOT' : 'TOP'} ${game.innings.inning}`
+            : game.frames?.active
+              ? (game.frames.overtime ? 'OT' : `Frame ${game.frames.currentFrame}`)
+              : game.quarter === 5 ? 'OT' : game.isHalftime ? 'Half' : `Q${game.quarter}`)
         : 'Soon'
 
     const showScores = isActive || isFinal

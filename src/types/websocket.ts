@@ -60,6 +60,7 @@ export interface SidelineGoalsState {
 // frames game format: golf-style match play (win a frame = +1; most frames wins)
 export interface FramesState {
   active: boolean
+  overtime?: boolean   // level frames + level points -> standard points-decided OT (not a 7th frame)
   framesPerGame: number
   currentFrame: number
   frameClock?: string   // time remaining in the current frame (M:SS)
