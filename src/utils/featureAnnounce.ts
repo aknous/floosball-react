@@ -4,6 +4,7 @@ const PREFIX = 'feature-seen:'
 
 export const FEATURE_CARDS = 'cards-collection-2026'
 export const FEATURE_SUPPORTER = 'supporter-2026'
+export const FEATURE_FANTASY_FUSION = 'fantasy-fusion-2026'
 
 export function isFeatureSeen(key: string): boolean {
   try {

@@ -98,7 +98,7 @@ const SAMPLE_CARDS: CardData[] = [
   {
     id: 901, templateId: 901, playerId: 901, playerName: 'Rex Tillery',
     teamId: null, teamColor: '#475569', playerRating: 72, position: 1,
-    edition: 'base', seasonCreated: 1, isRookie: false,
+    edition: 'metallic', seasonCreated: 1, isRookie: false,
     displayName: 'Freebie', category: 'flat_fp', outputType: 'fp',
     tagline: 'Free real estate',
     tooltip: 'It pays to show up. Bonus FP every week just for having this card equipped.',
@@ -1310,19 +1310,25 @@ const AboutPage: React.FC = () => {
           {/* ── Fantasy ── */}
           <Section id="fantasy" title="Fantasy">
             <p style={textStyle}>
-              Sign in to play <Link to="/fantasy" style={linkStyle}>Fantasy Floosball</Link>. Draft a roster
-              of players each season and earn Fantasy Points (FP) based on their live in-game performance.
-              Your FP update in real-time as games are played. You can watch your score tick up in the navbar
-              during live games.
+              Sign in to play <Link to="/fantasy" style={linkStyle}>Fantasy Floosball</Link>. Your equipped
+              trading cards are your roster: each card fields its real player, and that player's live in-game
+              Fantasy Points (FP) power the card. Your FP update in real-time as games are played. You can
+              watch your score tick up in the navbar during live games.
             </p>
 
             <p style={labelStyle}>Roster</p>
             <p style={textStyle}>
-              Your roster has 6 slots, one per position. You need at least 3 filled slots to lock a roster.
-              An optional 7th FLEX slot (any position) can be unlocked with the Conscription power-up or by
-              equipping a card with the Champion classification.
+              Your roster has 6 slots, one per position (QB, RB, WR, WR, TE, K), each filled by an equipped
+              card. You need at least 3 filled slots to lock. An optional 7th FLEX slot (any position) can be
+              unlocked with the Conscription power-up.
             </p>
             <RosterSlotVisual isMobile={isMobile} />
+
+            <p style={labelStyle}>The Power Bar</p>
+            <p style={textStyle}>
+              Every card has an FP power bar. Its effect turns on once that player fills the bar for the week
+              (clears their position's FP threshold). A benched player never fills it, so the effect stays off.
+            </p>
 
             <p style={labelStyle}>Scoring</p>
             <p style={textStyle}>
@@ -1358,8 +1364,6 @@ const AboutPage: React.FC = () => {
                 { name: 'Amplify', color: '#f472b6', desc: 'FPx bonus portions are doubled' },
                 { name: 'Frenzy', color: '#4ade80', desc: '+FP values are doubled' },
                 { name: 'Ironclad', color: '#f97316', desc: "Streak cards can't reset this week" },
-                { name: 'Overdrive', color: '#3b82f6', desc: 'Match bonus is 2.5x instead of 1.5x' },
-                { name: 'Wildcard', color: '#3b82f6', desc: 'All cards treated as matched' },
                 { name: 'Longshot', color: '#a78bfa', desc: 'Conditional card rewards are doubled' },
                 { name: 'Fortunate', color: '#38bdf8', desc: 'Chance card trigger rates increased by 15%' },
                 { name: 'Synergy', color: '#f472b6', desc: 'Bonus FPx for each unique position in your card slots' },
@@ -1383,7 +1387,7 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>Changing Your Lineup</p>
             <p style={textStyle}>
-              Your lineup is your equipped cards — each card fields its player at that position. You can
+              Your lineup is your equipped cards; each card fields its player at that position. You can
               change any card for another in your collection between game rounds, for free. Once games
               start for the week, your lineup locks until the next unlock window.
             </p>
@@ -1400,8 +1404,9 @@ const AboutPage: React.FC = () => {
           <Section id="trading-cards" title="Trading Cards">
             <p style={textStyle}>
               Collect player <Link to="/cards" style={linkStyle}>Trading Cards</Link> from packs or the
-              daily shop selection. Each card has a named effect that modifies your weekly Fantasy scoring.
-              Cards come in four editions, and rarer editions have stronger effects.
+              daily shop selection. Base cards simply field their player for their FP. The four effect
+              editions add a named effect that modifies your weekly Fantasy scoring, and rarer editions
+              have stronger effects.
             </p>
 
             <p style={labelStyle}>Editions</p>
@@ -1424,7 +1429,8 @@ const AboutPage: React.FC = () => {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
               {[
-                { name: 'Base', color: '#94a3b8', count: 33, desc: 'Simple, reliable effects. Flat FP bonuses, basic Floobit earnings, and straightforward conditionals. The backbone of any collection.' },
+                { name: 'Base', color: '#8a94a6', count: 0, desc: 'No effect. A Base card just fields its player for their FP. Your starter cards are Base, one per position.' },
+                { name: 'Metallic', color: '#9aabc4', count: 33, desc: 'Simple, reliable effects. Flat FP bonuses, basic Floobit earnings, and straightforward conditionals. The backbone of any collection.' },
                 { name: 'Holographic', color: '#c4b5fd', count: 45, desc: 'Conditional and composition effects. Team-based bonuses, position matchup rewards, and loyalty programs that scale with roster synergy.' },
                 { name: 'Prismatic', color: '#f472b6', count: 35, desc: 'Chance-based and streak effects. High-risk/high-reward mechanics that grow over consecutive weeks, plus game-outcome bonuses.' },
                 { name: 'Diamond', color: '#a5f3fc', count: 13, desc: 'Synergy effects. Hand-shaping cards that boost your entire loadout, chain reactions, and build-around centerpieces.' },
@@ -1437,7 +1443,7 @@ const AboutPage: React.FC = () => {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                     <span style={{ color: e.color, fontWeight: '700', fontSize: '13px' }}>{e.name}</span>
-                    <span style={{ color: '#64748b', fontSize: '11px' }}>{e.count} effects</span>
+                    <span style={{ color: '#64748b', fontSize: '11px' }}>{e.count > 0 ? `${e.count} effects` : 'no effect'}</span>
                   </div>
                   <span style={{ ...textStyle, fontSize: '13px' }}>{e.desc}</span>
                 </div>
@@ -1468,8 +1474,8 @@ const AboutPage: React.FC = () => {
               {[
                 { label: 'Rookie', abbr: 'R', color: '#fbbf24', desc: 'Sells for 2x Floobits' },
                 { label: 'MVP', abbr: 'MVP', color: '#3b82f6', desc: 'Unlocks a 6th card equipment slot' },
-                { label: 'Champion', abbr: 'CH', color: '#f59e0b', desc: 'Unlocks the FLEX roster slot' },
-                { label: 'All-Pro', abbr: 'AP', color: '#a78bfa', desc: '+1 roster swap when equipped, refreshes each game day' },
+                { label: 'Champion', abbr: 'CH', color: '#f59e0b', desc: 'Boosts your FPx when stacked with same-team cards' },
+                { label: 'All-Pro', abbr: 'AP', color: '#a78bfa', desc: 'Lowers its own power bar threshold, so its effect activates more easily' },
               ].map(c => (
                 <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
                   <span style={{
@@ -1503,7 +1509,7 @@ const AboutPage: React.FC = () => {
               { label: 'Floobits', color: '#eab308', desc: 'Earns bonus Floobits currency each week instead of (or in addition to) FP.', example: 'Allowance: earn 2 bonus Floobits every week.' },
               { label: 'Conditional', color: '#a78bfa', desc: 'Awards bonus FP all at once when a specific in-game condition is met.', example: 'Mismatch: bonus FP for each touchdown by your roster\'s chosen position, with an extra reward once they reach a set number of TDs.' },
               { label: 'Streak', color: '#f97316', desc: 'Grows stronger each consecutive week its condition is met. Resets on failure.', example: 'On Fire: an FP multiplier that grows each consecutive week your roster\'s kicker makes a field goal, and resets otherwise.' },
-              { label: 'Chance', color: '#38bdf8', desc: 'Rolls a probability check each week for an enhanced payout on top of a guaranteed floor.', example: 'Scrappy: a guaranteed FP floor plus a chance at a bigger FP payout. The odds climb the more low-rated players you keep on your roster.' },
+              { label: 'Chance', color: '#38bdf8', desc: 'The power bar is your trigger odds. A guaranteed floor always pays; the fuller the bar, the better your shot at the enhanced payout.', example: 'Scrappy: a guaranteed FP floor plus a chance at a bigger payout. The bar fills from the card player\'s FP plus each low-rated player on your roster.' },
             ].map(c => (
               <div key={c.label} style={{
                 marginBottom: '12px',
@@ -1530,26 +1536,20 @@ const AboutPage: React.FC = () => {
               increase each other's trigger probability.
             </p>
 
-            <p style={labelStyle}>Match Bonus</p>
-            <p style={textStyle}>
-              When a card's player is also on your fantasy roster, the card's primary effect gets a
-              1.5x boost. For example, if you have Rex Tillery on your roster and equip his card with a
-              +3 FP effect, it becomes +4.5 FP.
-            </p>
           </Section>
 
           {/* ── Card Equipment ── */}
           <Section id="card-equipment" title="Card Equipment">
             <p style={textStyle}>
-              Equip up to 5 cards in any combination on the <Link to="/fantasy" style={linkStyle}>Fantasy</Link> page.
-              Slots are not position-locked, so you can put any card in any slot. A 6th slot unlocks when you
-              equip a card with the MVP classification, or by using the Accession power-up.
+              Equip one card per position slot (QB, RB, WR, WR, TE, K) on the <Link to="/fantasy" style={linkStyle}>Fantasy</Link> page;
+              each card must match its slot's position. A 6th card slot unlocks when you equip a card with
+              the MVP classification, or by using the Accession power-up.
             </p>
             <EquipmentSlotDiagram isMobile={isMobile} />
             {bulletList([
               'Cards lock when games start for the week. Change your loadout between weeks',
               'Equip and unequip from the Fantasy page, below your roster',
-              'A colored glow around a slot means the card\'s player matches someone on your roster (Match Bonus active)',
+              'Each card carries an FP power bar that turns its effect on once its player fills it that week',
               'Cards must be unequipped before they can be sold or used in The Combine',
             ])}
           </Section>
@@ -1619,7 +1619,7 @@ const AboutPage: React.FC = () => {
                 { edition: 'Diamond', threshold: '300+', color: '#a5f3fc' },
                 { edition: 'Prismatic', threshold: '175 – 299', color: '#f472b6' },
                 { edition: 'Holographic', threshold: '50 – 174', color: '#c4b5fd' },
-                { edition: 'Base', threshold: '0 – 49', color: '#94a3b8' },
+                { edition: 'Metallic', threshold: '0 – 49', color: '#9aabc4' },
               ].map(t => (
                 <div key={t.edition} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '11px', fontWeight: '700', color: t.color, minWidth: '85px' }}>
@@ -1633,7 +1633,7 @@ const AboutPage: React.FC = () => {
             <p style={labelStyle}>Examples</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {[
-                { inputs: '10 Base (5x10 = 50)', result: 'Holographic', resultColor: '#c4b5fd' },
+                { inputs: '10 Metallic (5x10 = 50)', result: 'Holographic', resultColor: '#c4b5fd' },
                 { inputs: '6 Holographic (30x6 = 180)', result: 'Prismatic', resultColor: '#f472b6' },
                 { inputs: '4 Prismatic (75x4 = 300)', result: 'Diamond', resultColor: '#a5f3fc' },
               ].map((ex, i) => (
@@ -1719,7 +1719,7 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>Grades and payout</p>
             <p style={textStyle}>
-              Your featured cards earn a grade from F to S as a quick read on their quality — and, more
+              Your featured cards earn a grade from F to S as a quick read on their quality, and, more
               importantly, a Floobit dividend paid every regular-season week, scaled by how good your featured
               cards are. A better collection earns a better grade and a bigger weekly dividend: rarer editions,
               classifications (MVP, Champion, All-Pro), and higher tiers all push it up. Newer cards are worth

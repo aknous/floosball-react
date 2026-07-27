@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import { PointsBreakdownPanel } from '@/Components/Fantasy/PointsBreakdownPanel'
+import { compactStatLine } from '@/Components/Fantasy/playerStatLine'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, EquippedEntry } from '@/hooks/useLineup'
 import { useCardProjection, CardProjection } from '@/hooks/useCardProjection'
@@ -23,10 +24,17 @@ export const ScoringPane: React.FC = () => {
     || (myEntry?.cardBreakdowns?.length ?? 0) > 0
 
   const playerSummaries = (myEntry?.players ?? []).map(p => ({
+    playerId: p.playerId,
     playerName: p.playerName,
     position: p.position || p.slot,
     weekFP: p.weekFP,
+    // The player's this-week game line, shown under their name in Roster Week Total.
+    statLine: compactStatLine(myEntry?.playerGameStats?.[p.playerId], (p.position || '').toUpperCase()) ?? undefined,
   }))
+
+  // Depicted-player week FP by id — drives the per-card power-bar meter in the breakdown.
+  const playerFPById: Record<number, number> = {}
+  for (const p of myEntry?.players ?? []) playerFPById[p.playerId] = p.weekFP
 
   return (
     <div style={cardStyleFn(isMobile)}>
@@ -52,6 +60,7 @@ export const ScoringPane: React.FC = () => {
           seasonCardBonus={myEntry.seasonCardBonus}
           seasonTotal={myEntry.seasonTotal}
           modifier={snap.modifier}
+          playerFPById={playerFPById}
         />
       ) : (
         <LineupScoringPreview />
@@ -88,7 +97,7 @@ const LineupScoringPreview: React.FC = () => {
 
   const effectChip = (entry: EquippedEntry | undefined): React.ReactNode => {
     if (!entry) return <span style={{ color: '#475569' }}>—</span>
-    if (entry.card.edition === 'standard') return <span style={{ color: '#64748b' }}>No effect</span>
+    if (entry.card.edition === 'base') return <span style={{ color: '#64748b' }}>No effect</span>
     const p = projBySlot.get(entry.slotNumber)
     if (p) {
       if (p.projectedFloobits > 0) return <span style={{ color: TYPE_COLORS.floobits }}>+{p.projectedFloobits} Floobits</span>

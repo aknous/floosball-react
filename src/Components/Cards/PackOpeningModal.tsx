@@ -21,14 +21,14 @@ interface PackOpeningModalProps {
 }
 
 const EDITION_COLORS: Record<string, string> = {
-  base: '#94a3b8',
+  metallic: '#94a3b8',
   holographic: '#c4b5fd',
   prismatic: '#f9a8d4',
   diamond: '#a5f3fc',
 }
 
 const EDITION_RANK: Record<string, number> = {
-  base: 0,
+  metallic: 0,
   holographic: 1,
   prismatic: 2,
   diamond: 3,
@@ -36,7 +36,7 @@ const EDITION_RANK: Record<string, number> = {
 
 // Delay before revealing each edition (rarer = longer anticipation)
 const EDITION_DELAY: Record<string, number> = {
-  base: 250,
+  metallic: 250,
   holographic: 300,
   prismatic: 400,
   diamond: 600,
@@ -44,7 +44,7 @@ const EDITION_DELAY: Record<string, number> = {
 
 // Glow burst config per edition
 const EDITION_GLOW: Record<string, { color: string; size: number; duration: number }> = {
-  base: { color: 'rgba(148,163,184,0.3)', size: 60, duration: 300 },
+  metallic: { color: 'rgba(148,163,184,0.3)', size: 60, duration: 300 },
   holographic: { color: 'rgba(167,139,250,0.4)', size: 80, duration: 400 },
   prismatic: { color: 'rgba(244,114,182,0.6)', size: 140, duration: 600 },
   diamond: { color: 'rgba(103,232,249,0.7)', size: 200, duration: 800 },
@@ -269,7 +269,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
       setAllRevealed(true)
       return
     }
-    const nextEdition = sortedCards[revealedCount]?.edition ?? 'base'
+    const nextEdition = sortedCards[revealedCount]?.edition ?? 'metallic'
     const delay = EDITION_DELAY[nextEdition] ?? 350
 
     // Diamond gets a pre-reveal flash
@@ -379,7 +379,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
             {sortedCards.map((card, i) => {
               const isRevealed = i < revealedCount
               const edition = card.edition
-              const glow = EDITION_GLOW[edition] ?? EDITION_GLOW.base
+              const glow = EDITION_GLOW[edition] ?? EDITION_GLOW.metallic
               const isGlowing = glowStates.get(i) ?? false
               const isSelected = selected.has(i)
               const selectable = isSelectionMode && allRevealed
@@ -392,7 +392,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                     position: 'relative',
                     transition: 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s, filter 0.2s',
                     transform: isRevealed
-                      ? (isGlowing && edition !== 'base'
+                      ? (isGlowing && edition !== 'metallic'
                           ? 'scale(1.06)'
                           : isSelected ? 'translateY(-8px) scale(1.02)' : 'scale(1)')
                       : 'rotateY(90deg) scale(0.8)',
@@ -460,7 +460,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                         <ProjectionPillInline proj={projByTemplateId.get(card.templateId)!} />
                       )}
                       {/* No-effect (standard) cards can't be upgraded, so the owned count is moot */}
-                      {card.edition !== 'standard' && (card.ownedEffectCount ?? 0) > 0 && (
+                      {card.edition !== 'base' && (card.ownedEffectCount ?? 0) > 0 && (
                         <span
                           style={{
                             fontSize: '10px', fontFamily: 'pressStart', fontWeight: 600,

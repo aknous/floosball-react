@@ -13,7 +13,7 @@ import { CardData, getBehaviorTag } from './TradingCard'
  */
 
 export type PositionFilter = 'all' | 1 | 2 | 3 | 4 | 5
-export type EditionFilter = 'all' | 'base' | 'holographic' | 'prismatic' | 'diamond'
+export type EditionFilter = 'all' | 'metallic' | 'holographic' | 'prismatic' | 'diamond'
 export type OutputFilter = 'all' | 'fp' | 'mult' | 'floobits'
 export type ClassificationFilter = 'all' | 'mvp' | 'champion' | 'all_pro' | 'rookie'
 // Effect behavior — mirrors the on-card badge from TradingCard's getBehaviorTag.
@@ -22,7 +22,7 @@ export type CardSortMode = 'match' | 'rating' | 'edition'
 
 export const POSITION_LABELS: Record<number, string> = { 1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K' }
 // Rarest → most common. Used for both sorting and the edition tiebreak.
-export const EDITION_ORDER: Record<string, number> = { diamond: 0, prismatic: 1, holographic: 2, base: 3 }
+export const EDITION_ORDER: Record<string, number> = { diamond: 0, prismatic: 1, holographic: 2, metallic: 3 }
 
 export const POSITION_OPTIONS: { value: PositionFilter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -34,7 +34,7 @@ export const POSITION_OPTIONS: { value: PositionFilter; label: string }[] = [
 ]
 export const EDITION_OPTIONS: { value: EditionFilter; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'base', label: 'Base' },
+  { value: 'metallic', label: 'Metallic' },
   { value: 'holographic', label: 'Holo' },
   { value: 'prismatic', label: 'Prism' },
   { value: 'diamond', label: 'Diamond' },

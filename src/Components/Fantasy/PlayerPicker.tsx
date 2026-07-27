@@ -41,14 +41,14 @@ const POSITION_MAP: Record<string, string> = {
 }
 
 const EDITION_COLORS: Record<string, { color: string; bg: string }> = {
-  base:        { color: '#94a3b8', bg: 'rgba(148,163,184,0.18)' },
+  metallic:        { color: '#94a3b8', bg: 'rgba(148,163,184,0.18)' },
   holographic: { color: '#c4b5fd', bg: 'rgba(167,139,250,0.18)' },
   prismatic:   { color: '#f472b6', bg: 'rgba(219,39,119,0.18)' },
   diamond:     { color: '#a5f3fc', bg: 'rgba(165,243,252,0.18)' },
 }
 
 const EDITION_LABELS: Record<string, string> = {
-  standard: 'STND', base: 'BASE', holographic: 'HOLO', prismatic: 'PRSM',
+  base: 'BASE', metallic: 'MTLC', holographic: 'HOLO', prismatic: 'PRSM',
   diamond: 'DIAMOND',
 }
 
@@ -58,7 +58,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 }
 
 const CardBadge: React.FC<{ card: PlayerCardInfo }> = ({ card }) => {
-  const style = EDITION_COLORS[card.edition] || EDITION_COLORS.base
+  const style = EDITION_COLORS[card.edition] || EDITION_COLORS.metallic
   const label = EDITION_LABELS[card.edition] || card.edition.toUpperCase()
   const effectName = card.effectConfig?.displayName || ''
   const tooltip = card.effectConfig?.tooltip || ''

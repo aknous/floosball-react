@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import HoverTooltip from '@/Components/HoverTooltip'
+import { GateMeter } from './gateMeter'
+import { positionColor } from '@/Components/Cards/positionColors'
 import type { CardBreakdownEntry, EquationSummary, ModifierInfo } from '@/hooks/useFantasySnapshot'
 
 // The card-scoring breakdown panel. Rendered by ScoringPane on the fantasy page.
@@ -40,8 +42,8 @@ function getBreakdownBehavior(b: CardBreakdownEntry): keyof typeof BEHAVIOR_TAGS
 }
 
 const EDITION_SHORT: Record<string, string> = {
-  standard: 'STND',
   base: 'BASE',
+  metallic: 'MTLC',
   holographic: 'HOLO',
   prismatic: 'PRSM',
   diamond: 'DMND',
@@ -50,18 +52,276 @@ const EDITION_SHORT: Record<string, string> = {
 const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
 
 const EDITION_COLORS: Record<string, string> = {
-  base: '#94a3b8',
+  metallic: '#94a3b8',
   holographic: '#c4b5fd',
   prismatic: '#f472b6',
   diamond: '#67e8f9',
 }
 
+const ROW_STYLE: React.CSSProperties = {
+  display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '13px',
+}
+const DIVIDER: React.CSSProperties = {
+  borderTop: '1px solid #334155', marginTop: '6px', paddingTop: '6px',
+}
+
 interface PlayerSummary {
+  playerId?: number
   playerName: string
   position: string
   weekFP: number
+  statLine?: string   // the player's this-week game line (e.g. "9/9 rec · 47 yd · 0 TD")
 }
 
+// Per-card value chips: each card shows its outputs inline. FPx cards surface the
+// bonus-additive delta directly (the amount each card adds to the aggregate
+// `1 + Σ deltas` multiplier) so the chip ties one-to-one with the equation.
+function formatValue(val: number, type: 'fp' | 'mult' | 'floobits'): { str: string; color: string } {
+  if (type === 'fp') return { str: `+${val.toFixed(1)} FP`, color: TYPE_COLORS.fp }
+  if (type === 'mult') {
+    const delta = Math.max(0, val - 1)
+    return { str: `+${delta.toFixed(2)} FPx`, color: TYPE_COLORS.mult }
+  }
+  return { str: `+${val}F`, color: TYPE_COLORS.floobits }
+}
+
+// One roster slot in the merged Roster & Cards list: the fielded player (position, name,
+// week FP, stat line) with the equipped card's identity inline on the name row — edition +
+// effect + power-bar meter + tags — followed by the effect's equation and sub-lines. This
+// is the fusion view: the card IS the roster slot, so they render as one unit.
+const RosterCardRow: React.FC<{
+  position: string
+  playerName: string
+  weekFP: number
+  statLine?: string
+  b?: CardBreakdownEntry
+  mod: string
+  isGrounded: boolean
+  playerFP?: number
+}> = ({ position, playerName, weekFP, statLine, b, mod, isGrounded, playerFP }) => {
+  // A slot with no effect card (or a no-effect standard "none" print) renders just the
+  // player identity + stat line.
+  const hasEffect = !!b && b.effectName !== 'none' && !!b.effectName
+
+  const edTag = b ? (EDITION_SHORT[b.edition] ?? b.edition) : ''
+  const edColor = b ? (EDITION_COLORS[b.edition] ?? '#94a3b8') : '#94a3b8'
+  const effectLabel = b ? (b.displayName || b.effectName) : ''
+  const behaviorKey = b ? getBreakdownBehavior(b) : null
+  const bTag = behaviorKey ? BEHAVIOR_TAGS[behaviorKey] : null
+
+  const idRow = (
+    <div style={{ ...ROW_STYLE, alignItems: 'center', gap: '6px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+        <span style={{ color: positionColor(position), fontSize: '11px', fontWeight: '700', flexShrink: 0, width: '22px' }}>{position}</span>
+        {hasEffect && (
+          <span style={{ color: edColor, fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>{edTag}</span>
+        )}
+        <span style={{ color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{playerName}</span>
+        {hasEffect && (
+          <>
+            <HoverTooltip text={b!.detail || ''} color={(TYPE_COLORS as any)[b!.outputType] ?? CATEGORY_COLORS[b!.category] ?? '#cbd5e1'}>
+              <span style={{ color: (TYPE_COLORS as any)[b!.outputType] ?? CATEGORY_COLORS[b!.category] ?? '#cbd5e1', fontSize: '11px', flexShrink: 0 }}>
+                {effectLabel}
+              </span>
+            </HoverTooltip>
+            {(((b!.gateThreshold ?? 0) > 0 && b!.gateActive != null) || b!.isChanceEffect) && (
+              <GateMeter
+                threshold={b!.gateThreshold ?? 0}
+                active={b!.gateActive === true}
+                playerFP={playerFP}
+                inverse={b!.gateInverse}
+                allPro={b!.gateAllPro}
+                isChance={b!.isChanceEffect}
+                chancePct={b!.chanceThreshold}
+                chanceTriggered={b!.chanceTriggered}
+              />
+            )}
+            {(b!.tier ?? 1) >= 2 && (
+              <span style={{
+                fontSize: '9px', fontWeight: 800, color: '#fbbf24',
+                background: 'rgba(251,191,36,0.14)', border: '1px solid rgba(251,191,36,0.35)',
+                borderRadius: '3px', padding: '0 4px', flexShrink: 0,
+              }}>{TIER_ROMAN[b!.tier ?? 1] ?? b!.tier}</span>
+            )}
+            {b!.matchMultiplied && (
+              <span style={{
+                color: '#60a5fa', fontSize: '10px', fontWeight: '700', flexShrink: 0,
+                backgroundColor: 'rgba(96,165,250,0.15)', padding: '2px 5px', borderRadius: '3px',
+              }}>MATCH</span>
+            )}
+            {bTag && (
+              <HoverTooltip text={mod === bTag.activeModifier ? bTag.activeText : bTag.tooltip} color={bTag.color}>
+                <span style={{
+                  color: bTag.color, fontSize: '10px', flexShrink: 0,
+                  backgroundColor: `${bTag.color}30`, padding: '2px 5px', borderRadius: '3px',
+                }}>{bTag.label}</span>
+              </HoverTooltip>
+            )}
+          </>
+        )}
+      </div>
+      <span style={{ flexShrink: 0, color: weekFP < 0 ? '#ef4444' : '#22c55e', fontWeight: '600' }}>
+        {fmtSignedFP1(weekFP)}
+      </span>
+    </div>
+  )
+
+  const stat = statLine ? (
+    <div style={{ fontSize: '12px', color: '#a8b6cc', paddingLeft: '28px', lineHeight: 1.4 }}>{statLine}</div>
+  ) : null
+
+  if (!hasEffect) {
+    return <>{idRow}{stat}</>
+  }
+
+  const bd = b!
+  const floobitsTotal = bd.floobitsEarned ?? 0
+
+  // Build equation segments: each piece gets its own color (match = blue)
+  const eqSegments: { text: string, color: string }[] = []
+  let eqResult: { str: string; color: string } | null = null
+  let eqNegated = false // true when modifier negates this output type
+  const mm = bd.matchMultiplier ?? 1.5
+  const fpMatched = bd.matchMultiplied && (bd.preMatchFP ?? 0) > 0 && bd.preMatchFP !== bd.primaryFP
+  const fMatched = bd.matchMultiplied && (bd.preMatchFloobits ?? 0) > 0
+  const primaryF = floobitsTotal - (bd.secondaryFloobits ?? 0)
+  const matchColor = '#60a5fa'
+
+  // Determine which modifier tag to append per output type
+  const isLongshot = mod === 'longshot' && bd.category === 'conditional'
+  const fpModTag = mod === 'frenzy' ? ' × 2x frenzy'
+    : isLongshot ? ' × 2x longshot' : ''
+  const multModTag = (mod === 'amplify' || mod === 'cascade') ? ` × 2x ${mod}`
+    : isLongshot ? ' × 2x longshot'
+    : isGrounded ? ' (grounded)' : ''
+  const fModTag = mod === 'payday' ? ' × 3x payday'
+    : isLongshot ? ' × 2x longshot' : ''
+
+  // Multi-output cards join their equation parts with " | " — primary payout first,
+  // then trigger bonuses. Split so the trigger bonus renders as its own sub-line.
+  const eqSplit = (bd.equation || '').split(' | ')
+  const eqPrimary = eqSplit[0] || ''
+  const eqExtras = eqSplit.slice(1)
+  if (bd.primaryFP > 0 || fpMatched) {
+    const c = TYPE_COLORS.fp
+    if (eqPrimary) eqSegments.push({ text: eqPrimary, color: c })
+    else if (fpMatched) eqSegments.push({ text: bd.preMatchFP.toFixed(1), color: c })
+    if (fpMatched) eqSegments.push({ text: ` × ${mm}x match`, color: matchColor })
+    if (fpModTag) eqSegments.push({ text: ` ${fpModTag.trim()}`, color: c })
+    eqResult = formatValue(bd.primaryFP, 'fp')
+  } else if (bd.primaryMult > 1) {
+    const c = TYPE_COLORS.mult
+    eqNegated = isGrounded
+    if (eqPrimary) eqSegments.push({ text: eqPrimary, color: c })
+    else if (bd.matchMultiplied) {
+      const preBonus = (bd.preMatchMult ?? 1) - 1
+      eqSegments.push({ text: `+${preBonus.toFixed(2)} FPx`, color: c })
+    }
+    if (bd.matchMultiplied) eqSegments.push({ text: ` × ${mm}x match`, color: matchColor })
+    if (multModTag) eqSegments.push({ text: ` ${multModTag.trim()}`, color: c })
+    eqResult = formatValue(bd.primaryMult, 'mult')
+  } else if (primaryF > 0) {
+    const c = TYPE_COLORS.floobits
+    if (eqPrimary) eqSegments.push({ text: eqPrimary, color: c })
+    else if (fMatched) eqSegments.push({ text: `${bd.preMatchFloobits}F`, color: c })
+    if (fMatched && bd.preMatchFloobits !== primaryF) eqSegments.push({ text: ` × ${mm}x match`, color: matchColor })
+    if (fModTag) eqSegments.push({ text: ` ${fModTag.trim()}`, color: c })
+    eqResult = formatValue(primaryF, 'floobits')
+  } else if (bd.equation) {
+    if (isGrounded && bd.outputType === 'mult' && (bd.preMatchMult || 0) > 1) {
+      const c = TYPE_COLORS.mult
+      eqSegments.push({ text: bd.equation, color: c })
+      eqSegments.push({ text: ' (grounded)', color: '#ef4444' })
+      eqResult = { str: `+${(bd.preMatchMult - 1).toFixed(2)} FPx`, color: '#64748b' }
+      eqNegated = true
+    } else {
+      eqSegments.push({ text: bd.equation, color: '#94a3b8' })
+    }
+  }
+
+  // Sub-lines: multi-output trigger bonuses, conditional, edition bonuses
+  const subLines: { label: React.ReactNode; chip: { str: string; color: string }; negated?: boolean }[] = []
+  if (eqExtras.length > 0 && (bd.primaryFloobits ?? 0) > 0) {
+    const triggerFloobits = bd.primaryFloobits ?? 0
+    for (let xi = 0; xi < eqExtras.length; xi++) {
+      const part = eqExtras[xi]
+      const labelText = part.replace(/^\+?\d+F\s*/, '').trim() || part
+      subLines.push({
+        label: <span style={{ color: TYPE_COLORS.floobits }}>{labelText}</span>,
+        chip: formatValue(xi === 0 ? triggerFloobits : 0, 'floobits'),
+      })
+    }
+  }
+  if ((bd.conditionalBonus ?? 0) > 0) {
+    const condLabel = <><span style={{ color: matchColor, fontWeight: '700' }}>Match</span> {bd.conditionalLabel || 'Conditional bonus'}</>
+    subLines.push({ label: condLabel, chip: formatValue(bd.conditionalBonus, 'fp') })
+  }
+  const edLabel = <><span style={{ color: edColor, fontWeight: '700' }}>{edTag}</span> bonus</>
+  if ((bd.secondaryFP ?? 0) > 0) subLines.push({ label: edLabel, chip: formatValue(bd.secondaryFP, 'fp') })
+  if ((bd.secondaryMult ?? 0) > 1) subLines.push({ label: edLabel, chip: formatValue(bd.secondaryMult, 'mult'), negated: isGrounded })
+  if ((bd.secondaryFloobits ?? 0) > 0) subLines.push({ label: edLabel, chip: formatValue(bd.secondaryFloobits, 'floobits') })
+
+  // Zero state: dimmed potential output when the effect produced nothing this week.
+  const hasOutput = eqSegments.length > 0 || eqResult
+  let zeroChip: { str: string; color: string; negated?: boolean } | null = null
+  if (!hasOutput) {
+    const t = bd.outputType
+    const negateChip = isGrounded && t === 'mult'
+    const realMult = negateChip ? (bd.preMatchMult || bd.primaryMult || 1) : (bd.primaryMult || 1)
+    zeroChip = t === 'mult'
+      ? { str: `+${Math.max(0, realMult - 1).toFixed(2)} FPx`, color: '#64748b', negated: negateChip }
+      : t === 'floobits'
+      ? { str: '+0F', color: '#64748b' }
+      : { str: '+0.0 FP', color: '#64748b' }
+  }
+
+  return (
+    <>
+      {idRow}
+      {stat}
+      {/* Streak status line */}
+      {bd.streakActive != null && (
+        <div style={{ paddingLeft: '28px', fontSize: '11px', padding: '2px 0 0 28px' }}>
+          {bd.streakActive ? (
+            <span style={{ color: '#fb923c', fontWeight: '600' }}>
+              Streak Active (streak = {Math.max(0, (bd.streakCount ?? 0) - 1)})
+            </span>
+          ) : (
+            <span style={{ color: '#64748b' }}>
+              Streak Inactive — awaiting condition (streak = {Math.max(0, (bd.streakCount ?? 0) - 1)})
+            </span>
+          )}
+        </div>
+      )}
+      {/* Equation line with result right-aligned */}
+      {(eqSegments.length > 0 || eqResult) && (
+        <div style={{ ...ROW_STYLE, paddingLeft: '28px', opacity: eqNegated ? 0.45 : 1 }}>
+          <span style={{ fontSize: '11px', fontStyle: 'italic', textDecoration: eqNegated ? 'line-through' : 'none' }}>
+            {eqSegments.map((seg, j) => (
+              <span key={j} style={{ color: seg.color }}>{seg.text}</span>
+            ))}
+          </span>
+          {eqResult && (
+            <span style={{ color: eqResult.color, fontWeight: '700', fontSize: '13px', textDecoration: eqNegated ? 'line-through' : 'none' }}>{eqResult.str}</span>
+          )}
+        </div>
+      )}
+      {/* Zero-output: dimmed potential value, right-aligned under the identity */}
+      {!hasOutput && zeroChip && (
+        <div style={{ ...ROW_STYLE, paddingLeft: '28px', justifyContent: 'flex-end' }}>
+          <span style={{ color: zeroChip.color, fontWeight: '600', fontSize: '12px', textDecoration: zeroChip.negated ? 'line-through' : 'none', opacity: zeroChip.negated ? 0.45 : 1 }}>{zeroChip.str}</span>
+        </div>
+      )}
+      {/* Sub-lines: conditional, edition bonuses */}
+      {subLines.map((sub, j) => (
+        <div key={j} style={{ ...ROW_STYLE, paddingLeft: '28px', opacity: sub.negated ? 0.45 : 1 }}>
+          <span style={{ color: '#cbd5e1', fontSize: '11px', textDecoration: sub.negated ? 'line-through' : 'none' }}>{sub.label}</span>
+          <span style={{ color: sub.chip.color, fontSize: '12px', fontWeight: '600', textDecoration: sub.negated ? 'line-through' : 'none' }}>{sub.chip.str}</span>
+        </div>
+      ))}
+    </>
+  )
+}
 
 export const PointsBreakdownPanel: React.FC<{
   playerSummaries: PlayerSummary[]
@@ -73,16 +333,13 @@ export const PointsBreakdownPanel: React.FC<{
   seasonCardBonus: number
   seasonTotal: number
   modifier?: ModifierInfo | null
-}> = ({ playerSummaries, breakdowns, equationSummary, weekPlayerFP, weekCardBonus, seasonEarnedFP, seasonCardBonus, seasonTotal, modifier }) => {
+  playerFPById?: Record<number, number>
+}> = ({ playerSummaries, breakdowns, equationSummary, weekPlayerFP, weekCardBonus, seasonEarnedFP, seasonCardBonus, seasonTotal, modifier, playerFPById }) => {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ formula: true })
   const toggle = (key: string) => setExpanded(prev => ({ ...prev, [key]: !prev[key] }))
 
-  const rowStyle: React.CSSProperties = {
-    display: 'flex', justifyContent: 'space-between', padding: '3px 0', fontSize: '13px',
-  }
-  const divider: React.CSSProperties = {
-    borderTop: '1px solid #334155', marginTop: '6px', paddingTop: '6px',
-  }
+  const rowStyle = ROW_STYLE
+  const divider = DIVIDER
   const collapsibleHeader = (key: string, label: string, summaryValue: string, summaryColor: string, isFirst?: boolean) => (
     <div
       onClick={() => toggle(key)}
@@ -112,27 +369,20 @@ export const PointsBreakdownPanel: React.FC<{
   const eq = equationSummary
   const hasEquation = eq && (eq.totalBonusFP > 0 || (eq.multFactors?.length ?? 0) > 0)
 
-  // Build per-card value chips: each card shows all its outputs inline.
-  // FPx cards surface the bonus-additive delta directly — the amount each
-  // card contributes to the aggregate (1 + Σ deltas) multiplier — so the
-  // chip ties one-to-one with the `+0.30` in the equation. Previously
-  // showed `1.30x FPx (+0.30)` with the literal multiplier, which read
-  // as the wrong number because the aggregator doesn't multiply 1.30 in.
-  const formatValue = (val: number, type: 'fp' | 'mult' | 'floobits'): { str: string; color: string } => {
-    if (type === 'fp') return { str: `+${val.toFixed(1)} FP`, color: TYPE_COLORS.fp }
-    if (type === 'mult') {
-      const delta = Math.max(0, val - 1)
-      return { str: `+${delta.toFixed(2)} FPx`, color: TYPE_COLORS.mult }
-    }
-    return { str: `+${val}F`, color: TYPE_COLORS.floobits }
-  }
-
   // Determine if modifier negates certain types
   const mod = modifier?.name ?? ''
   const isGrounded = mod === 'grounded'
 
   // Compute totals from breakdowns for the equation
   const totalFloobits = breakdowns.reduce((s, b) => s + (b.floobitsEarned ?? 0), 0)
+
+  // Match each equipped card to its depicted player so the roster row and the card
+  // effect render together (the fusion model: the card IS the roster slot).
+  const breakdownByPlayerId: Record<number, CardBreakdownEntry> = {}
+  breakdowns.forEach(b => { if (b.playerId != null) breakdownByPlayerId[b.playerId] = b })
+  const rosterPlayers = playerSummaries.filter(p => p.position !== '')
+  const matchedIds = new Set(rosterPlayers.map(p => p.playerId).filter((id): id is number => id != null))
+  const orphanBreakdowns = breakdowns.filter(b => b.playerId == null || !matchedIds.has(b.playerId))
 
   const sectionTotalStyle: React.CSSProperties = {
     ...rowStyle, ...divider, fontWeight: '700', fontSize: '13px',
@@ -143,260 +393,51 @@ export const PointsBreakdownPanel: React.FC<{
       backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '10px',
       padding: '10px 14px', marginTop: '0px',
     }}>
-      {/* This Week — Player FP */}
-      {collapsibleHeader('playerFP', 'Roster Week Total', fmtSignedFP1(weekPlayerFP), '#22c55e', true)}
-      {expanded['playerFP'] && (
+      {/* Roster & Cards — each roster slot with its card effect beneath it */}
+      {collapsibleHeader('roster', 'Roster & Cards', fmtSignedFP1(weekPlayerFP + weekCardBonus), '#22c55e', true)}
+      {expanded['roster'] && (
         <>
-          {playerSummaries.filter(p => p.position !== '').map((p, i) => (
-            <div key={i} style={rowStyle}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-                <span style={{ color: '#cbd5e1', fontSize: '11px', fontWeight: '700', flexShrink: 0, width: '22px' }}>{p.position}</span>
-                <span style={{ color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.playerName}</span>
-              </div>
-              <span style={{ flexShrink: 0, color: p.weekFP < 0 ? '#ef4444' : '#22c55e', fontWeight: '600' }}>
-                {fmtSignedFP1(p.weekFP)}
-              </span>
-            </div>
-          ))}
-          <div style={sectionTotalStyle}>
-            <span style={{ color: '#cbd5e1' }}>Roster FP</span>
-            <span style={{ color: weekPlayerFP < 0 ? '#ef4444' : '#22c55e' }}>{fmtSignedFP1(weekPlayerFP)}</span>
-          </div>
-        </>
-      )}
-
-      {/* Equipped Cards */}
-      {breakdowns.length > 0 && (
-        <>
-          {collapsibleHeader('cards', 'Equipped Cards Total', weekCardBonus > 0 ? `+${weekCardBonus.toFixed(1)} bonus` : `${breakdowns.length} cards`, '#a78bfa')}
-          {expanded['cards'] && (<>
-          {breakdowns.map((b, i) => {
-            const edTag = EDITION_SHORT[b.edition] ?? b.edition
-            const edColor = EDITION_COLORS[b.edition] ?? '#94a3b8'
-            const effectLabel = b.displayName || b.effectName
-            const behaviorKey = getBreakdownBehavior(b)
-            const bTag = behaviorKey ? BEHAVIOR_TAGS[behaviorKey] : null
-
-            const floobitsTotal = b.floobitsEarned ?? 0
-
-            // Build equation segments: each piece gets its own color (match = blue)
-            let eqSegments: {text: string, color: string}[] = []
-            let eqResult: { str: string; color: string } | null = null
-            let eqNegated = false // true when modifier negates this output type
-            const mm = b.matchMultiplier ?? 1.5
-            const fpMatched = b.matchMultiplied && (b.preMatchFP ?? 0) > 0 && b.preMatchFP !== b.primaryFP
-            const fMatched = b.matchMultiplied && (b.preMatchFloobits ?? 0) > 0
-            const primaryF = floobitsTotal - (b.secondaryFloobits ?? 0)
-            const matchColor = '#60a5fa'
-
-            // Determine which modifier tag to append per output type
-            const isLongshot = mod === 'longshot' && b.category === 'conditional'
-            const fpModTag = mod === 'frenzy' ? ' × 2x frenzy'
-              : isLongshot ? ' × 2x longshot' : ''
-            const multModTag = (mod === 'amplify' || mod === 'cascade') ? ` × 2x ${mod}`
-              : isLongshot ? ' × 2x longshot'
-              : isGrounded ? ' (grounded)' : ''
-            const fModTag = mod === 'payday' ? ' × 3x payday'
-              : isLongshot ? ' × 2x longshot' : ''
-
-            // Multi-output cards (e.g. Believe, Comeback Kid, Domination,
-            // Walk Off) join their equation parts with " | " — primary
-            // payout first, then trigger bonuses. Split here so the
-            // trigger bonus renders as its own sub-line (matching the
-            // visual treatment of match/edition bonuses) instead of
-            // crowding the primary equation line.
-            const eqSplit = (b.equation || '').split(' | ')
-            const eqPrimary = eqSplit[0] || ''
-            const eqExtras = eqSplit.slice(1)
-            if (b.primaryFP > 0 || fpMatched) {
-              const c = TYPE_COLORS.fp
-              if (eqPrimary) eqSegments.push({text: eqPrimary, color: c})
-              else if (fpMatched) eqSegments.push({text: b.preMatchFP.toFixed(1), color: c})
-              if (fpMatched) eqSegments.push({text: ` × ${mm}x match`, color: matchColor})
-              if (fpModTag) eqSegments.push({text: ` ${fpModTag.trim()}`, color: c})
-              eqResult = formatValue(b.primaryFP, 'fp')
-            } else if (b.primaryMult > 1) {
-              const c = TYPE_COLORS.mult
-              eqNegated = isGrounded
-              if (eqPrimary) eqSegments.push({text: eqPrimary, color: c})
-              else if (b.matchMultiplied) {
-                // No compute equation — show the pre-match delta directly
-                // so it lines up with the chip's delta result. Old display
-                // showed the full multiplier (e.g., "1.32x") which then
-                // looked smaller than the result delta and confused users.
-                const preBonus = (b.preMatchMult ?? 1) - 1
-                eqSegments.push({text: `+${preBonus.toFixed(2)} FPx`, color: c})
-              }
-              // Match bonus on FPx uses bonus-additive scaling: only the
-              // bonus portion gets multiplied by the match factor. With
-              // compute equations now using delta notation (+X FPx), the
-              // multiplication chain reads correctly: +1.5 × 1.5 = +2.25.
-              if (b.matchMultiplied) eqSegments.push({text: ` × ${mm}x match`, color: matchColor})
-              if (multModTag) eqSegments.push({text: ` ${multModTag.trim()}`, color: c})
-              eqResult = formatValue(b.primaryMult, 'mult')
-            } else if (primaryF > 0) {
-              const c = TYPE_COLORS.floobits
-              if (eqPrimary) eqSegments.push({text: eqPrimary, color: c})
-              else if (fMatched) eqSegments.push({text: `${b.preMatchFloobits}F`, color: c})
-              if (fMatched && b.preMatchFloobits !== primaryF) eqSegments.push({text: ` × ${mm}x match`, color: matchColor})
-              if (fModTag) eqSegments.push({text: ` ${fModTag.trim()}`, color: c})
-              eqResult = formatValue(primaryF, 'floobits')
-            } else if (b.equation) {
-              // Grounded mult: show equation with struck-through would-be value
-              if (isGrounded && b.outputType === 'mult' && (b.preMatchMult || 0) > 1) {
-                const c = TYPE_COLORS.mult
-                eqSegments.push({text: b.equation, color: c})
-                eqSegments.push({text: ' (grounded)', color: '#ef4444'})
-                eqResult = { str: `+${(b.preMatchMult - 1).toFixed(2)} FPx`, color: '#64748b' }
-                eqNegated = true
-              } else {
-                eqSegments.push({text: b.equation, color: '#94a3b8'})
-              }
-            }
-
-            // Sub-lines: conditional, edition bonuses (with negation tracking)
-            const subLines: { label: React.ReactNode; chip: { str: string; color: string }; negated?: boolean }[] = []
-            // Multi-output trigger bonuses split off the primary equation
-            // (e.g. Believe's "+15F (fav team won this week)"). Each
-            // extra " | "-separated piece renders as its own sub-line
-            // with the floobits chip — matches the visual weight of a
-            // match bonus. The chip value comes from primaryFloobits when
-            // the trigger fired; if multiple extras exist they share that
-            // total (rare — currently every multi-output card has at most
-            // one trigger bonus).
-            if (eqExtras.length > 0 && (b.primaryFloobits ?? 0) > 0) {
-              const triggerFloobits = b.primaryFloobits ?? 0
-              for (let xi = 0; xi < eqExtras.length; xi++) {
-                const part = eqExtras[xi]
-                // Strip a leading "+NF " if present so the label reads as
-                // pure context — the chip already shows the value.
-                const labelText = part.replace(/^\+?\d+F\s*/, '').trim() || part
-                subLines.push({
-                  label: <span style={{ color: TYPE_COLORS.floobits }}>{labelText}</span>,
-                  chip: formatValue(xi === 0 ? triggerFloobits : 0, 'floobits'),
-                })
-              }
-            }
-            // Conditional bonus (match bonus — only triggers when card player is on roster)
-            if ((b.conditionalBonus ?? 0) > 0) {
-              const condLabel = <><span style={{ color: matchColor, fontWeight: '700' }}>Match</span> {b.conditionalLabel || 'Conditional bonus'}</>
-              subLines.push({ label: condLabel, chip: formatValue(b.conditionalBonus, 'fp') })
-            }
-            // Edition secondary bonuses
-            const edLabel = <><span style={{ color: edColor, fontWeight: '700' }}>{edTag}</span> bonus</>
-            if ((b.secondaryFP ?? 0) > 0) subLines.push({ label: edLabel, chip: formatValue(b.secondaryFP, 'fp') })
-            if ((b.secondaryMult ?? 0) > 1) subLines.push({ label: edLabel, chip: formatValue(b.secondaryMult, 'mult'), negated: isGrounded })
-            if ((b.secondaryFloobits ?? 0) > 0) subLines.push({ label: edLabel, chip: formatValue(b.secondaryFloobits, 'floobits') })
-
-            // Zero state: show dimmed output type on header when no equation/results
-            const hasOutput = eqSegments.length > 0 || eqResult
-            let zeroChip: { str: string; color: string; negated?: boolean } | null = null
-            if (!hasOutput) {
-              const t = b.outputType
-              const negateChip = isGrounded && t === 'mult'
-              // When grounded, use pre-modifier values to show what the card WOULD produce
-              const realMult = negateChip ? (b.preMatchMult || b.primaryMult || 1) : (b.primaryMult || 1)
-              zeroChip = t === 'mult'
-                ? { str: `+${Math.max(0, realMult - 1).toFixed(2)} FPx`, color: '#64748b', negated: negateChip }
-                : t === 'floobits'
-                ? { str: '+0F', color: '#64748b' }
-                : { str: '+0.0 FP', color: '#64748b' }
-            }
-
+          {rosterPlayers.map((p, i) => {
+            const b = p.playerId != null ? breakdownByPlayerId[p.playerId] : undefined
+            const pFP = p.playerId != null ? playerFPById?.[p.playerId] : undefined
+            const isLast = i === rosterPlayers.length - 1 && orphanBreakdowns.length === 0
             return (
               <div key={i} style={{
-                marginBottom: i < breakdowns.length - 1 ? '6px' : 0,
-                paddingBottom: i < breakdowns.length - 1 ? '6px' : 0,
-                borderBottom: i < breakdowns.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                borderBottom: isLast ? 'none' : '1px solid rgba(255,255,255,0.06)',
+                paddingBottom: isLast ? 0 : '6px', marginBottom: isLast ? 0 : '6px',
               }}>
-                {/* Card header line — identity only, no values */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 0' }}>
-                  <span style={{ color: edColor, fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>{edTag}</span>
-                  <span style={{ color: '#f1f5f9', fontSize: '12px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {b.playerName}
-                  </span>
-                  <HoverTooltip text={b.detail || ''} color={(TYPE_COLORS as any)[b.outputType] ?? CATEGORY_COLORS[b.category] ?? '#cbd5e1'}>
-                    <span style={{ color: (TYPE_COLORS as any)[b.outputType] ?? CATEGORY_COLORS[b.category] ?? '#cbd5e1', fontSize: '11px', flexShrink: 0 }}>
-                      {effectLabel}
-                    </span>
-                  </HoverTooltip>
-                  {b.gateActive === false && (
-                    <HoverTooltip text={`Power bar not met${b.gateThreshold ? ` (needs ${b.gateThreshold} FP)` : ''} — this card's effect scored nothing this week.`} color="#94a3b8">
-                      <span style={{
-                        fontSize: '9px', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.04em',
-                        background: 'rgba(148,163,184,0.14)', border: '1px solid rgba(148,163,184,0.3)',
-                        borderRadius: '3px', padding: '0 4px', flexShrink: 0,
-                      }}>GATE</span>
-                    </HoverTooltip>
-                  )}
-                  {(b.tier ?? 1) >= 2 && (
-                    <span style={{
-                      fontSize: '9px', fontWeight: 800, color: '#fbbf24',
-                      background: 'rgba(251,191,36,0.14)', border: '1px solid rgba(251,191,36,0.35)',
-                      borderRadius: '3px', padding: '0 4px', flexShrink: 0,
-                    }}>{TIER_ROMAN[b.tier ?? 1] ?? b.tier}</span>
-                  )}
-                  {b.matchMultiplied && (
-                    <span style={{
-                      color: '#60a5fa', fontSize: '10px', fontWeight: '700', flexShrink: 0,
-                      backgroundColor: 'rgba(96,165,250,0.15)', padding: '2px 5px', borderRadius: '3px',
-                    }}>MATCH</span>
-                  )}
-                  {bTag && (
-                    <HoverTooltip text={mod === bTag.activeModifier ? bTag.activeText : bTag.tooltip} color={bTag.color}>
-                      <span style={{
-                        color: bTag.color, fontSize: '10px', flexShrink: 0,
-                        backgroundColor: `${bTag.color}30`, padding: '2px 5px', borderRadius: '3px',
-                      }}>{bTag.label}</span>
-                    </HoverTooltip>
-                  )}
-                  {zeroChip && (
-                    <span style={{ color: zeroChip.color, fontWeight: '600', fontSize: '12px', marginLeft: 'auto', textDecoration: zeroChip.negated ? 'line-through' : 'none', opacity: zeroChip.negated ? 0.45 : 1 }}>{zeroChip.str}</span>
-                  )}
-                </div>
-                {/* Streak status line */}
-                {b.streakActive != null && (
-                  <div style={{ paddingLeft: '16px', fontSize: '11px', padding: '2px 0 0 16px' }}>
-                    {b.streakActive ? (
-                      <span style={{ color: '#fb923c', fontWeight: '600' }}>
-                        Streak Active (streak = {Math.max(0, (b.streakCount ?? 0) - 1)})
-                      </span>
-                    ) : (
-                      <span style={{ color: '#64748b' }}>
-                        Streak Inactive — awaiting condition (streak = {Math.max(0, (b.streakCount ?? 0) - 1)})
-                      </span>
-                    )}
-                  </div>
-                )}
-                {/* Equation line with result right-aligned */}
-                {(eqSegments.length > 0 || eqResult) && (
-                  <div style={{ ...rowStyle, paddingLeft: '16px', opacity: eqNegated ? 0.45 : 1 }}>
-                    <span style={{ fontSize: '11px', fontStyle: 'italic', textDecoration: eqNegated ? 'line-through' : 'none' }}>
-                      {eqSegments.map((seg, j) => (
-                        <span key={j} style={{ color: seg.color }}>{seg.text}</span>
-                      ))}
-                    </span>
-                    {eqResult && (
-                      <span style={{ color: eqResult.color, fontWeight: '700', fontSize: '13px', textDecoration: eqNegated ? 'line-through' : 'none' }}>{eqResult.str}</span>
-                    )}
-                  </div>
-                )}
-                {/* Sub-lines: conditional, edition bonuses */}
-                {subLines.map((sub, j) => (
-                  <div key={j} style={{ ...rowStyle, paddingLeft: '16px', opacity: sub.negated ? 0.45 : 1 }}>
-                    <span style={{ color: '#cbd5e1', fontSize: '11px', textDecoration: sub.negated ? 'line-through' : 'none' }}>{sub.label}</span>
-                    <span style={{ color: sub.chip.color, fontSize: '12px', fontWeight: '600', textDecoration: sub.negated ? 'line-through' : 'none' }}>{sub.chip.str}</span>
-                  </div>
-                ))}
-                {/* Roster player stats */}
-                {b.playerStatLine && (
-                  <div style={{ paddingLeft: '16px', fontSize: '11px', color: '#cbd5e1', padding: '2px 0 2px 16px' }}>
-                    <span style={{ color: '#64748b' }}>Slot stats: </span>{b.playerStatLine}
-                  </div>
-                )}
+                <RosterCardRow
+                  position={p.position}
+                  playerName={p.playerName}
+                  weekFP={p.weekFP}
+                  statLine={p.statLine}
+                  b={b}
+                  mod={mod}
+                  isGrounded={isGrounded}
+                  playerFP={pFP}
+                />
               </div>
             )
           })}
+
+          {/* Orphan cards (depicted player not on the roster — rare) */}
+          {orphanBreakdowns.map((b, i) => (
+            <div key={`orphan-${i}`} style={{
+              borderBottom: i < orphanBreakdowns.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+              paddingBottom: i < orphanBreakdowns.length - 1 ? '6px' : 0,
+              marginBottom: i < orphanBreakdowns.length - 1 ? '6px' : 0,
+            }}>
+              <RosterCardRow
+                position=""
+                playerName={b.playerName}
+                weekFP={b.playerId != null ? (playerFPById?.[b.playerId] ?? 0) : 0}
+                b={b}
+                mod={mod}
+                isGrounded={isGrounded}
+                playerFP={b.playerId != null ? playerFPById?.[b.playerId] : undefined}
+              />
+            </div>
+          ))}
 
           {/* Hand synergy summary */}
           {eq?.handSynergies && (() => {
@@ -453,21 +494,30 @@ export const PointsBreakdownPanel: React.FC<{
                       {syn.stack!.champions >= syn.stack!.size ? 'Dynasty' : 'Team Stack'} · {syn.stack!.size} same-team
                       {syn.stack!.champions > 0 ? ` (${syn.stack!.champions} champ${syn.stack!.champions !== 1 ? 's' : ''})` : ''}
                     </span>
-                    <span style={{ ...valStyle, color: '#fbbf24' }}>+{(syn.stack!.bonus * 100).toFixed(0)}% FPx</span>
+                    <span style={{ ...valStyle, color: '#fbbf24' }}>+{syn.stack!.bonus.toFixed(2)} FPx</span>
                   </div>
                 )}
               </div>
             )
           })()}
 
-          {/* Totals summary */}
-          {totalFloobits > 0 && (
-            <div style={{ ...rowStyle, ...divider }}>
-              <span style={{ color: '#cbd5e1', fontWeight: '600', fontSize: '13px' }}>Floobits earned</span>
-              <span style={{ color: TYPE_COLORS.floobits, fontWeight: '700', fontSize: '13px' }}>+{totalFloobits}F</span>
+          {/* Subtotals: roster FP + card bonus */}
+          <div style={sectionTotalStyle}>
+            <span style={{ color: '#cbd5e1' }}>Roster FP</span>
+            <span style={{ color: weekPlayerFP < 0 ? '#ef4444' : '#22c55e' }}>{fmtSignedFP1(weekPlayerFP)}</span>
+          </div>
+          {breakdowns.length > 0 && (
+            <div style={rowStyle}>
+              <span style={{ color: '#cbd5e1', fontWeight: '600' }}>Card Bonus</span>
+              <span style={{ color: '#a78bfa', fontWeight: '700' }}>{fmtSignedFP1(weekCardBonus)}</span>
             </div>
           )}
-          </>)}
+          {totalFloobits > 0 && (
+            <div style={{ ...rowStyle }}>
+              <span style={{ color: '#cbd5e1', fontWeight: '600' }}>Floobits earned</span>
+              <span style={{ color: TYPE_COLORS.floobits, fontWeight: '700' }}>+{totalFloobits}F</span>
+            </div>
+          )}
         </>
       )}
 
@@ -528,7 +578,7 @@ export const PointsBreakdownPanel: React.FC<{
                       `1 + Σ(M − 1)`. Each card's contribution is its
                       delta above 1.0, shown explicitly so users see
                       what every FPx card brought to the table. */}
-                  <span style={{ color: '#cbd5e1' }}> {'\u00d7'} (</span>
+                  <span style={{ color: '#cbd5e1' }}> {'×'} (</span>
                   <span style={{ color: '#cbd5e1', textDecoration: isGrounded ? 'line-through' : 'none', opacity: isGrounded ? 0.45 : 1 }}>1</span>
                   {factors.map((f, i) => {
                     const delta = Math.max(0, f - 1)

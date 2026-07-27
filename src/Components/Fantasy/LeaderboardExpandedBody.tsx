@@ -56,8 +56,8 @@ interface Props {
 const cardCache = new Map<string, EquippedCardEntry[]>()
 
 const EDITION_SHORT: Record<string, string> = {
-  standard: 'STND',
   base: 'BASE',
+  metallic: 'MTLC',
   holographic: 'HOLO',
   prismatic: 'PRSM',
   diamond: 'DMND',
@@ -80,7 +80,7 @@ const TierTag: React.FC<{ tier?: number }> = ({ tier }) => {
 }
 
 const EDITION_COLORS: Record<string, string> = {
-  base: '#94a3b8',
+  metallic: '#94a3b8',
   holographic: '#c4b5fd',
   prismatic: '#f472b6',
   diamond: '#67e8f9',
