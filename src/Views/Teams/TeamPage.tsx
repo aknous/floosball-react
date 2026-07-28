@@ -16,6 +16,9 @@ import CareerStageBadge, { hasRenderableStage } from '@/Components/CareerStageBa
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+// Frames won can be fractional (½ for a halved frame): render "2", "2½", "½".
+const fmtFramesWon = (v: number): string => { const w = Math.floor(v); return (v - w >= 0.5) ? `${w > 0 ? w : ''}½` : `${w}` }
+
 interface RosterPlayer {
   id: number
   name: string
@@ -43,6 +46,10 @@ interface ScheduleEntry {
   opponent: { id: number; name: string; city: string; abbr: string }
   teamScore: number
   oppScore: number
+  // Format-aware result score: frames won for frames matches, else the point totals.
+  displayTeamScore?: number
+  displayOppScore?: number
+  scoreLabel?: 'frames' | null
   status: string
   result: string | null
 }
@@ -1456,7 +1463,11 @@ export default function TeamPage() {
                     )}
                   </div>
                   <div style={{ fontSize: '13px', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                    {game.status !== 'Scheduled' ? `${game.teamScore}–${game.oppScore}` : '—'}
+                    {game.status !== 'Scheduled'
+                      ? (game.scoreLabel === 'frames'
+                          ? `${fmtFramesWon(game.displayTeamScore ?? game.teamScore)}–${fmtFramesWon(game.displayOppScore ?? game.oppScore)}`
+                          : `${game.teamScore}–${game.oppScore}`)
+                      : '—'}
                   </div>
                 </div>
               )
