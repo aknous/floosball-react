@@ -3,6 +3,8 @@
 
 // ── Vote costs & limits (mirrors constants.py) ──
 
+import type { CoachProfileData } from '@/Components/CoachProfile'
+
 export const GM_VOTE_COST: Record<string, number> = {
   fire_coach: 15,
   cut_player: 10,
@@ -32,15 +34,14 @@ export const GM_FA_BALLOT_MAX_RANKINGS = 18
 export interface GmCoachInfo {
   id: number | null
   name: string
-  overallRating: number
-  offensiveMind: number
-  defensiveMind: number
-  adaptability: number
-  aggressiveness: number
-  clockManagement: number
-  playerDevelopment: number
-  scouting: number
-  attitude?: number
+  slot?: number
+  seasonsCoached?: number
+  /**
+   * Archetypes only. Coach/GM rating NUMBERS are deliberately not sent — a GM
+   * reads as their specialty, flaw, fan-trust axis and per-attribute
+   * qualitative bands. See floosball_coach.buildCoachProfile / plan Part B.
+   */
+  profile?: CoachProfileData | null
 }
 
 export interface GmPlayerInfo {

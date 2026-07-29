@@ -12,6 +12,7 @@ import FacilitiesSection from './FacilitiesSection'
 import { Stars, calcStars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import CareerStageBadge, { hasRenderableStage } from '@/Components/CareerStageBadge'
+import { CoachProfileTags, CoachTraitList } from '@/Components/CoachProfile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -641,35 +642,14 @@ function OverviewTab({
               <div>
                 <div style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0' }}>{team.coach.name}</div>
                 <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Stars stars={calcStars(team.coach.overallRating)} size={13} />
+                  <CoachProfileTags profile={(team.coach as any).profile} />
                   <span>{team.coach.seasonsCoached} season{team.coach.seasonsCoached !== 1 ? 's' : ''}</span>
                 </div>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 20px' }}>
-              {([
-                ['Offensive Mind', team.coach.offensiveMind],
-                ['Defensive Mind', team.coach.defensiveMind],
-                ['Adaptability', team.coach.adaptability],
-                ['Aggressiveness', team.coach.aggressiveness],
-                ['Clock Mgmt', team.coach.clockManagement],
-                ['Player Dev', team.coach.playerDevelopment],
-                ...(team.coach.scouting != null ? [['Scouting', team.coach.scouting] as [string, number]] : []),
-              ] as [string, number][]).map(([label, val]) => (
-                <div key={label}>
-                  <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '3px' }}>{label}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <div style={{ flex: 1, height: '4px', backgroundColor: '#334155', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{
-                        width: `${val}%`, height: '100%',
-                        backgroundColor: val >= 85 ? '#22c55e' : val >= 72 ? '#f59e0b' : '#ef4444',
-                      }} />
-                    </div>
-                    <span style={{ fontSize: '12px', color: '#cbd5e1', minWidth: '24px', textAlign: 'right' as const, fontVariantNumeric: 'tabular-nums' as const }}>{val}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* Archetypes + qualitative bands only — coach rating numbers
+                are deliberately never shown (plan Part B). */}
+            <CoachTraitList traits={(team.coach as any).profile?.traits} />
           </div>
         </div>
       )}

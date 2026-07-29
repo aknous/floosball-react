@@ -1,17 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
-import { Stars, calcStars } from './Stars'
+import { CoachProfileTags, CoachTraitList, CoachProfileData } from './CoachProfile'
 
 export interface CoachHoverData {
   name: string
-  overallRating: number
-  offensiveMind?: number
-  defensiveMind?: number
-  adaptability?: number
-  aggressiveness?: number
-  clockManagement?: number
-  playerDevelopment?: number
-  scouting?: number
+  /** Archetypes + qualitative bands only — no coach rating numbers are sent. */
+  profile?: CoachProfileData | null
+  seasonsCoached?: number
 }
 
 // ── Portal card ───────────────────────────────────────────────────────────────
@@ -19,26 +14,6 @@ export interface CoachHoverData {
 const CARD_WIDTH = 240
 const CARD_HEIGHT_EST = 280
 const OFFSET = 16
-
-const RatingBar: React.FC<{ label: string; value: number }> = ({ label, value }) => {
-  const color = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
-  return (
-    <div style={{ marginBottom: '6px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-        <span style={{ fontSize: '12px', color: '#94a3b8' }}>{label}</span>
-        <span style={{ fontSize: '12px', color: '#64748b' }}>{value}</span>
-      </div>
-      <div style={{ height: '3px', backgroundColor: '#334155', borderRadius: '2px' }}>
-        <div style={{
-          width: `${Math.min(100, value)}%`,
-          height: '100%',
-          backgroundColor: color,
-          borderRadius: '2px',
-        }} />
-      </div>
-    </div>
-  )
-}
 
 interface CardProps {
   data: CoachHoverData
@@ -57,15 +32,6 @@ const Card: React.FC<CardProps> = ({ data, teamColor, mouseX, mouseY }) => {
   top = Math.max(8, top)
 
   const color = teamColor || '#64748b'
-
-  const attrs: { label: string; value: number }[] = []
-  if (data.aggressiveness != null) attrs.push({ label: 'Aggressiveness', value: data.aggressiveness })
-  if (data.offensiveMind != null) attrs.push({ label: 'Offensive Mind', value: data.offensiveMind })
-  if (data.defensiveMind != null) attrs.push({ label: 'Defensive Mind', value: data.defensiveMind })
-  if (data.adaptability != null) attrs.push({ label: 'Adaptability', value: data.adaptability })
-  if (data.clockManagement != null) attrs.push({ label: 'Clock Mgmt', value: data.clockManagement })
-  if (data.playerDevelopment != null) attrs.push({ label: 'Player Dev', value: data.playerDevelopment })
-  if (data.scouting != null) attrs.push({ label: 'Scouting', value: data.scouting })
 
   return ReactDOM.createPortal(
     <div style={{
@@ -89,27 +55,11 @@ const Card: React.FC<CardProps> = ({ data, teamColor, mouseX, mouseY }) => {
         <div style={{ marginBottom: '12px' }}>
           <div style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{data.name}</div>
           <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>Head Coach</div>
-          <div style={{ marginTop: '3px' }}><Stars stars={calcStars(data.overallRating)} size={18} /></div>
+          <div style={{ marginTop: '6px' }}><CoachProfileTags profile={data.profile} /></div>
         </div>
 
-        {/* Overall bar */}
-        <div style={{ marginBottom: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-            <span style={{ fontSize: '13px', color: '#94a3b8' }}>Overall</span>
-            <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '700' }}>{data.overallRating}</span>
-          </div>
-          <div style={{ height: '4px', backgroundColor: '#334155', borderRadius: '2px' }}>
-            <div style={{
-              width: `${Math.min(100, data.overallRating)}%`,
-              height: '100%',
-              backgroundColor: data.overallRating >= 85 ? '#22c55e' : data.overallRating >= 72 ? '#f59e0b' : '#ef4444',
-              borderRadius: '2px',
-            }} />
-          </div>
-        </div>
-
-        {/* Attributes */}
-        {attrs.map(a => <RatingBar key={a.label} label={a.label} value={a.value} />)}
+        {/* Qualitative attribute read — bands, never numbers */}
+        <CoachTraitList traits={data.profile?.traits} />
       </div>
     </div>,
     document.body

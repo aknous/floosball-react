@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react'
 import CoachHoverCard from '@/Components/CoachHoverCard'
-import { Stars, calcStars } from '@/Components/Stars'
 import ProbabilityMeter from './ProbabilityMeter'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { getContrastTextColor } from '@/utils/colors'
 import type { GmCoachInfo, GmVoteTally } from '@/types/gm'
+import { CoachProfileTags } from '@/Components/CoachProfile'
 
 const CONFIRM_WINDOW_MS = 3000
 const CONFIRM_COLOR = '#f59e0b'
@@ -105,7 +105,7 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
           <div>
             <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0' }}>{coach.name}</div>
             <div style={{ marginTop: '3px' }}>
-              <Stars stars={calcStars(coach.overallRating)} size={13} />
+              <CoachProfileTags profile={(coach as any).profile} />
             </div>
           </div>
         </div>
@@ -216,7 +216,7 @@ const FireCoachCard: React.FC<FireCoachCardProps> = ({
                   color: '#cbd5e1',
                   cursor: 'default',
                 }}>
-                  <Stars stars={calcStars(c.overallRating)} size={11} />
+                  <CoachProfileTags profile={(c as any).profile} size={10} max={2} />
                   <span>{c.name}</span>
                 </div>
               </CoachHoverCard>

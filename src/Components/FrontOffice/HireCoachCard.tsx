@@ -1,9 +1,9 @@
 import React from 'react'
 import CoachHoverCard from '@/Components/CoachHoverCard'
-import { Stars, calcStars } from '@/Components/Stars'
 import { VoteButton, UndoButton } from './VoteControls'
 import { getContrastTextColor } from '@/utils/colors'
 import type { GmCoachInfo, GmVoteTally } from '@/types/gm'
+import { CoachProfileTags } from '@/Components/CoachProfile'
 
 interface HireCoachCardProps {
   availableCoaches: GmCoachInfo[]
@@ -119,7 +119,7 @@ const HireCoachCard: React.FC<HireCoachCardProps> = ({
                         {c.name}
                       </span>
                     </CoachHoverCard>
-                    <Stars stars={calcStars(c.overallRating)} size={12} />
+                    <CoachProfileTags profile={(c as any).profile} size={10} max={2} />
                     {isSoleLeader && (
                       <span style={{
                         fontSize: '9px',

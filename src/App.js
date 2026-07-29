@@ -16,7 +16,7 @@ import FantasyPage from './Views/Fantasy/FantasyPage'
 import AboutPage from './Views/About/AboutPage'
 import CardsPage from './Views/Cards/CardsPage'
 import AchievementsPage from './Views/Achievements/AchievementsPage'
-import FrontOfficePage from './Views/FrontOffice/FrontOfficePage'
+import FrontOfficeRedirect from '@/Views/FrontOffice/FrontOfficeRedirect'
 import AwardsPage from './Views/Awards/AwardsPage'
 import BracketView from './Views/Bracket/BracketView'
 import Dashboard from './Views/Dashboard/Dashboard'
@@ -82,7 +82,7 @@ function AppLayout() {
           <Route exact path='/fantasy' element={<FantasyPage />} />
           <Route exact path='/cards' element={<CardsPage />} />
           <Route exact path='/achievements' element={<AchievementsPage />} />
-          <Route exact path='/front-office' element={<FrontOfficePage />} />
+          <Route exact path='/front-office' element={<FrontOfficeRedirect />} />
           <Route exact path='/awards' element={<AwardsPage />} />
           <Route exact path='/bracket' element={<BracketView />} />
           <Route exact path='/history' element={<HistoryPage />} />

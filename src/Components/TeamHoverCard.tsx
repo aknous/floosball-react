@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import TeamFormBadge, { TeamFormState } from './TeamFormBadge'
+import { CoachProfileTags } from './CoachProfile'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -141,9 +142,8 @@ const Card: React.FC<{ data: TeamDetail; mouseX: number; mouseY: number }> = ({ 
               </div>
               <span style={{ fontSize: '11px', color: '#94a3b8' }}>{data.coach.seasonsCoached}s</span>
             </div>
-            <RatingBar label="Aggressiveness" value={data.coach.aggressiveness} />
-            <RatingBar label="Clock Mgmt" value={data.coach.clockManagement} />
-            <RatingBar label="Adaptability" value={data.coach.adaptability} />
+            {/* Archetype tags — coach rating numbers are never shown. */}
+            <CoachProfileTags profile={(data.coach as any).profile} size={10} max={3} />
           </>
         )}
       </div>
