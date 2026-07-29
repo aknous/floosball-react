@@ -13,7 +13,6 @@ import TeamFeed from '@/Components/Sentiment/TeamFeed'
 import SentimentBoards from '@/Components/Sentiment/SentimentBoards'
 import FacilitiesSection from '@/Views/FrontOffice/FacilitiesSection'
 import SupporterCard from '@/Components/FrontOffice/SupporterCard'
-import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -401,8 +400,10 @@ export default function TeamPage() {
           <div style={{ marginTop: '40px' }}>
             <Rule label="Your Team" color={accent} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              {/* The vote cards lived here until step 7 removed the binding
+                  votes — the GM decides now, and fans express themselves by
+                  rating. What's left is what fans still genuinely control. */}
               <FacilitiesSection />
-              <FrontOfficePanel teamId={team.id} teamAbbr={team.abbr} teamColor={accent} />
               <SupporterCard />
             </div>
           </div>

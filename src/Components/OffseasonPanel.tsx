@@ -1,12 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { Stars, calcStars, DualStars } from './Stars'
 import PlayerHoverCard from './PlayerHoverCard'
 import PlayerLink from './PlayerLink'
-import FaBallotModal from './FrontOffice/FaBallotModal'
-import type { ScoutingPlayer, OpenSlot } from './FrontOffice/FaBallotModal'
 import type {
   OffseasonStartEvent,
   OffseasonPickEvent,
@@ -17,7 +15,6 @@ import type {
   GmFaDirectivesEvent,
   GmFaDirectivePlayer,
 } from '@/types/websocket'
-import type { GmFaBallotResponse } from '@/types/gm'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -110,7 +107,7 @@ type TeamRosterData = Record<string, RosterPlayer | null>
 
 export const OffseasonPanel: React.FC = () => {
   const { event } = useSeasonWebSocket()
-  const { user, getToken, updateFloobits } = useAuth()
+  const { user, getToken } = useAuth()
   const { seasonState } = useFloosball()
 
   const [freeAgents, setFreeAgents] = useState<FreeAgent[]>([])
@@ -138,18 +135,13 @@ export const OffseasonPanel: React.FC = () => {
   const [faWindowOpen, setFaWindowOpen] = useState(false)
   const [faPool, setFaPool] = useState<Array<{ id: number; name: string; position: string; rating: number; tier: string }>>([])
   const [faWindowEnd, setFaWindowEnd] = useState<number | null>(null)
-  const [ballotModalOpen, setBallotModalOpen] = useState(false)
-  const [existingBallot, setExistingBallot] = useState<number[] | null>(null)
-  const [existingPositionPriority, setExistingPositionPriority] = useState<number[] | null>(null)
-  const [ballotSubmitting, setBallotSubmitting] = useState(false)
   const [gmResolvedEvents, setGmResolvedEvents] = useState<GmVoteResolvedEvent[]>([])
   const [faDirectives, setFaDirectives] = useState<GmFaDirectivePlayer[]>([])
   const [pickedPlayerNames, setPickedPlayerNames] = useState<Set<string>>(new Set())
   const [rightTab, setRightTab] = useState<'players' | 'directives' | 'transactions'>('players')
   const [tabNotify, setTabNotify] = useState<{ directives: boolean; transactions: boolean }>({ directives: false, transactions: false })
   const [faTimeLeft, setFaTimeLeft] = useState('')
-  const [scoutingPlayers, setScoutingPlayers] = useState<ScoutingPlayer[]>([])
-  const [openSlots, setOpenSlots] = useState<OpenSlot[]>([])
+  const [openSlots, setOpenSlots] = useState<{ slot: string; position: string }[]>([])
 
   // Find favorite team's abbr and color from draft order
   const favoriteTeam = useMemo(() => {
@@ -250,7 +242,6 @@ export const OffseasonPanel: React.FC = () => {
         })
         const json = await res.json()
         if (json.success && json.data) {
-          setScoutingPlayers(json.data.players || [])
           setOpenSlots(json.data.openSlots || [])
         }
       } catch {
@@ -259,43 +250,6 @@ export const OffseasonPanel: React.FC = () => {
     }
     fetchScouting()
   }, [faWindowOpen, getToken])
-
-  const handleSubmitBallot = useCallback(async (rankings: number[], positionPriority: number[]): Promise<GmFaBallotResponse | null> => {
-    const tok = await getToken()
-    if (!tok) return null
-    setBallotSubmitting(true)
-    try {
-      const res = await fetch(`${API_BASE}/gm/fa-ballot`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-        body: JSON.stringify({ rankings, positionPriority }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: 'Ballot submission failed' }))
-        alert(err.detail || 'Ballot submission failed')
-        return null
-      }
-      const json = await res.json()
-      const data: GmFaBallotResponse = json.data ?? json
-      setExistingBallot(data.rankings)
-      setExistingPositionPriority(Array.isArray(data.positionPriority) ? data.positionPriority : null)
-      // Refresh balance
-      const balRes = await fetch(`${API_BASE}/currency/balance`, {
-        headers: { Authorization: `Bearer ${tok}` },
-      })
-      if (balRes.ok) {
-        const bj = await balRes.json()
-        updateFloobits(bj.data?.balance ?? 0)
-      }
-      setBallotModalOpen(false)
-      return data
-    } catch {
-      alert('Ballot submission failed')
-      return null
-    } finally {
-      setBallotSubmitting(false)
-    }
-  }, [getToken, updateFloobits])
 
   // Initial load from REST
   useEffect(() => {
@@ -371,8 +325,6 @@ export const OffseasonPanel: React.FC = () => {
         }
         // Restore FA pool + ballot + directives for rank markers
         if (data.faPool?.length > 0) setFaPool(data.faPool)
-        if (data.existingBallot) setExistingBallot(data.existingBallot)
-        setExistingPositionPriority(Array.isArray(data.existingPositionPriority) ? data.existingPositionPriority : null)
         if (data.faDirectives?.length > 0) setFaDirectives(data.faDirectives)
         if (data.gmResolutions?.length > 0) {
           setGmResolvedEvents(data.gmResolutions as GmVoteResolvedEvent[])
@@ -682,7 +634,6 @@ export const OffseasonPanel: React.FC = () => {
       setFaWindowOpen(false)
       // Keep faPool so ballot rank markers persist through the draft
       setFaWindowEnd(null)
-      setBallotModalOpen(false)
       // Fetch current FA list + directives so the draft board populates immediately
       const token = getToken()
       Promise.resolve(token).then(tok => {
@@ -847,23 +798,6 @@ export const OffseasonPanel: React.FC = () => {
               {faTimeLeft}
             </span>
           )}
-          {faWindowOpen && openSlots.length > 0 && (
-            <button
-              onClick={() => setBallotModalOpen(true)}
-              style={{
-                padding: '5px 12px',
-                backgroundColor: '#f59e0b',
-                color: '#0f172a',
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '11px',
-                fontWeight: '700',
-                cursor: 'pointer',
-              }}
-            >
-              {existingBallot ? 'Revise Ballot' : 'Submit Requisition'}
-            </button>
-          )}
           </div>
         </div>
       )}
@@ -895,21 +829,6 @@ export const OffseasonPanel: React.FC = () => {
               {faTimeLeft}
             </span>
           )}
-          <button
-            onClick={() => setBallotModalOpen(true)}
-            style={{
-              padding: '5px 12px',
-              backgroundColor: '#f59e0b',
-              color: '#0f172a',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '11px',
-              fontWeight: '700',
-              cursor: 'pointer',
-            }}
-          >
-            {existingBallot ? 'Revise Ballot' : 'Submit Requisition'}
-          </button>
           </div>
         </div>
       )}
@@ -1506,18 +1425,6 @@ export const OffseasonPanel: React.FC = () => {
 
       </div>{/* end side-by-side grid */}
 
-      {/* FA Ballot Modal */}
-      <FaBallotModal
-        visible={ballotModalOpen}
-        onClose={() => setBallotModalOpen(false)}
-        openSlots={openSlots}
-        scoutingPlayers={scoutingPlayers}
-        faWindowEnd={faWindowEnd}
-        onSubmit={handleSubmitBallot}
-        submitting={ballotSubmitting}
-        existingBallot={existingBallot}
-        existingPositionPriority={existingPositionPriority}
-      />
     </div>
   )
 }
