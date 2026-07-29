@@ -5,6 +5,7 @@ import { useFloosball } from '@/contexts/FloosballContext'
 import { Stars, calcStars, DualStars } from './Stars'
 import PlayerHoverCard from './PlayerHoverCard'
 import PlayerLink from './PlayerLink'
+import HoverTooltip from './HoverTooltip'
 import type {
   OffseasonStartEvent,
   OffseasonPickEvent,
@@ -44,6 +45,9 @@ interface FreeAgent {
   tier: string
   offensiveRating?: number
   defensiveRating?: number
+  /** Never played a pro season. New players enter only through the FA pool
+   *  now that there is no rookie draft, so the pool is where they surface. */
+  isNewcomer?: boolean
 }
 
 type TransactionType = 'pick' | 'cut' | 'expired' | 'rookie_pick' | 'rookie_skip' | 'resign' | 'promotion'
@@ -76,13 +80,6 @@ interface TeamSetup {
   promotions: SetupPlayer[]
 }
 
-interface Prospect {
-  id: number
-  name: string
-  position: string
-  rating: number
-  tier: string
-}
 
 interface DraftTeam {
   name: string
@@ -115,11 +112,10 @@ export const OffseasonPanel: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [currentTeamAbbr, setCurrentTeamAbbr] = useState<string | null>(null)
   // Which phase of the offseason is actively streaming picks. Set by
-  // offseason_predraft_start, rookie_draft_start, fa_draft_order_update.
+  // offseason_predraft_start, fa_draft_order_update.
   // Drives the header label, team-row grouping, and right-panel content.
-  const [currentPhase, setCurrentPhase] = useState<'predraft' | 'rookie_draft' | 'free_agency' | null>(null)
+  const [currentPhase, setCurrentPhase] = useState<'predraft' | 'free_agency' | null>(null)
   const [predraftSetups, setPredraftSetups] = useState<Record<string, TeamSetup>>({})
-  const [rookies, setRookies] = useState<Prospect[]>([])
   // Once the user manually expands a team, auto-expand during the predraft
   // roll-through stops taking over — they're reading the UI on their terms.
   const userExpandedRef = useRef<boolean>(false)
@@ -158,7 +154,7 @@ export const OffseasonPanel: React.FC = () => {
   //   • Waiting phases (post_bowl, frontoffice, pre_fa) → countdown to the
   //     next phase. The current phase is implied by what's coming next, so
   //     we don't double-label it.
-  //   • Active phases (rookie_draft, fa_draft, training) → static label,
+  //   • Active phases (fa_draft, training) → static label,
   //     no countdown (the panel content itself shows progress).
   const offseasonPhase = seasonState.offseasonPhase
   const offseasonPhaseTargetTime = seasonState.offseasonPhaseTargetTime
@@ -168,11 +164,10 @@ export const OffseasonPanel: React.FC = () => {
   useEffect(() => {
     const NEXT_LABEL: Record<string, string> = {
       post_bowl: 'Offseason',
-      frontoffice: 'Rookie Draft',
+      frontoffice: 'Free Agency',
       pre_fa: 'Free Agency',
     }
     const ACTIVE_LABEL: Record<string, string> = {
-      rookie_draft: 'Rookie Draft',
       fa_draft: 'Free Agency',
       training: 'Offseason Training',
     }
@@ -314,7 +309,7 @@ export const OffseasonPanel: React.FC = () => {
           // pre-FA wait, post-draft training) there's no clock running —
           // leaving it on the most-recent transaction's team made the
           // marker stick on whichever team had the last front-office move.
-          if (txs.length > 0 && (data.phase === 'rookie_draft' || data.phase === 'free_agency')) {
+          if (txs.length > 0 && data.phase === 'free_agency') {
             setCurrentTeamAbbr(txs[0].teamAbbr)
           }
         }
@@ -331,17 +326,8 @@ export const OffseasonPanel: React.FC = () => {
         }
         // Restore the active phase so tier grouping and prospect swap persist
         // across refreshes mid-offseason.
-        if (data.phase && (data.phase === 'predraft' || data.phase === 'rookie_draft' || data.phase === 'free_agency')) {
+        if (data.phase && (data.phase === 'predraft' || data.phase === 'free_agency')) {
           setCurrentPhase(data.phase)
-        }
-        // Restore upcoming rookies so a refresh mid-rookie-draft keeps the
-        // right-panel pool populated. The WS rookie_draft_start event also
-        // populates this, but a refresh has no event replay — rely on the API.
-        // Always set (even if empty) so the state is authoritative — the
-        // backend filters by is_upcoming_rookie, so an empty array genuinely
-        // means all rookies have been drafted.
-        if (data.rookies && Array.isArray(data.rookies)) {
-          setRookies(data.rookies)
         }
         // If draft already finished, mark complete and clear on-the-clock
         if (data.draftComplete) {
@@ -567,45 +553,6 @@ export const OffseasonPanel: React.FC = () => {
       setCurrentPhase(null)
       setCurrentTeamAbbr(null)
       setExpandedTeam(null)
-    } else if (e.event === 'rookie_draft_start') {
-      // Rookie draft phase kicks off — show phase indicator, reset per-phase state
-      setCurrentPhase('rookie_draft')
-      setCurrentTeamAbbr(null)
-      setExpandedTeam(null)
-      const ev = e as { rookies?: Prospect[]; totalRookies?: number }
-      console.log('[Offseason] rookie_draft_start', { totalRookies: ev.totalRookies, rookieCount: ev.rookies?.length ?? 0 })
-      setRookies(ev.rookies || [])
-    } else if (e.event === 'rookie_draft_on_clock') {
-      setCurrentTeamAbbr((e as any).teamAbbr)
-    } else if (e.event === 'rookie_draft_pick') {
-      const ev = e as any
-      setTransactions(prev => [{
-        type: 'rookie_pick',
-        teamName: ev.team,
-        teamAbbr: ev.teamAbbr,
-        playerId: ev.playerId,
-        playerName: ev.player,
-        position: ev.position,
-        rating: ev.rating,
-        tier: ev.tier,
-      }, ...prev])
-      setRookies(prev => prev.filter(r => r.name !== ev.player))
-      setTabNotify(prev => prev.transactions ? prev : { ...prev, transactions: rightTab !== 'transactions' })
-    } else if (e.event === 'rookie_draft_skip') {
-      const ev = e as any
-      setTransactions(prev => [{
-        type: 'rookie_skip',
-        teamName: ev.team,
-        teamAbbr: ev.teamAbbr,
-        playerName: ev.reason === 'pipeline_full' ? '(pipeline full — forfeited pick)' : '(no eligible rookies)',
-        position: '—',
-        rating: 0,
-      }, ...prev])
-    } else if (e.event === 'rookie_draft_complete') {
-      // Rookie phase done — next we expect fa_draft_order_update to flip into FA.
-      setCurrentPhase(null)
-      setCurrentTeamAbbr(null)
-      setRookies([])
     } else if (e.event === 'fa_draft_order_update') {
       // FA phase preview: replace the draft order with the tier-sorted list
       // and populate the FA pool. Fires during the pre-FA wait so the team
@@ -740,14 +687,10 @@ export const OffseasonPanel: React.FC = () => {
           {currentPhase && (
             <span style={{
               fontSize: '12px', fontWeight: '700',
-              color: currentPhase === 'rookie_draft' ? '#a78bfa'
-                : currentPhase === 'predraft' ? '#38bdf8'
-                : '#f59e0b',
+              color: currentPhase === 'predraft' ? '#38bdf8' : '#f59e0b',
               letterSpacing: '0.06em', textTransform: 'uppercase' as const,
             }}>
-              · {currentPhase === 'rookie_draft' ? 'Rookie Draft'
-                : currentPhase === 'predraft' ? 'Team Setup'
-                : 'Free Agency'}
+              · {currentPhase === 'predraft' ? 'Team Setup' : 'Free Agency'}
             </span>
           )}
           {!currentPhase && phaseLabel && (
@@ -868,7 +811,7 @@ export const OffseasonPanel: React.FC = () => {
                 <>Waiting for the offseason to begin…</>
               )}
               <div style={{ marginTop: '8px', fontSize: '11px', color: '#64748b' }}>
-                Coach decisions, re-signs, cuts, and the FA pool have been resolved. The rookie draft kicks off at noon Eastern, followed by free agency.
+                Coach decisions, re-signs, cuts, and the FA pool have been resolved. Free agency is next.
               </div>
             </div>
           ) : (
@@ -1098,9 +1041,7 @@ export const OffseasonPanel: React.FC = () => {
           <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px', flexShrink: 0 }}>
             {(['players', 'directives', 'transactions'] as const).map(tab => {
               const isActive = rightTab === tab
-              const playersLabel = currentPhase === 'rookie_draft'
-                ? `Prospects${rookies.length > 0 ? ` (${rookies.length})` : ''}`
-                : `Players${freeAgents.length > 0 ? ` (${freeAgents.length})` : ''}`
+              const playersLabel = `Players${freeAgents.length > 0 ? ` (${freeAgents.length})` : ''}`
               const label = tab === 'players' ? playersLabel
                 : tab === 'directives' ? 'Directives'
                 : `Transactions${transactions.length > 0 ? ` (${transactions.length})` : ''}`
@@ -1137,45 +1078,8 @@ export const OffseasonPanel: React.FC = () => {
             })}
           </div>
 
-          {/* Players tab — swaps to rookie pool during rookie draft phase */}
-          {rightTab === 'players' && currentPhase === 'rookie_draft' && (
-            <>
-              <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px' }}>
-                {POSITIONS.map(pos => (
-                  <button key={pos} style={posPillStyle(pos)} onClick={() => setPosFilter(pos)}>
-                    {pos}
-                  </button>
-                ))}
-              </div>
-              <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '640px', overflowY: 'auto' }}>
-                {rookies.length === 0 ? (
-                  <div style={{ color: '#94a3b8', fontSize: '13px', padding: '10px 6px' }}>
-                    {currentPhase === 'rookie_draft' ? 'All prospects drafted.' : 'Waiting for rookie draft…'}
-                  </div>
-                ) : (
-                  (posFilter === 'ALL' ? rookies : rookies.filter(r => r.position === posFilter))
-                    .sort((a, b) => b.rating - a.rating)
-                    .map((r, i) => (
-                    <div
-                      key={`${r.name}-${i}`}
-                      style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '4px', padding: '5px 8px', fontSize: '13px' }}
-                    >
-                      <Stars stars={calcStars(r.rating)} />
-                      <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <PlayerLink
-                          playerId={r.id}
-                          playerName={r.name}
-                          style={{ color: '#e2e8f0' }}
-                        />
-                      </span>
-                      <span style={{ color: '#64748b', fontSize: '12px' }}>{r.position}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </>
-          )}
-          {rightTab === 'players' && currentPhase !== 'rookie_draft' && (
+          {/* Players tab — the free agent pool */}
+          {rightTab === 'players' && (
             <>
               <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px' }}>
                 {POSITIONS.map(pos => (
@@ -1212,6 +1116,25 @@ export const OffseasonPanel: React.FC = () => {
                             playerName={fa.name}
                             style={{ color: '#e2e8f0' }}
                           />
+                          {fa.isNewcomer && (
+                            <HoverTooltip text="New to the league. Has not played a pro season." color="#7dd3fc">
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: '700',
+                                color: '#7dd3fc',
+                                backgroundColor: 'rgba(125,211,252,0.12)',
+                                border: '1px solid rgba(125,211,252,0.30)',
+                                padding: '1px 6px',
+                                borderRadius: '3px',
+                                letterSpacing: '0.02em',
+                                flexShrink: 0,
+                              }}
+                            >
+                              New
+                            </span>
+                            </HoverTooltip>
+                          )}
                           {posRank != null && (
                             <span style={{
                               fontSize: '10px',
