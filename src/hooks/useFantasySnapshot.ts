@@ -47,6 +47,7 @@ export interface CardBreakdownEntry {
   isChanceEffect?: boolean
   chanceThreshold?: number   // trigger probability (0-100) for chance cards
   chanceTriggered?: boolean  // did the chance roll fire this week
+  chanceResolved?: boolean   // false while live (roll resolves at week end) → UI shows Pending
   streakActive?: boolean | null
   streakCount?: number
   // FP power-bar gate: null = ungated, true = the depicted player cleared the bar
@@ -349,6 +350,7 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
               isChanceEffect: cb.isChanceEffect ?? false,
               chanceThreshold: cb.chanceThreshold ?? 0,
               chanceTriggered: cb.chanceTriggered ?? false,
+              chanceResolved: cb.chanceResolved ?? false,
               streakActive: cb.streakActive ?? null,
               streakCount: cb.streakCount ?? 0,
               gateActive: cb.gateActive ?? null,
