@@ -34,6 +34,7 @@ const PerfBlock: React.FC<{
     playerFP: fp, threshold: thr, active: gate?.inverse ? fp < thr : fp >= thr, inverse: gate?.inverse,
     allPro: gate?.allPro,
     isChance, chancePct: bonus?.chanceThreshold, chanceTriggered: bonus?.chanceTriggered,
+    chanceResolved: bonus?.chanceResolved,
   }
   const pct = gateFill(meterOpts) * 100
   const barColor = gateBarColor(meterOpts)

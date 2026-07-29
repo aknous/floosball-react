@@ -20,12 +20,17 @@ export interface GateTooltipOpts {
   isChance?: boolean
   chancePct?: number       // 0-1 trigger probability (this IS the bar fill for chance cards)
   chanceTriggered?: boolean
+  chanceResolved?: boolean // false while the week is live (roll resolves at week end)
 }
 
 export function gateTooltipText(o: GateTooltipOpts): string {
   if (o.isChance) {
     const pct = o.chancePct != null ? `${Math.round(o.chancePct * 100)}% ` : ''
-    return `${pct}trigger chance · ${o.chanceTriggered ? 'Triggered' : 'Missed'}`
+    // Three states: the roll resolves at WEEK END, so while it's still pending don't call
+    // it "Missed" (chanceTriggered is just false-because-not-yet-rolled). Only a resolved
+    // roll reads Triggered / Missed.
+    const verdict = o.chanceTriggered ? 'Triggered' : o.chanceResolved ? 'Missed' : 'Pending'
+    return `${pct}trigger chance · ${verdict}`
   }
   const lines = [
     `${o.playerFP != null ? `${o.playerFP.toFixed(0)}/${o.threshold}` : o.threshold} FP · Effect ${o.active ? 'Active' : 'Inactive'}`,

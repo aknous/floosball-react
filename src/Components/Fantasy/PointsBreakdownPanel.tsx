@@ -142,6 +142,7 @@ const RosterCardRow: React.FC<{
                 isChance={b!.isChanceEffect}
                 chancePct={b!.chanceThreshold}
                 chanceTriggered={b!.chanceTriggered}
+                chanceResolved={b!.chanceResolved}
               />
             )}
             {(b!.tier ?? 1) >= 2 && (
