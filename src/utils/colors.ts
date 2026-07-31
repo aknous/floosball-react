@@ -64,6 +64,75 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   return [h, s, l]
 }
 
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  const c = (1 - Math.abs(2 * l - 1)) * s
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1))
+  const m = l - c / 2
+  let rgb: [number, number, number]
+  if (h < 60) rgb = [c, x, 0]
+  else if (h < 120) rgb = [x, c, 0]
+  else if (h < 180) rgb = [0, c, x]
+  else if (h < 240) rgb = [0, x, c]
+  else if (h < 300) rgb = [x, 0, c]
+  else rgb = [c, 0, x]
+  return rgb.map(v => Math.round((v + m) * 255)) as [number, number, number]
+}
+
+const toHex = (rgb: [number, number, number]) =>
+  '#' + rgb.map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0')).join('')
+
+/** WCAG relative luminance. */
+function luminance([r, g, b]: [number, number, number]): number {
+  const f = (c: number) => {
+    const v = c / 255
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  }
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+}
+
+export function contrastRatio(a: string, b: string): number {
+  const ra = hexToRgb(a), rb = hexToRgb(b)
+  if (!ra || !rb) return 1
+  const la = luminance(ra), lb = luminance(rb)
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+}
+
+/**
+ * Make a team colour legible AS TEXT on a dark background.
+ *
+ * Team colours are DATA, and a good few of them are navy, maroon or forest
+ * green — perfectly good as a field or a border, but as small text on the
+ * near-black page background they sink into it and the label disappears.
+ * `getContrastTextColor` solves the opposite problem (what ink goes ON this
+ * colour); this one keeps the colour's identity while lifting it far enough
+ * off the background to read.
+ *
+ * Lightens in HSL, which holds the hue, so a navy team stays recognisably
+ * navy — just a lighter navy. Falls back to the body grey only if even a
+ * near-white version of the hue can't clear the bar (a pure-black brand).
+ */
+export function readableOnDark(
+  hex?: string | null,
+  background = '#0b1220',
+  minRatio = 4.5,
+): string {
+  const rgb = hexToRgb(hex)
+  if (!rgb) return '#cbd5e1'
+  // eslint-disable-next-line prefer-const
+  let [h, s, l] = rgbToHsl(...rgb)
+  // A very desaturated dark colour just becomes grey when lightened, which is
+  // legible but loses the point — give it a little saturation to keep an
+  // identity.
+  if (s < 0.15) s = Math.min(0.35, s + 0.2)
+  for (let i = 0; i < 20; i++) {
+    const candidate = toHex(hslToRgb(h, s, l))
+    if (contrastRatio(candidate, background) >= minRatio) return candidate
+    l += 0.04
+    if (l > 0.97) break
+  }
+  return '#cbd5e1'
+}
+
 export function colorsTooClose(a?: string | null, b?: string | null): boolean {
   const ra = hexToRgb(a), rb = hexToRgb(b)
   if (!ra || !rb) return false

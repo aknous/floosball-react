@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { FiChevronDown } from 'react-icons/fi'
 import { useAuth } from '@/contexts/AuthContext'
+import HoverTooltip from '@/Components/HoverTooltip'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -49,12 +50,34 @@ interface Props {
   refreshKey?: number
   /** You post about your OWN team. Elsewhere you can read, not join in. */
   canPost?: boolean
+  /** Drop the panel chrome and the internal heading: the host page owns both.
+   *  The team page is editorial - only the roster cards carry boxes there, and
+   *  a bordered feed fought that. It also rendered its own "The Bleachers"
+   *  title directly under the page's, showing the heading twice. */
+  bare?: boolean
+  /** Cap the scrolling feed. The team page runs it in a narrow rail beside the
+   *  season record, where the default 320 pushed the column past the roster. */
+  maxHeight?: number
+  /** 'cheers' lays the catalog out as tappable chips instead of a dropdown.
+   *  Kept as an option, but 'dropdown' is what the team page ships: eight
+   *  always-visible chips crowded out the feed itself, which is the part
+   *  people actually read. */
+  composer?: 'dropdown' | 'cheers'
+  /** Square corners and the #131e2f row surfaces, to sit in a page that has no
+   *  radius anywhere. Independent of `composer` — the team page wants this
+   *  look WITH the dropdown. */
+  railTone?: boolean
 }
 
-export const TeamFeed: React.FC<Props> = ({ teamId, refreshKey = 0, canPost = true }) => {
+export const TeamFeed: React.FC<Props> = ({
+  teamId, refreshKey = 0, canPost = true, bare = false, maxHeight = 320,
+  composer = 'dropdown', railTone = false,
+}) => {
   const { getToken, user } = useAuth()
   const isSignedIn = !!user
   const interactive = isSignedIn && canPost
+  const rail = railTone || composer === 'cheers'
+  const radius = rail ? 0 : 8
 
   const [catalog, setCatalog] = useState<Catalog | null>(null)
   const [posts, setPosts] = useState<FeedPost[]>([])
@@ -111,8 +134,26 @@ export const TeamFeed: React.FC<Props> = ({ teamId, refreshKey = 0, canPost = tr
   // Only the general team lines are manually postable.
   const options = useMemo<CatalogPost[]>(() => catalog?.team || [], [catalog])
 
+  /** The catalog ordered the way the crowd actually is: what's being said most,
+   *  support first. Counts come from the loaded window of posts — the feed
+   *  endpoint has no per-key tally, and a running total would read as all-time
+   *  when what matters is the mood right now. */
+  const cheers = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const p of posts) {
+      if (p.targetType !== 'team') continue
+      counts.set(p.postKey, (counts.get(p.postKey) || 0) + 1)
+    }
+    const withCounts = options.map(o => ({ ...o, count: counts.get(o.key) || 0 }))
+    const byCount = (a: typeof withCounts[0], b: typeof withCounts[0]) => b.count - a.count
+    return [
+      ...withCounts.filter(o => o.valence > 0).sort(byCount),
+      ...withCounts.filter(o => o.valence < 0).sort(byCount),
+    ]
+  }, [options, posts])
+
   return (
-    <div style={{
+    <div style={bare ? { overflow: 'hidden' } : {
       backgroundColor: '#1e293b',
       border: '1px solid #334155',
       borderRadius: '10px',
@@ -120,25 +161,81 @@ export const TeamFeed: React.FC<Props> = ({ teamId, refreshKey = 0, canPost = tr
     }}>
       {/* No aggregate mood band — how the fanbase feels should come across by
           READING the feed, not from a computed label sitting above it. */}
+      {!bare && (
       <div style={{
         padding: '12px 14px',
         borderBottom: '1px solid #334155',
         display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px',
       }}>
         <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>The Bleachers</div>
-        <div style={{ fontSize: '11px', color: '#64748b' }}>
+        <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
           {canPost
             ? 'Rate players and back or call out the GM to have your say here'
             : 'Visiting fan — you can read, but not join in'}
         </div>
       </div>
+      )}
+
+      {/* Cheer chips — the whole catalog, visible, each carrying how often it's
+          been said lately. Unlike the dropdown this shows the crowd's mood
+          without a click, which is the point of the panel. Signed-out fans see
+          the chips inert with a sign-in hint rather than nothing at all. */}
+      {composer === 'cheers' && (
+      <div style={{ padding: bare ? '0 0 2px' : '12px 14px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {cheers.map(c => {
+            const up = c.valence > 0
+            const tone = up ? '#4ade80' : '#f87171'
+            const tint = up ? 'rgba(74,222,128,0.10)' : 'rgba(248,113,113,0.10)'
+            const edge = up ? 'rgba(74,222,128,0.35)' : 'rgba(248,113,113,0.35)'
+            return (
+              <button
+                key={c.key}
+                type="button"
+                className="tp-cheer"
+                disabled={!interactive}
+                onClick={() => send(c.key)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  padding: '5px 10px', fontSize: '12px', fontWeight: 600,
+                  borderRadius: 0, color: tone,
+                  backgroundColor: tint, border: `1px solid ${edge}`,
+                  cursor: interactive ? 'pointer' : 'default',
+                }}
+              >
+                {c.text}
+                {c.count > 0 && (
+                  <span style={{
+                    fontSize: '11px', fontWeight: 700, color: '#94a3b8',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}>{c.count}</span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+        {/* The real rate-limit state, not a fixed promise: the backend meters
+            per hour, so that's what gets reported. */}
+        <div style={{ marginTop: '8px', fontSize: '12px', color: error ? '#f87171' : '#94a3b8' }}>
+          {error
+            ? error
+            : !isSignedIn
+              ? 'Sign in to post'
+              : !canPost
+                ? 'Visiting fan — you can read, but not join in'
+                : remaining != null
+                  ? `${remaining} post${remaining === 1 ? '' : 's'} left this hour`
+                  : ''}
+        </div>
+      </div>
+      )}
 
       {/* Composer — general support/frustration only. Opinions about a
           specific player or the GM arrive by rating them, which posts here
           automatically. Hidden away from your own team: a row of permanently
           disabled buttons is just noise. */}
-      {canPost && (
-      <div style={{ padding: '12px 14px', position: 'relative' }}>
+      {composer === 'dropdown' && canPost && (
+      <div style={{ padding: bare ? '0 0 2px' : '12px 14px', position: 'relative' }}>
         <button
           type="button"
           disabled={!interactive}
@@ -146,12 +243,15 @@ export const TeamFeed: React.FC<Props> = ({ teamId, refreshKey = 0, canPost = tr
           style={{
             width: '100%',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '8px 12px', borderRadius: '8px',
-            fontSize: '12px', fontWeight: 700,
+            font: 'inherit',
+            padding: '9px 12px', borderRadius: `${radius}px`,
+            fontSize: '13px', fontWeight: 700,
             cursor: interactive ? 'pointer' : 'not-allowed',
             border: `1px solid ${open ? '#64748b' : '#334155'}`,
             backgroundColor: open ? '#243044' : '#0f172a',
-            color: interactive ? '#e2e8f0' : '#64748b',
+            // #64748b is under the readable floor; a disabled control still
+            // has to be legible, it just isn't clickable.
+            color: interactive ? '#e2e8f0' : '#94a3b8',
             transition: 'all 130ms ease',
           }}
         >
@@ -166,19 +266,19 @@ export const TeamFeed: React.FC<Props> = ({ teamId, refreshKey = 0, canPost = tr
         {open && (
           <div className="feed-composer-pop" style={{
             marginTop: '6px',
-            border: '1px solid #334155', borderRadius: '8px',
+            border: '1px solid #334155', borderRadius: `${radius}px`,
             backgroundColor: '#0f172a', overflow: 'hidden',
           }}>
             {(['support', 'frustration'] as const).map(group => {
-              const items = options.filter(o =>
+              const items = cheers.filter(o =>
                 group === 'support' ? o.valence > 0 : o.valence < 0)
               if (items.length === 0) return null
               const accent = group === 'support' ? '#4ade80' : '#f87171'
               return (
                 <div key={group}>
                   <div style={{
-                    padding: '6px 12px 4px',
-                    fontSize: '11px', fontWeight: 700, letterSpacing: '0.04em',
+                    padding: '7px 12px 4px',
+                    fontSize: '12px', fontWeight: 700, letterSpacing: '0.04em',
                     color: accent,
                   }}>
                     {group === 'support' ? 'Rally behind them' : 'Let them hear it'}
@@ -190,14 +290,22 @@ export const TeamFeed: React.FC<Props> = ({ teamId, refreshKey = 0, canPost = tr
                       onClick={() => { send(o.key); setOpen(false) }}
                       className="feed-composer-option"
                       style={{
-                        display: 'block', width: '100%', textAlign: 'left',
-                        padding: '7px 12px', fontSize: '12px',
+                        font: 'inherit',
+                        display: 'flex', alignItems: 'baseline', gap: '8px',
+                        width: '100%', textAlign: 'left',
+                        padding: '8px 12px', fontSize: '13px',
                         border: 'none', background: 'transparent',
                         color: '#cbd5e1', cursor: 'pointer',
                         borderLeft: `2px solid ${accent}00`,
                       }}
                     >
-                      {o.text}
+                      <span style={{ flex: 1, minWidth: 0 }}>{o.text}</span>
+                      {o.count > 0 && (
+                        <span style={{
+                          fontSize: '11px', fontWeight: 700, color: '#94a3b8',
+                          fontVariantNumeric: 'tabular-nums', flexShrink: 0,
+                        }}>{o.count}</span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -206,7 +314,7 @@ export const TeamFeed: React.FC<Props> = ({ teamId, refreshKey = 0, canPost = tr
           </div>
         )}
 
-        <div style={{ marginTop: '8px', fontSize: '11px', color: error ? '#f87171' : '#94a3b8' }}>
+        <div style={{ marginTop: '8px', fontSize: '12px', color: error ? '#f87171' : '#94a3b8' }}>
           {error
             ? error
             : remaining != null
@@ -216,10 +324,21 @@ export const TeamFeed: React.FC<Props> = ({ teamId, refreshKey = 0, canPost = tr
       </div>
       )}
 
-      {/* Feed */}
-      <div style={{ borderTop: '1px solid #334155', maxHeight: '320px', overflowY: 'auto' }}>
+      {/* Feed. In the rail the rows are surfaces with a tone edge rather than
+          hairline-separated lines — at 340px wide a valence bar plus a border
+          on every row was two dividers doing one job. */}
+      <div style={{
+        ...(rail
+          ? { marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '2px' }
+          : { borderTop: '1px solid #1e293b' }),
+        maxHeight: `${maxHeight}px`, overflowY: 'auto',
+      }}>
         {posts.length === 0 ? (
-          <div style={{ padding: '18px 14px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
+          <div style={{
+            padding: bare ? '14px 0' : '18px 14px',
+            fontSize: '13px', color: '#cbd5e1',
+            textAlign: bare ? 'left' : 'center',
+          }}>
             Nothing from the bleachers yet.
           </div>
         ) : posts.map((p, i) => (
@@ -227,31 +346,40 @@ export const TeamFeed: React.FC<Props> = ({ teamId, refreshKey = 0, canPost = tr
             key={p.id}
             className="feed-post-row"
             style={{
-              padding: '8px 14px',
-              borderBottom: '1px solid #23304a',
               display: 'flex', alignItems: 'baseline', gap: '10px',
+              ...(rail ? {
+                padding: '8px 10px',
+                backgroundColor: '#131e2f',
+                borderLeft: `3px solid ${valenceColor(p.valence)}`,
+              } : {
+                padding: bare ? '8px 0' : '8px 14px',
+                borderBottom: '1px solid #16202f',
+              }),
               // Stagger only the first handful — a long list shouldn't cascade.
               animationDelay: `${Math.min(i, 8) * 35}ms`,
             }}
           >
-            <span style={{
-              width: '3px', alignSelf: 'stretch', borderRadius: '2px',
-              backgroundColor: valenceColor(p.valence), flexShrink: 0,
-            }} />
-            <span style={{ fontSize: '12px', color: '#cbd5e1', flex: 1, minWidth: 0 }}>
+            {!rail && (
+              <span style={{
+                width: '3px', alignSelf: 'stretch', borderRadius: '2px',
+                backgroundColor: valenceColor(p.valence), flexShrink: 0,
+              }} />
+            )}
+            <span style={{ fontSize: '13px', color: '#cbd5e1', flex: 1, minWidth: 0 }}>
               {p.text}
               {p.targetType === 'player' && p.targetName && (
                 <span style={{ color: '#94a3b8' }}> — {p.targetName}</span>
               )}
             </span>
             {p.isAuto && (
-              <span style={{ fontSize: '10px', color: '#64748b' }}
-                    title="Generated from a rating">rated</span>
+              <HoverTooltip text="Generated from a rating">
+                <span style={{ fontSize: '11px', color: '#94a3b8' }}>rated</span>
+              </HoverTooltip>
             )}
             {p.mine && (
-              <span style={{ fontSize: '10px', color: '#64748b' }}>you</span>
+              <span style={{ fontSize: '11px', color: '#94a3b8' }}>you</span>
             )}
-            <span style={{ fontSize: '10px', color: '#64748b', flexShrink: 0 }}>
+            <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>
               {timeAgo(p.createdAt)}
             </span>
           </div>

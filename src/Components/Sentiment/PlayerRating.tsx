@@ -40,17 +40,39 @@ interface Props {
    *  still SHOWS the standing, but can't be used. */
   canRate?: boolean
   onChange?: (data: PlayerRatingData) => void
+  /** Fill the pips from the FANBASE AVERAGE rather than from your own rating,
+   *  whenever you haven't rated and aren't hovering. Without this the pips read
+   *  empty to a visitor who can't rate, which wastes the one place on the team
+   *  page where a player's standing with the fans is visible. Your own rating
+   *  still wins the moment you have one — this only fills the blank. */
+  averageFill?: boolean
+  /** Pip edge length in px. Overrides the compact/full default. */
+  pipSize?: number
+  /** Appended after the rater count ("34" → "34 fans"). */
+  countSuffix?: string
+  /** 'column' drops the average onto its own line under the pips, for narrow
+   *  fixed-width columns (the team page's roster plates) where the inline
+   *  average would push the pips out of their 150px cell. */
+  layout?: 'inline' | 'column'
 }
+
+// The average is an aggregate, not a stance — amber and half-washed so it never
+// reads as "you rated this".
+const AVG_BORDER = '#f59e0b'
+const AVG_FILL = 'rgba(245,158,11,0.5)'
 
 const Pip: React.FC<{
   index: number
   active: boolean
   color: string
+  /** Fill, when it differs from the border. The average-fill mode washes the
+   *  pip at 50% so a computed aggregate never looks like a stance you took. */
+  fill?: string
   onClick: () => void
   onHover: (n: number) => void
   size: number
   interactive: boolean
-}> = ({ index, active, color, onClick, onHover, size, interactive }) => (
+}> = ({ index, active, color, fill, onClick, onHover, size, interactive }) => (
   <button
     type="button"
     aria-label={`Rate ${index} of 5`}
@@ -62,16 +84,17 @@ const Pip: React.FC<{
       padding: 0,
       border: `1px solid ${active ? color : '#334155'}`,
       borderRadius: '3px',
-      backgroundColor: active ? color : 'transparent',
+      backgroundColor: active ? (fill || color) : 'transparent',
       cursor: interactive ? 'pointer' : 'default',
       transition: 'background-color 120ms ease, border-color 120ms ease, transform 120ms ease',
-      transform: active ? 'translateY(-1px)' : 'none',
+      transform: active && !fill ? 'translateY(-1px)' : 'none',
     }}
   />
 )
 
 export const PlayerRating: React.FC<Props> = ({
   playerId, subject = 'player', compact = false, canRate = true, onChange,
+  averageFill = false, pipSize, countSuffix = '', layout = 'inline',
 }) => {
   const endpoint = subject === 'gm'
     ? `${API_BASE}/teams/${playerId}/gm-vote`
@@ -123,14 +146,29 @@ export const PlayerRating: React.FC<Props> = ({
     }
   }
 
-  const shown = hover || data?.myRating || 0
-  const size = compact ? 12 : 16
+  const mine = hover || data?.myRating || 0
+  // Your own rating (or a hover) always wins; the average only fills the blank.
+  const showingAverage = averageFill && !mine && data?.average != null
+  const shown = showingAverage ? Math.round(data!.average!) : mine
+  const size = pipSize ?? (compact ? 12 : 16)
   const settled = data?.average != null
+  const stacked = layout === 'column'
+
+  const averageLine = settled ? (
+    <span style={{
+      marginLeft: stacked ? 0 : '6px',
+      fontSize: stacked || compact ? '11px' : '12px',
+      color: '#cbd5e1', fontVariantNumeric: 'tabular-nums',
+    }}>
+      {data!.average!.toFixed(1)}
+      <span style={{ color: '#94a3b8' }}> · {data!.raters}{countSuffix}</span>
+    </span>
+  ) : null
 
   return (
     <div
       onMouseLeave={() => setHover(0)}
-      style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}
+      style={{ display: 'flex', flexDirection: 'column', gap: stacked ? '5px' : '4px' }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
         {[1, 2, 3, 4, 5].map(n => (
@@ -139,32 +177,32 @@ export const PlayerRating: React.FC<Props> = ({
             index={n}
             size={size}
             active={n <= shown}
-            color={TIER_COLOR[shown] || '#94a3b8'}
+            color={showingAverage ? AVG_BORDER : (TIER_COLOR[shown] || '#94a3b8')}
+            fill={showingAverage ? AVG_FILL : undefined}
             onClick={() => submit(n)}
             onHover={interactive ? setHover : () => {}}
             interactive={interactive}
           />
         ))}
-        {settled && (
-          <span style={{
-            marginLeft: '6px', fontSize: compact ? '11px' : '12px',
-            color: '#cbd5e1', fontVariantNumeric: 'tabular-nums',
-          }}>
-            {data!.average!.toFixed(1)}
-            <span style={{ color: '#94a3b8' }}> · {data!.raters}</span>
-          </span>
-        )}
+        {!stacked && averageLine}
       </div>
 
-      {!compact && (
-        <div style={{ fontSize: '11px', color: '#94a3b8', minHeight: '15px' }}>
+      {stacked && averageLine}
+
+      {(!compact || stacked) && (
+        <div style={{
+          fontSize: '11px', color: '#94a3b8',
+          minHeight: stacked ? 0 : '15px',
+        }}>
           {!isSignedIn
             ? 'Sign in to rate'
             : !canRate
               // You follow one team — you don't get a vote on someone else's.
               ? null
-            : shown
-              ? LABELS[shown]
+            // `mine`, not `shown` — in average-fill mode `shown` is the
+            // fanbase's number, and labelling it would put words in your mouth.
+            : mine
+              ? LABELS[mine]
               : data?.ratersNeeded
                 // Honest about the gate rather than showing a number that
                 // one or two people control.

@@ -18,12 +18,15 @@ interface StarsProps {
   stars: number
   /** Font size in px. If omitted, inherits from parent. */
   size?: number
+  /** Letter spacing in px. Defaults to 1; the team page's roster plates run 2
+   *  so the stars read as a rating at display size rather than a solid block. */
+  tracking?: number
 }
 
-export const Stars: React.FC<StarsProps> = ({ stars, size }) => {
+export const Stars: React.FC<StarsProps> = ({ stars, size, tracking = 1 }) => {
   const n = Math.max(1, Math.min(5, Math.round(stars)))
   return (
-    <span style={{ letterSpacing: '1px', lineHeight: 1, ...(size != null ? { fontSize: `${size}px` } : {}) }}>
+    <span style={{ letterSpacing: `${tracking}px`, lineHeight: 1, ...(size != null ? { fontSize: `${size}px` } : {}) }}>
       <span style={{ color: STAR_COLORS[n] }}>{'★'.repeat(n)}</span>
       {n < 5 && <span style={{ color: '#1e3a52' }}>{'★'.repeat(5 - n)}</span>}
     </span>

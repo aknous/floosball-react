@@ -742,40 +742,40 @@
   padding-left: 16px !important;
 }
 
-/* ── Team page: roster cards by unit ─────────────────────────────────────────
-   Six players is a small enough set to give each one a card. Grouped by unit,
-   with the QB as a feature card so the grid has hierarchy rather than six
-   identical boxes. */
-
-/* Two columns of three, in a CAPPED column (see PAGE grid) so the cards stay
-   compact instead of stretching. The width they give up goes to the rail. */
-.tp-unit {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  align-items: stretch;
-}
-@media (max-width: 760px) { .tp-unit { grid-template-columns: 1fr; } }
-
+/* ── Team page: "season rail" ────────────────────────────────────────────────
+   The roster is six full-width PLATES, not cards: rows are what let offense,
+   defense and fan rating line up in columns you can read straight down. Radius
+   is 0 and there are no shadows anywhere on this page — depth comes from the
+   #131e2f-on-#0b1220 surface step and the borders, which is what stops a page
+   this dense reading as a pile of boxes. */
 .tp-slot {
   animation: plateIn 360ms cubic-bezier(.2,.7,.3,1) both;
-  height: 100%;
 }
 @keyframes plateIn {
   0%   { opacity: 0; transform: translateY(10px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
-/* The card. Rounded to match the rest of the app (8px is the house radius);
-   an earlier pass squared these off as "nameplates", which just made them
-   fight every other panel on the site. */
+/* Bars run out from zero on first paint. Mount only — a data refresh must not
+   re-run this or every rating on the page twitches when one player changes. */
+.tp-fill {
+  animation: tpFill 400ms ease-out both;
+}
+@keyframes tpFill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.tp-fill { transform-origin: left center; }
+
 .tp-plate {
-  height: 100%;
   box-sizing: border-box;
-  background: #1e293b;
-  border: 1px solid #2b3a52;
-  border-radius: 8px;
-  padding: 10px 12px 11px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: #131e2f;
+  border: 1px solid #1e293b;
+  border-radius: 0;
+  padding: 13px 16px;
   transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
 }
 .tp-plate:hover {
@@ -784,46 +784,64 @@
   transform: translateY(-2px);
 }
 .tp-plate-empty {
-  background: #172033;
+  background: #0f172a;
   border-style: dashed;
-  border-color: #2b3a52;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+}
+.tp-plate-empty:hover {
+  transform: none;
+  background: #0f172a;
 }
 
-/* Position tab. Inline now rather than absolutely pinned to the corner, so the
-   card's first row can carry tab + name + rating together. */
-.tp-tab {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 2px 6px;
-  border-radius: 4px;
+/* Every interactive thing on the page gets a visible hover — a bare cursor
+   change is not an affordance. */
+.tp-link:hover { text-decoration: underline; }
+.tp-sched-row:hover:not(:disabled),
+.tp-fact-cell:hover:not(:disabled),
+.tp-cheer:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.04) !important;
 }
-.tp-tab-def {
-  background: #334155;
-  color: #cbd5e1;
-  margin-left: 3px;
+.tp-page .feed-post-row:hover {
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
-/* Disclosure for the long reference tables. */
-.tp-disclose {
-  width: 100%;
-  margin-top: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 11px 14px;
-  border: 1px solid #2b3a52;
-  border-radius: 8px;
-  background-color: #1e293b;
-  color: #cbd5e1;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: border-color 140ms ease, background-color 140ms ease;
+/* Focus ring in the team's own secondary colour, fed by --tp-focus from the
+   component. Never the browser default. */
+.tp-page :focus-visible {
+  outline: 2px solid var(--tp-focus, #38bdf8);
+  outline-offset: 2px;
 }
-.tp-disclose:hover { border-color: #334155; background-color: #131c2e; }
+
+
+/* Section snapping. Armed by SectionRail on mount and removed on unmount — the
+   scroll container is the document, so this class lives on <html> and would
+   otherwise follow the user to every other page.
+
+   PROXIMITY, never mandatory: each section here is taller than the viewport, so
+   mandatory snapping would make it impossible to rest mid-roster and would
+   fight every flick. Proximity only engages once you've already come to rest
+   near a boundary. */
+.tp-snap {
+  scroll-snap-type: y proximity;
+}
+.tp-section {
+  scroll-snap-align: start;
+  /* Clear the app's fixed header, or a snapped section lands underneath it.
+     SectionRail measures the real height into --tp-head. */
+  scroll-margin-top: var(--tp-head, 72px);
+}
+/* The FIRST section means "the top of the page". The routed content starts
+   below the GameBar (App.js renders it above the router), so snapping this one
+   under the header would scroll the GameBar out of sight. Its margin is its own
+   document offset, measured into --tp-top, which puts the snap target at
+   scroll position 0. */
+.tp-section-top {
+  scroll-margin-top: var(--tp-top, 0px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-slot, .tp-fill { animation: none; }
+  .tp-plate:hover { transform: none; }
+  /* Snapping is motion the user did not ask for. */
+  .tp-snap { scroll-snap-type: none; }
+}
+
