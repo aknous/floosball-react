@@ -340,6 +340,28 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // off the cursor play; otherwise straight from the live snapshot.
   const dHomeScore = replayActive && replayCursor ? (replayCursor.homeTeamScore ?? 0) : gameData?.homeScore
   const dAwayScore = replayActive && replayCursor ? (replayCursor.awayTeamScore ?? 0) : gameData?.awayScore
+
+  // Frames scoreboard cell: [frames won] | [actual points], matching the game card. When the
+  // frames are level and points decide it, the leader's point total is highlighted green (no
+  // separate tie note). Every other format's big number already IS the points.
+  const renderModalScore = (side: 'home' | 'away', teamPts: number | null | undefined, oppPts: number | null | undefined): React.ReactNode => {
+    const fr = gameData?.frames
+    if (fr?.active) {
+      const pointsWinner = fr.tiebreak?.decidedByPoints && fr.tiebreak.winner === side
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+          <span>{fmtFramesWon(side === 'home' ? fr.framesWonHome : fr.framesWonAway)}</span>
+          <span style={{ width: '1px', height: '26px', backgroundColor: '#475569', flexShrink: 0 }} />
+          {/* Fixed-width, LEFT-aligned: the total hugs the divider, 1- vs 2-digit reserves
+              the same space so the frames score stays put. */}
+          <span style={{ display: 'inline-block', minWidth: '28px', textAlign: 'left', fontSize: '19px', color: pointsWinner ? '#22c55e' : '#94a3b8', fontWeight: pointsWinner ? 800 : 600 }}>
+            {displayScore(teamPts, oppPts, scoringModel)}
+          </span>
+        </span>
+      )
+    }
+    return displayScore(teamPts, oppPts, scoringModel)
+  }
   const dQuarter = replayActive && replayCursor ? replayCursor.quarter : gameData?.quarter
   const dClock = replayActive && replayCursor ? replayCursor.timeRemaining : gameData?.timeRemaining
   const dPossession = replayActive && replayCursor ? replayCursor.offensiveTeam : gameData?.possession
@@ -401,17 +423,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   }
   const cycleReplaySpeed = () => setReplaySpeed(s => (s === 1 ? 2 : s === 2 ? 4 : 1))
 
-  // Plays with WP data, in chronological order (oldest first), for the chart
-  // No-clock formats (innings / frames) never advance the game clock, so every play
-  // arrives with quarter=1 and a frozen timeRemaining — the elapsed-time x-axis would
-  // collapse every point to 0. Detect them per-game and bucket by play ordinal instead,
-  // with the period count/labels coming from the format (innings / frames), not Q1-Q4.
-  const wpPeriods = gameData?.frames?.active
-    ? (gameData.frames.framesPerGame || 6)
-    : gameData?.innings?.active
-      ? (gameData.innings.lineScore?.innings?.length || gameData.innings.inningsPerGame || 3)
-      : 0
+  // Plays with WP data, in chronological order (oldest first), for the chart.
+  // Innings is the only truly CLOCKLESS format (its clock loop is inert, so every play arrives
+  // quarter=1 with a frozen timeRemaining) — bucket its plays by at-bat ordinal. Frames RUNS
+  // the game clock (quarters advance normally), so it's just the standard elapsed x-axis split
+  // into framesPerGame sections instead of 4 quarters.
+  const framesClock = !!gameData?.frames?.active
+  const wpPeriods = gameData?.innings?.active
+    ? (gameData.innings.lineScore?.innings?.length || gameData.innings.inningsPerGame || 3)
+    : 0
   const wpNoClock = wpPeriods > 0
+  // Clock-based regulation sections: frames split regulation into framesPerGame; standard = 4.
+  const regSections = framesClock ? (gameData!.frames!.framesPerGame || 6) : 4
+  const sectionSecs = 3600 / regSections
 
   const wpPlays = useMemo(() => {
     const chronological = (displayPlays as any[])
@@ -520,18 +544,22 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         elapsed = 3600 + otOffset + (600 - remaining)
       }
       prevElapsed = elapsed
-      pts.push({ pos: elapsed <= 3600 ? elapsed / 900 : 4 + (elapsed - 3600) / 600, wp: p.homeWinProbability })
+      // Map regulation elapsed to [0, regSections] (a section per quarter, or per frame in
+      // frames), then OT sections after. A clinched frames game simply stops early here — the
+      // line ends where the game did, leaving the later frame sections empty (as it should).
+      pts.push({ pos: elapsed <= 3600 ? elapsed / sectionSecs : regSections + (elapsed - 3600) / 600, wp: p.homeWinProbability })
     })
     return pts
-  }, [wpPlays, wpNoClock, wpPeriods, gameData?.innings?.triesPerInning])
+  }, [wpPlays, wpNoClock, wpPeriods, gameData?.innings?.triesPerInning, sectionSecs, regSections])
 
   // Shared x-axis descriptor: how many equal-width sections, where the dividers fall
   // (in section units), the period labels, and which divider is the thicker
   // regulation/OT boundary. Derived once so wpSegments and the axis render agree.
   const wpAxis = useMemo(() => {
     if (wpNoClock) {
+      // Innings only (frames is clock-based below).
       const n = Math.max(1, wpPeriods)
-      const prefix = gameData?.frames?.active ? 'F' : 'In'
+      const prefix = 'In'
       return {
         numSections: n,
         dividers: Array.from({ length: n - 1 }, (_, i) => i + 1),
@@ -539,17 +567,26 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
         bigDivider: -1,
       }
     }
+    // Clock-based: regSections regulation sections (4 quarters, or framesPerGame frames), then
+    // any OT sections. Frames label F1..Fn; standard Q1..Q4. The thick divider marks the
+    // regulation/OT boundary.
     const lastPos = chartPoints.length ? chartPoints[chartPoints.length - 1].pos : 0
-    const numOT = lastPos > 4 ? Math.ceil(lastPos - 4) : 0
+    const numOT = lastPos > regSections ? Math.ceil(lastPos - regSections) : 0
+    const prefix = framesClock ? 'F' : 'Q'
     return {
-      numSections: 4 + numOT,
-      dividers: [1, 2, 3, ...(numOT > 0 ? [4] : []),
-        ...Array.from({ length: Math.max(0, numOT - 1) }, (_, i) => 4 + (i + 1))],
-      labels: ['Q1', 'Q2', 'Q3', 'Q4',
-        ...Array.from({ length: numOT }, (_, i) => numOT === 1 ? 'OT' : `OT${i + 1}`)],
-      bigDivider: 4,
+      numSections: regSections + numOT,
+      dividers: [
+        ...Array.from({ length: regSections - 1 }, (_, i) => i + 1),
+        ...(numOT > 0 ? [regSections] : []),
+        ...Array.from({ length: Math.max(0, numOT - 1) }, (_, i) => regSections + (i + 1)),
+      ],
+      labels: [
+        ...Array.from({ length: regSections }, (_, i) => `${prefix}${i + 1}`),
+        ...Array.from({ length: numOT }, (_, i) => numOT === 1 ? 'OT' : `OT${i + 1}`),
+      ],
+      bigDivider: regSections,
     }
-  }, [chartPoints, wpNoClock, wpPeriods, gameData?.frames?.active])
+  }, [chartPoints, wpNoClock, wpPeriods, regSections, framesClock])
 
   const prevHomeScore = useRef(dHomeScore)
   const prevAwayScore = useRef(dAwayScore)
@@ -1286,7 +1323,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={homeFlash ? 'score-updated' : ''}>
-                  {gameData.frames?.active ? fmtFramesWon(gameData.frames.framesWonHome) : displayScore(dHomeScore, dAwayScore, scoringModel)}
+                  {renderModalScore('home', dHomeScore, dAwayScore)}
                 </div>
               </div>
 
@@ -1334,7 +1371,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   </Link>
                 </TeamHoverCard>
                 <div style={{ fontSize: '30px', fontWeight: '700', color: '#e2e8f0', fontVariantNumeric: 'tabular-nums', flexShrink: 0, minWidth: '52px', textAlign: 'right' }} className={awayFlash ? 'score-updated' : ''}>
-                  {gameData.frames?.active ? fmtFramesWon(gameData.frames.framesWonAway) : displayScore(dAwayScore, dHomeScore, scoringModel)}
+                  {renderModalScore('away', dAwayScore, dHomeScore)}
                 </div>
               </div>
 
@@ -1393,16 +1430,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         {rowFor('home', gameData.homeTeam.abbr)}
                       </tbody>
                     </table>
-                    {fr.tiebreak?.decidedByPoints && (() => {
-                      const tb = fr.tiebreak!
-                      const winTeam = tb.winner === 'home' ? gameData.homeTeam : gameData.awayTeam
-                      const isDone = gameData.status === 'Final'
-                      return (
-                        <div style={{ marginTop: '8px', fontSize: '12px', color: '#f59e0b', fontWeight: 600, lineHeight: 1.5 }}>
-                          {`Frames level ${fmtFramesWon(fr.framesWonHome)}-${fmtFramesWon(fr.framesWonAway)} — ${isDone ? 'won' : 'leading'} on total points, ${winTeam.abbr} ${Math.max(tb.homePoints, tb.awayPoints)}-${Math.min(tb.homePoints, tb.awayPoints)}`}
-                        </div>
-                      )
-                    })()}
+                    {/* A frames tie decided on points is shown by highlighting the winning
+                        team's point total in the scoreboard above — no note here. */}
                   </div>
                 )
               })() : null}

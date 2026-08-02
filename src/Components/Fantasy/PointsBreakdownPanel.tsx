@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import HoverTooltip from '@/Components/HoverTooltip'
+import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { GateMeter } from './gateMeter'
 import { positionColor } from '@/Components/Cards/positionColors'
 import type { CardBreakdownEntry, EquationSummary, ModifierInfo } from '@/hooks/useFantasySnapshot'
@@ -92,13 +93,14 @@ function formatValue(val: number, type: 'fp' | 'mult' | 'floobits'): { str: stri
 const RosterCardRow: React.FC<{
   position: string
   playerName: string
+  playerId?: number
   weekFP: number
   statLine?: string
   b?: CardBreakdownEntry
   mod: string
   isGrounded: boolean
   playerFP?: number
-}> = ({ position, playerName, weekFP, statLine, b, mod, isGrounded, playerFP }) => {
+}> = ({ position, playerName, playerId, weekFP, statLine, b, mod, isGrounded, playerFP }) => {
   // A slot with no effect card (or a no-effect standard "none" print) renders just the
   // player identity + stat line.
   const hasEffect = !!b && b.effectName !== 'none' && !!b.effectName
@@ -116,7 +118,13 @@ const RosterCardRow: React.FC<{
         {hasEffect && (
           <span style={{ color: edColor, fontWeight: '700', fontSize: '11px', flexShrink: 0 }}>{edTag}</span>
         )}
-        <span style={{ color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{playerName}</span>
+        {playerId != null ? (
+          <PlayerHoverCard playerId={playerId} playerName={playerName}>
+            <span style={{ color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, cursor: 'help' }}>{playerName}</span>
+          </PlayerHoverCard>
+        ) : (
+          <span style={{ color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{playerName}</span>
+        )}
         {hasEffect && (
           <>
             <HoverTooltip text={b!.detail || ''} color={(TYPE_COLORS as any)[b!.outputType] ?? CATEGORY_COLORS[b!.category] ?? '#cbd5e1'}>
@@ -134,6 +142,7 @@ const RosterCardRow: React.FC<{
                 isChance={b!.isChanceEffect}
                 chancePct={b!.chanceThreshold}
                 chanceTriggered={b!.chanceTriggered}
+                chanceResolved={b!.chanceResolved}
               />
             )}
             {(b!.tier ?? 1) >= 2 && (
@@ -409,6 +418,7 @@ export const PointsBreakdownPanel: React.FC<{
                 <RosterCardRow
                   position={p.position}
                   playerName={p.playerName}
+                  playerId={p.playerId}
                   weekFP={p.weekFP}
                   statLine={p.statLine}
                   b={b}
@@ -430,6 +440,7 @@ export const PointsBreakdownPanel: React.FC<{
               <RosterCardRow
                 position=""
                 playerName={b.playerName}
+                playerId={b.playerId ?? undefined}
                 weekFP={b.playerId != null ? (playerFPById?.[b.playerId] ?? 0) : 0}
                 b={b}
                 mod={mod}

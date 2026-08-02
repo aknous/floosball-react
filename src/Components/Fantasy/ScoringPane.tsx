@@ -6,6 +6,7 @@ import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, EquippedEntry } from '@/h
 import { useCardProjection, CardProjection } from '@/hooks/useCardProjection'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import PlayerHoverCard from '@/Components/PlayerHoverCard'
 
 const TYPE_COLORS = { fp: '#4ade80', mult: '#f472b6', floobits: '#eab308' }
 
@@ -117,12 +118,23 @@ const LineupScoringPreview: React.FC = () => {
           return (
             <div key={slot} style={rowStyle}>
               <span style={posTag}>{slot}{slot === FLEX_SLOT && <span style={{ color: '#fbbf24', marginLeft: 3 }}>◇</span>}</span>
-              <span style={{
-                flex: 1, minWidth: 0, color: entry ? '#e2e8f0' : '#64748b',
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {entry ? entry.card.playerName : `Add a ${slot} card`}
-              </span>
+              {entry ? (
+                <PlayerHoverCard playerId={entry.playerId} playerName={entry.card.playerName}>
+                  <span style={{
+                    flex: 1, minWidth: 0, color: '#e2e8f0', cursor: 'help',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  }}>
+                    {entry.card.playerName}
+                  </span>
+                </PlayerHoverCard>
+              ) : (
+                <span style={{
+                  flex: 1, minWidth: 0, color: '#64748b',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {`Add a ${slot} card`}
+                </span>
+              )}
               <span style={{ flexShrink: 0, fontWeight: 700, fontSize: 12 }}>{effectChip(entry)}</span>
             </div>
           )

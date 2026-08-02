@@ -374,13 +374,11 @@ export const OffseasonPanel: React.FC = () => {
       setIsComplete(false)
       setExpandedTeam(null)
       setFaDirectives([])
-      setExistingBallot(null)
       setFaPool([])
       setPickedPlayerNames(new Set())
       setGmResolvedEvents([])
       setTabNotify({ directives: false, transactions: false })
       setPredraftSetups({})
-      setRookies([])
       userExpandedRef.current = false
       // Seed roster cache from pre-FA snapshots so rosters populate live from picks
       const snapshots = (ev as any).rosterSnapshots as Record<string, TeamRosterData> | undefined

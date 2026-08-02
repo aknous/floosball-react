@@ -70,6 +70,9 @@ const ROSTER_SLOTS = ['qb', 'rb', 'wr1', 'wr2', 'te', 'k']
 /** Regular season is 28 weeks; the schedule payload is 0-indexed. */
 const REGULAR_SEASON_WEEKS = 28
 
+// Frames won can be fractional (½ for a halved frame): render "2", "2½", "½".
+const fmtFramesWon = (v: number): string => { const w = Math.floor(v); return (v - w >= 0.5) ? `${w > 0 ? w : ''}½` : `${w}` }
+
 interface RosterPlayer {
   id: number
   name: string
@@ -109,6 +112,12 @@ interface ScheduleGame {
   opponent: { id: number; name: string; city: string; abbr: string }
   teamScore: number
   oppScore: number
+  // Format-aware result score: frames won for frames matches, else the point
+  // totals. Frames matches are decided by FRAMES WON, so the point total would
+  // misreport the result.
+  displayTeamScore?: number
+  displayOppScore?: number
+  scoreLabel?: 'frames' | null
   status: string
   result: 'W' | 'L' | null
 }
@@ -1246,7 +1255,12 @@ export default function TeamPage() {
                           fontVariantNumeric: 'tabular-nums',
                         }}>
                           {played || g.status === 'Active'
-                            ? `${g.teamScore}\u2013${g.oppScore}`
+                            // A frames match is decided by FRAMES WON, so the
+                            // point total would misreport the result. W/L is
+                            // already frames-aware via `result`.
+                            ? (g.scoreLabel === 'frames'
+                                ? `${fmtFramesWon(g.displayTeamScore ?? g.teamScore)}\u2013${fmtFramesWon(g.displayOppScore ?? g.oppScore)}`
+                                : `${g.teamScore}\u2013${g.oppScore}`)
                             : '\u2014'}
                         </span>
                       </button>

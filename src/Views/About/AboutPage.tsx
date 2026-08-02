@@ -1366,7 +1366,7 @@ const AboutPage: React.FC = () => {
                 { name: 'Ironclad', color: '#f97316', desc: "Streak cards can't reset this week" },
                 { name: 'Longshot', color: '#a78bfa', desc: 'Conditional card rewards are doubled' },
                 { name: 'Fortunate', color: '#38bdf8', desc: 'Chance card trigger rates increased by 15%' },
-                { name: 'Synergy', color: '#f472b6', desc: 'Bonus FPx for each unique position in your card slots' },
+                { name: 'Synergy', color: '#f472b6', desc: 'Same-team stack FPx is doubled this week' },
                 { name: 'Payday', color: '#eab308', desc: 'Floobits earned are tripled' },
                 { name: 'Grounded', color: '#ef4444', desc: 'All FPx effects disabled' },
                 { name: 'Steady', color: '#94a3b8', desc: 'No special effect. All normal rules apply' },
