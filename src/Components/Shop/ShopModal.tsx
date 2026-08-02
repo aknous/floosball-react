@@ -8,7 +8,7 @@ import { useTemplateProjections, projectionPillStyle, TemplateProjection } from 
 import {
   GiCardDraw, GiCrownCoin, GiGemChain, GiCrystalShine,
   GiMagicSwirl, GiCardPlay, GiPerspectiveDiceSixFacesRandom,
-  GiQueenCrown,
+  GiQueenCrown, GiAmphora,
 } from 'react-icons/gi'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -26,7 +26,7 @@ interface PackType {
   dailyLimit: number | null
   remainingToday: number | null
   guaranteedRarity?: string | null
-  themeType?: 'position' | 'team' | 'output' | 'rookie' | 'champion' | 'allpro' | null
+  themeType?: 'position' | 'team' | 'output' | 'rookie' | 'champion' | 'allpro' | 'collection' | null
   themeValue?: string | null
 }
 
@@ -98,6 +98,9 @@ const THEMED_PACK_COLORS: Record<string, { border: string; bg: string; accent: s
   rookie:   { border: '#2dd4bf', bg: 'linear-gradient(135deg, #042f2e 0%, #115e59 100%)', accent: '#5eead4' },
   champion: { border: '#f59e0b', bg: 'linear-gradient(135deg, #451a03 0%, #78350f 50%, #92400e 100%)', accent: '#fcd34d' },
   allpro:   { border: '#10b981', bg: 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%)', accent: '#6ee7b7' },
+  // Collection sits apart from the fantasy packs on purpose — nothing it drops
+  // can be equipped, so it shouldn't read as a competitor to them.
+  collection: { border: '#a855f7', bg: 'linear-gradient(135deg, #2e1065 0%, #4c1d95 50%, #5b21b6 100%)', accent: '#d8b4fe' },
 }
 
 const themedPackColors = (p: PackType) => {
@@ -109,6 +112,7 @@ const themedPackColors = (p: PackType) => {
   if (p.themeType === 'rookie') return THEMED_PACK_COLORS.rookie
   if (p.themeType === 'champion') return THEMED_PACK_COLORS.champion
   if (p.themeType === 'allpro') return THEMED_PACK_COLORS.allpro
+  if (p.themeType === 'collection') return THEMED_PACK_COLORS.collection
   return THEMED_PACK_COLORS.position
 }
 
@@ -117,6 +121,7 @@ const PACK_ICONS: Record<string, React.ComponentType<{ size?: number; color?: st
   humble: GiCardDraw,
   grand: GiGemChain,
   exquisite: GiCrystalShine,
+  themed_collection: GiAmphora,
 }
 
 const POWERUP_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
@@ -169,6 +174,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
 
   const [packs, setPacks] = useState<PackType[]>([])
   const [themedPacks, setThemedPacks] = useState<PackType[]>([])
+  // The Collection Pack never rotates and is the only pack sold outside the
+  // regular season, so it's tracked separately from the rotating pools.
+  const [collectionPack, setCollectionPack] = useState<PackType | null>(null)
+  const [collectionOnly, setCollectionOnly] = useState(false)
   const [starter, setStarter] = useState<StarterPack | null>(null)
   const [featured, setFeatured] = useState<FeaturedCard[]>([])
 
@@ -223,6 +232,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         const j = await packsRes.json()
         setPacks(j.data?.packs ?? [])
         setThemedPacks(j.data?.themedPacks ?? [])
+        setCollectionPack(j.data?.collectionPack ?? null)
+        setCollectionOnly(!!j.data?.collectionOnly)
         setStarter(j.data?.starter ?? null)
         if (j.data?.shopOpen !== undefined) setShopOpen(j.data.shopOpen)
         if (typeof j.data?.cycleLimit === 'number') setCycleLimit(j.data.cycleLimit)
@@ -559,27 +570,35 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
             </div>
           ) : (
             <>
-              {!shopOpen && (
+              {/* The shop no longer closes. What changes between seasons is what's
+                  on sale, so say that plainly rather than showing a wall of
+                  disabled packs with no reason given. */}
+              {collectionOnly && (
                 <div style={{
                   padding: '12px 16px',
                   marginBottom: '16px',
                   borderRadius: '8px',
-                  backgroundColor: 'rgba(239,68,68,0.1)',
-                  border: '1px solid rgba(239,68,68,0.25)',
-                  color: '#fca5a5',
+                  backgroundColor: 'rgba(168,85,247,0.1)',
+                  border: '1px solid rgba(168,85,247,0.25)',
+                  color: '#d8b4fe',
                   fontSize: '11px',
                   lineHeight: '1.5',
                   textAlign: 'center',
                 }}>
-                  The shop is closed for the season. Cards expire at season end, so purchases are disabled during playoffs and offseason.
+                  The regular season is over, so fantasy packs are away until the next one starts.
+                  The Collection Pack stays open. Its cards go straight to your Vault and score in the Showcase.
                 </div>
               )}
               {/* ── Daily Selection ── */}
-              {/* Gate on shopOpen, not featured.length: once a user buys out
-                  the whole selection the list is empty, but the reroll button
-                  lives in this block — so it must stay rendered so they can
+              {/* Hidden entirely outside the regular season: the daily selection is
+                  current-season fantasy singles, and the backend rejects those once
+                  the season is over, so showing them would only produce a 403.
+                  Gate on `shopOpen` for the in-season case, not featured.length:
+                  once a user buys out the whole selection the list is empty, but
+                  the reroll button lives in this block — so it must stay rendered
+                  so they can
                   pay to refresh. */}
-              {shopOpen && (
+              {shopOpen && !collectionOnly && (
                 <div style={{ marginBottom: '28px' }}>
                   <SectionHeader
                     title="Daily Selection"
@@ -773,7 +792,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                         </div>
                       )
                     })()}
-                    {[...packs, ...themedPacks].map(pack => {
+                    {[...(collectionOnly ? [] : packs), ...(collectionOnly ? [] : themedPacks),
+                      ...(collectionPack ? [collectionPack] : [])].map(pack => {
                       // Standard tier names hit PACK_COLORS; everything else
                       // (themed packs) goes through the theme-color resolver.
                       const colors = PACK_COLORS[pack.name] || themedPackColors(pack)
@@ -794,7 +814,9 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                 ? 'Champ'
                                 : pack.themeType === 'allpro'
                                   ? 'All-Pro'
-                                  : null
+                                  : pack.themeType === 'collection'
+                                    ? 'Collection'
+                                    : null
 
                       return (
                         <div key={pack.id} style={{
