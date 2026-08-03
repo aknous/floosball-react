@@ -98,7 +98,7 @@ WS URL from `REACT_APP_WS_URL` (default `ws://localhost:8000/ws`). On (re)connec
 | `/dashboard` | `DashboardNew` | Main view — games grid + tabbed right panel |
 | `/dashboard/old` | `Dashboard` | Legacy |
 | `/teams` | `TeamsPage` | |
-| `/team/:id` | `TeamPage` | tabs: Overview / Funding / Schedule |
+| `/team/:id` | `TeamPage` | single scrolling page, no tabs: hero band → trophy case → 5-cell facts row (ratings / coach / locker room / stadium / next up) → roster + The Bleachers → season history + schedule → `FrontOfficeBand` (gated to your own team; `/front-office` redirects here). `SectionRail` gives right-edge section nav + proximity scroll-snap. |
 | `/players` `/players/:id` | `PlayersPage` / `PlayerPage` | |
 | `/cards` | `CardsPage` | |
 | `/fantasy` | `FantasyPage` | roster + card equipment; status bar shows `DayModifierBadge` (active modifier chip; click → dropdown of the day's full slate by week, `useModifierSchedule`) next to the lock countdown + swaps badge |
@@ -131,7 +131,6 @@ Cross-component signalling without prop drilling. Dispatch with `window.dispatch
 | `shop-purchase` | CardEquipment, FantasyRoster, useFantasySnapshot | refresh after buy |
 | `show-highlights` / `-pickem` / `-standings` / `-leaders` | DashboardNew | switch right-panel tab |
 | `show-markets` / `-overview` / `-votes` | FrontOfficePage | switch tab (`show-team-funding` is a legacy alias → markets) |
-| `show-team-funding` / `-team-schedule` / `-team-overview` | TeamPage | switch tab |
 | `show-roster` / `-breakdown` | FantasyRoster | switch view |
 | `expand-cards`, `flip-card`/`unflip-card`, `mock-card`/`unmock-card` | CardEquipment | tutorial card actions |
 | `mock-countdown` / `unmock-countdown` | FantasyPage | tutorial lock countdown |
@@ -143,6 +142,7 @@ Plus a non-namespaced `cards-equipped` event (dispatched by CardEquipment, heard
 - Background `#0f172a`. Panels: **`#1e2d3d`** for toasts/elevated cards; **`#1e293b`** (slate-800) for most modal bodies/sidebar/ticker — both are in use by context.
 - Borders `#2a3a4e` / `#334155`. Accents: primary `#3b82f6`, achievements/fav-team `#f59e0b`, MVP/packs `#a78bfa`, powerups `#06b6d4`, floobits `#fbbf24`. Oppose/negative `#ef4444`, positive `#22c55e`.
 - Font: Tailwind class `font-pixel` → `@font-face` family **`pressStart`**, whose files are actually **Inconsolata** variants (monospace, not a pixel font despite the class name).
+- **Rating gauges** are one shared pattern — see `PlayerPage.attrRow`, `PlayerHoverCard`, `TeamPage.Gauge`. Track `#334155`, `borderRadius: 2px`, `overflow: hidden`; fill same radius; height 4px (6px for a hero/overall bar, 3px for a compact sub-bar). Colour bands `>= 85 → #22c55e`, `>= 72 → #f59e0b`, else `#ef4444`. **Fill width is the raw 0–100 value** — do NOT normalise to a 60–100 window: it draws an 80 as a half-full bar and empties anything under 60 (common for a non-primary defender), and the bar must agree with the number printed beside it. Layout is label left / value right on one line with the bar full-width beneath; `TeamPage`'s roster plates use an inline label-track-number variant so six players line up into readable columns.
 
 ## Card Editions UI (`Cards/TradingCard.tsx`)
 `EDITION_STYLES`: base (slate, no glow), holographic (purple shimmer), prismatic (rainbow conic shimmer), diamond (cyan shimmer + 8 sparkle positions + particle burst). Classifications render as corner badges (`rookie` R, `mvp` MVP, `champion` CH, `all_pro` AP) with effect blurbs. Behavior tags on the back: Chance / Conditional / Streak. `colorizeEffectText()` tints FP green, FPx pink, Floobits gold. Sizes xs/sm/md/lg.

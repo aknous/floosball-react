@@ -1,20 +1,74 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import PlayerHoverCard from '@/Components/PlayerHoverCard'
-import { Stars } from '@/Components/Stars'
-import FrontOfficePanel from '@/Components/FrontOffice/FrontOfficePanel'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { GiLaurelsTrophy, GiTrophy } from 'react-icons/gi'
+
 import { useAuth } from '@/contexts/AuthContext'
-import { useIsMobile } from '@/hooks/useIsMobile'
-import TutorialOverlay from '@/Components/Tutorial/TutorialOverlay'
-import TourPrompt from '@/Components/Tutorial/TourPrompt'
-import TeamFormBadge, { TeamFormState } from '@/Components/TeamFormBadge'
+import { useFloosball } from '@/contexts/FloosballContext'
+import { useGames } from '@/contexts/GamesContext'
+import { Stars } from '@/Components/Stars'
+import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import TeamNavStrip from '@/Components/TeamNavStrip'
+import { GameModalNew } from '@/Components/GameModalNew'
+import CareerStageBadge from '@/Components/CareerStageBadge'
 import HoverTooltip from '@/Components/HoverTooltip'
-import { useTutorial, TutorialStep } from '@/Components/Tutorial/useTutorial'
-import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
-import CareerStageBadge, { hasRenderableStage } from '@/Components/CareerStageBadge'
+import { CoachProfileTags } from '@/Components/CoachProfile'
+import { getContrastTextColor, readableOnDark } from '@/utils/colors'
+import PlayerRating from '@/Components/Sentiment/PlayerRating'
+import TeamFeed from '@/Components/Sentiment/TeamFeed'
+import FrontOfficeBand from './FrontOfficeBand'
+import SectionRail, { RailSection } from './SectionRail'
+import { quipAt } from '@/Views/FrontOffice/FacilitiesSection'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+
+/**
+ * TEAM PAGE — "season rail".
+ *
+ * The page answers three questions in the first screen, in order: who are they
+ * (hero band in the team's own colours), are they any good (trophy case, then
+ * one scan-line of four facts — ratings, coach, locker room, next game), and
+ * who's on the field (six roster plates, with The Bleachers alongside).
+ * The record itself — every season and every week — runs full width below.
+ *
+ * Three structural decisions carry the layout:
+ *
+ * The roster is SIX rows, not six cards. Six is small enough that each player
+ * can own a full-width plate, and rows are what let offense rating, defensive
+ * rating and fan rating line up in columns you can read down. Cards put every
+ * player's numbers in a different place on screen.
+ *
+ * The Bleachers sits BESIDE the roster, not under a schedule in a rail. It's
+ * the only panel here fans write to, and it was the last thing on the page.
+ *
+ * Season history and the schedule pair off full width at the bottom, each in
+ * two internal columns, so all 16 seasons and all 28 weeks are visible at once
+ * — no scrollbars and nothing behind an overflow. That's what the width down
+ * there is for.
+ *
+ * Radius is 0 everywhere except fan pips and W/L chips, and there are no
+ * shadows: depth comes from the #131e2f-on-#0b1220 surface step and the
+ * borders. That's what keeps a page this dense from reading as a pile of cards.
+ */
+
+const PAGE_MAX = '1500px'
+// The rail was 340 to the handoff spec, but the roster plates only need about
+// 900px before the ratings bars stop growing usefully — the rest was slack. The
+// Bleachers is the one panel here that benefits from every pixel it gets.
+const RAIL = 420
+const PAGE_PAD = 28
+
+/** Below this the two body columns stack and the facts grid goes 2×2. */
+const STACK_WIDTH = 1180
+/** Below this the roster plates reflow to three rows. */
+const PLATE_WRAP_WIDTH = 760
+
+const POSITION_LABEL: Record<string, string> = {
+  qb: 'QB', rb: 'RB', wr1: 'WR', wr2: 'WR', te: 'TE', k: 'K',
+}
+const ROSTER_SLOTS = ['qb', 'rb', 'wr1', 'wr2', 'te', 'k']
+
+/** Regular season is 28 weeks; the schedule payload is 0-indexed. */
+const REGULAR_SEASON_WEEKS = 28
 
 // Frames won can be fractional (½ for a halved frame): render "2", "2½", "½".
 const fmtFramesWon = (v: number): string => { const w = Math.floor(v); return (v - w >= 0.5) ? `${w > 0 ? w : ''}½` : `${w}` }
@@ -25,62 +79,59 @@ interface RosterPlayer {
   position: string
   rating: number
   ratingStars: number
-  offensiveRatingStars?: number
-  defensiveRatingStars?: number
-  defensivePosition?: string | null
+  offensiveRating?: number
+  defensiveRating?: number
   termRemaining?: number
   serviceTime?: string
   fatigue?: number
-  resilience?: number
-  mood?: string
-  moodTier?: string
-  personality?: string
-  attitude?: number
-  ratingHistory?: { season: number; rating: number }[]
-}
-
-interface ScheduleEntry {
-  gameId: number
-  isHome: boolean
-  week: number | null
-  opponent: { id: number; name: string; city: string; abbr: string }
-  teamScore: number
-  oppScore: number
-  // Format-aware result score: frames won for frames matches, else the point totals.
-  displayTeamScore?: number
-  displayOppScore?: number
-  scoreLabel?: 'frames' | null
-  status: string
-  result: string | null
+  // Floosball players go both ways: QB→S, RB→LB, WR→CB, TE→DE. Kickers don't
+  // play defense, so this is null for them.
+  defensivePosition?: string | null
 }
 
 interface Coach {
   name: string
-  overallRating: number
-  offensiveMind: number
-  defensiveMind: number
-  adaptability: number
-  aggressiveness: number
-  clockManagement: number
-  playerDevelopment: number
-  scouting: number
   seasonsCoached: number
+  profile?: any
 }
 
-interface FundingData {
+interface LockerRoom {
+  resolve: number
+  resolveLabel: string
+  fortitude: number
+  fortitudeTier: string
+  fortitudeLabel: string
+  vulnerability: number
+  vulnerabilityLabel: string
+}
+
+interface ScheduleGame {
+  gameId: number
+  isHome: boolean
+  week: number
+  opponent: { id: number; name: string; city: string; abbr: string }
+  teamScore: number
+  oppScore: number
+  // Format-aware result score: frames won for frames matches, else the point
+  // totals. Frames matches are decided by FRAMES WON, so the point total would
+  // misreport the result.
+  displayTeamScore?: number
+  displayOppScore?: number
+  scoreLabel?: 'frames' | null
+  status: string
+  result: 'W' | 'L' | null
+}
+
+interface HistoryRow {
   season: number
-  baselineFunding: number
-  fanContributions: number
-  currentFunding: number
-  effectiveFunding: number
-  tier: string
-  tierRank: number
-  // Market tiers are now assigned by relative rank (quartiles) across the league,
-  // so "thresholds" are live values derived from standings — only the single
-  // next-tier threshold is surfaced. No fixed per-tier floors to plot.
-  nextTierThreshold: number | null
-  nextTierName: string | null
-  progressToNextTier: number | null
+  elo: number
+  wins: number
+  losses: number
+  winPerc: number
+  madePlayoffs?: boolean
+  leagueChamp?: boolean
+  floosbowlChamp?: boolean
+  topSeed?: boolean
 }
 
 interface TeamData {
@@ -88,1498 +139,1299 @@ interface TeamData {
   name: string
   city: string
   abbr: string
-  color: string
-  secondaryColor: string
   league: string
-  elo: number
+  color: string
+  secondaryColor?: string
   wins: number
   losses: number
-  winPerc: string
-  overallRating: number
-  offenseRating: number
-  defenseRunCoverageRating: number
-  defensePassCoverageRating: number
-  fundingTier?: string
-  fundingTierRank?: number
-  funding?: FundingData
-  formState?: string
-  lockerRoom?: {
-    vulnerability: number
-    vulnerabilityTier: string
-    vulnerabilityLabel: string
-    resolve: number
-    resolveTier: string
-    resolveLabel: string
-    fortitude: number
-    fortitudeTier: string
-    fortitudeLabel: string
-  }
-  clinchedPlayoffs: boolean
-  clinchedTopSeed: boolean
-  floosbowlChampion: boolean
-  eliminated: boolean
-  leagueChampionships: any[]
-  floosbowlChampionships: any[]
+  elo: number
+  streak?: number
+  offenseRating?: number
+  defenseRunCoverageRating?: number
+  defensePassCoverageRating?: number
+  lockerRoom?: LockerRoom
+  leagueChampionships?: string[]
+  floosbowlChampionships?: string[]
   roster: Record<string, RosterPlayer | null>
-  schedule: ScheduleEntry[]
-  history: any[]
+  schedule: ScheduleGame[]
+  history: HistoryRow[]
   coach: Coach | null
+  fundingTier?: string
+  floosbowlChampion?: boolean
+  clinchedPlayoffs?: boolean
+  clinchedTopSeed?: boolean
+  eliminated?: boolean
 }
 
-function TierBadge({ tier, label, color, effects, size = 'normal' }: {
-  tier: string, label: string, color: string, effects: string[], size?: 'normal' | 'small'
-}) {
-  const [hover, setHover] = useState(false)
-  const fontSize = size === 'small' ? '11px' : '13px'
-  const padding = size === 'small' ? '2px 8px' : '3px 10px'
-  return (
-    <span
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{ position: 'relative', cursor: 'default' }}
-    >
-      <span style={{
-        backgroundColor: `${color}20`,
-        color: color,
-        fontSize,
-        fontWeight: '700',
-        padding,
-        borderRadius: '4px',
-        border: `1px solid ${color}40`,
-      }}>
-        {label}
-      </span>
-      {hover && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          marginTop: '6px',
-          backgroundColor: '#0f172a',
-          border: '1px solid #334155',
-          borderRadius: '6px',
-          padding: '8px 12px',
-          zIndex: 50,
-          whiteSpace: 'nowrap',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-        }}>
-          <div style={{ fontSize: '11px', fontWeight: '600', color, marginBottom: '4px' }}>{label} Effects</div>
-          {effects.map((item, i) => (
-            <div key={i} style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: '1.5' }}>{item}</div>
-          ))}
-        </div>
-      )}
-    </span>
-  )
+// ── Shared helpers ──────────────────────────────────────────────────────────
+
+/** Team colours are DATA, so any overlay tinted with one has to be built at
+ *  runtime rather than written as a literal rgba(). */
+function rgba(hex: string, alpha: number): string {
+  const h = (hex || '').replace('#', '')
+  if (h.length !== 6) return `rgba(148,163,184,${alpha})`
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  return `rgba(${r},${g},${b},${alpha})`
 }
 
-const ROSTER_SLOTS: [string, string][] = [
-  ['qb', 'QB'], ['rb', 'RB'], ['wr1', 'WR1'], ['wr2', 'WR2'], ['te', 'TE'], ['k', 'K']
-]
+// ── The house gauge ─────────────────────────────────────────────────────────
+// Same bar the player page and the player hover card draw, so a rating reads
+// identically wherever you meet it: #334155 track, 2px radius, fill straight
+// off the 0-100 value, three colour bands at 85 and 72.
+//
+// The 0-100 mapping is deliberate. An earlier version of this page normalised
+// to a 60-100 window on the grounds that ratings never go below 60 — the
+// player page tried exactly that and reverted it, because it drew an 80 as a
+// half-full bar and left anything under 60 (common for a non-primary
+// defender) completely empty. The bar has to agree with the number printed
+// next to it.
+const GAUGE_TRACK = '#334155'
 
-type RetirementRisk = 'safe' | 'possible' | 'likely' | 'very_likely' | 'retiring'
-interface RetirementRiskEntry {
-  playerId: number
-  risk: RetirementRisk
-  seasonsPlayed: number
-  longevity: number
-  termRemaining: number
+function barWidth(rating: number): number {
+  return Math.max(0, Math.min(100, rating))
 }
-interface ProspectEntry {
-  playerId: number
+
+function gaugeColor(rating: number): string {
+  if (rating >= 85) return '#22c55e'
+  if (rating >= 72) return '#f59e0b'
+  return '#ef4444'
+}
+
+/** Career status in one word — what a fan actually reads. Detail lives on the
+ *  player page. */
+function careerStatus(p: RosterPlayer): string {
+  const svc = (p.serviceTime || '').toLowerCase()
+  if (svc.includes('rookie')) return 'Rookie'
+  if (svc.includes('veteran3') || svc.includes('veteran4')) return 'Veteran'
+  if (svc.includes('veteran')) return 'Established'
+  return 'Active'
+}
+
+const ORDINALS = ['', 'First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth',
+  'Seventh', 'Eighth', 'Ninth', 'Tenth']
+
+/** "Third season in charge" reads as tenure; "3" reads as a stat. */
+function tenurePhrase(seasons: number): string {
+  const n = Math.max(1, seasons)
+  return `${ORDINALS[n] || `${n}th`} season in charge`
+}
+
+function titleCase(raw: string): string {
+  return raw.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+}
+
+// ── Trophies ────────────────────────────────────────────────────────────────
+// Two honours, two tiers, and the case has to say which is which without a
+// hover. Gold and the laurel trophy for the Floos Bowl — the app's
+// championship mark everywhere else it appears (Hall of Fame, player pages,
+// awards), so a different one here would read as a different honour. Silver
+// and a plain cup for a league title: unmistakably a trophy, unmistakably the
+// lesser one.
+const TROPHY_TONE = {
+  bowl: {
+    Icon: GiLaurelsTrophy,
+    icon: '#fbbf24',
+    text: '#fde68a',
+    bg: 'rgba(245,158,11,0.14)',
+    border: 'rgba(245,158,11,0.45)',
+  },
+  league: {
+    Icon: GiTrophy,
+    icon: '#cbd5e1',
+    text: '#e2e8f0',
+    bg: 'rgba(148,163,184,0.12)',
+    border: 'rgba(148,163,184,0.40)',
+  },
+} as const
+
+// ── Stadium ─────────────────────────────────────────────────────────────────
+// OFF until stadiums are real on the backend. Everything below still works and
+// the cell still renders when this is flipped back on; it's hidden rather than
+// deleted because the only thing missing is the two backend fields listed in
+// the note under this one.
+const SHOW_STADIUM: boolean = false
+
+// MOCK. The stadium LEVEL is real — it's the `stadium` facility, 1-5, driving
+// home_morale — and the size below is derived from it, which is what makes the
+// cell respond to the facilities a fanbase has actually funded.
+//
+// The NAME and the CAPACITY are invented here, because the backend has no
+// concept of either: there is no stadium_name, capacity or attendance field
+// anywhere in the models, config.json or the facilities payload. To make this
+// real the backend needs, on the team record:
+//
+//   stadium_name       str   — persisted, per team, ideally namable by fans
+//   stadium_capacity   int   — or keep deriving it from the facility level
+//
+// The description is NOT mocked: it's the facilities quip for the level.
+//
+// Until then names are generated DETERMINISTICALLY from the team id, so a
+// given team always shows the same ground rather than reshuffling per render.
+
+const STADIUM_SUFFIX = ['Field', 'Park', 'Grounds', 'Coliseum', 'Yards', 'Commons', 'Dome', 'Bowl']
+
+/** Level → roughly what that many funded upgrades buys you. */
+const STADIUM_CAPACITY = [14000, 19000, 34000, 51000, 68000, 87000]
+const STADIUM_SIZE = ['Sandlot', 'Intimate', 'Modest', 'Mid-Size', 'Major', 'Monumental']
+// The description comes from the FACILITIES quips, not a second set written
+// here. Those already ladder per level ("Bleachers, a hot dog cart, and big
+// dreams"), they're the copy a fan reads when funding the thing, and two
+// parallel descriptions of one stadium would drift apart the moment either
+// was edited.
+
+interface Stadium {
   name: string
-  position: string
-  rating: number
-  tier: string | null
-  prospectSeasons: number
-  seasonsRemaining: number
-  draftSeason?: number | null
-  isUndrafted: boolean
-  ratingHistory: { season: number; rating: number }[]
+  level: number
+  capacity: number
+  size: string
+  blurb: string
 }
 
-const RISK_STYLES: Record<RetirementRisk, { label: string; color: string; bg: string }> = {
-  safe:         { label: '',                color: '',        bg: '' },
-  possible:     { label: 'TWILIGHT',        color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
-  likely:       { label: 'RETIRING?',       color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
-  very_likely:  { label: 'FAREWELL TOUR',   color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
-  retiring:     { label: 'RETIRING',        color: '#f97316', bg: 'rgba(249,115,22,0.18)' },
+function mockStadium(team: { id: number; city: string }, level: number): Stadium {
+  const lv = Math.max(0, Math.min(5, level))
+  return {
+    name: `${team.city} ${STADIUM_SUFFIX[team.id % STADIUM_SUFFIX.length]}`,
+    level: lv,
+    capacity: STADIUM_CAPACITY[lv],
+    size: STADIUM_SIZE[lv],
+    blurb: quipAt('stadium', lv),
+  }
 }
 
-function RetirementBadge({ risk }: { risk: RetirementRisk }) {
-  if (risk === 'safe') return null
-  const style = RISK_STYLES[risk]
-  return (
+/** Regular season is 28 weeks, 0-indexed, so anything past it is a playoff
+ *  round. "W29" tells a fan nothing; the round name is the whole point. */
+function weekLabel(week: number): string {
+  const PLAYOFF = ['R1', 'R2', 'Champ', 'Bowl']
+  return week >= REGULAR_SEASON_WEEKS
+    ? (PLAYOFF[week - REGULAR_SEASON_WEEKS] ?? 'PO')
+    : `W${week + 1}`
+}
+
+/** The same week spelled out. Playoff games DO land in team.schedule (the
+ *  season manager appends each round), so Next up carries them through
+ *  January — and "R2" is not what you want to read there. */
+function weekTitle(week: number): string {
+  const PLAYOFF = ['Playoffs Round 1', 'Playoffs Round 2', 'League Championship', 'Floos Bowl']
+  return week >= REGULAR_SEASON_WEEKS
+    ? (PLAYOFF[week - REGULAR_SEASON_WEEKS] ?? 'Playoffs')
+    : `Week ${week + 1}`
+}
+
+/** How a season ENDED. The payload carries flags rather than a result string,
+ *  and they say more than a W-L line does.
+ *
+ *  `inProgress` is load-bearing: a season still being played has none of these
+ *  flags set yet, so every team's current row fell through to "Missed
+ *  playoffs" — declaring all 24 of them out before a game had been decided. */
+function seasonFinish(h: HistoryRow, inProgress = false): { label: string; color: string; weight: number } {
+  if (h.floosbowlChamp) return { label: 'Floos Bowl', color: '#f59e0b', weight: 700 }
+  if (h.leagueChamp) return { label: 'League champions', color: '#a78bfa', weight: 700 }
+  if (h.topSeed) return { label: 'Top seed', color: '#38bdf8', weight: 500 }
+  if (h.madePlayoffs) return { label: 'Playoffs', color: '#4ade80', weight: 500 }
+  if (inProgress) return { label: 'In progress', color: '#cbd5e1', weight: 500 }
+  return { label: 'Missed playoffs', color: '#94a3b8', weight: 500 }
+}
+
+const FOCUS_RING = (secondary: string): React.CSSProperties => ({
+  // Applied through a CSS custom property so the :focus-visible rule in
+  // index.css can use the team's own colour.
+  ['--tp-focus' as any]: secondary,
+})
+
+// ── Small presentational pieces ─────────────────────────────────────────────
+
+/** Sentence case: labels earn their quiet from weight and tracking, not from
+ *  shouting. (Uppercase is reserved for the facts-grid cells and table heads,
+ *  which are field labels rather than section titles.) */
+const SectionHead: React.FC<{
+  label: string
+  note?: string
+  style?: React.CSSProperties
+}> = ({ label, note, style }) => (
+  <div style={{
+    display: 'flex', alignItems: 'baseline', gap: '12px',
+    marginBottom: '12px', ...style,
+  }}>
     <span style={{
-      fontSize: '9px',
-      fontWeight: 800,
-      letterSpacing: '0.06em',
-      color: style.color,
-      backgroundColor: style.bg,
-      padding: '2px 6px',
-      borderRadius: '3px',
-      flexShrink: 0,
+      fontSize: '13px', letterSpacing: '0.08em', fontWeight: 800, color: '#f1f5f9',
       whiteSpace: 'nowrap',
+    }}>{label}</span>
+    {note && <span style={{ fontSize: '12px', color: '#cbd5e1', whiteSpace: 'nowrap' }}>{note}</span>}
+    <span style={{ flex: 1, height: '2px', backgroundColor: '#1e293b' }} />
+  </div>
+)
+
+/** Facts-row cell headings. These were 10px #94a3b8 — at the very floor of both
+ *  the size and the contrast rules at once, which is what made them hard to
+ *  read. 10px is for metadata; a heading is not metadata. */
+/** Facts-row cell geometry. With five cells that reflow to a 2-wide grid, the
+ *  edges and dividers can't be hand-written per cell any more: which cell is
+ *  flush with the page and which needs a left rule both depend on how many
+ *  columns the row currently has. Outer cells lose their outer padding so the
+ *  row reads edge to edge with the rest of the page. */
+function factCell(index: number, cols: number, span = 1): React.CSSProperties {
+  const col = index % cols
+  const first = col === 0
+  const last = span > 1 || col === cols - 1
+  return {
+    padding: `14px ${last ? 0 : 20}px 14px ${first ? 0 : 20}px`,
+    borderLeft: first ? undefined : '1px solid #1e293b',
+    borderTop: index >= cols ? '1px solid #1e293b' : undefined,
+    ...(span > 1 ? { gridColumn: `span ${span}` } : {}),
+  }
+}
+
+const CellLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div style={{
+    fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
+    color: '#cbd5e1', textTransform: 'uppercase',
+  }}>{children}</div>
+)
+
+/** The house gauge, in the two forms the app already uses.
+ *
+ *  'stacked' is the player page's `attrRow`: label left, value right, bar full
+ *  width beneath. That's the default and what the facts grid runs.
+ *
+ *  'inline' is the compact form (the hover card's sub-bars are the same idea):
+ *  label, track and number on one line. The roster plates need it because six
+ *  players have to line up into columns you can read straight down — stacking
+ *  there would put every player's numbers at a different height.
+ *
+ *  Both draw the SAME bar: #334155 track, 2px radius, fill off the raw 0-100
+ *  value, house colour bands. `animate` runs the fill out from zero on first
+ *  paint; nothing else on the page moves. */
+const Gauge: React.FC<{
+  label: string
+  rating: number
+  variant?: 'stacked' | 'inline'
+  /** Fixed label column width — inline only, and what keeps the plates aligned. */
+  labelWidth?: number
+  numberWidth?: number
+  height?: number
+  animate?: boolean
+  // 6px, the house "overall bar" weight. 4px is the standard, but on a page
+  // where the gauges ARE the content they read as hairlines at that size.
+}> = ({ label, rating, variant = 'stacked', labelWidth = 76, numberWidth = 24, height = 6, animate = true }) => {
+  const color = gaugeColor(rating)
+  const value = Math.round(rating)
+
+  const track = (
+    <span style={{
+      display: 'block', flex: variant === 'inline' ? 1 : undefined,
+      height: `${height}px`, backgroundColor: GAUGE_TRACK,
+      borderRadius: '2px', overflow: 'hidden', minWidth: 0,
     }}>
-      {style.label}
+      <span
+        className={animate ? 'tp-fill' : undefined}
+        style={{
+          display: 'block', height: '100%',
+          width: `${barWidth(rating)}%`,
+          backgroundColor: color, borderRadius: '2px',
+        }}
+      />
     </span>
   )
+
+  if (variant === 'inline') {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{
+          fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
+          color: '#cbd5e1', width: `${labelWidth}px`, flexShrink: 0,
+        }}>{label}</span>
+        {track}
+        <span style={{
+          fontSize: '13px', fontWeight: 700, color,
+          fontVariantNumeric: 'tabular-nums',
+          width: `${numberWidth}px`, textAlign: 'right', flexShrink: 0,
+        }}>{value}</span>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+        marginBottom: '3px',
+      }}>
+        <span style={{ fontSize: '13px', color: '#cbd5e1' }}>{label}</span>
+        <span style={{
+          fontSize: '16px', fontWeight: 700, color: '#e2e8f0',
+          fontVariantNumeric: 'tabular-nums',
+        }}>{value}</span>
+      </div>
+      {track}
+    </div>
+  )
 }
+
+/** The three locker-room composites are small scalars on THREE DIFFERENT
+ *  scales, and reading them as 0..1 pinned every team under half a bar — the
+ *  panel showed three near-empty tracks whichever team you opened.
+ *
+ *  Each gets its own domain. These are MEASURED across all 24 teams, not taken
+ *  from the ranges quoted in computeLockerRoom's docstring: those describe the
+ *  roster average, and the real league spread is several times wider (fortitude
+ *  runs about −1.0 to +1.1, not −0.2 to +0.4). Calibrated to the docstring, a
+ *  third of the league pegged at a full bar instead.
+ *
+ *  Checked against a live league: mean fill ~55% with nothing clipping at
+ *  either end, so the bar actually separates one team from the next. */
+const MOOD_DOMAIN: Record<string, [number, number]> = {
+  Resolve: [-0.20, 0.55],
+  Fortitude: [-1.10, 1.15],
+  Vulnerability: [-0.40, 0.56],
+}
+
+/** Indicative-only: these are composites with no meaning as a displayed
+ *  number, so they get a bar and no figure. */
+const MoodBar: React.FC<{ label: string; value: number; color: string }> = ({ label, value, color }) => {
+  const [lo, hi] = MOOD_DOMAIN[label] ?? [0, 1]
+  const pct = Math.max(0, Math.min(100, ((value - lo) / (hi - lo)) * 100))
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <span style={{ fontSize: '12px', color: '#cbd5e1', width: '80px', flexShrink: 0 }}>{label}</span>
+      {/* Same track as every other bar on the site, even though what fills it
+          isn't a 0-100 rating. */}
+      <span style={{
+        flex: 1, height: '4px', backgroundColor: GAUGE_TRACK,
+        borderRadius: '2px', overflow: 'hidden', minWidth: 0,
+      }}>
+        <span style={{
+          display: 'block', height: '100%', backgroundColor: color, borderRadius: '2px',
+          // A floor of 2% so a genuinely rock-bottom reading still shows a mark
+          // rather than looking like missing data.
+          width: `${Math.max(2, pct)}%`,
+        }} />
+      </span>
+    </div>
+  )
+}
+
+// ── Roster plate ────────────────────────────────────────────────────────────
+
+const RosterPlate: React.FC<{
+  slot: string
+  player: RosterPlayer | null
+  teamColor: string
+  canRate: boolean
+  onRated: () => void
+  /** Where they sit on their career arc — developing / prime / aging /
+   *  twilight / retiring. Service time says how long they've been here;
+   *  this says whether they're still getting better. */
+  stage?: string
+  /** Three rows instead of one, below PLATE_WRAP_WIDTH. */
+  narrow: boolean
+}> = ({ slot, player, teamColor, canRate, onRated, stage, narrow }) => {
+  const label = POSITION_LABEL[slot] || slot.toUpperCase()
+
+  const badge = (
+    <span style={{
+      width: '42px', flexShrink: 0, textAlign: 'center',
+      fontSize: '15px', fontWeight: 800, padding: '5px 0',
+      // A quarter of the league's colours are light enough that white ink on
+      // them is unreadable — let the contrast helper pick.
+      backgroundColor: player ? teamColor : '#334155',
+      color: player ? getContrastTextColor(teamColor) : '#cbd5e1',
+    }}>{label}</span>
+  )
+
+  if (!player) {
+    return (
+      <div className="tp-plate tp-plate-empty">
+        {badge}
+        <span style={{ fontSize: '11px', color: '#cbd5e1' }}>Vacant</span>
+      </div>
+    )
+  }
+
+  const offense = player.offensiveRating ?? player.rating
+  const defense = player.defensiveRating
+  const term = player.termRemaining
+
+  return (
+    <div className="tp-plate" style={narrow ? { flexWrap: 'wrap', gap: '10px 12px' } : undefined}>
+      {badge}
+
+      <div style={{
+        width: narrow ? 'auto' : '196px',
+        flex: narrow ? 1 : undefined,
+        flexShrink: narrow ? 1 : 0,
+        minWidth: 0,
+      }}>
+        <PlayerHoverCard playerId={player.id} playerName={player.name}>
+          <Link to={`/players/${player.id}`} className="tp-link" style={{
+            display: 'block', textDecoration: 'none',
+            fontSize: '15px', fontWeight: 700, letterSpacing: '-0.02em',
+            color: '#f8fafc',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{player.name}</Link>
+        </PlayerHoverCard>
+        <div style={{ marginTop: '3px' }}>
+          <Stars stars={player.ratingStars} size={16} tracking={1} />
+        </div>
+      </div>
+
+      <div style={{ width: '124px', flexShrink: 0 }}>
+        <div style={{ fontSize: '11px', color: '#cbd5e1' }}>{careerStatus(player)}</div>
+        {term != null && (
+          <div style={{
+            fontSize: '11px', marginTop: '2px',
+            // A walk-year contract is the one thing on this line a fan should
+            // notice without being told.
+            color: term === 1 ? '#f59e0b' : '#cbd5e1',
+          }}>{term}yr remaining</div>
+        )}
+        {stage && (
+          <div style={{ marginTop: '4px' }}>
+            <CareerStageBadge stage={stage} full />
+          </div>
+        )}
+      </div>
+
+      {/* Two-way ratings. Kickers get the offense row only — they have no
+          defensive assignment, and inventing a bar for one would be a lie. */}
+      <div style={{
+        flex: narrow ? '1 1 100%' : 1, minWidth: 0,
+        display: 'flex', flexDirection: 'column', gap: '5px',
+      }}>
+        <Gauge label="OFFENSE" rating={offense} variant="inline" height={5} />
+        {defense != null && player.defensivePosition && (
+          <Gauge label={`${player.defensivePosition} DEF`} rating={defense} variant="inline" height={5} />
+        )}
+      </div>
+
+      <div style={{
+        width: narrow ? '100%' : '134px', flexShrink: 0,
+        ...(narrow
+          ? { borderTop: '1px solid #1e293b', paddingTop: '10px' }
+          : { borderLeft: '1px solid #1e293b', paddingLeft: '14px' }),
+      }}>
+        <div style={{
+          fontSize: '10px', letterSpacing: '0.08em', fontWeight: 700, color: '#cbd5e1',
+        }}>FAN RATING</div>
+        <div style={{ marginTop: '4px' }}>
+          {/* The same 1–5 control the fanbase uses. Signed out, or looking at
+              somebody else's team, the pips show where the fanbase has landed
+              rather than sitting empty. */}
+          <PlayerRating
+            playerId={player.id}
+            canRate={canRate}
+            onChange={onRated}
+            averageFill
+            pipSize={13}
+            countSuffix=" fans"
+            layout="column"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Page ────────────────────────────────────────────────────────────────────
 
 export default function TeamPage() {
   const { id } = useParams<{ id: string }>()
-  const { user, getToken, refetchUser } = useAuth()
+  const { user } = useAuth()
+  const { seasonState } = useFloosball()
+  const { games } = useGames()
+
   const [team, setTeam] = useState<TeamData | null>(null)
-  const [fanCount, setFanCount] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('overview')
-  const [projectedFunding, setProjectedFunding] = useState<{ projectedAutoContributions: number, contributingFans: number, totalFans: number, nextSeasonProjectedFunding?: number, nextSeasonProjectedTier?: string, decayRate?: number } | null>(null)
-  const [fundingRefresh, setFundingRefresh] = useState(0)
-  const [showHelp, setShowHelp] = useState(false)
-  const [retirementWatch, setRetirementWatch] = useState<Record<number, RetirementRiskEntry>>({})
-  const [careerStages, setCareerStages] = useState<Record<number, string>>({})
-  const [prospects, setProspects] = useState<ProspectEntry[]>([])
-  const [prospectsMeta, setProspectsMeta] = useState<{ slotCapPerPosition: number, developmentWindow: number, promotionThreshold: number } | null>(null)
-  const [expandedRosterSlot, setExpandedRosterSlot] = useState<string | null>(null)
-  const isMobile = useIsMobile()
-  const isFavTeam = !!team && user?.favoriteTeamId === team.id
-
-  const tourSteps = useMemo<TutorialStep[]>(() => [
-    {
-      target: 'team-hero',
-      title: 'Your Team',
-      content: "Your team's profile — record, ELO rating, championship history, and current market tier at a glance.",
-      placement: 'bottom',
-      onEnter: () => setActiveTab('overview'),
-    },
-    {
-      target: 'team-roster',
-      title: 'Roster',
-      content: 'Your active roster. Each player shows their position, overall rating, and contract length remaining.',
-      placement: 'bottom',
-    },
-    {
-      target: 'team-coach',
-      title: 'Head Coach',
-      content: "Your head coach's attributes — offensive/defensive mind, aggressiveness, adaptability, clock management, and player development.",
-      placement: 'bottom',
-    },
-    {
-      target: 'team-tab-funding',
-      title: 'Funding',
-      content: 'Fund your team to build up its Facilities, which drive player development, morale, and fatigue recovery. Funding does not raise your market tier.',
-      placement: 'bottom',
-      onEnter: () => setActiveTab('funding'),
-    },
-    {
-      target: 'team-funding-tier',
-      title: 'Market Tier',
-      content: "Your market tier reflects your team's fanbase size relative to the rest of the league. Player development, morale, and fatigue perks come from Facilities, not from this tier.",
-      placement: 'bottom',
-    },
-    {
-      target: 'team-funding-bar',
-      title: 'Tier Progress',
-      content: 'Track funding progress toward the next tier. The bar shows current funding and the projected tier next season.',
-      placement: 'bottom',
-    },
-    {
-      target: 'team-funding-contribute',
-      title: 'Contributions',
-      content: 'Contribute Floobits directly or set an auto-contribution percentage that donates from your unspent balance at season end.',
-      placement: 'top',
-    },
-    {
-      target: 'team-tab-schedule',
-      title: 'Schedule',
-      content: "Your team's full season schedule — past results and upcoming matchups.",
-      placement: 'bottom',
-      onEnter: () => setActiveTab('schedule'),
-    },
-    {
-      target: 'team-tab-frontoffice',
-      title: 'Front Office',
-      content: 'The Board of Directors convenes in Week 22. Once open, vote on coaching changes, player signings, and roster cuts.',
-      placement: 'bottom',
-    },
-  ], [])
-
-  const tour = useTutorial({ tourId: 'team-page', steps: tourSteps })
+  const [tick, setTick] = useState(0)
+  const [width, setWidth] = useState(window.innerWidth)
+  const [openGameId, setOpenGameId] = useState<number | null>(null)
+  const [stages, setStages] = useState<Record<number, string>>({})
+  const [stadiumLevel, setStadiumLevel] = useState(1)
 
   useEffect(() => {
-    if (!id) return
+    const onResize = () => setWidth(window.innerWidth)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  const stacked = width < STACK_WIDTH
+  const narrowPlates = width < PLATE_WRAP_WIDTH
+  const pad = stacked ? 16 : PAGE_PAD
+
+  useEffect(() => {
+    let cancelled = false
     setLoading(true)
     fetch(`${API_BASE}/teams/${id}`)
       .then(r => r.json())
-      .then(json => { if (json.success && json.data) setTeam(json.data) })
-      .catch(err => console.error('Failed to fetch team:', err))
-      .finally(() => setLoading(false))
-  }, [id])
-
-  // Fan count for the market badge — sourced from the league facilities feed
-  // (same per-team fanCount the Facilities tab uses).
-  useEffect(() => {
-    if (!id) return
-    let cancelled = false
-    fetch(`${API_BASE}/league/facilities`)
-      .then(r => r.json())
       .then(json => {
-        if (cancelled || !json?.success) return
-        const t = (json.data?.teams || []).find((x: { id: number; fanCount: number }) => x.id === Number(id))
-        if (t && typeof t.fanCount === 'number') setFanCount(t.fanCount)
+        if (cancelled) return
+        if (json?.data) setTeam(json.data)
+        setLoading(false)
       })
-      .catch(() => {})
+      .catch(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [id])
 
+  // Career arc per player. It rides the retirement-watch endpoint rather than
+  // the team payload — same computeCareerStage source the Front Office roster
+  // reads, so the two can't disagree about who's past it.
   useEffect(() => {
-    if (!id || activeTab !== 'funding') return
-    fetch(`${API_BASE}/teams/${id}/projected-funding`)
-      .then(r => r.json())
-      .then(json => { if (json.success && json.data) setProjectedFunding(json.data) })
-      .catch(() => {})
-  }, [id, activeTab, fundingRefresh])
-
-  // Retirement risk watch + prospect pipeline — visible year-round on the
-  // Overview tab so fans can see farewell-tour candidates and the team's
-  // developing prospects without waiting for offseason.
-  useEffect(() => {
-    if (!id) return
     let cancelled = false
-    Promise.all([
-      fetch(`${API_BASE}/teams/${id}/retirement-watch`).then(r => r.json()).catch(() => null),
-      fetch(`${API_BASE}/teams/${id}/prospects`).then(r => r.json()).catch(() => null),
-    ]).then(([watchJson, prospectsJson]) => {
-      if (cancelled) return
-      if (watchJson?.success && watchJson.data?.watch) {
-        const byId: Record<number, RetirementRiskEntry> = {}
-        for (const w of watchJson.data.watch) byId[w.playerId] = w
-        setRetirementWatch(byId)
-        setCareerStages(watchJson.data.stages || {})
-      }
-      if (prospectsJson?.success && prospectsJson.data) {
-        setProspects(prospectsJson.data.prospects || [])
-        setProspectsMeta({
-          slotCapPerPosition: prospectsJson.data.slotCapPerPosition,
-          developmentWindow: prospectsJson.data.developmentWindow,
-          promotionThreshold: prospectsJson.data.promotionThreshold,
-        })
-      }
-    })
+    fetch(`${API_BASE}/teams/${id}/retirement-watch`)
+      .then(r => r.json())
+      .then(body => { if (!cancelled && body?.data?.stages) setStages(body.data.stages) })
+      .catch(() => { /* a badge must never take the page down */ })
     return () => { cancelled = true }
   }, [id])
 
-  // External callers (e.g. the achievements page) can request a tab switch via
-  // a window event so deep-links land on the correct section.
+  // The one REAL thing behind the stadium cell: how far the fanbase has funded
+  // the stadium facility. Everything else in that cell is derived from it.
   useEffect(() => {
-    const showFunding = () => setActiveTab('funding')
-    const showSchedule = () => setActiveTab('schedule')
-    const showOverview = () => setActiveTab('overview')
-    window.addEventListener('floosball:show-team-funding', showFunding)
-    window.addEventListener('floosball:show-team-schedule', showSchedule)
-    window.addEventListener('floosball:show-team-overview', showOverview)
-    return () => {
-      window.removeEventListener('floosball:show-team-funding', showFunding)
-      window.removeEventListener('floosball:show-team-schedule', showSchedule)
-      window.removeEventListener('floosball:show-team-overview', showOverview)
-    }
-  }, [])
+    if (!SHOW_STADIUM) return
+    let cancelled = false
+    fetch(`${API_BASE}/teams/${id}/facilities`)
+      .then(r => r.json())
+      .then(body => {
+        if (cancelled) return
+        const s = (body?.data?.facilities || []).find((f: any) => f.key === 'stadium')
+        if (s?.level != null) setStadiumLevel(s.level)
+      })
+      .catch(() => { /* falls back to level 1 */ })
+    return () => { cancelled = true }
+  }, [id])
 
-  if (loading || !team) {
-    const stripTeamId = team?.id ?? (id ? parseInt(id, 10) : 0)
-    return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#0f172a' }}>
-        <TeamNavStrip currentTeamId={stripTeamId} />
-        <div style={{ padding: '48px', color: '#94a3b8', textAlign: 'center' }}>
-          {loading ? 'Loading…' : 'Team not found'}
-        </div>
-      </div>
-    )
-  }
+  const isMyTeam = !!user?.favoriteTeamId && String(user.favoriteTeamId) === String(id)
+  const onRated = useCallback(() => setTick(t => t + 1), [])
 
-  const sectionHeader = (label: string) => (
-    <div style={{ padding: '10px 14px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155' }}>
-      <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>{label}</span>
-    </div>
+  // Memoised, not `team?.schedule || []` inline: the bare fallback mints a new
+  // array every render, which silently defeats every memo downstream of it.
+  const schedule = useMemo(() => team?.schedule || [], [team])
+  const history = useMemo(() => team?.history || [], [team])
+
+  /** The live-or-next game: first row without a result. */
+  const nextIdx = useMemo(
+    () => schedule.findIndex(g => g.status !== 'Final' && !g.result),
+    [schedule],
   )
 
-  const calcStars = (rating: number) => Math.min(5, Math.max(1, Math.floor((rating - 60) / 8) + 1))
+  /** Live scores ride the season WS feed through GamesContext, so a game in
+   *  progress keeps ticking without refetching the whole team. */
+  const liveOverlay = useCallback((g: ScheduleGame) => {
+    const live = games.get(g.gameId)
+    if (!live) return g
+    const isHome = g.isHome
+    return {
+      ...g,
+      teamScore: isHome ? live.homeScore : live.awayScore,
+      oppScore: isHome ? live.awayScore : live.homeScore,
+      status: live.status,
+    }
+  }, [games])
 
-  const ratingBar = (value: number) => {
-    const color = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
+  const trophies = useMemo(() => {
+    if (!team) return []
+    // Floos Bowl first — it outranks a league title, so it leads the case.
+    const bowl = (team.floosbowlChampionships || [])
+      .map(s => ({ season: s, label: 'Floos Bowl Champions', kind: 'bowl' as const }))
+    const league = (team.leagueChampionships || [])
+      .map(s => ({ season: s, label: `${team.league} Champions`, kind: 'league' as const }))
+    return [...bowl, ...league]
+  }, [team])
+
+  /** Signed streak from the backend: +2 = won two straight. */
+  const streakLine = useMemo(() => {
+    const s = team?.streak ?? 0
+    if (!s) return null
+    return {
+      text: `${s > 0 ? 'Won' : 'Lost'} ${Math.abs(s)} straight`,
+      color: s > 0 ? '#4ade80' : '#f87171',
+    }
+  }, [team])
+
+  /** Newest first, split evenly: 16 seasons → 16–9 left, 8–1 right. */
+  const [historyLeft, historyRight] = useMemo(() => {
+    const half = Math.ceil(history.length / 2)
+    return [history.slice(0, half), history.slice(half)]
+  }, [history])
+
+  /** The schedule now runs in two columns of 14 below the fold rather than a
+   *  scrolling rail, so the whole season is visible at once — no scroll
+   *  position to restore and nothing hidden behind an overflow. */
+  const [scheduleLeft, scheduleRight] = useMemo(() => {
+    const half = Math.ceil(schedule.length / 2)
+    return [schedule.slice(0, half), schedule.slice(half)]
+  }, [schedule])
+
+  // Memoised: the rail keys effects off this array, so a fresh one each render
+  // would tear down and rebuild the observer continuously.
+  const railSections: RailSection[] = useMemo(() => [
+    { id: 'tp-overview', label: 'Overview' },
+    { id: 'tp-squad', label: 'Squad' },
+    { id: 'tp-record', label: 'Record' },
+    ...(isMyTeam ? [{ id: 'tp-frontoffice', label: 'Front office' }] : []),
+  ], [isMyTeam])
+
+  // The strip stays up even while the team is loading or missing, so you can
+  // always navigate on to another team rather than hitting a dead end.
+  if (loading || !team) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ flex: 1, height: '5px', backgroundColor: '#334155', borderRadius: '3px', overflow: 'hidden' }}>
-          <div style={{ width: `${value}%`, height: '100%', backgroundColor: color, borderRadius: '3px' }} />
+      <div style={{ backgroundColor: '#0b1220', minHeight: '100vh' }}>
+        <TeamNavStrip currentTeamId={team?.id ?? (id ? parseInt(id, 10) : 0)} />
+        <div style={{ padding: '60px', textAlign: 'center', color: '#cbd5e1', fontSize: '14px' }}>
+          {loading ? 'Loading…' : 'Team not found.'}
         </div>
-        <span style={{ fontSize: '12px', color: '#cbd5e1', minWidth: '26px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
       </div>
     )
   }
 
-  const coachAttrBar = (value: number) => {
-    const color = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <div style={{ flex: 1, height: '4px', backgroundColor: '#334155', borderRadius: '3px', overflow: 'hidden' }}>
-          <div style={{ width: `${value}%`, height: '100%', backgroundColor: color, borderRadius: '3px' }} />
-        </div>
-        <span style={{ fontSize: '12px', color: '#cbd5e1', minWidth: '26px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
-      </div>
-    )
-  }
+  const accent = team.color || '#334155'
+  const secondary = team.secondaryColor || accent
+  const locker = team.lockerRoom
+  const nextGame = nextIdx >= 0 ? liveOverlay(schedule[nextIdx]) : null
+
+  // The season currently being played, or null between seasons. Once the Bowl
+  // is done the flags are real and the row shows a genuine finish, so this has
+  // to go null the moment the season completes rather than track the season
+  // number alone.
+  const liveSeason = seasonState.seasonNumber && !seasonState.seasonComplete
+    ? seasonState.seasonNumber
+    : null
+
+  const heroName = stacked ? (width < 520 ? 32 : 40) : 58
+  // Facts cells fold to two columns on a narrow window. Without the stadium
+  // it's four, which is also why Next up no longer needs to span: four cells
+  // fill two rows of two exactly.
+  const factCols = stacked ? 2 : (SHOW_STADIUM ? 5 : 4)
+  const nextUpIndex = SHOW_STADIUM ? 4 : 3
+  const stadium = mockStadium(team, stadiumLevel)
+
+  // The page's four reads. The Front Office only exists for the team you
+  // follow, so
+  // the rail's length tells you something too.
+
+  /** Fortitude is the single composite of resolve and vulnerability, so it's
+   *  the honest headline word; the three bars below break it back apart.
+   *  Steady sits mid on purpose — it's the league middle, not a good sign. */
+  const moodColor = (() => {
+    const tier = locker?.fortitudeTier
+    if (tier === 'hardened' || tier === 'resilient') return '#4ade80'
+    if (tier === 'brittle') return '#f87171'
+    return '#f59e0b'
+  })()
+
+  const canOpen = (g: ScheduleGame) => g.status !== 'Scheduled'
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f172a' }}>
+    <div style={{ backgroundColor: '#0b1220', minHeight: '100vh' }} className="tp-page">
 
-      <TeamNavStrip currentTeamId={team.id} />
+      {/* The Overview section starts at the very top of the document, nav strip
+          included. Anchoring it on the hero instead put the first snap point
+          ~60px down, so the smallest scroll from rest would yank the strip out
+          of view — the one place snapping would have felt like a glitch. */}
+      <div id="tp-overview" className="tp-section tp-section-top">
+        {/* Jump straight to any other team without going back to the league list. */}
+        <TeamNavStrip currentTeamId={team.id} />
+      </div>
 
-      {/* Hero */}
-      <div data-tour="team-hero" style={{
-        background: `linear-gradient(135deg, ${team.color}50 0%, #0f172a 55%)`,
-        borderBottom: '1px solid #1e293b',
-        padding: isMobile ? '20px 16px' : '28px 24px'
+      {/* ── HERO BAND ──────────────────────────────────────────────────────
+          Full-bleed, in the team's own colours. The gradient runs dark on the
+          left so the name always has something to sit on, and washes to the
+          secondary on the right; the ghost abbreviation is the only decoration
+          on the page. */}
+      <div style={{
+        position: 'relative', overflow: 'hidden',
+        backgroundColor: accent,
+        borderBottom: `4px solid ${secondary}`,
       }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '14px' : '20px' }}>
-          <img
-            src={`/avatars/${team.id}.png`}
-            alt={team.name}
-            style={{ width: isMobile ? '56px' : '80px', height: isMobile ? '56px' : '80px', flexShrink: 0 }}
-          />
-          <div>
-            <div style={{ fontSize: isMobile ? '11px' : '13px', color: '#94a3b8' }}>{team.league} · {team.city}</div>
-            <div style={{ fontSize: isMobile ? '20px' : '28px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{team.name}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px', flexWrap: 'wrap' as const }}>
-              <span style={{ fontSize: '15px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{team.wins}–{team.losses}</span>
-              {team.formState && team.formState !== 'UNKNOWN' && (
-                <TeamFormBadge state={team.formState as TeamFormState} />
+        <span style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: `linear-gradient(100deg, rgba(11,18,32,0.5) 0%, rgba(11,18,32,0.06) 52%, ${rgba(secondary, 0.2)} 100%)`,
+        }} />
+        <span aria-hidden style={{
+          position: 'absolute', right: '-6px', top: '-22px', pointerEvents: 'none',
+          fontSize: stacked ? '110px' : '150px', lineHeight: 1, fontWeight: 800,
+          letterSpacing: '-0.04em', color: 'rgba(255,255,255,0.10)',
+        }}>{team.abbr}</span>
+
+        <div style={{
+          position: 'relative', maxWidth: PAGE_MAX, margin: '0 auto',
+          padding: `16px ${pad}px`,
+          display: 'flex', alignItems: 'center', gap: stacked ? '14px' : '20px',
+          flexWrap: 'wrap',
+        }}>
+          <span style={{
+            width: '72px', height: '72px', flexShrink: 0,
+            backgroundColor: '#0b1220', border: `1px solid ${secondary}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <img src={`/avatars/${team.id}.png`} alt="" style={{ width: '52px', height: '52px' }} />
+          </span>
+
+          <div style={{ minWidth: 0 }}>
+            {/* Market lives here rather than in the facts row: it's an
+                identity fact like the city and the league, not a performance
+                one, and it was the weakest of the four things competing for
+                that scan line. */}
+            <div style={{
+              fontSize: '13px', letterSpacing: '0.12em', fontWeight: 700,
+              color: 'rgba(255,255,255,0.92)',
+            }}>
+              {team.city} &middot; {team.league}
+              {team.fundingTier && <> &middot; {titleCase(team.fundingTier)}</>}
+            </div>
+            <h1 style={{
+              margin: '4px 0 0', fontSize: `${heroName}px`, lineHeight: 0.94,
+              fontWeight: 800, letterSpacing: '-0.045em', color: '#ffffff',
+            }}>{team.name}</h1>
+          </div>
+
+          <div style={{
+            marginLeft: stacked ? 0 : 'auto', flexShrink: 0,
+            display: 'flex', alignItems: 'stretch', gap: '2px',
+          }}>
+            <div style={{
+              backgroundColor: 'rgba(11,18,32,0.55)', padding: '10px 16px', textAlign: 'right',
+            }}>
+              <div style={{
+                fontSize: '11px', letterSpacing: '0.12em', fontWeight: 700,
+                color: 'rgba(255,255,255,0.85)',
+              }}>RECORD</div>
+              <div style={{
+                fontSize: '34px', lineHeight: 1, fontWeight: 800, color: '#ffffff',
+                fontVariantNumeric: 'tabular-nums',
+              }}>{team.wins}&ndash;{team.losses}</div>
+              {streakLine && (
+                <div style={{ fontSize: '11px', fontWeight: 700, color: streakLine.color }}>
+                  {streakLine.text}
+                </div>
               )}
-              {team.lockerRoom && (() => {
-                const fColors: Record<string, string> = {
-                  hardened:  '#22c55e',
-                  resilient: '#4ade80',
-                  steady:    '#94a3b8',
-                  wobbly:    '#f59e0b',
-                  brittle:   '#ef4444',
-                }
-                const accent = fColors[team.lockerRoom!.fortitudeTier] || '#94a3b8'
-                const lr = team.lockerRoom!
-                const tipContent = (
-                  <span>
-                    Resolve: <strong>{lr.resolveLabel}</strong>
-                    <span style={{ color: '#64748b', margin: '0 6px' }}>·</span>
-                    Vuln: <strong>{lr.vulnerabilityLabel}</strong>
-                  </span>
-                )
-                return (
-                  <HoverTooltip content={tipContent} color={accent}>
-                    <span style={{
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: accent,
-                      backgroundColor: `${accent}1a`,
-                      border: `1px solid ${accent}66`,
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                    }}>
-                      Fortitude: <span style={{ fontWeight: 700 }}>{lr.fortitudeLabel}</span>
-                    </span>
-                  </HoverTooltip>
-                )
-              })()}
-              <span style={{ fontSize: '13px', color: '#64748b' }}>·</span>
-              <span style={{ fontSize: '13px', color: '#94a3b8' }}>ELO {Math.round(team.elo)}</span>
-              {team.fundingTier && (() => {
-                const tc: Record<string, string> = { 'MEGA_MARKET': '#a78bfa', 'LARGE_MARKET': '#3b82f6', 'MID_MARKET': '#2dd4bf', 'SMALL_MARKET': '#f97316' }
-                const tl: Record<string, string> = { 'MEGA_MARKET': 'Mega Market', 'LARGE_MARKET': 'Large Market', 'MID_MARKET': 'Mid Market', 'SMALL_MARKET': 'Small Market' }
-                const mc = tc[team.fundingTier] || '#64748b'
-                const fanTip = fanCount != null
-                  ? `${fanCount.toLocaleString()} ${fanCount === 1 ? 'fan backs' : 'fans back'} this team. Market tier is set by fanbase size relative to the league.`
-                  : 'Market tier is set by fanbase size relative to the league.'
-                return (
-                  <HoverTooltip content={fanTip} color={mc}>
-                    <span style={{
-                      fontSize: '11px', fontWeight: 700, color: mc,
-                      backgroundColor: `${mc}20`, border: `1px solid ${mc}40`,
-                      padding: '2px 8px', borderRadius: '4px',
-                    }}>
-                      {tl[team.fundingTier] || team.fundingTier}
-                    </span>
-                  </HoverTooltip>
-                )
-              })()}
-              {(team.floosbowlChampionships?.length ?? 0) > 0 && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', color: '#f59e0b' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-                    <path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
-                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
-                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-                  </svg>
-                  {team.floosbowlChampionships.length}
-                </span>
-              )}
-              {(team.leagueChampionships?.length ?? 0) > 0 && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '700', color: '#ca8a04' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="8" r="6" /><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                  </svg>
-                  {team.leagueChampionships.length}
-                </span>
-              )}
-              {team.floosbowlChampion && (
-                <span style={{ backgroundColor: '#f59e0b', color: '#000', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>CHAMPION</span>
-              )}
-              {team.clinchedTopSeed && !team.floosbowlChampion && (
-                <span style={{ backgroundColor: '#ca8a04', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>TOP SEED</span>
-              )}
-              {team.clinchedPlayoffs && !team.clinchedTopSeed && !team.floosbowlChampion && (
-                <span style={{ backgroundColor: '#16a34a', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>PLAYOFFS</span>
-              )}
-              {team.eliminated && (
-                <span style={{ backgroundColor: '#374151', color: '#6b7280', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px' }}>ELIMINATED</span>
-              )}
+            </div>
+            <div style={{
+              backgroundColor: 'rgba(11,18,32,0.55)', padding: '10px 16px', textAlign: 'right',
+            }}>
+              <div style={{
+                fontSize: '11px', letterSpacing: '0.12em', fontWeight: 700,
+                color: 'rgba(255,255,255,0.85)',
+              }}>ELO</div>
+              <div style={{
+                fontSize: '34px', lineHeight: 1, fontWeight: 800, color: '#ffffff',
+                fontVariantNumeric: 'tabular-nums',
+              }}>{Math.round(team.elo)}</div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Ratings in hero */}
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: isMobile ? '10px 16px 0' : '14px 24px 0' }}>
-          <div style={{ display: 'flex', gap: isMobile ? '10px' : '20px', flexWrap: 'wrap' as const }}>
-            {[
-              { label: 'OVR', value: team.overallRating },
-              { label: 'OFF', value: team.offenseRating },
-              { label: 'RUN D', value: team.defenseRunCoverageRating },
-              { label: 'PASS D', value: team.defensePassCoverageRating },
-            ].map(({ label, value }) => {
-              const barColor = value >= 85 ? '#22c55e' : value >= 72 ? '#f59e0b' : '#ef4444'
+      {/* ── TROPHY CASE ────────────────────────────────────────────────────
+          Above the fold, because pedigree is half of "are they good".
+          Each title is a MARK, not a sentence: trophy plus the season it was
+          won. A dynasty should read as a row of trophies you can count at a
+          glance, which spelled-out labels made impossible — what the title was
+          lives on the hover. Nothing to show, no empty case. */}
+      {trophies.length > 0 && (
+        <div style={{
+          backgroundColor: 'rgba(245,158,11,0.06)',
+          borderBottom: '1px solid rgba(245,158,11,0.22)',
+        }}>
+          <div style={{
+            maxWidth: PAGE_MAX, margin: '0 auto', padding: `8px ${pad}px`,
+            display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',
+          }}>
+            <span style={{
+              fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em',
+              color: '#0b1220', backgroundColor: '#f59e0b', padding: '3px 9px',
+              marginRight: '6px',
+            }}>Trophy case</span>
+            {trophies.map(t => {
+              const tone = TROPHY_TONE[t.kind]
+              const Icon = tone.Icon
               return (
-                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', minWidth: '42px' }}>{label}</span>
-                  <div style={{ width: isMobile ? '80px' : '100px', height: '8px', backgroundColor: '#1e293b', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${Math.min(value, 100)}%`, height: '100%', backgroundColor: barColor, borderRadius: '4px' }} />
+                <HoverTooltip key={`${t.season}-${t.label}`} text={`${t.season} · ${t.label}`} color={tone.icon}>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    backgroundColor: tone.bg,
+                    border: `1px solid ${tone.border}`,
+                    padding: '3px 8px 3px 6px',
+                  }}>
+                    <Icon size={15} color={tone.icon} style={{ flexShrink: 0 }} />
+                    <span style={{
+                      fontSize: '13px', fontWeight: 700, color: tone.text,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>{t.season.replace(/^Season\s*/i, 'S')}</span>
+                  </span>
+                </HoverTooltip>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── FACTS GRID ─────────────────────────────────────────────────────
+          One scan line, five cells: how good they are, who runs them, how
+          they're holding up, where they play, and what's next. Outer cells sit
+          flush with the column so the row reads edge to edge — see factCell,
+          which works out the edges and dividers from the current column count
+          rather than each cell hard-coding its own. */}
+      <div style={{ maxWidth: PAGE_MAX, margin: '0 auto', padding: `0 ${pad}px` }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${factCols}, minmax(0,1fr))`,
+          borderBottom: '1px solid #1e293b',
+        }}>
+          <div style={factCell(0, factCols)}>
+            <CellLabel>Team ratings</CellLabel>
+            <div style={{ marginTop: '7px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <Gauge label="Offense" rating={team.offenseRating ?? 0} />
+              <Gauge label="Run Defense" rating={team.defenseRunCoverageRating ?? 0} />
+              <Gauge label="Pass Defense" rating={team.defensePassCoverageRating ?? 0} />
+            </div>
+          </div>
+
+          <div style={factCell(1, factCols)}>
+            <CellLabel>Head coach</CellLabel>
+            {team.coach ? (
+              <>
+                <div style={{
+                  fontSize: '17px', fontWeight: 700, color: '#f8fafc',
+                  marginTop: '3px', letterSpacing: '-0.01em',
+                }}>{team.coach.name}</div>
+                <div style={{ marginTop: '7px' }}>
+                  <CoachProfileTags profile={team.coach.profile} />
+                </div>
+                <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '6px' }}>
+                  {tenurePhrase(team.coach.seasonsCoached)}
+                </div>
+                {/* The same 1-5 the players get. A GM is judged on the same
+                    scale by the same fans, so it's the same control. */}
+                <div style={{ marginTop: '8px' }}>
+                  <PlayerRating
+                    playerId={team.id}
+                    subject="gm"
+                    canRate={isMyTeam}
+                    onChange={onRated}
+                    averageFill
+                    pipSize={15}
+                    countSuffix=" fans"
+                    layout="column"
+                  />
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '3px' }}>Vacant</div>
+            )}
+          </div>
+
+          <div style={factCell(2, factCols)}>
+            <CellLabel>Locker room</CellLabel>
+            {locker ? (
+              <>
+                <div style={{
+                  fontSize: '23px', lineHeight: 1.15, fontWeight: 800, color: moodColor,
+                }}>{locker.fortitudeLabel}</div>
+                <div style={{ marginTop: '7px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <MoodBar label="Resolve" value={locker.resolve} color="#4ade80" />
+                  <MoodBar label="Fortitude" value={locker.fortitude} color="#4ade80" />
+                  <MoodBar label="Vulnerability" value={locker.vulnerability} color="#38bdf8" />
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '3px' }}>No read yet</div>
+            )}
+          </div>
+
+          {/* Stadium. The LEVEL is real (the funded `stadium` facility); the
+              name, capacity and blurb are mocked — see mockStadium. Off until
+              the backend has stadiums; SHOW_STADIUM brings it back. */}
+          {SHOW_STADIUM && (
+          <div style={factCell(3, factCols)}>
+            <CellLabel>Stadium</CellLabel>
+            <div style={{
+              fontSize: '17px', fontWeight: 700, color: '#f8fafc',
+              marginTop: '3px', letterSpacing: '-0.01em',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{stadium.name}</div>
+            <div style={{
+              display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '6px',
+            }}>
+              {/* The team's own colour, lifted until it actually reads on the
+                  near-black page. Several secondaries are navy or maroon and
+                  sank straight into the background at their raw value. */}
+              <span style={{
+                fontSize: '12px', fontWeight: 700, color: readableOnDark(secondary),
+              }}>{stadium.size}</span>
+              <span style={{
+                fontSize: '12px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums',
+              }}>{stadium.capacity.toLocaleString()} seats</span>
+            </div>
+            <div style={{
+              fontSize: '12px', color: '#94a3b8', marginTop: '6px', lineHeight: 1.45,
+            }}>{stadium.blurb}</div>
+          </div>
+          )}
+
+          {/* Next up takes the market's place. It's the most time-sensitive
+              thing on the page, so it belongs on the first scan line rather
+              than partway down a rail.
+
+              `font: inherit` is load-bearing: a <button> does NOT inherit
+              font-family or size from the page, so without it this cell's text
+              rendered in the browser default and sat a couple of pixels off
+              the three headings beside it. */}
+          <button
+            type="button"
+            className="tp-fact-cell"
+            disabled={!nextGame || !canOpen(nextGame)}
+            onClick={() => nextGame && canOpen(nextGame) && setOpenGameId(nextGame.gameId)}
+            style={{
+              ...FOCUS_RING(secondary),
+              font: 'inherit', textAlign: 'left', width: '100%',
+              // A <button> centres its own content vertically, and `display:
+              // block` does not stop it — that is what floated this cell off
+              // the headings beside it. An explicit flex container with
+              // flex-start overrides the browser's anonymous centring.
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'stretch', justifyContent: 'flex-start',
+              border: 'none', borderRadius: 0,
+              backgroundColor: 'transparent',
+              cursor: nextGame && canOpen(nextGame) ? 'pointer' : 'default',
+              // Last cell. With the stadium showing it's the fifth, which
+              // leaves it alone on the final row when folded to two columns —
+              // so it spans rather than sitting as a half-width orphan. With
+              // four cells the fold is even and no span is needed.
+              ...factCell(nextUpIndex, factCols, stacked && SHOW_STADIUM ? 2 : 1),
+            }}
+          >
+            <CellLabel>Next up</CellLabel>
+            {nextGame ? (
+              <>
+                <div style={{
+                  fontSize: '11px', letterSpacing: '0.08em', fontWeight: 700,
+                  color: '#38bdf8', marginTop: '7px',
+                }}>
+                  {weekTitle(nextGame.week)}
+                  {' · '}
+                  {nextGame.status === 'Active' ? 'Live' : nextGame.status === 'Final' ? 'Final' : nextGame.isHome ? 'Home' : 'Away'}
+                  {nextGame.status !== 'Scheduled' && (nextGame.isHome ? ' · Home' : ' · Away')}
+                </div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '12px', marginTop: '7px',
+                }}>
+                  <img src={`/avatars/${nextGame.opponent.id}.png`} alt=""
+                       style={{ width: '34px', height: '34px', flexShrink: 0 }} />
+                  {/* The name WRAPS rather than ellipsing. With a one-line
+                      name most opponents were cut off mid-city. Two short
+                      lines cost a few pixels of height and lose nothing. */}
+                  <span style={{
+                    fontSize: '16px', fontWeight: 700, color: '#f1f5f9', lineHeight: 1.2,
+                    minWidth: 0, overflowWrap: 'anywhere',
+                  }}>{nextGame.opponent.city} {nextGame.opponent.name}</span>
+                </div>
+
+                {/* The score is a SCOREBOARD, not a bare pair of numbers. Sat
+                    at the end of the name row, "Baltimore Ravens 16-6" read as
+                    the opponent's record. Naming both sides and separating
+                    them is what makes it a score. */}
+                {nextGame.status !== 'Scheduled' && (
+                  <div style={{
+                    display: 'flex', alignItems: 'baseline', gap: '14px', marginTop: '9px',
+                  }}>
+                    {[
+                      { abbr: team.abbr, score: nextGame.teamScore },
+                      { abbr: nextGame.opponent.abbr, score: nextGame.oppScore },
+                    ].map(side => (
+                      <span key={side.abbr} style={{
+                        display: 'flex', alignItems: 'baseline', gap: '6px',
+                      }}>
+                        <span style={{
+                          fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em',
+                          color: '#94a3b8',
+                        }}>{side.abbr}</span>
+                        <span style={{
+                          fontSize: '22px', fontWeight: 800, lineHeight: 1,
+                          fontVariantNumeric: 'tabular-nums',
+                          // The side in front is the brighter one, so the
+                          // scoreline says who's winning without a label.
+                          color: side.score >= Math.max(nextGame.teamScore, nextGame.oppScore)
+                            ? '#f8fafc' : '#94a3b8',
+                        }}>{side.score}</span>
+                      </span>
+                    ))}
                   </div>
-                  <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '600', fontVariantNumeric: 'tabular-nums', minWidth: '24px' }}>{Math.round(value)}</span>
+                )}
+              </>
+            ) : (
+              /* No next game means one of three quite different things, and
+                 "Season over" was wrong for two of them. A team knocked out in
+                 round 2 is not in the same position as the one holding the
+                 trophy. */
+              <div style={{ marginTop: '7px' }}>
+                <div style={{
+                  fontSize: '23px', lineHeight: 1.15, fontWeight: 800,
+                  color: team.floosbowlChampion ? '#f59e0b'
+                    : team.eliminated ? '#cbd5e1' : '#cbd5e1',
+                }}>
+                  {team.floosbowlChampion ? 'Champions'
+                    : team.eliminated ? 'Eliminated' : 'Season over'}
+                </div>
+                <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '5px' }}>
+                  {team.floosbowlChampion ? 'Floos Bowl winners'
+                    : team.eliminated ? 'Out of the running'
+                    : 'No games scheduled'}
+                </div>
+              </div>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ── BODY ──────────────────────────────────────────────────────────
+          Roster and The Bleachers side by side. The feed used to sit third in
+          a rail under the schedule, which buried the one part of the page fans
+          actually write to — here it runs the full height of the roster and is
+          the second thing you see. */}
+      <div id="tp-squad" className="tp-section" style={{
+        maxWidth: PAGE_MAX, margin: '0 auto', padding: `24px ${pad}px 0`,
+        display: 'grid',
+        gridTemplateColumns: stacked ? 'minmax(0,1fr)' : `minmax(0,1fr) minmax(0,${RAIL}px)`,
+        gap: '32px', alignItems: 'start',
+      }}>
+
+        <div style={{ minWidth: 0 }}>
+          <SectionHead label="Roster" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {ROSTER_SLOTS.map((slot, i) => {
+              const p = team.roster?.[slot] ?? null
+              return (
+                <div key={slot} className="tp-slot" style={{ animationDelay: `${i * 40}ms` }}>
+                  <RosterPlate
+                    slot={slot}
+                    player={p}
+                    teamColor={accent}
+                    canRate={isMyTeam}
+                    onRated={onRated}
+                    stage={p ? stages[p.id] : undefined}
+                    narrow={narrowPlates}
+                  />
                 </div>
               )
             })}
           </div>
         </div>
-      </div>
 
-      {/* Tab Bar */}
-      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: isMobile ? '12px 16px 0' : '16px 24px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' as const }}>
-          {([
-            { key: 'overview', label: 'Overview' },
-            { key: 'schedule', label: 'Schedule' },
-            // Funding and Front Office are now on the dedicated /front-office hub.
-            // Favorite-team fans see a quick link inline (below); team page stays
-            // focused on roster, coach, schedule, and read-only stats.
-          ] as { key: string; label: string }[]).map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              data-tour={`team-tab-${tab.key.toLowerCase()}`}
-              style={{
-                padding: '6px 14px',
-                fontSize: '13px',
-                fontWeight: activeTab === tab.key ? '700' : '500',
-                borderRadius: '6px',
-                border: `1px solid ${activeTab === tab.key ? team.color : '#334155'}`,
-                backgroundColor: activeTab === tab.key ? `${team.color}20` : 'transparent',
-                color: activeTab === tab.key ? '#e2e8f0' : '#94a3b8',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-          {isFavTeam && (
-            <div style={{ marginLeft: 'auto' }}>
-              <HelpButton onClick={() => { tour.hasCompleted ? setShowHelp(true) : tour.startTour() }} size={24} />
-            </div>
-          )}
+        <div style={{ minWidth: 0 }}>
+          <SectionHead label="The Bleachers" note="Say your piece" style={{ marginBottom: '10px' }} />
+          {/* Tall enough to fill the roster's height rather than stopping a
+              third of the way down it. */}
+          <TeamFeed
+            teamId={team.id}
+            refreshKey={tick}
+            canPost={isMyTeam}
+            bare
+            composer="dropdown"
+            railTone
+            maxHeight={stacked ? 280 : 430}
+          />
         </div>
       </div>
 
-      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: isMobile ? '16px' : '24px' }}>
+      {/* ── THE RECORD ─────────────────────────────────────────────────────
+          Season history and the full schedule, side by side across the whole
+          page. Both run in two internal columns so all 16 seasons and all 28
+          weeks are visible at once — no scrollbars, nothing behind an
+          overflow. That's what the width down here is for. */}
+      <div id="tp-record" className="tp-section" style={{
+        maxWidth: PAGE_MAX, margin: '0 auto', padding: `30px ${pad}px 0`,
+        display: 'grid',
+        gridTemplateColumns: stacked ? 'minmax(0,1fr)' : 'repeat(2, minmax(0,1fr))',
+        gap: '36px', alignItems: 'start',
+      }}>
 
-        {/* === OVERVIEW TAB === */}
-        {activeTab === 'overview' && (<>
-
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.6fr) minmax(0, 1fr)', gap: '16px', alignItems: 'start', marginBottom: '20px' }}>
-
-          {/* Roster */}
-          <div data-tour="team-roster" style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-            {sectionHeader('Roster')}
-            <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {ROSTER_SLOTS.map(([slot, posLabel]) => {
-                const player = team.roster?.[slot]
-
-                const positionCell = (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: '70px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8' }}>{posLabel}</span>
-                    <span style={{
-                      fontSize: '10px', fontWeight: '600',
-                      color: player?.defensivePosition ? '#94a3b8' : 'transparent',
-                      backgroundColor: player?.defensivePosition ? '#1e293b' : 'transparent',
-                      padding: '1px 6px', borderRadius: '3px', minWidth: '32px',
-                      textAlign: 'center', letterSpacing: '0.04em',
-                    }}>
-                      {player?.defensivePosition || ''}
-                    </span>
-                  </div>
-                )
-
-                if (!player) {
-                  return (
-                    <div key={slot} style={{
-                      display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '7px 10px', borderRadius: '4px', backgroundColor: '#0f172a',
-                    }}>
-                      {positionCell}
-                      <span style={{ fontSize: '13px', color: '#475569' }}>—</span>
-                    </div>
-                  )
-                }
-
-                // Fatigue is reported on a 0-100 scale but accumulates
-                // slowly (~0.25%/week). Realistic late-season range is
-                // 0-10% — thresholds calibrated to that.
-                const fatigue = player.fatigue ?? 0
-                let statusLabel = 'Fresh'
-                let statusColor = '#22c55e'
-                if (fatigue > 7) { statusLabel = 'Worn'; statusColor = '#ef4444' }
-                else if (fatigue > 4) { statusLabel = 'Worked'; statusColor = '#f59e0b' }
-                else if (fatigue > 2) { statusLabel = 'Active'; statusColor = '#94a3b8' }
-                // Service time → short rookie/veteran label + accent.
-                const svc = player.serviceTime || ''
-                let svcLabel = ''
-                let svcColor = '#64748b'
-                if (svc === 'Rookie') { svcLabel = 'Rookie'; svcColor = '#22c55e' }
-                else if (svc === 'Established') { svcLabel = 'Estab.'; svcColor = '#94a3b8' }
-                else if (svc === 'Veteran') { svcLabel = 'Veteran'; svcColor = '#94a3b8' }
-                else if (svc === 'Grizzled Veteran') { svcLabel = 'Grizzled'; svcColor = '#f59e0b' }
-                else if (svc === 'Ancient Veteran') { svcLabel = 'Ancient'; svcColor = '#ef4444' }
-
-                const nameLink = (
-                  <PlayerHoverCard playerId={player.id} playerName={player.name}>
-                    <Link
-                      to={`/players/${player.id}`}
-                      style={{
-                        fontSize: isMobile ? '14px' : '13px', color: '#e2e8f0', fontWeight: '600',
-                        textDecoration: 'none', overflow: 'hidden',
-                        textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
-                      }}
-                    >
-                      {player.name}
-                    </Link>
-                  </PlayerHoverCard>
-                )
-                const statusPill = (
-                  <span style={{
-                    fontSize: '10px', fontWeight: 600,
-                    color: statusColor,
-                    backgroundColor: `${statusColor}1a`,
-                    border: `1px solid ${statusColor}55`,
-                    padding: '1px 7px', borderRadius: '3px',
-                    letterSpacing: '0.03em', whiteSpace: 'nowrap',
-                    textAlign: 'center',
-                  }}>
-                    {statusLabel}
-                  </span>
-                )
-                const contractText = player.termRemaining != null ? (
-                  <span style={{
-                    fontSize: '11px',
-                    color: player.termRemaining === 1 ? '#f59e0b' : '#94a3b8',
-                    fontVariantNumeric: 'tabular-nums',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {player.termRemaining}yr left
-                  </span>
-                ) : null
-                const svcChip = svcLabel ? (
-                  <span style={{
-                    fontSize: '10px', fontWeight: 600,
-                    color: svcColor, letterSpacing: '0.04em',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {svcLabel}
-                  </span>
-                ) : null
-                const retirementBadge = retirementWatch[player.id]
-                  ? <RetirementBadge risk={retirementWatch[player.id].risk} />
-                  : <CareerStageBadge stage={careerStages[player.id]} />
-
-                const isExpanded = expandedRosterSlot === slot
-                const toggleExpand = () => setExpandedRosterSlot(isExpanded ? null : slot)
-                const chevron = (
-                  <span style={{
-                    color: '#94a3b8',
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    transition: 'transform 0.15s, color 0.15s',
-                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    lineHeight: 1,
-                    flexShrink: 0,
-                    minWidth: '18px',
-                  }}>▾</span>
-                )
-
-                // Maps a team form state into a short reason + multiplier so
-                // we can show users the *concrete* expected rating impact for
-                // each rostered player this week. Multipliers mirror the
-                // backend's FORM_STATE_RATING_MULT.
-                const formInfo: { label: string; mult: number; color: string } | null = (() => {
-                  switch (team.formState) {
-                    case 'COMPLACENT': return { label: 'COMPLACENT', mult: 0.93,  color: '#ef4444' }
-                    case 'SPIRALING':  return { label: 'SPIRALING',  mult: 0.95,  color: '#ef4444' }
-                    case 'COOLING_OFF':return { label: 'COOLING OFF',mult: 0.97,  color: '#f59e0b' }
-                    case 'SHAKY':      return { label: 'SHAKY',      mult: 0.985, color: '#f59e0b' }
-                    case 'RESOLUTE':   return { label: 'RESOLUTE',   mult: 1.03,  color: '#22c55e' }
-                    case 'HOT_STREAK': return { label: 'HOT STREAK', mult: 1.00,  color: '#22c55e' }
-                    case 'GETTING_HOT':return { label: 'GETTING HOT',mult: 1.00,  color: '#22c55e' }
-                    case 'STEADY':     return { label: 'STEADY',     mult: 1.00,  color: '#94a3b8' }
-                    default:           return null
-                  }
-                })()
-
-                // Approximate rating impact previews. These mirror the backend
-                // math but compute on the frontend so users see live numbers
-                // without waiting for a game to run.
-                const fatiguePct = player.fatigue ?? 0          // 0-100 (percent)
-                // Fatigue applies fully to physical attrs; physical attrs are
-                // the dominant input to overallRating, so the rating impact
-                // is roughly fatiguePct% of baseline. Floor to 0 while the
-                // status is "Fresh" — a sub-2% drag rounds to -1 on stars
-                // but reads as wrong next to a "Fresh" badge.
-                const rawFatigueImpact = Math.round(-(player.rating * (fatiguePct / 100)))
-                const fatigueImpact = statusLabel === 'Fresh' ? 0 : rawFatigueImpact
-                const formImpact = formInfo
-                  ? Math.round(player.rating * (formInfo.mult - 1.0))
-                  : 0
-                const previewRating = Math.max(0, player.rating + fatigueImpact + formImpact)
-
-                const totalDelta = previewRating - player.rating
-                const totalDeltaColor = totalDelta > 0 ? '#22c55e' : totalDelta < 0 ? '#ef4444' : '#94a3b8'
-                const fmtDelta = (n: number) => (n > 0 ? `+${n}` : n === 0 ? '±0' : `${n}`)
-                const deltaColor = (n: number) => (n > 0 ? '#22c55e' : n < 0 ? '#ef4444' : '#94a3b8')
-
-                const insightsPanel = isExpanded ? (
-                  <div style={{
-                    marginTop: '4px', padding: '10px 12px', borderRadius: '4px',
-                    backgroundColor: '#0b1424', border: '1px solid #1e293b',
-                    display: 'flex', flexDirection: 'column', gap: '8px',
-                  }}>
-                    {/* Rating preview — baseline → effective with total delta */}
-                    <div style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      gap: '12px', padding: '6px 8px', borderRadius: '3px',
-                      backgroundColor: '#0f172a', border: '1px solid #1e293b',
-                    }}>
-                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>Effective rating</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontVariantNumeric: 'tabular-nums' }}>
-                        <span style={{ fontSize: '12px', color: '#94a3b8' }}>{player.rating}</span>
-                        <span style={{ fontSize: '11px', color: '#475569' }}>→</span>
-                        <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 700 }}>{previewRating}</span>
-                        <span style={{
-                          fontSize: '10px', fontWeight: 700,
-                          color: totalDeltaColor,
-                          backgroundColor: `${totalDeltaColor}1a`,
-                          border: `1px solid ${totalDeltaColor}55`,
-                          padding: '1px 6px', borderRadius: '3px',
-                        }}>
-                          {fmtDelta(totalDelta)}
-                        </span>
-                      </span>
-                    </div>
-
-                    {/* Fatigue */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
-                      <span style={{ color: '#cbd5e1' }}>
-                        Fatigue
-                        <span style={{ color: statusColor, marginLeft: '6px', fontSize: '11px' }}>
-                          {statusLabel} ({fatigue.toFixed(1)}%)
-                        </span>
-                      </span>
-                      <span style={{
-                        color: deltaColor(fatigueImpact), fontWeight: 600,
-                        fontVariantNumeric: 'tabular-nums',
-                      }}>
-                        {fmtDelta(fatigueImpact)}
-                      </span>
-                    </div>
-
-                    {/* Team disposition (matches the game-modal label —
-                        same concept, same name everywhere). */}
-                    {formInfo && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
-                        <span style={{ color: '#cbd5e1' }}>
-                          Team disposition
-                          <span style={{ color: formInfo.color, marginLeft: '6px', fontWeight: 600 }}>
-                            {formInfo.label}
-                          </span>
-                        </span>
-                        <span style={{
-                          color: deltaColor(formImpact), fontWeight: 600,
-                          fontVariantNumeric: 'tabular-nums',
-                        }}>
-                          {fmtDelta(formImpact)}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Attitude — rendered as a descriptive badge, not a raw
-                        number. Tiers mirror the player-page mapping. */}
-                    {player.attitude != null && (() => {
-                      const att = player.attitude
-                      let label = 'Steady'
-                      let color = '#94a3b8'
-                      if (att >= 90)      { label = 'Leader';   color = '#22c55e' }
-                      else if (att >= 80) { label = 'Positive'; color = '#86efac' }
-                      else if (att >= 65) { label = 'Neutral';  color = '#94a3b8' }
-                      else if (att >= 50) { label = 'Sour';     color = '#f59e0b' }
-                      else                { label = 'Toxic';    color = '#ef4444' }
-                      return (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '12px' }}>
-                          <span style={{ color: '#cbd5e1' }}>Locker-room presence</span>
-                          <span style={{
-                            fontSize: '10px', fontWeight: 600,
-                            color,
-                            backgroundColor: `${color}1a`,
-                            border: `1px solid ${color}55`,
-                            padding: '1px 7px', borderRadius: '3px',
-                            letterSpacing: '0.03em',
-                          }}>
-                            {label}
-                          </span>
-                        </div>
-                      )
-                    })()}
-                  </div>
-                ) : null
-
-                if (isMobile) {
-                  return (
-                    <div key={slot}>
-                      <div onClick={toggleExpand} className="roster-row-expandable" style={{
-                        display: 'flex', flexDirection: 'column', gap: '6px',
-                        padding: '8px 10px', borderRadius: '4px', backgroundColor: '#0f172a',
-                        cursor: 'pointer',
-                      }}>
-                        {/* Top row: position | name | retirement | chevron */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                          {positionCell}
-                          <div style={{ flex: 1, minWidth: 0 }}>{nameLink}</div>
-                          {retirementBadge}
-                          {chevron}
-                        </div>
-                        {/* Bottom row: stars + status + contract + service (wraps) */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', paddingLeft: '2px' }}>
-                          <Stars stars={player.ratingStars} size={11} />
-                          {statusPill}
-                          {contractText}
-                          {svcChip}
-                        </div>
-                      </div>
-                      {insightsPanel}
-                    </div>
-                  )
-                }
-
-                return (
-                  <div key={slot}>
-                    <div onClick={toggleExpand} className="roster-row-expandable" style={{
-                      display: 'grid',
-                      // Fixed widths so rows stay aligned regardless of content.
-                      // The retirement column reserves a fixed slot only while
-                      // retirement data is live (weeks 22+); otherwise it
-                      // collapses so the off-season layout isn't padded out.
-                      gridTemplateColumns: `auto minmax(0, 1fr) 60px 80px ${(Object.keys(retirementWatch).length > 0 || hasRenderableStage(careerStages)) ? '96px' : 'auto'} 20px`,
-                      columnGap: '10px',
-                      alignItems: 'center',
-                      padding: '7px 10px',
-                      borderRadius: '4px',
-                      backgroundColor: '#0f172a',
-                      cursor: 'pointer',
-                    }}>
-                      {positionCell}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                        {nameLink}
-                        <Stars stars={player.ratingStars} size={11} />
-                      </div>
-                      <span>{statusPill}</span>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                        {contractText}
-                        {svcChip}
-                      </div>
-                      <span style={{ minWidth: 0, display: 'flex', justifyContent: 'flex-end' }}>
-                        {retirementBadge}
-                      </span>
-                      {chevron}
-                    </div>
-                    {insightsPanel}
-                  </div>
-                )
-              })}
+        <div style={{ minWidth: 0 }}>
+          <SectionHead label="Season history" style={{ marginBottom: '10px' }} />
+          {history.length === 0 ? (
+            <div style={{ fontSize: '13px', color: '#cbd5e1' }}>First season.</div>
+          ) : (
+            <div style={{
+              display: 'grid',
+              // One column for a team with barely any history — two half-empty
+              // tables side by side would look like a rendering fault.
+              gridTemplateColumns: historyRight.length === 0 || narrowPlates
+                ? 'minmax(0,1fr)'
+                : 'repeat(2, minmax(0,1fr))',
+              gap: '28px', alignItems: 'start',
+            }}>
+              {(historyRight.length === 0 || narrowPlates
+                ? [history]
+                : [historyLeft, historyRight]
+              ).map((rows, i) => <HistoryTable key={i} rows={rows} liveSeason={liveSeason} />)}
             </div>
+          )}
+        </div>
 
-            {/* Prospect Pipeline — drafted rookies developing toward roster promotion.
-                Always rendered so empty pipelines are visible (no prospects = "drafted
-                empty rosters" hint for fans to understand the system). */}
-            <div style={{ padding: '10px 14px', borderTop: '1px solid #334155' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-                  Prospect Pipeline
-                </span>
-                <span style={{ fontSize: '10px', color: '#64748b' }}>
-                  {prospects.length} / {(prospectsMeta?.slotCapPerPosition ?? 2) * 5} slots
-                </span>
-              </div>
-              {prospects.length === 0 ? (
-                <div style={{ fontSize: '12px', color: '#64748b', padding: '6px 0' }}>
-                  No prospects in the pipeline yet. Rookies are drafted each offseason
-                  — 24 rookies per class, worst-first order, 1 pick per team.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  {prospects.map(p => {
-                    // "2 seasons until FA" if more than a season left, or
-                    // "final season — will be FA" at the last dev window year.
-                    const windowLabel = p.seasonsRemaining <= 1
-                      ? 'final season'
-                      : `${p.seasonsRemaining} seasons`
-                    const posCell = (
-                      <span style={{ fontSize: '11px', fontWeight: '700', color: '#94a3b8', minWidth: '32px' }}>{p.position}</span>
-                    )
-                    const nameLink = (
-                      <Link
-                        to={`/players/${p.playerId}`}
+        <div style={{ minWidth: 0 }}>
+          <SectionHead
+            label="Schedule"
+            note={seasonState.seasonNumber ? `Season ${seasonState.seasonNumber}` : undefined}
+            style={{ marginBottom: '10px' }}
+          />
+          {schedule.length === 0 ? (
+            <div style={{ fontSize: '13px', color: '#cbd5e1' }}>No games yet.</div>
+          ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: narrowPlates ? 'minmax(0,1fr)' : 'repeat(2, minmax(0,1fr))',
+              gap: '28px', alignItems: 'start',
+            }}>
+              {(narrowPlates ? [schedule] : [scheduleLeft, scheduleRight]).map((chunk, c) => (
+                <div key={c} style={{ minWidth: 0 }}>
+                  {chunk.map(raw => {
+                    const g = liveOverlay(raw)
+                    const played = g.result === 'W' || g.result === 'L'
+                    const isNext = nextGame != null && g.gameId === nextGame.gameId
+                    const scoreColor = isNext ? '#38bdf8'
+                      : g.result === 'W' ? '#4ade80'
+                      : g.result === 'L' ? '#f87171'
+                      : '#94a3b8'
+                    return (
+                      <button
+                        key={g.gameId}
+                        type="button"
+                        className="tp-sched-row"
+                        disabled={!canOpen(g)}
+                        onClick={() => canOpen(g) && setOpenGameId(g.gameId)}
                         style={{
-                          fontSize: isMobile ? '13px' : '12px', color: '#e2e8f0', fontWeight: '600',
-                          textDecoration: 'none', overflow: 'hidden',
-                          textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
+                          ...FOCUS_RING(secondary),
+                          width: '100%', textAlign: 'left',
+                          display: 'grid',
+                          gridTemplateColumns: '30px 22px 16px minmax(0,1fr) auto',
+                          gap: '8px', alignItems: 'center',
+                          padding: '6px 8px', border: 'none', borderRadius: 0,
+                          borderBottom: '1px solid #16202f',
+                          backgroundColor: isNext ? 'rgba(56,189,248,0.10)' : 'transparent',
+                          cursor: canOpen(g) ? 'pointer' : 'default',
                         }}
                       >
-                        {p.name}
-                      </Link>
-                    )
-                    const draftChip = (
-                      <span style={{
-                        fontSize: p.isUndrafted ? '9px' : '11px',
-                        fontWeight: p.isUndrafted ? 700 : 500,
-                        color: '#64748b',
-                        backgroundColor: p.isUndrafted ? '#1e293b' : 'transparent',
-                        padding: p.isUndrafted ? '1px 5px' : 0,
-                        borderRadius: '3px',
-                        letterSpacing: p.isUndrafted ? '0.04em' : 'normal',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {p.isUndrafted
-                          ? 'UNDRAFTED'
-                          : p.draftSeason != null
-                            ? `drafted S${p.draftSeason}`
-                            : ''}
-                      </span>
-                    )
-                    const faText = (
-                      <span style={{
-                        fontSize: '11px',
-                        color: p.seasonsRemaining <= 1 ? '#f59e0b' : '#94a3b8',
-                        whiteSpace: 'nowrap', fontWeight: 600,
-                      }}>
-                        {windowLabel} until FA
-                      </span>
-                    )
-
-                    if (isMobile) {
-                      return (
-                        <div key={p.playerId} style={{
-                          display: 'flex', flexDirection: 'column', gap: '4px',
-                          padding: '8px 10px', borderRadius: '4px', backgroundColor: '#0f172a',
+                        <span style={{
+                          fontSize: '12px', fontVariantNumeric: 'tabular-nums',
+                          color: isNext ? '#38bdf8' : '#cbd5e1',
+                        }}>{weekLabel(g.week)}</span>
+                        <img src={`/avatars/${g.opponent.id}.png`} alt=""
+                             style={{
+                               width: '20px', height: '20px',
+                               // Unplayed opponents go grey rather than the row
+                               // going translucent: dimming the whole row put
+                               // the text under the legibility floor.
+                               filter: played ? 'none' : 'grayscale(1)',
+                             }} />
+                        <span style={{ fontSize: '11px', color: '#cbd5e1' }}>{g.isHome ? 'vs' : '@'}</span>
+                        <span style={{
+                          minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap', fontSize: '13px',
+                          color: played ? '#cbd5e1' : '#94a3b8',
+                        }}>{g.opponent.city} {g.opponent.name}</span>
+                        <span style={{
+                          fontSize: '13px', fontWeight: 700, color: scoreColor,
+                          fontVariantNumeric: 'tabular-nums',
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                            {posCell}
-                            <div style={{ flex: 1, minWidth: 0 }}>{nameLink}</div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', paddingLeft: '2px' }}>
-                            <Stars stars={calcStars(p.rating)} size={11} />
-                            {draftChip}
-                            {faText}
-                          </div>
-                        </div>
-                      )
-                    }
-
-                    return (
-                      <div key={p.playerId} style={{
-                        display: 'grid',
-                        gridTemplateColumns: '32px minmax(0, 1fr) auto auto',
-                        columnGap: '10px',
-                        alignItems: 'center',
-                        padding: '6px 10px',
-                        borderRadius: '4px',
-                        backgroundColor: '#0f172a',
-                      }}>
-                        {posCell}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                          {nameLink}
-                          <Stars stars={calcStars(p.rating)} size={11} />
-                        </div>
-                        <span style={{ minWidth: '70px', textAlign: 'right' }}>{draftChip}</span>
-                        <span style={{ minWidth: '110px', textAlign: 'right' }}>{faText}</span>
-                      </div>
+                          {played || g.status === 'Active'
+                            // A frames match is decided by FRAMES WON, so the
+                            // point total would misreport the result. W/L is
+                            // already frames-aware via `result`.
+                            ? (g.scoreLabel === 'frames'
+                                ? `${fmtFramesWon(g.displayTeamScore ?? g.teamScore)}\u2013${fmtFramesWon(g.displayOppScore ?? g.oppScore)}`
+                                : `${g.teamScore}\u2013${g.oppScore}`)
+                            : '\u2014'}
+                        </span>
+                      </button>
                     )
                   })}
                 </div>
-              )}
-            </div>
-          </div>
-
-        {/* Head Coach */}
-        {team.coach ? (
-          <div data-tour="team-coach" style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-            {sectionHeader('Head Coach')}
-            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div>
-                  <div style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', marginBottom: '4px' }}>{team.coach.name}</div>
-                  <Stars stars={calcStars(team.coach.overallRating)} size={13} />
-                  <div style={{ marginTop: '4px', fontSize: '12px', color: '#94a3b8' }}>
-                    {team.coach.seasonsCoached} season{team.coach.seasonsCoached !== 1 ? 's' : ''}
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 20px' }}>
-                {([
-                  ['Offensive Mind', team.coach.offensiveMind],
-                  ['Defensive Mind', team.coach.defensiveMind],
-                  ['Adaptability', team.coach.adaptability],
-                  ['Aggressiveness', team.coach.aggressiveness],
-                  ['Clock Mgmt', team.coach.clockManagement],
-                  ['Player Dev', team.coach.playerDevelopment],
-                  ['Scouting', team.coach.scouting],
-                ] as [string, number][]).map(([label, val]) => (
-                  <div key={label}>
-                    <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '3px' }}>{label}</div>
-                    {coachAttrBar(val)}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : <div />}
-
-          </div>
-
-        </>)}
-
-        {/* === FUNDING TAB === */}
-        {activeTab === 'funding' && (<>
-
-        {/* Market Tier */}
-        {team.funding?.tier && (() => {
-          const f = team.funding!
-          const tierColors: Record<string, string> = {
-            'MEGA_MARKET': '#a78bfa',
-            'LARGE_MARKET': '#3b82f6',
-            'MID_MARKET': '#2dd4bf',
-            'SMALL_MARKET': '#f97316',
-          }
-          const tierLabels: Record<string, string> = {
-            'MEGA_MARKET': 'Mega Market',
-            'LARGE_MARKET': 'Large Market',
-            'MID_MARKET': 'Mid Market',
-            'SMALL_MARKET': 'Small Market',
-          }
-          const tierEffects: Record<string, string[]> = {
-            'MEGA_MARKET': ["One of the league's largest fanbases"],
-            'LARGE_MARKET': ['A large, well-established fanbase'],
-            'MID_MARKET': ['A mid-sized fanbase, around the league average'],
-            'SMALL_MARKET': ['A smaller fanbase'],
-          }
-          const orderedTiers = ['SMALL_MARKET', 'MID_MARKET', 'LARGE_MARKET', 'MEGA_MARKET']
-          const currentIdx = orderedTiers.indexOf(f.tier)
-          const tierColor = tierColors[f.tier] || '#64748b'
-
-          // Tiers are now relative quartiles; the only meaningful "line" on the bar
-          // is the live next-tier threshold (what this team needs to beat to climb).
-          const nextSeasonTier = projectedFunding?.nextSeasonProjectedTier
-          const projectedIdx = nextSeasonTier
-            ? orderedTiers.indexOf(nextSeasonTier)
-            : currentIdx
-          const projectedTier = orderedTiers[Math.max(0, projectedIdx)]
-
-          const nextSeasonFunding = projectedFunding?.nextSeasonProjectedFunding ?? null
-          const projectedTotal = projectedFunding ? f.currentFunding + projectedFunding.projectedAutoContributions : null
-          const maxFunding = Math.max(f.currentFunding, projectedTotal ?? 0, nextSeasonFunding ?? 0, f.nextTierThreshold ?? 0)
-          const barMin = 0
-          const barMax = Math.max(maxFunding * 1.15, (f.nextTierThreshold ?? 0) * 1.1, 1)
-          const barRange = barMax - barMin || 1
-          const fundingPct = Math.min(Math.max(((f.currentFunding - barMin) / barRange) * 100, 0), 100)
-          // Single marker: where the tier above you starts (if there is one)
-          const tierMarkers = (f.nextTierThreshold && f.nextTierName)
-            ? [{
-                tier: f.nextTierName,
-                threshold: f.nextTierThreshold,
-                pct: Math.min(Math.max(((f.nextTierThreshold - barMin) / barRange) * 100, 0), 100),
-                color: tierColors[f.nextTierName] || '#64748b',
-                label: tierLabels[f.nextTierName] || f.nextTierName,
-                isCurrent: false,
-              }]
-            : []
-
-          const currentEffects = tierEffects[f.tier]
-          const projectedEffects = projectedTier !== f.tier ? tierEffects[projectedTier] : null
-          const projectedColor = tierColors[projectedTier] || '#64748b'
-
-          return (
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
-              {sectionHeader('Market Status')}
-              <div style={{ padding: '16px' }}>
-                {/* === CURRENT TIER === */}
-                <div data-tour="team-funding-tier" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <TierBadge tier={f.tier} label={tierLabels[f.tier] || f.tier} color={tierColor} effects={currentEffects || []} />
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>Season {f.season}</span>
-                </div>
-
-                {/* === NEXT SEASON PROGRESS === */}
-                <div style={{ fontSize: '12px', fontWeight: '600', color: '#e2e8f0', marginTop: '12px', marginBottom: '6px' }}>
-                  Next Season Funding
-                </div>
-
-                {/* Funding progress bar */}
-                <div data-tour="team-funding-bar" style={{ marginBottom: '8px' }}>
-                  <div style={{ position: 'relative', height: '10px', backgroundColor: '#0f172a', borderRadius: '5px', overflow: 'visible' }}>
-                    {/* Tier threshold markers */}
-                    {tierMarkers.map(m => (
-                      <div key={m.tier} style={{
-                        position: 'absolute',
-                        left: `${m.pct}%`,
-                        top: -2,
-                        bottom: -2,
-                        width: '2px',
-                        backgroundColor: m.color,
-                        opacity: m.isCurrent ? 0.8 : 0.4,
-                      }} />
-                    ))}
-                    {/* Next-season projected ghost fill (accounts for decay) */}
-                    {nextSeasonFunding != null && nextSeasonFunding > f.currentFunding && (() => {
-                      const projPct = Math.min(Math.max(((nextSeasonFunding - barMin) / barRange) * 100, 0), 100)
-                      return (
-                        <div style={{
-                          position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          width: `${projPct}%`,
-                          height: '100%',
-                          backgroundColor: tierColors[projectedTier] || tierColor,
-                          opacity: 0.25,
-                          borderRadius: '5px',
-                        }} />
-                      )
-                    })()}
-                    {/* Funding fill */}
-                    <div style={{
-                      position: 'relative',
-                      width: `${fundingPct}%`,
-                      height: '100%',
-                      backgroundColor: projectedIdx > currentIdx ? tierColors[projectedTier] || tierColor : tierColor,
-                      borderRadius: '5px',
-                      transition: 'width 0.3s',
-                    }} />
-                    {/* Next-season projected marker line */}
-                    {nextSeasonFunding != null && nextSeasonFunding > f.currentFunding && (() => {
-                      const projPct = Math.min(Math.max(((nextSeasonFunding - barMin) / barRange) * 100, 0), 100)
-                      return (
-                        <div style={{
-                          position: 'absolute',
-                          left: `${projPct}%`,
-                          top: -2,
-                          bottom: -2,
-                          width: '2px',
-                          borderLeft: `2px dashed ${tierColors[projectedTier] || tierColor}`,
-                          opacity: 0.7,
-                        }} />
-                      )
-                    })()}
-                  </div>
-                </div>
-
-                {/* Threshold labels */}
-                <div style={{ position: 'relative', height: '30px', marginBottom: '12px' }}>
-                  {nextSeasonFunding != null && nextSeasonFunding > f.currentFunding && (() => {
-                    const projPct = Math.min(Math.max(((nextSeasonFunding - barMin) / barRange) * 100, 0), 100)
-                    return (
-                      <div style={{
-                        position: 'absolute',
-                        left: `${projPct}%`,
-                        transform: 'translateX(-50%)',
-                        textAlign: 'center',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        <div style={{ fontSize: '11px', color: tierColors[projectedTier] || tierColor }}>{nextSeasonFunding}F</div>
-                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>Next S.</div>
-                      </div>
-                    )
-                  })()}
-                  {tierMarkers.map(m => (
-                    <div key={m.tier} style={{
-                      position: 'absolute',
-                      left: `${m.pct}%`,
-                      transform: 'translateX(-50%)',
-                      textAlign: 'center',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      <div style={{ fontSize: '11px', color: m.isCurrent ? '#cbd5e1' : m.color }}>{m.threshold}F</div>
-                      <div style={{ fontSize: '10px', color: m.isCurrent ? '#cbd5e1' : '#94a3b8' }}>{m.label.split(' ')[0]}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Compact stats + progress */}
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '16px', flexWrap: 'wrap', fontSize: '12px', color: '#cbd5e1' }}>
-                  <span>Funded: <strong style={{ color: '#e2e8f0' }}>{f.currentFunding}F</strong> ({f.fanContributions ?? 0}F from fans)</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>Projected tier:</span>
-                  <TierBadge tier={projectedTier} label={tierLabels[projectedTier]} color={tierColors[projectedTier] || '#64748b'} effects={tierEffects[projectedTier] || []} size="small" />
-                </div>
-
-                {/* Fatigue + Contributions side by side */}
-                {(() => {
-                  const posOrder = ['qb', 'rb', 'wr1', 'wr2', 'te', 'k']
-                  const posLabels: Record<string, string> = { qb: 'QB', rb: 'RB', wr1: 'WR1', wr2: 'WR2', te: 'TE', k: 'K' }
-                  const rosterPlayers = team.roster ? posOrder.map(p => team.roster[p]).filter(Boolean) as RosterPlayer[] : []
-                  const hasFatigue = rosterPlayers.some(p => (p.fatigue ?? 0) > 0)
-                  const isFavTeam = user?.favoriteTeamId === team.id
-                  const fatigueColorFn = (v: number) => v < 5 ? '#4ade80' : v < 10 ? '#eab308' : v < 15 ? '#f97316' : '#ef4444'
-
-                  if (!hasFatigue && !isFavTeam) return null
-
-                  return (
-                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : hasFatigue && isFavTeam ? '1fr 1fr' : '1fr', gap: '32px', marginTop: '16px', borderTop: '1px solid #334155', paddingTop: '14px' }}>
-
-                      {/* Player fatigue */}
-                      {hasFatigue && team.roster && (
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '8px' }}>Player Fatigue</div>
-                          {posOrder.map(pos => {
-                            const p = team.roster[pos] as RosterPlayer | null
-                            if (!p) return null
-                            const fat = p.fatigue ?? 0
-                            return (
-                              <div key={pos} style={{ display: 'grid', gridTemplateColumns: '32px 1fr 50px 80px', gap: '8px', alignItems: 'center', padding: '5px 0' }}>
-                                <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>{posLabels[pos]}</span>
-                                <span style={{ fontSize: '13px', color: '#e2e8f0' }}>{p.name}</span>
-                                <span style={{ fontSize: '12px', color: fatigueColorFn(fat), fontWeight: '600', textAlign: 'right' }}>
-                                  {fat > 0 ? `${fat.toFixed(1)}%` : 'Fresh'}
-                                </span>
-                                <div style={{ height: '6px', backgroundColor: '#0f172a', borderRadius: '3px', overflow: 'hidden' }}>
-                                  <div style={{ width: `${Math.min(fat / 20 * 100, 100)}%`, height: '100%', backgroundColor: fatigueColorFn(fat), borderRadius: '3px' }} />
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )}
-
-                      {/* Contributions */}
-                      {isFavTeam && (() => {
-                        const contributePresets = [25, 50, 100, 250]
-                        const pct = user.teamFundingPct ?? 25
-                        const presets = [0, 10, 25, 50, 75, 100]
-                        return (
-                          <div data-tour="team-funding-contribute">
-                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '8px' }}>Contribute to {team.name}</div>
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const, alignItems: 'center' }}>
-                              {contributePresets.map(amt => (
-                                <button
-                                  key={amt}
-                                  disabled={(user.floobits ?? 0) < amt}
-                                  onClick={async () => {
-                                    if (!window.confirm(`Contribute ${amt}F to ${team.name}?`)) return
-                                    try {
-                                      const tok = await getToken()
-                                      if (!tok) return
-                                      const resp = await fetch(`${API_BASE}/teams/${team.id}/contribute`, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-                                        body: JSON.stringify({ amount: amt }),
-                                      })
-                                      const json = await resp.json()
-                                      if (json.success) {
-                                        refetchUser()
-                                        setFundingRefresh(n => n + 1)
-                                        const teamResp = await fetch(`${API_BASE}/teams/${team.id}`)
-                                        const teamJson = await teamResp.json()
-                                        if (teamJson.success && teamJson.data) setTeam(teamJson.data)
-                                      } else {
-                                        alert(json.detail || 'Contribution failed')
-                                      }
-                                    } catch (e) { console.error('Failed to contribute', e) }
-                                  }}
-                                  style={{
-                                    padding: '6px 14px',
-                                    fontSize: '13px',
-                                    fontWeight: '600',
-                                    borderRadius: '4px',
-                                    border: `1px solid ${(user.floobits ?? 0) < amt ? '#1e293b' : tierColor}`,
-                                    backgroundColor: (user.floobits ?? 0) < amt ? 'transparent' : `${tierColor}20`,
-                                    color: (user.floobits ?? 0) < amt ? '#334155' : tierColor,
-                                    cursor: (user.floobits ?? 0) < amt ? 'not-allowed' : 'pointer',
-                                    opacity: (user.floobits ?? 0) < amt ? 0.5 : 1,
-                                  }}
-                                >
-                                  {amt}F
-                                </button>
-                              ))}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '6px' }}>
-                              Your balance: {user.floobits ?? 0}F
-                            </div>
-
-                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginTop: '16px', marginBottom: '8px' }}>Season-End Auto-Contribution</div>
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const }}>
-                              {presets.map(p => (
-                                <button
-                                  key={p}
-                                  onClick={async () => {
-                                    try {
-                                      const tok = await getToken()
-                                      if (!tok) return
-                                      await fetch(`${API_BASE}/users/me/preferences`, {
-                                        method: 'PATCH',
-                                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-                                        body: JSON.stringify({ teamFundingPct: p }),
-                                      })
-                                      refetchUser()
-                                      setFundingRefresh(n => n + 1)
-                                    } catch (e) { console.error('Failed to update funding pct', e) }
-                                  }}
-                                  style={{
-                                    padding: '6px 14px',
-                                    fontSize: '13px',
-                                    fontWeight: pct === p ? '700' : '500',
-                                    borderRadius: '4px',
-                                    border: `1px solid ${pct === p ? tierColor : '#334155'}`,
-                                    backgroundColor: pct === p ? `${tierColor}20` : 'transparent',
-                                    color: pct === p ? tierColor : '#cbd5e1',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  {p}%
-                                </button>
-                              ))}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '6px' }}>
-                              {pct}% of your unspent Floobits will fund {team.name} at season end
-                            </div>
-                          </div>
-                        )
-                      })()}
-
-                    </div>
-                  )
-                })()}
-              </div>
-            </div>
-          )
-        })()}
-        {!team.funding?.tier && (
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
-            Funding data will be available once the season begins.
-          </div>
-        )}
-
-        </>)}
-
-        {/* === FRONT OFFICE TAB === */}
-        {activeTab === 'frontOffice' && user?.favoriteTeamId === team.id && (
-          <FrontOfficePanel teamId={team.id} teamAbbr={team.abbr} teamColor={team.color} />
-        )}
-
-        {/* === SCHEDULE TAB === */}
-        {activeTab === 'schedule' && (<>
-
-        {/* Schedule + Season History side by side */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (team.history?.length ?? 0) > 0 ? '3fr 2fr' : '1fr', gap: '16px', alignItems: 'start' }}>
-
-          {/* Schedule */}
-          <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-            {sectionHeader('Schedule')}
-            <div style={{ overflowX: 'auto' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '32px 28px 1fr 44px 80px', gap: '8px', padding: '6px 14px', borderBottom: '1px solid #334155', minWidth: isMobile ? '400px' : undefined }}>
-              {['WK', '', 'OPPONENT', 'RESULT', 'SCORE'].map((h, i) => (
-                <span key={i} style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600', textAlign: i >= 3 ? 'right' as const : 'left' as const }}>{h}</span>
               ))}
             </div>
-            {team.schedule.length === 0 && (
-              <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>No schedule available</div>
-            )}
-            {team.schedule.map((game, idx) => {
-              const resultColor = game.result === 'W' ? '#22c55e' : game.result === 'L' ? '#ef4444' : '#94a3b8'
-              const weekNum = game.week != null ? game.week + 1 : idx + 1
-              return (
-                <div key={game.gameId} style={{
-                  display: 'grid',
-                  gridTemplateColumns: '32px 28px 1fr 44px 80px',
-                  gap: '8px',
-                  alignItems: 'center',
-                  padding: '7px 14px',
-                  borderBottom: idx < team.schedule.length - 1 ? '1px solid #1a2640' : 'none',
-                  backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
-                  minWidth: isMobile ? '400px' : undefined,
-                }}>
-                  <span style={{ fontSize: '12px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>{weekNum}</span>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>{game.isHome ? 'vs' : '@'}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
-                    <img
-                      src={`/avatars/${game.opponent.id}.png`}
-                      alt={game.opponent.abbr}
-                      style={{ width: '20px', height: '20px', flexShrink: 0 }}
-                    />
-                    <Link
-                      to={`/team/${game.opponent.id}`}
-                      style={{ fontSize: '13px', color: '#cbd5e1', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                    >
-                      {game.opponent.city} {game.opponent.name}
-                    </Link>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    {game.result ? (
-                      <span style={{ fontSize: '13px', fontWeight: '700', color: resultColor }}>{game.result}</span>
-                    ) : game.status === 'Active' ? (
-                      <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: '600' }}>LIVE</span>
-                    ) : (
-                      <span style={{ fontSize: '12px', color: '#64748b' }}>—</span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: '13px', color: '#cbd5e1', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                    {game.status !== 'Scheduled'
-                      ? (game.scoreLabel === 'frames'
-                          ? `${fmtFramesWon(game.displayTeamScore ?? game.teamScore)}–${fmtFramesWon(game.displayOppScore ?? game.oppScore)}`
-                          : `${game.teamScore}–${game.oppScore}`)
-                      : '—'}
-                  </div>
-                </div>
-              )
-            })}
-            </div>
-          </div>
-
-          {/* Season History */}
-          {(team.history?.length ?? 0) > 0 && (
-            <div style={{ backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden' }}>
-              {sectionHeader('Season History')}
-              <div style={{ display: 'grid', gridTemplateColumns: '56px 56px 60px 1fr', gap: '8px', padding: '6px 14px', borderBottom: '1px solid #334155' }}>
-                {['Season', 'W–L', 'Pts/G', 'Result'].map((h, i) => (
-                  <span key={i} style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '600' }}>{h}</span>
-                ))}
-              </div>
-              {team.history.map((s: any, idx: number) => {
-                const result = s.floosbowlChamp ? 'Floos Bowl 🏆'
-                  : s.leagueChamp ? 'League Champ 🥇'
-                  : s.madePlayoffs ? 'Playoffs'
-                  : '—'
-                const resultColor = s.floosbowlChamp ? '#f59e0b' : s.leagueChamp ? '#ca8a04' : s.madePlayoffs ? '#94a3b8' : '#64748b'
-                return (
-                  <div key={idx} style={{
-                    display: 'grid',
-                    gridTemplateColumns: '56px 56px 60px 1fr',
-                    gap: '8px',
-                    alignItems: 'center',
-                    padding: '7px 14px',
-                    borderBottom: idx < team.history.length - 1 ? '1px solid #1a2640' : 'none',
-                    backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
-                  }}>
-                    <span style={{ fontSize: '13px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>S{s.season}</span>
-                    <span style={{ fontSize: '13px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{s.wins}–{s.losses}</span>
-                    <span style={{ fontSize: '13px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{s.Offense?.avgPts?.toFixed(1) ?? '—'}</span>
-                    <span style={{ fontSize: '13px', color: resultColor }}>{result}</span>
-                  </div>
-                )
-              })}
-            </div>
           )}
-
         </div>
-
-        </>)}
-
       </div>
 
-      {/* Help Modal */}
-      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} title="Your Team">
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
-          <button
-            onClick={() => { setShowHelp(false); tour.startTour() }}
-            style={{
-              background: 'transparent',
-              border: '1px solid #475569',
-              borderRadius: '6px',
-              color: '#94a3b8',
-              fontSize: '11px',
-              padding: '6px 14px',
-              cursor: 'pointer',
-              fontFamily: 'pressStart',
-              transition: 'border-color 0.15s, color 0.15s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#94a3b8'; e.currentTarget.style.color = '#e2e8f0' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#475569'; e.currentTarget.style.color = '#94a3b8' }}
-          >
-            Take the Tour
-          </button>
-        </div>
-        <GuideSection title="Overview">
-          The overview tab shows your team's active roster and head coach. Each player lists their
-          position, star rating, and contract length. The coach card displays six key attributes
-          that influence play-calling and player growth.
-        </GuideSection>
-        <GuideSection title="Funding">
-          Fund your team to build up its Facilities. The Training Facility drives player
-          development, the Locker Room lifts morale, the Recovery Center speeds fatigue recovery,
-          and the Scouting Department sharpens rookie scouting. Contribute Floobits directly or set
-          an auto-contribution percentage that donates from your unspent balance at season end.
-          Facilities are fan-funded through the Treasury on the Facilities tab under Front Office.
-        </GuideSection>
-        <GuideSection title="Market Tiers">
-          Market tier reflects your team's fanbase size relative to the rest of the league, from
-          Small Market up through Mid, Large, and Mega. It is a measure of following, not a source
-          of bonuses. Development, morale, and fatigue perks all come from your Facilities. Tiers
-          are relative to the league, so they shift as fanbases grow and shrink around you.
-        </GuideSection>
-        <GuideSection title="Schedule">
-          Your full season schedule with past results and upcoming matchups. Each row shows the
-          week, opponent, result, and score. Active games display a LIVE indicator.
-        </GuideSection>
-        <GuideSection title="Front Office">
-          The Board of Directors convenes in Week 22. Once open, issue directives to influence
-          team decisions: fire or hire coaches, re-sign or cut players, and request free agents.
-          Each directive costs Floobits. Motions need a quorum before ratification, and all
-          resolutions take effect during the offseason.
-        </GuideSection>
-      </HelpModal>
+      {/* ── FRONT OFFICE ───────────────────────────────────────────────────
+          The seam between the public page and your own controls, drawn on
+          purpose as a full-bleed band rather than left as a heading. Gated to
+          the one team you follow — `/front-office` redirects here, so this is
+          where those controls live. */}
+      {isMyTeam && (
+        <FrontOfficeBand pad={pad} pageMax={PAGE_MAX} stacked={stacked} accent={accent} />
+      )}
 
-      {/* Tutorial */}
-      {isFavTeam && tour.shouldPrompt && <TourPrompt onStart={tour.startTour} onDismiss={tour.dismissPrompt} />}
-      {isFavTeam && tour.isActive && (
-        <TutorialOverlay
-          steps={tourSteps}
-          currentStep={tour.currentStep}
-          onNext={tour.next}
-          onBack={tour.back}
-          onSkip={tour.skip}
-          onHelp={() => { tour.skip(); setShowHelp(true) }}
-        />
+      <div style={{ height: '48px' }} />
+
+      {/* Light section nav + the snap that makes a scroll feel like turning a
+          page rather than falling through one long column. */}
+      <SectionRail sections={railSections} accent={readableOnDark(secondary)} enabled={!stacked} />
+
+      {openGameId != null && (
+        <GameModalNew gameId={openGameId} onClose={() => setOpenGameId(null)} />
       )}
     </div>
   )
 }
+
+// ── Season history table ────────────────────────────────────────────────────
+
+const TH: React.CSSProperties = {
+  fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: '#cbd5e1',
+  borderBottom: '1px solid #1e293b', whiteSpace: 'nowrap',
+}
+const TD: React.CSSProperties = {
+  padding: '7px 10px', borderBottom: '1px solid #16202f', fontSize: '13px',
+}
+
+/** ELO in isolation means little; coloured against the 1500 baseline it reads
+ *  as "were they actually good that year" next to the record. */
+function eloColor(elo: number): string {
+  if (elo >= 1650) return '#4ade80'
+  if (elo >= 1500) return '#cbd5e1'
+  return '#f87171'
+}
+
+const HistoryTable: React.FC<{
+  rows: HistoryRow[]
+  /** The season still being played, if there is one. Its row can't have a
+   *  finish yet. */
+  liveSeason?: number | null
+}> = ({ rows, liveSeason }) => (
+  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <thead>
+      <tr>
+        <th style={{ ...TH, textAlign: 'left', padding: '0 0 7px', width: '38px' }}>SEASON</th>
+        <th style={{ ...TH, textAlign: 'right', padding: '0 10px 7px', width: '52px' }}>RECORD</th>
+        <th style={{ ...TH, textAlign: 'right', padding: '0 10px 7px', width: '52px' }}>ELO</th>
+        <th style={{ ...TH, textAlign: 'right', padding: '0 0 7px 10px' }}>FINISH</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map(h => {
+        const finish = seasonFinish(h, liveSeason != null && h.season === liveSeason)
+        return (
+          <tr key={h.season}>
+            <td style={{
+              ...TD, paddingLeft: 0, textAlign: 'left', fontWeight: 700,
+              color: '#e2e8f0', fontVariantNumeric: 'tabular-nums',
+            }}>S{h.season}</td>
+            <td style={{
+              ...TD, textAlign: 'right', color: '#e2e8f0',
+              fontVariantNumeric: 'tabular-nums',
+            }}>{h.wins}&ndash;{h.losses}</td>
+            <td style={{
+              ...TD, textAlign: 'right', color: eloColor(h.elo),
+              fontVariantNumeric: 'tabular-nums',
+            }}>{Math.round(h.elo)}</td>
+            <td style={{
+              ...TD, paddingRight: 0, textAlign: 'right',
+              color: finish.color, fontWeight: finish.weight,
+            }}>{finish.label}</td>
+          </tr>
+        )
+      })}
+    </tbody>
+  </table>
+)

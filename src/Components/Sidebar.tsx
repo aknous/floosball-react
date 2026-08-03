@@ -93,7 +93,7 @@ const NAV_ITEMS = [
   },
   {
     key: 'frontoffice',
-    label: 'Team Management',
+    label: 'My Team',
     path: '/front-office',
     icon: (
       // Building/tower icon — represents the front-office HQ where fans fund,

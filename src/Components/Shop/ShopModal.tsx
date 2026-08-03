@@ -8,7 +8,7 @@ import { useTemplateProjections, projectionPillStyle, TemplateProjection } from 
 import {
   GiCardDraw, GiCrownCoin, GiGemChain, GiCrystalShine,
   GiMagicSwirl, GiCardPlay, GiPerspectiveDiceSixFacesRandom,
-  GiQueenCrown,
+  GiQueenCrown, GiAmphora,
 } from 'react-icons/gi'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -26,7 +26,7 @@ interface PackType {
   dailyLimit: number | null
   remainingToday: number | null
   guaranteedRarity?: string | null
-  themeType?: 'position' | 'team' | 'output' | 'rookie' | 'champion' | 'allpro' | null
+  themeType?: 'position' | 'team' | 'output' | 'rookie' | 'champion' | 'allpro' | 'collection' | null
   themeValue?: string | null
 }
 
@@ -98,6 +98,9 @@ const THEMED_PACK_COLORS: Record<string, { border: string; bg: string; accent: s
   rookie:   { border: '#2dd4bf', bg: 'linear-gradient(135deg, #042f2e 0%, #115e59 100%)', accent: '#5eead4' },
   champion: { border: '#f59e0b', bg: 'linear-gradient(135deg, #451a03 0%, #78350f 50%, #92400e 100%)', accent: '#fcd34d' },
   allpro:   { border: '#10b981', bg: 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%)', accent: '#6ee7b7' },
+  // Collection sits apart from the fantasy packs on purpose — nothing it drops
+  // can be equipped, so it shouldn't read as a competitor to them.
+  collection: { border: '#a855f7', bg: 'linear-gradient(135deg, #2e1065 0%, #4c1d95 50%, #5b21b6 100%)', accent: '#d8b4fe' },
 }
 
 const themedPackColors = (p: PackType) => {
@@ -109,6 +112,7 @@ const themedPackColors = (p: PackType) => {
   if (p.themeType === 'rookie') return THEMED_PACK_COLORS.rookie
   if (p.themeType === 'champion') return THEMED_PACK_COLORS.champion
   if (p.themeType === 'allpro') return THEMED_PACK_COLORS.allpro
+  if (p.themeType === 'collection') return THEMED_PACK_COLORS.collection
   return THEMED_PACK_COLORS.position
 }
 
@@ -117,6 +121,7 @@ const PACK_ICONS: Record<string, React.ComponentType<{ size?: number; color?: st
   humble: GiCardDraw,
   grand: GiGemChain,
   exquisite: GiCrystalShine,
+  themed_collection: GiAmphora,
 }
 
 const POWERUP_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
@@ -169,6 +174,13 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
 
   const [packs, setPacks] = useState<PackType[]>([])
   const [themedPacks, setThemedPacks] = useState<PackType[]>([])
+  // The Collection Pack never rotates and is the only pack sold outside the
+  // regular season, so it's tracked separately from the rotating pools.
+  const [collectionPack, setCollectionPack] = useState<PackType | null>(null)
+  const [collectionOnly, setCollectionOnly] = useState(false)
+  // Individual past-season cards for the Collection tab, generated separately
+  // from the fantasy daily selection but bought through the same endpoint.
+  const [collectionCards, setCollectionCards] = useState<any[]>([])
   const [starter, setStarter] = useState<StarterPack | null>(null)
   const [featured, setFeatured] = useState<FeaturedCard[]>([])
 
@@ -197,9 +209,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
   const cycleRemaining = Math.max(0, cycleLimit - cyclePacksOpened)
   const cycleCapped = cycleLimit > 0 && cycleRemaining <= 0
 
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
-  const toggleSection = (key: string) =>
-    setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
+  // Shop tabs. Three sections in one scroll had got crowded, and they answer
+  // different questions: build a lineup, build a collection, spend on utility.
+  type ShopTab = 'fantasy' | 'collection' | 'powerups'
+  const [tab, setTab] = useState<ShopTab>('fantasy')
 
   const fetchAll = useCallback(async () => {
     if (!isOpen) return
@@ -223,6 +236,11 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         const j = await packsRes.json()
         setPacks(j.data?.packs ?? [])
         setThemedPacks(j.data?.themedPacks ?? [])
+        setCollectionPack(j.data?.collectionPack ?? null)
+        setCollectionOnly(!!j.data?.collectionOnly)
+        // Outside the regular season the fantasy tab is empty, so open on the
+        // one that has something in it.
+        if (j.data?.collectionOnly) setTab('collection')
         setStarter(j.data?.starter ?? null)
         if (j.data?.shopOpen !== undefined) setShopOpen(j.data.shopOpen)
         if (typeof j.data?.cycleLimit === 'number') setCycleLimit(j.data.cycleLimit)
@@ -230,6 +248,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       }
       if (featuredRes?.ok) {
         const j = await featuredRes.json()
+        setCollectionCards(j.data?.collectionCards ?? [])
         setFeatured(j.data?.cards ?? [])
       }
       if (balRes?.ok) {
@@ -493,6 +512,111 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null
 
+  // One pack card. Extracted so the Card Packs grid and the Collection
+  // section render identically from a single source rather than a copy.
+  const renderPackCard = (pack: PackType) => {
+                    // Standard tier names hit PACK_COLORS; everything else
+                    // (themed packs) goes through the theme-color resolver.
+                    const colors = PACK_COLORS[pack.name] || themedPackColors(pack)
+                    const Icon = PACK_ICONS[pack.name] || GiCardDraw
+                    const canAfford = balance >= pack.cost
+                    const isBuying2 = buying === `pack_${pack.id}`
+                    const canBuy = canAfford && !isBuying2 && !!user && shopOpen && !cycleCapped
+
+                    const themeBadge = pack.themeType === 'position'
+                      ? pack.themeValue
+                      : pack.themeType === 'output'
+                        ? (pack.themeValue === 'fpx' ? 'FPx' : pack.themeValue === 'fp' ? 'FP' : 'Floobits')
+                        : pack.themeType === 'team'
+                          ? 'Team'
+                          : pack.themeType === 'rookie'
+                            ? 'Rookie'
+                            : pack.themeType === 'champion'
+                              ? 'Champ'
+                              : pack.themeType === 'allpro'
+                                ? 'All-Pro'
+                                : pack.themeType === 'collection'
+                                  ? 'Collection'
+                                  : null
+
+                    return (
+                      <div key={pack.id} style={{
+                        width: isMobile ? '100%' : '195px',
+                        minHeight: '215px',
+                        borderRadius: '8px',
+                        background: colors.bg,
+                        borderBottom: `2px solid ${colors.border}`,
+                        padding: '14px',
+                        display: 'flex', flexDirection: 'column', gap: '8px',
+                        position: 'relative',
+                      }}>
+                        {themeBadge && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '8px', right: '8px',
+                            fontSize: '9px',
+                            fontFamily: 'pressStart',
+                            color: colors.accent,
+                            background: `${colors.border}30`,
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: '4px',
+                            padding: '3px 6px',
+                            letterSpacing: '0.5px',
+                          }}>
+                            {themeBadge}
+                          </div>
+                        )}
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: '700',
+                          color: colors.accent,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          paddingRight: themeBadge ? '50px' : 0,
+                          minHeight: '38px',
+                          lineHeight: 1.25,
+                        }}>
+                          <div style={{ flexShrink: 0, display: 'flex' }}>
+                            <Icon size={28} color={colors.accent} />
+                          </div>
+                          <span>{pack.displayName}</span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5, flex: 1 }}>
+                          {pack.description}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                          Reveal {pack.cardsPerPack}
+                          {pack.cardsKept != null && pack.cardsKept < pack.cardsPerPack && (
+                            <span> · keep {pack.cardsKept}</span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleOpenPack(pack.id)}
+                          disabled={!canBuy}
+                          style={{
+                            width: '100%', padding: '8px',
+                            borderRadius: '5px',
+                            border: 'none',
+                            backgroundColor: canBuy ? `${colors.accent}20` : 'rgba(51,65,85,0.3)',
+                            color: canBuy ? colors.accent : '#94a3b8',
+                            fontSize: '12px', fontWeight: '700',
+                            cursor: canBuy ? 'pointer' : 'not-allowed',
+                            fontFamily: 'pressStart',
+                            opacity: isBuying2 ? 0.6 : 1,
+                            transition: 'opacity 0.15s',
+                          }}
+                        >
+                          {isBuying2
+                            ? 'Opening...'
+                            : cycleCapped
+                              ? 'Cycle full'
+                              : `${pack.cost} Floobits`}
+                        </button>
+                      </div>
+                    )
+  }
+
   return (
     <div
       onClick={onClose}
@@ -510,7 +634,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         onClick={e => e.stopPropagation()}
         style={{
           width: isMobile ? '96vw' : '920px',
-          maxHeight: '90vh',
+          // FIXED height, not maxHeight: tabs hold different amounts of content,
+          // and a shell that resizes on every tab switch makes the whole modal
+          // jump under the cursor. The body scrolls instead.
+          height: isMobile ? '92vh' : '86vh',
           backgroundColor: '#0f172a',
           border: '1px solid #334155',
           borderRadius: '12px',
@@ -552,41 +679,83 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Scrollable content */}
-        <div ref={contentRef} style={{ overflowY: 'auto', padding: isMobile ? '12px 12px' : '16px 20px' }}>
+        <div ref={contentRef} style={{
+          flex: 1, minHeight: 0, overflowY: 'auto',
+          padding: isMobile ? '12px 12px' : '16px 20px',
+        }}>
           {loading ? (
             <div style={{ color: '#94a3b8', fontSize: '12px', textAlign: 'center', padding: '40px 0' }}>
               Loading shop...
             </div>
           ) : (
             <>
-              {!shopOpen && (
+              {/* The shop no longer closes. What changes between seasons is what's
+                  on sale, so say that plainly rather than showing a wall of
+                  disabled packs with no reason given. */}
+              {collectionOnly && tab === 'fantasy' && (
                 <div style={{
                   padding: '12px 16px',
                   marginBottom: '16px',
                   borderRadius: '8px',
-                  backgroundColor: 'rgba(239,68,68,0.1)',
-                  border: '1px solid rgba(239,68,68,0.25)',
-                  color: '#fca5a5',
+                  backgroundColor: 'rgba(168,85,247,0.1)',
+                  border: '1px solid rgba(168,85,247,0.25)',
+                  color: '#d8b4fe',
                   fontSize: '11px',
                   lineHeight: '1.5',
                   textAlign: 'center',
                 }}>
-                  The shop is closed for the season. Cards expire at season end, so purchases are disabled during playoffs and offseason.
+                  The regular season is over, so fantasy packs are away until the next one starts.
+                  The Collection tab stays open.
                 </div>
               )}
+              {/* ── Tabs ── */}
+              <div style={{
+                display: 'flex', gap: '4px', marginBottom: '20px',
+                borderBottom: '1px solid #1e293b',
+              }}>
+                {([
+                  { key: 'fantasy' as const,    label: 'Fantasy Cards', accent: '#eab308' },
+                  { key: 'collection' as const, label: 'Collection',    accent: '#a855f7' },
+                  { key: 'powerups' as const,   label: 'Power-Ups',     accent: '#38bdf8' },
+                ]).map(t => {
+                  const on = tab === t.key
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setTab(t.key)}
+                      style={{
+                        font: 'inherit', cursor: 'pointer', background: 'none',
+                        border: 'none', borderRadius: 0,
+                        padding: '8px 14px 9px',
+                        fontSize: '12px', fontWeight: 700,
+                        color: on ? '#e2e8f0' : '#94a3b8',
+                        // The active tab is marked by its own accent, matching the
+                        // palette each section already uses elsewhere in the shop.
+                        borderBottom: `2px solid ${on ? t.accent : 'transparent'}`,
+                        marginBottom: '-1px',
+                        transition: 'color 120ms ease, border-color 120ms ease',
+                      }}
+                    >{t.label}</button>
+                  )
+                })}
+              </div>
+
               {/* ── Daily Selection ── */}
-              {/* Gate on shopOpen, not featured.length: once a user buys out
-                  the whole selection the list is empty, but the reroll button
-                  lives in this block — so it must stay rendered so they can
+              {/* Hidden entirely outside the regular season: the daily selection is
+                  current-season fantasy singles, and the backend rejects those once
+                  the season is over, so showing them would only produce a 403.
+                  Gate on `shopOpen` for the in-season case, not featured.length:
+                  once a user buys out the whole selection the list is empty, but
+                  the reroll button lives in this block — so it must stay rendered
+                  so they can
                   pay to refresh. */}
-              {shopOpen && (
+              {tab === 'fantasy' && shopOpen && !collectionOnly && (
                 <div style={{ marginBottom: '28px' }}>
                   <SectionHeader
                     title="Daily Selection"
-                    collapsed={!!collapsed.featured}
-                    onToggle={() => toggleSection('featured')}
                   />
-                  {!collapsed.featured && (
+                  {(
                     <>
                       {featured.length === 0 ? (
                         <div style={{
@@ -689,13 +858,12 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   Rerollable slots:  3 themed/grand/exquisite picks from a
                                      weighted category pool. Grand and
                                      Exquisite only appear via this rotation. */}
+              {tab === 'fantasy' && (
               <div style={{ marginBottom: '28px' }}>
                 <SectionHeader
                   title="Card Packs"
-                  collapsed={!!collapsed.packs}
-                  onToggle={() => toggleSection('packs')}
                 />
-                {!collapsed.packs && cycleLimit > 0 && (
+                {cycleLimit > 0 && (
                   <div style={{
                     fontSize: '11px',
                     color: cycleCapped ? '#ef4444' : '#94a3b8',
@@ -707,7 +875,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                       : `${cyclePacksOpened} of ${cycleLimit} packs opened this cycle`}
                   </div>
                 )}
-                {!collapsed.packs && (
+                {(
                   <div style={{
                     display: 'flex',
                     gap: '12px',
@@ -773,109 +941,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                         </div>
                       )
                     })()}
-                    {[...packs, ...themedPacks].map(pack => {
-                      // Standard tier names hit PACK_COLORS; everything else
-                      // (themed packs) goes through the theme-color resolver.
-                      const colors = PACK_COLORS[pack.name] || themedPackColors(pack)
-                      const Icon = PACK_ICONS[pack.name] || GiCardDraw
-                      const canAfford = balance >= pack.cost
-                      const isBuying2 = buying === `pack_${pack.id}`
-                      const canBuy = canAfford && !isBuying2 && !!user && shopOpen && !cycleCapped
-
-                      const themeBadge = pack.themeType === 'position'
-                        ? pack.themeValue
-                        : pack.themeType === 'output'
-                          ? (pack.themeValue === 'fpx' ? 'FPx' : pack.themeValue === 'fp' ? 'FP' : 'Floobits')
-                          : pack.themeType === 'team'
-                            ? 'Team'
-                            : pack.themeType === 'rookie'
-                              ? 'Rookie'
-                              : pack.themeType === 'champion'
-                                ? 'Champ'
-                                : pack.themeType === 'allpro'
-                                  ? 'All-Pro'
-                                  : null
-
-                      return (
-                        <div key={pack.id} style={{
-                          width: isMobile ? '100%' : '195px',
-                          minHeight: '215px',
-                          borderRadius: '8px',
-                          background: colors.bg,
-                          borderBottom: `2px solid ${colors.border}`,
-                          padding: '14px',
-                          display: 'flex', flexDirection: 'column', gap: '8px',
-                          position: 'relative',
-                        }}>
-                          {themeBadge && (
-                            <div style={{
-                              position: 'absolute',
-                              top: '8px', right: '8px',
-                              fontSize: '9px',
-                              fontFamily: 'pressStart',
-                              color: colors.accent,
-                              background: `${colors.border}30`,
-                              border: `1px solid ${colors.border}`,
-                              borderRadius: '4px',
-                              padding: '3px 6px',
-                              letterSpacing: '0.5px',
-                            }}>
-                              {themeBadge}
-                            </div>
-                          )}
-                          <div style={{
-                            fontSize: '14px',
-                            fontWeight: '700',
-                            color: colors.accent,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            paddingRight: themeBadge ? '50px' : 0,
-                            minHeight: '38px',
-                            lineHeight: 1.25,
-                          }}>
-                            <div style={{ flexShrink: 0, display: 'flex' }}>
-                              <Icon size={28} color={colors.accent} />
-                            </div>
-                            <span>{pack.displayName}</span>
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5, flex: 1 }}>
-                            {pack.description}
-                          </div>
-                          <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                            Reveal {pack.cardsPerPack}
-                            {pack.cardsKept != null && pack.cardsKept < pack.cardsPerPack && (
-                              <span> · keep {pack.cardsKept}</span>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => handleOpenPack(pack.id)}
-                            disabled={!canBuy}
-                            style={{
-                              width: '100%', padding: '8px',
-                              borderRadius: '5px',
-                              border: 'none',
-                              backgroundColor: canBuy ? `${colors.accent}20` : 'rgba(51,65,85,0.3)',
-                              color: canBuy ? colors.accent : '#94a3b8',
-                              fontSize: '12px', fontWeight: '700',
-                              cursor: canBuy ? 'pointer' : 'not-allowed',
-                              fontFamily: 'pressStart',
-                              opacity: isBuying2 ? 0.6 : 1,
-                              transition: 'opacity 0.15s',
-                            }}
-                          >
-                            {isBuying2
-                              ? 'Opening...'
-                              : cycleCapped
-                                ? 'Cycle full'
-                                : `${pack.cost} Floobits`}
-                          </button>
-                        </div>
-                      )
-                    })}
+                    {(collectionOnly ? [] : [...packs, ...themedPacks]).map(renderPackCard)}
                   </div>
                 )}
-                {!collapsed.packs && !!user && (
+                {!!user && (
                   <div style={{
                     display: 'flex', justifyContent: 'center', marginTop: '14px',
                   }}>
@@ -903,15 +972,110 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
               </div>
+              )}
+
+              {/* ── Collection ──
+                  Mirrors the Fantasy tab's shape on purpose: singles first, then
+                  packs, same headings and same grids. They are different shelves
+                  but the same act of shopping, and having them laid out in
+                  opposite orders made switching tabs feel like changing app. */}
+              {tab === 'collection' && (
+                <>
+                  {/* Singles — the counterpart to the fantasy Daily Selection. */}
+                  <div style={{ marginBottom: '28px' }}>
+                    <SectionHeader
+                      title="Daily Selection"
+                      subtitle="Individual cards, refreshed daily"
+                    />
+                    {collectionCards.length === 0 ? (
+                      <div style={{
+                        color: '#94a3b8', fontSize: '11px', textAlign: 'center',
+                        padding: '8px 0 4px',
+                      }}>
+                        You&rsquo;ve cleared today&rsquo;s singles. A fresh set arrives tomorrow.
+                      </div>
+                    ) : (
+                      <div style={{
+                        display: 'flex', gap: isMobile ? '8px' : '14px',
+                        flexWrap: 'wrap', justifyContent: 'center',
+                      }}>
+                        {collectionCards.map(card => {
+                          const canAfford = balance >= card.buyPrice
+                          const busy = buying === `card_${card.templateId}`
+                          return (
+                            <div key={card.templateId} style={{
+                              display: 'flex', flexDirection: 'column',
+                              alignItems: 'center', gap: isMobile ? '4px' : '6px',
+                            }}>
+                              {/* No projection pill and no "you own N" badge: both
+                                  describe what a card does in a lineup, and nothing
+                                  here can be fielded. */}
+                              <TradingCard
+                                card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
+                                size="sm"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleBuyCard(card.templateId)}
+                                disabled={!canAfford || busy || !user}
+                                style={{
+                                  font: 'inherit', fontSize: '11px', fontWeight: 700,
+                                  padding: '5px 12px', borderRadius: '6px',
+                                  cursor: canAfford && !busy ? 'pointer' : 'not-allowed',
+                                  border: `1px solid ${canAfford ? '#a855f7' : '#334155'}`,
+                                  backgroundColor: canAfford ? 'rgba(168,85,247,0.12)' : 'rgba(51,65,85,0.3)',
+                                  color: canAfford ? '#d8b4fe' : '#94a3b8',
+                                }}
+                              >
+                                {busy ? 'Buying...' : `${card.buyPrice} Floobits`}
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Packs — same slot the fantasy tab gives Card Packs.
+                      Once today's has been bought the pack is GONE rather than
+                      shown greyed out: the buy button is the only thing on the
+                      card, so a disabled one is just a card that lies about
+                      being for sale. */}
+                  {collectionPack && collectionPack.remainingToday === 0 && (
+                    <div style={{ marginBottom: '28px' }}>
+                      <SectionHeader title="Card Packs" />
+                      <div style={{
+                        color: '#94a3b8', fontSize: '11px', textAlign: 'center',
+                        padding: '8px 0 4px',
+                      }}>
+                        You&rsquo;ve opened today&rsquo;s Collection Pack. A new one is available tomorrow.
+                      </div>
+                    </div>
+                  )}
+                  {collectionPack && collectionPack.remainingToday !== 0 && (
+                    <div style={{ marginBottom: '28px' }}>
+                      <SectionHeader
+                        title="Card Packs"
+                        subtitle="One a day, and outside your cycle limit"
+                      />
+                      <div style={{
+                        display: 'flex', flexWrap: 'wrap', gap: '12px',
+                        justifyContent: 'center',
+                      }}>
+                        {renderPackCard(collectionPack)}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
 
               {/* ── Power-Ups ── */}
+              {tab === 'powerups' && (
               <div>
                 <SectionHeader
                   title="Power-Ups"
-                  collapsed={!!collapsed.powerups}
-                  onToggle={() => toggleSection('powerups')}
                 />
-                {!collapsed.powerups && (
+                {(
                   <div style={{
                     display: 'grid',
                     gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
@@ -994,6 +1158,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
               </div>
+              )}
             </>
           )}
         </div>
@@ -1027,26 +1192,16 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
 
 // ─── Section Header ────────────────────────────────────────────────────────────
 
+// Plain heading. The collapse toggle came out when tabs arrived — tabs already
+// hide what you're not looking at, so a second control for the same job just
+// gave every section a way to disagree with the tab you picked.
 const SectionHeader: React.FC<{
   title: string
   subtitle?: string
-  collapsed: boolean
-  onToggle: () => void
-}> = ({ title, subtitle, collapsed, onToggle }) => (
-  <div
-    onClick={onToggle}
-    style={{
-      display: 'flex',
-      alignItems: 'baseline',
-      gap: '10px',
-      marginBottom: collapsed ? '0' : '12px',
-      cursor: 'pointer',
-      userSelect: 'none',
-    }}
-  >
-    <span style={{ fontSize: '18px', color: '#64748b', lineHeight: 1 }}>
-      {collapsed ? '+' : '\u2013'}
-    </span>
+}> = ({ title, subtitle }) => (
+  <div style={{
+    display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '12px',
+  }}>
     <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
       {title}
     </h3>

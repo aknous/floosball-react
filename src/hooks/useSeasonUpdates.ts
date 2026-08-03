@@ -7,7 +7,6 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 export type OffseasonPhase =
   | 'post_bowl'
   | 'frontoffice'
-  | 'rookie_draft'
   | 'pre_fa'
   | 'fa_draft'
   | 'training'
@@ -180,7 +179,7 @@ export const useSeasonUpdates = () => {
 
       case 'offseason_phase_change' as any: {
         // Live phase transition — backend fires this every time the offseason
-        // flow moves between post_bowl / frontoffice / rookie_draft / pre_fa /
+        // flow moves between post_bowl / frontoffice / pre_fa /
         // fa_draft / training. Pull the phase + target straight from the event
         // so countdowns flip without waiting for the next /api/season poll.
         const ev = event as any
@@ -198,19 +197,6 @@ export const useSeasonUpdates = () => {
       // React batching when bursts of events arrive at once), these
       // pre-existing draft-start / window-close events still drive the phase
       // forward so the navbar countdown doesn't stay stuck on "starting soon".
-      case 'rookie_draft_start' as any:
-        setSeasonState(prev => ({
-          ...prev,
-          offseasonPhase: 'rookie_draft' as OffseasonPhase,
-          offseasonPhaseTargetTime: null,
-        }))
-        break
-
-      case 'rookie_draft_complete' as any:
-        // Pre-FA wait kicks in next — re-fetch to pick up the new target time
-        fetchSeasonData()
-        break
-
       case 'gm_fa_window_close' as any:
         // Window close fires right when the FA draft starts.
         setSeasonState(prev => ({

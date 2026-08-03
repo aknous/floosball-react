@@ -715,7 +715,7 @@ export default function Navbar() {
                 ['Players', '/players'],
                 ['Fantasy', '/fantasy'],
                 ['Cards', '/cards'],
-                ['Team Management', '/front-office'],
+                ['My Team', '/front-office'],
                 ...(seasonState.bracketAvailable ? [['Bracket', '/bracket']] : []),
                 ...(awardsOpen ? [['Awards Voting', '/awards']] : []),
                 ['Achievements', '/achievements'],

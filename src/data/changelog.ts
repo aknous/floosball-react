@@ -12,6 +12,47 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v0.25.0',
+    date: '2026-08-02',
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Front Office] Each team\'s GM now decides re-signings, cuts, and free agent signings. GMs judge players through their own scouting, so weaker scouts misjudge more.',
+          '[Front Office] GMs can be fired, retire, or leave, and are replaced.',
+          '[Teams] Rate any player on your team, and your GM, from 1 to 5.',
+          '[Teams] The Bleachers, a feed on every team page. Post from a set of lines, and rating a player or your GM posts on your behalf.',
+          '[Teams] Team pages rebuilt as one scrolling page: squad, trophy case, locker room, season history, schedule, and a front office section on the team you follow.',
+          '[Cards] Collection cards, prints from past seasons where a player was an All-Pro, a champion, or MVP. They go to your Vault and score in the Showcase, and cannot be equipped.',
+          '[Shop] The shop is open all season, including the playoffs and between seasons.',
+          '[Shop] Three tabs: Fantasy, Collection, and Power-Ups. The Collection tab has its own pack and a daily selection of individual cards.',
+          '[Simulation] QB sneaks in short yardage, and the sneak look, which shows the sneak then pitches or throws.',
+          '[Simulation] Defenses read run or pass before the snap. A correct read strengthens the defense and a wrong one weakens it.',
+          '[Simulation] Ball carriers stiff-arm, spin, and hurdle. The move comes from the carrier\'s attributes, flair and in-game state decide whether they attempt it, and disciplined defenders can stop it.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Prospects] The rookie draft is removed. New players arrive through free agency.',
+          '[Front Office] Fan votes no longer decide re-signings, cuts, or firings. Ratings and posts feed the GM\'s decision instead.',
+          '[Cards] One Collection Pack per day, outside the five-pack cycle limit. Each guarantees a hit.',
+          '[Fantasy] Showcase set bonuses are capped once stacked.',
+          '[Fantasy] The Showcase pays more for early-career cards of players who went on to be Hall of Famers, MVPs, or All-Pros.',
+          '[Hall of Fame] The automatic induction threshold is higher.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Hall of Fame] Retired free agents were missing from the ballot but could still be inducted automatically. They are now on the ballot.',
+          '[Cards] The Showcase picker would not flip a card to its back.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.24.0',
     date: '2026-07-27',
     changes: [],

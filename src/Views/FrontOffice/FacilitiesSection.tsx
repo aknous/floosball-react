@@ -66,7 +66,7 @@ const QUIP: Record<string, string[]> = {
     'A cathedral to the sport.',
   ],
 }
-const quipAt = (key: string, lvl: number) => (QUIP[key] || [])[lvl] || ''
+export const quipAt = (key: string, lvl: number) => (QUIP[key] || [])[lvl] || ''
 const TIER_SHORT: Record<string, string> = {
   MEGA_MARKET: 'MEGA', LARGE_MARKET: 'LARGE', MID_MARKET: 'MID', SMALL_MARKET: 'SMALL',
 }
@@ -139,7 +139,26 @@ function FundChips({ onFund, balance, max, topGap = 8, allowCustom = false }: { 
 }
 
 // ── main ──────────────────────────────────────────────────────────────────
-const FacilitiesSection: React.FC = () => {
+export interface FrontOfficeSummary {
+  treasury: number
+  appeal: number
+  marketTier: string
+  teamColor?: string
+}
+
+interface FacilitiesProps {
+  /** 'band' drops the stat panel (the host draws it in its own summary strip),
+   *  squares the chrome to match a radius-0 page, and folds the league-wide
+   *  comparison away behind a toggle — a league table is not a your-team fact
+   *  and it was the biggest thing in the section. */
+  variant?: 'page' | 'band'
+  /** Reports treasury/appeal/market up to the host so the summary strip can be
+   *  drawn without a second identical fetch. */
+  onSummary?: (s: FrontOfficeSummary) => void
+}
+
+const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSummary }) => {
+  const band = variant === 'band'
   const { user, getToken, updateFloobits } = useAuth()
   const favId = (user as any)?.favoriteTeamId ?? null
   const [data, setData] = useState<TeamFacilities | null>(null)
@@ -152,6 +171,7 @@ const FacilitiesSection: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [leagueTab, setLeagueTab] = useState<'facilities' | 'fanbase'>('facilities')
+  const [leagueOpen, setLeagueOpen] = useState(false)
 
   const load = useCallback(async () => {
     const reqs: Promise<any>[] = [
@@ -171,6 +191,18 @@ const FacilitiesSection: React.FC = () => {
 
   useEffect(() => { load() }, [load])
   useEffect(() => { setBalance((user as any)?.floobits ?? 0) }, [user])
+
+  // Hand the headline numbers to the host rather than making it refetch them.
+  useEffect(() => {
+    if (!data || !onSummary) return
+    const mine = league.find(x => x.id === data.teamId)
+    onSummary({
+      treasury: data.treasury,
+      appeal: data.appeal,
+      marketTier: mine?.marketTier || 'MID_MARKET',
+      teamColor: mine?.color,
+    })
+  }, [data, league, onSummary])
 
   const contribute = useCallback(async (amount: number, target: string, extra: Record<string, any> = {}) => {
     if (!favId || busy || amount <= 0) return
@@ -217,11 +249,11 @@ const FacilitiesSection: React.FC = () => {
     } finally { setBusy(false) }
   }, [favId, busy, getToken, load])
 
-  if (loading) return <div style={{ color: '#64748b', padding: '20px', fontSize: '13px' }}>Loading facilities…</div>
+  if (loading) return <div style={{ color: '#94a3b8', padding: '20px', fontSize: '13px' }}>Loading facilities…</div>
 
   const me = data ? league.find(t => t.id === data.teamId) : undefined
   const tierColor = TIER_COLOR[me?.marketTier || 'MID_MARKET']
-  const accent = me?.color || tierColor   // the club's own color tints the tab
+  const accent = me?.color || tierColor   // the team's own color tints the tab
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', color: '#e2e8f0', fontFamily: 'pressStart, monospace' }}>
@@ -230,7 +262,10 @@ const FacilitiesSection: React.FC = () => {
 
       {data && (
         <>
-          {/* readout panel */}
+          {/* readout panel — suppressed in band mode: the host's summary strip
+              already carries Treasury / Appeal / Market, and showing them twice
+              on one screen was the loudest part of "tacked on". */}
+          {!band && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '1px',
             background: '#2c3a4d', border: '1px solid #334155', borderRadius: '12px', overflow: 'hidden',
             boxShadow: '0 8px 24px rgba(0,0,0,.4)' }}>
@@ -252,6 +287,7 @@ const FacilitiesSection: React.FC = () => {
               </HoverTooltip>
             ))}
           </div>
+          )}
 
           {/* Treasury funding: season-end auto-deposit % + direct contribution, one row.
               Direct chips also count toward the patron rank + funding achievements. */}
@@ -306,7 +342,23 @@ const FacilitiesSection: React.FC = () => {
         </>
       )}
 
-      {/* league readouts — tabbed (Facilities / Fanbase) */}
+      {/* league readouts — tabbed (Facilities / Fanbase). In band mode these
+          start closed: they're a LEAGUE view, and on your own team's page they
+          were the largest thing on screen while answering a question nobody
+          had asked yet. */}
+      {band && !leagueOpen && (
+        <button
+          type="button"
+          onClick={() => setLeagueOpen(true)}
+          style={{
+            font: 'inherit', alignSelf: 'flex-start', cursor: 'pointer',
+            background: 'none', border: 'none', padding: '2px 0',
+            fontSize: '13px', fontWeight: 700, color: '#cbd5e1',
+            letterSpacing: '.04em',
+          }}
+        >Compare across the league &rarr;</button>
+      )}
+      {(!band || leagueOpen) && (
       <section>
         <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap', margin: '0 0 11px', borderBottom: '1px solid #1e293b' }}>
           {([['facilities', 'League Facilities'], ['fanbase', 'League Fanbase']] as const).map(([key, label]) => {
@@ -327,6 +379,7 @@ const FacilitiesSection: React.FC = () => {
           ? <AppealGraph teams={league} catalog={catalog} favId={favId} />
           : <FanGraph teams={league} favId={favId} />}
       </section>
+      )}
     </div>
   )
 }

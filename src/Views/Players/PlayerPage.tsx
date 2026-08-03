@@ -11,6 +11,7 @@ import {
   pressureHandlingTier, MentalTier,
 } from '@/utils/mentalProfile'
 import { useAuth } from '@/contexts/AuthContext'
+import PlayerRating from '@/Components/Sentiment/PlayerRating'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -524,6 +525,9 @@ export default function PlayerPage() {
     <div style={{ padding: '48px', color: '#94a3b8', textAlign: 'center', backgroundColor: '#0f172a', minHeight: '100vh' }}>Player not found</div>
   )
 
+  // You only get a say on your own club's players — rating an opponent would
+  // also post into THEIR stands, which makes no sense.
+  const isMyClubPlayer = !!user?.favoriteTeamId && player.teamId === user.favoriteTeamId
   const teamColor = player.teamColor || '#64748b'
   const teamSecondary = player.teamSecondaryColor || null
 
@@ -635,6 +639,12 @@ export default function PlayerPage() {
                   </div>
                 </div>
               )}
+              {/* Fan rating — the quiet standing stance (plan Part D, signal 1).
+                  Sits with the player's identity, not buried in attributes:
+                  it's how you feel about him, not a stat. */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
+                <PlayerRating playerId={player.id} canRate={isMyClubPlayer} />
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '6px' }}>
                 <Stars stars={player.ratingStars} size={16} />
                 {(player.isProspect || player.rank) && (

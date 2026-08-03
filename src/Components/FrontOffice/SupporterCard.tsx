@@ -40,11 +40,23 @@ const C = {
   gold: '#fbbf24', green: '#22c55e', blue: '#3b82f6', warn: '#f59e0b',
 }
 
-const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div style={{ backgroundColor: C.card, borderRadius: 8, padding: 14, border: `1px solid ${C.border}` }}>
-    {children}
-  </div>
-)
+// `square` drops the radius and steps the surface down, for hosts that have no
+// radius anywhere (the team page's Front Office band). Otherwise identical.
+const SquareCtx = React.createContext(false)
+
+const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const square = React.useContext(SquareCtx)
+  return (
+    <div style={{
+      backgroundColor: square ? '#131e2f' : C.card,
+      borderRadius: square ? 0 : 8,
+      padding: 14,
+      border: `1px solid ${square ? '#1e293b' : C.border}`,
+    }}>
+      {children}
+    </div>
+  )
+}
 
 const Header = () => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -88,7 +100,7 @@ function formatParts(bd: PendingDividend['breakdown']): string {
   return `${segs.join(' · ')} ×${bd.mult}`
 }
 
-const SupporterCard: React.FC = () => {
+const SupporterInner: React.FC = () => {
   const { getToken, refetchUser } = useAuth()
   const [status, setStatus] = useState<SupporterStatus | null>(null)
   const [loading, setLoading] = useState(true)
@@ -152,87 +164,118 @@ const SupporterCard: React.FC = () => {
   const winTip = `Paid the weeks your team wins. The bonus grows with the win: upsets, shutouts, blowouts, comebacks, win streaks, and playoff rounds all add more on top.`
   return (
     <Card>
-      {/* Header + equation on the left, claim on the right — one row, no extra
-          content row. */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Supporter Dividend
-            </span>
-            <span style={{ fontSize: 11, color: C.muted }}>- Floobits every week for backing your team</span>
-          </div>
+      {/* Compact by construction. The old layout led with the full dividend
+          equation inline — ( Base + Win ) x ( Tenure x Funding ) = range, about
+          a dozen elements with parentheses — which reads fine across a wide row
+          and turns to spaghetti in a rail column, where it wrapped mid-formula.
 
-          {/* The dividend equation, fantasy-calc style: (Base + Win) scaled by
-              (Loyalty × Patron). Spells out exactly what's multiplied; loyalty
-              and patron terms are hoverable for how to grow them. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          What a supporter actually needs at a glance is: what can I collect,
+          and what am I earning. Those are rows one and two. The derivation is
+          real and worth keeping, but it's reference material, so it moved
+          behind one disclosure along with the per-week pool. */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          Supporter dividend
+        </span>
+        <span style={{ fontSize: 12, color: C.muted }}>yours, for backing them</span>
+      </div>
+
+      {/* The action. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
+          <span style={{
+            fontSize: 23, lineHeight: 1.15, fontWeight: 800,
+            color: status.unclaimed > 0 ? C.gold : C.body,
+            fontVariantNumeric: 'tabular-nums',
+          }}>{status.unclaimed} F</span>
+          <span style={{ fontSize: 12, color: C.muted }}>to claim</span>
+        </div>
+        <button
+          onClick={claim}
+          disabled={!canClaim}
+          style={{
+            font: 'inherit', marginLeft: 'auto', flexShrink: 0,
+            padding: '7px 16px', borderRadius: 0, border: 'none',
+            fontWeight: 700, fontSize: 13,
+            cursor: canClaim ? 'pointer' : 'not-allowed',
+            backgroundColor: canClaim ? C.blue : '#334155',
+            color: canClaim ? '#fff' : C.muted,
+          }}
+        >
+          {claiming ? 'Claiming…' : 'Claim'}
+        </button>
+      </div>
+
+      {/* The rate, and the two things that scale it. */}
+      <div style={{
+        display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap',
+        marginTop: 9, paddingTop: 9, borderTop: '1px solid #1e293b',
+      }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: C.body, fontVariantNumeric: 'tabular-nums' }}>
+          {status.weeklyMin}–{status.weeklyMax} F
+        </span>
+        <span style={{ fontSize: 12, color: C.muted }}>a week</span>
+        <span style={{ flex: 1 }} />
+        <HoverTooltip text={loyaltyTip}>
+          <span style={{ fontSize: 12, color: C.body, borderBottom: '1px dotted #475569', whiteSpace: 'nowrap' }}>
+            {status.loyaltyTier} ×{status.loyaltyMultiplier}
+          </span>
+        </HoverTooltip>
+        <HoverTooltip text={patronTip}>
+          <span style={{ fontSize: 12, color: C.body, borderBottom: '1px dotted #475569', whiteSpace: 'nowrap' }}>
+            {status.patronTier ? `${status.patronTier} ×${status.patronMultiplier}` : 'No rank ×1'}
+          </span>
+        </HoverTooltip>
+      </div>
+
+      {!status.earning && (
+        <p style={{ fontSize: 12, color: C.warn, margin: '8px 0 0', lineHeight: 1.45 }}>
+          Paused while you're away. Sign in to keep dividends flowing.
+        </p>
+      )}
+
+      {/* One disclosure for BOTH the maths and the pool — they were two separate
+          expandables competing for the same small space. */}
+      <button
+        onClick={() => setShowBreakdown(v => !v)}
+        style={{
+          font: 'inherit', background: 'none', border: 'none', padding: 0,
+          marginTop: 9, cursor: 'pointer',
+          fontSize: 12, color: C.muted,
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+        }}
+      >
+        <span style={{ fontSize: 10 }}>{showBreakdown ? '▾' : '▸'}</span>
+        {showBreakdown ? 'Hide the detail' : 'How it\'s worked out'}
+        {(status.pending?.length ?? 0) > 0 && (
+          <span>· {status.pending!.length} {status.pending!.length === 1 ? 'week' : 'weeks'} banked</span>
+        )}
+      </button>
+
+      {showBreakdown && (
+        <div style={{ marginTop: 9, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* The equation, now with room to sit on its own lines. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
             <Op>(</Op>
             <Term label="Base" value={`${status.weeklyBase} F`} color={C.gold} />
             <Op>+</Op>
             <Term label="Win" value={`${status.weeklyWinBonus}+ F`} color={C.gold} tip={winTip} />
             <Op>)</Op>
             <Op>×</Op>
-            <Op>(</Op>
-            <Term label="Tenure" value={`${status.loyaltyTier} ×${status.loyaltyMultiplier}`} tip={loyaltyTip} />
+            <Term label="Tenure" value={`×${status.loyaltyMultiplier}`} tip={loyaltyTip} />
             <Op>×</Op>
-            <Term label="Funding" value={status.patronTier ? `${status.patronTier} ×${status.patronMultiplier}` : 'None ×1'} tip={patronTip} />
-            <Op>)</Op>
-            <Op>=</Op>
-            <span style={{ fontSize: 17, fontWeight: 800, color: C.gold }}>{status.weeklyMin}–{status.weeklyMax} F</span>
+            <Term label="Funding" value={`×${status.patronMultiplier}`} tip={patronTip} />
           </div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>
-            Win bonus applies the weeks they win, and grows with upsets, shutouts, blowouts, comebacks, streaks, and playoff wins.
+          <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>
+            The win bonus lands the weeks they win, and grows with upsets,
+            shutouts, blowouts, comebacks, streaks and playoff wins.
           </div>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 11, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Claimable</div>
-            <div style={{ fontSize: 19, fontWeight: 800, color: status.unclaimed > 0 ? C.gold : C.muted }}>
-              {status.unclaimed} F
-            </div>
-          </div>
-          <button
-            onClick={claim}
-            disabled={!canClaim}
-            style={{
-              padding: '8px 18px', borderRadius: 6, border: 'none', fontWeight: 700, fontSize: 13,
-              cursor: canClaim ? 'pointer' : 'not-allowed',
-              backgroundColor: canClaim ? C.blue : '#334155',
-              color: canClaim ? '#fff' : C.muted,
-            }}
-          >
-            {claiming ? 'Claiming…' : 'Claim'}
-          </button>
-        </div>
-      </div>
-
-      {!status.earning && (
-        <p style={{ fontSize: 11, color: C.warn, margin: '8px 0 0', lineHeight: 1.45 }}>
-          Paused while you're away. Sign in to keep dividends flowing.
-        </p>
-      )}
-
-      {/* Collapsible per-week breakdown of what's in the pool. Collapsed by
-          default, so it adds only a single subtle toggle line until opened. */}
-      {(status.pending?.length ?? 0) > 0 && (
-        <div style={{ marginTop: 10 }}>
-          <button
-            onClick={() => setShowBreakdown(v => !v)}
-            style={{
-              background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-              fontSize: 11, color: C.muted, display: 'inline-flex', alignItems: 'center', gap: 5,
-            }}
-          >
-            <span style={{ fontSize: 9 }}>{showBreakdown ? '▾' : '▸'}</span>
-            {showBreakdown ? 'Hide' : 'Show'} pool breakdown ({status.pending!.length} {status.pending!.length === 1 ? 'week' : 'weeks'})
-          </button>
-          {showBreakdown && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
+          {(status.pending?.length ?? 0) > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {status.pending!.map(p => (
                 <div key={`${p.season}-${p.week}`} style={{
-                  display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', fontSize: 11,
+                  display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', fontSize: 12,
                 }}>
                   <span style={{ color: C.muted, minWidth: 52 }}>Week {p.week}</span>
                   <span style={{ color: C.body, flex: 1, minWidth: 0 }}>{formatParts(p.breakdown)}</span>
@@ -246,5 +289,11 @@ const SupporterCard: React.FC = () => {
     </Card>
   )
 }
+
+const SupporterCard: React.FC<{ square?: boolean }> = ({ square = false }) => (
+  <SquareCtx.Provider value={square}>
+    <SupporterInner />
+  </SquareCtx.Provider>
+)
 
 export default SupporterCard
