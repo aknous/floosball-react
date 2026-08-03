@@ -209,13 +209,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
   const cycleRemaining = Math.max(0, cycleLimit - cyclePacksOpened)
   const cycleCapped = cycleLimit > 0 && cycleRemaining <= 0
 
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   // Shop tabs. Three sections in one scroll had got crowded, and they answer
   // different questions: build a lineup, build a collection, spend on utility.
   type ShopTab = 'fantasy' | 'collection' | 'powerups'
   const [tab, setTab] = useState<ShopTab>('fantasy')
-  const toggleSection = (key: string) =>
-    setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
 
   const fetchAll = useCallback(async () => {
     if (!isOpen) return
@@ -637,7 +634,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         onClick={e => e.stopPropagation()}
         style={{
           width: isMobile ? '96vw' : '920px',
-          maxHeight: '90vh',
+          // FIXED height, not maxHeight: tabs hold different amounts of content,
+          // and a shell that resizes on every tab switch makes the whole modal
+          // jump under the cursor. The body scrolls instead.
+          height: isMobile ? '92vh' : '86vh',
           backgroundColor: '#0f172a',
           border: '1px solid #334155',
           borderRadius: '12px',
@@ -679,7 +679,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Scrollable content */}
-        <div ref={contentRef} style={{ overflowY: 'auto', padding: isMobile ? '12px 12px' : '16px 20px' }}>
+        <div ref={contentRef} style={{
+          flex: 1, minHeight: 0, overflowY: 'auto',
+          padding: isMobile ? '12px 12px' : '16px 20px',
+        }}>
           {loading ? (
             <div style={{ color: '#94a3b8', fontSize: '12px', textAlign: 'center', padding: '40px 0' }}>
               Loading shop...
@@ -751,10 +754,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                 <div style={{ marginBottom: '28px' }}>
                   <SectionHeader
                     title="Daily Selection"
-                    collapsed={!!collapsed.featured}
-                    onToggle={() => toggleSection('featured')}
                   />
-                  {!collapsed.featured && (
+                  {(
                     <>
                       {featured.length === 0 ? (
                         <div style={{
@@ -861,10 +862,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
               <div style={{ marginBottom: '28px' }}>
                 <SectionHeader
                   title="Card Packs"
-                  collapsed={!!collapsed.packs}
-                  onToggle={() => toggleSection('packs')}
                 />
-                {!collapsed.packs && cycleLimit > 0 && (
+                {cycleLimit > 0 && (
                   <div style={{
                     fontSize: '11px',
                     color: cycleCapped ? '#ef4444' : '#94a3b8',
@@ -876,7 +875,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                       : `${cyclePacksOpened} of ${cycleLimit} packs opened this cycle`}
                   </div>
                 )}
-                {!collapsed.packs && (
+                {(
                   <div style={{
                     display: 'flex',
                     gap: '12px',
@@ -945,7 +944,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                     {(collectionOnly ? [] : [...packs, ...themedPacks]).map(renderPackCard)}
                   </div>
                 )}
-                {!collapsed.packs && !!user && (
+                {!!user && (
                   <div style={{
                     display: 'flex', justifyContent: 'center', marginTop: '14px',
                   }}>
@@ -976,90 +975,91 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
               )}
 
               {/* ── Collection ──
-                  Its own section on purpose. Nothing here can be equipped, so
-                  sitting it beside the fantasy packs invited the comparison
-                  "which pack is better for my lineup", which is the wrong
-                  question. It also never rotates and is the only pack on sale
-                  outside the regular season, so it needs a fixed home rather
-                  than a slot in a grid that empties. */}
-              {tab === 'collection' && collectionPack && (
-                <div style={{ marginBottom: '28px' }}>
-                  <SectionHeader
-                    title="Collection"
-                    subtitle="Past seasons — for the collection, not the lineup"
-                    collapsed={!!collapsed.collection}
-                    onToggle={() => toggleSection('collection')}
-                  />
-                  {!collapsed.collection && (
-                    <>
+                  Mirrors the Fantasy tab's shape on purpose: singles first, then
+                  packs, same headings and same grids. They are different shelves
+                  but the same act of shopping, and having them laid out in
+                  opposite orders made switching tabs feel like changing app. */}
+              {tab === 'collection' && (
+                <>
+                  <div style={{
+                    fontSize: '11px', color: '#cbd5e1', textAlign: 'center',
+                    marginBottom: '16px', lineHeight: 1.5,
+                  }}>
+                    Cards from the seasons players earned their honours. They go straight
+                    to your Vault and score in the Showcase, and they can&rsquo;t be equipped.
+                  </div>
+
+                  {/* Singles — the counterpart to the fantasy Daily Selection. */}
+                  <div style={{ marginBottom: '28px' }}>
+                    <SectionHeader
+                      title="Daily Selection"
+                      subtitle="Individual cards, refreshed daily"
+                    />
+                    {collectionCards.length === 0 ? (
                       <div style={{
-                        fontSize: '11px', color: '#cbd5e1', textAlign: 'center',
-                        marginBottom: '10px', lineHeight: 1.5,
+                        color: '#94a3b8', fontSize: '11px', textAlign: 'center',
+                        padding: '8px 0 4px',
                       }}>
-                        Cards from the seasons players earned their honours. They go
-                        straight to your Vault and score in the Showcase, and they
-                        can&rsquo;t be equipped. One pack a day, and it doesn&rsquo;t
-                        touch your cycle limit.
+                        You&rsquo;ve cleared today&rsquo;s singles. A fresh set arrives tomorrow.
                       </div>
+                    ) : (
+                      <div style={{
+                        display: 'flex', gap: isMobile ? '8px' : '14px',
+                        flexWrap: 'wrap', justifyContent: 'center',
+                      }}>
+                        {collectionCards.map(card => {
+                          const canAfford = balance >= card.buyPrice
+                          const busy = buying === `card_${card.templateId}`
+                          return (
+                            <div key={card.templateId} style={{
+                              display: 'flex', flexDirection: 'column',
+                              alignItems: 'center', gap: isMobile ? '4px' : '6px',
+                            }}>
+                              {/* No projection pill and no "you own N" badge: both
+                                  describe what a card does in a lineup, and nothing
+                                  here can be fielded. */}
+                              <TradingCard
+                                card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
+                                size="sm"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleBuyCard(card.templateId)}
+                                disabled={!canAfford || busy || !user}
+                                style={{
+                                  font: 'inherit', fontSize: '11px', fontWeight: 700,
+                                  padding: '5px 12px', borderRadius: '6px',
+                                  cursor: canAfford && !busy ? 'pointer' : 'not-allowed',
+                                  border: `1px solid ${canAfford ? '#a855f7' : '#334155'}`,
+                                  backgroundColor: canAfford ? 'rgba(168,85,247,0.12)' : 'rgba(51,65,85,0.3)',
+                                  color: canAfford ? '#d8b4fe' : '#94a3b8',
+                                }}
+                              >
+                                {busy ? 'Buying...' : `${card.buyPrice} Floobits`}
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Packs — same slot the fantasy tab gives Card Packs. */}
+                  {collectionPack && (
+                    <div style={{ marginBottom: '28px' }}>
+                      <SectionHeader
+                        title="Card Packs"
+                        subtitle="One a day, and outside your cycle limit"
+                      />
                       <div style={{
                         display: 'flex', flexWrap: 'wrap', gap: '12px',
                         justifyContent: 'center',
                       }}>
                         {renderPackCard(collectionPack)}
                       </div>
-
-                      {/* Individual collection cards — the same idea as the
-                          fantasy Daily Selection, but for the shelf. No
-                          projection pill and no "you own N" badge: neither means
-                          anything for a card that can't be fielded. */}
-                      {collectionCards.length > 0 && (
-                        <div style={{ marginTop: '22px' }}>
-                          <div style={{
-                            fontSize: '12px', fontWeight: 700, color: '#e2e8f0',
-                            textAlign: 'center', marginBottom: '10px',
-                          }}>
-                            Today&rsquo;s Singles
-                          </div>
-                          <div style={{
-                            display: 'flex', gap: isMobile ? '8px' : '14px',
-                            flexWrap: 'wrap', justifyContent: 'center',
-                          }}>
-                            {collectionCards.map(card => {
-                              const canAfford = balance >= card.buyPrice
-                              const busy = buying === `card_${card.templateId}`
-                              return (
-                                <div key={card.templateId} style={{
-                                  display: 'flex', flexDirection: 'column',
-                                  alignItems: 'center', gap: isMobile ? '4px' : '6px',
-                                }}>
-                                  <TradingCard
-                                    card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
-                                    size="sm"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleBuyCard(card.templateId)}
-                                    disabled={!canAfford || busy || !user}
-                                    style={{
-                                      font: 'inherit', fontSize: '11px', fontWeight: 700,
-                                      padding: '5px 12px', borderRadius: '6px',
-                                      cursor: canAfford && !busy ? 'pointer' : 'not-allowed',
-                                      border: `1px solid ${canAfford ? '#a855f7' : '#334155'}`,
-                                      backgroundColor: canAfford ? 'rgba(168,85,247,0.12)' : 'rgba(51,65,85,0.3)',
-                                      color: canAfford ? '#d8b4fe' : '#94a3b8',
-                                    }}
-                                  >
-                                    {busy ? 'Buying...' : `${card.buyPrice} Floobits`}
-                                  </button>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </>
+                    </div>
                   )}
-                </div>
+                </>
               )}
 
               {/* ── Power-Ups ── */}
@@ -1067,10 +1067,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
               <div>
                 <SectionHeader
                   title="Power-Ups"
-                  collapsed={!!collapsed.powerups}
-                  onToggle={() => toggleSection('powerups')}
                 />
-                {!collapsed.powerups && (
+                {(
                   <div style={{
                     display: 'grid',
                     gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
@@ -1187,26 +1185,16 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
 
 // ─── Section Header ────────────────────────────────────────────────────────────
 
+// Plain heading. The collapse toggle came out when tabs arrived — tabs already
+// hide what you're not looking at, so a second control for the same job just
+// gave every section a way to disagree with the tab you picked.
 const SectionHeader: React.FC<{
   title: string
   subtitle?: string
-  collapsed: boolean
-  onToggle: () => void
-}> = ({ title, subtitle, collapsed, onToggle }) => (
-  <div
-    onClick={onToggle}
-    style={{
-      display: 'flex',
-      alignItems: 'baseline',
-      gap: '10px',
-      marginBottom: collapsed ? '0' : '12px',
-      cursor: 'pointer',
-      userSelect: 'none',
-    }}
-  >
-    <span style={{ fontSize: '18px', color: '#64748b', lineHeight: 1 }}>
-      {collapsed ? '+' : '\u2013'}
-    </span>
+}> = ({ title, subtitle }) => (
+  <div style={{
+    display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '12px',
+  }}>
     <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', margin: 0 }}>
       {title}
     </h3>
