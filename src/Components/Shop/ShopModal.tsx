@@ -504,6 +504,111 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null
 
+  // One pack card. Extracted so the Card Packs grid and the Collection
+  // section render identically from a single source rather than a copy.
+  const renderPackCard = (pack: PackType) => {
+                    // Standard tier names hit PACK_COLORS; everything else
+                    // (themed packs) goes through the theme-color resolver.
+                    const colors = PACK_COLORS[pack.name] || themedPackColors(pack)
+                    const Icon = PACK_ICONS[pack.name] || GiCardDraw
+                    const canAfford = balance >= pack.cost
+                    const isBuying2 = buying === `pack_${pack.id}`
+                    const canBuy = canAfford && !isBuying2 && !!user && shopOpen && !cycleCapped
+
+                    const themeBadge = pack.themeType === 'position'
+                      ? pack.themeValue
+                      : pack.themeType === 'output'
+                        ? (pack.themeValue === 'fpx' ? 'FPx' : pack.themeValue === 'fp' ? 'FP' : 'Floobits')
+                        : pack.themeType === 'team'
+                          ? 'Team'
+                          : pack.themeType === 'rookie'
+                            ? 'Rookie'
+                            : pack.themeType === 'champion'
+                              ? 'Champ'
+                              : pack.themeType === 'allpro'
+                                ? 'All-Pro'
+                                : pack.themeType === 'collection'
+                                  ? 'Collection'
+                                  : null
+
+                    return (
+                      <div key={pack.id} style={{
+                        width: isMobile ? '100%' : '195px',
+                        minHeight: '215px',
+                        borderRadius: '8px',
+                        background: colors.bg,
+                        borderBottom: `2px solid ${colors.border}`,
+                        padding: '14px',
+                        display: 'flex', flexDirection: 'column', gap: '8px',
+                        position: 'relative',
+                      }}>
+                        {themeBadge && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '8px', right: '8px',
+                            fontSize: '9px',
+                            fontFamily: 'pressStart',
+                            color: colors.accent,
+                            background: `${colors.border}30`,
+                            border: `1px solid ${colors.border}`,
+                            borderRadius: '4px',
+                            padding: '3px 6px',
+                            letterSpacing: '0.5px',
+                          }}>
+                            {themeBadge}
+                          </div>
+                        )}
+                        <div style={{
+                          fontSize: '14px',
+                          fontWeight: '700',
+                          color: colors.accent,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          paddingRight: themeBadge ? '50px' : 0,
+                          minHeight: '38px',
+                          lineHeight: 1.25,
+                        }}>
+                          <div style={{ flexShrink: 0, display: 'flex' }}>
+                            <Icon size={28} color={colors.accent} />
+                          </div>
+                          <span>{pack.displayName}</span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5, flex: 1 }}>
+                          {pack.description}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                          Reveal {pack.cardsPerPack}
+                          {pack.cardsKept != null && pack.cardsKept < pack.cardsPerPack && (
+                            <span> · keep {pack.cardsKept}</span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleOpenPack(pack.id)}
+                          disabled={!canBuy}
+                          style={{
+                            width: '100%', padding: '8px',
+                            borderRadius: '5px',
+                            border: 'none',
+                            backgroundColor: canBuy ? `${colors.accent}20` : 'rgba(51,65,85,0.3)',
+                            color: canBuy ? colors.accent : '#94a3b8',
+                            fontSize: '12px', fontWeight: '700',
+                            cursor: canBuy ? 'pointer' : 'not-allowed',
+                            fontFamily: 'pressStart',
+                            opacity: isBuying2 ? 0.6 : 1,
+                            transition: 'opacity 0.15s',
+                          }}
+                        >
+                          {isBuying2
+                            ? 'Opening...'
+                            : cycleCapped
+                              ? 'Cycle full'
+                              : `${pack.cost} Floobits`}
+                        </button>
+                      </div>
+                    )
+  }
+
   return (
     <div
       onClick={onClose}
@@ -792,109 +897,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                         </div>
                       )
                     })()}
-                    {[...(collectionOnly ? [] : packs), ...(collectionOnly ? [] : themedPacks),
-                      ...(collectionPack ? [collectionPack] : [])].map(pack => {
-                      // Standard tier names hit PACK_COLORS; everything else
-                      // (themed packs) goes through the theme-color resolver.
-                      const colors = PACK_COLORS[pack.name] || themedPackColors(pack)
-                      const Icon = PACK_ICONS[pack.name] || GiCardDraw
-                      const canAfford = balance >= pack.cost
-                      const isBuying2 = buying === `pack_${pack.id}`
-                      const canBuy = canAfford && !isBuying2 && !!user && shopOpen && !cycleCapped
-
-                      const themeBadge = pack.themeType === 'position'
-                        ? pack.themeValue
-                        : pack.themeType === 'output'
-                          ? (pack.themeValue === 'fpx' ? 'FPx' : pack.themeValue === 'fp' ? 'FP' : 'Floobits')
-                          : pack.themeType === 'team'
-                            ? 'Team'
-                            : pack.themeType === 'rookie'
-                              ? 'Rookie'
-                              : pack.themeType === 'champion'
-                                ? 'Champ'
-                                : pack.themeType === 'allpro'
-                                  ? 'All-Pro'
-                                  : pack.themeType === 'collection'
-                                    ? 'Collection'
-                                    : null
-
-                      return (
-                        <div key={pack.id} style={{
-                          width: isMobile ? '100%' : '195px',
-                          minHeight: '215px',
-                          borderRadius: '8px',
-                          background: colors.bg,
-                          borderBottom: `2px solid ${colors.border}`,
-                          padding: '14px',
-                          display: 'flex', flexDirection: 'column', gap: '8px',
-                          position: 'relative',
-                        }}>
-                          {themeBadge && (
-                            <div style={{
-                              position: 'absolute',
-                              top: '8px', right: '8px',
-                              fontSize: '9px',
-                              fontFamily: 'pressStart',
-                              color: colors.accent,
-                              background: `${colors.border}30`,
-                              border: `1px solid ${colors.border}`,
-                              borderRadius: '4px',
-                              padding: '3px 6px',
-                              letterSpacing: '0.5px',
-                            }}>
-                              {themeBadge}
-                            </div>
-                          )}
-                          <div style={{
-                            fontSize: '14px',
-                            fontWeight: '700',
-                            color: colors.accent,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            paddingRight: themeBadge ? '50px' : 0,
-                            minHeight: '38px',
-                            lineHeight: 1.25,
-                          }}>
-                            <div style={{ flexShrink: 0, display: 'flex' }}>
-                              <Icon size={28} color={colors.accent} />
-                            </div>
-                            <span>{pack.displayName}</span>
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5, flex: 1 }}>
-                            {pack.description}
-                          </div>
-                          <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                            Reveal {pack.cardsPerPack}
-                            {pack.cardsKept != null && pack.cardsKept < pack.cardsPerPack && (
-                              <span> · keep {pack.cardsKept}</span>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => handleOpenPack(pack.id)}
-                            disabled={!canBuy}
-                            style={{
-                              width: '100%', padding: '8px',
-                              borderRadius: '5px',
-                              border: 'none',
-                              backgroundColor: canBuy ? `${colors.accent}20` : 'rgba(51,65,85,0.3)',
-                              color: canBuy ? colors.accent : '#94a3b8',
-                              fontSize: '12px', fontWeight: '700',
-                              cursor: canBuy ? 'pointer' : 'not-allowed',
-                              fontFamily: 'pressStart',
-                              opacity: isBuying2 ? 0.6 : 1,
-                              transition: 'opacity 0.15s',
-                            }}
-                          >
-                            {isBuying2
-                              ? 'Opening...'
-                              : cycleCapped
-                                ? 'Cycle full'
-                                : `${pack.cost} Floobits`}
-                          </button>
-                        </div>
-                      )
-                    })}
+                    {(collectionOnly ? [] : [...packs, ...themedPacks]).map(renderPackCard)}
                   </div>
                 )}
                 {!collapsed.packs && !!user && (
@@ -925,6 +928,43 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
               </div>
+
+              {/* ── Collection ──
+                  Its own section on purpose. Nothing here can be equipped, so
+                  sitting it beside the fantasy packs invited the comparison
+                  "which pack is better for my lineup", which is the wrong
+                  question. It also never rotates and is the only pack on sale
+                  outside the regular season, so it needs a fixed home rather
+                  than a slot in a grid that empties. */}
+              {collectionPack && (
+                <div style={{ marginBottom: '28px' }}>
+                  <SectionHeader
+                    title="Collection"
+                    subtitle="Past seasons — for the collection, not the lineup"
+                    collapsed={!!collapsed.collection}
+                    onToggle={() => toggleSection('collection')}
+                  />
+                  {!collapsed.collection && (
+                    <>
+                      <div style={{
+                        fontSize: '11px', color: '#cbd5e1', textAlign: 'center',
+                        marginBottom: '10px', lineHeight: 1.5,
+                      }}>
+                        Cards from the seasons players earned their honours. They go
+                        straight to your Vault and score in the Showcase, and they
+                        can&rsquo;t be equipped. One pack a day, and it doesn&rsquo;t
+                        touch your cycle limit.
+                      </div>
+                      <div style={{
+                        display: 'flex', flexWrap: 'wrap', gap: '12px',
+                        justifyContent: 'center',
+                      }}>
+                        {renderPackCard(collectionPack)}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* ── Power-Ups ── */}
               <div>
