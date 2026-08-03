@@ -133,6 +133,10 @@ const CardCollection: React.FC = () => {
       if (activeOnly) params.set('activeOnly', 'true')
       if (equippedOnly && !inVault) params.set('equipped', 'true')
       params.set('vaulted', inVault ? 'true' : 'false')
+      // Showcase points, in the Vault only. Vaulted cards can't be equipped, so
+      // their point value is the only measure of what they're worth, and it's
+      // the one thing the Vault couldn't tell you without opening the picker.
+      if (inVault) params.set('showcaseScore', 'true')
       params.set('sort', sortBy)
       const res = await fetch(`${API_BASE}/cards/collection?${params}`, {
         headers: { Authorization: `Bearer ${tok}` },
@@ -603,6 +607,7 @@ const CardCollection: React.FC = () => {
                 cursor: canReorder ? 'grab' : undefined, alignSelf: 'flex-start',
                 opacity: draggingCard?.id === card.id ? 0.35 : 1,
                 transition: 'opacity 0.1s',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
               }}
             >
               <TradingCard
@@ -615,6 +620,14 @@ const CardCollection: React.FC = () => {
                 noHoverLift={canReorder}
                 showSellValue={!inVault}
               />
+              {inVault && (card as any).showcase && (
+                <span style={{
+                  fontSize: '11px', fontWeight: 700, color: '#fbbf24',
+                  backgroundColor: 'rgba(251,191,36,0.12)',
+                  padding: '2px 7px', borderRadius: '5px',
+                  fontVariantNumeric: 'tabular-nums',
+                }}>{Math.round((card as any).showcase.points)} pts</span>
+              )}
             </div>
           ))}
         </div>
