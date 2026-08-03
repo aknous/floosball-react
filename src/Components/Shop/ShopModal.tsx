@@ -981,14 +981,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   opposite orders made switching tabs feel like changing app. */}
               {tab === 'collection' && (
                 <>
-                  <div style={{
-                    fontSize: '11px', color: '#cbd5e1', textAlign: 'center',
-                    marginBottom: '16px', lineHeight: 1.5,
-                  }}>
-                    Cards from the seasons players earned their honours. They go straight
-                    to your Vault and score in the Showcase, and they can&rsquo;t be equipped.
-                  </div>
-
                   {/* Singles — the counterpart to the fantasy Daily Selection. */}
                   <div style={{ marginBottom: '28px' }}>
                     <SectionHeader
