@@ -178,6 +178,9 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
   // regular season, so it's tracked separately from the rotating pools.
   const [collectionPack, setCollectionPack] = useState<PackType | null>(null)
   const [collectionOnly, setCollectionOnly] = useState(false)
+  // Individual past-season cards for the Collection tab, generated separately
+  // from the fantasy daily selection but bought through the same endpoint.
+  const [collectionCards, setCollectionCards] = useState<any[]>([])
   const [starter, setStarter] = useState<StarterPack | null>(null)
   const [featured, setFeatured] = useState<FeaturedCard[]>([])
 
@@ -248,6 +251,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       }
       if (featuredRes?.ok) {
         const j = await featuredRes.json()
+        setCollectionCards(j.data?.collectionCards ?? [])
         setFeatured(j.data?.cards ?? [])
       }
       if (balRes?.ok) {
@@ -1003,6 +1007,56 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                       }}>
                         {renderPackCard(collectionPack)}
                       </div>
+
+                      {/* Individual collection cards — the same idea as the
+                          fantasy Daily Selection, but for the shelf. No
+                          projection pill and no "you own N" badge: neither means
+                          anything for a card that can't be fielded. */}
+                      {collectionCards.length > 0 && (
+                        <div style={{ marginTop: '22px' }}>
+                          <div style={{
+                            fontSize: '12px', fontWeight: 700, color: '#e2e8f0',
+                            textAlign: 'center', marginBottom: '10px',
+                          }}>
+                            Today&rsquo;s Singles
+                          </div>
+                          <div style={{
+                            display: 'flex', gap: isMobile ? '8px' : '14px',
+                            flexWrap: 'wrap', justifyContent: 'center',
+                          }}>
+                            {collectionCards.map(card => {
+                              const canAfford = balance >= card.buyPrice
+                              const busy = buying === `card_${card.templateId}`
+                              return (
+                                <div key={card.templateId} style={{
+                                  display: 'flex', flexDirection: 'column',
+                                  alignItems: 'center', gap: isMobile ? '4px' : '6px',
+                                }}>
+                                  <TradingCard
+                                    card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
+                                    size="sm"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleBuyCard(card.templateId)}
+                                    disabled={!canAfford || busy || !user}
+                                    style={{
+                                      font: 'inherit', fontSize: '11px', fontWeight: 700,
+                                      padding: '5px 12px', borderRadius: '6px',
+                                      cursor: canAfford && !busy ? 'pointer' : 'not-allowed',
+                                      border: `1px solid ${canAfford ? '#a855f7' : '#334155'}`,
+                                      backgroundColor: canAfford ? 'rgba(168,85,247,0.12)' : 'rgba(51,65,85,0.3)',
+                                      color: canAfford ? '#d8b4fe' : '#94a3b8',
+                                    }}
+                                  >
+                                    {busy ? 'Buying...' : `${card.buyPrice} Floobits`}
+                                  </button>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
