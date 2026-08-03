@@ -26,6 +26,9 @@ interface PackType {
   dailyLimit: number | null
   remainingToday: number | null
   guaranteedRarity?: string | null
+  /** Whether the 5-per-cycle cap applies. The server decides; don't re-derive
+   *  it here. Absent on an older payload, in which case assume it does. */
+  countsTowardCycle?: boolean
   themeType?: 'position' | 'team' | 'output' | 'rookie' | 'champion' | 'allpro' | 'collection' | null
   themeValue?: string | null
 }
@@ -521,7 +524,11 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                     const Icon = PACK_ICONS[pack.name] || GiCardDraw
                     const canAfford = balance >= pack.cost
                     const isBuying2 = buying === `pack_${pack.id}`
-                    const canBuy = canAfford && !isBuying2 && !!user && shopOpen && !cycleCapped
+                    // The cap only blocks packs it actually applies to. The
+                    // Collection Pack is exempt server-side, so gating it here
+                    // meant the shop refused a purchase the API would allow.
+                    const capBlocked = cycleCapped && pack.countsTowardCycle !== false
+                    const canBuy = canAfford && !isBuying2 && !!user && shopOpen && !capBlocked
 
                     const themeBadge = pack.themeType === 'position'
                       ? pack.themeValue
@@ -609,7 +616,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                         >
                           {isBuying2
                             ? 'Opening...'
-                            : cycleCapped
+                            : capBlocked
                               ? 'Cycle full'
                               : `${pack.cost} Floobits`}
                         </button>
@@ -1009,11 +1016,20 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             }}>
                               {/* No projection pill and no "you own N" badge: both
                                   describe what a card does in a lineup, and nothing
-                                  here can be fielded. */}
+                                  here can be fielded. Showcase points take their
+                                  place, because that IS what these are worth. */}
                               <TradingCard
                                 card={{ ...card, id: card.templateId, acquiredAt: null, acquiredVia: '' }}
                                 size="sm"
                               />
+                              {card.showcase && (
+                                <span style={{
+                                  fontSize: '11px', fontWeight: 700, color: '#fbbf24',
+                                  backgroundColor: 'rgba(251,191,36,0.12)',
+                                  padding: '2px 7px', borderRadius: '5px',
+                                  fontVariantNumeric: 'tabular-nums',
+                                }}>{Math.round(card.showcase.points)} pts</span>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => handleBuyCard(card.templateId)}

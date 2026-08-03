@@ -459,6 +459,17 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                       {projByTemplateId.get(card.templateId) && (
                         <ProjectionPillInline proj={projByTemplateId.get(card.templateId)!} />
                       )}
+                      {/* Vault-bound cards get Showcase points instead of a
+                          projection. They can't be fielded, so points are the
+                          only thing that says which one to keep. */}
+                      {(card as any).showcase && (
+                        <span style={{
+                          fontSize: '11px', fontWeight: 700, color: '#fbbf24',
+                          backgroundColor: 'rgba(251,191,36,0.12)',
+                          padding: '2px 7px', borderRadius: '5px',
+                          fontVariantNumeric: 'tabular-nums',
+                        }}>{Math.round((card as any).showcase.points)} pts</span>
+                      )}
                       {/* No-effect (standard) cards can't be upgraded, so the owned count is moot */}
                       {card.edition !== 'base' && (card.ownedEffectCount ?? 0) > 0 && (
                         <span
