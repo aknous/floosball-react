@@ -203,11 +203,10 @@ export const PlayerRating: React.FC<Props> = ({
             // fanbase's number, and labelling it would put words in your mouth.
             : mine
               ? LABELS[mine]
-              : data?.ratersNeeded
-                // Honest about the gate rather than showing a number that
-                // one or two people control.
-                ? `${data.ratersNeeded} more rating${data.ratersNeeded === 1 ? '' : 's'} until this counts`
-                : subject === 'gm' ? 'Rate the GM' : 'Rate this player'}
+              // Below quorum this used to count down the ratings still needed.
+              // The gate is still there — an average under it isn't published —
+              // but the prompt to rate is the useful half of that sentence.
+              : subject === 'gm' ? 'Rate the GM' : 'Rate this player'}
         </div>
       )}
     </div>
