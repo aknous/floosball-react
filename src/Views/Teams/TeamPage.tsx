@@ -320,12 +320,17 @@ function weekTitle(week: number): string {
 }
 
 /** How a season ENDED. The payload carries flags rather than a result string,
- *  and they say more than a W-L line does. */
-function seasonFinish(h: HistoryRow): { label: string; color: string; weight: number } {
+ *  and they say more than a W-L line does.
+ *
+ *  `inProgress` is load-bearing: a season still being played has none of these
+ *  flags set yet, so every team's current row fell through to "Missed
+ *  playoffs" — declaring all 24 of them out before a game had been decided. */
+function seasonFinish(h: HistoryRow, inProgress = false): { label: string; color: string; weight: number } {
   if (h.floosbowlChamp) return { label: 'Floos Bowl', color: '#f59e0b', weight: 700 }
   if (h.leagueChamp) return { label: 'League champions', color: '#a78bfa', weight: 700 }
   if (h.topSeed) return { label: 'Top seed', color: '#38bdf8', weight: 500 }
   if (h.madePlayoffs) return { label: 'Playoffs', color: '#4ade80', weight: 500 }
+  if (inProgress) return { label: 'In progress', color: '#cbd5e1', weight: 500 }
   return { label: 'Missed playoffs', color: '#94a3b8', weight: 500 }
 }
 
@@ -784,6 +789,14 @@ export default function TeamPage() {
   const secondary = team.secondaryColor || accent
   const locker = team.lockerRoom
   const nextGame = nextIdx >= 0 ? liveOverlay(schedule[nextIdx]) : null
+
+  // The season currently being played, or null between seasons. Once the Bowl
+  // is done the flags are real and the row shows a genuine finish, so this has
+  // to go null the moment the season completes rather than track the season
+  // number alone.
+  const liveSeason = seasonState.seasonNumber && !seasonState.seasonComplete
+    ? seasonState.seasonNumber
+    : null
 
   const heroName = stacked ? (width < 520 ? 32 : 40) : 58
   // Facts cells fold to two columns on a narrow window. Without the stadium
@@ -1251,7 +1264,7 @@ export default function TeamPage() {
               {(historyRight.length === 0 || narrowPlates
                 ? [history]
                 : [historyLeft, historyRight]
-              ).map((rows, i) => <HistoryTable key={i} rows={rows} />)}
+              ).map((rows, i) => <HistoryTable key={i} rows={rows} liveSeason={liveSeason} />)}
             </div>
           )}
         </div>
@@ -1380,7 +1393,12 @@ function eloColor(elo: number): string {
   return '#f87171'
 }
 
-const HistoryTable: React.FC<{ rows: HistoryRow[] }> = ({ rows }) => (
+const HistoryTable: React.FC<{
+  rows: HistoryRow[]
+  /** The season still being played, if there is one. Its row can't have a
+   *  finish yet. */
+  liveSeason?: number | null
+}> = ({ rows, liveSeason }) => (
   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
     <thead>
       <tr>
@@ -1392,7 +1410,7 @@ const HistoryTable: React.FC<{ rows: HistoryRow[] }> = ({ rows }) => (
     </thead>
     <tbody>
       {rows.map(h => {
-        const finish = seasonFinish(h)
+        const finish = seasonFinish(h, liveSeason != null && h.season === liveSeason)
         return (
           <tr key={h.season}>
             <td style={{
