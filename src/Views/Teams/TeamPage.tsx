@@ -223,6 +223,12 @@ function titleCase(raw: string): string {
 }
 
 // ── Stadium ─────────────────────────────────────────────────────────────────
+// OFF until stadiums are real on the backend. Everything below still works and
+// the cell still renders when this is flipped back on; it's hidden rather than
+// deleted because the only thing missing is the two backend fields listed in
+// the note under this one.
+const SHOW_STADIUM: boolean = false
+
 // MOCK. The stadium LEVEL is real — it's the `stadium` facility, 1-5, driving
 // home_morale — and the size below is derived from it, which is what makes the
 // cell respond to the facilities a fanbase has actually funded.
@@ -496,8 +502,8 @@ const RosterPlate: React.FC<{
 
   const badge = (
     <span style={{
-      width: '52px', flexShrink: 0, textAlign: 'center',
-      fontSize: '20px', fontWeight: 800, padding: '8px 0',
+      width: '42px', flexShrink: 0, textAlign: 'center',
+      fontSize: '15px', fontWeight: 800, padding: '5px 0',
       // A quarter of the league's colours are light enough that white ink on
       // them is unreadable — let the contrast helper pick.
       backgroundColor: player ? teamColor : '#334155',
@@ -509,7 +515,7 @@ const RosterPlate: React.FC<{
     return (
       <div className="tp-plate tp-plate-empty">
         {badge}
-        <span style={{ fontSize: '12px', color: '#cbd5e1' }}>Vacant</span>
+        <span style={{ fontSize: '11px', color: '#cbd5e1' }}>Vacant</span>
       </div>
     )
   }
@@ -519,11 +525,11 @@ const RosterPlate: React.FC<{
   const term = player.termRemaining
 
   return (
-    <div className="tp-plate" style={narrow ? { flexWrap: 'wrap', gap: '12px 14px' } : undefined}>
+    <div className="tp-plate" style={narrow ? { flexWrap: 'wrap', gap: '10px 12px' } : undefined}>
       {badge}
 
       <div style={{
-        width: narrow ? 'auto' : '230px',
+        width: narrow ? 'auto' : '196px',
         flex: narrow ? 1 : undefined,
         flexShrink: narrow ? 1 : 0,
         minWidth: 0,
@@ -531,28 +537,28 @@ const RosterPlate: React.FC<{
         <PlayerHoverCard playerId={player.id} playerName={player.name}>
           <Link to={`/players/${player.id}`} className="tp-link" style={{
             display: 'block', textDecoration: 'none',
-            fontSize: '19px', fontWeight: 700, letterSpacing: '-0.02em',
+            fontSize: '15px', fontWeight: 700, letterSpacing: '-0.02em',
             color: '#f8fafc',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{player.name}</Link>
         </PlayerHoverCard>
-        <div style={{ marginTop: '4px' }}>
-          <Stars stars={player.ratingStars} size={22} tracking={2} />
+        <div style={{ marginTop: '3px' }}>
+          <Stars stars={player.ratingStars} size={16} tracking={1} />
         </div>
       </div>
 
-      <div style={{ width: '140px', flexShrink: 0 }}>
-        <div style={{ fontSize: '12px', color: '#cbd5e1' }}>{careerStatus(player)}</div>
+      <div style={{ width: '124px', flexShrink: 0 }}>
+        <div style={{ fontSize: '11px', color: '#cbd5e1' }}>{careerStatus(player)}</div>
         {term != null && (
           <div style={{
-            fontSize: '12px', marginTop: '3px',
+            fontSize: '11px', marginTop: '2px',
             // A walk-year contract is the one thing on this line a fan should
             // notice without being told.
             color: term === 1 ? '#f59e0b' : '#cbd5e1',
           }}>{term}yr remaining</div>
         )}
         {stage && (
-          <div style={{ marginTop: '5px' }}>
+          <div style={{ marginTop: '4px' }}>
             <CareerStageBadge stage={stage} full />
           </div>
         )}
@@ -562,24 +568,24 @@ const RosterPlate: React.FC<{
           defensive assignment, and inventing a bar for one would be a lie. */}
       <div style={{
         flex: narrow ? '1 1 100%' : 1, minWidth: 0,
-        display: 'flex', flexDirection: 'column', gap: '7px',
+        display: 'flex', flexDirection: 'column', gap: '5px',
       }}>
-        <Gauge label="OFFENSE" rating={offense} variant="inline" />
+        <Gauge label="OFFENSE" rating={offense} variant="inline" height={5} />
         {defense != null && player.defensivePosition && (
-          <Gauge label={`${player.defensivePosition} DEF`} rating={defense} variant="inline" />
+          <Gauge label={`${player.defensivePosition} DEF`} rating={defense} variant="inline" height={5} />
         )}
       </div>
 
       <div style={{
-        width: narrow ? '100%' : '150px', flexShrink: 0,
+        width: narrow ? '100%' : '134px', flexShrink: 0,
         ...(narrow
-          ? { borderTop: '1px solid #1e293b', paddingTop: '12px' }
-          : { borderLeft: '1px solid #1e293b', paddingLeft: '16px' }),
+          ? { borderTop: '1px solid #1e293b', paddingTop: '10px' }
+          : { borderLeft: '1px solid #1e293b', paddingLeft: '14px' }),
       }}>
         <div style={{
-          fontSize: '11px', letterSpacing: '0.08em', fontWeight: 700, color: '#cbd5e1',
+          fontSize: '10px', letterSpacing: '0.08em', fontWeight: 700, color: '#cbd5e1',
         }}>FAN RATING</div>
-        <div style={{ marginTop: '5px' }}>
+        <div style={{ marginTop: '4px' }}>
           {/* The same 1–5 control the fanbase uses. Signed out, or looking at
               somebody else's team, the pips show where the fanbase has landed
               rather than sitting empty. */}
@@ -588,7 +594,7 @@ const RosterPlate: React.FC<{
             canRate={canRate}
             onChange={onRated}
             averageFill
-            pipSize={15}
+            pipSize={13}
             countSuffix=" fans"
             layout="column"
           />
@@ -653,6 +659,7 @@ export default function TeamPage() {
   // The one REAL thing behind the stadium cell: how far the fanbase has funded
   // the stadium facility. Everything else in that cell is derived from it.
   useEffect(() => {
+    if (!SHOW_STADIUM) return
     let cancelled = false
     fetch(`${API_BASE}/teams/${id}/facilities`)
       .then(r => r.json())
@@ -755,8 +762,11 @@ export default function TeamPage() {
   const nextGame = nextIdx >= 0 ? liveOverlay(schedule[nextIdx]) : null
 
   const heroName = stacked ? (width < 520 ? 32 : 40) : 58
-  // Five facts cells; they fold to two columns on a narrow window.
-  const factCols = stacked ? 2 : 5
+  // Facts cells fold to two columns on a narrow window. Without the stadium
+  // it's four, which is also why Next up no longer needs to span: four cells
+  // fill two rows of two exactly.
+  const factCols = stacked ? 2 : (SHOW_STADIUM ? 5 : 4)
+  const nextUpIndex = SHOW_STADIUM ? 4 : 3
   const stadium = mockStadium(team, stadiumLevel)
 
   // The page's four reads. The Front Office only exists for the team you
@@ -993,7 +1003,9 @@ export default function TeamPage() {
           </div>
 
           {/* Stadium. The LEVEL is real (the funded `stadium` facility); the
-              name, capacity and blurb are mocked — see mockStadium. */}
+              name, capacity and blurb are mocked — see mockStadium. Off until
+              the backend has stadiums; SHOW_STADIUM brings it back. */}
+          {SHOW_STADIUM && (
           <div style={factCell(3, factCols)}>
             <CellLabel>Stadium</CellLabel>
             <div style={{
@@ -1018,6 +1030,7 @@ export default function TeamPage() {
               fontSize: '12px', color: '#94a3b8', marginTop: '6px', lineHeight: 1.45,
             }}>{stadium.blurb}</div>
           </div>
+          )}
 
           {/* Next up takes the market's place. It's the most time-sensitive
               thing on the page, so it belongs on the first scan line rather
@@ -1044,10 +1057,11 @@ export default function TeamPage() {
               border: 'none', borderRadius: 0,
               backgroundColor: 'transparent',
               cursor: nextGame && canOpen(nextGame) ? 'pointer' : 'default',
-              // Last of five. When the row folds to two columns it lands alone
-              // on the final row, so it spans the full width rather than
-              // sitting as a half-width orphan.
-              ...factCell(4, factCols, stacked ? 2 : 1),
+              // Last cell. With the stadium showing it's the fifth, which
+              // leaves it alone on the final row when folded to two columns —
+              // so it spans rather than sitting as a half-width orphan. With
+              // four cells the fold is even and no span is needed.
+              ...factCell(nextUpIndex, factCols, stacked && SHOW_STADIUM ? 2 : 1),
             }}
           >
             <CellLabel>Next up</CellLabel>
@@ -1066,15 +1080,20 @@ export default function TeamPage() {
                   display: 'flex', alignItems: 'center', gap: '12px', marginTop: '7px',
                 }}>
                   <img src={`/avatars/${nextGame.opponent.id}.png`} alt=""
-                       style={{ width: '38px', height: '38px', flexShrink: 0 }} />
+                       style={{ width: '34px', height: '34px', flexShrink: 0 }} />
+                  {/* The name WRAPS rather than ellipsing. Once a game goes
+                      live the score claims the right-hand end of this row, and
+                      with a one-line name the two together cut most opponents
+                      off mid-city. Two short lines cost a few pixels of height
+                      and lose nothing. */}
                   <span style={{
-                    fontSize: '17px', fontWeight: 700, color: '#f1f5f9', lineHeight: 1.15,
-                    minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    fontSize: '16px', fontWeight: 700, color: '#f1f5f9', lineHeight: 1.2,
+                    minWidth: 0, overflowWrap: 'anywhere',
                   }}>{nextGame.opponent.city} {nextGame.opponent.name}</span>
                   {nextGame.status !== 'Scheduled' && (
                     <span style={{
                       marginLeft: 'auto', flexShrink: 0,
-                      fontSize: '26px', fontWeight: 800, color: '#f8fafc', lineHeight: 1,
+                      fontSize: '22px', fontWeight: 800, color: '#f8fafc', lineHeight: 1,
                       fontVariantNumeric: 'tabular-nums',
                     }}>{nextGame.teamScore}&ndash;{nextGame.oppScore}</span>
                   )}

@@ -771,11 +771,11 @@
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   background: #131e2f;
   border: 1px solid #1e293b;
   border-radius: 0;
-  padding: 13px 16px;
+  padding: 8px 14px;
   transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
 }
 .tp-plate:hover {
