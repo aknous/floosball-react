@@ -82,9 +82,6 @@ const FrontOfficeBand: React.FC<Props> = ({ pad, pageMax, stacked, accent }) => 
             fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em',
             color: '#0b1220', backgroundColor: '#38bdf8', padding: '3px 9px',
           }}>Front office</span>
-          <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
-            Only you see these controls
-          </span>
           <span style={{ flex: 1, height: '2px', backgroundColor: 'rgba(56,189,248,0.18)' }} />
         </div>
 
