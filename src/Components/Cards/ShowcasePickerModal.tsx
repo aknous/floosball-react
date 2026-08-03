@@ -200,12 +200,17 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
               {available.map(card => (
                 <div
                   key={card.id}
-                  onClick={() => onPick(card)}
                   style={{ cursor: 'pointer', borderRadius: '12px', transition: 'transform 0.12s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)' }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'none' }}
                 >
-                  <TradingCard card={card} size="sm" />
+                  {/* onClick goes on the CARD, not this wrapper. TradingCard
+                      reserves its rightmost 25% as a flip zone whenever an
+                      onClick is passed; a wrapper-level handler instead fired
+                      the pick and the flip on the same click, so the modal
+                      closed before the back (and its season stats) could be
+                      read. */}
+                  <TradingCard card={card} size="sm" onClick={() => onPick(card)} />
                   {card.showcase && (
                     <span style={{
                       fontSize: '11px', fontFamily: 'pressStart', fontWeight: 700,
