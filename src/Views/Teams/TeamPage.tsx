@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { GiLaurelsTrophy } from 'react-icons/gi'
+import { GiLaurelsTrophy, GiTrophy } from 'react-icons/gi'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
@@ -221,6 +221,30 @@ function tenurePhrase(seasons: number): string {
 function titleCase(raw: string): string {
   return raw.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
 }
+
+// ── Trophies ────────────────────────────────────────────────────────────────
+// Two honours, two tiers, and the case has to say which is which without a
+// hover. Gold and the laurel trophy for the Floos Bowl — the app's
+// championship mark everywhere else it appears (Hall of Fame, player pages,
+// awards), so a different one here would read as a different honour. Silver
+// and a plain cup for a league title: unmistakably a trophy, unmistakably the
+// lesser one.
+const TROPHY_TONE = {
+  bowl: {
+    Icon: GiLaurelsTrophy,
+    icon: '#fbbf24',
+    text: '#fde68a',
+    bg: 'rgba(245,158,11,0.14)',
+    border: 'rgba(245,158,11,0.45)',
+  },
+  league: {
+    Icon: GiTrophy,
+    icon: '#cbd5e1',
+    text: '#e2e8f0',
+    bg: 'rgba(148,163,184,0.12)',
+    border: 'rgba(148,163,184,0.40)',
+  },
+} as const
 
 // ── Stadium ─────────────────────────────────────────────────────────────────
 // OFF until stadiums are real on the backend. Everything below still works and
@@ -704,9 +728,9 @@ export default function TeamPage() {
     if (!team) return []
     // Floos Bowl first — it outranks a league title, so it leads the case.
     const bowl = (team.floosbowlChampionships || [])
-      .map(s => ({ season: s, label: 'Floos Bowl Champions' }))
+      .map(s => ({ season: s, label: 'Floos Bowl Champions', kind: 'bowl' as const }))
     const league = (team.leagueChampionships || [])
-      .map(s => ({ season: s, label: `${team.league} Champions` }))
+      .map(s => ({ season: s, label: `${team.league} Champions`, kind: 'league' as const }))
     return [...bowl, ...league]
   }, [team])
 
@@ -894,8 +918,8 @@ export default function TeamPage() {
           lives on the hover. Nothing to show, no empty case. */}
       {trophies.length > 0 && (
         <div style={{
-          backgroundColor: 'rgba(167,139,250,0.10)',
-          borderBottom: '1px solid rgba(167,139,250,0.25)',
+          backgroundColor: 'rgba(245,158,11,0.06)',
+          borderBottom: '1px solid rgba(245,158,11,0.22)',
         }}>
           <div style={{
             maxWidth: PAGE_MAX, margin: '0 auto', padding: `8px ${pad}px`,
@@ -903,28 +927,29 @@ export default function TeamPage() {
           }}>
             <span style={{
               fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em',
-              color: '#0b1220', backgroundColor: '#a78bfa', padding: '3px 9px',
+              color: '#0b1220', backgroundColor: '#f59e0b', padding: '3px 9px',
               marginRight: '6px',
             }}>Trophy case</span>
-            {trophies.map(t => (
-              <HoverTooltip key={`${t.season}-${t.label}`} text={`${t.season} · ${t.label}`} color="#c4b5fd">
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '5px',
-                  backgroundColor: 'rgba(167,139,250,0.16)',
-                  border: '1px solid rgba(167,139,250,0.45)',
-                  padding: '3px 8px 3px 6px',
-                }}>
-                  {/* The app's championship mark everywhere else it appears
-                      (Hall of Fame, player pages, awards) — a different trophy
-                      here would read as a different kind of honour. */}
-                  <GiLaurelsTrophy size={15} color="#c4b5fd" style={{ flexShrink: 0 }} />
+            {trophies.map(t => {
+              const tone = TROPHY_TONE[t.kind]
+              const Icon = tone.Icon
+              return (
+                <HoverTooltip key={`${t.season}-${t.label}`} text={`${t.season} · ${t.label}`} color={tone.icon}>
                   <span style={{
-                    fontSize: '13px', fontWeight: 700, color: '#e9d5ff',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}>{t.season.replace(/^Season\s*/i, 'S')}</span>
-                </span>
-              </HoverTooltip>
-            ))}
+                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    backgroundColor: tone.bg,
+                    border: `1px solid ${tone.border}`,
+                    padding: '3px 8px 3px 6px',
+                  }}>
+                    <Icon size={15} color={tone.icon} style={{ flexShrink: 0 }} />
+                    <span style={{
+                      fontSize: '13px', fontWeight: 700, color: tone.text,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>{t.season.replace(/^Season\s*/i, 'S')}</span>
+                  </span>
+                </HoverTooltip>
+              )
+            })}
           </div>
         </div>
       )}
