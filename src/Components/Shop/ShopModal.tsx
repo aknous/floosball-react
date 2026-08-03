@@ -207,6 +207,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
   const cycleCapped = cycleLimit > 0 && cycleRemaining <= 0
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  // Shop tabs. Three sections in one scroll had got crowded, and they answer
+  // different questions: build a lineup, build a collection, spend on utility.
+  type ShopTab = 'fantasy' | 'collection' | 'powerups'
+  const [tab, setTab] = useState<ShopTab>('fantasy')
   const toggleSection = (key: string) =>
     setCollapsed(prev => ({ ...prev, [key]: !prev[key] }))
 
@@ -234,6 +238,9 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         setThemedPacks(j.data?.themedPacks ?? [])
         setCollectionPack(j.data?.collectionPack ?? null)
         setCollectionOnly(!!j.data?.collectionOnly)
+        // Outside the regular season the fantasy tab is empty, so open on the
+        // one that has something in it.
+        if (j.data?.collectionOnly) setTab('collection')
         setStarter(j.data?.starter ?? null)
         if (j.data?.shopOpen !== undefined) setShopOpen(j.data.shopOpen)
         if (typeof j.data?.cycleLimit === 'number') setCycleLimit(j.data.cycleLimit)
@@ -678,7 +685,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
               {/* The shop no longer closes. What changes between seasons is what's
                   on sale, so say that plainly rather than showing a wall of
                   disabled packs with no reason given. */}
-              {collectionOnly && (
+              {collectionOnly && tab === 'fantasy' && (
                 <div style={{
                   padding: '12px 16px',
                   marginBottom: '16px',
@@ -691,9 +698,42 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   textAlign: 'center',
                 }}>
                   The regular season is over, so fantasy packs are away until the next one starts.
-                  The Collection Pack stays open. Its cards go straight to your Vault and score in the Showcase.
+                  The Collection tab stays open.
                 </div>
               )}
+              {/* ── Tabs ── */}
+              <div style={{
+                display: 'flex', gap: '4px', marginBottom: '20px',
+                borderBottom: '1px solid #1e293b',
+              }}>
+                {([
+                  { key: 'fantasy' as const,    label: 'Fantasy Cards', accent: '#eab308' },
+                  { key: 'collection' as const, label: 'Collection',    accent: '#a855f7' },
+                  { key: 'powerups' as const,   label: 'Power-Ups',     accent: '#38bdf8' },
+                ]).map(t => {
+                  const on = tab === t.key
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setTab(t.key)}
+                      style={{
+                        font: 'inherit', cursor: 'pointer', background: 'none',
+                        border: 'none', borderRadius: 0,
+                        padding: '8px 14px 9px',
+                        fontSize: '12px', fontWeight: 700,
+                        color: on ? '#e2e8f0' : '#94a3b8',
+                        // The active tab is marked by its own accent, matching the
+                        // palette each section already uses elsewhere in the shop.
+                        borderBottom: `2px solid ${on ? t.accent : 'transparent'}`,
+                        marginBottom: '-1px',
+                        transition: 'color 120ms ease, border-color 120ms ease',
+                      }}
+                    >{t.label}</button>
+                  )
+                })}
+              </div>
+
               {/* ── Daily Selection ── */}
               {/* Hidden entirely outside the regular season: the daily selection is
                   current-season fantasy singles, and the backend rejects those once
@@ -703,7 +743,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   the reroll button lives in this block — so it must stay rendered
                   so they can
                   pay to refresh. */}
-              {shopOpen && !collectionOnly && (
+              {tab === 'fantasy' && shopOpen && !collectionOnly && (
                 <div style={{ marginBottom: '28px' }}>
                   <SectionHeader
                     title="Daily Selection"
@@ -813,6 +853,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   Rerollable slots:  3 themed/grand/exquisite picks from a
                                      weighted category pool. Grand and
                                      Exquisite only appear via this rotation. */}
+              {tab === 'fantasy' && (
               <div style={{ marginBottom: '28px' }}>
                 <SectionHeader
                   title="Card Packs"
@@ -928,6 +969,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
               </div>
+              )}
 
               {/* ── Collection ──
                   Its own section on purpose. Nothing here can be equipped, so
@@ -936,7 +978,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   question. It also never rotates and is the only pack on sale
                   outside the regular season, so it needs a fixed home rather
                   than a slot in a grid that empties. */}
-              {collectionPack && (
+              {tab === 'collection' && collectionPack && (
                 <div style={{ marginBottom: '28px' }}>
                   <SectionHeader
                     title="Collection"
@@ -967,6 +1009,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
               )}
 
               {/* ── Power-Ups ── */}
+              {tab === 'powerups' && (
               <div>
                 <SectionHeader
                   title="Power-Ups"
@@ -1056,6 +1099,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 )}
               </div>
+              )}
             </>
           )}
         </div>
