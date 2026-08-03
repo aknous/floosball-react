@@ -1081,23 +1081,46 @@ export default function TeamPage() {
                 }}>
                   <img src={`/avatars/${nextGame.opponent.id}.png`} alt=""
                        style={{ width: '34px', height: '34px', flexShrink: 0 }} />
-                  {/* The name WRAPS rather than ellipsing. Once a game goes
-                      live the score claims the right-hand end of this row, and
-                      with a one-line name the two together cut most opponents
-                      off mid-city. Two short lines cost a few pixels of height
-                      and lose nothing. */}
+                  {/* The name WRAPS rather than ellipsing. With a one-line
+                      name most opponents were cut off mid-city. Two short
+                      lines cost a few pixels of height and lose nothing. */}
                   <span style={{
                     fontSize: '16px', fontWeight: 700, color: '#f1f5f9', lineHeight: 1.2,
                     minWidth: 0, overflowWrap: 'anywhere',
                   }}>{nextGame.opponent.city} {nextGame.opponent.name}</span>
-                  {nextGame.status !== 'Scheduled' && (
-                    <span style={{
-                      marginLeft: 'auto', flexShrink: 0,
-                      fontSize: '22px', fontWeight: 800, color: '#f8fafc', lineHeight: 1,
-                      fontVariantNumeric: 'tabular-nums',
-                    }}>{nextGame.teamScore}&ndash;{nextGame.oppScore}</span>
-                  )}
                 </div>
+
+                {/* The score is a SCOREBOARD, not a bare pair of numbers. Sat
+                    at the end of the name row, "Baltimore Ravens 16-6" read as
+                    the opponent's record. Naming both sides and separating
+                    them is what makes it a score. */}
+                {nextGame.status !== 'Scheduled' && (
+                  <div style={{
+                    display: 'flex', alignItems: 'baseline', gap: '14px', marginTop: '9px',
+                  }}>
+                    {[
+                      { abbr: team.abbr, score: nextGame.teamScore },
+                      { abbr: nextGame.opponent.abbr, score: nextGame.oppScore },
+                    ].map(side => (
+                      <span key={side.abbr} style={{
+                        display: 'flex', alignItems: 'baseline', gap: '6px',
+                      }}>
+                        <span style={{
+                          fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em',
+                          color: '#94a3b8',
+                        }}>{side.abbr}</span>
+                        <span style={{
+                          fontSize: '22px', fontWeight: 800, lineHeight: 1,
+                          fontVariantNumeric: 'tabular-nums',
+                          // The side in front is the brighter one, so the
+                          // scoreline says who's winning without a label.
+                          color: side.score >= Math.max(nextGame.teamScore, nextGame.oppScore)
+                            ? '#f8fafc' : '#94a3b8',
+                        }}>{side.score}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
               /* No next game means one of three quite different things, and

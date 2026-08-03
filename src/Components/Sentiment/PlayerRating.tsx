@@ -24,8 +24,8 @@ export interface PlayerRatingData {
   sentiment?: number | null
 }
 
-const PLAYER_LABELS = ['', 'Run them out of town', 'Not good enough', 'Fine', 'Real asset', 'Franchise cornerstone']
-const GM_LABELS = ['', 'Fire them', 'Out of their depth', 'Fine', 'Knows the job', 'Best in the league']
+const PLAYER_LABELS = ['', 'Get them out', 'Not good enough', 'Fine', 'Real asset', 'Cornerstone']
+const GM_LABELS = ['', 'Fire them', 'Out of their depth', 'Fine', 'Doing a good job', 'Best in the league']
 
 // Warm at the top, cold at the bottom — reads instantly without a legend.
 const TIER_COLOR = ['#94a3b8', '#f87171', '#fb923c', '#cbd5e1', '#a3e635', '#4ade80']
