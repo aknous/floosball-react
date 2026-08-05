@@ -372,6 +372,17 @@ export interface PlayEvent {
   yardLine: number
   playType: string
   yardsGained: number
+  // ── Punt telemetry (field graphic) ──
+  // yardsGained on a punt is the GROSS kick, so the arc draws to puntLanding and
+  // the return is a SEPARATE leg back from it. All yard values are measured from
+  // the RECEIVING team's own goal line.
+  puntType?: string | null            // boomer | standard | pin | coffin
+  puntAction?: string | null          // fairCatch | return | muff | touchdown
+  puntLanding?: number | null         // where the ball came down
+  puntGross?: number | null           // gross kick distance
+  puntTouchback?: boolean
+  returnYards?: number
+  returnerName?: string | null
   description: string
   playResult: string | null
   isTouchdown: boolean

@@ -1824,6 +1824,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               let playStroke = '#60a5fa'
               let playDash = 'none'
               let playEndX: number | null = null
+              // Punt legs, drawn in addition to the kick arc.
+              let puntReturnFromX: number | null = null
+              let puntReturnToX: number | null = null
+              let puntTouchbackFromX: number | null = null
+              let puntTouchbackToX: number | null = null
 
               if (isHoopShot && ballX != null) {
                 // Hoop shot — arc from the ball up to the target hoop (midfield or the
@@ -1837,16 +1842,53 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 playStroke = hoopMade ? '#22c55e' : '#94a3b8'   // green make / grey incompletion
                 playDash = '6,3'
                 playEndX = hoopX
-              } else if (playType === 'PUNT' && ballX != null && ballAbsYfl != null && Math.abs(yardsGained) >= 1) {
-                // Punt: draw arc forward from LOS to landing spot
-                const puntEndX = toX(ballAbsYfl + yardsGained * lastPlayDir)
-                const midPX = (ballX + puntEndX) / 2
-                const arcH = Math.min(Math.abs(puntEndX - ballX) * 0.35, 45)
-                const peakY = midY - Math.min(arcH * 1.6, 60)
-                playPath = `M${ballX},${midY} Q${midPX},${peakY} ${puntEndX},${midY}`
-                playStroke = '#a78bfa'
-                playDash = '8,4'
-                playEndX = puntEndX
+              } else if (playType === 'PUNT' && lastPlay) {
+                // Punt: the ARC is the kick, drawn from the punt's own line of
+                // scrimmage to where the ball actually came down; the RETURN is a
+                // separate straight leg back from the landing spot. Previously this
+                // drew ONE arc to the post-return spot, which is neither where the
+                // ball landed nor how it got there.
+                //
+                // puntLanding / the return are measured from the RECEIVING team's own
+                // goal line, which is the same frame as the punting team's
+                // yards-to-endzone — so the abs conversion is identical to a LOS.
+                const toAbs = (yte: number) => (lastPlayDir === 1 ? 110 - yte : 10 + yte)
+                const losYte = deriveYardsToEndzone(lastPlay)
+                const puntLanding = (lastPlay as any)?.puntLanding as number | null | undefined
+                const isTouchback = Boolean((lastPlay as any)?.puntTouchback)
+                const retYards = Number((lastPlay as any)?.returnYards ?? 0)
+                const startX = losYte != null ? toX(toAbs(losYte)) : ballX
+
+                if (startX != null) {
+                  // A touchback carries the ball THROUGH the end zone, so the arc
+                  // runs to the back of it rather than stopping at a landing spot.
+                  const endZoneX = lastPlayDir === 1 ? toX(112) : toX(8)
+                  const landX = isTouchback
+                    ? endZoneX
+                    : (puntLanding != null ? toX(toAbs(puntLanding)) : ballX)
+
+                  if (landX != null) {
+                    const midPX = (startX + landX) / 2
+                    const arcH = Math.min(Math.abs(landX - startX) * 0.35, 45)
+                    const peakY = midY - Math.min(arcH * 1.6, 60)
+                    playPath = `M${startX},${midY} Q${midPX},${peakY} ${landX},${midY}`
+                    playStroke = '#a78bfa'
+                    playDash = '8,4'
+                    playEndX = landX
+
+                    if (isTouchback) {
+                      // Ball placed at the 20 — draw the spot-back as its own leg so
+                      // it reads as a placement, not part of the kick.
+                      puntTouchbackFromX = landX
+                      puntTouchbackToX = toX(toAbs(20))
+                    } else if (retYards > 0 && puntLanding != null) {
+                      // The return advances AWAY from the receiving team's own goal,
+                      // so the spot increases.
+                      puntReturnFromX = landX
+                      puntReturnToX = toX(toAbs(puntLanding + retYards))
+                    }
+                  }
+                }
               } else if (playType === 'FIELDGOAL' && lastPlay) {
                 // A kick gains no yards, so it never hits the yardage branch
                 // below. Anchor on the kick's own line of scrimmage (from its
@@ -2119,6 +2161,40 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         strokeLinecap="round"
                         opacity={0.8}
                       />
+                    )}
+
+                    {/* Punt return — a solid leg back from the landing spot, so the
+                        kick and the run-back read as two different things. */}
+                    {puntReturnFromX != null && puntReturnToX != null && (
+                      <>
+                        <path d={`M${puntReturnFromX},${midY} L${puntReturnToX},${midY}`}
+                          fill="none" stroke="#38bdf8" strokeWidth={3}
+                          strokeLinecap="round" opacity={0.95}
+                        />
+                        {/* landing spot marker */}
+                        <circle cx={puntReturnFromX} cy={midY} r={3.5}
+                          fill="#a78bfa" opacity={0.95} />
+                        <polygon
+                          points={`${puntReturnToX},${midY - 5} ${puntReturnToX + (puntReturnToX >= puntReturnFromX ? 8 : -8)},${midY} ${puntReturnToX},${midY + 5}`}
+                          fill="#38bdf8" opacity={0.95}
+                        />
+                      </>
+                    )}
+
+                    {/* Touchback — the ball carried through the end zone, then gets
+                        spotted at the 20. Dashed amber so it reads as a placement
+                        rather than as yardage anyone gained. */}
+                    {puntTouchbackFromX != null && puntTouchbackToX != null && (
+                      <>
+                        <path d={`M${puntTouchbackFromX},${midY} L${puntTouchbackToX},${midY}`}
+                          fill="none" stroke="#fbbf24" strokeWidth={2}
+                          strokeDasharray="3,3" strokeLinecap="round" opacity={0.85}
+                        />
+                        <circle cx={puntTouchbackToX} cy={midY} r={4}
+                          fill="none" stroke="#fbbf24" strokeWidth={2} opacity={0.95} />
+                        <text x={puntTouchbackToX} y={midY - 10} textAnchor="middle"
+                          fontSize={9} fill="#fbbf24" opacity={0.95}>TB</text>
+                      </>
                     )}
 
                     {/* Arrowhead at end of play */}
