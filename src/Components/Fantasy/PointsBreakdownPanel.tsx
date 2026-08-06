@@ -4,6 +4,7 @@ import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { GateMeter } from './gateMeter'
 import { positionColor } from '@/Components/Cards/positionColors'
 import type { CardBreakdownEntry, EquationSummary, ModifierInfo } from '@/hooks/useFantasySnapshot'
+import GlitchLine from './GlitchLine'
 
 // The card-scoring breakdown panel. Rendered by ScoringPane on the fantasy page.
 // Extracted from the retired FantasyRoster component (fusion cleanup) — it was the
@@ -328,6 +329,21 @@ const RosterCardRow: React.FC<{
           <span style={{ color: sub.chip.color, fontSize: '12px', fontWeight: '600', textDecoration: sub.negated ? 'line-through' : 'none' }}>{sub.chip.str}</span>
         </div>
       ))}
+      {/* Glitch: corrupted noise until the week resolves, then the payout. The OUTCOME
+          stays unreadable unless the on-card player is awakened. */}
+      {bd.glitched && (
+        <div style={{ paddingLeft: '28px' }}>
+          <GlitchLine
+            chance={bd.glitchChance ?? 0}
+            resolved={!!bd.chanceResolved}
+            triggered={!!bd.glitchTriggered}
+            outcome={bd.glitchOutcome}
+            readable={bd.glitchReadable}
+            fp={bd.glitchFp}
+            multDelta={bd.glitchMultDelta}
+          />
+        </div>
+      )}
     </>
   )
 }

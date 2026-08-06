@@ -261,6 +261,16 @@ export interface CardData {
   isActive: boolean
   isEquipped?: boolean
   vaulted?: boolean  // permanently in the Vault — can't equip/sell/combine
+  // Glitch (docs/GLITCH_CARDS.md): marked during a Criticality. Purely a visual flag
+  // here — the extra payout is resolved server-side at week end.
+  glitched?: boolean
+  glitchedSeason?: number | null
+  glitchedWeek?: number | null
+  // True when the on-card player is AWAKENED, which converges the treatment on the
+  // existing gold rather than the unstable violet.
+  glitchAwakened?: boolean
+  // The week a surge actually fired — the one moment the card is allowed to move.
+  glitchSurged?: boolean
   // Player's stat line for the card's season — shown on the back of a vaulted
   // card (which drops its effect and becomes a keepsake player card).
   playerStats?: {
@@ -836,6 +846,16 @@ const TradingCard: React.FC<TradingCardProps> = ({
   // text, no behavior tags, no upgrade-tier chrome — just the player + stats.
   const isVaulted = !!card.vaulted
 
+  // Glitched cards take the AWAKENED treatment's shape (a glow that breathes in
+  // intensity and never moves) rather than the glitch-feed animations, which sway and
+  // strobe — fine for a line passing through a feed, unpleasant on a card someone is
+  // reading for minutes. See the note in index.css.
+  const glitchClass = card.glitched
+    ? ['glitched-card',
+       card.glitchAwakened ? 'glitched-card-awakened' : '',
+       card.glitchSurged ? 'glitched-card-surged' : ''].filter(Boolean).join(' ')
+    : ''
+
   // Upgrade tier: hexagon badge shown for tier 2+ (un-upgraded base cards stay
   // clean), full gold ring added at the max tier (IV) to flag a fully-upgraded card.
   const cardTier = card.tier || 1
@@ -902,6 +922,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
 
   return (
     <div
+      className={glitchClass || undefined}
       style={containerStyle}
       onClick={handleCardClick}
       onMouseEnter={() => { setHovered(true); onHoverChange?.(true) }}

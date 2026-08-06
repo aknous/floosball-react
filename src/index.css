@@ -845,3 +845,50 @@
   .tp-snap { scroll-snap-type: none; }
 }
 
+
+
+/* ── Glitched card treatment (docs/GLITCH_CARDS.md) ───────────────────────
+   A card marked during a Criticality. Deliberately reuses the AWAKENED shape rather
+   than the glitch-feed animations: a card sits in a collection view for minutes where
+   a feed line is gone in seconds, and .glitch-text-l1/l2 sway, drift, slam and strobe.
+   Fine passing by, unpleasant on something you are reading.
+
+   So this only breathes in INTENSITY and never moves position — the same lesson
+   .awakened-row already learned (its position-swept predecessor janked on reflow).
+   Only the hue differs: violet while the on-card player is still cracking, and the
+   existing gold once they are awakened, so the two states visibly converge. */
+@keyframes glitched-card-glow {
+  0%, 100% { box-shadow: inset 0 0 0 1px rgba(167,139,250,0.38), inset 0 0 22px rgba(167,139,250,0.10),
+                         0 0 12px rgba(167,139,250,0.12); }
+  50%      { box-shadow: inset 0 0 0 1px rgba(167,139,250,0.60), inset 0 0 34px rgba(167,139,250,0.19),
+                         0 0 20px rgba(167,139,250,0.22); }
+}
+.glitched-card { position: relative; }
+.glitched-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 6px;
+  background: rgba(167, 139, 250, 0.04);   /* faint, static violet wash */
+  /* Slower than the awakened row (3.4s): a card is on screen far longer, so the
+     resting state wants to be calmer than the feed equivalent. */
+  animation: glitched-card-glow 5.2s ease-in-out infinite;
+}
+/* Awakened player: the two states have converged, so it takes the gold. */
+.glitched-card.glitched-card-awakened::after {
+  background: rgba(253, 224, 138, 0.05);
+  animation: awakened-glow 4.6s ease-in-out infinite;
+}
+/* The one moment anything is allowed to move: the week a surge actually fires. */
+@keyframes glitched-card-surge {
+  0%   { box-shadow: inset 0 0 0 1px rgba(196,181,253,0.95), 0 0 34px rgba(167,139,250,0.55); }
+  100% { box-shadow: inset 0 0 0 1px rgba(167,139,250,0.38), 0 0 12px rgba(167,139,250,0.12); }
+}
+.glitched-card-surged::after { animation: glitched-card-surge 1.6s ease-out 1, glitched-card-glow 5.2s ease-in-out infinite 1.6s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .glitched-card::after,
+  .glitched-card.glitched-card-awakened::after,
+  .glitched-card-surged::after { animation: none; }
+}
