@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { GiProcessor, GiVirus } from 'react-icons/gi'
+import { GiProcessor, GiBiohazard } from 'react-icons/gi'
 
 /**
  * The at-a-glance marker on a glitched card (docs/GLITCH_CARDS.md).
@@ -16,11 +16,16 @@ import { GiProcessor, GiVirus } from 'react-icons/gi'
  * resting glyph to GiCircuitry on the line below if that reads better in place.
  *
  * The FLICKER is where the meaning lives, and it runs the opposite way round to the first
- * attempt: the chip is the resting state and the VIRUS flashes through it for ~260ms. The
- * chrome plan plays awakening as an SIR infection spreading via teammates and tackles, so
- * a card that caught something during a Criticality is infected — the system holding, with
- * the anomaly showing through. Illegible-at-size is fine for a quarter-second frame; it
- * reads as corruption, which is the point.
+ * attempt: the chip is the resting state and a CONTAMINATION mark flashes through it for
+ * ~260ms. The chrome plan plays awakening as an SIR infection spreading via teammates and
+ * tackles, so a card that caught something during a Criticality is infected — the system
+ * holding, with the anomaly showing through.
+ *
+ * That frame was GiVirus, which reads as a SCORPION at 13px (owner, 2026-08-07). The
+ * lesson is that a 260ms frame has no time to be decoded: only the silhouette lands, so
+ * the glyph has to be shape, not detail. Biohazard is built for exactly that — three bold
+ * lobes in rotational symmetry, legible tiny — and it keeps the contamination meaning the
+ * virus was carrying. GiRadioactive is the equivalent swap if it reads better.
  *
  * On an AWAKENED card the flicker stops and the mark turns gold: that player is in
  * control, so nothing is showing through any more. Same distinction the frame carries.
@@ -65,7 +70,7 @@ const GlitchMark: React.FC<Props> = ({ size, top, right, awakened, title }) => {
   const accent = awakened ? '#fde68a' : '#e9d5ff'
   const border = awakened ? 'rgba(253,224,138,0.85)' : 'rgba(196,181,253,0.9)'
   const bg = awakened ? 'rgba(253,224,138,0.18)' : 'rgba(139,92,246,0.30)'
-  const Glyph = jolt ? GiVirus : GiProcessor
+  const Glyph = jolt ? GiBiohazard : GiProcessor
   const glyphPx = Math.round(size * GLYPH_FILL)
 
   return (
