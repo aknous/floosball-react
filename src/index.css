@@ -848,53 +848,110 @@
 
 
 /* ── Glitched card treatment (docs/GLITCH_CARDS.md) ───────────────────────
-   A card marked during a Criticality. Reuses the AWAKENED shape rather than the
-   glitch-feed animations: a card sits in a collection view for minutes where a feed
-   line is gone in seconds, and .glitch-text-l1/l2 sway, drift, slam and strobe. Fine
-   passing by, unpleasant on something you are reading. So this only breathes in
-   INTENSITY and never moves position.
+   A card marked during a Criticality.
 
-   ⚠️ TradingCard's container sets `overflow: hidden`, which CLIPS any outer box-shadow
-   on this ::after. A first version leaned on `0 0 12px` for its glow plus a 1px inset
-   border at 0.38 and a 4% wash — the outer glow was clipped away and what remained was
-   invisible against the card's own coloured border and gradient art. Everything here
-   must therefore be INSET, and pitched for a busy surface rather than a plain row. */
-@keyframes glitched-card-glow {
-  0%, 100% { box-shadow: inset 0 0 0 2px rgba(167,139,250,0.70),
-                         inset 0 0 34px rgba(167,139,250,0.28); }
-  50%      { box-shadow: inset 0 0 0 3px rgba(216,180,254,1),
-                         inset 0 0 62px rgba(167,139,250,0.50); }
+   ⚠️ Two earlier versions were wrong in opposite ways, both worth recording.
+   A tinted wash plus a breathing rim WASHED THE CARD OUT — a permanent colour cast
+   fights the edition gradient and the art, and reads as "this card is tinted" rather
+   than "this card is unstable". Before that, an outer glow was invisible entirely,
+   because TradingCard's container sets overflow:hidden and clips it.
+
+   A glitch is not a state the card is bathed in — it is something that HAPPENS to it.
+   So the card looks completely normal ~92% of the time and briefly breaks: a scanline
+   pass, a chroma split, and a horizontal slice offset, all over in ~250ms. Nothing is
+   tinted, nothing is permanently dimmed, and at rest the card is untouched.
+
+   Pacing is deliberately slow (7s). This sits on screen for as long as a collection view
+   is open, which is why it does not use the play-feed animations — they sway, slam and
+   strobe on a line that is gone in seconds. */
+
+/* Pass 1: scanlines + chroma, invisible except for a brief tear. */
+@keyframes glitched-card-tear {
+  0%, 90%, 100% { opacity: 0; transform: translateX(0); }
+  91%  { opacity: 0.55; transform: translateX(-2px); }
+  93%  { opacity: 0.30; transform: translateX(2px); }
+  95%  { opacity: 0.60; transform: translateX(-1px); }
+  97%  { opacity: 0; transform: translateX(0); }
 }
+/* Pass 2: a single horizontal band that slips sideways, offset in time from the tear so
+   the two do not fire together and read as one big flash. */
+@keyframes glitched-card-slip {
+  0%, 40%, 100% { opacity: 0; }
+  42% { opacity: 1; clip-path: inset(28% 0 64% 0); transform: translateX(-4px); }
+  45% { opacity: 1; clip-path: inset(52% 0 40% 0); transform: translateX(3px); }
+  47% { opacity: 0; }
+}
+
 .glitched-card { position: relative; }
+
 .glitched-card::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  border-radius: 6px;
-  background: rgba(167, 139, 250, 0.14);
-  /* Above the card face, below the flip-zone affordance (zIndex 4). */
   z-index: 3;
-  /* Slower than the awakened row (3.4s): a card is on screen far longer, so the
-     resting state wants to be calmer than the feed equivalent. */
-  animation: glitched-card-glow 5.2s ease-in-out infinite;
+  border-radius: 6px;
+  /* Scanlines + a chroma cast. Both ride the opacity keyframes, so at rest this
+     contributes NOTHING — the card is its normal self. */
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(196,181,253,0.16) 0px,
+      rgba(196,181,253,0.16) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    linear-gradient(90deg, rgba(244,114,182,0.10), transparent 40%, rgba(56,189,248,0.10));
+  opacity: 0;
+  animation: glitched-card-tear 7s steps(1) infinite;
 }
-/* Awakened player: the two states have converged, so it takes the gold. */
+
+.glitched-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(233,213,255,0.22), rgba(139,92,246,0.10));
+  opacity: 0;
+  animation: glitched-card-slip 7s steps(1) infinite;
+}
+
+/* Awakened: the player is in CONTROL, so the card stops tearing. It keeps a warm cast
+   and a slow scanline drift instead — deliberate rather than cracking, which is the same
+   distinction the anomaly ladder draws. */
+@keyframes glitched-card-steady {
+  0%, 100% { opacity: 0.14; }
+  50%      { opacity: 0.26; }
+}
+.glitched-card.glitched-card-awakened::before { animation: none; opacity: 0; }
 .glitched-card.glitched-card-awakened::after {
-  background: rgba(253, 224, 138, 0.10);
-  animation: awakened-glow 4.6s ease-in-out infinite;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(253,224,138,0.14) 0px,
+    rgba(253,224,138,0.14) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  animation: glitched-card-steady 4.6s ease-in-out infinite;
 }
-/* The one moment anything is allowed to move: the week a surge actually fires. */
+
+/* The week a surge actually fires: the same tear, briefly much busier. */
 @keyframes glitched-card-surge {
-  0%   { box-shadow: inset 0 0 0 3px rgba(233,213,255,1), inset 0 0 70px rgba(167,139,250,0.65); }
-  100% { box-shadow: inset 0 0 0 2px rgba(167,139,250,0.55), inset 0 0 30px rgba(167,139,250,0.20); }
+  0%   { opacity: 0.85; transform: translateX(-5px); }
+  20%  { opacity: 0.35; transform: translateX(5px); }
+  40%  { opacity: 0.80; transform: translateX(-3px); }
+  70%  { opacity: 0.30; transform: translateX(2px); }
+  100% { opacity: 0; transform: translateX(0); }
 }
 .glitched-card-surged::after {
-  animation: glitched-card-surge 1.6s ease-out 1, glitched-card-glow 5.2s ease-in-out infinite 1.6s;
+  animation: glitched-card-surge 1.4s steps(1) 2, glitched-card-tear 7s steps(1) infinite 2.8s;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .glitched-card::after,
+  .glitched-card::before,
   .glitched-card.glitched-card-awakened::after,
-  .glitched-card-surged::after { animation: none; }
+  .glitched-card-surged::after { animation: none; opacity: 0; }
 }
