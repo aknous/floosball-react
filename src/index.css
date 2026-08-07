@@ -860,10 +860,10 @@
    invisible against the card's own coloured border and gradient art. Everything here
    must therefore be INSET, and pitched for a busy surface rather than a plain row. */
 @keyframes glitched-card-glow {
-  0%, 100% { box-shadow: inset 0 0 0 2px rgba(167,139,250,0.55),
-                         inset 0 0 30px rgba(167,139,250,0.20); }
-  50%      { box-shadow: inset 0 0 0 2px rgba(196,181,253,0.95),
-                         inset 0 0 52px rgba(167,139,250,0.38); }
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(167,139,250,0.70),
+                         inset 0 0 34px rgba(167,139,250,0.28); }
+  50%      { box-shadow: inset 0 0 0 3px rgba(216,180,254,1),
+                         inset 0 0 62px rgba(167,139,250,0.50); }
 }
 .glitched-card { position: relative; }
 .glitched-card::after {
@@ -872,7 +872,7 @@
   inset: 0;
   pointer-events: none;
   border-radius: 6px;
-  background: rgba(167, 139, 250, 0.10);
+  background: rgba(167, 139, 250, 0.14);
   /* Above the card face, below the flip-zone affordance (zIndex 4). */
   z-index: 3;
   /* Slower than the awakened row (3.4s): a card is on screen far longer, so the

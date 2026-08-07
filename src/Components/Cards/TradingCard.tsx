@@ -338,6 +338,17 @@ const TIER_BADGE_DIMS = {
 }
 
 const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
+
+// Glitch marker (docs/GLITCH_CARDS.md). A breathing rim alone cannot carry "this card is
+// different" at a glance in a lineup of six — it reads as ambient card art. This is the
+// unmistakable part; the rim is the atmosphere. Mirrors the tier badge's corner placement
+// on the opposite side so the two never collide.
+const GLITCH_MARK_DIMS = {
+  xs: { top: 4, right: 4, size: 12, font: 8 },
+  sm: { top: 5, right: 5, size: 15, font: 9 },
+  md: { top: 6, right: 6, size: 18, font: 11 },
+  lg: { top: 7, right: 7, size: 22, font: 13 },
+}
 const HEX_CLIP = 'polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)'
 
 // Delegate to calcStars + STAR_COLORS so the card's tier color can't drift out
@@ -920,6 +931,8 @@ const TradingCard: React.FC<TradingCardProps> = ({
     }
   }
 
+  const gm = GLITCH_MARK_DIMS[size]
+
   return (
     <div
       className={glitchClass || undefined}
@@ -928,6 +941,32 @@ const TradingCard: React.FC<TradingCardProps> = ({
       onMouseEnter={() => { setHovered(true); onHoverChange?.(true) }}
       onMouseLeave={() => { setHovered(false); onHoverChange?.(false) }}
     >
+      {/* Glitch marker — the at-a-glance signal that this card caught something. */}
+      {card.glitched && (
+        <div
+          title={card.glitchedSeason
+            ? `Glitched in the Season ${card.glitchedSeason} Criticality (week ${card.glitchedWeek})`
+            : 'Glitched during a Criticality'}
+          style={{
+            position: 'absolute',
+            top: gm.top, right: gm.right, zIndex: 6,
+            width: gm.size, height: gm.size,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: gm.font, fontWeight: 800, fontFamily: 'monospace', lineHeight: 1,
+            color: card.glitchAwakened ? '#fde68a' : '#e9d5ff',
+            background: card.glitchAwakened ? 'rgba(253,224,138,0.18)' : 'rgba(139,92,246,0.30)',
+            border: `1px solid ${card.glitchAwakened ? 'rgba(253,224,138,0.85)' : 'rgba(196,181,253,0.9)'}`,
+            borderRadius: 3,
+            textShadow: card.glitchAwakened
+              ? '0 0 6px rgba(253,230,138,0.8)'
+              : '0 0 6px rgba(196,181,253,0.9)',
+            pointerEvents: 'none',
+          }}
+        >
+          ▓
+        </div>
+      )}
+
       {/* Flip-zone affordance — only when an external onClick is wired up.
           Subtle vertical strip on the right edge with a flip glyph so users
           discover the zone without ugly visual noise. */}
