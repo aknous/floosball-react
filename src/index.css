@@ -949,9 +949,43 @@
   animation: glitched-card-surge 1.4s steps(1) 2, glitched-card-tear 7s steps(1) infinite 2.8s;
 }
 
+/* Text chroma. Same green split the play feed uses (rgba(57,255,20) / rgba(16,185,129))
+   so a glitched card and a glitching play read as the same phenomenon.
+
+   Two differences from glitch-chroma-l1, both because a card is READ rather than glanced
+   at. The cycle is 13s against the feed's 6s, and the baseline carries NO shadow at all —
+   the feed keeps a permanent 1.5px split, which on body text you are actually reading
+   just looks like a rendering fault. Here the text is clean until it briefly is not.
+
+   text-shadow inherits, so putting this on the container covers every label on the card
+   without touching each one. No transform: shifting a whole card's text is nauseating in
+   a way shifting one feed line is not. */
+@keyframes glitched-card-text {
+  0%, 26%, 100% { text-shadow: none; }
+  27% { text-shadow: 1.5px 0 0 rgba(57,255,20,0.65), -1.5px 0 0 rgba(16,185,129,0.65); }
+  29% { text-shadow: 2.5px 0 0 rgba(57,255,20,0.8), -2.5px 1px 0 rgba(16,185,129,0.8); }
+  31% { text-shadow: none; }
+  72% { text-shadow: -2px 1px 0 rgba(57,255,20,0.7), 2.5px -1px 0 rgba(16,185,129,0.75); }
+  74% { text-shadow: 1.5px 0 0 rgba(57,255,20,0.6), -1.5px 0 0 rgba(16,185,129,0.6); }
+  76% { text-shadow: none; }
+}
+.glitched-card { animation: glitched-card-text 13s steps(1) infinite; }
+
+/* Awakened is in CONTROL, so its text does not tear. */
+.glitched-card.glitched-card-awakened { animation: none; }
+
 @media (prefers-reduced-motion: reduce) {
+  /* Stop every animation, and hide only the OVERLAYS. Note the card element itself must
+     keep its opacity — an earlier version grouped it with the pseudo-elements and set
+     opacity:0 on all of them, which hid the entire card for anyone with reduced motion on.
+     The text-shadow keyframes also have to be cancelled explicitly, since animation:none
+     leaves whatever the last computed shadow was. */
+  .glitched-card,
   .glitched-card::after,
   .glitched-card::before,
   .glitched-card.glitched-card-awakened::after,
-  .glitched-card-surged::after { animation: none; opacity: 0; }
+  .glitched-card-surged::after { animation: none; }
+  .glitched-card { text-shadow: none; }
+  .glitched-card::after,
+  .glitched-card::before { opacity: 0; }
 }
