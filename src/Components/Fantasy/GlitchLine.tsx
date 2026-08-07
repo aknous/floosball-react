@@ -79,7 +79,18 @@ const GlitchLine: React.FC<Props> = ({
     )
   }
 
-  if (!triggered) return null   // a quiet week simply has no line
+  // ⚠️ A quiet week must still show the line. Returning null here made the line VANISH
+  // once the week resolved without a trigger, so a glitched card became indistinguishable
+  // from a clean one and there was no way to tell the card was still glitched. It reads
+  // as the feature breaking rather than as the card being quiet.
+  if (!triggered) {
+    return (
+      <div className="flex items-center justify-between text-[11px] py-0.5 opacity-40">
+        <span className="text-violet-300 font-mono tracking-wider">{settledNoise}</span>
+        <span className="text-violet-300 font-mono">--</span>
+      </div>
+    )
+  }
 
   const amount = multDelta > 0
     ? `+${multDelta.toFixed(2)} FPx`
