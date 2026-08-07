@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { GiProcessor, GiVirus } from 'react-icons/gi'
 
 /**
  * The at-a-glance marker on a glitched card (docs/GLITCH_CARDS.md).
@@ -7,46 +8,53 @@ import React, { useEffect, useRef, useState } from 'react'
  * surface that already has edition gradients, borders and art it reads as decoration. This
  * is the unmistakable part; the rim is atmosphere.
  *
- * The glyph itself flickers, because a static block would look like a UI chip rather than
- * something wrong with the card. It swaps character on a slow cycle with a short hold, so
- * it reads as unstable while you are looking at it and stays quiet when you are not. That
- * pacing matters: this sits on screen for as long as the collection view is open, which is
- * why it does not use the play-feed glitch animations (they sway, slam and strobe).
+ * WHY A PROCESSOR. This renders between 12 and 22 CSS pixels, and at that size detail
+ * turns to mush — a virus as the resting glyph was unreadable (owner, 2026-08-07). A
+ * processor is geometric and holds its silhouette down to xs. The cost is that it sits
+ * inside the Cores' visual language (utils/coresVisual gives Halverson circuitry and uses
+ * processor as the fallback), so the mark leans "system" rather than "infection". Swap the
+ * resting glyph to GiCircuitry on the line below if that reads better in place.
  *
- * Gold once the depicted player is AWAKENED — a player in control, matching the treatment
- * the card frame converges on.
+ * The FLICKER is where the meaning lives, and it runs the opposite way round to the first
+ * attempt: the chip is the resting state and the VIRUS flashes through it for ~260ms. The
+ * chrome plan plays awakening as an SIR infection spreading via teammates and tackles, so
+ * a card that caught something during a Criticality is infected — the system holding, with
+ * the anomaly showing through. Illegible-at-size is fine for a quarter-second frame; it
+ * reads as corruption, which is the point.
+ *
+ * On an AWAKENED card the flicker stops and the mark turns gold: that player is in
+ * control, so nothing is showing through any more. Same distinction the frame carries.
+ *
+ * Pacing is deliberately slow. This sits on screen for as long as the collection view is
+ * open, which is why it does not borrow the play-feed glitch animations (they sway, slam
+ * and strobe) and why the owner asked for subtle.
  */
 
-const MARKS = '▓▒░█▚▞▛▜'
+// Fraction of the box the glyph fills. Was driven by a font-size tuned for block
+// CHARACTERS, which sit well inside their em box — an SVG does not, so the old numbers
+// rendered the icon smaller than intended on top of an already-small mark.
+const GLYPH_FILL = 0.72
 
 interface Props {
   size: number
-  font: number
   top: number
   right: number
   awakened?: boolean
   title?: string
 }
 
-const GlitchMark: React.FC<Props> = ({ size, font, top, right, awakened, title }) => {
-  const [glyph, setGlyph] = useState(MARKS[0])
+const GlitchMark: React.FC<Props> = ({ size, top, right, awakened, title }) => {
   const [jolt, setJolt] = useState(false)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
-    // An awakened card is deliberate rather than cracking, so it settles: slower cycle,
-    // no jolt. The marker carries the same distinction the frame does.
-    const period = awakened ? 3200 : 1700
-    const hold = awakened ? 200 : 320
+    // An awakened card is deliberate rather than cracking, so it settles: no flicker.
+    if (awakened) return undefined
     const id = setInterval(() => {
-      setGlyph(MARKS[Math.floor(Math.random() * MARKS.length)])
-      if (!awakened) setJolt(true)
-      const t = setTimeout(() => {
-        setGlyph(MARKS[0])
-        setJolt(false)
-      }, hold)
+      setJolt(true)
+      const t = setTimeout(() => setJolt(false), 260)
       timers.current.push(t)
-    }, period)
+    }, 2600)
     return () => {
       clearInterval(id)
       timers.current.forEach(clearTimeout)
@@ -57,6 +65,8 @@ const GlitchMark: React.FC<Props> = ({ size, font, top, right, awakened, title }
   const accent = awakened ? '#fde68a' : '#e9d5ff'
   const border = awakened ? 'rgba(253,224,138,0.85)' : 'rgba(196,181,253,0.9)'
   const bg = awakened ? 'rgba(253,224,138,0.18)' : 'rgba(139,92,246,0.30)'
+  const Glyph = jolt ? GiVirus : GiProcessor
+  const glyphPx = Math.round(size * GLYPH_FILL)
 
   return (
     <div
@@ -66,21 +76,21 @@ const GlitchMark: React.FC<Props> = ({ size, font, top, right, awakened, title }
         top, right, zIndex: 6,
         width: size, height: size,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: font, fontWeight: 800, fontFamily: 'monospace', lineHeight: 1,
-        color: accent,
         background: bg,
         border: `1px solid ${border}`,
         borderRadius: 3,
         // Chroma split only while jolting — the aberration IS the glitch tell, and
-        // leaving it on permanently makes the glyph look blurry rather than unstable.
-        textShadow: jolt
-          ? `-1px 0 rgba(244,114,182,0.9), 1px 0 rgba(56,189,248,0.9), 0 0 8px ${accent}`
-          : `0 0 6px ${accent}`,
-        opacity: jolt ? 0.85 : 1,
+        // leaving it on permanently makes the mark look blurry rather than unstable.
+        filter: jolt
+          ? 'drop-shadow(-1px 0 rgba(244,114,182,0.85)) drop-shadow(1px 0 rgba(56,189,248,0.85))'
+          : 'none',
+        // A sub-pixel nudge on the jolt reads as a tear without moving the layout.
+        transform: jolt ? 'translateX(0.5px) skewX(-4deg)' : 'none',
+        opacity: jolt ? 0.88 : 1,
         pointerEvents: 'none',
       }}
     >
-      {glyph}
+      <Glyph size={glyphPx} color={accent} style={{ display: 'block' }} />
     </div>
   )
 }

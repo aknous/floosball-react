@@ -346,11 +346,13 @@ const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' 
 // on the opposite side so the two never collide.
 // Vertical offsets mirror TIER_BADGE_DIMS so the mark clears the top badge row (the
 // season chip lives there) and sits opposite the tier hexagon rather than on top of it.
+// `font` is gone: the mark is an SVG now and sizes itself from the box (GLYPH_FILL in
+// GlitchMark), rather than from a font-size tuned for block characters.
 const GLITCH_MARK_DIMS = {
-  xs: { top: 25, right: 6, size: 12, font: 8 },
-  sm: { top: 32, right: 8, size: 15, font: 9 },
-  md: { top: 42, right: 10, size: 18, font: 11 },
-  lg: { top: 53, right: 13, size: 22, font: 13 },
+  xs: { top: 25, right: 6, size: 12 },
+  sm: { top: 32, right: 8, size: 15 },
+  md: { top: 42, right: 10, size: 18 },
+  lg: { top: 53, right: 13, size: 22 },
 }
 const HEX_CLIP = 'polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)'
 
@@ -948,7 +950,6 @@ const TradingCard: React.FC<TradingCardProps> = ({
       {card.glitched && (
         <GlitchMark
           size={gm.size}
-          font={gm.font}
           top={gm.top}
           right={gm.right}
           awakened={card.glitchAwakened}
