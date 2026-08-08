@@ -1,7 +1,7 @@
 import React from 'react'
 import AppHeader from './AppHeader'
 import AppNav from './AppNav'
-import { BG, BORDER, FONT } from './tokens'
+import { BG, BORDER, FONT, FOOTER_HEIGHT } from './tokens'
 
 /**
  * The frame the three redesigned pages sit in: full-width header, fixed 196px nav, and a
@@ -32,7 +32,12 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <AppHeader />
     <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
       <AppNav />
-      <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+      {/* The Footer is fixed to the viewport bottom, so its height is reserved here —
+          without it the last rows of every page scroll underneath it and cannot be read. */}
+      <main style={{
+        flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
+        paddingBottom: `${FOOTER_HEIGHT}px`,
+      }}>
         {children}
       </main>
     </div>

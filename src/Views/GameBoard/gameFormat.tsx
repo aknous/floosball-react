@@ -252,3 +252,36 @@ export function leadingSide(game: CurrentGame): 'home' | 'away' | 'tied' {
   if (home === away) return 'tied'
   return home > away ? 'home' : 'away'
 }
+
+
+/**
+ * Has this game gone far enough for CLOSENESS to mean anything?
+ *
+ * Every game starts 0-0, so without this every card on a fresh slate reads TIED — sixteen
+ * identical chips saying nothing. Gating only TIED would just move the problem, because a
+ * 0-0 game is also within one score, so the whole board would read 1-SCORE instead. Both
+ * chips are gated on this, and so is the interest ranking that uses them.
+ *
+ * "Far enough" is a FORMAT question, since none of these share a notion of halfway:
+ *   standard and friends — the second half
+ *   innings             — the bottom of the second inning
+ *   frames              — the fourth frame
+ */
+export function closenessCounts(game: CurrentGame): boolean {
+  if (game.status === 'Final') return true
+  if (game.status !== 'Active') return false
+
+  const innings = game.innings
+  if (innings?.active) {
+    const half = Math.max(2, Math.ceil((innings.inningsPerGame || 3) / 2))
+    return innings.inning > half || (innings.inning === half && innings.half === 'bottom')
+  }
+
+  const frames = game.frames
+  if (frames?.active) {
+    // Past the midpoint of the match — frame 4 of 6.
+    return frames.currentFrame >= Math.floor((frames.framesPerGame || 6) / 2) + 1
+  }
+
+  return (game.quarter ?? 1) >= 3
+}

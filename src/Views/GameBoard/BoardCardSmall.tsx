@@ -118,7 +118,6 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '18px' }}>
-        {pinned && <span style={{ ...font(700, 9, 1, '0.1em'), color: ACCENT.ownTeam }}>PINNED</span>}
         {live && <PulsingDot size={5} />}
         {isFinal ? (
           <span style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>FINAL</span>

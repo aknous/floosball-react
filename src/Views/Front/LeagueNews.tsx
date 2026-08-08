@@ -136,10 +136,22 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
               borderBottom: i < items.length - 1 ? `1px solid ${BORDER.hairline}` : 'none',
             }}
           >
-            <span style={{
-              width: '6px', height: '6px', borderRadius: '50%',
-              background: colorFor(item), flexShrink: 0,
-            }} />
+            {/* The crest where there is one — a team event carries its own, and a player
+                event gets their club's, resolved server-side. The category dot stands in
+                when neither applies (a Cores line, a rule change), so the column keeps its
+                width and the rows stay aligned. */}
+            {item.teamId ? (
+              <Crest teamId={item.teamId} size={20} />
+            ) : (
+              <span style={{
+                width: '20px', display: 'flex', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <span style={{
+                  width: '6px', height: '6px', borderRadius: '50%',
+                  background: colorFor(item),
+                }} />
+              </span>
+            )}
             <span style={{
               ...font(700, 10, 1, '0.1em'), color: colorFor(item),
               width: '104px', flexShrink: 0,

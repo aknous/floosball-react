@@ -44,7 +44,13 @@ export const SeedBadge: React.FC<{ team: TeamStanding }> = ({ team }) => {
   )
 }
 
-/** Crest + city over team name, with a YOURS tag on the user's own club. */
+/**
+ * Crest + city over team name.
+ *
+ * The user's own club is marked by the ROW — tinted background, inset rail in the team's
+ * colour, and the name in that colour too. A "YOURS" tag on top of all that was redundant
+ * (owner).
+ */
 export const TeamCell: React.FC<{
   team: TeamStanding
   crestSize?: number
@@ -60,16 +66,12 @@ export const TeamCell: React.FC<{
         <span style={{ display: 'block', ...font(500, 11), color: TEXT.muted, whiteSpace: 'nowrap' }}>
           {team.city}
         </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
-          <span style={{
-            ...font(700, 15, 1, '-0.015em'),
-            color: isYours ? readableTeamColor(team.color) : TEXT.strong,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{team.name}</span>
-          {isYours && (
-            <span style={{ ...font(700, 9, 1, '0.1em'), color: ACCENT.ownTeam, flexShrink: 0 }}>YOURS</span>
-          )}
-        </span>
+        <span style={{
+          display: 'block',
+          ...font(700, 15, 1, '-0.015em'),
+          color: isYours ? readableTeamColor(team.color) : TEXT.strong,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{team.name}</span>
       </span>
     </Link>
   </TeamHoverCard>

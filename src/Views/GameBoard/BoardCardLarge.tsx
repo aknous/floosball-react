@@ -6,7 +6,7 @@ import { finalLeaders } from './finalLeaders'
 import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
 import {
-  Crest, MomentumFlame, InterestChip, PulsingDot, SectionLabel, SwingTrend, SplitBar,
+  Crest, MomentumFlame, InterestChip, PulsingDot, SectionLabel, SplitBar,
   ScrollingLine, CHIP_COLOR, type ChipKind,
 } from './boardPieces'
 
@@ -55,27 +55,6 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
 
   const homeWp = Math.round(game.homeWinProbability ?? 50)
   const awayWp = 100 - homeWp
-  // Once a game is final the win probability is 100/0, which would make the favoured side
-  // the winner by definition. Read the favourite off the SCORE there so the trend line and
-  // its label agree with the result.
-  const homeFavoured = isFinal ? leader !== 'away' : homeWp >= awayWp
-  const favouredAbbr = homeFavoured ? home?.abbr : away?.abbr
-  const favouredText = homeFavoured ? homeText : awayText
-  // The trend line takes the CORRECTED colour, not the raw one. It is a 1.5px stroke on a
-  // dark card — functionally text, not a fill — and a dark team primary (Anchorage's slate)
-  // drew a line that was invisible.
-  const favouredFill = favouredText
-
-  // Recent win probability for the favoured side, straight off the plays already in
-  // memory. Home WP is stored per play, so the away line is its mirror.
-  const wpHistory = (game.plays || [])
-    .filter((p: any) => typeof p?.homeWinProbability === 'number')
-    .slice(-24)
-    .map((p: any) => (homeFavoured ? p.homeWinProbability : 100 - p.homeWinProbability))
-
-  const swing = wpHistory.length >= 2
-    ? Math.round(wpHistory[wpHistory.length - 1] - wpHistory[0])
-    : 0
 
   const lastPlay = (() => {
     const plays = game.plays || []
@@ -180,7 +159,6 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minHeight: '20px' }}>
-        {pinned && <span style={{ ...font(700, 11, 1, '0.1em'), color: ACCENT.ownTeam }}>PINNED</span>}
         {live && <PulsingDot size={6} />}
         {isFinal ? (
           <span style={{ ...font(700, 12, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>FINAL</span>
@@ -235,24 +213,18 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             )}
           </div>
         ) : (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ ...font(awayWp > homeWp ? 800 : 600, 14), color: awayText, ...TABULAR, whiteSpace: 'nowrap' }}>
-                {away?.abbr} {awayWp}%
-              </span>
-              <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={6} />
-              <span style={{ ...font(homeWp > awayWp ? 800 : 600, 14), color: homeText, ...TABULAR, whiteSpace: 'nowrap' }}>
-                {homeWp}% {home?.abbr}
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <SectionLabel>SWING</SectionLabel>
-              <span style={{ ...font(700, 13), color: favouredText, ...TABULAR, whiteSpace: 'nowrap' }}>
-                {swing >= 0 ? '▲' : '▼'} {Math.abs(swing)} {favouredAbbr}
-              </span>
-              <SwingTrend points={wpHistory} color={favouredFill} />
-            </div>
-          </>
+          // Just the gauge (owner): the swing trend line came out. Both sides carry their
+          // own percentage, so the bar is read against two labelled numbers rather than
+          // one favoured side and a sparkline.
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ ...font(awayWp > homeWp ? 800 : 600, 14), color: awayText, ...TABULAR, whiteSpace: 'nowrap' }}>
+              {away?.abbr} {awayWp}%
+            </span>
+            <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={6} />
+            <span style={{ ...font(homeWp > awayWp ? 800 : 600, 14), color: homeText, ...TABULAR, whiteSpace: 'nowrap' }}>
+              {homeWp}% {home?.abbr}
+            </span>
+          </div>
         )}
       </div>
 

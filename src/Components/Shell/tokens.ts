@@ -82,6 +82,14 @@ export const FONT = "'pressStart', ui-monospace, monospace"
 /** Every number that can change is tabular and lives in a fixed-width container. */
 export const TABULAR = { fontVariantNumeric: 'tabular-nums' } as const
 
+/**
+ * The Footer is `position: fixed; bottom: 0`, so it floats OVER the page and the layout
+ * has to reserve its height or the last rows of every page sit underneath it. The old
+ * layout did this with a hardcoded `paddingBottom: 33`; this is the same reservation with
+ * a name, plus a little clearance.
+ */
+export const FOOTER_HEIGHT = 40
+
 export const NAV_WIDTH = 196
 export const RAIL_WIDTH = 330
 

@@ -67,7 +67,7 @@ const TopPlayers: React.FC<{
               {/* Stars sit BESIDE the name, not out at the far right — a rating belongs to
                   the player, and the shared component colours it by band (gold/green/blue/
                   grey/red) instead of the flat amber this used to draw. */}
-              <Stars stars={row.ratingStars} size={11} />
+              <Stars stars={row.ratingStars} size={15} tracking={1.5} />
               {yours && <RelationTag label="YOURS" color={readableTeamColor(row.teamColor)} />}
               {fantasy && <RelationTag label="FANTASY" color={ACCENT.success} />}
               <span style={{ ...font(500, 11, 1, '0.06em'), color: TEXT.muted, whiteSpace: 'nowrap' }}>
