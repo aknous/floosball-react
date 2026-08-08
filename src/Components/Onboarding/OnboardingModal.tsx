@@ -7,12 +7,33 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 // ── Username selection step ────────────────────────────────────────────────
 
+// Mirrors api/auth.validateUsername. Duplicated ON PURPOSE: the server is the authority
+// and re-checks everything, but a name typed here should fail as you type rather than on
+// submit. Keep the two in step — the server's message wins if they ever disagree.
+const NAME_MIN = 3
+const NAME_MAX = 20
+const NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/
+
+const localNameError = (name: string): string | null => {
+  const n = name.trim()
+  if (!n) return null                     // empty is "not yet", not "wrong"
+  if (n.length < NAME_MIN) return `At least ${NAME_MIN} characters`
+  if (n.length > NAME_MAX) return `${NAME_MAX} characters or fewer`
+  if (!NAME_RE.test(n)) return 'Letters, numbers and underscores, starting with a letter'
+  return null
+}
+
 const UsernameStep: React.FC<{
   onSelect: (name: string) => void
   getToken: () => Promise<string | null>
 }> = ({ onSelect, getToken }) => {
   const [options, setOptions] = useState<string[]>([])
   const [selected, setSelected] = useState<string | null>(null)
+  const [ownName, setOwnName] = useState('')
+  const ownError = localNameError(ownName)
+  // Typing takes precedence over a highlighted suggestion, so the box the user is
+  // actively using is the one that wins rather than whichever was touched last.
+  const chosen = ownName.trim() ? (ownError ? null : ownName.trim()) : selected
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,7 +59,7 @@ const UsernameStep: React.FC<{
   useEffect(() => { fetchOptions() }, [fetchOptions])
 
   const handleConfirm = async () => {
-    if (!selected) return
+    if (!chosen) return
     setSubmitting(true)
     setError(null)
     try {
@@ -47,14 +68,19 @@ const UsernameStep: React.FC<{
       const res = await fetch(`${API_BASE}/users/me/username`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-        body: JSON.stringify({ username: selected }),
+        body: JSON.stringify({ username: chosen }),
       })
       if (res.ok) {
-        onSelect(selected)
+        onSelect(chosen)
+      } else if (res.status === 400) {
+        // The server validates independently and its message is the authoritative one.
+        setError((await res.json().catch(() => ({}))).detail || 'That name will not work.')
       } else if (res.status === 409) {
-        setError('That name was just taken. Here are some new options.')
+        setError(ownName.trim()
+          ? 'That name is already taken. Try another.'
+          : 'That name was just taken. Here are some new options.')
         setSelected(null)
-        fetchOptions()
+        if (!ownName.trim()) fetchOptions()
       } else {
         setError('Something went wrong. Try again.')
       }
@@ -96,6 +122,41 @@ const UsernameStep: React.FC<{
           ))}
         </div>
       )}
+      <div style={{ marginBottom: '12px' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0 10px',
+          color: '#64748b', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.06em',
+        }}>
+          <span style={{ flex: 1, height: 1, background: '#1e293b' }} />
+          or make your own
+          <span style={{ flex: 1, height: 1, background: '#1e293b' }} />
+        </div>
+        <input
+          value={ownName}
+          onChange={e => { setOwnName(e.target.value); setSelected(null); setError(null) }}
+          onKeyDown={e => { if (e.key === 'Enter' && chosen && !submitting) handleConfirm() }}
+          placeholder="Your own name"
+          maxLength={NAME_MAX}
+          spellCheck={false}
+          autoComplete="off"
+          style={{
+            width: '100%', boxSizing: 'border-box',
+            padding: '12px 16px', borderRadius: '8px',
+            border: `1px solid ${ownError ? '#b45309' : ownName.trim() ? '#3b82f6' : '#334155'}`,
+            backgroundColor: '#0f172a', color: '#e2e8f0',
+            fontSize: '15px', fontWeight: 600, outline: 'none',
+          }}
+        />
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', gap: '10px',
+          fontSize: '11px', marginTop: '5px', minHeight: '15px',
+        }}>
+          <span style={{ color: ownError ? '#fbbf24' : '#64748b' }}>{ownError || ''}</span>
+          <span style={{ color: '#64748b', flexShrink: 0 }}>
+            {ownName.length}/{NAME_MAX}
+          </span>
+        </div>
+      </div>
       <button
         onClick={fetchOptions}
         disabled={loading}
@@ -115,18 +176,18 @@ const UsernameStep: React.FC<{
       <div style={{ marginTop: '16px' }}>
         <button
           onClick={handleConfirm}
-          disabled={!selected || submitting}
+          disabled={!chosen || submitting}
           style={{
             padding: '10px 24px', borderRadius: '6px',
-            backgroundColor: selected ? '#3b82f6' : '#334155',
+            backgroundColor: chosen ? '#3b82f6' : '#334155',
             border: 'none',
-            color: selected ? '#fff' : '#64748b',
+            color: chosen ? '#fff' : '#64748b',
             fontSize: '14px', fontWeight: '600',
-            cursor: selected && !submitting ? 'pointer' : 'default',
+            cursor: chosen && !submitting ? 'pointer' : 'default',
             width: '100%',
           }}
         >
-          {submitting ? 'Claiming...' : selected ? `I'll go by ${selected}` : 'Select a name'}
+          {submitting ? 'Claiming...' : chosen ? `I'll go by ${chosen}` : 'Pick or type a name'}
         </button>
       </div>
     </>
