@@ -2,8 +2,12 @@ import './index.css';
 import React, { useEffect, useState, useRef } from 'react'
 import Navbar from './Components/Navbar.js'
 import GameBar from './Components/GameBar'
-import Sidebar from './Components/Sidebar'
-import { SidebarProvider, SIDEBAR_WIDTH_COLLAPSED } from './contexts/SidebarContext'
+import { SidebarProvider } from './contexts/SidebarContext'
+import AppShell from './Components/Shell/AppShell'
+import FrontPage from './Views/Front/FrontPage'
+import GameBoardPage from './Views/GameBoard/GameBoardPage'
+import StandingsPage from './Views/Standings/StandingsPage'
+import PrognosticationsPage from './Views/Prognostications/PrognosticationsPage'
 import TeamsPage from './Views/Teams/TeamsPage'
 import Team from './Views/Teams/TeamPage'
 import Player from './Views/Players/PlayerPage'
@@ -47,48 +51,78 @@ import PendingPackResumer from './Components/Cards/PendingPackResumer'
 import HalftimeShowModal from './Components/HalftimeShowModal'
 import { ChakraProvider } from '@chakra-ui/react'
 
+/**
+ * Every route, shared by both shells.
+ *
+ * `/` is the front page now, not a redirect to the dashboard. `/dashboard` redirects the
+ * other way so old links and bookmarks still land somewhere sensible; `/dashboard/old`
+ * keeps the original for comparison while the redesign settles.
+ */
+function AppRoutes({ headerHeight }) {
+  return (
+    <Routes>
+      <Route exact path='/' element={<FrontPage />} />
+      <Route exact path='/games' element={<GameBoardPage />} />
+      <Route exact path='/standings' element={<StandingsPage />} />
+      <Route exact path='/prognostications' element={<PrognosticationsPage />} />
+      <Route exact path='/dashboard' element={<Navigate to='/' replace />} />
+      <Route exact path='/dashboard/legacy' element={<DashboardNew headerHeight={headerHeight} />} />
+      <Route exact path='/dashboard/old' element={<Dashboard />} />
+      <Route exact path='/players' element={<Players />} />
+      <Route exact path='/teams' element={<TeamsPage />} />
+      <Route path='/team/:id' element={<Team />} />
+      <Route path='/players/:id' element={<Player />} />
+      <Route exact path='/fantasy' element={<FantasyPage />} />
+      <Route exact path='/cards' element={<CardsPage />} />
+      <Route exact path='/achievements' element={<AchievementsPage />} />
+      <Route exact path='/front-office' element={<FrontOfficeRedirect />} />
+      <Route exact path='/awards' element={<AwardsPage />} />
+      <Route exact path='/bracket' element={<BracketView />} />
+      <Route exact path='/history' element={<HistoryPage />} />
+      <Route exact path='/about' element={<AboutPage />} />
+      <Route exact path='/admin' element={<AdminPage />} />
+    </Routes>
+  )
+}
+
+/**
+ * Desktop runs the redesigned shell (Components/Shell): full-width header, fixed 196px
+ * nav, content column. Mobile keeps the original Navbar + GameBar, because the handoffs
+ * are a fixed 1440px desktop layout and explicitly did not design a responsive collapse.
+ */
 function AppLayout() {
   const headerRef = useRef(null)
   const [headerHeight, setHeaderHeight] = useState(64)
   const isMobile = useIsMobile()
-  const sidebarWidth = isMobile ? 0 : SIDEBAR_WIDTH_COLLAPSED
 
   useEffect(() => {
-    if (!headerRef.current) return
-    const observer = new ResizeObserver(() => {
-      setHeaderHeight(headerRef.current.offsetHeight)
-    })
-    observer.observe(headerRef.current)
-    return () => observer.disconnect()
-  }, [])
+    if (isMobile && headerRef.current) {
+      const observer = new ResizeObserver(() => {
+        if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight)
+      })
+      observer.observe(headerRef.current)
+      return () => observer.disconnect()
+    }
+  }, [isMobile])
+
+  if (!isMobile) {
+    return (
+      <AppShell>
+        <AppRoutes headerHeight={headerHeight} />
+        <Footer />
+      </AppShell>
+    )
+  }
 
   return (
     <div className='min-h-screen relative font-pixel' style={{ backgroundColor: '#0f172a' }}>
-      {!isMobile && <Sidebar headerHeight={headerHeight} />}
       <div ref={headerRef} className='fixed w-full top-0 z-50'>
         <Navbar />
         <BetaBanner />
       </div>
-      <div style={{ paddingTop: headerHeight, paddingBottom: 33, marginLeft: sidebarWidth, transition: 'margin-left 0.2s ease' }}>
+      <div style={{ paddingTop: headerHeight, paddingBottom: 33 }}>
         <GameBar />
-        <Routes>
-          <Route exact path='/' element={<Navigate to='/dashboard' />} />
-          <Route exact path='/dashboard' element={<DashboardNew headerHeight={headerHeight} />} />
-          <Route exact path='/dashboard/old' element={<Dashboard />} />
-          <Route exact path='/players' element={<Players />} />
-          <Route exact path='/teams' element={<TeamsPage />} />
-          <Route path='/team/:id' element={<Team />} />
-          <Route path='/players/:id' element={<Player />} />
-          <Route exact path='/fantasy' element={<FantasyPage />} />
-          <Route exact path='/cards' element={<CardsPage />} />
-          <Route exact path='/achievements' element={<AchievementsPage />} />
-          <Route exact path='/front-office' element={<FrontOfficeRedirect />} />
-          <Route exact path='/awards' element={<AwardsPage />} />
-          <Route exact path='/bracket' element={<BracketView />} />
-          <Route exact path='/history' element={<HistoryPage />} />
-          <Route exact path='/about' element={<AboutPage />} />
-          <Route exact path='/admin' element={<AdminPage />} />
-        </Routes>
+        <AppRoutes headerHeight={headerHeight} />
         <Footer />
       </div>
     </div>

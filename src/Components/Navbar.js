@@ -49,7 +49,9 @@ const notifTypeColors = {
   favorite_team: '#f43f5e',
 }
 
-function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker }) {
+// Exported so the redesigned shell header (Components/Shell/AppHeader) mounts the SAME
+// account menu rather than growing a second one that drifts from this.
+export function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker }) {
   const { user, logout, getToken } = useAuth()
   const [emailOptOut, setEmailOptOut] = useState(user?.emailOptOut ?? false)
   // Renaming lives here for now because this dropdown is the only account surface that

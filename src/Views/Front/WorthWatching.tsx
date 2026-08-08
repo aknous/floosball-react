@@ -1,0 +1,87 @@
+import React from 'react'
+import { Link } from 'react-router-dom'
+import PlayerHoverCard from '@/Components/PlayerHoverCard'
+import PlayerAvatar from '@/Components/PlayerAvatar'
+import { BG, BORDER, TEXT, ACCENT, TABULAR, font } from '@/Components/Shell/tokens'
+import { readableTeamColor } from '@/utils/colors'
+import { SectionHeader, Stars, RelationTag } from './frontPieces'
+
+export interface LeaderRow {
+  id: number
+  name: string
+  position: string
+  teamAbbr: string
+  teamId: number | null
+  teamColor: string
+  ratingStars: number
+  statLabel: string
+  statValue: string
+}
+
+/**
+ * A ranked leaderboard, eight deep.
+ *
+ * The RELATIONSHIP TAGS are the point of this module — YOURS when the player is on the
+ * user's favourite team, FANTASY when they are on their fantasy roster. Without them
+ * this is just the stats page in miniature; with them it is a reason to look, which is
+ * what earns a leaderboard a place on a personal landing page.
+ *
+ * Depth went 3 -> 7 -> 8 across review. Three read as too thin.
+ */
+const WorthWatching: React.FC<{
+  rows: LeaderRow[]
+  favouriteTeamId: number | null
+  fantasyPlayerIds: Set<number>
+}> = ({ rows, favouriteTeamId, fantasyPlayerIds }) => {
+  if (rows.length === 0) return null
+
+  return (
+    <div style={{ marginTop: '26px' }}>
+      <SectionHeader title="WORTH WATCHING" link={{ to: '/players', label: 'ALL STATS →' }} />
+      <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}` }}>
+        {rows.map((row, i) => {
+          const yours = favouriteTeamId != null && row.teamId === favouriteTeamId
+          const fantasy = fantasyPlayerIds.has(row.id)
+          return (
+            <div
+              key={row.id}
+              className="row"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px',
+                borderBottom: i < rows.length - 1 ? `1px solid ${BORDER.hairline}` : 'none',
+              }}
+            >
+              <span style={{ ...font(700, 11), color: TEXT.faint, width: '14px', flexShrink: 0, ...TABULAR }}>
+                {i + 1}
+              </span>
+              <PlayerAvatar name={row.name} teamId={row.teamId} size={22} />
+              <PlayerHoverCard playerId={row.id} playerName={row.name}>
+                <Link
+                  to={`/players/${row.id}`}
+                  style={{ ...font(800, 13), color: TEXT.strong, whiteSpace: 'nowrap', textDecoration: 'none' }}
+                >{row.name}</Link>
+              </PlayerHoverCard>
+              {yours && <RelationTag label="YOURS" color={readableTeamColor(row.teamColor)} />}
+              {fantasy && <RelationTag label="FANTASY" color={ACCENT.success} />}
+              <span style={{ ...font(400, 10, 1, '0.08em'), color: TEXT.dim, whiteSpace: 'nowrap' }}>
+                {row.position} · {row.teamAbbr}
+              </span>
+              <span style={{ flex: 1 }} />
+              <Stars value={row.ratingStars} />
+              <span style={{
+                ...font(700, 9, 1, '0.12em'), color: TEXT.muted,
+                width: '86px', textAlign: 'right', flexShrink: 0,
+              }}>{row.statLabel}</span>
+              <span style={{
+                ...font(800, 16), color: TEXT.primary, ...TABULAR,
+                width: '58px', textAlign: 'right', flexShrink: 0,
+              }}>{row.statValue}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+export default WorthWatching

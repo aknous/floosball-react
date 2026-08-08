@@ -1,0 +1,164 @@
+import React from 'react'
+import { BG, BORDER, TEXT, ACCENT, MOMENTUM, FONT, TABULAR, font } from '@/Components/Shell/tokens'
+
+/** Crests exist for team ids 1-24. Anything above renders a placeholder. */
+export const CREST_MAX_ID = 24
+
+/**
+ * A crest, or a same-size dashed circle when the team has no artwork yet.
+ *
+ * `box-sizing: border-box` is not optional here. A content-box placeholder lays out 2px
+ * larger than a real crest and shifts the team name beside it — a real defect caught in
+ * review. The placeholder is also circular, because every real crest is.
+ */
+export const Crest: React.FC<{
+  teamId?: string | number | null
+  size: number
+  possession?: boolean
+  style?: React.CSSProperties
+}> = ({ teamId, size, possession = false, style }) => {
+  const id = Number(teamId)
+  const hasArt = Number.isFinite(id) && id >= 1 && id <= CREST_MAX_ID
+
+  const inner = hasArt ? (
+    <img
+      src={`/avatars/${id}.png`}
+      alt=""
+      width={size}
+      height={size}
+      style={{ display: 'block', borderRadius: '50%', flexShrink: 0 }}
+    />
+  ) : (
+    <span style={{
+      display: 'block',
+      boxSizing: 'border-box',
+      width: `${size}px`,
+      height: `${size}px`,
+      borderRadius: '50%',
+      background: BG.panel,
+      border: `1px dashed ${BORDER.raised}`,
+      flexShrink: 0,
+    }} />
+  )
+
+  if (!possession) return <span style={{ flexShrink: 0, ...style }}>{inner}</span>
+
+  // The team with the ball gets a ring on the crest. Outline rather than border so it
+  // does not change the layout box as it appears and disappears mid-drive.
+  return (
+    <span style={{
+      flexShrink: 0,
+      display: 'block',
+      borderRadius: '50%',
+      outline: '2px solid #fff',
+      outlineOffset: '2px',
+      ...style,
+    }}>{inner}</span>
+  )
+}
+
+/** Momentum flame, coloured by magnitude. */
+export const MomentumFlame: React.FC<{ magnitude: number; size: number }> = ({ magnitude, size }) => {
+  const color = magnitude >= 25 ? MOMENTUM.high : magnitude >= 15 ? MOMENTUM.mid : MOMENTUM.low
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill={color} style={{ flexShrink: 0 }}>
+      <path d="M10 1c1.2 3 4.5 4.4 4.5 8a4.5 4.5 0 11-9 0c0-1.5.6-2.6 1.4-3.6.2 1 .8 1.8 1.6 2.1C8.2 5.4 9 3.1 10 1z" />
+    </svg>
+  )
+}
+
+export type ChipKind = 'TIED' | '1-SCORE' | 'UPSET' | 'FEATURED'
+
+export const CHIP_COLOR: Record<ChipKind, string> = {
+  TIED: ACCENT.live,
+  '1-SCORE': ACCENT.live,
+  UPSET: ACCENT.upset,
+  FEATURED: ACCENT.featured,
+}
+
+/** The one interest chip a card may carry. Its colour also sets the card's top border. */
+export const InterestChip: React.FC<{ kind: ChipKind; size: 'large' | 'small' }> = ({ kind, size }) => {
+  const color = CHIP_COLOR[kind]
+  return (
+    <span style={{
+      ...font(700, size === 'large' ? 10 : 9, 1, '0.08em'),
+      color,
+      border: `1px solid ${color}59`,
+      padding: size === 'large' ? '3px 6px' : '3px 5px',
+      whiteSpace: 'nowrap',
+      flexShrink: 0,
+    }}>{kind}</span>
+  )
+}
+
+export const PulsingDot: React.FC<{ size: number; color?: string }> = ({ size, color = ACCENT.live }) => (
+  <span
+    className="board-live-dot"
+    style={{
+      width: `${size}px`, height: `${size}px`, borderRadius: '50%',
+      background: color, flexShrink: 0,
+    }}
+  />
+)
+
+export const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <span style={{ ...font(600, 11, 1, '0.1em'), color: TEXT.muted, flexShrink: 0 }}>{children}</span>
+)
+
+/**
+ * The swing trend: win probability for the favoured side over the recent plays.
+ *
+ * Drawn from `game.plays`, which already carries a per-play win probability, rather than
+ * from a client-side accumulator — so the line is right immediately on load instead of
+ * only after the tab has been open long enough to have watched the swings happen.
+ */
+export const SwingTrend: React.FC<{
+  points: number[]
+  color: string
+  width?: number
+  height?: number
+}> = ({ points, color, width = 130, height = 24 }) => {
+  if (points.length < 2) {
+    return <svg width={width} height={height} style={{ flexShrink: 0 }} aria-hidden />
+  }
+  const lo = Math.min(...points)
+  const hi = Math.max(...points)
+  const span = Math.max(hi - lo, 4)
+  const step = width / (points.length - 1)
+  const path = points
+    .map((p, i) => `${(i * step).toFixed(1)},${(height - ((p - lo) / span) * (height - 4) - 2).toFixed(1)}`)
+    .join(' ')
+  return (
+    <svg width={width} height={height} style={{ flexShrink: 0, overflow: 'visible' }} aria-hidden>
+      <line x1="0" y1={height / 2} x2={width} y2={height / 2} stroke={BORDER.hairline} strokeWidth="1" />
+      <polyline points={path} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+/**
+ * A two-team split bar. Both halves use RAW team colours — bars are fills, and the
+ * lightening rule applies only to team colour used as text.
+ */
+export const SplitBar: React.FC<{
+  awayPct: number
+  awayColor: string
+  homeColor: string
+  height: number
+}> = ({ awayPct, awayColor, homeColor, height }) => (
+  <span style={{
+    flex: 1, minWidth: 0, display: 'flex', height: `${height}px`,
+    background: BORDER.hairline, overflow: 'hidden',
+  }}>
+    <span style={{ width: `${awayPct}%`, background: awayColor, transition: 'width 0.5s ease' }} />
+    <span style={{ flex: 1, background: homeColor }} />
+  </span>
+)
+
+export const boardStyles = {
+  font: FONT,
+  tabular: TABULAR,
+  text: TEXT,
+  bg: BG,
+  border: BORDER,
+}

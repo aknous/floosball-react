@@ -989,3 +989,39 @@
   .glitched-card::after,
   .glitched-card::before { opacity: 0; }
 }
+
+/* ---------------------------------------------------------------------------
+   Redesigned shell (Components/Shell + the front page, game board, standings).
+
+   Three shared hover behaviours, kept in CSS because they are pure presentation
+   and every one of them is applied to dozens of elements per page:
+
+     .row   — a list row or a grid cell that is a link
+     .plate — a raised element that lifts on hover (cards, chips, the user chip)
+     .hd    — a header/nav link that only brightens
+
+   Depth in this system is background steps plus 1px borders, so none of these
+   add a shadow.
+   --------------------------------------------------------------------------- */
+.row { transition: background-color 140ms ease; }
+.row:hover { background-color: rgba(255,255,255,0.04); }
+
+.plate { transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease; }
+.plate:hover { border-color: #475569; background: #1b2739; transform: translateY(-2px); }
+
+.hd { transition: color 140ms ease; }
+.hd:hover { color: #ffffff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .plate:hover { transform: none; }
+}
+
+/* The live dot on the game board and the front page's Happening now band. A slow
+   opacity pulse, not a scale ring — sixteen of these breathing at once has to read as
+   ambient rather than as sixteen things demanding attention. */
+@keyframes boardLiveDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.board-live-dot { animation: boardLiveDot 2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .board-live-dot { animation: none; }
+}
