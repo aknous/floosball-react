@@ -122,7 +122,7 @@ const LeagueRace: React.FC<{
       <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}`, padding: '16px 18px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
           <span style={{ ...font(600, 10, 1, '0.12em'), color: TEXT.muted }}>
-            FOUR WILD CARDS — {chasing.length} CLUBS, PLACED BY GAMES BACK
+            FOUR WILD CARDS — {chasing.length} TEAMS, PLACED BY GAMES BACK
           </span>
           <span style={{ flex: 1 }} />
           <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>

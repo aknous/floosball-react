@@ -33,17 +33,6 @@ export const SectionHeader: React.FC<{
   </div>
 )
 
-/** Five-star rating. Filled amber, empty a raised hairline. */
-export const Stars: React.FC<{ value: number; size?: number }> = ({ value, size = 10 }) => (
-  <span style={{ display: 'flex', gap: '1px', flexShrink: 0 }}>
-    {[1, 2, 3, 4, 5].map(i => (
-      <span key={i} style={{ fontSize: `${size}px`, lineHeight: 1, color: i <= value ? ACCENT.warning : BORDER.raised }}>
-        ★
-      </span>
-    ))}
-  </span>
-)
-
 /** An outlined relationship tag: YOURS in the team colour, FANTASY in green. */
 export const RelationTag: React.FC<{ label: string; color: string }> = ({ label, color }) => (
   <span style={{

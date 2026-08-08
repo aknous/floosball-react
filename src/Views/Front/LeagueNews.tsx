@@ -99,7 +99,7 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
                 }}>{labelFor(lead)}</span>
                 <span style={{ ...font(700, 9), color: TEXT.muted }}>SEASON {lead.season}</span>
                 <span style={{ flex: 1 }} />
-                <span style={{ ...font(400, 10), color: TEXT.faint }}>{timeAgo(lead.at)}</span>
+                <span style={{ ...font(400, 10), color: TEXT.muted }}>{timeAgo(lead.at)}</span>
               </div>
 
               <h2 style={{
@@ -148,7 +148,7 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
             <span style={{ flex: 1, minWidth: 0, ...font(400, 12, 1.45), color: TEXT.body, textWrap: 'pretty' as any }}>
               {item.text}
             </span>
-            <span style={{ ...font(400, 10), color: TEXT.faint, flexShrink: 0 }}>{timeAgo(item.at)}</span>
+            <span style={{ ...font(400, 10), color: TEXT.muted, flexShrink: 0 }}>{timeAgo(item.at)}</span>
           </div>
         ))}
       </div>

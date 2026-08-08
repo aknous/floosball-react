@@ -47,7 +47,7 @@ const DivisionBlock: React.FC<{
         <span style={COLUMN_HEADER}>#</span>
         <span style={COLUMN_HEADER}>TEAM</span>
         <span style={{ ...COLUMN_HEADER, textAlign: 'right' }}>W–L</span>
-        <HoverTooltip text="Record inside this division. It settles a division tie, because these four clubs played the same slate.">
+        <HoverTooltip text="Record inside this division. It settles a division tie, because these four teams played the same slate.">
           <span style={{ ...COLUMN_HEADER, textAlign: 'right', display: 'block' }}>DIV</span>
         </HoverTooltip>
         <span style={{ ...COLUMN_HEADER, textAlign: 'right' }}>PCT</span>

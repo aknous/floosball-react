@@ -357,7 +357,7 @@ const SignedOutPanel: React.FC = () => (
       ...font(800, 30, 1.1, '-0.035em'), color: TEXT.primary,
       margin: '12px 0 0', textWrap: 'balance' as any,
     }}>
-      Pick a club and start calling games
+      Pick a team and start watching
     </h2>
     <p style={{ ...font(400, 13, 1.65), color: TEXT.muted, margin: '12px 0 0', maxWidth: '560px' }}>
       The league runs whether you are watching or not. Sign in to follow a team, build a

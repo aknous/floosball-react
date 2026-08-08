@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useGames } from '@/contexts/GamesContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
+import { useScoringModel } from '@/contexts/ScoringModelContext'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { ScoreboardWeekNav } from '@/Components/ScoreboardWeekNav'
 import { BG, BORDER, TEXT, ACCENT, FONT, font } from '@/Components/Shell/tokens'
@@ -30,6 +31,9 @@ const GameBoardPage: React.FC = () => {
   const { games } = useGames()
   const { user } = useAuth()
   const { seasonState } = useFloosball()
+  // The league's scoring model is mutable (additive / spread / subtractive), and it is a
+  // lens over how every score on this board READS.
+  const scoringModel = useScoringModel()
 
   const [density, setDensity] = useState<Density>(() => {
     try { return (localStorage.getItem(DENSITY_KEY) as Density) || 'large' } catch { return 'large' }
@@ -207,6 +211,7 @@ const GameBoardPage: React.FC = () => {
                   chip={chip}
                   pinned={pinned}
                   pinnedAccent={pinnedAccent}
+                  scoringModel={scoringModel}
                   onOpen={setOpenGameId}
                 />
               ) : (
@@ -216,6 +221,7 @@ const GameBoardPage: React.FC = () => {
                   chip={chip}
                   pinned={pinned}
                   pinnedAccent={pinnedAccent}
+                  scoringModel={scoringModel}
                   onOpen={setOpenGameId}
                 />
               )

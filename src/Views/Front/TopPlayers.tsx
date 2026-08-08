@@ -4,7 +4,8 @@ import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import PlayerAvatar from '@/Components/PlayerAvatar'
 import { BG, BORDER, TEXT, ACCENT, TABULAR, font } from '@/Components/Shell/tokens'
 import { readableTeamColor } from '@/utils/colors'
-import { SectionHeader, Stars, RelationTag } from './frontPieces'
+import { Stars } from '@/Components/Stars'
+import { SectionHeader, RelationTag } from './frontPieces'
 
 export interface LeaderRow {
   id: number
@@ -53,7 +54,7 @@ const TopPlayers: React.FC<{
                 borderBottom: i < rows.length - 1 ? `1px solid ${BORDER.hairline}` : 'none',
               }}
             >
-              <span style={{ ...font(700, 11), color: TEXT.faint, width: '14px', flexShrink: 0, ...TABULAR }}>
+              <span style={{ ...font(700, 12), color: TEXT.muted, width: '16px', flexShrink: 0, ...TABULAR }}>
                 {i + 1}
               </span>
               <PlayerAvatar name={row.name} teamId={row.teamId} size={22} />
@@ -63,20 +64,23 @@ const TopPlayers: React.FC<{
                   style={{ ...font(800, 13), color: TEXT.strong, whiteSpace: 'nowrap', textDecoration: 'none' }}
                 >{row.name}</Link>
               </PlayerHoverCard>
+              {/* Stars sit BESIDE the name, not out at the far right — a rating belongs to
+                  the player, and the shared component colours it by band (gold/green/blue/
+                  grey/red) instead of the flat amber this used to draw. */}
+              <Stars stars={row.ratingStars} size={11} />
               {yours && <RelationTag label="YOURS" color={readableTeamColor(row.teamColor)} />}
               {fantasy && <RelationTag label="FANTASY" color={ACCENT.success} />}
-              <span style={{ ...font(400, 10, 1, '0.08em'), color: TEXT.dim, whiteSpace: 'nowrap' }}>
+              <span style={{ ...font(500, 11, 1, '0.06em'), color: TEXT.muted, whiteSpace: 'nowrap' }}>
                 {row.position} · {row.teamAbbr}
               </span>
               <span style={{ flex: 1 }} />
-              <Stars value={row.ratingStars} />
               <span style={{
-                ...font(700, 9, 1, '0.12em'), color: TEXT.muted,
-                width: '86px', textAlign: 'right', flexShrink: 0,
+                ...font(700, 10, 1, '0.1em'), color: TEXT.secondary,
+                width: '96px', textAlign: 'right', flexShrink: 0,
               }}>{row.statLabel}</span>
               <span style={{
                 ...font(800, 16), color: TEXT.primary, ...TABULAR,
-                width: '58px', textAlign: 'right', flexShrink: 0,
+                width: '62px', textAlign: 'right', flexShrink: 0,
               }}>{row.statValue}</span>
             </div>
           )

@@ -46,16 +46,16 @@ const ByLeague: React.FC<{
               <HoverTooltip text="Projected playoff seed if the season ended today. Seeds 1-4 are the division winners.">
                 <span style={{ ...COLUMN_HEADER, display: 'block' }}>#</span>
               </HoverTooltip>
-              <HoverTooltip text="Change in this club's league rank by record since last week.">
+              <HoverTooltip text="Change in this team's league rank by record since last week.">
                 <span style={{ ...COLUMN_HEADER, display: 'block', textAlign: 'center' }}>±</span>
               </HoverTooltip>
               <span style={COLUMN_HEADER}>TEAM</span>
               <span style={COLUMN_HEADER}>DIVISION</span>
               <span style={{ ...COLUMN_HEADER, textAlign: 'right' }}>W–L</span>
-              <HoverTooltip text="Record inside this club's own division. It settles a division tie: those four clubs played the same slate.">
+              <HoverTooltip text="Record inside this team's own division. It settles a division tie: those four teams played the same slate.">
                 <span style={{ ...COLUMN_HEADER, display: 'block', textAlign: 'right' }}>DIV</span>
               </HoverTooltip>
-              <HoverTooltip text="Record against this league. It settles a wild card tie, where the clubs come from different divisions and division record would compare different opponents.">
+              <HoverTooltip text="Record against this league. It settles a wild card tie, where the teams come from different divisions and division record would compare different opponents.">
                 <span style={{ ...COLUMN_HEADER, display: 'block', textAlign: 'right' }}>LGE</span>
               </HoverTooltip>
               <span style={{ ...COLUMN_HEADER, textAlign: 'right' }}>PCT</span>
@@ -124,7 +124,7 @@ const ByLeague: React.FC<{
 
           <SectionNote label="SEEDING">
             Seeds 1 to 4 are the four division winners. A division is won on record, then on
-            division record. Seeds 5 to 8 are the wild cards. Clubs from different divisions
+            division record. Seeds 5 to 8 are the wild cards. Teams from different divisions
             are separated by league record instead, because they did not play the same
             division slate. Point differential settles anything still level.
           </SectionNote>

@@ -3,6 +3,8 @@ import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
 import { finalLeaders } from './finalLeaders'
+import { periodColumns, FormatClock, FormatScore, leadingSide, formatLabel } from './gameFormat'
+import type { ScoringModel } from '@/utils/displayScore'
 import {
   Crest, MomentumFlame, InterestChip, PulsingDot, SectionLabel, SwingTrend, SplitBar,
   ScrollingLine, CHIP_COLOR, type ChipKind,
@@ -28,13 +30,11 @@ type Props = {
   chip: ChipKind | null
   pinned: boolean
   pinnedAccent: string
+  scoringModel: ScoringModel
   onOpen: (id: number) => void
 }
 
-const formatScore = (v: number | undefined | null): string =>
-  v == null ? '·' : String(v)
-
-const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onOpen }) => {
+const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, scoringModel, onOpen }) => {
   const live = game.status === 'Active'
   const isFinal = game.status === 'Final'
   const home = game.homeTeam
@@ -42,8 +42,10 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
 
   const homeScore = game.homeScore ?? 0
   const awayScore = game.awayScore ?? 0
-  const homeAhead = homeScore >= awayScore
-  const awayAhead = awayScore >= homeScore
+  // Who is ahead is a FORMAT question — in frames it is frames won, not points.
+  const leader = leadingSide(game)
+  const homeAhead = leader !== 'away'
+  const awayAhead = leader !== 'home'
 
   // Fills use the raw colour; only text gets corrected.
   const awayFill = effectiveAwayColor(home?.color, away?.color, away?.secondaryColor)
@@ -56,7 +58,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
   // Once a game is final the win probability is 100/0, which would make the favoured side
   // the winner by definition. Read the favourite off the SCORE there so the trend line and
   // its label agree with the result.
-  const homeFavoured = isFinal ? homeScore >= awayScore : homeWp >= awayWp
+  const homeFavoured = isFinal ? leader !== 'away' : homeWp >= awayWp
   const favouredAbbr = homeFavoured ? home?.abbr : away?.abbr
   const favouredText = homeFavoured ? homeText : awayText
   // The trend line takes the CORRECTED colour, not the raw one. It is a 1.5px stroke on a
@@ -94,12 +96,10 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
   const possessionTeam = game.homeTeamPoss ? 'home' : game.awayTeamPoss ? 'away' : null
   const momentumMagnitude = Math.abs(game.momentum ?? 0)
 
-  const clockText = isFinal
-    ? 'FINAL'
-    : live
-      ? (game.isHalftime ? 'HALFTIME' : `Q${game.quarter} ${game.timeRemaining}`)
-      : 'SCHEDULED'
-  const clockColor = live ? ACCENT.live : isFinal ? TEXT.muted : TEXT.muted
+  // The period columns this format actually has: quarters for most, the innings line
+  // score for innings, none at all for frames.
+  const columns = periodColumns(game)
+  const badge = formatLabel(game)
 
   const teamRow = (
     side: 'away' | 'home',
@@ -107,7 +107,6 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
     score: number,
     ahead: boolean,
   ) => {
-    const quarters = game.quarterScores?.[side]
     const hasMomentum = live && momentumMagnitude > 0 && game.momentumTeam === team?.abbr
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -126,25 +125,28 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
           }}>{team?.name}</div>
         </div>
         <div style={CLUSTER}>
-          <div style={QUARTERS}>
-            {(['q1', 'q2', 'q3', 'q4'] as const).map((q, i) => {
-              const value = quarters?.[q]
-              const played = value != null && (isFinal || game.quarter > i + 1 || (game.quarter === i + 1 && live))
-              return (
-                <span key={q} style={{
+          {columns && (
+            <div style={QUARTERS}>
+              {columns.periods.map((period, i) => (
+                <span key={period.label} style={{
                   ...QUARTER_CELL,
-                  ...font(played ? 600 : 400, 15),
-                  color: !played ? TEXT.dim : game.quarter === i + 1 && live ? TEXT.strong : TEXT.secondary,
-                }}>{played ? formatScore(value) : '·'}</span>
-              )
-            })}
-          </div>
-          <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />
-          <span style={{
-            ...TOTAL_CELL,
-            ...font(800, 34),
-            color: ahead ? TEXT.primary : TEXT.muted,
-          }}>{score}</span>
+                  ...font(period.played ? 600 : 400, 15),
+                  color: !period.played ? TEXT.dim
+                    : game.quarter === i + 1 && live ? TEXT.strong : TEXT.secondary,
+                }}>{side === 'home' ? period.homeValue : period.awayValue}</span>
+              ))}
+            </div>
+          )}
+          {columns && <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />}
+          <span style={{ ...TOTAL_CELL, display: 'inline-flex', justifyContent: 'flex-end' }}>
+            <FormatScore
+              game={game}
+              side={side}
+              scoringModel={scoringModel}
+              size={34}
+              color={ahead ? TEXT.primary : TEXT.muted}
+            />
+          </span>
         </div>
       </div>
     )
@@ -173,17 +175,39 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minHeight: '20px' }}>
         {pinned && <span style={{ ...font(700, 11, 1, '0.1em'), color: ACCENT.ownTeam }}>PINNED</span>}
         {live && <PulsingDot size={6} />}
-        <span style={{ ...font(700, 12, 1, '0.08em'), color: clockColor, ...TABULAR }}>{clockText}</span>
+        {isFinal ? (
+          <span style={{ ...font(700, 12, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>FINAL</span>
+        ) : live ? (
+          game.isHalftime
+            ? <span style={{ ...font(700, 12, 1, '0.08em'), color: ACCENT.live, ...TABULAR }}>HALFTIME</span>
+            : <FormatClock game={game} size="large" />
+        ) : (
+          <span style={{ ...font(700, 12, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>SCHEDULED</span>
+        )}
         {chip && <InterestChip kind={chip} size="large" />}
+        {/* A non-standard format is named on the card. The whole readout below changes
+            shape under it, and a reader should not have to infer why. */}
+        {badge && (
+          <span style={{
+            ...font(700, 10, 1, '0.08em'), color: ACCENT.anomaly,
+            border: `1px solid ${ACCENT.anomaly}59`, padding: '3px 6px', whiteSpace: 'nowrap',
+          }}>{badge}</span>
+        )}
         <span style={{ flex: 1 }} />
         <div style={CLUSTER}>
-          <div style={QUARTERS}>
-            {['Q1', 'Q2', 'Q3', 'Q4'].map(q => (
-              <span key={q} style={{ ...QUARTER_CELL, ...font(600, 11), color: TEXT.muted }}>{q}</span>
-            ))}
-          </div>
-          <span style={{ width: '1px', height: '16px', background: BORDER.hairline }} />
-          <span style={{ ...TOTAL_CELL, ...font(600, 11, 1, '0.08em'), color: TEXT.muted }}>TOT</span>
+          {columns && (
+            <div style={QUARTERS}>
+              {columns.periods.map(period => (
+                <span key={period.label} style={{ ...QUARTER_CELL, ...font(600, 11), color: TEXT.muted }}>
+                  {period.label}
+                </span>
+              ))}
+            </div>
+          )}
+          {columns && <span style={{ width: '1px', height: '16px', background: BORDER.hairline }} />}
+          <span style={{ ...TOTAL_CELL, ...font(600, 11, 1, '0.08em'), color: TEXT.muted }}>
+            {columns?.label ?? 'TOT'}
+          </span>
         </div>
       </div>
 

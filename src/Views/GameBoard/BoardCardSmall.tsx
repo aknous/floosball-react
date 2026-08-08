@@ -3,6 +3,8 @@ import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
 import { Crest, MomentumFlame, InterestChip, PulsingDot, SplitBar, CHIP_COLOR, type ChipKind } from './boardPieces'
+import { FormatClock, FormatScore, leadingSide, formatLabel } from './gameFormat'
+import type { ScoringModel } from '@/utils/displayScore'
 
 /**
  * SMALL density: four across, glanceable. ~286px wide and a uniform 179px tall, so 16
@@ -21,10 +23,11 @@ type Props = {
   chip: ChipKind | null
   pinned: boolean
   pinnedAccent: string
+  scoringModel: ScoringModel
   onOpen: (id: number) => void
 }
 
-const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onOpen }) => {
+const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, scoringModel, onOpen }) => {
   const live = game.status === 'Active'
   const isFinal = game.status === 'Final'
   const home = game.homeTeam
@@ -40,7 +43,9 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
   const awayWp = 100 - homeWp
   // On a final, read the favourite off the SCORE — the win probability has already
   // resolved to 100/0 and would name the winner by definition.
-  const homeFavoured = isFinal ? homeScore >= awayScore : homeWp >= awayWp
+  // Who is ahead is a FORMAT question — in frames it is frames won, not points.
+  const leader = leadingSide(game)
+  const homeFavoured = isFinal ? leader !== 'away' : homeWp >= awayWp
   const favouredAbbr = homeFavoured ? home?.abbr : away?.abbr
   const favouredPct = homeFavoured ? homeWp : awayWp
   // Both sides get the correction even though only one is drawn — the helper is applied
@@ -59,11 +64,14 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
   const possessionTeam = game.homeTeamPoss ? 'home' : game.awayTeamPoss ? 'away' : null
   const momentumMagnitude = Math.abs(game.momentum ?? 0)
 
-  const clockText = isFinal
-    ? 'FINAL'
-    : live
-      ? (game.isHalftime ? 'HALFTIME' : `Q${game.quarter} ${game.timeRemaining}`)
-      : 'SCHEDULED'
+  const badge = formatLabel(game)
+
+  // The winning margin, in whatever unit this format is decided by. Under FRAMES that is
+  // frames won, not points — "by 21" would describe a number that did not settle it.
+  const frames = game.frames
+  const finalMargin = frames?.active
+    ? Math.abs((frames.framesWonHome ?? 0) - (frames.framesWonAway ?? 0))
+    : Math.abs(homeScore - awayScore)
 
   const teamRow = (side: 'away' | 'home', team: typeof home, score: number, ahead: boolean) => {
     const hasMomentum = live && momentumMagnitude > 0 && game.momentumTeam === team?.abbr
@@ -84,8 +92,14 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
             {hasMomentum && <MomentumFlame magnitude={momentumMagnitude} size={12} />}
           </div>
         </div>
-        <span style={{ ...font(800, 26), color: ahead ? TEXT.primary : TEXT.muted, ...TABULAR, flexShrink: 0 }}>
-          {score}
+        <span style={{ flexShrink: 0 }}>
+          <FormatScore
+            game={game}
+            side={side}
+            scoringModel={scoringModel}
+            size={26}
+            color={ahead ? TEXT.primary : TEXT.muted}
+          />
         </span>
       </div>
     )
@@ -114,15 +128,25 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '18px' }}>
         {pinned && <span style={{ ...font(700, 9, 1, '0.1em'), color: ACCENT.ownTeam }}>PINNED</span>}
         {live && <PulsingDot size={5} />}
-        <span style={{ ...font(700, 10, 1, '0.08em'), color: live ? ACCENT.live : TEXT.muted, ...TABULAR }}>
-          {clockText}
-        </span>
+        {isFinal ? (
+          <span style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>FINAL</span>
+        ) : live ? (
+          game.isHalftime
+            ? <span style={{ ...font(700, 10, 1, '0.08em'), color: ACCENT.live, ...TABULAR }}>HALFTIME</span>
+            : <FormatClock game={game} size="small" />
+        ) : (
+          <span style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>SCHEDULED</span>
+        )}
         <span style={{ flex: 1 }} />
-        {chip && <InterestChip kind={chip} size="small" />}
+        {/* Only one badge fits here, and naming a non-standard format matters more than
+            the interest chip — the whole card reads differently under it. */}
+        {badge
+          ? <span style={{ ...font(700, 9, 1, '0.08em'), color: ACCENT.anomaly, border: `1px solid ${ACCENT.anomaly}59`, padding: '3px 5px', whiteSpace: 'nowrap' }}>{badge}</span>
+          : chip && <InterestChip kind={chip} size="small" />}
       </div>
 
-      {teamRow('away', away, awayScore, awayScore >= homeScore)}
-      {teamRow('home', home, homeScore, homeScore >= awayScore)}
+      {teamRow('away', away, awayScore, leader !== 'home')}
+      {teamRow('home', home, homeScore, leader !== 'away')}
 
       {/* Same rule as the large card: a final game's gauge is 100/0, so it reports the
           margin instead of a certainty. */}
@@ -131,7 +155,7 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
         {isFinal && <span style={{ flex: 1 }} />}
         <span style={{ ...font(700, 11), color: favouredText, ...TABULAR, whiteSpace: 'nowrap', flexShrink: 0 }}>
           {isFinal
-            ? (homeScore === awayScore ? 'TIED' : `${favouredAbbr} by ${Math.abs(homeScore - awayScore)}`)
+            ? (leader === 'tied' ? 'TIED' : `${favouredAbbr} by ${finalMargin}`)
             : `${favouredAbbr} ${favouredPct}%`}
         </span>
         {!isFinal && (

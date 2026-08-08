@@ -19,6 +19,8 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
  */
 
 const LABELS: Record<string, string> = {
+  gameFormat: 'Format',
+  scoringModel: 'Scoring',
   downsPerSeries: 'Downs per series',
   firstDownDistance: 'Yards to gain',
   touchdownPoints: 'Touchdown',
@@ -35,6 +37,11 @@ const LABELS: Record<string, string> = {
 }
 
 const formatValue = (key: string, value: any): string => {
+  // The format and scoring model arrive as snake_case keys ('play_limit'); nobody wants
+  // to read that on a board.
+  if (key === 'gameFormat' || key === 'scoringModel') {
+    return String(value).replace(/_/g, ' ').toUpperCase()
+  }
   if (typeof value === 'boolean') return value ? 'yes' : 'no'
   if (key.endsWith('Seconds')) {
     const minutes = Math.floor(Number(value) / 60)
@@ -71,9 +78,10 @@ const ActiveRulesStrip: React.FC = () => {
 
   if (!data) return null
 
+  // gameFormat and scoringModel are themselves mutable rules, so a non-standard one
+  // already arrives in `changed` and renders as a chip like any other. An extra standalone
+  // "INNINGS FORMAT" label beside it just said the same thing twice.
   const changed = (data.changed || []).filter(key => data.rules?.[key] !== undefined)
-  const format = data.rules?.gameFormat
-  const scoringModel = data.rules?.scoringModel
 
   return (
     <div style={{
@@ -105,19 +113,6 @@ const ActiveRulesStrip: React.FC = () => {
               </span>
             </span>
           ))}
-        </span>
-      )}
-
-      {/* A non-standard format or scoring model changes what a score even MEANS, so it
-          gets said plainly rather than being left to the changed-rules list. */}
-      {format && format !== 'standard' && (
-        <span style={{ ...font(700, 10, 1, '0.08em'), color: ACCENT.anomaly }}>
-          {String(format).toUpperCase()} FORMAT
-        </span>
-      )}
-      {scoringModel && scoringModel !== 'additive' && (
-        <span style={{ ...font(700, 10, 1, '0.08em'), color: ACCENT.anomaly }}>
-          {String(scoringModel).toUpperCase()} SCORING
         </span>
       )}
 
