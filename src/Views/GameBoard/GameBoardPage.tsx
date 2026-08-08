@@ -223,29 +223,21 @@ const GameBoardPage: React.FC = () => {
           </div>
         )}
 
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '12px',
-          padding: '11px 16px', background: BG.panel, border: `1px solid ${BORDER.hairline}`,
-        }}>
-          <span style={{ ...font(600, 11, 1, '0.12em'), color: TEXT.muted, flexShrink: 0 }}>RANKING</span>
-          <span style={{ ...font(400, 12), color: TEXT.muted }}>
-            Your game is pinned on top. Then interest, tied games, upsets, one-score games,
-            margin, and where two games are equally interesting the one in your own league
-            comes first. Recalculated on refresh, never underneath you.
-          </span>
-          {anyPlaceholderCrest && (
-            <>
-              <span style={{ flex: 1 }} />
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.muted }}>NO CREST YET</span>
-                <span style={{
-                  boxSizing: 'border-box', width: '16px', height: '16px', borderRadius: '50%',
-                  background: BG.panel, border: `1px dashed ${BORDER.raised}`,
-                }} />
-              </span>
-            </>
-          )}
-        </div>
+        {/* The footer explained the ranking rule in prose. Removed (owner) — the order
+            speaks for itself and a paragraph under every slate is not worth the room. The
+            crest legend stays, and only while there are teams without artwork. */}
+        {anyPlaceholderCrest && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end',
+            padding: '11px 16px', background: BG.panel, border: `1px solid ${BORDER.hairline}`,
+          }}>
+            <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.muted }}>NO CREST YET</span>
+            <span style={{
+              boxSizing: 'border-box', width: '16px', height: '16px', borderRadius: '50%',
+              background: BG.panel, border: `1px dashed ${BORDER.raised}`,
+            }} />
+          </div>
+        )}
       </div>
 
       {openGameId != null && (

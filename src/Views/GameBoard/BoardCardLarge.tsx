@@ -2,9 +2,10 @@ import React from 'react'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
+import { finalLeaders } from './finalLeaders'
 import {
   Crest, MomentumFlame, InterestChip, PulsingDot, SectionLabel, SwingTrend, SplitBar,
-  CHIP_COLOR, type ChipKind,
+  ScrollingLine, CHIP_COLOR, type ChipKind,
 } from './boardPieces'
 
 /**
@@ -52,10 +53,16 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
 
   const homeWp = Math.round(game.homeWinProbability ?? 50)
   const awayWp = 100 - homeWp
-  const homeFavoured = homeWp >= awayWp
+  // Once a game is final the win probability is 100/0, which would make the favoured side
+  // the winner by definition. Read the favourite off the SCORE there so the trend line and
+  // its label agree with the result.
+  const homeFavoured = isFinal ? homeScore >= awayScore : homeWp >= awayWp
   const favouredAbbr = homeFavoured ? home?.abbr : away?.abbr
   const favouredText = homeFavoured ? homeText : awayText
-  const favouredFill = homeFavoured ? homeFill : awayFill
+  // The trend line takes the CORRECTED colour, not the raw one. It is a 1.5px stroke on a
+  // dark card — functionally text, not a fill — and a dark team primary (Anchorage's slate)
+  // drew a line that was invisible.
+  const favouredFill = favouredText
 
   // Recent win probability for the favoured side, straight off the plays already in
   // memory. Home WP is stored per play, so the away line is its mirror.
@@ -76,6 +83,12 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
     }
     return null
   })()
+
+  // Who turned up, for a game that is over. Empty while a game is live or if nobody
+  // cleared the minimums, in which case the row says so rather than printing filler.
+  const leaders = isFinal
+    ? finalLeaders(game.gameStats)
+    : []
 
   const accent = pinned ? pinnedAccent : chip ? CHIP_COLOR[chip] : BORDER.hairline
   const possessionTeam = game.homeTeamPoss ? 'home' : game.awayTeamPoss ? 'away' : null
@@ -178,30 +191,51 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
       {teamRow('home', home, homeScore, homeAhead)}
 
       <div style={{ paddingTop: '14px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', flexDirection: 'column', gap: '11px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ ...font(awayWp > homeWp ? 800 : 600, 14), color: awayText, ...TABULAR, whiteSpace: 'nowrap' }}>
-            {away?.abbr} {awayWp}%
-          </span>
-          <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={6} />
-          <span style={{ ...font(homeWp > awayWp ? 800 : 600, 14), color: homeText, ...TABULAR, whiteSpace: 'nowrap' }}>
-            {homeWp}% {home?.abbr}
-          </span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <SectionLabel>SWING</SectionLabel>
-          <span style={{ ...font(700, 13), color: favouredText, ...TABULAR, whiteSpace: 'nowrap' }}>
-            {swing >= 0 ? '▲' : '▼'} {Math.abs(swing)} {favouredAbbr}
-          </span>
-          <SwingTrend points={wpHistory} color={favouredFill} />
-        </div>
+        {/* ⚠️ A FINAL game gets neither the gauge nor the swing. Its win probability has
+            resolved to 100% / 0%, and the margin is already legible from the two scores
+            sitting directly above — so both rows spend space restating what the card has
+            said. What a reader wants off a final is who turned up, so it becomes a leader
+            line instead. */}
+        {isFinal ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <SectionLabel>LEADERS</SectionLabel>
+            {leaders.length === 0 ? (
+              <span style={{ ...font(400, 13), color: TEXT.muted }}>No standout performances</span>
+            ) : (
+              <ScrollingLine
+                text={leaders.map(l => `${l.name} ${l.line}`).join('   ·   ')}
+                style={{ ...font(400, 13), color: TEXT.secondary, flex: 1 }}
+              />
+            )}
+          </div>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ ...font(awayWp > homeWp ? 800 : 600, 14), color: awayText, ...TABULAR, whiteSpace: 'nowrap' }}>
+                {away?.abbr} {awayWp}%
+              </span>
+              <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={6} />
+              <span style={{ ...font(homeWp > awayWp ? 800 : 600, 14), color: homeText, ...TABULAR, whiteSpace: 'nowrap' }}>
+                {homeWp}% {home?.abbr}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <SectionLabel>SWING</SectionLabel>
+              <span style={{ ...font(700, 13), color: favouredText, ...TABULAR, whiteSpace: 'nowrap' }}>
+                {swing >= 0 ? '▲' : '▼'} {Math.abs(swing)} {favouredAbbr}
+              </span>
+              <SwingTrend points={wpHistory} color={favouredFill} />
+            </div>
+          </>
+        )}
       </div>
 
       <div style={{ paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
         <SectionLabel>LAST PLAY</SectionLabel>
-        <span style={{
-          ...font(400, 14), color: TEXT.secondary,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
-        }}>{lastPlay || (live ? 'Waiting on the snap' : '—')}</span>
+        <ScrollingLine
+          text={lastPlay || (live ? 'Waiting on the snap' : '—')}
+          style={{ ...font(400, 14), color: TEXT.secondary, flex: 1 }}
+        />
       </div>
     </div>
   )

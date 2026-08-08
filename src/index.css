@@ -1036,3 +1036,18 @@
 @media (prefers-reduced-motion: reduce) {
   .cores-band-dot { animation: none; }
 }
+
+/* A too-long single line (the game board's LAST PLAY) travels out and back so the end of
+   it can be read. Distance comes from `--marquee-shift`, set inline after measuring, and
+   the duration is set inline too so the speed is constant regardless of length. It rests
+   at both ends rather than snapping. */
+@keyframes boardMarquee {
+  0%, 12%   { transform: translateX(0); }
+  46%, 58%  { transform: translateX(var(--marquee-shift, 0)); }
+  92%, 100% { transform: translateX(0); }
+}
+.board-marquee { animation-name: boardMarquee; animation-iteration-count: infinite; animation-timing-function: linear; }
+
+@media (prefers-reduced-motion: reduce) {
+  .board-marquee { animation: none; }
+}

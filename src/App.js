@@ -29,7 +29,6 @@ import BetaBlockedPage from './Components/Auth/BetaBlockedPage'
 import LandingPage from './Views/Landing/LandingPage'
 import { OnboardingModal } from './Components/Onboarding/OnboardingModal'
 import WelcomeModal from './Components/WelcomeModal'
-import FrontOfficeModal from './Components/FrontOfficeModal'
 import SurveyModal from './Components/SurveyModal'
 import RuleVoteModal from './Components/RuleVoteModal'
 import { Footer } from './Components/Footer'
@@ -221,7 +220,6 @@ function AuthGate() {
     <>
       <OnboardingModal />
       <WelcomeModal />
-      <FrontOfficeModal />
       <SurveyModal />
       <RuleVoteModal />
       <AppLayout />

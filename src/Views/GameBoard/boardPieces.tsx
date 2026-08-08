@@ -155,6 +155,67 @@ export const SplitBar: React.FC<{
   </span>
 )
 
+/**
+ * One line of text that SCROLLS when it is too long to fit, rather than truncating.
+ *
+ * Play descriptions run long and the interesting part is usually at the end ("...tackled
+ * by Airbrush Delacroix at the 3"), so an ellipsis cuts off exactly what a reader wanted.
+ * Wrapping is not an option either: the cards are in a grid and a second line makes one
+ * card taller than its row.
+ *
+ * It travels out and back on a loop rather than snapping, and the duration scales with the
+ * overflow distance so the speed is the same on a slightly-long line as on a very long
+ * one. Nothing animates when the text fits, and nothing animates under reduced motion —
+ * both fall back to a plain clipped line.
+ */
+export const ScrollingLine: React.FC<{
+  text: string
+  style?: React.CSSProperties
+}> = ({ text, style }) => {
+  const outerRef = React.useRef<HTMLSpanElement>(null)
+  const innerRef = React.useRef<HTMLSpanElement>(null)
+  const [shift, setShift] = React.useState(0)
+
+  React.useEffect(() => {
+    const outer = outerRef.current
+    const inner = innerRef.current
+    if (!outer || !inner) return
+    const measure = () => {
+      const overflow = inner.scrollWidth - outer.clientWidth
+      // A couple of pixels of overflow is measurement noise, not a long line.
+      setShift(overflow > 4 ? overflow : 0)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(outer)
+    observer.observe(inner)
+    return () => observer.disconnect()
+  }, [text])
+
+  // ~28px per second of travel, with a floor so a barely-overflowing line does not
+  // whip across.
+  const duration = shift > 0 ? Math.max(6, shift / 28 + 4) : 0
+
+  return (
+    <span
+      ref={outerRef}
+      style={{ display: 'block', overflow: 'hidden', whiteSpace: 'nowrap', minWidth: 0, ...style }}
+    >
+      <span
+        ref={innerRef}
+        className={shift > 0 ? 'board-marquee' : undefined}
+        style={{
+          display: 'inline-block',
+          whiteSpace: 'nowrap',
+          ...(shift > 0
+            ? ({ '--marquee-shift': `-${shift}px`, animationDuration: `${duration}s` } as React.CSSProperties)
+            : {}),
+        }}
+      >{text}</span>
+    </span>
+  )
+}
+
 export const boardStyles = {
   font: FONT,
   tabular: TABULAR,

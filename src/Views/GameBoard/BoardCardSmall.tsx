@@ -38,7 +38,9 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
 
   const homeWp = Math.round(game.homeWinProbability ?? 50)
   const awayWp = 100 - homeWp
-  const homeFavoured = homeWp >= awayWp
+  // On a final, read the favourite off the SCORE — the win probability has already
+  // resolved to 100/0 and would name the winner by definition.
+  const homeFavoured = isFinal ? homeScore >= awayScore : homeWp >= awayWp
   const favouredAbbr = homeFavoured ? home?.abbr : away?.abbr
   const favouredPct = homeFavoured ? homeWp : awayWp
   // Both sides get the correction even though only one is drawn — the helper is applied
@@ -122,14 +124,21 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, onO
       {teamRow('away', away, awayScore, awayScore >= homeScore)}
       {teamRow('home', home, homeScore, homeScore >= awayScore)}
 
+      {/* Same rule as the large card: a final game's gauge is 100/0, so it reports the
+          margin instead of a certainty. */}
       <div style={{ paddingTop: '12px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', alignItems: 'center', gap: '9px' }}>
-        <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={3} />
+        {!isFinal && <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={3} />}
+        {isFinal && <span style={{ flex: 1 }} />}
         <span style={{ ...font(700, 11), color: favouredText, ...TABULAR, whiteSpace: 'nowrap', flexShrink: 0 }}>
-          {favouredAbbr} {favouredPct}%
+          {isFinal
+            ? (homeScore === awayScore ? 'TIED' : `${favouredAbbr} by ${Math.abs(homeScore - awayScore)}`)
+            : `${favouredAbbr} ${favouredPct}%`}
         </span>
-        <span style={{ ...font(600, 10), color: TEXT.muted, ...TABULAR, flexShrink: 0 }}>
-          {swing >= 0 ? '▲' : '▼'}{Math.abs(swing)}
-        </span>
+        {!isFinal && (
+          <span style={{ ...font(600, 10), color: TEXT.muted, ...TABULAR, flexShrink: 0 }}>
+            {swing >= 0 ? '▲' : '▼'}{Math.abs(swing)}
+          </span>
+        )}
       </div>
     </div>
   )
