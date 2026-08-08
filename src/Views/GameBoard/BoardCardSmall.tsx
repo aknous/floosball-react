@@ -3,7 +3,7 @@ import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
 import { Crest, MomentumFlame, InterestChip, PulsingDot, SplitBar, CHIP_COLOR, type ChipKind } from './boardPieces'
-import { FormatClock, FormatScore, leadingSide, formatLabel } from './gameFormat'
+import { FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
 
 /**
@@ -63,8 +63,6 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   const accent = pinned ? pinnedAccent : chip ? CHIP_COLOR[chip] : BORDER.hairline
   const possessionTeam = game.homeTeamPoss ? 'home' : game.awayTeamPoss ? 'away' : null
   const momentumMagnitude = Math.abs(game.momentum ?? 0)
-
-  const badge = formatLabel(game)
 
   // The winning margin, in whatever unit this format is decided by. Under FRAMES that is
   // frames won, not points — "by 21" would describe a number that did not settle it.
@@ -138,11 +136,8 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           <span style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>SCHEDULED</span>
         )}
         <span style={{ flex: 1 }} />
-        {/* Only one badge fits here, and naming a non-standard format matters more than
-            the interest chip — the whole card reads differently under it. */}
-        {badge
-          ? <span style={{ ...font(700, 9, 1, '0.08em'), color: ACCENT.anomaly, border: `1px solid ${ACCENT.anomaly}59`, padding: '3px 5px', whiteSpace: 'nowrap' }}>{badge}</span>
-          : chip && <InterestChip kind={chip} size="small" />}
+        {/* No format badge (owner) — the rules strip names the format once at the top. */}
+        {chip && <InterestChip kind={chip} size="small" />}
       </div>
 
       {teamRow('away', away, awayScore, leader !== 'home')}

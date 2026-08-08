@@ -36,15 +36,28 @@ export function periodColumns(game: CurrentGame): { label: string; periods: Peri
   const innings = game.innings
   if (innings?.active) {
     const line = innings.lineScore
-    if (!line || !line.innings?.length) return null
+    // ⚠️ Fall back to the SCHEDULED slate rather than returning null. An earlier version
+    // bailed out when the line score was missing, so the card silently lost its headers
+    // and every value at once — which looks identical to "this format has no periods"
+    // and is impossible to tell apart from a working frames card. A game that has not
+    // produced a line score yet should show its innings as unplayed, not vanish.
+    const numbers = line?.innings?.length
+      ? line.innings
+      : Array.from({ length: Math.max(1, innings.inningsPerGame || 3) }, (_, i) => i + 1)
     return {
       label: 'R',
-      periods: line.innings.map((n, i) => ({
-        label: String(n),
-        homeValue: String(line.home?.[i] ?? 0),
-        awayValue: String(line.away?.[i] ?? 0),
-        played: true,
-      })),
+      periods: numbers.map((n, i) => {
+        const home = line?.home?.[i]
+        const away = line?.away?.[i]
+        // An inning is played once the game has moved past it, or is in it.
+        const played = n < innings.inning || (n === innings.inning && game.status !== 'Scheduled')
+        return {
+          label: String(n),
+          homeValue: played ? String(home ?? 0) : '·',
+          awayValue: played ? String(away ?? 0) : '·',
+          played,
+        }
+      }),
     }
   }
 
@@ -204,13 +217,4 @@ export function leadingSide(game: CurrentGame): 'home' | 'away' | 'tied' {
   const away = game.awayScore ?? 0
   if (home === away) return 'tied'
   return home > away ? 'home' : 'away'
-}
-
-/** A short label for the format, for the card header. Null for the standard game. */
-export function formatLabel(game: CurrentGame): string | null {
-  if (game.innings?.active) return 'INNINGS'
-  if (game.frames?.active) return 'FRAMES'
-  if (game.chessClock?.active) return 'CHESS CLOCK'
-  if (game.playLimit?.active) return 'PLAY LIMIT'
-  return null
 }

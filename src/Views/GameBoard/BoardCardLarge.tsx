@@ -3,7 +3,7 @@ import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
 import { finalLeaders } from './finalLeaders'
-import { periodColumns, FormatClock, FormatScore, leadingSide, formatLabel } from './gameFormat'
+import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
 import {
   Crest, MomentumFlame, InterestChip, PulsingDot, SectionLabel, SwingTrend, SplitBar,
@@ -99,7 +99,6 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   // The period columns this format actually has: quarters for most, the innings line
   // score for innings, none at all for frames.
   const columns = periodColumns(game)
-  const badge = formatLabel(game)
 
   const teamRow = (
     side: 'away' | 'home',
@@ -185,14 +184,9 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           <span style={{ ...font(700, 12, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>SCHEDULED</span>
         )}
         {chip && <InterestChip kind={chip} size="large" />}
-        {/* A non-standard format is named on the card. The whole readout below changes
-            shape under it, and a reader should not have to infer why. */}
-        {badge && (
-          <span style={{
-            ...font(700, 10, 1, '0.08em'), color: ACCENT.anomaly,
-            border: `1px solid ${ACCENT.anomaly}59`, padding: '3px 6px', whiteSpace: 'nowrap',
-          }}>{badge}</span>
-        )}
+        {/* No format badge here (owner). The board's rules strip already names the active
+            format once, at the top — repeating it on all sixteen cards is noise, and the
+            column headers below already show what changed. */}
         <span style={{ flex: 1 }} />
         <div style={CLUSTER}>
           {columns && (
