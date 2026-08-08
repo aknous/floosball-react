@@ -12,6 +12,7 @@ import LeagueNews, { type NewsItem } from './LeagueNews'
 import WorthWatching, { type LeaderRow } from './WorthWatching'
 import YourTeamCard, { type RecentResult } from './YourTeamCard'
 import YourNumbers, { type NumbersCell, type NumbersAction } from './YourNumbers'
+import CoresStatusPanel from './CoresStatusPanel'
 import type { LeagueStandings, TeamStanding } from '@/Views/Standings/standingsTypes'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -292,21 +293,23 @@ const FrontPage: React.FC = () => {
           />
         </div>
 
-        {user && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', minWidth: 0 }}>
-            {myTeam && (
-              <YourTeamCard
-                team={myTeam}
-                leagueName={myLeagueName}
-                liveGame={myLiveGame}
-                nextFixture={nextFixture}
-                recent={recent}
-                onOpenGame={setOpenGameId}
-              />
-            )}
-            <YourNumbers cells={numbersCells} actions={numbersActions} />
-          </div>
-        )}
+        {/* The rail. The Cores panel sits below the personal cards and shows for signed-out
+            visitors too — the state of the simulation is not a personal stat, and it is
+            the one thing on this page that is about the world rather than about you. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', minWidth: 0 }}>
+          {user && myTeam && (
+            <YourTeamCard
+              team={myTeam}
+              leagueName={myLeagueName}
+              liveGame={myLiveGame}
+              nextFixture={nextFixture}
+              recent={recent}
+              onOpenGame={setOpenGameId}
+            />
+          )}
+          {user && <YourNumbers cells={numbersCells} actions={numbersActions} />}
+          <CoresStatusPanel />
+        </div>
       </div>
 
       {openGameId != null && (

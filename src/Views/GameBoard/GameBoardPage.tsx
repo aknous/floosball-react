@@ -9,6 +9,7 @@ import BoardCardLarge from './BoardCardLarge'
 import BoardCardSmall from './BoardCardSmall'
 import { rankGames, chipFor, type Ranked } from './ranking'
 import { PulsingDot, CREST_MAX_ID } from './boardPieces'
+import ActiveRulesStrip from './ActiveRulesStrip'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const DENSITY_KEY = 'floosball:boardDensity'
@@ -181,6 +182,10 @@ const GameBoardPage: React.FC = () => {
         padding: '18px 28px 28px', display: 'flex', flexDirection: 'column', gap: '14px',
         fontFamily: FONT,
       }}>
+        {/* Above the cards, not below: what these games are being played under has to be
+            read before the scores, not after scrolling past sixteen of them. */}
+        <ActiveRulesStrip />
+
         {total === 0 ? (
           <div style={{
             background: BG.card, border: `1px solid ${BORDER.hairline}`,

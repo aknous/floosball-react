@@ -1025,3 +1025,14 @@
 @media (prefers-reduced-motion: reduce) {
   .board-live-dot { animation: none; }
 }
+
+/* The Cores band dot on the front page. Its period comes from the band itself
+   (see coresVisual.CRITICALITY_BANDS.pulseMs), set inline as animation-duration,
+   so the dot visibly quickens as the season tenses without needing one keyframe
+   set per band. */
+@keyframes coresBandPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.cores-band-dot { animation-name: coresBandPulse; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cores-band-dot { animation: none; }
+}
