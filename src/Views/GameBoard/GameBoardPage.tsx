@@ -9,7 +9,7 @@ import { BG, BORDER, TEXT, ACCENT, FONT, font } from '@/Components/Shell/tokens'
 import BoardCardLarge from './BoardCardLarge'
 import BoardCardSmall from './BoardCardSmall'
 import { rankGames, chipFor, type Ranked } from './ranking'
-import { PulsingDot, CREST_MAX_ID } from './boardPieces'
+import { PulsingDot } from './boardPieces'
 import ActiveRulesStrip from './ActiveRulesStrip'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -124,9 +124,6 @@ const GameBoardPage: React.FC = () => {
     : null
   const pinnedAccent = pinnedTeam?.color || ACCENT.ownTeam
 
-  const anyPlaceholderCrest = gameList.some(g =>
-    Number(g.homeTeam?.id) > CREST_MAX_ID || Number(g.awayTeam?.id) > CREST_MAX_ID)
-
   const columns = density === 'large' ? 2 : 4
 
   return (
@@ -229,21 +226,6 @@ const GameBoardPage: React.FC = () => {
           </div>
         )}
 
-        {/* The footer explained the ranking rule in prose. Removed (owner) — the order
-            speaks for itself and a paragraph under every slate is not worth the room. The
-            crest legend stays, and only while there are teams without artwork. */}
-        {anyPlaceholderCrest && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end',
-            padding: '11px 16px', background: BG.panel, border: `1px solid ${BORDER.hairline}`,
-          }}>
-            <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.muted }}>NO CREST YET</span>
-            <span style={{
-              boxSizing: 'border-box', width: '16px', height: '16px', borderRadius: '50%',
-              background: BG.panel, border: `1px dashed ${BORDER.raised}`,
-            }} />
-          </div>
-        )}
       </div>
 
       {openGameId != null && (
