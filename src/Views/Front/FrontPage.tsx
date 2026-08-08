@@ -9,7 +9,7 @@ import { GameModalNew } from '@/Components/GameModalNew'
 import { BG, BORDER, TEXT, ACCENT, FONT, RAIL_WIDTH, font } from '@/Components/Shell/tokens'
 import HappeningNow from './HappeningNow'
 import LeagueNews, { type NewsItem } from './LeagueNews'
-import WorthWatching, { type LeaderRow } from './WorthWatching'
+import TopPlayers, { type LeaderRow } from './TopPlayers'
 import YourTeamCard, { type RecentResult } from './YourTeamCard'
 import YourNumbers, { type NumbersCell, type NumbersAction } from './YourNumbers'
 import CoresStatusPanel from './CoresStatusPanel'
@@ -18,18 +18,31 @@ import type { LeagueStandings, TeamStanding } from '@/Views/Standings/standingsT
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 /**
- * Which categories the Worth watching board draws from. One player per category, best
- * first, so the eight rows span the whole game rather than being eight quarterbacks.
+ * How many news stories the feed carries. The feed itself is cumulative and never
+ * cleared — this is the window onto it, so a story falls off the bottom when newer ones
+ * push it out, not when the week rolls over.
+ */
+const NEWS_LENGTH = 10
+
+/**
+ * The stat leaderboards Top Players tracks, in the order they render — one row each,
+ * showing whoever currently leads it.
+ *
+ * Ordered by phase of the game (throw, run, catch, kick) rather than by importance, so
+ * the board reads as a tour of the season instead of a ranking. Ten rows: enough to fill
+ * the board without turning it into the stats page.
  */
 const LEADER_CATEGORIES: { category: string; label: string; format?: (v: number) => string }[] = [
   { category: 'passing_yards', label: 'PASS YDS' },
+  { category: 'passing_tds', label: 'PASS TDS' },
+  { category: 'completions', label: 'COMPLETIONS' },
   { category: 'rushing_yards', label: 'RUSH YDS' },
-  { category: 'fantasy_points', label: 'FANTASY PTS', format: v => v.toFixed(0) },
+  { category: 'rushing_tds', label: 'RUSH TDS' },
   { category: 'receiving_yards', label: 'REC YDS' },
-  { category: 'def_tackles', label: 'TACKLES' },
-  { category: 'def_sacks', label: 'SACKS', format: v => (Number.isInteger(v) ? String(v) : v.toFixed(1)) },
+  { category: 'receptions', label: 'RECEPTIONS' },
   { category: 'receiving_tds', label: 'REC TDS' },
-  { category: 'fg_made', label: 'FG MADE' },
+  { category: 'fg_made', label: 'FIELD GOALS' },
+  { category: 'fantasy_points', label: 'FANTASY PTS', format: v => v.toFixed(0) },
 ]
 
 /**
@@ -71,13 +84,19 @@ const FrontPage: React.FC = () => {
   const [standingsTick, setStandingsTick] = useState(0)
   useEffect(() => {
     const type = (wsEvent as any)?.type
-    if (type === 'week_start' || type === 'season_start') setNewsTick(n => n + 1)
+    // The feed is cumulative and published as things happen, so it refetches on anything
+    // that PRODUCES news — a finished game (upsets, big games, records), a league_news
+    // broadcast (clinches, rule changes, awakenings, criticality) — not just on the week
+    // rollover.
+    if (type === 'game_end' || type === 'league_news' || type === 'week_start' || type === 'season_start') {
+      setNewsTick(n => n + 1)
+    }
     if (type === 'standings_update' || type === 'game_end') setStandingsTick(n => n + 1)
   }, [wsEvent])
 
   useEffect(() => {
     let cancelled = false
-    fetch(`${API_BASE}/front-page/news?limit=8`)
+    fetch(`${API_BASE}/front-page/news?limit=${NEWS_LENGTH}`)
       .then(r => r.json())
       .then(json => { if (!cancelled) setNews(json?.data ?? { lead: null, items: [] }) })
       .catch(() => { /* the module hides itself when empty */ })
@@ -286,7 +305,7 @@ const FrontPage: React.FC = () => {
         <div style={{ minWidth: 0 }}>
           {!user && <SignedOutPanel />}
           <LeagueNews lead={news.lead} items={news.items} />
-          <WorthWatching
+          <TopPlayers
             rows={leaders}
             favouriteTeamId={favouriteTeamId}
             fantasyPlayerIds={fantasyPlayerIds}

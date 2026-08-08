@@ -19,16 +19,18 @@ export interface LeaderRow {
 }
 
 /**
- * A ranked leaderboard, eight deep.
+ * Who currently leads each stat category — one row per leaderboard, best player first.
  *
- * The RELATIONSHIP TAGS are the point of this module — YOURS when the player is on the
- * user's favourite team, FANTASY when they are on their fantasy roster. Without them
- * this is just the stats page in miniature; with them it is a reason to look, which is
- * what earns a leaderboard a place on a personal landing page.
+ * It is a board of LEADERS, not a single ranking: every row is the top of a different
+ * category, so the eight or ten rows span passing, running, catching, kicking and fantasy
+ * rather than being eight quarterbacks stacked by yards.
  *
- * Depth went 3 -> 7 -> 8 across review. Three read as too thin.
+ * The RELATIONSHIP TAGS are the point of it being here rather than only on the stats
+ * page — YOURS when the player is on the user's favourite team, FANTASY when they are on
+ * their fantasy roster. Without them this is the stats page in miniature; with them it is
+ * a reason to look.
  */
-const WorthWatching: React.FC<{
+const TopPlayers: React.FC<{
   rows: LeaderRow[]
   favouriteTeamId: number | null
   fantasyPlayerIds: Set<number>
@@ -37,7 +39,7 @@ const WorthWatching: React.FC<{
 
   return (
     <div style={{ marginTop: '26px' }}>
-      <SectionHeader title="WORTH WATCHING" link={{ to: '/players', label: 'ALL STATS →' }} />
+      <SectionHeader title="TOP PLAYERS" link={{ to: '/players', label: 'ALL STATS →' }} />
       <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}` }}>
         {rows.map((row, i) => {
           const yours = favouriteTeamId != null && row.teamId === favouriteTeamId
@@ -84,4 +86,4 @@ const WorthWatching: React.FC<{
   )
 }
 
-export default WorthWatching
+export default TopPlayers

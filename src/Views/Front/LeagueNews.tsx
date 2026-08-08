@@ -10,42 +10,62 @@ export interface NewsStat {
 }
 
 export interface NewsItem {
+  id: number
   category: string
+  rawCategory: string
   text: string
   week: number
+  season: number
   teamId: number | null
   playerId: number | null
   stats: NewsStat[]
   at: string | null
-  league: string | null
 }
 
 /**
- * Category colours. Every category the backend can emit has one; anything unrecognised
- * falls back to muted rather than rendering an invisible dot.
+ * Category colours, keyed on the backend's raw category. Anything unrecognised falls back
+ * to muted rather than rendering an invisible dot — a new publisher shipping before this
+ * map knows about it should still be readable.
  */
 const CATEGORY_COLOR: Record<string, string> = {
-  CLINCHED: ACCENT.success,
-  STREAK: ACCENT.success,
-  MILESTONE: ACCENT.warning,
-  RECORD: ACCENT.warning,
-  ERRATIC: ACCENT.anomaly,
-  'RULE CHANGE': ACCENT.rules,
-  SIGNING: ACCENT.info,
-  INJURY: ACCENT.negative,
-  CORES: ACCENT.cards,
+  clinched: ACCENT.success,
+  streak: ACCENT.success,
+  record: ACCENT.warning,
+  milestone: ACCENT.warning,
+  big_game: ACCENT.warning,
+  upset: ACCENT.upset,
+  anomaly_transition: ACCENT.anomaly,
+  criticality: ACCENT.negative,
+  rules: ACCENT.rules,
+  signing: ACCENT.info,
+  injury: ACCENT.negative,
+  eliminated: TEXT.muted,
+  cores: ACCENT.cards,
 }
 
-const colorFor = (category: string) => CATEGORY_COLOR[category] || TEXT.muted
+/** Shorter display names where the raw category reads awkwardly in a 104px column. */
+const CATEGORY_LABEL: Record<string, string> = {
+  anomaly_transition: 'ANOMALY',
+  big_game: 'BIG GAME',
+  rules: 'RULE CHANGE',
+  criticality: 'INSTABILITY',
+}
+
+const colorFor = (item: NewsItem) => CATEGORY_COLOR[item.rawCategory] || TEXT.muted
+const labelFor = (item: NewsItem) => CATEGORY_LABEL[item.rawCategory] || item.category
 
 /**
  * League news: one lead item with four supporting numbers, then single-clause rows.
  *
+ * The feed is CUMULATIVE and persisted — items are published the moment they happen and
+ * stay put, so it does not clear at the week rollover. It is fixed-length, and a story
+ * falls off the bottom when newer ones push it out.
+ *
  * There is no prose here by design. The lead's headline is a template the sim can fill
  * and its body is four numbers — an earlier draft with an authored headline and two
  * sentences of analysis was rejected because nothing in the system publishes at that
- * level. If a category cannot produce a full four numbers it renders as a standard row
- * instead of leading with an empty strip.
+ * level. An item without a full four numbers renders as a standard row instead of
+ * leading with an empty strip.
  */
 const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ lead, items }) => {
   if (!lead && items.length === 0) return null
@@ -66,20 +86,18 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '9px',
             }}>
               <Crest teamId={lead.teamId} size={44} />
-              {lead.league && (
-                <span style={{ ...font(700, 9, 1, '0.12em'), color: TEXT.muted }}>
-                  {lead.league.split(' ')[0].toUpperCase()}
-                </span>
-              )}
+              <span style={{ ...font(700, 9, 1, '0.12em'), color: TEXT.muted }}>
+                WEEK {lead.week}
+              </span>
             </div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
                 <span style={{
                   ...font(700, 9, 1, '0.12em'),
-                  color: BG.shell, background: colorFor(lead.category), padding: '4px 7px',
-                }}>{lead.category}</span>
-                <span style={{ ...font(700, 9), color: TEXT.dim }}>WEEK {lead.week}</span>
+                  color: BG.shell, background: colorFor(lead), padding: '4px 7px',
+                }}>{labelFor(lead)}</span>
+                <span style={{ ...font(700, 9), color: TEXT.muted }}>SEASON {lead.season}</span>
                 <span style={{ flex: 1 }} />
                 <span style={{ ...font(400, 10), color: TEXT.faint }}>{timeAgo(lead.at)}</span>
               </div>
@@ -111,7 +129,7 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
 
         {items.map((item, i) => (
           <div
-            key={`${item.category}-${i}-${item.text.slice(0, 24)}`}
+            key={item.id}
             className="row"
             style={{
               display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px',
@@ -120,13 +138,13 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
           >
             <span style={{
               width: '6px', height: '6px', borderRadius: '50%',
-              background: colorFor(item.category), flexShrink: 0,
+              background: colorFor(item), flexShrink: 0,
             }} />
             <span style={{
-              ...font(700, 10, 1, '0.1em'), color: colorFor(item.category),
+              ...font(700, 10, 1, '0.1em'), color: colorFor(item),
               width: '104px', flexShrink: 0,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>{item.category}</span>
+            }}>{labelFor(item)}</span>
             <span style={{ flex: 1, minWidth: 0, ...font(400, 12, 1.45), color: TEXT.body, textWrap: 'pretty' as any }}>
               {item.text}
             </span>
