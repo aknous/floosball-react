@@ -126,14 +126,22 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
         <div style={CLUSTER}>
           {columns && (
             <div style={QUARTERS}>
-              {columns.periods.map((period, i) => (
-                <span key={period.label} style={{
-                  ...QUARTER_CELL,
-                  ...font(period.played ? 600 : 400, 15),
-                  color: !period.played ? TEXT.dim
-                    : game.quarter === i + 1 && live ? TEXT.strong : TEXT.secondary,
-                }}>{side === 'home' ? period.homeValue : period.awayValue}</span>
-              ))}
+              {columns.periods.map((period, i) => {
+                // In frames the side that TOOK the frame is what matters, not the points —
+                // so the winner is lit and the loser reads as background, which is the
+                // opposite emphasis to a quarter score.
+                const tookIt = side === 'home' ? period.homeWon : period.awayWon
+                const isFrames = period.homeWon !== undefined
+                return (
+                  <span key={period.label} style={{
+                    ...QUARTER_CELL,
+                    ...font(isFrames ? (tookIt ? 800 : 400) : period.played ? 600 : 400, 15),
+                    color: !period.played ? TEXT.dim
+                      : isFrames ? (tookIt ? ACCENT.live : TEXT.dim)
+                        : game.quarter === i + 1 && live ? TEXT.strong : TEXT.secondary,
+                  }}>{side === 'home' ? period.homeValue : period.awayValue}</span>
+                )
+              })}
             </div>
           )}
           {columns && <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />}
@@ -200,7 +208,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           )}
           {columns && <span style={{ width: '1px', height: '16px', background: BORDER.hairline }} />}
           <span style={{ ...TOTAL_CELL, ...font(600, 11, 1, '0.08em'), color: TEXT.muted }}>
-            {columns?.label ?? 'TOT'}
+            {columns ? columns.label : 'TOT'}
           </span>
         </div>
       </div>

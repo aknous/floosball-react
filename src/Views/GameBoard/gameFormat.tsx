@@ -22,7 +22,15 @@ import { formatScore } from '@/utils/formatScore'
 const framesWon = (n: number): string =>
   Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, '')
 
-export type Period = { label: string; homeValue: string; awayValue: string; played: boolean }
+export type Period = {
+  label: string
+  homeValue: string
+  awayValue: string
+  played: boolean
+  /** Frames only: which side TOOK this frame, so the winner can be emphasised. */
+  homeWon?: boolean
+  awayWon?: boolean
+}
 
 /**
  * The period columns a large card shows, or null when the format has no meaningful ones.
@@ -45,7 +53,9 @@ export function periodColumns(game: CurrentGame): { label: string; periods: Peri
       ? line.innings
       : Array.from({ length: Math.max(1, innings.inningsPerGame || 3) }, (_, i) => i + 1)
     return {
-      label: 'R',
+      // No label over the total under innings (owner). Baseball's line score calls it R,
+      // but the total is the only big number on the row and does not need naming.
+      label: '',
       periods: numbers.map((n, i) => {
         const home = line?.home?.[i]
         const away = line?.away?.[i]
@@ -61,7 +71,31 @@ export function periodColumns(game: CurrentGame): { label: string; periods: Peri
     }
   }
 
-  if (game.frames?.active) return null
+  const frames = game.frames
+  if (frames?.active) {
+    // A frames match's line score IS the frame-by-frame: each side's points in each frame,
+    // with the side that TOOK the frame emphasised. Without it the card shows two frame
+    // totals and no account of how they were won, which is the one thing this format is
+    // about — a frame taken 7-0 and one taken 3-0 are worth exactly the same, and only the
+    // per-frame line makes that visible.
+    const played = frames.frameResults ?? []
+    const total = Math.max(frames.framesPerGame || played.length, played.length)
+    return {
+      label: '',
+      periods: Array.from({ length: total }, (_, i) => {
+        const result = played[i]
+        return {
+          label: String(i + 1),
+          homeValue: result ? String(result.home) : '·',
+          awayValue: result ? String(result.away) : '·',
+          played: !!result,
+          // A drawn frame is HALVED rather than won, so neither side is emphasised.
+          homeWon: result?.winner === 'home',
+          awayWon: result?.winner === 'away',
+        }
+      }),
+    }
+  }
 
   const quarters = game.quarterScores
   const isFinal = game.status === 'Final'

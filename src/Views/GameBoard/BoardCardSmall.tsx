@@ -64,12 +64,6 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   const possessionTeam = game.homeTeamPoss ? 'home' : game.awayTeamPoss ? 'away' : null
   const momentumMagnitude = Math.abs(game.momentum ?? 0)
 
-  // The winning margin, in whatever unit this format is decided by. Under FRAMES that is
-  // frames won, not points — "by 21" would describe a number that did not settle it.
-  const frames = game.frames
-  const finalMargin = frames?.active
-    ? Math.abs((frames.framesWonHome ?? 0) - (frames.framesWonAway ?? 0))
-    : Math.abs(homeScore - awayScore)
 
   const teamRow = (side: 'away' | 'home', team: typeof home, score: number, ahead: boolean) => {
     const hasMomentum = live && momentumMagnitude > 0 && game.momentumTeam === team?.abbr
@@ -143,22 +137,21 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       {teamRow('away', away, awayScore, leader !== 'home')}
       {teamRow('home', home, homeScore, leader !== 'away')}
 
-      {/* Same rule as the large card: a final game's gauge is 100/0, so it reports the
-          margin instead of a certainty. */}
-      <div style={{ paddingTop: '12px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', alignItems: 'center', gap: '9px' }}>
-        {!isFinal && <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={3} />}
-        {isFinal && <span style={{ flex: 1 }} />}
-        <span style={{ ...font(700, 11), color: favouredText, ...TABULAR, whiteSpace: 'nowrap', flexShrink: 0 }}>
-          {isFinal
-            ? (leader === 'tied' ? 'TIED' : `${favouredAbbr} by ${finalMargin}`)
-            : `${favouredAbbr} ${favouredPct}%`}
-        </span>
-        {!isFinal && (
+      {/* The gauge is a LIVE readout and nothing more. On a final it resolved to 100/0, and
+          the margin that replaced it was removed (owner) — the two scores directly above
+          already say who won and by how much, so the row was restating the card. Finals
+          simply drop it rather than showing an empty strip. */}
+      {!isFinal && (
+        <div style={{ paddingTop: '12px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', alignItems: 'center', gap: '9px' }}>
+          <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={3} />
+          <span style={{ ...font(700, 11), color: favouredText, ...TABULAR, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {favouredAbbr} {favouredPct}%
+          </span>
           <span style={{ ...font(600, 10), color: TEXT.muted, ...TABULAR, flexShrink: 0 }}>
             {swing >= 0 ? '▲' : '▼'}{Math.abs(swing)}
           </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
