@@ -33,7 +33,11 @@ export const SectionHeader: React.FC<{
   </div>
 )
 
-/** An outlined relationship tag: YOURS in the team colour, FANTASY in green. */
+/**
+ * An outlined relationship tag. Only FANTASY survives — the YOURS variants came off every
+ * surface (owner), because a tinted row or cell in the team's own colour already says it
+ * and the badge was repeating the point.
+ */
 export const RelationTag: React.FC<{ label: string; color: string }> = ({ label, color }) => (
   <span style={{
     ...font(700, 9, 1, '0.08em'),

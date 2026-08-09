@@ -100,7 +100,6 @@ const HappeningNow: React.FC<{
                   <span style={{ flex: 1, ...font(700, 9, 1, '0.12em'), color: statusColor, whiteSpace: 'nowrap' }}>
                     {statusText}
                   </span>
-                  {yours && <span style={{ ...font(700, 9, 1, '0.1em'), color: ACCENT.ownTeam }}>YOURS</span>}
                 </div>
                 {teamLine(game.awayTeam, awayScore, awayScore >= homeScore)}
                 {teamLine(game.homeTeam, homeScore, homeScore >= awayScore)}
