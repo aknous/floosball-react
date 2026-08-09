@@ -27,6 +27,20 @@ import GameBleachers, { useRailEntries } from './gameBleachers'
  * full-width scoreboard band, and the rail.
  */
 
+/**
+ * The design is a fixed 1440px screen with a 196px nav, so the content it was
+ * drawn against is 1244px wide.
+ *
+ * Without a cap the body grid grows with the window while the rail stays 372px
+ * — every extra pixel of monitor goes into the left column, and the field,
+ * being `width: 100%` of a 600×220 viewBox, grows with it until it is a mural.
+ * Capped and centred, the layout holds the proportions it was drawn at.
+ *
+ * The bands stay full-bleed (their background and bottom rule span the window);
+ * only their CONTENT is capped, so nothing looks cut off on a wide display.
+ */
+const CONTENT_MAX = 1244
+
 const FlameIcon: React.FC<{ color: string }> = ({ color }) => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill={color} style={{ flexShrink: 0, display: 'block' }}>
     <path d="M12 2s4 4.5 4 8a4 4 0 01-8 0c0-1 .3-2 .8-2.9C8 8.6 6 11 6 14a6 6 0 0012 0c0-4.5-6-12-6-12z" />
@@ -204,9 +218,11 @@ const GamePage: React.FC = () => {
 
       {/* Nav bar — back to the board, and the round in its interest order. */}
       <div style={{
+        background: BG.shell, borderBottom: `1px solid ${BORDER.hairline}`,
+      }}>
+      <div style={{
         display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap',
-        padding: '13px 28px', background: BG.shell,
-        borderBottom: `1px solid ${BORDER.hairline}`,
+        padding: '13px 28px', maxWidth: CONTENT_MAX, margin: '0 auto',
       }}>
         <NavPlate to="/games">
           <span style={{ ...font(800, 14), color: TEXT.body }}>←</span>
@@ -235,12 +251,17 @@ const GamePage: React.FC = () => {
           }}>YOUR TEAM</span>
         )}
       </div>
+      </div>
 
-      {/* Scoreboard band — away tint left, home tint right, matching the field. */}
+      {/* Scoreboard band — away tint left, home tint right, matching the field.
+          The gradient spans the window; the teams sit on the capped measure. */}
+      <div style={{
+        borderBottom: `1px solid ${BORDER.raised}`,
+        background: `linear-gradient(100deg, ${awayDisplayColor}1a 0%, ${BG.shell} 42%, ${BG.shell} 58%, ${homeColor}22 100%)`,
+      }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '26px',
-        padding: '18px 28px', borderBottom: `1px solid ${BORDER.raised}`,
-        background: `linear-gradient(100deg, ${awayDisplayColor}1a 0%, ${BG.shell} 42%, ${BG.shell} 58%, ${homeColor}22 100%)`,
+        padding: '18px 28px', maxWidth: CONTENT_MAX, margin: '0 auto',
       }}>
         {teamBlock('away')}
         <div style={{
@@ -277,11 +298,13 @@ const GamePage: React.FC = () => {
         </div>
         {teamBlock('home')}
       </div>
+      </div>
 
       {/* Body — the game left, the talk right. */}
       <div style={{
         display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 372px', gap: '22px',
         padding: '20px 28px 32px', alignItems: 'start',
+        maxWidth: CONTENT_MAX, margin: '0 auto',
       }}>
         <GameModalNew gameId={id} layout="page" onClose={() => navigate('/games')} />
 

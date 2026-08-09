@@ -2064,7 +2064,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 <div style={{ padding: '0 16px 16px' }}>
                   {/* "Field Position" label + replay controls live on the row
                       above (consolidated), so no header here. */}
-                  <svg viewBox={`0 0 ${FW} ${FH}`} style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '4px' }}>
+                  {/* ⚠️ `width: 100%` on a 600×220 viewBox means the field is as
+                      tall as its container is wide, divided by 2.7. In the modal
+                      the container is a 40% panel; on the route it is the whole
+                      left column, so without a ceiling the pitch grows with the
+                      monitor. 762 is the width it was drawn at (the design's
+                      794px column less its 16px padding). */}
+                  <svg
+                    viewBox={`0 0 ${FW} ${FH}`}
+                    style={{
+                      width: '100%', height: 'auto', display: 'block', borderRadius: '4px',
+                      ...(asPage ? { maxWidth: '762px', margin: '0 auto' } : {}),
+                    }}
+                  >
                     {/* Home end zone (LEFT) */}
                     <rect x={0} y={0} width={EZW} height={FH} fill={homeTeam.color} opacity={0.4} />
                     {/* Away end zone (RIGHT) */}
