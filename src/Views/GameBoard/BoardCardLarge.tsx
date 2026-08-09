@@ -3,6 +3,7 @@ import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
 import { finalLeaders, finalTeamStats } from './finalLeaders'
+import { lastPlaySummary } from './lastPlaySummary'
 import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
 import {
@@ -56,14 +57,8 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   const homeWp = Math.round(game.homeWinProbability ?? 50)
   const awayWp = 100 - homeWp
 
-  const lastPlay = (() => {
-    const plays = game.plays || []
-    for (let i = plays.length - 1; i >= 0; i--) {
-      const text = (plays[i] as any)?.description
-      if (typeof text === 'string' && text.trim()) return text.trim()
-    }
-    return null
-  })()
+  // The last play as structure, not prose — see lastPlaySummary for why.
+  const lastPlay = lastPlaySummary(game)
 
   // Who turned up, for a game that is over. Empty while a game is live or if nobody
   // cleared the minimums, in which case the row says so rather than printing filler.
@@ -265,10 +260,70 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       ) : (
         <div style={{ paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
           <SectionLabel>LAST PLAY</SectionLabel>
-          <ScrollingLine
-            text={lastPlay || (live ? 'Waiting on the snap' : '—')}
-            style={{ ...font(400, 14), color: TEXT.secondary, flex: 1 }}
-          />
+          {lastPlay ? (
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '9px', minWidth: 0 }}>
+              {lastPlay.teamAbbr && (
+                <span style={{
+                  ...font(700, 12, 1, '0.04em'),
+                  color: lastPlay.teamAbbr === away?.abbr ? awayText : homeText,
+                  ...TABULAR,
+                }}>{lastPlay.teamAbbr}</span>
+              )}
+              <span style={{ ...font(700, 14, 1, '0.02em'), color: TEXT.secondary, whiteSpace: 'nowrap' }}>
+                {lastPlay.action}
+              </span>
+              {lastPlay.yards != null && (
+                <span style={{
+                  ...font(800, 15), ...TABULAR, whiteSpace: 'nowrap',
+                  color: lastPlay.yards < 0 ? ACCENT.negative : TEXT.primary,
+                }}>
+                  {lastPlay.yards > 0 ? `+${lastPlay.yards}` : lastPlay.yards}
+                  <span style={{ ...font(500, 11), color: TEXT.muted }}> YD</span>
+                </span>
+              )}
+              {lastPlay.tag && (
+                <span style={{
+                  ...font(700, 10, 1, '0.08em'), color: lastPlay.tagColor,
+                  border: `1px solid ${lastPlay.tagColor}59`, padding: '3px 6px',
+                  whiteSpace: 'nowrap',
+                }}>{lastPlay.tag}</span>
+              )}
+            </div>
+          ) : (
+            <span style={{ ...font(400, 14), color: TEXT.muted }}>
+              {live ? 'Waiting on the snap' : '—'}
+            </span>
+          )}
+
+          {/* Where the game stands NOW, at the far end of the same row (owner).
+              The last play says what just happened; this says what is about to.
+              Deliberately paired rather than given its own row — read together
+              they are one thought, and the row had the space sitting empty. */}
+          {/* Not at halftime: nobody is on the clock, so the down and the spot are
+              last drive's, and the row would state a situation that is over. */}
+          {live && !game.isHalftime && (game.downText || game.yardLine) && (
+            <>
+              <span style={{ flex: 1 }} />
+              <span style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexShrink: 0 }}>
+                {game.downText && (
+                  <span style={{ ...font(700, 13), color: TEXT.secondary, ...TABULAR, whiteSpace: 'nowrap' }}>
+                    {game.downText}
+                  </span>
+                )}
+                {game.downText && game.yardLine && (
+                  <span style={{ ...font(400, 11), color: BORDER.raised }}>·</span>
+                )}
+                {game.yardLine && (
+                  <span style={{
+                    ...font(600, 13), ...TABULAR, whiteSpace: 'nowrap',
+                    // Red zone is the one field position worth colouring — it is
+                    // the difference between a drive and a scoring chance.
+                    color: (game.yardsToEndzone ?? 99) <= 20 ? ACCENT.warning : TEXT.muted,
+                  }}>{game.yardLine}</span>
+                )}
+              </span>
+            </>
+          )}
         </div>
       )}
     </div>
