@@ -5,6 +5,7 @@ import { useAchievements } from '@/contexts/AchievementsContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useGames } from '@/contexts/GamesContext'
 import { SiDiscord } from 'react-icons/si'
+import { VersionPill } from '@/Components/Footer'
 import { FaTrophy } from 'react-icons/fa'
 import { BG, BORDER, TEXT, ACCENT, FONT, NAV_WIDTH, font } from './tokens'
 
@@ -206,8 +207,25 @@ const AppNav: React.FC = () => {
         display: 'flex',
         flexDirection: 'column',
         fontFamily: FONT,
+        // Stick to the viewport and scroll internally. The rail grew taller than
+        // the screen once the version badge joined the foot of it, and a nav
+        // that scrolls with the PAGE puts its own footer below the fold.
+        //
+        // ⚠️ `100vh` is WRONG here: the nav starts below the header, so a full
+        // viewport height overhangs the bottom by exactly the header — which
+        // left the badge a few pixels out of reach. `100dvh - header` is what
+        // the rail actually has.
+        position: 'sticky',
+        top: 0,
+        alignSelf: 'flex-start',
+        height: 'calc(100dvh - var(--app-header-h, 60px))',
+        overflow: 'hidden',
       }}
     >
+      {/* Only the ITEM LIST scrolls. The block below it is pinned, because a
+          nav that scrolls as one puts its own foot below the fold — which is
+          where the version badge was ending up on a short viewport. */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
       <div style={GROUP_LABEL}>THE LEAGUE</div>
       {LEAGUE_ITEMS.map(renderItem)}
 
@@ -260,7 +278,8 @@ const AppNav: React.FC = () => {
         <span style={{ ...font(500, 13), whiteSpace: 'nowrap' }}>Discord</span>
       </a>
 
-      <span style={{ flex: 1 }} />
+      </div>
+
       <div style={{
         ...font(400, 10, 1.5, '0.12em'),
         color: TEXT.ghost,
@@ -268,6 +287,12 @@ const AppNav: React.FC = () => {
       }}>
         INSTANCE 498b<br />
         {seasonState.seasonNumber > 0 ? `SEASON ${seasonState.seasonNumber}` : 'STANDING BY'}
+      </div>
+      {/* The version badge and its changelog, moved off the fixed footer bar —
+          the rail already had a bottom edge doing nothing, and the footer was a
+          strip across every page carrying almost nothing else. */}
+      <div style={{ padding: '14px 18px 4px' }}>
+        <VersionPill align="left" />
       </div>
     </nav>
   )

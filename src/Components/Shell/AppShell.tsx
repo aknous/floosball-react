@@ -1,7 +1,7 @@
 import React from 'react'
 import AppHeader from './AppHeader'
 import AppNav from './AppNav'
-import { BG, BORDER, FONT, FOOTER_HEIGHT } from './tokens'
+import { BG, BORDER, FONT } from './tokens'
 
 /**
  * The frame the three redesigned pages sit in: full-width header, fixed 196px nav, and a
@@ -16,7 +16,23 @@ import { BG, BORDER, FONT, FOOTER_HEIGHT } from './tokens'
  *
  * Responsive below desktop was not designed; the old mobile Navbar still covers phones.
  */
-const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // The nav is sticky and full-height, so it has to know how tall the header is
+  // to avoid overhanging the viewport by exactly that much. Measured rather than
+  // assumed: the header grows when the beta strip or a season banner is up.
+  const headerRef = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    const el = headerRef.current
+    if (!el) return
+    const apply = () => document.documentElement.style.setProperty(
+      '--app-header-h', `${el.getBoundingClientRect().height}px`)
+    apply()
+    const ro = new ResizeObserver(apply)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  return (
   <div
     className="font-pixel"
     style={{
@@ -29,19 +45,20 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
       flexDirection: 'column',
     }}
   >
-    <AppHeader />
+    <div ref={headerRef}><AppHeader /></div>
     <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
       <AppNav />
-      {/* The Footer is fixed to the viewport bottom, so its height is reserved here —
-          without it the last rows of every page scroll underneath it and cannot be read. */}
+      {/* No footer on desktop any more, so nothing to reserve height for — the
+          version badge lives at the foot of the nav and the page runs to the
+          bottom of the viewport. */}
       <main style={{
         flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
-        paddingBottom: `${FOOTER_HEIGHT}px`,
       }}>
         {children}
       </main>
     </div>
   </div>
-)
+  )
+}
 
 export default AppShell

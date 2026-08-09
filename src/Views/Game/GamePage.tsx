@@ -47,9 +47,24 @@ import GameBleachers, { useRailEntries } from './gameBleachers'
 const CONTENT_MAX_STACKED = 1244
 const CONTENT_MAX_THREE_COLUMN = 1720
 
-const FlameIcon: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill={color} style={{ flexShrink: 0, display: 'block' }}>
-    <path d="M12 2s4 4.5 4 8a4 4 0 01-8 0c0-1 .3-2 .8-2.9C8 8.6 6 11 6 14a6 6 0 0012 0c0-4.5-6-12-6-12z" />
+/**
+ * Momentum.
+ *
+ * ⚠️ The SAME path the game card and the modal draw — a two-part flame with an
+ * inner cutout, not a plain teardrop. A hand-rolled one read as a different
+ * icon for the same idea. Only the size differs here: it sits beside a 46px
+ * score rather than a 12px label.
+ */
+const FlameIcon: React.FC<{ color: string; size?: number; glow?: string }> = ({ color, size = 13, glow }) => (
+  <svg
+    viewBox="0 0 24 24" fill={color}
+    style={{
+      width: `${size}px`, height: `${size}px`, flexShrink: 0, display: 'block',
+      filter: glow && glow !== 'none' ? `drop-shadow(${glow})` : undefined,
+      transition: 'all 0.5s ease',
+    }}
+  >
+    <path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.42-7.1A13.5 13.5 0 0 1 10.5 5.8s.5 2.7 2.5 4.2c2-1.5 2.5-4.2 2.5-4.2s2.08 1.5 3.08 2.6C20.26 10.06 20 12.93 20 15.5 20 19.42 16.97 23 12 23Zm0-2c2.76 0 5-1.79 5-4.5 0-1.5-.5-3-1.5-4l-1 1c-1 1-2.5 1-3.5 0l-1-1c-1 1-1.5 2.5-1.5 4 0 2.71 2.24 4.5 5 4.5Z" />
   </svg>
 )
 
@@ -166,6 +181,8 @@ const GamePage: React.FC = () => {
   const isLive = gameData.status === 'Active'
   const absMomentum = Math.abs(gameData.momentum ?? 0)
   const flameColor = absMomentum >= 25 ? '#f97316' : absMomentum >= 15 ? '#fb923c' : '#fdba74'
+  // Same glow rule as the game card: only a real run gets it.
+  const flameGlow = absMomentum >= 25 ? '0 0 6px #f97316' : 'none'
   const yourTeamId = user?.favoriteTeamId ?? null
   const isYours = yourTeamId != null
     && (Number(gameData.homeTeam.id) === yourTeamId || Number(gameData.awayTeam.id) === yourTeamId)
@@ -198,7 +215,6 @@ const GamePage: React.FC = () => {
           <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
             <span style={{ ...font(500, 12, 1, '0.04em'), color: TEXT.muted }}>{team.city}</span>
             {record && <span style={{ ...font(500, 11), color: TEXT.muted }}>{record}</span>}
-            {hasMomentum && <FlameIcon color={flameColor} />}
           </span>
           <Link to={`/team/${team.id}`} style={{ textDecoration: 'none' }}>
             <span style={{
@@ -210,9 +226,17 @@ const GamePage: React.FC = () => {
       </>
     )
 
+    // The flame rides the SCORE, not the record line — momentum is about who is
+    // taking the game over, so it belongs next to the number that says so. It
+    // sits on the outer side of each score so the two big numbers stay
+    // symmetric about the centre clock.
     const scoreEl = (
-      <span style={{ ...font(800, 46, 1), color: TEXT.primary, flexShrink: 0, ...TABULAR }}>
-        {score ?? 0}
+      <span style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+        {side === 'away' && hasMomentum && <FlameIcon color={flameColor} size={30} glow={flameGlow} />}
+        <span style={{ ...font(800, 46, 1), color: TEXT.primary, ...TABULAR }}>
+          {score ?? 0}
+        </span>
+        {side === 'home' && hasMomentum && <FlameIcon color={flameColor} size={30} glow={flameGlow} />}
       </span>
     )
 
@@ -324,26 +348,20 @@ const GamePage: React.FC = () => {
           onClose={() => navigate('/games')}
           railContent={(
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
+              {/* No header. The buttons say "Cheer" and carry their club's crest
+                  and colour, so a RALLY label above them only repeated what they
+                  already show. */}
               {isLive && (
-                <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}`, padding: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', paddingBottom: '11px' }}>
-                    <span style={{ ...font(800, 12, 1, '0.1em'), color: TEXT.strong }}>RALLY</span>
-                    <span style={{ ...font(400, 10), color: TEXT.muted }}>charge the stands</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <RallyButton game={gameData} teamId={Number(gameData.homeTeam.id)} teamColor={homeColor} />
-                    <RallyButton game={gameData} teamId={Number(gameData.awayTeam.id)} teamColor={awayDisplayColor} />
-                  </div>
+                <div style={{
+                  background: BG.card, border: `1px solid ${BORDER.hairline}`,
+                  padding: '14px', display: 'flex', gap: '10px',
+                }}>
+                  <RallyButton game={gameData} teamId={Number(gameData.homeTeam.id)} teamColor={homeColor} />
+                  <RallyButton game={gameData} teamId={Number(gameData.awayTeam.id)} teamColor={awayDisplayColor} />
                 </div>
               )}
 
-              <GameBleachers
-                entries={railEntries}
-                watching={watching}
-                // You post into your OWN club's stand, so the composer only
-                // appears when the signed-in fan's team is one of the two playing.
-                feedTeamId={isYours ? yourTeamId : null}
-              />
+              <GameBleachers entries={railEntries} watching={watching} gameId={id} />
             </div>
           )}
         />

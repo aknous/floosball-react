@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { personalityAccent } from '@/utils/personality'
-import TeamFeed from '@/Components/Sentiment/TeamFeed'
+import GameFeedComposer from './GameFeedComposer'
 
 /**
  * The Bleachers rail — the fan conversation, which the modal had nowhere to put.
@@ -133,15 +133,17 @@ const LiveDot: React.FC = () => (
 )
 
 /**
- * The rail. `feedTeamId` is the club whose Bleachers the composer posts into —
- * you post about your OWN club, so it is only set when the signed-in fan's team
- * is one of the two playing.
+ * The rail: what fans shouted at this game, and what the players said on it.
+ *
+ * The fan half is GAME-scoped (`GameFeedComposer`), not team-scoped. Reusing the
+ * club feed put season-long lines in a live game's composer and, worse, showed a
+ * post made at one game in every other game's rail.
  */
 const GameBleachers: React.FC<{
   entries: RailEntry[]
   watching: number | null
-  feedTeamId: number | null
-}> = ({ entries, watching, feedTeamId }) => (
+  gameId: number
+}> = ({ entries, watching, gameId }) => (
   <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}` }}>
     <div style={{
       padding: '12px 16px', background: BG.panel,
@@ -158,12 +160,8 @@ const GameBleachers: React.FC<{
       )}
     </div>
 
-    {/* The fan composer and fan posts. Only your own club's stand will take a
-        post, so a neutral watching a game they have no side in reads the two
-        player voices below and nothing more. */}
-    {feedTeamId != null && (
-      <TeamFeed teamId={feedTeamId} bare railTone composer="dropdown" maxHeight={300} />
-    )}
+    {/* The fan half: shouts at THIS game, from either stand. */}
+    <GameFeedComposer gameId={gameId} />
 
     <div style={{ maxHeight: '520px', overflowY: 'auto' }}>
       {entries.map(entry => <Entry key={entry.key} entry={entry} />)}

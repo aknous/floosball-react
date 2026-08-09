@@ -83,10 +83,10 @@ export const FONT = "'pressStart', ui-monospace, monospace"
 export const TABULAR = { fontVariantNumeric: 'tabular-nums' } as const
 
 /**
- * The Footer is `position: fixed; bottom: 0`, so it floats OVER the page and the layout
- * has to reserve its height or the last rows of every page sit underneath it. The old
- * layout did this with a hardcoded `paddingBottom: 33`; this is the same reservation with
- * a name, plus a little clearance.
+ * Height the fixed footer bar occupies.
+ *
+ * MOBILE ONLY now. The desktop shell dropped the footer and moved the version
+ * badge to the foot of the nav, so nothing on desktop reserves this any more.
  */
 export const FOOTER_HEIGHT = 40
 

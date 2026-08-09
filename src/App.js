@@ -115,7 +115,6 @@ function AppLayout() {
     return (
       <AppShell>
         <AppRoutes headerHeight={headerHeight} />
-        <Footer />
       </AppShell>
     )
   }
