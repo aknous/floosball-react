@@ -28,6 +28,8 @@ export interface NewsItem {
   rawText?: string | null
   /** A multi-turn Cores exchange, already in spoken order. */
   turns?: CoreTurn[] | null
+  /** Prose beneath the headline. Hand-written announcements only. */
+  body?: string | null
   at: string | null
 }
 
@@ -124,6 +126,51 @@ const railFor = (item: NewsItem) => CATEGORY_COLOR[item.rawCategory] || TEXT.mut
 // band instead of a row, and the feed reads as a run of weeks rather than one long list.
 const DIVIDER_CATEGORIES = new Set(['schedule'])
 const isDivider = (item: NewsItem) => DIVIDER_CATEGORIES.has(item.rawCategory)
+
+/**
+ * The 20px mark at the head of a row.
+ *
+ * A club event carries its crest, and a hand-written announcement can carry the
+ * league mark or one of the Cores instead — an admin choosing who a notice is FROM.
+ *
+ * ⚠️ The league mark travels as the sentinel `core: 'league'`. That column means
+ * "who is speaking", which the league legitimately is, and the alternative was a
+ * migration for one bit. Decoded here and in the admin endpoint, nowhere else. If a
+ * fourth source appears, give it a real column — two sentinels is where this stops
+ * being defensible.
+ *
+ * Everything else gets the category dot, which keeps the column's width so the rows
+ * stay aligned whatever is in it.
+ */
+const rowMark = (item: NewsItem): React.ReactNode => {
+  if (item.teamId) return <Crest teamId={item.teamId} size={20} />
+  const slot: React.CSSProperties = {
+    width: '20px', display: 'flex', justifyContent: 'center',
+    alignItems: 'center', flexShrink: 0,
+  }
+  if (item.core === 'league') {
+    return (
+      <span style={slot}>
+        <img src="/avatars/league_logo.svg" alt="" width={18} height={18}
+             style={{ display: 'block', borderRadius: '50%' }} />
+      </span>
+    )
+  }
+  if (item.core) {
+    return (
+      <span style={slot}>
+        <CoreIcon core={item.core} color={coreColor(item.core)} size={16} />
+      </span>
+    )
+  }
+  return (
+    <span style={slot}>
+      <span style={{
+        width: '6px', height: '6px', borderRadius: '50%', background: colorFor(item),
+      }} />
+    </span>
+  )
+}
 
 // Three weights of row, and the tint is what separates them. A record falling or a rule
 // changing is a thing you want to catch while scanning; an upset or a Cores line is worth
@@ -308,25 +355,25 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
                 event gets their club's, resolved server-side. The category dot stands in
                 when neither applies (a Cores line, a rule change), so the column keeps its
                 width and the rows stay aligned. */}
-            {item.teamId ? (
-              <Crest teamId={item.teamId} size={20} />
-            ) : (
+            {rowMark(item)}
+            <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{
-                width: '20px', display: 'flex', justifyContent: 'center', flexShrink: 0,
+                display: 'block',
+                ...font(isNoteworthy(item) ? 600 : 400, 12, 1.45),
+                color: isNoteworthy(item) ? TEXT.primary : TEXT.body,
+                textWrap: 'pretty' as any,
               }}>
-                <span style={{
-                  width: '6px', height: '6px', borderRadius: '50%',
-                  background: colorFor(item),
-                }} />
+                {item.text}
               </span>
-            )}
-            <span style={{
-              flex: 1, minWidth: 0,
-              ...font(isNoteworthy(item) ? 600 : 400, 12, 1.45),
-              color: isNoteworthy(item) ? TEXT.primary : TEXT.body,
-              textWrap: 'pretty' as any,
-            }}>
-              {item.text}
+              {/* Prose under the headline, on hand-written items only. Every other
+                  row is one clause and carries no body at all. */}
+              {item.body && (
+                <span style={{
+                  display: 'block', marginTop: '5px', whiteSpace: 'pre-wrap',
+                  ...font(400, 12, 1.55), color: TEXT.secondary,
+                  textWrap: 'pretty' as any,
+                }}>{item.body}</span>
+              )}
             </span>
             <span style={{ ...font(400, 10), color: TEXT.muted, flexShrink: 0 }}>{timeAgo(item.at)}</span>
           </div>
