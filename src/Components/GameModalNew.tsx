@@ -29,7 +29,7 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
  * Exported because the page sets its own max width off the same threshold: the
  * two have to agree or the layout caps at a width the columns cannot use.
  */
-export const PAGE_THREE_COLUMN_MIN = 1400
+export const PAGE_THREE_COLUMN_MIN = 1500
 
 interface GameModalNewProps {
   onClose: () => void
@@ -45,6 +45,17 @@ interface GameModalNewProps {
    * insights, the box score — is identical in both, and a copy would drift.
    */
   layout?: 'modal' | 'page'
+  /**
+   * The Bleachers rail, rendered BESIDE the play feed rather than as a sibling
+   * column of the page.
+   *
+   * It lives here because it belongs to the Plays view: the fan feed is what you
+   * read while watching, and the box score and player stats are a different job
+   * that wants the width instead. As a page-level column it took 372px away
+   * from a box score that needed it and gave it to a feed nobody reads while
+   * studying a stat line.
+   */
+  railContent?: React.ReactNode
 }
 
 interface ReplayControlBarProps {
@@ -230,7 +241,7 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
 }
 
 
-export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, layout = 'modal' }) => {
+export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, layout = 'modal', railContent }) => {
   const asPage = layout === 'page'
   const [activeTab, setActiveTab] = useState<'box' | 'plays' | 'stats'>('plays')
   const [showHighlightsOnly, setShowHighlightsOnly] = useState(false)
@@ -723,6 +734,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
     if (play.type === 'reaction' || play.event?.type === 'reaction') return null
 
     // Sideline cutaway — flavor entry between plays, formatted to mirror a regular play row
+    // On the route these live in the Bleachers rail instead — rendering them
+    // here as well printed every cutaway twice, once in each column.
+    if (asPage && play.isSidelineCutaway) return null
     if (play.isSidelineCutaway && play.sidelineCutaway) {
       const cutaway = play.sidelineCutaway
       const accent = personalityAccent(cutaway.personality)
@@ -1080,7 +1094,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 {play.reaction.text}
               </p>
             )}
-            {play.personalityEvent && (() => {
+            {/* Same rule as the cutaways: on the route a player's reaction is a
+                voice, and the voices live in the Bleachers. */}
+            {!asPage && play.personalityEvent && (() => {
               const accent = personalityAccent(play.personalityEvent.personality)
               return (
                 <div style={{ margin: '4px 0 0' }}>
@@ -1328,11 +1344,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
 
           {/* Left panel: Scoreboard + Status + WP */}
           <div style={{
-            // On the route this is the game-state column. 42% rather than the
-            // modal's 40% because it has to hold the field AND the WP chart
-            // while the plays column keeps enough room to read a description
-            // without wrapping every line.
-            flex: stacked ? '0 0 auto' : asPage ? '0 1 42%' : '0 0 40%',
+            // On the route this is the game-state column, and it is a FIXED
+            // measure rather than a share: the field and the WP chart do not get
+            // better with more width, so everything past this belongs to the
+            // plays and the box score. As a percentage it grew with the window
+            // and stole the width the box score actually needed.
+            flex: stacked ? '0 0 auto' : asPage ? '0 0 400px' : '0 0 40%',
             minWidth: 0,
             // The route separates its columns with a gap, not a rule — the
             // panels already have their own borders and a divider between two
@@ -2420,8 +2437,21 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
             })()}
           </div>
 
-          {/* Right panel: Tabs + scrollable content. On a wide route this is the
-              MIDDLE column, beside the field; stacked, it falls below it. */}
+          {/* The right REGION of the route: the tabs panel, and — only while the
+              Plays view is up — the Bleachers beside it. Switching to Box Score
+              or Player Stats hands the rail's width to the table, which is the
+              view that actually wants it. `display: contents` in the modal so
+              this wrapper adds nothing there. */}
+          <div style={asPage ? {
+            flex: stacked ? 'none' : 1,
+            display: 'flex',
+            flexDirection: stacked ? 'column' : 'row',
+            alignItems: 'stretch',
+            gap: '16px',
+            minWidth: 0,
+          } : { display: 'contents' }}>
+
+          {/* Tabs + scrollable content. */}
           <div style={{
             flex: stacked ? 'none' : 1,
             display: 'flex', flexDirection: 'column',
@@ -3475,6 +3505,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 )
               })()}
             </div>
+          </div>
+
+          {/* The Bleachers, beside the play feed. Plays only — the other two
+              views are reading a table, and the rail's width is better spent
+              there than on a feed you are not watching. */}
+          {asPage && railContent && activeTab === 'plays' && (
+            <div style={{
+              width: stacked ? '100%' : '372px',
+              flexShrink: 0,
+              minWidth: 0,
+            }}>{railContent}</div>
+          )}
+
           </div>
 
         </div>

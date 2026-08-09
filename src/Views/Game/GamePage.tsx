@@ -311,36 +311,42 @@ const GamePage: React.FC = () => {
       </div>
       </div>
 
-      {/* Body — the game left, the talk right. */}
+      {/* Body. The COLUMNS are decided inside the game view, not here: the rail
+          only earns one while the Plays view is up, and only that component
+          knows which view that is. */}
       <div style={{
-        display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 372px', gap: '22px',
-        padding: '20px 28px 32px', alignItems: 'start',
+        padding: '20px 28px 32px',
         maxWidth: contentMax, margin: '0 auto',
       }}>
-        <GameModalNew gameId={id} layout="page" onClose={() => navigate('/games')} />
+        <GameModalNew
+          gameId={id}
+          layout="page"
+          onClose={() => navigate('/games')}
+          railContent={(
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
+              {isLive && (
+                <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}`, padding: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', paddingBottom: '11px' }}>
+                    <span style={{ ...font(800, 12, 1, '0.1em'), color: TEXT.strong }}>RALLY</span>
+                    <span style={{ ...font(400, 10), color: TEXT.muted }}>charge the stands</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <RallyButton game={gameData} teamId={Number(gameData.homeTeam.id)} teamColor={homeColor} />
+                    <RallyButton game={gameData} teamId={Number(gameData.awayTeam.id)} teamColor={awayDisplayColor} />
+                  </div>
+                </div>
+              )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
-          {isLive && (
-            <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}`, padding: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', paddingBottom: '11px' }}>
-                <span style={{ ...font(800, 12, 1, '0.1em'), color: TEXT.strong }}>RALLY</span>
-                <span style={{ ...font(400, 10), color: TEXT.muted }}>charge the stands</span>
-              </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <RallyButton game={gameData} teamId={Number(gameData.homeTeam.id)} teamColor={homeColor} />
-                <RallyButton game={gameData} teamId={Number(gameData.awayTeam.id)} teamColor={awayDisplayColor} />
-              </div>
+              <GameBleachers
+                entries={railEntries}
+                watching={watching}
+                // You post into your OWN club's stand, so the composer only
+                // appears when the signed-in fan's team is one of the two playing.
+                feedTeamId={isYours ? yourTeamId : null}
+              />
             </div>
           )}
-
-          <GameBleachers
-            entries={railEntries}
-            watching={watching}
-            // You post into your OWN club's stand, so the composer only appears
-            // when the signed-in fan's team is one of the two playing.
-            feedTeamId={isYours ? yourTeamId : null}
-          />
-        </div>
+        />
       </div>
     </div>
   )
