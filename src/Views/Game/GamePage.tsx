@@ -262,12 +262,16 @@ const GamePage: React.FC = () => {
           </TeamHoverCard>
           <span style={{ minWidth: 0 }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-              <span style={{ ...font(500, 11, 1, '0.04em'), color: TEXT.muted }}>{team.city}</span>
+              <span style={{ ...font(500, 11, 1, '0.04em'), color: TEXT.muted, display: 'block' }}>{team.city}</span>
               {record && <span style={{ ...font(500, 10), color: TEXT.muted }}>{record}</span>}
             </span>
             <Link to={`/team/${team.id}`} style={{ textDecoration: 'none' }}>
               <span style={{
-                display: 'block', ...font(800, 17, 1.1, '-0.025em'), color: TEXT.primary,
+                // ⚠️ lineHeight 1, not 1.1. The rows share a pitch, so a taller
+                // line box on the name eats the gap between the two clubs —
+                // measured 23px between the names against 26px between the
+                // period numbers, which is exactly the difference in box height.
+                display: 'block', ...font(800, 17, 1, '-0.025em'), color: TEXT.primary,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>{team.name}</span>
             </Link>

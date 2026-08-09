@@ -60,12 +60,19 @@ export const Crest: React.FC<{
   )
 }
 
-/** Momentum flame, coloured by magnitude. */
+/**
+ * Momentum flame, coloured by magnitude.
+ *
+ * ⚠️ THE path — the two-part flame with an inner cutout that the game card, the
+ * game modal and the game page all draw. This component used to carry its own
+ * simpler teardrop, so the same idea had two shapes depending on which surface
+ * you were looking at. If a third place needs a flame, import this one.
+ */
 export const MomentumFlame: React.FC<{ magnitude: number; size: number }> = ({ magnitude, size }) => {
   const color = magnitude >= 25 ? MOMENTUM.high : magnitude >= 15 ? MOMENTUM.mid : MOMENTUM.low
   return (
-    <svg width={size} height={size} viewBox="0 0 20 20" fill={color} style={{ flexShrink: 0 }}>
-      <path d="M10 1c1.2 3 4.5 4.4 4.5 8a4.5 4.5 0 11-9 0c0-1.5.6-2.6 1.4-3.6.2 1 .8 1.8 1.6 2.1C8.2 5.4 9 3.1 10 1z" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} style={{ flexShrink: 0 }}>
+      <path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.42-7.1A13.5 13.5 0 0 1 10.5 5.8s.5 2.7 2.5 4.2c2-1.5 2.5-4.2 2.5-4.2s2.08 1.5 3.08 2.6C20.26 10.06 20 12.93 20 15.5 20 19.42 16.97 23 12 23Zm0-2c2.76 0 5-1.79 5-4.5 0-1.5-.5-3-1.5-4l-1 1c-1 1-2.5 1-3.5 0l-1-1c-1 1-1.5 2.5-1.5 4 0 2.71 2.24 4.5 5 4.5Z" />
     </svg>
   )
 }

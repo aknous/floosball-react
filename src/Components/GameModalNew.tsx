@@ -880,12 +880,24 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
     const bigPlayTeamColor = homeGained ? gameData.homeTeam.color : awayDisplayColor
     const wpaValue = homeGained ? (play.homeWpa ?? 0) : (play.awayWpa ?? 0)
     const hasAccent = isBigPlay || isClutchPlay || isChokePlay || isMomentumShift
+    // Precedence is the source's own: big -> clutch -> choke -> momentum.
+    const accentColor = isBigPlay ? '#f59e0b'
+      : isClutchPlay ? '#06b6d4'
+      : isChokePlay ? '#ef4444'
+      : isMomentumShift ? '#f97316'
+      : null
     const playKey = play.playNumber != null ? `pn-${play.playNumber}` : `${keyPrefix}-${index}`
     const hasInsights = play.insights && Object.keys(play.insights).length > 0
     const isExpanded = expandedPlayKey === playKey
 
     return (
-      <div key={playKey} style={{ borderBottom: '1px solid #334155' }}>
+      <div key={playKey} style={{
+        // ⚠️ The accent is the row's OWN DIVIDER, not a rail down its left edge.
+        // A 3px coloured bar on a tinted row is the house style of every AI-built
+        // dashboard; colouring the separator the row already has marks it just as
+        // clearly without borrowing that look.
+        borderBottom: accentColor ? `1px solid ${accentColor}` : '1px solid #334155',
+      }}>
         <div
           onClick={hasInsights ? () => setExpandedPlayKey(isExpanded ? null : playKey) : undefined}
           className={hasGlitch ? (isGlitchL3 ? 'anomaly-row-l3' : isGlitchL2 ? 'anomaly-row-l2' : 'anomaly-row-l1') : hasAwakened ? 'awakened-row' : undefined}
@@ -894,17 +906,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
             paddingTop: '6px',
             paddingLeft: '10px',
             paddingRight: '6px',
-            boxShadow: isBigPlay ? 'inset 3px 0 0 #f59e0b'
-              : isClutchPlay ? 'inset 3px 0 0 #06b6d4'
-              : isChokePlay ? 'inset 3px 0 0 #ef4444'
-              : isMomentumShift ? 'inset 3px 0 0 #f97316'
-              : 'none',
-            backgroundColor: isBigPlay ? '#1a1300'
-              : isClutchPlay ? '#001a1f'
-              : isChokePlay ? '#1a0500'
-              : isMomentumShift ? '#1a0f00'
+            // A wash that fades out across the row rather than a flat fill, so the
+            // colour is strongest where the marker is and the description still
+            // sits on the page's own background.
+            background: accentColor
+              ? `linear-gradient(90deg, ${accentColor}26 0%, ${accentColor}0d 42%, transparent 78%)`
               : 'transparent',
-            borderRadius: hasAccent ? '4px' : '0',
+            borderRadius: 0,
             display: 'flex',
             gap: '12px',
             cursor: hasInsights ? 'pointer' : 'default',
@@ -1830,7 +1838,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 or using (A || B) && (...) trips an eslint-plugin-react-hooks
                 false-positive in this file. */}
             {gameData.status !== 'Scheduled' && (
-              <div style={{ padding: '2px 16px 6px', display: 'flex', alignItems: 'center', gap: '8px', minHeight: '26px' }}>
+              <div style={{
+                // On the route the scoreboard sits directly above this, and the
+                // Catch Up button was landing hard against its bottom rule.
+                padding: asPage ? '12px 16px 6px' : '2px 16px 6px',
+                display: 'flex', alignItems: 'center', gap: '8px', minHeight: '26px',
+              }}>
                 <ReplayControlBar
                   active={replayActive}
                   playing={replayPlaying}

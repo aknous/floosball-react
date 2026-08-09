@@ -15,14 +15,14 @@ import {
  * by design.
  *
  * ⚠️ The quarter/TOT header cluster and the team rows' value cluster MUST share their
- * gaps and widths exactly (cluster gap 14, quarter cells 21 with gap 9, 1px divider,
- * total 48). They drifted apart in review and the labels stopped sitting over their
- * values. They are defined once below and spread into both.
+ * gaps and widths exactly. They drifted apart in review and the labels stopped sitting
+ * over their values, so they are defined once below and spread into both — change a
+ * width or a gap here and BOTH move together.
  */
 
 const CLUSTER = { display: 'flex', alignItems: 'center', gap: '14px' } as const
-const QUARTERS = { display: 'flex', gap: '9px' } as const
-const QUARTER_CELL = { width: '21px', textAlign: 'center' as const, ...TABULAR }
+const QUARTERS = { display: 'flex', gap: '10px' } as const
+const QUARTER_CELL = { width: '26px', textAlign: 'center' as const, ...TABULAR }
 const TOTAL_CELL = { width: '48px', textAlign: 'right' as const, ...TABULAR }
 
 type Props = {
@@ -114,7 +114,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                 return (
                   <span key={period.label} style={{
                     ...QUARTER_CELL,
-                    ...font(isFrames ? (tookIt ? 800 : 400) : period.played ? 600 : 400, 15),
+                    ...font(isFrames ? (tookIt ? 800 : 400) : period.played ? 600 : 400, 18),
                     color: !period.played ? TEXT.dim
                       : isFrames ? (tookIt ? ACCENT.live : TEXT.dim)
                         : game.quarter === i + 1 && live ? TEXT.strong : TEXT.secondary,
@@ -178,7 +178,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           {columns && (
             <div style={QUARTERS}>
               {columns.periods.map(period => (
-                <span key={period.label} style={{ ...QUARTER_CELL, ...font(600, 11), color: TEXT.muted }}>
+                <span key={period.label} style={{ ...QUARTER_CELL, ...font(600, 12), color: TEXT.muted }}>
                   {period.label}
                 </span>
               ))}
