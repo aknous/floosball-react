@@ -82,6 +82,7 @@ const FrontPage: React.FC = () => {
    */
   const [newsTick, setNewsTick] = useState(0)
   const [standingsTick, setStandingsTick] = useState(0)
+  const [leadersTick, setLeadersTick] = useState(0)
   useEffect(() => {
     const type = (wsEvent as any)?.type
     // The feed is cumulative and published as things happen, so it refetches on anything
@@ -92,6 +93,13 @@ const FrontPage: React.FC = () => {
       setNewsTick(n => n + 1)
     }
     if (type === 'standings_update' || type === 'game_end') setStandingsTick(n => n + 1)
+    // ⚠️ Top Players used to fetch once on mount and never again. Season totals only move
+    // when a game finishes, which made it look right — until a season rolled over or the
+    // sim restarted fresh, at which point the board kept showing the PREVIOUS season's
+    // numbers over a league that had played nothing.
+    if (type === 'game_end' || type === 'week_start' || type === 'season_start') {
+      setLeadersTick(n => n + 1)
+    }
   }, [wsEvent])
 
   useEffect(() => {
@@ -138,7 +146,7 @@ const FrontPage: React.FC = () => {
       setLeaders(rows)
     })
     return () => { cancelled = true }
-  }, [])
+  }, [leadersTick])
 
   useEffect(() => {
     let cancelled = false

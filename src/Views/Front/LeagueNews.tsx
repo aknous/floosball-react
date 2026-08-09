@@ -41,6 +41,7 @@ const CATEGORY_COLOR: Record<string, string> = {
   injury: ACCENT.negative,
   eliminated: TEXT.muted,
   cores: ACCENT.cards,
+  schedule: ACCENT.info,
 }
 
 /** Shorter display names where the raw category reads awkwardly in a 104px column. */
@@ -49,6 +50,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   big_game: 'BIG GAME',
   rules: 'RULE CHANGE',
   criticality: 'INSTABILITY',
+  schedule: 'SCHEDULE',
 }
 
 const colorFor = (item: NewsItem) => CATEGORY_COLOR[item.rawCategory] || TEXT.muted
