@@ -1111,21 +1111,37 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 {play.reaction.text}
               </p>
             )}
-            {/* Same rule as the cutaways: on the route a player's reaction is a
-                voice, and the voices live in the Bleachers. */}
-            {!asPage && play.personalityEvent && (() => {
+            {/* A player's reaction belongs WITH the play he is reacting to — it
+                is about that snap, and in the rail it lost the thing it was
+                about. Sideline cutaways are the opposite: they fire between
+                plays and belong in the Bleachers. */}
+            {play.personalityEvent && (() => {
               const accent = personalityAccent(play.personalityEvent.personality)
               return (
-                <div style={{ margin: '4px 0 0' }}>
+                // A quote mark rather than a coloured left rail. The rail was the
+                // same device the big-play highlight used, so a reaction and a
+                // 60-yard run were flagged identically; a quote says "someone
+                // said this" on its own and the personality colour rides it.
+                <div style={{
+                  margin: '5px 0 0',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '7px',
+                  padding: '6px 9px',
+                  // Tinted block, no rail: the background is what sets a quote
+                  // apart from the play above it, and the personality colour
+                  // still rides it without borrowing the highlight's device.
+                  background: `${accent}1a`,
+                }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill={accent}
+                       style={{ flexShrink: 0, marginTop: '2px', opacity: 0.85 }}>
+                    <path d="M9.5 5C6.5 6.6 4.8 9.3 4.8 12.6V19h6.4v-6.4H8.1c0-2 .7-3.6 2.4-4.7L9.5 5Zm9 0c-3 1.6-4.7 4.3-4.7 7.6V19h6.4v-6.4h-3.1c0-2 .7-3.6 2.4-4.7L18.5 5Z" />
+                  </svg>
                   <p style={{
                     fontSize: '13px',
                     color: '#e2e8f0',
                     fontStyle: 'italic',
                     margin: 0,
-                    backgroundColor: `${accent}10`,
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    borderLeft: `2px solid ${accent}`,
                   }}>
                     {play.personalityEvent.text}
                   </p>

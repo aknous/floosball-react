@@ -6,10 +6,9 @@ import GameFeedComposer from './GameFeedComposer'
 /**
  * The Bleachers rail — the fan conversation, which the modal had nowhere to put.
  *
- * Three kinds of voice share one row shell: fans, players reacting to a play they
- * were part of, and sideline cutaways. The first comes from the team feed; the
- * other two used to render INLINE IN THE PLAY LIST and move here, so the
- * play-by-play column is only the game and this column is only the talk.
+ * Two kinds of voice share one row shell: fans, and sideline cutaways. A player
+ * REACTING to a play stays inline with that play — moved here it became a quote
+ * with no snap attached.
  *
  * Accent is the personality tier (`personalityAccent`): a Stoic line reads as
  * background flavour, a Prophet line is meant to stand out.
@@ -29,7 +28,10 @@ export interface RailEntry {
 }
 
 /**
- * Pull the player reactions and sideline cutaways out of the play list.
+ * Pull the SIDELINE CUTAWAYS out of the play list.
+ *
+ * Cutaways fire between plays and are about nothing in particular, so the rail
+ * is where they belong. Player reactions stay inline with their play.
  *
  * Newest first, matching the play list's own order — the plays arrive
  * newest-first and these are read off them without re-sorting.
@@ -52,21 +54,9 @@ export function railEntriesFromPlays(plays: any[] | undefined): RailEntry[] {
       })
       return
     }
-    if (play.personalityEvent) {
-      const event = play.personalityEvent
-      out.push({
-        key: `reaction-${i}`,
-        kind: 'player',
-        text: event.text,
-        personality: event.personality,
-        speaker: event.playerName || event.name || 'Player',
-        teamId: play.teamId ?? null,
-        teamAbbr: play.offensiveTeam ?? null,
-        // The quote is how a right-column entry stays legible about a
-        // left-column play without making the reader hunt for it.
-        playQuote: play.playDescription || play.description || null,
-      })
-    }
+    // ⚠️ Player reactions are NOT collected here. They render inline with the
+    // play they are about — pulled into the rail they became a quote with no
+    // snap attached, which is the opposite of what makes them worth reading.
   })
   return out
 }

@@ -157,9 +157,12 @@ const GameBoardPage: React.FC = () => {
           variant="board"
         />
 
-        <span style={{ flex: 1 }} />
+        {/* The rules sit in the header row (owner), not as a slab above the cards.
+            What these games are played under is a property of the board, so it
+            belongs with the board's own title and controls. */}
+        <ActiveRulesStrip inline />
 
-        <span style={{ ...font(700, 10, 1, '0.12em'), color: TEXT.muted }}>DENSITY</span>
+        <span style={{ ...font(700, 10, 1, '0.12em'), color: TEXT.muted, flexShrink: 0 }}>DENSITY</span>
         <div style={{ display: 'flex', background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
           {(['large', 'small'] as Density[]).map((option, i) => {
             const active = density === option
@@ -185,10 +188,6 @@ const GameBoardPage: React.FC = () => {
         padding: '18px 28px 28px', display: 'flex', flexDirection: 'column', gap: '14px',
         fontFamily: FONT,
       }}>
-        {/* Above the cards, not below: what these games are being played under has to be
-            read before the scores, not after scrolling past sixteen of them. */}
-        <ActiveRulesStrip />
-
         {total === 0 ? (
           <div style={{
             background: BG.card, border: `1px solid ${BORDER.hairline}`,

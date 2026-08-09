@@ -2,7 +2,7 @@ import React from 'react'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
-import { finalLeaders } from './finalLeaders'
+import { finalLeaders, finalTeamStats } from './finalLeaders'
 import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
 import {
@@ -70,6 +70,9 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   const leaders = isFinal
     ? finalLeaders(game.gameStats)
     : []
+
+  // How the two clubs compared, for the row a live game spends on its last play.
+  const teamStats = isFinal ? finalTeamStats(game.gameStats) : []
 
   const accent = pinned ? pinnedAccent : chip ? CHIP_COLOR[chip] : BORDER.hairline
   const possessionTeam = game.homeTeamPoss ? 'home' : game.awayTeamPoss ? 'away' : null
@@ -228,13 +231,46 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
         )}
       </div>
 
-      <div style={{ paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-        <SectionLabel>LAST PLAY</SectionLabel>
-        <ScrollingLine
-          text={lastPlay || (live ? 'Waiting on the snap' : '—')}
-          style={{ ...font(400, 14), color: TEXT.secondary, flex: 1 }}
-        />
-      </div>
+      {/* A final does not need a last play (owner): the last snap of a finished
+          game is a kneel or a punt about as often as it is anything, and this is
+          prime space on the card. It carries how the two clubs compared instead.
+          The winning number in each pair is bolder — that is what makes the row
+          readable at a glance rather than eight digits to subtract. */}
+      {isFinal && teamStats.length > 0 ? (
+        <div style={{
+          paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
+          display: 'flex', alignItems: 'stretch', gap: '18px', minWidth: 0,
+        }}>
+          {teamStats.map(stat => (
+            <div key={stat.label} style={{
+              display: 'flex', flexDirection: 'column', gap: '5px', minWidth: 0, flex: 1,
+            }}>
+              <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.muted, whiteSpace: 'nowrap' }}>
+                {stat.label}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'baseline', gap: '6px', ...TABULAR }}>
+                <span style={{
+                  ...font(stat.betterSide === 'away' ? 800 : 500, 14),
+                  color: stat.betterSide === 'away' ? TEXT.primary : TEXT.muted,
+                }}>{stat.away}</span>
+                <span style={{ ...font(400, 11), color: BORDER.raised }}>/</span>
+                <span style={{
+                  ...font(stat.betterSide === 'home' ? 800 : 500, 14),
+                  color: stat.betterSide === 'home' ? TEXT.primary : TEXT.muted,
+                }}>{stat.home}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+          <SectionLabel>LAST PLAY</SectionLabel>
+          <ScrollingLine
+            text={lastPlay || (live ? 'Waiting on the snap' : '—')}
+            style={{ ...font(400, 14), color: TEXT.secondary, flex: 1 }}
+          />
+        </div>
+      )}
     </div>
   )
 }

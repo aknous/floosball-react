@@ -111,3 +111,103 @@ export function finalLeaders(stats: GameStats | undefined): FinalLeader[] {
 
   return leaders
 }
+
+/** One side's team line, as the websocket feed carries it. */
+interface TeamLine {
+  totalYards?: number
+  turnovers?: number
+  firstDowns?: number
+  thirdDownConv?: number
+  thirdDownAtt?: number
+  sacks?: number
+}
+
+export interface FinalStat {
+  label: string
+  away: string
+  home: string
+  /** Which side reads better. Null when it is a wash, or when better is meaningless. */
+  betterSide: 'away' | 'home' | null
+}
+
+/**
+ * How the two clubs actually compared, for a game that is over.
+ *
+ * A finished game does not need a LAST PLAY row — the last play of a final is a
+ * kneel or a punt roughly as often as it is anything worth reading, and the row
+ * is prime space on the card. This is what goes there instead.
+ *
+ * ⚠️ TURNOVERS on a side's own line are what that side FORCED, not what it gave
+ * away, so the giveaway column has to be read off the OPPOSITE line. Printing
+ * them straight would credit the wrong club every time.
+ */
+export function finalTeamStats(gameStats: GameStats | undefined): FinalStat[] {
+  const away = (gameStats as any)?.away?.team as TeamLine | undefined
+  const home = (gameStats as any)?.home?.team as TeamLine | undefined
+  if (!away || !home) return []
+
+  const out: FinalStat[] = []
+  const num = (v: number | undefined) => Math.round(Number(v ?? 0))
+
+  const yardsA = num(away.totalYards)
+  const yardsH = num(home.totalYards)
+  if (yardsA || yardsH) {
+    out.push({
+      label: 'YARDS',
+      away: String(yardsA),
+      home: String(yardsH),
+      betterSide: yardsA === yardsH ? null : yardsA > yardsH ? 'away' : 'home',
+    })
+  }
+
+  const fdA = num(away.firstDowns)
+  const fdH = num(home.firstDowns)
+  if (fdA || fdH) {
+    out.push({
+      label: '1ST DOWNS',
+      away: String(fdA),
+      home: String(fdH),
+      betterSide: fdA === fdH ? null : fdA > fdH ? 'away' : 'home',
+    })
+  }
+
+  const pct = (conv?: number, att?: number) =>
+    att && att > 0 ? `${Math.round((conv ?? 0) / att * 100)}%` : null
+  const tdA = pct(away.thirdDownConv, away.thirdDownAtt)
+  const tdH = pct(home.thirdDownConv, home.thirdDownAtt)
+  if (tdA && tdH) {
+    const rawA = (away.thirdDownConv ?? 0) / (away.thirdDownAtt || 1)
+    const rawH = (home.thirdDownConv ?? 0) / (home.thirdDownAtt || 1)
+    out.push({
+      label: '3RD DOWN',
+      away: tdA,
+      home: tdH,
+      betterSide: rawA === rawH ? null : rawA > rawH ? 'away' : 'home',
+    })
+  }
+
+  // Giveaways: read off the opponent's forced-turnover count. Fewer is better.
+  const giveA = num(home.turnovers)
+  const giveH = num(away.turnovers)
+  if (giveA || giveH) {
+    out.push({
+      label: 'TURNOVERS',
+      away: String(giveA),
+      home: String(giveH),
+      betterSide: giveA === giveH ? null : giveA < giveH ? 'away' : 'home',
+    })
+  }
+
+  const sackA = num(away.sacks)
+  const sackH = num(home.sacks)
+  if (sackA || sackH) {
+    out.push({
+      label: 'SACKS',
+      away: String(sackA),
+      home: String(sackH),
+      betterSide: sackA === sackH ? null : sackA > sackH ? 'away' : 'home',
+    })
+  }
+
+  return out
+}

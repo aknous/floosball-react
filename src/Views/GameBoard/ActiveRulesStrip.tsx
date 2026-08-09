@@ -61,7 +61,7 @@ interface RulesPayload {
   changeCount: number
 }
 
-const ActiveRulesStrip: React.FC = () => {
+const ActiveRulesStrip: React.FC<{ inline?: boolean }> = ({ inline = false }) => {
   const [data, setData] = useState<RulesPayload | null>(null)
   const ruleVote = useRuleVote()
 
@@ -83,11 +83,15 @@ const ActiveRulesStrip: React.FC = () => {
   // "INNINGS FORMAT" label beside it just said the same thing twice.
   const changed = (data.changed || []).filter(key => data.rules?.[key] !== undefined)
 
+  // `inline` drops the panel chrome so the rules can sit in the board's own
+  // header row next to the title, rather than as a slab above the cards.
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: '12px',
-      padding: '11px 16px', background: BG.panel, border: `1px solid ${BORDER.hairline}`,
-      fontFamily: FONT, flexWrap: 'wrap',
+      display: 'flex', alignItems: 'center', gap: inline ? '9px' : '12px',
+      fontFamily: FONT, flexWrap: 'wrap', minWidth: 0,
+      ...(inline
+        ? { flex: 1 }
+        : { padding: '11px 16px', background: BG.panel, border: `1px solid ${BORDER.hairline}` }),
     }}>
       <span style={{ ...font(600, 11, 1, '0.12em'), color: TEXT.muted, flexShrink: 0 }}>RULES</span>
 
@@ -116,7 +120,7 @@ const ActiveRulesStrip: React.FC = () => {
         </span>
       )}
 
-      <span style={{ flex: 1 }} />
+      {!inline && <span style={{ flex: 1 }} />}
 
       {ruleVote.open ? (
         <span style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>

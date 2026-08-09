@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
-import { useFloosball } from '@/contexts/FloosballContext'
 import { useGames } from '@/contexts/GamesContext'
 import { SiDiscord } from 'react-icons/si'
 import { VersionPill } from '@/Components/Footer'
@@ -90,7 +89,6 @@ const AppNav: React.FC = () => {
   const location = useLocation()
   const { user } = useAuth()
   const { unclaimedCount } = useAchievements()
-  const { seasonState } = useFloosball()
   const { games } = useGames()
 
   const [awardsOpen, setAwardsOpen] = useState(false)
@@ -273,18 +271,13 @@ const AppNav: React.FC = () => {
 
       </div>
 
-      <div style={{
-        ...font(400, 10, 1.5, '0.12em'),
-        color: TEXT.ghost,
-        padding: '18px 18px 0',
-      }}>
-        INSTANCE 498b<br />
-        {seasonState.seasonNumber > 0 ? `SEASON ${seasonState.seasonNumber}` : 'STANDING BY'}
-      </div>
       {/* The version badge and its changelog, moved off the fixed footer bar —
           the rail already had a bottom edge doing nothing, and the footer was a
-          strip across every page carrying almost nothing else. */}
-      <div style={{ padding: '14px 18px 4px' }}>
+          strip across every page carrying almost nothing else. The instance
+          label and season number sat here too and came out (owner): the header
+          already carries the season, and 498b is Cores-side lore rather than
+          something the rail needs to state on every page. */}
+      <div style={{ padding: '18px 18px 4px' }}>
         <VersionPill align="left" />
       </div>
     </nav>
