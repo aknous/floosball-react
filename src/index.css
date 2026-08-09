@@ -1051,3 +1051,12 @@
 @media (prefers-reduced-motion: reduce) {
   .board-marquee { animation: none; }
 }
+
+/* The welcome hero sits the activity tiles BESIDE the headline block, so the rule
+   between them is vertical. Once the two stop fitting side by side and the tiles wrap
+   underneath, that rule has to become horizontal or it reads as a stray line down the
+   left edge. Inline styles cannot express that, so it lives here. */
+.heroTiles { border-left: 1px solid #1e293b; }
+@media (max-width: 1120px) {
+  .heroTiles { border-left: none; border-top: 1px solid #1e293b; }
+}
