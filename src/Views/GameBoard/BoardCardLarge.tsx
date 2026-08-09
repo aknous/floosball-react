@@ -146,31 +146,33 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minHeight: '46px' }}>
         <Crest teamId={team?.id} size={36} possession={live && possessionTeam === side} />
-        {/* ⚠️ Shrink-to-fit, NOT flex: 1. Growing this block pushed the record all
-            the way across to the scoreboard, which put a club's name and its record
-            at opposite ends of the row with nothing in between. It sizes to the name
-            now and the record follows immediately; the spacer below takes the slack. */}
+        {/* ⚠️ Shrink-to-fit, NOT flex: 1. Growing this block pushed everything after
+            it across to the scoreboard; the spacer below takes the slack instead. */}
         <div style={{ flexShrink: 1, minWidth: 0 }}>
           <div style={{ ...font(500, 13), color: TEXT.muted, whiteSpace: 'nowrap' }}>{team?.city}</div>
+          {/* The record rides the NAME line (owner). On the city line it read as
+              part of the city — "Anaheim 5-0" as one phrase — and centred beside
+              the whole block it floated with nothing to attach to. Against the
+              name it reads as that club's season, which is what it is.
+              BASELINE, not centre: 13px next to 21px centred sits visibly high. */}
           <div style={{
-            ...font(ahead ? 800 : 600, 21, 1, '-0.02em'),
-            color: ahead ? TEXT.primary : TEXT.muted,
-            marginTop: '3px',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{team?.name}</div>
-        </div>
-
-        {/* The record sits beside the WHOLE identity block (owner), not tucked
-            against the city. It describes the club, not the city line, and on the
-            top line it read as part of the city — "Anaheim 5-0" as one phrase.
-            Centred across both lines it reads as what it is: a season to date.
-            The momentum flame travels with it — both describe the club's state
-            right now rather than its name. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
-          <span style={{ ...font(600, 13, 1), color: TEXT.muted, ...TABULAR, whiteSpace: 'nowrap' }}>
-            {team?.record}
-          </span>
-          {hasMomentum && <MomentumFlame magnitude={momentumMagnitude} size={14} />}
+            display: 'flex', alignItems: 'baseline', gap: '9px',
+            marginTop: '3px', minWidth: 0,
+          }}>
+            <span style={{
+              ...font(ahead ? 800 : 600, 21, 1, '-0.02em'),
+              color: ahead ? TEXT.primary : TEXT.muted,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              minWidth: 0,
+            }}>{team?.name}</span>
+            {/* flexShrink 0 so a long club name truncates and the record survives —
+                the name is still recognisable clipped, a record is not. */}
+            <span style={{
+              ...font(600, 13, 1), color: TEXT.muted, ...TABULAR,
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}>{team?.record}</span>
+            {hasMomentum && <MomentumFlame magnitude={momentumMagnitude} size={14} />}
+          </div>
         </div>
 
         <span style={{ flex: 1, minWidth: 0 }} />
