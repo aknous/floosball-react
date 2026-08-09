@@ -77,15 +77,21 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   const teamStats = isFinal ? finalTeamStats(game.gameStats) : []
 
   /**
-   * ⚠️ Was this game's DETAIL ever loaded?
+   * ⚠️ TEAM stats and PLAYER stats arrive separately, and a card must not assume
+   * one from the other.
    *
-   * A past week comes from `/weekGames`, which is a summary — score, quarter
-   * lines, status, nothing else. Absent detail is not the same as a quiet game:
-   * without this the leaders row claims "No standout performances" about a game
-   * whose stats were simply never fetched, which is a statement, and a false one.
-   * The rows that need detail are hidden instead.
+   * A live game has both. A past week from `/weekGames` now carries the TEAM
+   * block — persisted to `games.team_stats` at completion — but no per-player
+   * lines, since those live in `game_player_stats` under a different shape and
+   * are not rebuilt for a whole-week request.
+   *
+   * Absent is not the same as quiet. Treating them as one flag makes the leaders
+   * row claim "No standout performances" about a game whose player lines were
+   * simply never fetched, which is a statement, and a false one. Each row is
+   * gated on the data it actually needs.
    */
-  const hasDetail = !!game.gameStats
+  const hasTeamStats = teamStats.length > 0
+  const hasPlayerStats = !!(game.gameStats as any)?.home?.players
 
   const accent = pinned ? pinnedAccent : chip ? CHIP_COLOR[chip] : BORDER.hairline
   const possessionTeam = game.homeTeamPoss ? 'home' : game.awayTeamPoss ? 'away' : null
@@ -218,7 +224,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       {/* ⚠️ The whole block goes, not just its contents. This wrapper owns the
           divider and the top padding, so returning null from the rows inside it
           left a ruled empty band on every past-week card. */}
-      {!(isFinal && !hasDetail) && (
+      {!(isFinal && !hasPlayerStats) && (
       <div style={{ paddingTop: '14px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', flexDirection: 'column', gap: '11px' }}>
         {/* ⚠️ A FINAL game gets neither the gauge nor the swing. Its win probability has
             resolved to 100% / 0%, and the margin is already legible from the two scores
@@ -259,7 +265,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           prime space on the card. It carries how the two clubs compared instead.
           The winning number in each pair is bolder — that is what makes the row
           readable at a glance rather than eight digits to subtract. */}
-      {isFinal && !hasDetail ? null : isFinal && teamStats.length > 0 ? (
+      {isFinal && !hasTeamStats ? null : isFinal ? (
         <div style={{
           paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
           display: 'flex', alignItems: 'stretch', gap: '18px', minWidth: 0,
