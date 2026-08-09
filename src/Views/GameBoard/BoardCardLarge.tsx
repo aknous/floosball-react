@@ -43,6 +43,25 @@ const RULE: React.CSSProperties = {
  */
 
 const CLUSTER = { display: 'flex', alignItems: 'center', gap: '14px' } as const
+
+/**
+ * The score column's panel, applied to the header cluster and BOTH team clusters.
+ *
+ * ⚠️ `alignSelf: stretch` is what makes this work. The three clusters are separate
+ * rows, so their backgrounds only join into one continuous panel if each fills its
+ * row's full height — a cluster sized to its own content leaves a gap wherever the
+ * team block beside it is taller, and the panel comes apart into three boxes.
+ *
+ * For the same reason the rows sit at gap 0 and the breathing room lives INSIDE
+ * this padding: a gap between the rows is a gap through the middle of the panel.
+ */
+const SCORE_PANEL = {
+  background: BG.panel,
+  borderLeft: `1px solid ${BORDER.hairline}`,
+  borderRight: `1px solid ${BORDER.hairline}`,
+  padding: '0 13px',
+  alignSelf: 'stretch',
+} as const
 const QUARTERS = { display: 'flex', gap: '10px' } as const
 const QUARTER_CELL = { width: '26px', textAlign: 'center' as const, ...TABULAR }
 const TOTAL_CELL = { width: '48px', textAlign: 'right' as const, ...TABULAR }
@@ -106,7 +125,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   ) => {
     const hasMomentum = live && momentumMagnitude > 0 && game.momentumTeam === team?.abbr
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minHeight: '54px' }}>
         <Crest teamId={team?.id} size={36} possession={live && possessionTeam === side} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -121,7 +140,10 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{team?.name}</div>
         </div>
-        <div style={CLUSTER}>
+        <div style={{
+          ...CLUSTER, ...SCORE_PANEL,
+          ...(side === 'home' ? { borderBottom: `1px solid ${BORDER.hairline}` } : {}),
+        }}>
           {columns && (
             <div style={QUARTERS}>
               {columns.periods.map((period, i) => {
@@ -177,6 +199,10 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
         fontFamily: FONT,
       }}
     >
+      {/* The scoreboard block: status, then the two clubs. Held at gap 0 so the
+          score panel behind the numbers stays continuous — see SCORE_PANEL. The
+          root's own 16px gap still separates this block from the footer. */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minHeight: '20px' }}>
         {/* ⚠️ The running clock is NOT here — it moved down to the situation row
             (owner), where the quarter, the down, the spot and the red zone read
@@ -198,7 +224,11 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             format once, at the top — repeating it on all sixteen cards is noise, and the
             column headers below already show what changed. */}
         <span style={{ flex: 1 }} />
-        <div style={CLUSTER}>
+        <div style={{
+          ...CLUSTER, ...SCORE_PANEL,
+          borderTop: `1px solid ${BORDER.hairline}`,
+          paddingTop: '7px', paddingBottom: '5px',
+        }}>
           {columns && (
             <div style={QUARTERS}>
               {columns.periods.map(period => (
@@ -217,6 +247,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
 
       {teamRow('away', away, awayScore, awayAhead)}
       {teamRow('home', home, homeScore, homeAhead)}
+      </div>
 
       {/* ⚠️ A FINAL card stops at the score (owner). Everything below the team
           rows is a LIVE readout — the win-probability gauge resolves to 100/0
