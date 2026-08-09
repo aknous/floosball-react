@@ -126,8 +126,14 @@ const GameFeedComposer: React.FC<{
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      {/* The composer is pinned; everything said scrolls under it. */}
-      <div style={{ padding: '13px 14px', borderBottom: `1px solid ${BORDER.hairline}`, flexShrink: 0 }}>
+      {/* The composer is pinned; everything said scrolls under it.
+          `relative` so the option list can be lifted OUT of the flow — in it,
+          opening the list shoved the whole feed down the page instead of
+          covering it. */}
+      <div style={{
+        padding: '13px 14px', borderBottom: `1px solid ${BORDER.hairline}`,
+        flexShrink: 0, position: 'relative', zIndex: 5,
+      }}>
         <button
           onClick={() => (canPost ? setOpen(o => !o) : undefined)}
           style={{
@@ -145,7 +151,20 @@ const GameFeedComposer: React.FC<{
         </button>
 
         {open && (
-          <div style={{ marginTop: '6px', border: `1px solid ${BORDER.raised}`, background: BG.panel }}>
+          <div style={{
+            // Over the feed, not above it. Anchored to the trigger's box and
+            // inset to match its padding, so it lines up with the button.
+            position: 'absolute',
+            top: 'calc(100% - 8px)',
+            left: '14px',
+            right: '14px',
+            zIndex: 30,
+            maxHeight: '340px',
+            overflowY: 'auto',
+            border: `1px solid ${BORDER.raised}`,
+            background: BG.panel,
+            boxShadow: '0 10px 28px rgba(0,0,0,0.55)',
+          }}>
             {groups.map(group => (
               <div key={group.label}>
                 <div style={{ ...font(700, 11, 1, '0.04em'), color: TEXT.muted, padding: '8px 12px 5px' }}>
