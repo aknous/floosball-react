@@ -2,13 +2,12 @@ import React from 'react'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
-import { finalLeaders, finalTeamStats } from './finalLeaders'
 import { lastPlaySummary, downAndDistance } from './lastPlaySummary'
 import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
 import {
   Crest, MomentumFlame, InterestChip, SectionLabel, SplitBar,
-  ScrollingLine, CHIP_COLOR, RedZoneChip, inRedZone, RED_ZONE, type ChipKind,
+  CHIP_COLOR, RedZoneChip, inRedZone, RED_ZONE, type ChipKind,
 } from './boardPieces'
 
 /**
@@ -67,31 +66,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   // next drive starts, so the row shows only the clock through that gap.
   const situationLive = !lastPlay?.afterScore
 
-  // Who turned up, for a game that is over. Empty while a game is live or if nobody
-  // cleared the minimums, in which case the row says so rather than printing filler.
-  const leaders = isFinal
-    ? finalLeaders(game.gameStats)
-    : []
 
-  // How the two clubs compared, for the row a live game spends on its last play.
-  const teamStats = isFinal ? finalTeamStats(game.gameStats) : []
-
-  /**
-   * ⚠️ TEAM stats and PLAYER stats arrive separately, and a card must not assume
-   * one from the other.
-   *
-   * A live game has both. A past week from `/weekGames` now carries the TEAM
-   * block — persisted to `games.team_stats` at completion — but no per-player
-   * lines, since those live in `game_player_stats` under a different shape and
-   * are not rebuilt for a whole-week request.
-   *
-   * Absent is not the same as quiet. Treating them as one flag makes the leaders
-   * row claim "No standout performances" about a game whose player lines were
-   * simply never fetched, which is a statement, and a false one. Each row is
-   * gated on the data it actually needs.
-   */
-  const hasTeamStats = teamStats.length > 0
-  const hasPlayerStats = !!(game.gameStats as any)?.home?.players
 
   const accent = pinned ? pinnedAccent : chip ? CHIP_COLOR[chip] : BORDER.hairline
   const possessionTeam = game.homeTeamPoss ? 'home' : game.awayTeamPoss ? 'away' : null
@@ -221,32 +196,17 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       {teamRow('away', away, awayScore, awayAhead)}
       {teamRow('home', home, homeScore, homeAhead)}
 
-      {/* ⚠️ The whole block goes, not just its contents. This wrapper owns the
-          divider and the top padding, so returning null from the rows inside it
-          left a ruled empty band on every past-week card. */}
-      {!(isFinal && !hasPlayerStats) && (
-      <div style={{ paddingTop: '14px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', flexDirection: 'column', gap: '11px' }}>
-        {/* ⚠️ A FINAL game gets neither the gauge nor the swing. Its win probability has
-            resolved to 100% / 0%, and the margin is already legible from the two scores
-            sitting directly above — so both rows spend space restating what the card has
-            said. What a reader wants off a final is who turned up, so it becomes a leader
-            line instead. */}
-        {isFinal ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-            <SectionLabel>LEADERS</SectionLabel>
-            {leaders.length === 0 ? (
-              <span style={{ ...font(400, 13), color: TEXT.muted }}>No standout performances</span>
-            ) : (
-              <ScrollingLine
-                text={leaders.map(l => `${l.name} ${l.line}`).join('   ·   ')}
-                style={{ ...font(400, 13), color: TEXT.secondary, flex: 1 }}
-              />
-            )}
-          </div>
-        ) : (
-          // Just the gauge (owner): the swing trend line came out. Both sides carry their
-          // own percentage, so the bar is read against two labelled numbers rather than
-          // one favoured side and a sparkline.
+      {/* ⚠️ A FINAL card stops at the score (owner). Everything below the team
+          rows is a LIVE readout — the win-probability gauge resolves to 100/0
+          the moment a game ends, and the leader line and team-stat table that
+          replaced it were reinstating a footer the reader did not ask for.
+          Finals live in their own section now, so they are uniformly compact
+          and read as a results list rather than sixteen half-empty cards. */}
+      {!isFinal && (
+        <div style={{ paddingTop: '14px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', flexDirection: 'column', gap: '11px' }}>
+          {/* Just the gauge (owner): the swing trend line came out. Both sides carry
+              their own percentage, so the bar is read against two labelled numbers
+              rather than one favoured side and a sparkline. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ ...font(awayWp > homeWp ? 800 : 600, 14), color: awayText, ...TABULAR, whiteSpace: 'nowrap' }}>
               {away?.abbr} {awayWp}%
@@ -256,53 +216,10 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               {homeWp}% {home?.abbr}
             </span>
           </div>
-        )}
-      </div>
+        </div>
       )}
 
-      {/* A final does not need a last play (owner): the last snap of a finished
-          game is a kneel or a punt about as often as it is anything, and this is
-          prime space on the card. It carries how the two clubs compared instead.
-          The winning number in each pair is bolder — that is what makes the row
-          readable at a glance rather than eight digits to subtract. */}
-      {isFinal && !hasTeamStats ? null : isFinal ? (
-        /* ⚠️ A TABLE, not a row of `412 / 388` pairs. Paired like that there is
-           nothing saying which number belongs to which club — the reader has to
-           infer it from the away-above-home order of the rows further up, which
-           is exactly the inference a scoreboard should never ask for. This is
-           the same shape as the quarter cluster at the top of the card: labels
-           across, then the away row, then the home row, each named. */
-        <div style={{
-          paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
-          display: 'grid',
-          gridTemplateColumns: `40px repeat(${teamStats.length}, minmax(0, 1fr))`,
-          rowGap: '7px', columnGap: '10px', alignItems: 'baseline', minWidth: 0,
-        }}>
-          <span />
-          {teamStats.map(stat => (
-            <span key={stat.label} style={{
-              ...font(600, 10, 1, '0.08em'), color: TEXT.muted,
-              whiteSpace: 'nowrap', textAlign: 'right',
-            }}>{stat.label}</span>
-          ))}
-
-          {(['away', 'home'] as const).map(side => (
-            <React.Fragment key={side}>
-              <span style={{
-                ...font(700, 11, 1, '0.04em'), ...TABULAR,
-                color: side === 'away' ? awayText : homeText,
-              }}>{(side === 'away' ? away : home)?.abbr}</span>
-              {teamStats.map(stat => (
-                <span key={stat.label} style={{
-                  ...font(stat.betterSide === side ? 800 : 500, 15), ...TABULAR,
-                  color: stat.betterSide === side ? TEXT.primary : TEXT.muted,
-                  textAlign: 'right',
-                }}>{side === 'away' ? stat.away : stat.home}</span>
-              ))}
-            </React.Fragment>
-          ))}
-        </div>
-      ) : (
+      {!isFinal && (
         <div style={{ paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
           <SectionLabel>LAST PLAY</SectionLabel>
           {lastPlay ? (
