@@ -3,7 +3,7 @@ import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
 import {
-  Crest, MomentumFlame, InterestChip, PulsingDot, SplitBar, CHIP_COLOR,
+  Crest, MomentumFlame, InterestChip, SplitBar, CHIP_COLOR,
   RedZoneChip, inRedZone, type ChipKind,
 } from './boardPieces'
 import { FormatClock, FormatScore, leadingSide } from './gameFormat'
@@ -121,7 +121,6 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '18px' }}>
-        {live && <PulsingDot size={5} />}
         {isFinal ? (
           <span style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>FINAL</span>
         ) : live ? (

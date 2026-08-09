@@ -68,7 +68,39 @@ const GameBoardPage: React.FC = () => {
   const favouriteTeamId = user?.favoriteTeamId ?? null
   const favouriteLeague = favouriteTeamId != null ? leagueByTeam[String(favouriteTeamId)] ?? null : null
 
-  const gameList = useMemo(() => Array.from(games.values()), [games])
+  /**
+   * A PAST week, fetched on demand.
+   *
+   * ⚠️ The week selector used to be decorative here: `viewWeek` was stored and
+   * never read, so clicking back a week moved the label and left the current
+   * slate on screen. `GamesContext` only ever holds the round in progress, so a
+   * past week has to come from `/weekGames` the way `GameGridNew` already does.
+   *
+   * That payload is a SUMMARY — teams, score, quarter lines, status. It carries
+   * no `gameStats` and no `plays`, because per-game TEAM stats are not persisted
+   * at all (only the player rows are). So a past-week card knows the result and
+   * nothing about how it was reached, and the rows that would need that data are
+   * hidden rather than filled with dashes.
+   */
+  const [pastGames, setPastGames] = useState<any[]>([])
+  const [pastLoading, setPastLoading] = useState(false)
+  useEffect(() => {
+    if (viewWeek === null) { setPastGames([]); return }
+    let cancelled = false
+    setPastLoading(true)
+    fetch(`${API_BASE}/weekGames?week=${viewWeek}`)
+      .then(r => r.json())
+      .then(data => { if (!cancelled) setPastGames(Array.isArray(data) ? data : []) })
+      .catch(() => { if (!cancelled) setPastGames([]) })
+      .finally(() => { if (!cancelled) setPastLoading(false) })
+    return () => { cancelled = true }
+  }, [viewWeek])
+
+  const isPast = viewWeek !== null
+  const gameList = useMemo(
+    () => (isPast ? pastGames : Array.from(games.values())),
+    [isPast, pastGames, games],
+  )
 
   /**
    * ⚠️ The ORDER is computed once and frozen; the game data inside it stays live.
@@ -80,7 +112,7 @@ const GameBoardPage: React.FC = () => {
    */
   const orderRef = useRef<number[]>([])
   const orderKeyRef = useRef<string>('')
-  const slateKey = gameList.map(g => g.id).sort((a, b) => a - b).join(',')
+  const slateKey = gameList.map(g => Number(g.id)).sort((a, b) => a - b).join(',')
   if (slateKey && slateKey !== orderKeyRef.current && Object.keys(leagueByTeam).length > 0) {
     orderKeyRef.current = slateKey
     orderRef.current = rankGames(
@@ -95,8 +127,17 @@ const GameBoardPage: React.FC = () => {
     orderRef.current = rankGames(gameList, favouriteTeamId, null, () => null).map(r => r.game.id)
   }
 
+  // A past week resolves against its own fetched list — `games` holds only the
+  // round in progress, so looking these ids up there returns nothing.
+  const byId = useMemo(() => {
+    if (!isPast) return games
+    const map = new Map<number, any>()
+    pastGames.forEach(g => map.set(Number(g.id), g))
+    return map
+  }, [isPast, pastGames, games])
+
   const ordered: Ranked[] = orderRef.current
-    .map(id => games.get(id))
+    .map(id => byId.get(Number(id)))
     .filter((g): g is NonNullable<typeof g> => !!g)
     .map(game => ({
       game,
@@ -157,7 +198,7 @@ const GameBoardPage: React.FC = () => {
         {/* Next kickoff. Sits with the status pill because it answers the same
             question — what is happening on this board right now — and it is the
             only thing worth reading when nothing is live. */}
-        {countdown && (
+        {!isPast && countdown && (
           <span style={{
             display: 'flex', alignItems: 'center', gap: '7px',
             ...font(700, 10, 1, '0.1em'), color: ACCENT.info,
@@ -213,12 +254,19 @@ const GameBoardPage: React.FC = () => {
         padding: '18px 28px 28px', display: 'flex', flexDirection: 'column', gap: '14px',
         fontFamily: FONT,
       }}>
-        {total === 0 ? (
+        {pastLoading ? (
           <div style={{
             background: BG.card, border: `1px solid ${BORDER.hairline}`,
             padding: '40px', textAlign: 'center', ...font(400, 13), color: TEXT.muted,
           }}>
-            No games running. The next slate will appear here.
+            Loading week {viewWeek}.
+          </div>
+        ) : total === 0 ? (
+          <div style={{
+            background: BG.card, border: `1px solid ${BORDER.hairline}`,
+            padding: '40px', textAlign: 'center', ...font(400, 13), color: TEXT.muted,
+          }}>
+            {isPast ? `Nothing was played in week ${viewWeek}.` : 'No games running. The next slate will appear here.'}
           </div>
         ) : (
           <div style={{

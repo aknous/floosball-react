@@ -3,11 +3,11 @@ import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
 import { finalLeaders, finalTeamStats } from './finalLeaders'
-import { lastPlaySummary } from './lastPlaySummary'
+import { lastPlaySummary, downAndDistance } from './lastPlaySummary'
 import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
 import {
-  Crest, MomentumFlame, InterestChip, PulsingDot, SectionLabel, SplitBar,
+  Crest, MomentumFlame, InterestChip, SectionLabel, SplitBar,
   ScrollingLine, CHIP_COLOR, RedZoneChip, inRedZone, RED_ZONE, type ChipKind,
 } from './boardPieces'
 
@@ -61,6 +61,8 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   const lastPlay = lastPlaySummary(game)
 
   const redZone = inRedZone(game)
+  // Derived, NOT game.downText — that field is REST-only and freezes.
+  const downText = downAndDistance(game)
   // A score leaves the down and the spot holding pre-score values until the
   // next drive starts, so the row shows only the clock through that gap.
   const situationLive = !lastPlay?.afterScore
@@ -73,6 +75,17 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
 
   // How the two clubs compared, for the row a live game spends on its last play.
   const teamStats = isFinal ? finalTeamStats(game.gameStats) : []
+
+  /**
+   * ⚠️ Was this game's DETAIL ever loaded?
+   *
+   * A past week comes from `/weekGames`, which is a summary — score, quarter
+   * lines, status, nothing else. Absent detail is not the same as a quiet game:
+   * without this the leaders row claims "No standout performances" about a game
+   * whose stats were simply never fetched, which is a statement, and a false one.
+   * The rows that need detail are hidden instead.
+   */
+  const hasDetail = !!game.gameStats
 
   const accent = pinned ? pinnedAccent : chip ? CHIP_COLOR[chip] : BORDER.hairline
   const possessionTeam = game.homeTeamPoss ? 'home' : game.awayTeamPoss ? 'away' : null
@@ -162,7 +175,6 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minHeight: '20px' }}>
-        {live && <PulsingDot size={6} />}
         {/* ⚠️ The running clock is NOT here — it moved down to the situation row
             (owner), where the quarter, the down, the spot and the red zone read
             as one line. Duplicating it in both places is the same number twice.
@@ -203,6 +215,10 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       {teamRow('away', away, awayScore, awayAhead)}
       {teamRow('home', home, homeScore, homeAhead)}
 
+      {/* ⚠️ The whole block goes, not just its contents. This wrapper owns the
+          divider and the top padding, so returning null from the rows inside it
+          left a ruled empty band on every past-week card. */}
+      {!(isFinal && !hasDetail) && (
       <div style={{ paddingTop: '14px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', flexDirection: 'column', gap: '11px' }}>
         {/* ⚠️ A FINAL game gets neither the gauge nor the swing. Its win probability has
             resolved to 100% / 0%, and the margin is already legible from the two scores
@@ -236,13 +252,14 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           </div>
         )}
       </div>
+      )}
 
       {/* A final does not need a last play (owner): the last snap of a finished
           game is a kneel or a punt about as often as it is anything, and this is
           prime space on the card. It carries how the two clubs compared instead.
           The winning number in each pair is bolder — that is what makes the row
           readable at a glance rather than eight digits to subtract. */}
-      {isFinal && teamStats.length > 0 ? (
+      {isFinal && !hasDetail ? null : isFinal && teamStats.length > 0 ? (
         <div style={{
           paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
           display: 'flex', alignItems: 'stretch', gap: '18px', minWidth: 0,
@@ -320,12 +337,12 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                     or a chess-clock game does not have either. */}
                 <FormatClock game={game} size="large" />
                 {situationLive && <span style={{ ...font(400, 11), color: TEXT.muted }}>·</span>}
-                {situationLive && game.downText && (
+                {situationLive && downText && (
                   <span style={{ ...font(700, 13), color: TEXT.secondary, ...TABULAR, whiteSpace: 'nowrap' }}>
-                    {game.downText}
+                    {downText}
                   </span>
                 )}
-                {situationLive && game.downText && game.yardLine && (
+                {situationLive && downText && game.yardLine && (
                   <span style={{ ...font(400, 11), color: TEXT.muted }}>·</span>
                 )}
                 {situationLive && game.yardLine && (

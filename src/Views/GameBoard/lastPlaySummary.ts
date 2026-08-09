@@ -155,3 +155,39 @@ export function lastPlaySummary(game: CurrentGame): PlaySummary | null {
     unsigned: action === 'PUNT',
   }
 }
+
+/**
+ * Down and distance, DERIVED rather than read off `downText`.
+ *
+ * ⚠️ `game.downText` is REST-only. The websocket `game_state` payload carries
+ * `down`, `distance`, `yardLine` and `yardsToEndzone` but NO `downText`, so the
+ * string set by the initial `/currentGames` fetch is never updated again — it
+ * simply freezes at whatever the situation was when the page loaded while the
+ * yard line beside it keeps moving. Observed on the board as every card reading
+ * "1st & Goal" next to a live midfield spot.
+ *
+ * Goal-to-go is `yardsToEndzone <= distance`: the end zone is nearer than the
+ * line to gain. That needs no rules constant, which matters because
+ * `firstDownDistance` is a MUTABLE rule the Cores can change.
+ *
+ * The ordinal is computed generically — chaos rules allow 5+ downs, and a
+ * hardcoded 1st-4th map renders a 5th down as "1st".
+ */
+export function downAndDistance(game: CurrentGame): string | null {
+  const down = Number(game.down)
+  if (!Number.isFinite(down) || down < 1) return null
+
+  const suffix = down % 100 >= 11 && down % 100 <= 13
+    ? 'th'
+    : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[down % 10] || 'th'
+  const ordinal = `${down}${suffix}`
+
+  const distance = Number((game as any).distance ?? game.yardsToFirstDown)
+  const toEndzone = Number(game.yardsToEndzone)
+
+  if (Number.isFinite(toEndzone) && Number.isFinite(distance) && toEndzone <= distance) {
+    return `${ordinal} & Goal`
+  }
+  if (!Number.isFinite(distance)) return null
+  return `${ordinal} & ${Math.max(0, Math.round(distance))}`
+}
