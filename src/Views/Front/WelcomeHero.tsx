@@ -86,13 +86,23 @@ const WelcomeHero: React.FC<{
     }}>
       <div style={{ display: 'flex', gap: '18px', padding: '22px 24px 20px' }}>
         {/* The league crest, at a size that reads as a mark rather than a favicon. It is
-            the same asset the header wears at 28px; here it anchors the block. */}
+            the same asset the header wears at 28px; here it anchors the block.
+
+            ⚠️ alignSelf and the CSS width/height are both load-bearing. The asset is
+            square (256x256) and the width/height ATTRIBUTES said 56 — but this is a flex
+            child, and a flex container defaults to `align-items: stretch`, which
+            overrode the attribute height and pulled the crest into an oval as tall as the
+            headline block beside it. Attributes do not survive that; CSS sizing plus
+            flex-start does. */}
         <img
           src="/avatars/league_logo.png"
           alt=""
           width={56}
           height={56}
-          style={{ borderRadius: '50%', flexShrink: 0, marginTop: '2px' }}
+          style={{
+            width: '56px', height: '56px',
+            borderRadius: '50%', flexShrink: 0, alignSelf: 'flex-start', marginTop: '2px',
+          }}
         />
         <div style={{ minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px', flexWrap: 'wrap' }}>
