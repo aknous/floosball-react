@@ -6,17 +6,30 @@ import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shel
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 /**
- * What the games on this board are actually being played under.
+ * What the games on this board are actually being played under — a pill in the
+ * header that opens the whole rulebook.
  *
- * The rules are MUTABLE — the Cores can change them — so a board showing sixteen games
- * without saying which ruleset they run on is hiding the most consequential thing about
- * them. The header's Rulebook glyph could only ever be a colour and a dot; here there is
- * room to name the rules that are not at their default value, which is the only part a
- * user needs to hold in their head.
+ * The rules are MUTABLE (the Cores can change them), so a board showing sixteen
+ * games without saying which ruleset they run on is hiding the most consequential
+ * thing about them. But the previous inline strip spent a whole header row on it,
+ * and on a standard rulebook that row said "nothing has changed" — a sentence
+ * about an absence.
  *
- * Shows the CHANGED rules by name. When nothing has been changed it says so in one line
- * rather than listing a dozen defaults nobody is reading.
+ * The pill states the one thing worth knowing at a glance (standard, or how many
+ * rules are off default) and the popover carries EVERY active rule, not just the
+ * changed ones — "see all active rules" is the question a reader actually has,
+ * and a changed-only list cannot answer "so what IS a touchdown worth".
  */
+
+/** Ordered groups. Rules with no group fall into a final catch-all, so a new one
+ *  added server-side still appears rather than silently vanishing from the list. */
+const GROUPS: { title: string; keys: string[] }[] = [
+  { title: 'Game', keys: ['gameFormat', 'scoringModel'] },
+  { title: 'Downs', keys: ['downsPerSeries', 'firstDownDistance'] },
+  { title: 'Scoring', keys: ['touchdownPoints', 'fieldGoalPoints', 'extraPointPoints', 'twoPointConversionPoints', 'safetyPoints'] },
+  { title: 'Clock', keys: ['quarterLengthSeconds', 'overtimeLengthSeconds', 'clockStopsOnDeadBall'] },
+  { title: 'Field', keys: ['kickoffPosition', 'twoPointConversionDistance', 'patSnapDistance'] },
+]
 
 const LABELS: Record<string, string> = {
   gameFormat: 'Format',
@@ -61,8 +74,13 @@ interface RulesPayload {
   changeCount: number
 }
 
-const ActiveRulesStrip: React.FC<{ inline?: boolean }> = ({ inline = false }) => {
+const ActiveRulesStrip: React.FC = () => {
   const [data, setData] = useState<RulesPayload | null>(null)
+  const [open, setOpen] = useState(false)
+  // Hover opens it; a click PINS it so the list can be read without holding the
+  // cursor still, and so it is reachable without a pointer at all.
+  const [pinned, setPinned] = useState(false)
+  const wrapRef = React.useRef<HTMLDivElement>(null)
   const ruleVote = useRuleVote()
 
   useEffect(() => {
@@ -70,76 +88,152 @@ const ActiveRulesStrip: React.FC<{ inline?: boolean }> = ({ inline = false }) =>
     const load = () => fetch(`${API_BASE}/rules`)
       .then(r => r.json())
       .then(j => { if (!cancelled) setData(j?.data ?? null) })
-      .catch(() => { /* strip hides itself */ })
+      .catch(() => { /* the pill hides itself */ })
     load()
     const id = setInterval(load, 60_000)
     return () => { cancelled = true; clearInterval(id) }
   }, [])
 
+  // A pinned popover closes on an outside click or Escape — without this it is a
+  // panel you cannot dismiss, since leaving with the pointer no longer closes it.
+  useEffect(() => {
+    if (!pinned) return
+    const onDown = (e: MouseEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) { setPinned(false); setOpen(false) }
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setPinned(false); setOpen(false) }
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [pinned])
+
   if (!data) return null
 
   // gameFormat and scoringModel are themselves mutable rules, so a non-standard one
-  // already arrives in `changed` and renders as a chip like any other. An extra standalone
-  // "INNINGS FORMAT" label beside it just said the same thing twice.
+  // already arrives in `changed` and renders like any other.
   const changed = (data.changed || []).filter(key => data.rules?.[key] !== undefined)
+  const changedSet = new Set(changed)
+  const rules = data.rules || {}
 
-  // `inline` drops the panel chrome so the rules can sit in the board's own
-  // header row next to the title, rather than as a slab above the cards.
+  // Grouped, with anything the server added but this file does not know about
+  // collected at the end rather than dropped.
+  const grouped = GROUPS
+    .map(g => ({ title: g.title, keys: g.keys.filter(k => rules[k] !== undefined) }))
+    .filter(g => g.keys.length > 0)
+  const known = new Set(GROUPS.flatMap(g => g.keys))
+  const extras = Object.keys(rules).filter(k => !known.has(k))
+  if (extras.length) grouped.push({ title: 'Other', keys: extras })
+
+  const accent = changed.length > 0 ? ACCENT.rules : TEXT.muted
+  const show = open || pinned
+
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: inline ? '9px' : '12px',
-      fontFamily: FONT, flexWrap: 'wrap', minWidth: 0,
-      ...(inline
-        ? { flex: 1 }
-        : { padding: '11px 16px', background: BG.panel, border: `1px solid ${BORDER.hairline}` }),
-    }}>
-      <span style={{ ...font(600, 11, 1, '0.12em'), color: TEXT.muted, flexShrink: 0 }}>RULES</span>
-
-      {changed.length === 0 ? (
-        <span style={{ ...font(400, 12), color: TEXT.muted }}>
-          Standard rulebook. Nothing has been changed this season.
+    <div
+      ref={wrapRef}
+      style={{ position: 'relative', flexShrink: 0, fontFamily: FONT }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => { if (!pinned) setOpen(false) }}
+    >
+      <button
+        onClick={() => { setPinned(v => !v); setOpen(true) }}
+        aria-expanded={show}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '7px',
+          background: show ? BG.panel : 'transparent',
+          border: `1px solid ${show ? BORDER.raised : `${accent}40`}`,
+          padding: '5px 9px', cursor: 'pointer', fontFamily: FONT,
+          ...font(700, 10, 1, '0.1em'), color: accent, whiteSpace: 'nowrap',
+        }}
+      >
+        RULES
+        <span style={{ ...font(700, 10, 1, '0.06em'), color: accent, ...TABULAR }}>
+          {changed.length === 0 ? 'STANDARD' : `${changed.length} CHANGED`}
         </span>
-      ) : (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          {changed.map(key => (
-            <span
-              key={key}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                border: `1px solid ${ACCENT.rules}59`, padding: '4px 7px',
-              }}
-            >
-              <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.muted }}>
-                {LABELS[key] || key}
-              </span>
-              <span style={{ ...font(700, 11), color: ACCENT.rules, ...TABULAR }}>
-                {formatValue(key, data.rules[key])}
-              </span>
-            </span>
-          ))}
-        </span>
-      )}
-
-      {!inline && <span style={{ flex: 1 }} />}
-
-      {ruleVote.open ? (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
+        {/* An open ballot is the one thing urgent enough to show without opening
+            the popover — a rule is about to change under these games. */}
+        {ruleVote.open && (
           <span style={{
             width: '5px', height: '5px', borderRadius: '50%',
-            background: coreColor(ruleVote.core || undefined),
+            background: coreColor(ruleVote.core || undefined), flexShrink: 0,
           }} />
-          <span style={{ ...font(700, 10, 1, '0.08em'), color: coreColor(ruleVote.core || undefined) }}>
-            A BALLOT IS OPEN
-          </span>
-        </span>
-      ) : data.lastChange ? (
-        <span style={{ ...font(400, 11), color: TEXT.muted, flexShrink: 0 }}>
-          Last changed by{' '}
-          <span style={{ color: coreColor(data.lastChange.core), fontWeight: 700 }}>
-            {data.lastChange.core.charAt(0).toUpperCase() + data.lastChange.core.slice(1)}
-          </span>
-        </span>
-      ) : null}
+        )}
+      </button>
+
+      {show && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 60,
+          minWidth: '300px', maxHeight: '420px', overflowY: 'auto',
+          background: BG.panel, border: `1px solid ${BORDER.raised}`,
+          boxShadow: '0 12px 32px rgba(0,0,0,0.55)', padding: '4px 0',
+        }}>
+          {ruleVote.open && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '7px',
+              padding: '9px 14px', borderBottom: `1px solid ${BORDER.hairline}`,
+            }}>
+              <span style={{
+                width: '5px', height: '5px', borderRadius: '50%',
+                background: coreColor(ruleVote.core || undefined),
+              }} />
+              <span style={{ ...font(700, 10, 1, '0.08em'), color: coreColor(ruleVote.core || undefined) }}>
+                A BALLOT IS OPEN
+              </span>
+            </div>
+          )}
+
+          {grouped.map(group => (
+            <div key={group.title}>
+              <div style={{
+                ...font(700, 10, 1, '0.1em'), color: TEXT.muted,
+                padding: '10px 14px 5px',
+              }}>{group.title}</div>
+              {group.keys.map(key => {
+                const isChanged = changedSet.has(key)
+                return (
+                  <div key={key} style={{
+                    display: 'flex', alignItems: 'baseline', gap: '12px',
+                    padding: '5px 14px',
+                    ...(isChanged ? { background: `${ACCENT.rules}12` } : {}),
+                  }}>
+                    <span style={{ ...font(500, 12), color: TEXT.secondary, flex: 1, minWidth: 0 }}>
+                      {LABELS[key] || key}
+                    </span>
+                    {/* What it WAS, for anything off default — a changed rule is
+                        only meaningful against the number it replaced. */}
+                    {isChanged && data.defaults?.[key] !== undefined && (
+                      <span style={{
+                        ...font(400, 11), color: TEXT.muted, ...TABULAR,
+                        textDecoration: 'line-through', whiteSpace: 'nowrap',
+                      }}>{formatValue(key, data.defaults[key])}</span>
+                    )}
+                    <span style={{
+                      ...font(700, 12), ...TABULAR, whiteSpace: 'nowrap',
+                      color: isChanged ? ACCENT.rules : TEXT.primary,
+                    }}>{formatValue(key, rules[key])}</span>
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+
+          {data.lastChange && (
+            <div style={{
+              ...font(400, 11), color: TEXT.muted,
+              padding: '10px 14px', borderTop: `1px solid ${BORDER.hairline}`, marginTop: '4px',
+            }}>
+              Last changed by{' '}
+              <span style={{ color: coreColor(data.lastChange.core), fontWeight: 700 }}>
+                {data.lastChange.core.charAt(0).toUpperCase() + data.lastChange.core.slice(1)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

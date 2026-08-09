@@ -262,7 +262,9 @@ const GameBoardPage: React.FC = () => {
         {/* The rules sit in the header row (owner), not as a slab above the cards.
             What these games are played under is a property of the board, so it
             belongs with the board's own title and controls. */}
-        <ActiveRulesStrip inline />
+        <ActiveRulesStrip />
+
+        <span style={{ flex: 1 }} />
 
         <span style={{ ...font(700, 10, 1, '0.12em'), color: TEXT.muted, flexShrink: 0 }}>DENSITY</span>
         <div style={{ display: 'flex', background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
