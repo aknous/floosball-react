@@ -266,29 +266,40 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           The winning number in each pair is bolder — that is what makes the row
           readable at a glance rather than eight digits to subtract. */}
       {isFinal && !hasTeamStats ? null : isFinal ? (
+        /* ⚠️ A TABLE, not a row of `412 / 388` pairs. Paired like that there is
+           nothing saying which number belongs to which club — the reader has to
+           infer it from the away-above-home order of the rows further up, which
+           is exactly the inference a scoreboard should never ask for. This is
+           the same shape as the quarter cluster at the top of the card: labels
+           across, then the away row, then the home row, each named. */
         <div style={{
           paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
-          display: 'flex', alignItems: 'stretch', gap: '18px', minWidth: 0,
+          display: 'grid',
+          gridTemplateColumns: `40px repeat(${teamStats.length}, minmax(0, 1fr))`,
+          rowGap: '7px', columnGap: '10px', alignItems: 'baseline', minWidth: 0,
         }}>
+          <span />
           {teamStats.map(stat => (
-            <div key={stat.label} style={{
-              display: 'flex', flexDirection: 'column', gap: '5px', minWidth: 0, flex: 1,
-            }}>
-              <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.muted, whiteSpace: 'nowrap' }}>
-                {stat.label}
-              </span>
-              <span style={{ display: 'flex', alignItems: 'baseline', gap: '6px', ...TABULAR }}>
-                <span style={{
-                  ...font(stat.betterSide === 'away' ? 800 : 500, 14),
-                  color: stat.betterSide === 'away' ? TEXT.primary : TEXT.muted,
-                }}>{stat.away}</span>
-                <span style={{ ...font(400, 11), color: TEXT.muted }}>/</span>
-                <span style={{
-                  ...font(stat.betterSide === 'home' ? 800 : 500, 14),
-                  color: stat.betterSide === 'home' ? TEXT.primary : TEXT.muted,
-                }}>{stat.home}</span>
-              </span>
-            </div>
+            <span key={stat.label} style={{
+              ...font(600, 10, 1, '0.08em'), color: TEXT.muted,
+              whiteSpace: 'nowrap', textAlign: 'right',
+            }}>{stat.label}</span>
+          ))}
+
+          {(['away', 'home'] as const).map(side => (
+            <React.Fragment key={side}>
+              <span style={{
+                ...font(700, 11, 1, '0.04em'), ...TABULAR,
+                color: side === 'away' ? awayText : homeText,
+              }}>{(side === 'away' ? away : home)?.abbr}</span>
+              {teamStats.map(stat => (
+                <span key={stat.label} style={{
+                  ...font(stat.betterSide === side ? 800 : 500, 15), ...TABULAR,
+                  color: stat.betterSide === side ? TEXT.primary : TEXT.muted,
+                  textAlign: 'right',
+                }}>{side === 'away' ? stat.away : stat.home}</span>
+              ))}
+            </React.Fragment>
           ))}
         </div>
       ) : (

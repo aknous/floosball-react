@@ -175,6 +175,42 @@ const GameBoardPage: React.FC = () => {
 
   const columns = density === 'large' ? 2 : 4
 
+  const renderGrid = (items: Ranked[]) => (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+      gap: '14px',
+      // `start` rather than the default `stretch`: within a section cards are
+      // the same height anyway, but a past week whose games predate the
+      // team_stats column renders shorter than one whose games do not.
+      alignItems: 'start',
+    }}>
+      {items.map(({ game, chip, pinned }) => (
+        density === 'large' ? (
+          <BoardCardLarge
+            key={game.id}
+            game={game}
+            chip={chip}
+            pinned={pinned}
+            pinnedAccent={pinnedAccent}
+            scoringModel={scoringModel}
+            onOpen={openGame}
+          />
+        ) : (
+          <BoardCardSmall
+            key={game.id}
+            game={game}
+            chip={chip}
+            pinned={pinned}
+            pinnedAccent={pinnedAccent}
+            scoringModel={scoringModel}
+            onOpen={openGame}
+          />
+        )
+      ))}
+    </div>
+  )
+
   return (
     <>
       <div style={{
@@ -269,35 +305,31 @@ const GameBoardPage: React.FC = () => {
             {isPast ? `Nothing was played in week ${viewWeek}.` : 'No games running. The next slate will appear here.'}
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-            gap: '14px',
-          }}>
-            {ordered.map(({ game, chip, pinned }) => (
-              density === 'large' ? (
-                <BoardCardLarge
-                  key={game.id}
-                  game={game}
-                  chip={chip}
-                  pinned={pinned}
-                  pinnedAccent={pinnedAccent}
-                  scoringModel={scoringModel}
-                  onOpen={openGame}
-                />
-              ) : (
-                <BoardCardSmall
-                  key={game.id}
-                  game={game}
-                  chip={chip}
-                  pinned={pinned}
-                  pinnedAccent={pinnedAccent}
-                  scoringModel={scoringModel}
-                  onOpen={openGame}
-                />
-              )
-            ))}
-          </div>
+          /* Finished games sit in their OWN section (owner). A final card is
+             genuinely shorter than a live one — it drops the win-probability
+             gauge, which is a live readout and nothing else — so mixing the two
+             in one grid left dead space inside every final card that happened to
+             share a row with a live one. Splitting them makes each section
+             uniform, which is a structural fix rather than an alignment tweak. */
+          <>
+            {ordered.some(o => o.game.status !== 'Final') && renderGrid(ordered.filter(o => o.game.status !== 'Final'))}
+
+            {ordered.some(o => o.game.status === 'Final') && (
+              <>
+                {/* The heading earns its place only when there is something to
+                    separate FROM. A whole week of finals is just the board. */}
+                {ordered.some(o => o.game.status !== 'Final') && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '4px' }}>
+                    <span style={{ ...font(700, 11, 1, '0.12em'), color: TEXT.muted, flexShrink: 0 }}>
+                      FINAL
+                    </span>
+                    <span style={{ flex: 1, height: '1px', background: BORDER.hairline }} />
+                  </div>
+                )}
+                {renderGrid(ordered.filter(o => o.game.status === 'Final'))}
+              </>
+            )}
+          </>
         )}
 
       </div>
