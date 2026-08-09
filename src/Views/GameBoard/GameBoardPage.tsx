@@ -3,6 +3,7 @@ import { useGames } from '@/contexts/GamesContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useScoringModel } from '@/contexts/ScoringModelContext'
+import { useOpenGame } from '@/hooks/useOpenGame'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { ScoreboardWeekNav } from '@/Components/ScoreboardWeekNav'
 import { BG, BORDER, TEXT, ACCENT, FONT, font } from '@/Components/Shell/tokens'
@@ -38,7 +39,8 @@ const GameBoardPage: React.FC = () => {
   const [density, setDensity] = useState<Density>(() => {
     try { return (localStorage.getItem(DENSITY_KEY) as Density) || 'large' } catch { return 'large' }
   })
-  const [openGameId, setOpenGameId] = useState<number | null>(null)
+  // Desktop routes to the game's own page; mobile keeps the modal.
+  const { openGame, modalGameId, closeGame } = useOpenGame()
   const [viewWeek, setViewWeek] = useState<number | null>(null)
 
   useEffect(() => {
@@ -209,7 +211,7 @@ const GameBoardPage: React.FC = () => {
                   pinned={pinned}
                   pinnedAccent={pinnedAccent}
                   scoringModel={scoringModel}
-                  onOpen={setOpenGameId}
+                  onOpen={openGame}
                 />
               ) : (
                 <BoardCardSmall
@@ -219,7 +221,7 @@ const GameBoardPage: React.FC = () => {
                   pinned={pinned}
                   pinnedAccent={pinnedAccent}
                   scoringModel={scoringModel}
-                  onOpen={setOpenGameId}
+                  onOpen={openGame}
                 />
               )
             ))}
@@ -228,8 +230,8 @@ const GameBoardPage: React.FC = () => {
 
       </div>
 
-      {openGameId != null && (
-        <GameModalNew gameId={openGameId} onClose={() => setOpenGameId(null)} />
+      {modalGameId != null && (
+        <GameModalNew gameId={modalGameId} onClose={closeGame} />
       )}
     </>
   )

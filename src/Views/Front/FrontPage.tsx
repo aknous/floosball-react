@@ -7,6 +7,7 @@ import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { GameModalNew } from '@/Components/GameModalNew'
+import { useOpenGame } from '@/hooks/useOpenGame'
 import { BG, BORDER, TEXT, ACCENT, FONT, RAIL_WIDTH, font } from '@/Components/Shell/tokens'
 import WelcomeHero from './WelcomeHero'
 import LeagueNews, { type NewsItem } from './LeagueNews'
@@ -63,7 +64,8 @@ const FrontPage: React.FC = () => {
   const { event: wsEvent } = useSeasonWebSocket()
   const { seasonState } = useFloosball()
 
-  const [openGameId, setOpenGameId] = useState<number | null>(null)
+  // Desktop routes to the game's own page; mobile keeps the modal.
+  const { openGame, modalGameId, closeGame } = useOpenGame()
   const [news, setNews] = useState<{ lead: NewsItem | null; items: NewsItem[] }>({ lead: null, items: [] })
   const [leaders, setLeaders] = useState<LeaderRow[]>([])
   const [leagues, setLeagues] = useState<LeagueStandings[]>([])
@@ -344,7 +346,7 @@ const FrontPage: React.FC = () => {
                 liveGame={myLiveGame}
                 nextFixture={nextFixture}
                 recent={recent}
-                onOpenGame={setOpenGameId}
+                onOpenGame={openGame}
               />
             )}
             <YourNumbers cells={numbersCells} actions={numbersActions} />
@@ -352,8 +354,8 @@ const FrontPage: React.FC = () => {
         )}
       </div>
 
-      {openGameId != null && (
-        <GameModalNew gameId={openGameId} onClose={() => setOpenGameId(null)} />
+      {modalGameId != null && (
+        <GameModalNew gameId={modalGameId} onClose={closeGame} />
       )}
     </>
   )

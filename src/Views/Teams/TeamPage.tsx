@@ -9,6 +9,7 @@ import { Stars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import TeamNavStrip from '@/Components/TeamNavStrip'
 import { GameModalNew } from '@/Components/GameModalNew'
+import { useOpenGame } from '@/hooks/useOpenGame'
 import CareerStageBadge from '@/Components/CareerStageBadge'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { CoachProfileTags } from '@/Components/CoachProfile'
@@ -645,7 +646,8 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true)
   const [tick, setTick] = useState(0)
   const [width, setWidth] = useState(window.innerWidth)
-  const [openGameId, setOpenGameId] = useState<number | null>(null)
+  // Desktop routes to the game's own page; mobile keeps the modal.
+  const { openGame, modalGameId, closeGame } = useOpenGame()
   const [stages, setStages] = useState<Record<number, string>>({})
   const [stadiumLevel, setStadiumLevel] = useState(1)
 
@@ -1082,7 +1084,7 @@ export default function TeamPage() {
             type="button"
             className="tp-fact-cell"
             disabled={!nextGame || !canOpen(nextGame)}
-            onClick={() => nextGame && canOpen(nextGame) && setOpenGameId(nextGame.gameId)}
+            onClick={() => nextGame && canOpen(nextGame) && openGame(nextGame.gameId)}
             style={{
               ...FOCUS_RING(secondary),
               font: 'inherit', textAlign: 'left', width: '100%',
@@ -1299,7 +1301,7 @@ export default function TeamPage() {
                         type="button"
                         className="tp-sched-row"
                         disabled={!canOpen(g)}
-                        onClick={() => canOpen(g) && setOpenGameId(g.gameId)}
+                        onClick={() => canOpen(g) && openGame(g.gameId)}
                         style={{
                           ...FOCUS_RING(secondary),
                           width: '100%', textAlign: 'left',
@@ -1368,8 +1370,8 @@ export default function TeamPage() {
           page rather than falling through one long column. */}
       <SectionRail sections={railSections} accent={readableOnDark(secondary)} enabled={!stacked} />
 
-      {openGameId != null && (
-        <GameModalNew gameId={openGameId} onClose={() => setOpenGameId(null)} />
+      {modalGameId != null && (
+        <GameModalNew gameId={modalGameId} onClose={closeGame} />
       )}
     </div>
   )
