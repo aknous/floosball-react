@@ -12,6 +12,7 @@ import TeamsPage from './Views/Teams/TeamsPage'
 import Team from './Views/Teams/TeamPage'
 import Player from './Views/Players/PlayerPage'
 import StatsPage from './Views/Stats/StatsPage'
+import GamePage from './Views/Game/GamePage'
 import HistoryPage from './Views/History/HistoryPage'
 import Results from './Views/Results/Results.js'
 import AdminPage from './Views/Admin/AdminPage'
@@ -61,6 +62,9 @@ function AppRoutes({ headerHeight }) {
     <Routes>
       <Route exact path='/' element={<FrontPage />} />
       <Route exact path='/games' element={<GameBoardPage />} />
+      {/* The live game moved out of a modal and onto its own route, which is
+          what gave the fan feed somewhere to live. */}
+      <Route path='/game/:gameId' element={<GamePage />} />
       <Route exact path='/standings' element={<StandingsPage />} />
       <Route exact path='/prognostications' element={<PrognosticationsPage />} />
       <Route exact path='/dashboard' element={<Navigate to='/' replace />} />

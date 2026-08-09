@@ -1,0 +1,313 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { GameModalNew } from '@/Components/GameModalNew'
+import RallyButton from '@/Components/GameModal/RallyPanel'
+import TeamHoverCard from '@/Components/TeamHoverCard'
+import { useGames } from '@/contexts/GamesContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { useFloosball } from '@/contexts/FloosballContext'
+import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
+import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
+import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
+import { rankGames } from '@/Views/GameBoard/ranking'
+import { ordinal } from '@/utils/ordinal'
+import GameBleachers, { useRailEntries } from './gameBleachers'
+
+/**
+ * The live game, on its own route.
+ *
+ * It was a modal opened from the board, the team page and the front page, and a
+ * modal is why the fan conversation had nowhere to live. The route spends the
+ * width it gained on a 372px right rail: the game on the left, the talk on the
+ * right.
+ *
+ * Everything inside the left column is `GameModalNew` in its `page` layout —
+ * the same field SVG, WP chart, replay, play rows and insights the modal
+ * renders. This view adds only what the modal could not have: the nav bar, the
+ * full-width scoreboard band, and the rail.
+ */
+
+const FlameIcon: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill={color} style={{ flexShrink: 0, display: 'block' }}>
+    <path d="M12 2s4 4.5 4 8a4 4 0 01-8 0c0-1 .3-2 .8-2.9C8 8.6 6 11 6 14a6 6 0 0012 0c0-4.5-6-12-6-12z" />
+  </svg>
+)
+
+const Chevron: React.FC<{ dir: 'left' | 'right' }> = ({ dir }) => (
+  <svg width="13" height="13" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0, display: 'block' }}>
+    <path
+      d={dir === 'left' ? 'M12 4l-6 6 6 6' : 'M8 4l6 6-6 6'}
+      stroke={TEXT.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    />
+  </svg>
+)
+
+const NavPlate: React.FC<{
+  onClick?: () => void
+  to?: string
+  children: React.ReactNode
+  disabled?: boolean
+}> = ({ onClick, to, children, disabled }) => {
+  const style: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: '8px',
+    background: BG.card, border: `1px solid ${BORDER.raised}`,
+    padding: '8px 11px', cursor: disabled ? 'default' : 'pointer',
+    textDecoration: 'none', fontFamily: FONT,
+    opacity: disabled ? 0.4 : 1,
+  }
+  if (to && !disabled) return <Link className="plate" to={to} style={style}>{children}</Link>
+  return <button className={disabled ? undefined : 'plate'} onClick={onClick} disabled={disabled} style={style}>{children}</button>
+}
+
+const GamePage: React.FC = () => {
+  const { gameId } = useParams<{ gameId: string }>()
+  const navigate = useNavigate()
+  const { games } = useGames()
+  const { user } = useAuth()
+  const { seasonState } = useFloosball()
+
+  const id = Number(gameId)
+  const gameData: any = games.get(id)
+
+  /**
+   * Prev / next walk the GAME BOARD'S OWN interest order, not the schedule.
+   *
+   * "Next" therefore means the next most interesting game, which is the point —
+   * and the ranking is frozen in a ref for exactly the reason the board freezes
+   * it: it must not re-sort under the reader as scores land.
+   */
+  const allGames = useMemo(() => Array.from(games.values()), [games])
+  const rankedRef = useRef<number[] | null>(null)
+  const ranked = useMemo(() => {
+    if (rankedRef.current && rankedRef.current.length) return rankedRef.current
+    if (!allGames.length) return []
+    const order = rankGames(
+      allGames as any,
+      user?.favoriteTeamId ?? null,
+      null,
+      () => null,
+    ).map(r => Number((r.game as any).id ?? (r.game as any).gameId))
+    rankedRef.current = order
+    return order
+  }, [allGames, user?.favoriteTeamId])
+
+  const position = ranked.indexOf(id)
+  const prevId = position > 0 ? ranked[position - 1] : ranked.length ? ranked[ranked.length - 1] : null
+  const nextId = position >= 0 && position < ranked.length - 1 ? ranked[position + 1] : ranked.length ? ranked[0] : null
+  const nameOf = (otherId: number | null): string => {
+    if (otherId == null) return ''
+    const other: any = games.get(otherId)
+    if (!other) return ''
+    return `${other.awayTeam?.abbr ?? '???'} at ${other.homeTeam?.abbr ?? '???'}`
+  }
+
+  // Reset the frozen order when the round changes underneath us.
+  useEffect(() => { rankedRef.current = null }, [seasonState?.currentWeek])
+
+  const railEntries = useRailEntries(gameData?.plays)
+
+  /**
+   * How many people are here. It rides the season socket rather than the game
+   * payload, so the rail has to ask for it itself — and it is the Bleachers'
+   * empty state too: a game nobody has posted in still says who is watching.
+   */
+  const { subscribe: subscribeSeason } = useSeasonWebSocket()
+  const [watching, setWatching] = useState<number | null>(null)
+  useEffect(() => {
+    setWatching(null)   // never carry a count across a game switch
+    return subscribeSeason((msg: any) => {
+      if (msg?.event === 'viewer_count' && String(msg.gameId) === String(id)) {
+        setWatching(Number(msg.count) || 0)
+      }
+    })
+  }, [id, subscribeSeason])
+
+  const awayDisplayColor = useMemo(
+    () => effectiveAwayColor(
+      gameData?.homeTeam?.color, gameData?.awayTeam?.color, gameData?.awayTeam?.secondaryColor,
+    ),
+    [gameData?.homeTeam?.color, gameData?.awayTeam?.color, gameData?.awayTeam?.secondaryColor],
+  )
+
+  if (!gameData) {
+    return (
+      <div style={{ padding: '48px', textAlign: 'center', ...font(400, 13), color: TEXT.muted, fontFamily: FONT }}>
+        This game is not in the current round.
+      </div>
+    )
+  }
+
+  const homeColor = gameData.homeTeam.color
+  const isLive = gameData.status === 'Active'
+  const absMomentum = Math.abs(gameData.momentum ?? 0)
+  const flameColor = absMomentum >= 25 ? '#f97316' : absMomentum >= 15 ? '#fb923c' : '#fdba74'
+  const yourTeamId = user?.favoriteTeamId ?? null
+  const isYours = yourTeamId != null
+    && (Number(gameData.homeTeam.id) === yourTeamId || Number(gameData.awayTeam.id) === yourTeamId)
+
+  const teamBlock = (side: 'home' | 'away') => {
+    const team = side === 'home' ? gameData.homeTeam : gameData.awayTeam
+    const colour = side === 'home' ? homeColor : awayDisplayColor
+    const score = side === 'home' ? gameData.homeScore : gameData.awayScore
+    const hasBall = isLive && gameData.possession === team.abbr
+    const hasMomentum = isLive && gameData.momentumTeam === team.abbr
+    const record = side === 'home' ? gameData.homeRecord : gameData.awayRecord
+
+    const identity = (
+      <>
+        <TeamHoverCard teamId={team.id}>
+          <img
+            src={`/avatars/${team.id}.png`}
+            alt=""
+            width={46}
+            height={46}
+            style={{
+              borderRadius: '50%', flexShrink: 0, display: 'block',
+              // The possession ring — the one thing on the band that moves.
+              outline: hasBall ? '2px solid #ffffff' : 'none',
+              outlineOffset: '3px',
+            }}
+          />
+        </TeamHoverCard>
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+            <span style={{ ...font(500, 12, 1, '0.04em'), color: TEXT.muted }}>{team.city}</span>
+            {record && <span style={{ ...font(500, 11), color: TEXT.muted }}>{record}</span>}
+            {hasMomentum && <FlameIcon color={flameColor} />}
+          </span>
+          <Link to={`/team/${team.id}`} style={{ textDecoration: 'none' }}>
+            <span style={{
+              display: 'block', ...font(800, 24, 1, '-0.025em'), color: TEXT.primary,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{team.name}</span>
+          </Link>
+        </span>
+      </>
+    )
+
+    const scoreEl = (
+      <span style={{ ...font(800, 46, 1), color: TEXT.primary, flexShrink: 0, ...TABULAR }}>
+        {score ?? 0}
+      </span>
+    )
+
+    // Away reads left-to-right, home right-to-left, matching the field's ends.
+    return (
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '14px', justifyContent: side === 'home' ? 'flex-end' : 'flex-start' }}>
+        {side === 'away' ? <>{identity}<span style={{ flex: 1 }} />{scoreEl}</> : <>{scoreEl}<span style={{ flex: 1 }} />{identity}</>}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ fontFamily: FONT }}>
+
+      {/* Nav bar — back to the board, and the round in its interest order. */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap',
+        padding: '13px 28px', background: BG.shell,
+        borderBottom: `1px solid ${BORDER.hairline}`,
+      }}>
+        <NavPlate to="/games">
+          <span style={{ ...font(800, 14), color: TEXT.body }}>←</span>
+          <span style={{ ...font(700, 11, 1, '0.08em'), color: TEXT.body }}>GAME BOARD</span>
+        </NavPlate>
+        <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />
+        <NavPlate onClick={() => prevId != null && navigate(`/game/${prevId}`)} disabled={prevId == null}>
+          <Chevron dir="left" />
+          <span style={{ ...font(600, 11, 1, '0.06em'), color: TEXT.muted }}>{nameOf(prevId)}</span>
+        </NavPlate>
+        {position >= 0 && (
+          <span style={{ ...font(600, 11, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>
+            GAME {position + 1} OF {ranked.length}
+          </span>
+        )}
+        <NavPlate onClick={() => nextId != null && navigate(`/game/${nextId}`)} disabled={nextId == null}>
+          <span style={{ ...font(600, 11, 1, '0.06em'), color: TEXT.muted }}>{nameOf(nextId)}</span>
+          <Chevron dir="right" />
+        </NavPlate>
+        <span style={{ flex: 1 }} />
+        <span style={{ ...font(600, 10, 1, '0.12em'), color: TEXT.muted }}>INTEREST ORDER</span>
+        {isYours && (
+          <span style={{
+            ...font(700, 10, 1, '0.1em'), color: ACCENT.ownTeam,
+            border: '1px solid rgba(244,114,182,0.35)', padding: '5px 8px',
+          }}>YOUR TEAM</span>
+        )}
+      </div>
+
+      {/* Scoreboard band — away tint left, home tint right, matching the field. */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '26px',
+        padding: '18px 28px', borderBottom: `1px solid ${BORDER.raised}`,
+        background: `linear-gradient(100deg, ${awayDisplayColor}1a 0%, ${BG.shell} 42%, ${BG.shell} 58%, ${homeColor}22 100%)`,
+      }}>
+        {teamBlock('away')}
+        <div style={{
+          flexShrink: 0, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', gap: '9px', padding: '0 8px',
+        }}>
+          {isLive && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="pulse" style={{
+                width: '6px', height: '6px', borderRadius: '50%',
+                background: ACCENT.live, display: 'block',
+              }} />
+              <span style={{ ...font(700, 11, 1, '0.12em'), color: ACCENT.live }}>LIVE</span>
+            </span>
+          )}
+          <span style={{ ...font(800, 26, 1), color: TEXT.primary, ...TABULAR }}>
+            {gameData.status === 'Final' ? 'FINAL' : (gameData.timeRemaining ?? '—')}
+          </span>
+          <span style={{ ...font(600, 10, 1, '0.1em'), color: TEXT.muted, textAlign: 'center' }}>
+            {/* ⚠️ Distance is `yardsToFirstDown`, not `yardsToGo` — the latter does
+                not exist on the payload and rendered "4 & undefined". Goal-line
+                carries the string "Goal" rather than a number. */}
+            {gameData.status === 'Final'
+              ? `${gameData.homeTeam.abbr} ${gameData.homeScore} · ${gameData.awayTeam.abbr} ${gameData.awayScore}`
+              : [
+                  gameData.down != null && gameData.yardsToFirstDown != null
+                    ? `${ordinal(Number(gameData.down))} & ${gameData.yardsToFirstDown}`
+                    : null,
+                  gameData.yardLine,
+                ].filter(Boolean).join(' · ') || '—'}
+          </span>
+        </div>
+        {teamBlock('home')}
+      </div>
+
+      {/* Body — the game left, the talk right. */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 372px', gap: '22px',
+        padding: '20px 28px 32px', alignItems: 'start',
+      }}>
+        <GameModalNew gameId={id} layout="page" onClose={() => navigate('/games')} />
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
+          {isLive && (
+            <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}`, padding: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', paddingBottom: '11px' }}>
+                <span style={{ ...font(800, 12, 1, '0.1em'), color: TEXT.strong }}>RALLY</span>
+                <span style={{ ...font(400, 10), color: TEXT.muted }}>charge the stands</span>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <RallyButton game={gameData} teamId={Number(gameData.homeTeam.id)} teamColor={homeColor} />
+                <RallyButton game={gameData} teamId={Number(gameData.awayTeam.id)} teamColor={awayDisplayColor} />
+              </div>
+            </div>
+          )}
+
+          <GameBleachers
+            entries={railEntries}
+            watching={watching}
+            // You post into your OWN club's stand, so the composer only appears
+            // when the signed-in fan's team is one of the two playing.
+            feedTeamId={isYours ? yourTeamId : null}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default GamePage

@@ -25,6 +25,17 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 interface GameModalNewProps {
   onClose: () => void
   gameId: number
+  /**
+   * `modal` (default) is the overlay opened from the board, the team page and
+   * the front page. `page` is the same game rendered inline as the left column
+   * of the game route — no overlay, no card, no close button, and no scores
+   * block, because the route puts a full-width scoreboard band above it.
+   *
+   * A prop rather than a fork: everything that makes this component worth
+   * reusing — the field SVG, the WP chart, replay, the play rows and their
+   * insights, the box score — is identical in both, and a copy would drift.
+   */
+  layout?: 'modal' | 'page'
 }
 
 interface ReplayControlBarProps {
@@ -210,7 +221,8 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
 }
 
 
-export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) => {
+export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, layout = 'modal' }) => {
+  const asPage = layout === 'page'
   const [activeTab, setActiveTab] = useState<'box' | 'plays' | 'stats'>('plays')
   const [showHighlightsOnly, setShowHighlightsOnly] = useState(false)
   const [expandedPlayKey, setExpandedPlayKey] = useState<string | null>(null)
@@ -244,7 +256,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // phone gives the stats area ~540px which is too tight for 6 columns
   // and a readable player name. Engage the condensed layout below 1000px.
   const isTightStats = useIsMobile(1000)
-  
+  // The modal's body is two columns side by side; the page stacks them, because
+  // the route already spends its horizontal room on the Bleachers rail. Mobile
+  // stacked first and the page reuses exactly that path.
+  const stacked = isMobile || asPage
+
   // Get game from central state and fetch plays
   const { games, fetchGamePlays } = useGames()
   const liveGameData = useMemo(() => games.get(gameId), [games, gameId])
@@ -1195,8 +1211,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
   return (
     <div
-      onClick={onClose}
-      style={{
+      onClick={asPage ? undefined : onClose}
+      style={asPage ? { minWidth: 0 } : {
         position: 'fixed',
         inset: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -1208,8 +1224,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
+        onClick={asPage ? undefined : (e) => e.stopPropagation()}
+        style={asPage ? {
+          // On the route these two wrappers stop being chrome and become a plain
+          // container: the page owns the background, the scrolling and the width.
+          display: 'flex', flexDirection: 'column', minWidth: 0,
+        } : {
           backgroundColor: '#0f172a',
           borderRadius: isMobile ? '0' : '12px',
           width: '100%',
@@ -1220,9 +1240,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           overflow: 'hidden'
         }}
       >
-        {/* Header */}
+        {/* Header — the watching count, the cheer bar and the close button. The
+            route carries all three in its own nav bar and scoreboard band. */}
         <div style={{
-          display: 'flex',
+          display: asPage ? 'none' : 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '12px 20px',
@@ -1274,27 +1295,39 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           </button>
         </div>
 
-        {/* Body: two-column on desktop, stacked on mobile */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: isMobile ? 'auto' : 'hidden', minHeight: 0 }}>
+        {/* Body: two-column in the modal, stacked on mobile and on the route */}
+        <div style={{
+          flex: asPage ? 'none' : 1,
+          display: 'flex',
+          flexDirection: stacked ? 'column' : 'row',
+          gap: asPage ? '16px' : 0,
+          overflow: stacked ? (asPage ? 'visible' : 'auto') : 'hidden',
+          minHeight: 0,
+        }}>
 
           {/* Left panel: Scoreboard + Status + WP */}
           <div style={{
-            flex: isMobile ? '0 0 auto' : '0 0 40%',
+            flex: stacked ? '0 0 auto' : '0 0 40%',
             minWidth: 0,
-            borderRight: isMobile ? 'none' : '1px solid #334155',
-            borderBottom: isMobile ? '1px solid #334155' : 'none',
+            borderRight: stacked ? 'none' : '1px solid #334155',
+            borderBottom: stacked && !asPage ? '1px solid #334155' : 'none',
             display: 'flex',
             flexDirection: 'column',
-            overflowY: isMobile ? 'visible' : 'auto'
+            gap: asPage ? '16px' : 0,
+            overflowY: stacked ? 'visible' : 'auto'
           }}>
 
-            {/* Scores */}
+            {/* Scores.
+                ⚠️ Only the two SCORE ROWS are hidden on the route — the route has
+                a full-width scoreboard band above the grid. The frames and innings
+                line scores live in this same block and must stay, or the two
+                formats that have no quarter breakdown lose their whole line score. */}
             <div style={{ padding: '16px', backgroundColor: '#1e293b' }}>
 
               {/* Home team — outer flex row holds RallyButton and score
                   OUTSIDE the TeamHoverCard wrapper so hovering the
                   cheer button doesn't pop the team tooltip. */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '12px' }}>
+              <div style={{ display: asPage ? 'none' : 'flex', alignItems: 'center', gap: '10px', paddingBottom: '12px' }}>
                 <TeamHoverCard teamId={gameData.homeTeam.id}>
                   <div style={{
                     width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
@@ -1328,7 +1361,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               </div>
 
               {/* Home timeouts */}
-              {gameData.status === 'Active' && gameData.homeTimeouts != null && hasTimeouts && (
+              {!asPage && gameData.status === 'Active' && gameData.homeTimeouts != null && hasTimeouts && (
                 <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingBottom: '8px' }}>
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{
@@ -1342,7 +1375,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
               {/* Away team — RallyButton and score sit outside the
                   TeamHoverCard wrapper, same pattern as Home. */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '12px', borderTop: '1px solid #334155' }}>
+              <div style={{ display: asPage ? 'none' : 'flex', alignItems: 'center', gap: '10px', paddingTop: '12px', borderTop: '1px solid #334155' }}>
                 <TeamHoverCard teamId={gameData.awayTeam.id}>
                   <div style={{
                     width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
@@ -1376,7 +1409,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               </div>
 
               {/* Away timeouts */}
-              {gameData.status === 'Active' && gameData.awayTimeouts != null && hasTimeouts && (
+              {!asPage && gameData.status === 'Active' && gameData.awayTimeouts != null && hasTimeouts && (
                 <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingTop: '8px' }}>
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{
@@ -1514,8 +1547,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
               {/* Rally buttons — one per team, side-by-side below the
                   scoreboard. Each is a "Cheer for <Team>" CTA that
-                  charges floobits and bumps that team's confidence. */}
-              {gameData.status === 'Active' && (
+                  charges floobits and bumps that team's confidence.
+                  On the route these sit at the top of the Bleachers rail, with
+                  the rest of the fan voice, rather than under the scores. */}
+              {!asPage && gameData.status === 'Active' && (
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
@@ -2345,13 +2380,49 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             })()}
           </div>
 
-          {/* Right panel: Tabs + scrollable content */}
-          <div style={{ flex: isMobile ? 'none' : 1, display: 'flex', flexDirection: 'column', overflow: isMobile ? 'visible' : 'hidden', minWidth: 0 }}>
+          {/* Right panel: Tabs + scrollable content. On the route this sits UNDER
+              the field rather than beside it, and its own scroller is released so
+              the page scrolls as one document. */}
+          <div style={{
+            flex: stacked ? 'none' : 1,
+            display: 'flex', flexDirection: 'column',
+            overflow: stacked ? 'visible' : 'hidden',
+            minWidth: 0,
+            ...(asPage ? { background: '#131e2f', border: '1px solid #1e293b' } : {}),
+          }}>
 
-            {/* Tab bar — hidden for Scheduled games */}
+            {/* Tab bar — hidden for Scheduled games. On the route it is the
+                page's segmented control: one object, shared with the stats page
+                and the standings view switcher. */}
             {gameData.status !== 'Scheduled' && (
-              <div style={{ padding: '10px 16px', borderBottom: '1px solid #334155', flexShrink: 0, display: 'flex', gap: '4px' }}>
-                {(['plays', 'box', 'stats'] as const).map(tab => (
+              <div style={asPage ? {
+                padding: '12px 16px', background: '#0f172a',
+                borderBottom: '1px solid #334155', flexShrink: 0,
+                display: 'flex', alignItems: 'center', gap: '11px',
+              } : { padding: '10px 16px', borderBottom: '1px solid #334155', flexShrink: 0, display: 'flex', gap: '4px' }}>
+                {asPage ? (
+                  <div style={{ display: 'flex', background: '#0f172a', border: '1px solid #1e293b' }}>
+                    {(['plays', 'box', 'stats'] as const).map((tab, i) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        style={{
+                          padding: '8px 13px',
+                          border: 'none',
+                          borderLeft: i > 0 ? '1px solid #1e293b' : 'none',
+                          cursor: 'pointer',
+                          fontFamily: "'pressStart', ui-monospace, monospace",
+                          fontSize: '11px', lineHeight: 1, letterSpacing: '0.08em',
+                          fontWeight: activeTab === tab ? 800 : 500,
+                          backgroundColor: activeTab === tab ? '#cbd5e1' : 'transparent',
+                          color: activeTab === tab ? '#0b1220' : '#94a3b8',
+                        }}
+                      >
+                        {tab === 'plays' ? 'PLAYS' : tab === 'box' ? 'BOX SCORE' : 'PLAYER STATS'}
+                      </button>
+                    ))}
+                  </div>
+                ) : (['plays', 'box', 'stats'] as const).map(tab => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -2374,7 +2445,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             )}
 
             {/* Tab content — fills all remaining height */}
-            <div style={{ flex: isMobile ? 'none' : 1, overflowY: isMobile ? 'visible' : 'auto', padding: '16px' }}>
+            <div style={{ flex: stacked ? 'none' : 1, overflowY: stacked ? 'visible' : 'auto', padding: '16px' }}>
 
               {/* Matchup preview for Scheduled games */}
               {gameData.status === 'Scheduled' && (() => {
