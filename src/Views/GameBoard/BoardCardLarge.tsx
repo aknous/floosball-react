@@ -10,6 +10,28 @@ import {
   CHIP_COLOR, RedZoneChip, inRedZone, RED_ZONE, type ChipKind,
 } from './boardPieces'
 
+/** Footer containers: a panel, its cells, and the rule between them. Defined once so
+ *  the two panels cannot drift apart in padding or height. */
+const PANEL: React.CSSProperties = {
+  background: BG.panel,
+  border: `1px solid ${BORDER.hairline}`,
+  padding: '0 11px',
+  minHeight: '34px',
+  boxSizing: 'border-box',
+}
+const CELL: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: '0 9px',
+}
+const RULE: React.CSSProperties = {
+  width: '1px',
+  alignSelf: 'stretch',
+  margin: '8px 0',
+  background: BORDER.hairline,
+  flexShrink: 0,
+}
+
 /**
  * LARGE density: two across, full detail. ~586px wide, ~300px tall, so 16 games scroll
  * by design.
@@ -219,80 +241,103 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
         </div>
       )}
 
+      {/* ⚠️ Two CONTAINERS, not one run of text (owner). The last play and the
+          current situation are separate thoughts that happened to share a row,
+          and floating them either side of a flex spacer read as one disorganised
+          sentence. Each gets a panel; inside the right-hand one the fields are
+          divided by rules rather than middots, which is the same idiom as the
+          quarter cluster at the top of the card and makes it read as one
+          instrument instead of three loose numbers. */}
       {!isFinal && (
-        <div style={{ paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-          <SectionLabel>LAST PLAY</SectionLabel>
-          {lastPlay ? (
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '9px', minWidth: 0 }}>
-              {lastPlay.teamAbbr && (
-                <span style={{
-                  ...font(700, 12, 1, '0.04em'),
-                  color: lastPlay.teamAbbr === away?.abbr ? awayText : homeText,
-                  ...TABULAR,
-                }}>{lastPlay.teamAbbr}</span>
-              )}
-              <span style={{ ...font(700, 14, 1, '0.02em'), color: TEXT.secondary, whiteSpace: 'nowrap' }}>
-                {lastPlay.action}
-              </span>
-              {lastPlay.yards != null && (
-                <span style={{
-                  ...font(800, 15), ...TABULAR, whiteSpace: 'nowrap',
-                  color: lastPlay.yards < 0 ? ACCENT.negative : TEXT.primary,
-                }}>
-                  {lastPlay.unsigned || lastPlay.yards <= 0 ? lastPlay.yards : `+${lastPlay.yards}`}
-                  <span style={{ ...font(500, 11), color: TEXT.muted }}> YD</span>
+        <div style={{
+          paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
+          display: 'flex', alignItems: 'stretch', gap: '10px', minWidth: 0,
+        }}>
+          <div style={{
+            ...PANEL, flex: 1, minWidth: 0,
+            display: 'flex', alignItems: 'center', gap: '10px',
+          }}>
+            <SectionLabel>LAST PLAY</SectionLabel>
+            {lastPlay ? (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '9px', minWidth: 0 }}>
+                {lastPlay.teamAbbr && (
+                  <span style={{
+                    ...font(700, 12, 1, '0.04em'),
+                    color: lastPlay.teamAbbr === away?.abbr ? awayText : homeText,
+                    ...TABULAR,
+                  }}>{lastPlay.teamAbbr}</span>
+                )}
+                <span style={{ ...font(700, 14, 1, '0.02em'), color: TEXT.secondary, whiteSpace: 'nowrap' }}>
+                  {lastPlay.action}
                 </span>
-              )}
-              {lastPlay.tag && (
-                <span style={{
-                  ...font(700, 10, 1, '0.08em'), color: lastPlay.tagColor,
-                  border: `1px solid ${lastPlay.tagColor}59`, padding: '3px 6px',
-                  whiteSpace: 'nowrap',
-                }}>{lastPlay.tag}</span>
-              )}
-            </div>
-          ) : (
-            <span style={{ ...font(400, 14), color: TEXT.muted }}>
-              {live ? 'Waiting on the snap' : '—'}
-            </span>
-          )}
-
-          {/* Where the game stands NOW, at the far end of the same row (owner).
-              The last play says what just happened; this says what is about to.
-              Deliberately paired rather than given its own row — read together
-              they are one thought, and the row had the space sitting empty. */}
-          {/* Not at halftime: nobody is on the clock, so the down and the spot are
-              last drive's, and the row would state a situation that is over. */}
-          {live && !game.isHalftime && (
-            <>
-              <span style={{ flex: 1 }} />
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                {/* FormatClock, not a hand-rolled quarter + time: an innings game
-                    or a chess-clock game does not have either. */}
-                <FormatClock game={game} size="large" />
-                {situationLive && <span style={{ ...font(400, 11), color: TEXT.muted }}>·</span>}
-                {situationLive && downText && (
-                  <span style={{ ...font(700, 13), color: TEXT.secondary, ...TABULAR, whiteSpace: 'nowrap' }}>
-                    {downText}
+                {lastPlay.yards != null && (
+                  <span style={{
+                    ...font(800, 15), ...TABULAR, whiteSpace: 'nowrap',
+                    color: lastPlay.yards < 0 ? ACCENT.negative : TEXT.primary,
+                  }}>
+                    {lastPlay.unsigned || lastPlay.yards <= 0 ? lastPlay.yards : `+${lastPlay.yards}`}
+                    <span style={{ ...font(500, 11), color: TEXT.muted }}> YD</span>
                   </span>
                 )}
-                {situationLive && downText && game.yardLine && (
-                  <span style={{ ...font(400, 11), color: TEXT.muted }}>·</span>
-                )}
-                {situationLive && game.yardLine && (
+                {lastPlay.tag && (
                   <span style={{
-                    ...font(600, 13), ...TABULAR, whiteSpace: 'nowrap',
-                    // Matched to the chip beside it so the spot and the flag read
-                    // as one signal rather than two.
+                    ...font(700, 10, 1, '0.08em'), color: lastPlay.tagColor,
+                    border: `1px solid ${lastPlay.tagColor}59`, padding: '3px 6px',
+                    whiteSpace: 'nowrap',
+                  }}>{lastPlay.tag}</span>
+                )}
+              </div>
+            ) : (
+              <span style={{ ...font(400, 14), color: TEXT.muted }}>
+                {live ? 'Waiting on the snap' : '—'}
+              </span>
+            )}
+          </div>
+
+          {/* Where the game stands NOW. The last play says what just happened;
+              this says what is about to. Suppressed at halftime, where nobody is
+              on the clock and the down and spot belong to a drive that is over. */}
+          {live && !game.isHalftime && (
+            <div style={{
+              ...PANEL, flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: 0,
+              ...(redZone && situationLive
+                ? { borderColor: `${RED_ZONE}4d`, background: 'rgba(248,113,113,0.06)' }
+                : {}),
+            }}>
+              {/* FormatClock, not a hand-rolled quarter + time: an innings game
+                  or a chess-clock game does not have either. */}
+              <span style={CELL}><FormatClock game={game} size="large" /></span>
+              {situationLive && downText && (
+                <>
+                  <span style={RULE} />
+                  <span style={{
+                    ...CELL, ...font(700, 13), color: TEXT.secondary,
+                    ...TABULAR, whiteSpace: 'nowrap',
+                  }}>{downText}</span>
+                </>
+              )}
+              {situationLive && game.yardLine && (
+                <>
+                  <span style={RULE} />
+                  <span style={{
+                    ...CELL, ...font(600, 13), ...TABULAR, whiteSpace: 'nowrap',
                     color: redZone ? RED_ZONE : TEXT.muted,
                   }}>{game.yardLine}</span>
-                )}
-                {/* No abbr here: the spot immediately to the left already names
-                    the side of the field, and the possession ring names who has
-                    it. On the small card there is no such context, so it does. */}
-                {situationLive && redZone && <RedZoneChip size="large" />}
-              </span>
-            </>
+                </>
+              )}
+              {/* No abbr: the spot immediately to the left already names the side
+                  of the field, and the possession ring names who has it. */}
+              {situationLive && redZone && (
+                <>
+                  <span style={RULE} />
+                  <span style={{
+                    ...CELL, ...font(700, 10, 1, '0.08em'), color: RED_ZONE,
+                    whiteSpace: 'nowrap',
+                  }}>RED ZONE</span>
+                </>
+              )}
+            </div>
           )}
         </div>
       )}
