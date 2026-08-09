@@ -42,7 +42,18 @@ const RULE: React.CSSProperties = {
  * width or a gap here and BOTH move together.
  */
 
-const CLUSTER = { display: 'flex', alignItems: 'center', gap: '14px' } as const
+/**
+ * ⚠️ The score panel takes a SHARE of the row, not its content width. Sized to
+ * content it stayed ~240px however wide the card got, so on a large window the
+ * club names kept the surplus and the numbers huddled against the right edge
+ * with a hole in the middle of the card. A percentage basis means the scoreboard
+ * grows with the board instead.
+ *
+ * Both the header cluster and the two value clusters use this, so they take the
+ * same share of the same row width and their columns stay aligned — which is the
+ * property the whole file depends on.
+ */
+const CLUSTER = { display: 'flex', alignItems: 'center', gap: '16px', flex: '0 0 46%', minWidth: 0 } as const
 
 /**
  * The score column's panel, applied to the header cluster and BOTH team clusters.
@@ -62,9 +73,11 @@ const SCORE_PANEL = {
   padding: '0 13px',
   alignSelf: 'stretch',
 } as const
-const QUARTERS = { display: 'flex', gap: '10px' } as const
-const QUARTER_CELL = { width: '26px', textAlign: 'center' as const, ...TABULAR }
-const TOTAL_CELL = { width: '48px', textAlign: 'right' as const, ...TABULAR }
+const QUARTERS = { display: 'flex', gap: '12px', flex: 1, minWidth: 0 } as const
+// The period columns SHARE the panel's spare width equally; the total keeps a fixed
+// box so the right edge does not move as periods are added.
+const QUARTER_CELL = { flex: 1, minWidth: 0, textAlign: 'center' as const, ...TABULAR }
+const TOTAL_CELL = { width: '58px', flexShrink: 0, textAlign: 'right' as const, ...TABULAR }
 
 type Props = {
   game: CurrentGame
@@ -124,8 +137,14 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
     ahead: boolean,
   ) => {
     const hasMomentum = live && momentumMagnitude > 0 && game.momentumTeam === team?.abbr
+    // ⚠️ minHeight 46, not 54. The rows carry their own height now that the block
+    // sits at gap 0, and the first pass simply reused the old 16px root gap as
+    // slack. Inside a bordered panel that slack stops reading as separation
+    // between rows and starts reading as an empty box — the card measured the
+    // SAME height as before and still looked bigger. Content is ~40px (a 36px
+    // crest, or the city + name block), so this leaves 6px of breathing room.
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minHeight: '54px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minHeight: '46px' }}>
         <Crest teamId={team?.id} size={36} possession={live && possessionTeam === side} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -227,7 +246,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
         <div style={{
           ...CLUSTER, ...SCORE_PANEL,
           borderTop: `1px solid ${BORDER.hairline}`,
-          paddingTop: '7px', paddingBottom: '5px',
+          paddingTop: '6px', paddingBottom: '4px',
         }}>
           {columns && (
             <div style={QUARTERS}>
