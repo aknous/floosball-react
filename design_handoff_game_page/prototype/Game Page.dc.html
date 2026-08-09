@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-Regular.ttf');font-weight:400;font-style:normal}
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-Medium.ttf');font-weight:500;font-style:normal}
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-SemiBold.ttf');font-weight:600;font-style:normal}
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-Bold.ttf');font-weight:700;font-style:normal}
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-ExtraBold.ttf');font-weight:800;font-style:normal}
+@keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.25}}
+html,body{margin:0;padding:0;background:#070c15;font-family:'pressStart',ui-monospace,monospace;color:#e2e8f0}
+a{color:#f1f5f9;text-decoration:none}
+a:hover{color:#ffffff}
+.hd:hover{color:#ffffff!important}
+.row:hover{background-color:rgba(255,255,255,0.04)!important}
+.pulse{animation:livePulse 1.6s ease-in-out infinite}
+.plate{transition:border-color 140ms ease,background-color 140ms ease,transform 140ms ease}
+.plate:hover{border-color:#475569!important;background:#1b2739!important}
+.feedopt:hover{background:#152033;border-left-color:#38bdf8}
+    .chip:hover{border-color:#64748b!important;color:#f1f5f9!important}
+</style>
+</helmet>
+
+<section style="padding:56px 64px 40px;display:flex;flex-direction:column;gap:28px">
+
+  <div style="display:flex;align-items:baseline;gap:16px;max-width:1060px">
+    <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.14em;background:#ec3013;padding:6px 9px">TURN 1</span>
+    <div>
+      <h2 style="font:800 26px/1 'pressStart',monospace;color:#f8fafc;line-height:1.1;margin:0;letter-spacing:-0.03em">The game gets a page</h2>
+      <p style="font:400 13px/1 'pressStart',monospace;color:#94a3b8;line-height:1.6;margin:8px 0 0;text-wrap:pretty">Out of the modal and onto a route. A bar across the top returns to the board and steps through the sixteen games in the board&rsquo;s own interest order, so next always means the next most interesting game. Left column is the game &mdash; scoreboard, line score, field, win probability, replay, and the full play-by-play, which keeps the modal&rsquo;s accents &mdash; amber big plays with their win-probability swing, cyan clutch and red choke moments naming who rose or buckled, orange momentum shifts &mdash; and where expanding a play opens the same two-column insights panel the sim already exposes &mdash; situation and stratagem on the left, composure and execution on the right. Right column belongs to the fans: a watching count, the team page&rsquo;s dropdown composer &mdash; grouped into lines about this play and lines you can post any time &mdash; and a permanent feed. A post about a play quotes that play above itself, and the players are in the feed too &mdash; in-character reactions to a play they were part of, and sideline cutaways between drives, each tinted by personality tier. One toggle drives the whole lower panel, the way the modal already does it &mdash; Plays, Box Score, Player Stats &mdash; with the play filters riding on the same bar so nothing competes with the live game. The mock is a standard four-quarter game; the line score, clock and win-probability axis are section-based in the source, so innings, frames, play-limit and chess-clock games swap columns and labels rather than breaking.</p>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:56px;align-items:flex-start;flex-wrap:wrap">
+    <div id="1a" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px;max-width:1440px">
+        <span style="font:800 12px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.1em;background:#f8fafc;padding:6px 9px">1a</span>
+        <span style="font:800 17px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.02em">Game page</span>
+        <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5">Game left, fans right, stats behind tabs.</span>
+      </div>
+
+      <div data-screen-label="1a Game page" style="width:1440px;background:#0b1220;border:1px solid #1e293b;display:flex;flex-direction:column;overflow:hidden">
+        <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:22px;padding:14px 22px;background:#0f172a;border-bottom:1px solid #1e293b">
+          <div style="display:flex;align-items:center;gap:9px">
+            <img src="assets/avatars/league_logo.png" alt="" width="28" height="28" style="border-radius:50%">
+            <span style="font:800 20px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.02em">Floosball</span>
+            <span style="font:700 9px/1 'pressStart',monospace;color:#f59e0b;background:rgba(245,158,11,0.28);padding:3px 5px;letter-spacing:0.06em">BETA</span>
+          </div>
+          <span style="width:1px;height:22px;background:#1e293b"></span>
+          <span style="font:600 13px/1 'pressStart',monospace;color:#cbd5e1;">Season 16</span>
+          <span style="font:400 13px/1 'pressStart',monospace;color:#94a3b8;">Week 15 of 28</span>
+          <span style="flex:1"></span>
+          <label style="display:flex;align-items:center;gap:8px;background:#131e2f;border:1px solid #1e293b;padding:7px 11px;width:196px">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="#94a3b8"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+            <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;">Teams, players, cards</span>
+          </label>
+          <a href="#1a" class="hd" style="display:flex;align-items:center;gap:6px;font:700 13px/1 'pressStart',monospace;color:#f59e0b;">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8"></circle></svg>1,240
+          </a>
+          <a href="#1a" class="plate" style="display:flex;align-items:center;gap:9px;background:#131e2f;border:1px solid #1e293b;padding:5px 10px 5px 6px">
+            <img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+            <span style="font:600 12px/1 'pressStart',monospace;color:#cbd5e1;">quiet_oyster_41</span>
+          </a>
+        </div>
+        </sc-if>
+
+        <div style="display:flex;flex:1;min-height:0">
+          <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+          <div style="width:196px;flex-shrink:0;background:#0f172a;border-right:1px solid #1e293b;padding:18px 0 22px;display:flex;flex-direction:column">
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:0 18px 9px">THE LEAGUE</div>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2 2 8v10h6v-6h4v6h6V8l-8-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Front page</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#f1f5f9;background:rgba(74,222,128,0.10);border-left:3px solid #4ade80">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 2h2v1l11 4-11 4v7H3V2z"></path></svg>
+              <span style="font:700 13px/1 'pressStart',monospace">Games</span><span style="flex:1"></span><span style="font:700 10px/1 'pressStart',monospace;color:#4ade80;">16</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h14v3H3V3zm0 5h14v3H3V8zm0 5h14v3H3v-3z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Standings</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h6v6H3V3zm0 8h6v6H3v-6zm8-8h6v6h-6V3zm0 8h6v6h-6v-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Teams</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Players</span>
+            </a>
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:22px 18px 9px">YOURS</div>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <img src="assets/avatars/3.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%">
+              <span style="font:500 13px/1 'pressStart',monospace;color:inherit;">Broads</span>
+              <span style="flex:1"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:#f472b6;flex-shrink:0"></span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M2 12l4-6 4 4 4-7 4 9v4H2v-4z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Prognostications</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4h14v3H3V4zm1 5h12v7H4V9z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Fantasy</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M5 2h10a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1zm1 3v4h8V5H6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Cards</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L1.4 7.3l6-.8L10 1z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Achievements</span><span style="flex:1"></span><span style="display:flex;align-items:center;gap:5px;flex-shrink:0"><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b"></span><span style="font:700 10px/1 'pressStart',monospace;color:#f59e0b;">2</span></span>
+            </a>
+            <span style="flex:1"></span>
+            <div style="font:400 10px/1 'pressStart',monospace;color:#7286a0;line-height:1.5;letter-spacing:0.12em;padding:18px 18px 0">INSTANCE 498b<br>SIM 2.4.1</div>
+          </div>
+          </sc-if>
+
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+            <div style="display:flex;align-items:center;gap:14px;padding:13px 28px;border-bottom:1px solid #1e293b;background:#0b1220">
+              <a href="#1a" class="plate" style="display:flex;align-items:center;gap:9px;background:#131e2f;border:1px solid #334155;padding:8px 13px">
+                <span style="font:800 14px/1 'pressStart',monospace;color:#e2e8f0;">&larr;</span>
+                <span style="font:700 11px/1 'pressStart',monospace;color:#e2e8f0;letter-spacing:0.08em;white-space:nowrap">GAME BOARD</span>
+              </a>
+              <span style="width:1px;height:24px;background:#1e293b"></span>
+              <div style="display:flex;align-items:center;gap:9px">
+                <a href="#1a" class="plate" style="display:flex;align-items:center;gap:8px;background:#131e2f;border:1px solid #334155;padding:8px 11px">
+                  <span style="font:800 13px/1 'pressStart',monospace;color:#94a3b8;">&lsaquo;</span>
+                  <span style="font:600 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.06em;white-space:nowrap">KCS at MIA</span>
+                </a>
+                <span style="font:600 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;white-space:nowrap">GAME 3 OF 16</span>
+                <a href="#1a" class="plate" style="display:flex;align-items:center;gap:8px;background:#131e2f;border:1px solid #334155;padding:8px 11px">
+                  <span style="font:600 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.06em;white-space:nowrap">DET at BOS</span>
+                  <span style="font:800 13px/1 'pressStart',monospace;color:#94a3b8;">&rsaquo;</span>
+                </a>
+              </div>
+              <span style="flex:1"></span>
+              <span style="font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.12em;white-space:nowrap">INTEREST ORDER</span>
+              <span style="display:flex;align-items:center;gap:6px;font:700 10px/1 'pressStart',monospace;color:#f472b6;letter-spacing:0.1em;border:1px solid rgba(244,114,182,0.35);padding:5px 8px;white-space:nowrap">YOUR TEAM</span>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:26px;padding:18px 28px;border-bottom:1px solid #334155;background:linear-gradient(100deg,#0071E31a 0%,#0b1220 42%,#0b1220 58%,#C5116222 100%)">
+              <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0">
+                  <span style="flex-shrink:0;border-radius:50%;"><img src="assets/avatars/22.png" alt="" width="46" height="46" style="flex-shrink:0;display:block;border-radius:50%"></span>
+                  <div style="min-width:0;flex:1">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span style="font:500 12px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">San Francisco</span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;">6-8</span>
+                      
+                    </div>
+                    <a href="#1a" style="display:block;font:800 24px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.025em;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Phones</a>
+                  </div>
+                  <span style="font:800 46px/1 'pressStart',monospace;color:#f8fafc;font-variant-numeric:tabular-nums;flex-shrink:0">14</span>
+                </div>
+              <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:9px;padding:0 8px">
+                <span style="display:flex;align-items:center;gap:7px;font:700 11px/1 'pressStart',monospace;color:#4ade80;letter-spacing:0.12em;white-space:nowrap"><span class="pulse" style="width:6px;height:6px;border-radius:50%;background:#4ade80"></span>LIVE</span>
+                <span style="font:800 26px/1 'pressStart',monospace;color:#f8fafc;font-variant-numeric:tabular-nums">Q3 4:22</span>
+                <span style="font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;white-space:nowrap">2ND &amp; 6 &middot; SFP 34</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0">
+                  <span style="flex-shrink:0;border-radius:50%;outline:2px solid #ffffff;outline-offset:3px;"><img src="assets/avatars/3.png" alt="" width="46" height="46" style="flex-shrink:0;display:block;border-radius:50%"></span>
+                  <div style="min-width:0;flex:1">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span style="font:500 12px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">Philadelphia</span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;">9-5</span>
+                      <svg viewBox="0 0 24 24" fill="#fb923c" style="width:13px;height:13px;flex-shrink:0"><path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.42-7.1A13.5 13.5 0 0 1 10.5 5.8s.5 2.7 2.5 4.2c2-1.5 2.5-4.2 2.5-4.2s2.08 1.5 3.08 2.6C20.26 10.06 20 12.93 20 15.5 20 19.42 16.97 23 12 23Z"></path></svg>
+                    </div>
+                    <a href="#1a" style="display:block;font:800 24px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.025em;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Broads</a>
+                  </div>
+                  <span style="font:800 46px/1 'pressStart',monospace;color:#f8fafc;font-variant-numeric:tabular-nums;flex-shrink:0">17</span>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:22px;padding:20px 28px 32px;align-items:start">
+
+              <div style="min-width:0;display:flex;flex-direction:column;gap:16px">
+
+                <div style="background:#131e2f;border:1px solid #1e293b">
+                  <div style="display:flex;align-items:center;gap:11px;padding:12px 16px;background:#0f172a;border-bottom:1px solid #334155">
+                    <span style="font:800 12px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.1em">LINE SCORE</span>
+                    <span style="flex:1"></span>
+                    <span style="display:flex;align-items:center;gap:9px"><span style="font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em">STANDARD &middot; THROUGH Q3</span><span title="Innings games swap these columns for innings with try pips. Frames games show frames won as the headline with a frame clock. play_limit and chess_clock replace the clock with plays remaining." style="font:700 10px/1 'pressStart',monospace;color:#38bdf8;border:1px solid #1e3a52;padding:3px 6px;letter-spacing:0.06em">FORMAT</span></span>
+                  </div>
+                  <div style="padding:0"><div style="display:grid;grid-template-columns:minmax(0,1fr) repeat(4,54px) 62px;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid #1e293b">
+                    <span></span><span style="font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;text-align:center">Q1</span><span style="font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;text-align:center">Q2</span><span style="font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;text-align:center">Q3</span><span style="font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;text-align:center">Q4</span><span style="font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;text-align:right">TOTAL</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) repeat(4,54px) 62px;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid #1e293b">
+                    <span style="display:flex;align-items:center;gap:9px;min-width:0"><img src="assets/avatars/22.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%"><span style="font:700 14px/1 'pressStart',monospace;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">San Francisco Phones</span></span>
+                    <span style="font:600 15px/1 'pressStart',monospace;color:#cbd5e1;font-variant-numeric:tabular-nums;text-align:center">7</span><span style="font:600 15px/1 'pressStart',monospace;color:#cbd5e1;font-variant-numeric:tabular-nums;text-align:center">0</span><span style="font:600 15px/1 'pressStart',monospace;color:#cbd5e1;font-variant-numeric:tabular-nums;text-align:center">7</span><span style="font:500 15px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;text-align:center">&middot;</span>
+                    <span style="font:800 20px/1 'pressStart',monospace;color:#f8fafc;font-variant-numeric:tabular-nums;text-align:right">14</span>
+                  </div><div style="display:grid;grid-template-columns:minmax(0,1fr) repeat(4,54px) 62px;align-items:center;gap:10px;padding:11px 16px;">
+                    <span style="display:flex;align-items:center;gap:9px;min-width:0"><img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%"><span style="font:700 14px/1 'pressStart',monospace;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Philadelphia Broads</span></span>
+                    <span style="font:600 15px/1 'pressStart',monospace;color:#cbd5e1;font-variant-numeric:tabular-nums;text-align:center">3</span><span style="font:600 15px/1 'pressStart',monospace;color:#cbd5e1;font-variant-numeric:tabular-nums;text-align:center">7</span><span style="font:600 15px/1 'pressStart',monospace;color:#cbd5e1;font-variant-numeric:tabular-nums;text-align:center">7</span><span style="font:500 15px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;text-align:center">&middot;</span>
+                    <span style="font:800 20px/1 'pressStart',monospace;color:#f8fafc;font-variant-numeric:tabular-nums;text-align:right">17</span>
+                  </div></div>
+                </div>
+
+                <div id="shot-field" style="background:#131e2f;border:1px solid #1e293b">
+                  <div style="display:flex;align-items:center;gap:11px;padding:12px 16px;background:#0f172a;border-bottom:1px solid #334155">
+                    <span style="font:800 12px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.1em">THE FIELD</span>
+                    <span style="flex:1"></span>
+                    <span style="display:flex;align-items:center;gap:7px"><span style="font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em">DRIVE CLOCK</span><span style="font:700 12px/1 'pressStart',monospace;color:#f59e0b;font-variant-numeric:tabular-nums">0:18</span></span>
+                  </div>
+                  <div style="padding:16px">
+                    <svg viewBox="0 0 600 220" style="width:100%;height:auto;display:block;border-radius:4px">
+                      <rect x="0" y="0" width="50" height="220" fill="#C51162" opacity="0.4"></rect>
+                      <rect x="550" y="0" width="50" height="220" fill="#0071E3" opacity="0.4"></rect>
+                      <rect x="50" y="0" width="500" height="220" fill="#1e4620"></rect>
+                      <line x1="50" y1="0" x2="50" y2="220" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"></line>
+                      <line x1="550" y1="0" x2="550" y2="220" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"></line>
+                      <line x1="75" y1="0" x2="75" y2="220" stroke="rgba(255,255,255,0.10)" stroke-width="0.6"></line><line x1="125" y1="0" x2="125" y2="220" stroke="rgba(255,255,255,0.10)" stroke-width="0.6"></line><line x1="175" y1="0" x2="175" y2="220" stroke="rgba(255,255,255,0.10)" stroke-width="0.6"></line><line x1="225" y1="0" x2="225" y2="220" stroke="rgba(255,255,255,0.10)" stroke-width="0.6"></line><line x1="275" y1="0" x2="275" y2="220" stroke="rgba(255,255,255,0.10)" stroke-width="0.6"></line><line x1="325" y1="0" x2="325" y2="220" stroke="rgba(255,255,255,0.10)" stroke-width="0.6"></line><line x1="375" y1="0" x2="375" y2="220" stroke="rgba(255,255,255,0.10)" stroke-width="0.6"></line><line x1="425" y1="0" x2="425" y2="220" stroke="rgba(255,255,255,0.10)" stroke-width="0.6"></line><line x1="475" y1="0" x2="475" y2="220" stroke="rgba(255,255,255,0.10)" stroke-width="0.6"></line><line x1="525" y1="0" x2="525" y2="220" stroke="rgba(255,255,255,0.10)" stroke-width="0.6"></line>
+                      <line x1="50" y1="0" x2="50" y2="220" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"></line><line x1="100" y1="0" x2="100" y2="220" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"></line><line x1="150" y1="0" x2="150" y2="220" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"></line><line x1="200" y1="0" x2="200" y2="220" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"></line><line x1="250" y1="0" x2="250" y2="220" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"></line><line x1="300" y1="0" x2="300" y2="220" stroke="rgba(255,255,255,0.18)" stroke-width="1.5"></line><line x1="350" y1="0" x2="350" y2="220" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"></line><line x1="400" y1="0" x2="400" y2="220" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"></line><line x1="450" y1="0" x2="450" y2="220" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"></line><line x1="500" y1="0" x2="500" y2="220" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"></line><line x1="550" y1="0" x2="550" y2="220" stroke="rgba(255,255,255,0.18)" stroke-width="0.75"></line>
+                      <line x1="45" y1="70.4" x2="55" y2="70.4" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="45" y1="149.60000000000002" x2="55" y2="149.60000000000002" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="95" y1="70.4" x2="105" y2="70.4" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="95" y1="149.60000000000002" x2="105" y2="149.60000000000002" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="145" y1="70.4" x2="155" y2="70.4" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="145" y1="149.60000000000002" x2="155" y2="149.60000000000002" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="195" y1="70.4" x2="205" y2="70.4" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="195" y1="149.60000000000002" x2="205" y2="149.60000000000002" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="245" y1="70.4" x2="255" y2="70.4" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="245" y1="149.60000000000002" x2="255" y2="149.60000000000002" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="295" y1="70.4" x2="305" y2="70.4" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="295" y1="149.60000000000002" x2="305" y2="149.60000000000002" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="345" y1="70.4" x2="355" y2="70.4" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="345" y1="149.60000000000002" x2="355" y2="149.60000000000002" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="395" y1="70.4" x2="405" y2="70.4" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="395" y1="149.60000000000002" x2="405" y2="149.60000000000002" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="445" y1="70.4" x2="455" y2="70.4" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="445" y1="149.60000000000002" x2="455" y2="149.60000000000002" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="495" y1="70.4" x2="505" y2="70.4" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="495" y1="149.60000000000002" x2="505" y2="149.60000000000002" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="545" y1="70.4" x2="555" y2="70.4" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line><line x1="545" y1="149.60000000000002" x2="555" y2="149.60000000000002" stroke="rgba(255,255,255,0.2)" stroke-width="1"></line>
+                      <text x="100" y="180.39999999999998" text-anchor="middle" font-size="17" fill="rgba(255,255,255,0.3)" font-family="pressStart, monospace">10</text><text x="150" y="180.39999999999998" text-anchor="middle" font-size="17" fill="rgba(255,255,255,0.3)" font-family="pressStart, monospace">20</text><text x="200" y="180.39999999999998" text-anchor="middle" font-size="17" fill="rgba(255,255,255,0.3)" font-family="pressStart, monospace">30</text><text x="250" y="180.39999999999998" text-anchor="middle" font-size="17" fill="rgba(255,255,255,0.3)" font-family="pressStart, monospace">40</text><text x="300" y="180.39999999999998" text-anchor="middle" font-size="17" fill="rgba(255,255,255,0.3)" font-family="pressStart, monospace">50</text><text x="350" y="180.39999999999998" text-anchor="middle" font-size="17" fill="rgba(255,255,255,0.3)" font-family="pressStart, monospace">40</text><text x="400" y="180.39999999999998" text-anchor="middle" font-size="17" fill="rgba(255,255,255,0.3)" font-family="pressStart, monospace">30</text><text x="450" y="180.39999999999998" text-anchor="middle" font-size="17" fill="rgba(255,255,255,0.3)" font-family="pressStart, monospace">20</text><text x="500" y="180.39999999999998" text-anchor="middle" font-size="17" fill="rgba(255,255,255,0.3)" font-family="pressStart, monospace">10</text>
+                      <text x="25" y="110" transform="rotate(-90 25 110)" text-anchor="middle" dominant-baseline="central" font-size="21" font-weight="800" letter-spacing="1.5" fill="#C51162" opacity="0.9" font-family="pressStart, monospace">PHILADELPHIA</text>
+                      <text x="575" y="110" transform="rotate(90 575 110)" text-anchor="middle" dominant-baseline="central" font-size="21" font-weight="800" letter-spacing="1.5" fill="#0071E3" opacity="0.9" font-family="pressStart, monospace">SAN FRANCISCO</text>
+                      <line x1="410" y1="6" x2="410" y2="214" stroke="#FFD700" stroke-width="1.5" opacity="0.7" stroke-dasharray="3,2"></line>
+                      <path d="M310.00000000000006,110 Q337.5,90.75000000000004 364.99999999999994,110" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-dasharray="7,3" stroke-linecap="round" opacity="0.8"></path>
+                      <path d="M364.99999999999994,110 L380,110" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" opacity="0.8"></path>
+                      <polygon points="380,104 389,110 380,116" fill="#60a5fa" opacity="0.85"></polygon>
+                      <circle cx="380" cy="110" r="11" fill="#C51162" opacity="0.3"></circle>
+                      <ellipse cx="380" cy="110" rx="8" ry="5" fill="#7B4F2E" stroke="rgba(255,255,255,0.9)" stroke-width="1.5"></ellipse>
+                      <line x1="377" y1="110" x2="383" y2="110" stroke="rgba(255,255,255,0.6)" stroke-width="1"></line>
+                      <circle cx="380" cy="88" r="11" fill="#0f172a" opacity="0.85" stroke="#C51162" stroke-width="1.5"></circle>
+                      <image href="assets/avatars/3.png" x="371" y="79" width="18" height="18"></image>
+                      <polygon points="394,110 387,105 387,115" fill="#f8fafc" stroke="rgba(0,0,0,0.55)" stroke-width="0.5" opacity="0.95"></polygon>
+                    </svg>
+                    <div style="margin-top:8px;min-height:24px">
+                      <p style="font:400 12px/1.4 'pressStart',monospace;color:#94a3b8;text-align:center;margin:0">Milk Jones 14 yd pass to Coco Mattel</p>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;margin-top:13px">
+                    <span style="font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.12em;flex-shrink:0">REPLAY</span>
+                    <a href="#1a" class="chip" style="font:700 12px/1 'pressStart',monospace;color:#94a3b8;border:1px solid #334155;padding:5px 9px">&#9198;</a>
+                    <a href="#1a" class="chip" style="font:700 12px/1 'pressStart',monospace;color:#e2e8f0;border:1px solid #475569;padding:5px 11px">&#9199;</a>
+                    <a href="#1a" class="chip" style="font:700 12px/1 'pressStart',monospace;color:#94a3b8;border:1px solid #334155;padding:5px 9px">&#9197;</a>
+                    <span style="flex:1;height:4px;background:#0f172a;display:flex"><span style="width:44%;background:#475569"></span></span>
+                    <span style="font:600 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0;white-space:nowrap">42 / 96</span>
+                    <span style="font:600 11px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0">1&times;</span>
+                  </div></div>
+                </div>
+
+                <div style="background:#131e2f;border:1px solid #1e293b">
+                  <div style="display:flex;align-items:center;gap:11px;padding:12px 16px;background:#0f172a;border-bottom:1px solid #334155">
+                    <span style="font:800 12px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.1em">WIN PROBABILITY</span>
+                    <span style="flex:1"></span>
+                    <span style="display:flex;align-items:center;gap:9px"><span style="font:800 15px/1 'pressStart',monospace;color:#fe2f97;font-variant-numeric:tabular-nums">PHI 62%</span><span style="font:600 11px/1 'pressStart',monospace;color:#4ade80;">&#9650; 7</span></span>
+                  </div>
+                  <div style="padding:16px"><div style="position:relative">
+                    <svg viewBox="0 0 744 118" width="100%" height="118" preserveAspectRatio="none" style="display:block;background:#0f172a;border:1px solid #1e293b">
+                      <line x1="0" y1="59" x2="744" y2="59" stroke="#334155" stroke-width="1" stroke-dasharray="3 4" vector-effect="non-scaling-stroke"></line>
+                      <line x1="186" y1="0" x2="186" y2="118" stroke="#1e293b" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="372" y1="0" x2="372" y2="118" stroke="#1e293b" stroke-width="2" vector-effect="non-scaling-stroke"></line><line x1="558" y1="0" x2="558" y2="118" stroke="#1e293b" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+                      <polyline points="0,56.64 74.4,60.18 148.8,49.56 223.2,66.08 297.6,62.540000000000006 372,69.62 446.4,53.099999999999994 520.8,59 595.2,49.56 669.6,54.279999999999994 744,44.84" fill="none" stroke="#C51162" stroke-width="2" vector-effect="non-scaling-stroke"></polyline>
+                      <circle cx="744" cy="44.84" r="3.5" fill="#C51162"></circle>
+                    </svg>
+                    <div style="display:flex;margin-top:7px" title="Four sections because this is a standard game — the axis is section-based, so frames label F1..Fn and the clock-less formats spread plays by period"><span style="flex:1;text-align:center;font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em">Q1</span><span style="flex:1;text-align:center;font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em">Q2</span><span style="flex:1;text-align:center;font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em">Q3</span><span style="flex:1;text-align:center;font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em">Q4</span></div>
+                  </div></div>
+                </div>
+
+                <div id="shot-plays" style="background:#131e2f;border:1px solid #1e293b">
+                  <div style="display:flex;align-items:center;gap:11px;padding:12px 16px;background:#0f172a;border-bottom:1px solid #334155">
+                    <div style="display:flex;background:#0f172a;border:1px solid #1e293b"><span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:8px 13px;background:#cbd5e1;">PLAYS</span><span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 13px;background:transparent;border-left:1px solid #1e293b;">BOX SCORE</span><span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 13px;background:transparent;border-left:1px solid #1e293b;">PLAYER STATS</span></div>
+                    <span style="flex:1"></span>
+                    <span style="display:flex;align-items:center;gap:10px"><div style="display:flex;background:#0f172a;border:1px solid #1e293b"><span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:8px 13px;background:#cbd5e1;">ALL</span><span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 13px;border-left:1px solid #1e293b;">SCORING</span><span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 13px;border-left:1px solid #1e293b;">BIG PLAYS</span></div></span>
+                  </div>
+                  <div style="padding:0"><div style="border-bottom:1px solid #1e293b;box-shadow:inset 3px 0 0 #f59e0b;background:#1a1300">
+                    <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 16px">
+                      <span style="display:flex;align-items:center;gap:7px;width:70px;flex-shrink:0;padding-top:1px">
+                        <img src="assets/avatars/3.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%">
+                        <span style="font:700 11px/1 'pressStart',monospace;color:#fe2f97;letter-spacing:0.04em">PHI</span>
+                      </span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:64px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">Q3 4:22</span>
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#cbd5e1;width:74px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">2nd & 6</span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:58px;flex-shrink:0;padding-top:5px;white-space:nowrap">SFP 34</span>
+                      <span style="flex:1;min-width:0;font:500 13px/1 'pressStart',monospace;color:#f8fafc;line-height:1.45;text-wrap:pretty">Milk Jones 14 yd pass to Coco Mattel</span>
+                      <span style="display:flex;align-items:center;gap:5px;font:700 10px/1 'pressStart',monospace;color:#d97706;flex-shrink:0;padding-top:4px;white-space:nowrap"><svg width="9" height="12" viewBox="0 0 8 12" fill="currentColor" style="display:block"><path d="M5 0L0 7h3l-1 5 5-7H4l1-5z"></path></svg><span style="color:#fe2f97">PHI</span> +7.2%</span>
+                      <span style="font:700 10px/1 'pressStart',monospace;color:#4ade80;letter-spacing:0.08em;flex-shrink:0;padding-top:5px;white-space:nowrap">+14</span>
+                      <span style="font:700 10px/1 'pressStart',monospace;color:#38bdf8;flex-shrink:0;padding-top:5px">&minus;</span>
+                    </div>
+                    <div style="padding:12px 16px 14px 82px;background:#0f172a;border-top:1px solid #1e293b">
+                      <div style="display:flex;gap:24px">
+
+                      <div style="flex:1 1 0;min-width:0;max-width:290px;display:flex;flex-direction:column;gap:13px">
+                        <div>
+                          <div style="font:700 9px/1 'pressStart',monospace;color:#cbd5e1;letter-spacing:0.12em;padding-bottom:4px;border-bottom:1px solid #1e293b;margin-bottom:6px">SITUATION</div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0">
+                            <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Game Pressure</span>
+                            <span style="display:flex;align-items:center;gap:6px"><span style="width:56px;height:6px;background:#334155;flex-shrink:0;display:block"><span style="display:block;width:78%;height:100%;background:#ef4444"></span></span><span style="font:600 10px/1 'pressStart',monospace;color:#ef4444;min-width:66px;text-align:right">Very High</span></span>
+                          </div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0">
+                            <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Momentum</span>
+                            <span style="display:flex;align-items:center;gap:6px"><span style="position:relative;width:56px;height:8px;background:#334155;flex-shrink:0;display:block"><span style="position:absolute;left:50%;top:0;width:32%;height:100%;background:#22c55e"></span></span><span style="font:700 10px/1 'pressStart',monospace;color:#22c55e;min-width:66px;text-align:right">PHI</span></span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div style="font:700 9px/1 'pressStart',monospace;color:#cbd5e1;letter-spacing:0.12em;padding-bottom:4px;border-bottom:1px solid #1e293b;margin-bottom:6px">STRATAGEM</div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Play Call</span><span style="font:600 10px/1 'pressStart',monospace;color:#5b9bd5">Medium Pass</span></div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Play Design</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0">Play-action + Mesh</span></div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Tempo</span><span style="font:600 10px/1 'pressStart',monospace;color:#94a3b8">Normal</span></div>
+
+                          <div style="border-left:2px solid #5b9bd5;padding-left:9px;margin-top:8px">
+                            <div style="font:700 9px/1 'pressStart',monospace;color:#5b9bd5;letter-spacing:0.1em;margin-bottom:4px">PHI OFFENSE</div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Gameplan</span><span style="font:600 10px/1 'pressStart',monospace;color:#5b9bd5">Pass First<span style="color:#eab308;font-size:9px;margin-left:5px">Adjusted</span></span></div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Run / Pass</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">38% / 62%</span></div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Offensive Mind</span><span style="font:600 10px/1 'pressStart',monospace;color:#eab308">Sharp</span></div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Adaptability</span><span style="font:600 10px/1 'pressStart',monospace;color:#eab308">Capable</span></div>
+                          </div>
+
+                          <div style="border-left:2px solid #ef4444;padding-left:9px;margin-top:8px">
+                            <div style="font:700 9px/1 'pressStart',monospace;color:#ef4444;letter-spacing:0.1em;margin-bottom:4px">SFP DEFENSE</div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Posture</span><span style="font:600 10px/1 'pressStart',monospace;color:#ef4444">Blitz Heavy<span style="color:#eab308;font-size:9px;margin-left:5px">Adjusted</span></span></div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Run Focus</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">42%</span></div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Blitz Rate</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">38%</span></div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Defensive Mind</span><span style="font:600 10px/1 'pressStart',monospace;color:#eab308">Capable</span></div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Coverage</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0">Man</span></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style="flex:1 1 0;min-width:0;max-width:290px;display:flex;flex-direction:column;gap:13px">
+                        <div>
+                          <div style="font:700 9px/1 'pressStart',monospace;color:#cbd5e1;letter-spacing:0.12em;padding-bottom:4px;border-bottom:1px solid #1e293b;margin-bottom:6px">COMPOSURE</div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">QB Milk Jones</span><span style="font:700 10px/1 'pressStart',monospace;color:#22c55e;flex-shrink:0">Locked In <span style="font-size:8px">&#9650;</span></span></div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">WR Coco Mattel</span><span style="font:700 10px/1 'pressStart',monospace;color:#4ade80;flex-shrink:0">In Rhythm <span style="font-size:8px">&#9650;</span></span></div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">CB Bizzy Bone</span><span style="font:700 10px/1 'pressStart',monospace;color:#f87171;flex-shrink:0">Frustrated <span style="font-size:8px">&#9660;</span></span></div>
+                        </div>
+
+                        <div>
+                          <div style="font:700 9px/1 'pressStart',monospace;color:#cbd5e1;letter-spacing:0.12em;padding-bottom:4px;border-bottom:1px solid #1e293b;margin-bottom:6px">EXECUTION</div>
+                          <div style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;margin-bottom:3px">Quarterback</div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0">
+                            <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Pass Rush</span>
+                            <span style="display:flex;align-items:center;gap:6px"><span style="position:relative;width:56px;height:8px;background:#334155;flex-shrink:0;display:block"><span style="position:absolute;left:50%;top:0;width:14%;height:100%;background:#22c55e"></span></span><span style="font:600 10px/1 'pressStart',monospace;color:#22c55e;min-width:66px;text-align:right">Protected</span></span>
+                          </div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0">
+                            <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Vision</span>
+                            <span style="display:flex;align-items:center;gap:6px"><span style="width:56px;height:6px;background:#334155;flex-shrink:0;display:block"><span style="display:block;width:84%;height:100%;background:#22c55e"></span></span><span style="font:600 10px/1 'pressStart',monospace;color:#22c55e;min-width:66px;text-align:right">Keen</span></span>
+                          </div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0">
+                            <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Throw Quality</span>
+                            <span style="display:flex;align-items:center;gap:6px"><span style="width:56px;height:6px;background:#334155;flex-shrink:0;display:block"><span style="display:block;width:71%;height:100%;background:#22c55e"></span></span><span style="font:600 10px/1 'pressStart',monospace;color:#22c55e;min-width:66px;text-align:right">Sharp</span></span>
+                          </div>
+
+                          <div style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;margin:8px 0 3px">Receiver</div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Target</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0">Coco Mattel (WR)</span></div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0">
+                            <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Separation</span>
+                            <span style="display:flex;align-items:center;gap:6px"><span style="width:56px;height:6px;background:#334155;flex-shrink:0;display:block"><span style="display:block;width:68%;height:100%;background:#22c55e"></span></span><span style="font:600 10px/1 'pressStart',monospace;color:#22c55e;min-width:66px;text-align:right">Open</span></span>
+                          </div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0">
+                            <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Hands</span>
+                            <span style="display:flex;align-items:center;gap:6px"><span style="width:56px;height:6px;background:#334155;flex-shrink:0;display:block"><span style="display:block;width:81%;height:100%;background:#22c55e"></span></span><span style="font:600 10px/1 'pressStart',monospace;color:#22c55e;min-width:66px;text-align:right">Sure</span></span>
+                          </div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0">
+                            <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Route</span>
+                            <span style="display:flex;align-items:center;gap:6px"><span style="width:56px;height:6px;background:#334155;flex-shrink:0;display:block"><span style="display:block;width:76%;height:100%;background:#eab308"></span></span><span style="font:600 10px/1 'pressStart',monospace;color:#eab308;min-width:66px;text-align:right">Solid</span></span>
+                          </div>
+
+                          <div style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;margin:8px 0 4px">Outcome</div>
+                          <div style="position:relative;height:10px;display:flex">
+                            <span style="width:4%;height:100%;background:#ef4444;display:block"></span><span style="width:71%;height:100%;background:#22c55e;display:block"></span><span style="width:9%;height:100%;background:#eab308;display:block"></span><span style="width:16%;height:100%;background:#475569;display:block"></span>
+                            <span style="position:absolute;left:38%;top:-2px;width:2px;height:14px;background:#fff;display:block"></span>
+                          </div>
+                          <div style="display:flex;gap:8px;margin-top:5px;flex-wrap:wrap;align-items:center">
+                            <span style="font:600 10px/1 'pressStart',monospace;color:#ef4444">INT 4%</span><span style="font:600 10px/1 'pressStart',monospace;color:#22c55e">Catch 71%</span><span style="font:600 10px/1 'pressStart',monospace;color:#eab308">Drop 9%</span><span style="font:600 10px/1 'pressStart',monospace;color:#94a3b8">Incomplete 16%</span>
+                            <span style="flex:1"></span><span style="font:700 10px/1 'pressStart',monospace;color:#f1f5f9">Catch</span>
+                          </div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0 2px"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Air Yards</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">11</span></div>
+                          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">YAC</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">3</span></div>
+                        </div>
+                      </div>
+
+                      </div>
+                    </div>
+                  </div>
+                  <div style="border-bottom:1px solid #1e293b">
+                    <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 16px">
+                      <span style="display:flex;align-items:center;gap:7px;width:70px;flex-shrink:0;padding-top:1px">
+                        <img src="assets/avatars/3.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%">
+                        <span style="font:700 11px/1 'pressStart',monospace;color:#fe2f97;letter-spacing:0.04em">PHI</span>
+                      </span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:64px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">Q3 4:58</span>
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#cbd5e1;width:74px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">1st & 10</span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:58px;flex-shrink:0;padding-top:5px;white-space:nowrap">SFP 48</span>
+                      <span style="flex:1;min-width:0;font:500 13px/1 'pressStart',monospace;color:#e2e8f0;line-height:1.45;text-wrap:pretty">Gootsy Porkins 4 yd rush</span>
+                      <span style="font:700 10px/1 'pressStart',monospace;color:#cbd5e1;letter-spacing:0.08em;flex-shrink:0;padding-top:5px;white-space:nowrap">+4</span>
+                      <span style="font:600 12px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0;padding-top:4px">+</span>
+                    </div>
+                    
+                  </div>
+                  <div style="border-bottom:1px solid #1e293b;box-shadow:inset 3px 0 0 #06b6d4;background:#001a1f">
+                    <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 16px">
+                      <span style="display:flex;align-items:center;gap:7px;width:70px;flex-shrink:0;padding-top:1px">
+                        <img src="assets/avatars/3.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%">
+                        <span style="font:700 11px/1 'pressStart',monospace;color:#fe2f97;letter-spacing:0.04em">PHI</span>
+                      </span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:64px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">Q3 5:12</span>
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#cbd5e1;width:74px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">3rd & 2</span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:58px;flex-shrink:0;padding-top:5px;white-space:nowrap">PHI 48</span>
+                      <span style="flex:1;min-width:0;font:500 13px/1 'pressStart',monospace;color:#e2e8f0;line-height:1.45;text-wrap:pretty">Milk Jones 8 yd pass to Sister Lettuce</span>
+                      <span style="font:700 10px/1 'pressStart',monospace;color:#4ade80;letter-spacing:0.08em;flex-shrink:0;padding-top:5px;white-space:nowrap">1ST DOWN</span>
+                      <span style="font:600 12px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0;padding-top:4px">+</span>
+                    </div>
+                    <div style="padding:0 16px 11px 82px;display:flex;align-items:center;gap:8px"><span style="font:700 10px/1 'pressStart',monospace;color:#06b6d4;letter-spacing:0.06em">&#9670; CLUTCH</span><span style="font:500 10px/1 'pressStart',monospace;color:#cbd5e1">Milk Jones, Sister Lettuce</span></div>
+                  </div>
+                  <div style="border-bottom:1px solid #1e293b">
+                    <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 16px">
+                      <span style="display:flex;align-items:center;gap:7px;width:70px;flex-shrink:0;padding-top:1px">
+                        <img src="assets/avatars/3.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%">
+                        <span style="font:700 11px/1 'pressStart',monospace;color:#fe2f97;letter-spacing:0.04em">PHI</span>
+                      </span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:64px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">Q3 5:49</span>
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#cbd5e1;width:74px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">2nd & 6</span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:58px;flex-shrink:0;padding-top:5px;white-space:nowrap">PHI 44</span>
+                      <span style="flex:1;min-width:0;font:500 13px/1 'pressStart',monospace;color:#e2e8f0;line-height:1.45;text-wrap:pretty">Large Ant stopped for no gain</span>
+                      <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;flex-shrink:0;padding-top:5px;white-space:nowrap">0</span>
+                      <span style="font:600 12px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0;padding-top:4px">+</span>
+                    </div>
+                    
+                  </div>
+                  <div style="border-bottom:1px solid #1e293b">
+                    <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 16px">
+                      <span style="display:flex;align-items:center;gap:7px;width:70px;flex-shrink:0;padding-top:1px">
+                        <img src="assets/avatars/3.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%">
+                        <span style="font:700 11px/1 'pressStart',monospace;color:#fe2f97;letter-spacing:0.04em">PHI</span>
+                      </span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:64px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">Q3 6:21</span>
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#cbd5e1;width:74px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">1st & 10</span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:58px;flex-shrink:0;padding-top:5px;white-space:nowrap">PHI 40</span>
+                      <span style="flex:1;min-width:0;font:500 13px/1 'pressStart',monospace;color:#e2e8f0;line-height:1.45;text-wrap:pretty">Milk Jones 4 yd pass to Chi Chi Eichelberger</span>
+                      <span style="font:700 10px/1 'pressStart',monospace;color:#cbd5e1;letter-spacing:0.08em;flex-shrink:0;padding-top:5px;white-space:nowrap">+4</span>
+                      <span style="font:600 12px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0;padding-top:4px">+</span>
+                    </div>
+                    
+                  </div>
+                  <div style="border-bottom:1px solid #1e293b;box-shadow:inset 3px 0 0 #f97316;background:#1a0f00">
+                    <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 16px">
+                      <span style="display:flex;align-items:center;gap:7px;width:70px;flex-shrink:0;padding-top:1px">
+                        <img src="assets/avatars/22.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%">
+                        <span style="font:700 11px/1 'pressStart',monospace;color:#0c92ff;letter-spacing:0.04em">SFP</span>
+                      </span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:64px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">Q3 6:40</span>
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#cbd5e1;width:74px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">4th & 3</span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:58px;flex-shrink:0;padding-top:5px;white-space:nowrap">SFP 41</span>
+                      <span style="flex:1;min-width:0;font:500 13px/1 'pressStart',monospace;color:#e2e8f0;line-height:1.45;text-wrap:pretty">Ovaltine Vinaigrette 41 yd punt to PHI 18, returned 2 yds by Chi Chi Eichelberger, tackled by Bevel Sanderson</span>
+                      <span style="display:flex;align-items:center;gap:5px;font:700 10px/1 'pressStart',monospace;color:#f97316;letter-spacing:0.06em;flex-shrink:0;padding-top:4px;white-space:nowrap"><svg width="10" height="12" viewBox="0 0 12 16" fill="#f97316" style="display:block"><path d="M6 0C6 0 2 4 2 8c0 2.2 1.8 4 4 4s4-1.8 4-4C10 4 6 0 6 0zm0 10.5c-1.4 0-2.5-1.1-2.5-2.5 0-1.9 2.5-5.5 2.5-5.5s2.5 3.6 2.5 5.5c0 1.4-1.1 2.5-2.5 2.5z"></path></svg>MOMENTUM SHIFT</span>
+                      <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;flex-shrink:0;padding-top:5px;white-space:nowrap">PUNT</span>
+                      <span style="font:600 12px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0;padding-top:4px">+</span>
+                    </div>
+                    
+                  </div>
+                  <div style="border-bottom:1px solid #1e293b;box-shadow:inset 3px 0 0 #ef4444;background:#1a0500">
+                    <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 16px">
+                      <span style="display:flex;align-items:center;gap:7px;width:70px;flex-shrink:0;padding-top:1px">
+                        <img src="assets/avatars/22.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%">
+                        <span style="font:700 11px/1 'pressStart',monospace;color:#0c92ff;letter-spacing:0.04em">SFP</span>
+                      </span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:64px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">Q3 7:18</span>
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#cbd5e1;width:74px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">3rd & 3</span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:58px;flex-shrink:0;padding-top:5px;white-space:nowrap">SFP 41</span>
+                      <span style="flex:1;min-width:0;font:500 13px/1 'pressStart',monospace;color:#e2e8f0;line-height:1.45;text-wrap:pretty">Cleat Jenkins sacked for -7 by Bizzy Bone</span>
+                      <span style="font:700 10px/1 'pressStart',monospace;color:#f87171;letter-spacing:0.08em;flex-shrink:0;padding-top:5px;white-space:nowrap">SACK</span>
+                      <span style="font:600 12px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0;padding-top:4px">+</span>
+                    </div>
+                    <div style="padding:0 16px 11px 82px;display:flex;align-items:center;gap:8px"><span style="font:700 10px/1 'pressStart',monospace;color:#ef4444;letter-spacing:0.06em">&#9660; CHOKE</span><span style="font:500 10px/1 'pressStart',monospace;color:#cbd5e1">Cleat Jenkins</span></div>
+                  </div>
+                  <div style="border-bottom:1px solid #1e293b">
+                    <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 16px">
+                      <span style="display:flex;align-items:center;gap:7px;width:70px;flex-shrink:0;padding-top:1px">
+                        <img src="assets/avatars/22.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%">
+                        <span style="font:700 11px/1 'pressStart',monospace;color:#0c92ff;letter-spacing:0.04em">SFP</span>
+                      </span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:64px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">Q3 7:55</span>
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#cbd5e1;width:74px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">2nd & 8</span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:58px;flex-shrink:0;padding-top:5px;white-space:nowrap">SFP 36</span>
+                      <span style="flex:1;min-width:0;font:500 13px/1 'pressStart',monospace;color:#e2e8f0;line-height:1.45;text-wrap:pretty">Cornbread Tippins 3 yd rush</span>
+                      <span style="font:700 10px/1 'pressStart',monospace;color:#cbd5e1;letter-spacing:0.08em;flex-shrink:0;padding-top:5px;white-space:nowrap">+3</span>
+                      <span style="font:600 12px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0;padding-top:4px">+</span>
+                    </div>
+                    
+                  </div>
+                  <div style="border-bottom:1px solid #1e293b">
+                    <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 16px">
+                      <span style="display:flex;align-items:center;gap:7px;width:70px;flex-shrink:0;padding-top:1px">
+                        <img src="assets/avatars/22.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%">
+                        <span style="font:700 11px/1 'pressStart',monospace;color:#0c92ff;letter-spacing:0.04em">SFP</span>
+                      </span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:64px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">Q3 8:31</span>
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#cbd5e1;width:74px;flex-shrink:0;padding-top:5px;white-space:nowrap;font-variant-numeric:tabular-nums">1st & 10</span>
+                      <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;width:58px;flex-shrink:0;padding-top:5px;white-space:nowrap">SFP 34</span>
+                      <span style="flex:1;min-width:0;font:500 13px/1 'pressStart',monospace;color:#e2e8f0;line-height:1.45;text-wrap:pretty">Cleat Jenkins pass incomplete to Kevin Oddly, broken up by Sister Lettuce in the flat</span>
+                      <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;flex-shrink:0;padding-top:5px;white-space:nowrap">INC</span>
+                      <span style="font:600 12px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0;padding-top:4px">+</span>
+                    </div>
+                    
+                  </div></div>
+                </div>
+
+              </div>
+
+              <div style="min-width:0;display:flex;flex-direction:column;gap:16px">
+
+                <div style="background:#131e2f;border:1px solid #1e293b;padding:14px">
+                  <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:11px">
+                    <span style="font:800 12px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.1em">RALLY</span>
+                    <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;">40 floobits, +1 confidence</span>
+                  </div>
+                  <div style="display:flex;gap:8px">
+                    <a href="#1a" class="plate" style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:8px;background:#0071E31f;border:1px solid #0071E366;padding:11px 0">
+                      <img src="assets/avatars/22.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%">
+                      <span style="font:700 11px/1 'pressStart',monospace;color:#0c92ff;letter-spacing:0.06em">SFP</span>
+                    </a><a href="#1a" class="plate" style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:8px;background:#C511621f;border:1px solid #C5116266;padding:11px 0">
+                      <img src="assets/avatars/3.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%">
+                      <span style="font:700 11px/1 'pressStart',monospace;color:#fe2f97;letter-spacing:0.06em">PHI</span>
+                    </a>
+                  </div>
+                </div>
+
+                <div id="shot-bleachers" style="background:#131e2f;border:1px solid #1e293b">
+                  <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#0f172a;border-bottom:1px solid #334155">
+                    <span style="font:800 12px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.1em">THE BLEACHERS</span>
+                    <span style="flex:1"></span>
+                    <span style="display:flex;align-items:center;gap:6px;font:600 11px/1 'pressStart',monospace;color:#4ade80;white-space:nowrap"><span class="pulse" style="width:5px;height:5px;border-radius:50%;background:#4ade80"></span>34 watching</span>
+                  </div>
+
+                  <div style="padding:13px 14px;border-bottom:1px solid #1e293b;position:relative">
+                    <a href="#1a" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #64748b;background:#243044;text-decoration:none">
+                      <span style="font:700 12px/1 'pressStart',monospace;color:#e2e8f0">Say something</span>
+                      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;transform:rotate(180deg)"><path d="M5 8l5 5 5-5"></path></svg>
+                    </a>
+                    <div style="margin-top:6px;border:1px solid #334155;background:#0f172a">
+                      <div style="padding:8px 12px 5px;font:700 11px/1 'pressStart',monospace;color:#38bdf8;letter-spacing:0.04em">On that play</div>
+                      <a href="#1a" class="feedopt" style="display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-left:2px solid transparent;text-decoration:none"><span style="flex:1;min-width:0;font:500 12px/1.3 'pressStart',monospace;color:#cbd5e1">THAT THROW</span><span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0">41</span></a>
+                      <a href="#1a" class="feedopt" style="display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-left:2px solid transparent;text-decoration:none"><span style="flex:1;min-width:0;font:500 12px/1.3 'pressStart',monospace;color:#cbd5e1">MATTEL AGAIN</span><span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0">26</span></a>
+                      <a href="#1a" class="feedopt" style="display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-left:2px solid transparent;text-decoration:none"><span style="flex:1;min-width:0;font:500 12px/1.3 'pressStart',monospace;color:#cbd5e1">MOVE THE STICKS</span><span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0">12</span></a>
+                      <div style="padding:8px 12px 5px;font:700 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">Any time</div>
+                      <a href="#1a" class="feedopt" style="display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-left:2px solid transparent;text-decoration:none"><span style="flex:1;min-width:0;font:500 12px/1.3 'pressStart',monospace;color:#cbd5e1">LET&rsquo;S GO</span><span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0">88</span></a>
+                      <a href="#1a" class="feedopt" style="display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-left:2px solid transparent;text-decoration:none"><span style="flex:1;min-width:0;font:500 12px/1.3 'pressStart',monospace;color:#cbd5e1">DEFENSE</span><span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0">54</span></a>
+                      <a href="#1a" class="feedopt" style="display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-left:2px solid transparent;text-decoration:none"><span style="flex:1;min-width:0;font:500 12px/1.3 'pressStart',monospace;color:#cbd5e1">CLOCK IT</span><span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0">31</span></a>
+                      <a href="#1a" class="feedopt" style="display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-left:2px solid transparent;text-decoration:none"><span style="flex:1;min-width:0;font:500 12px/1.3 'pressStart',monospace;color:#cbd5e1">THAT&rsquo;S A CATCH</span><span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0">22</span></a>
+                      <a href="#1a" class="feedopt" style="display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-left:2px solid transparent;text-decoration:none"><span style="flex:1;min-width:0;font:500 12px/1.3 'pressStart',monospace;color:#cbd5e1">OH NO</span><span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0">19</span></a>
+                      <a href="#1a" class="feedopt" style="display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-left:2px solid transparent;text-decoration:none"><span style="flex:1;min-width:0;font:500 12px/1.3 'pressStart',monospace;color:#cbd5e1">CALL IT</span><span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0">14</span></a>
+                      <a href="#1a" class="feedopt" style="display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-left:2px solid transparent;text-decoration:none"><span style="flex:1;min-width:0;font:500 12px/1.3 'pressStart',monospace;color:#cbd5e1">WE NEEDED THAT</span><span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0">11</span></a>
+                      <a href="#1a" class="feedopt" style="display:flex;align-items:baseline;gap:8px;padding:9px 12px;border-left:2px solid transparent;text-decoration:none"><span style="flex:1;min-width:0;font:500 12px/1.3 'pressStart',monospace;color:#cbd5e1">SIT DOWN</span><span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0">7</span></a>
+                    </div>
+                    <div style="font:400 11px/1 'pressStart',monospace;color:#94a3b8;margin-top:8px">Posting as <span style="color:#fe2f97;font-weight:700">quiet_oyster_41</span> &middot; 5 posts left this hour</div>
+                  </div>
+
+                  <div style="max-height:520px;overflow-y:auto">
+                    <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid #1e293b;background:rgba(197,17,98,0.08);box-shadow:inset 3px 0 0 #C51162;">
+                    <div style="display:flex;gap:8px;padding:7px 9px;background:#0f172a;border-left:2px solid #C51162">
+                      <span style="flex:1;min-width:0;font:400 10px/1 'pressStart',monospace;color:#94a3b8;line-height:1.4;text-wrap:pretty">Milk Jones 14 yd pass to Coco Mattel</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <img src="assets/avatars/3.png" alt="" width="18" height="18" style="flex-shrink:0;display:block;border-radius:50%">
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#fe2f97;">quiet_oyster_41</span>
+                      <span style="flex:1"></span>
+                      <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;">2s</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span style="flex:1;min-width:0;font:700 14px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.01em;text-wrap:pretty">THAT THROW</span>
+                      <span class="hd" style="display:flex;align-items:center;gap:5px;font:600 10px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0">
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17s-6-3.9-6-8a3.5 3.5 0 016-2.4A3.5 3.5 0 0116 9c0 4.1-6 8-6 8z"></path></svg>4
+                      </span>
+                    </div>
+                  </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid #1e293b;background:rgba(167,139,250,0.05)">
+                      <div style="display:flex;gap:8px;padding:7px 9px;background:#0f172a;border-left:2px solid #C51162">
+                        <span style="flex:1;min-width:0;font:400 10px/1 'pressStart',monospace;color:#94a3b8;line-height:1.4;text-wrap:pretty">Milk Jones 14 yd pass to Coco Mattel</span>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <img src="assets/avatars/3.png" alt="" width="18" height="18" style="flex-shrink:0;display:block;border-radius:50%">
+                        <span style="font:700 11px/1 'pressStart',monospace;color:#f1f5f9">Coco Mattel</span>
+                        <span style="font:700 8px/1 'pressStart',monospace;color:#a78bfa;letter-spacing:0.12em;border:1px solid #6d5aa8;padding:4px 5px">ON THE FIELD</span>
+                        <span style="flex:1"></span>
+                        <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;">8s</span>
+                      </div>
+                      <div style="font:400 12px/1 'pressStart',monospace;color:#e2e8f0;line-height:1.55;font-style:italic;background:rgba(167,139,250,0.09);border-left:2px solid #a78bfa;padding:8px 10px;text-wrap:pretty">They keep leaving one guy on me. I keep catching it. That&rsquo;s not a scheme, that&rsquo;s a gift.</div>
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <span style="flex:1"></span>
+                        <span class="hd" style="display:flex;align-items:center;gap:5px;font:600 10px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0">
+                          <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17s-6-3.9-6-8a3.5 3.5 0 016-2.4A3.5 3.5 0 0116 9c0 4.1-6 8-6 8z"></path></svg>27
+                        </span>
+                      </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid #1e293b;">
+                    <div style="display:flex;gap:8px;padding:7px 9px;background:#0f172a;border-left:2px solid #C51162">
+                      <span style="flex:1;min-width:0;font:400 10px/1 'pressStart',monospace;color:#94a3b8;line-height:1.4;text-wrap:pretty">Milk Jones 14 yd pass to Coco Mattel</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <img src="assets/avatars/3.png" alt="" width="18" height="18" style="flex-shrink:0;display:block;border-radius:50%">
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#fe2f97;">brass_marmot_09</span>
+                      <span style="flex:1"></span>
+                      <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;">14s</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span style="flex:1;min-width:0;font:700 14px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.01em;text-wrap:pretty">MOVE THE STICKS</span>
+                      <span class="hd" style="display:flex;align-items:center;gap:5px;font:600 10px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0">
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17s-6-3.9-6-8a3.5 3.5 0 016-2.4A3.5 3.5 0 0116 9c0 4.1-6 8-6 8z"></path></svg>2
+                      </span>
+                    </div>
+                  </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid #1e293b;">
+                    
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <img src="assets/avatars/22.png" alt="" width="18" height="18" style="flex-shrink:0;display:block;border-radius:50%">
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#0c92ff;">tin_gannet_77</span>
+                      <span style="flex:1"></span>
+                      <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;">41s</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span style="flex:1;min-width:0;font:700 14px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.01em;text-wrap:pretty">DEFENSE</span>
+                      <span class="hd" style="display:flex;align-items:center;gap:5px;font:600 10px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0">
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17s-6-3.9-6-8a3.5 3.5 0 016-2.4A3.5 3.5 0 0116 9c0 4.1-6 8-6 8z"></path></svg>6
+                      </span>
+                    </div>
+                  </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid #1e293b;">
+                    <div style="display:flex;gap:8px;padding:7px 9px;background:#0f172a;border-left:2px solid #C51162">
+                      <span style="flex:1;min-width:0;font:400 10px/1 'pressStart',monospace;color:#94a3b8;line-height:1.4;text-wrap:pretty">Milk Jones 8 yd pass to Sister Lettuce</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <img src="assets/avatars/3.png" alt="" width="18" height="18" style="flex-shrink:0;display:block;border-radius:50%">
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#fe2f97;">plum_civet_23</span>
+                      <span style="flex:1"></span>
+                      <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;">1m</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span style="flex:1;min-width:0;font:700 14px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.01em;text-wrap:pretty">WE NEEDED THAT</span>
+                      <span class="hd" style="display:flex;align-items:center;gap:5px;font:600 10px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0">
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17s-6-3.9-6-8a3.5 3.5 0 016-2.4A3.5 3.5 0 0116 9c0 4.1-6 8-6 8z"></path></svg>3
+                      </span>
+                    </div>
+                  </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid #1e293b;background:rgba(245,158,11,0.05)">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <img src="assets/avatars/3.png" alt="" width="18" height="18" style="flex-shrink:0;display:block;border-radius:50%">
+                        <span style="font:700 11px/1 'pressStart',monospace;color:#f1f5f9">Sister Lettuce</span>
+                        <span style="font:700 8px/1 'pressStart',monospace;color:#f59e0b;letter-spacing:0.12em;border:1px solid #8a6516;padding:4px 5px">SIDELINE</span>
+                        <span style="flex:1"></span>
+                        <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;">1m</span>
+                      </div>
+                      <div style="font:400 12px/1 'pressStart',monospace;color:#e2e8f0;line-height:1.55;font-style:italic;background:rgba(245,158,11,0.09);border-left:2px solid #f59e0b;padding:8px 10px;text-wrap:pretty">Drinking water with both hands again, staring somewhere past the scoreboard at a thing the cameras can&rsquo;t find.</div>
+                      <div style="display:flex;align-items:center;gap:10px">
+                        <span style="flex:1"></span>
+                        <span class="hd" style="display:flex;align-items:center;gap:5px;font:600 10px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0">
+                          <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17s-6-3.9-6-8a3.5 3.5 0 016-2.4A3.5 3.5 0 0116 9c0 4.1-6 8-6 8z"></path></svg>41
+                        </span>
+                      </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid #1e293b;">
+                    <div style="display:flex;gap:8px;padding:7px 9px;background:#0f172a;border-left:2px solid #0071E3">
+                      <span style="flex:1;min-width:0;font:400 10px/1 'pressStart',monospace;color:#94a3b8;line-height:1.4;text-wrap:pretty">Cleat Jenkins sacked for -7 by Bizzy Bone</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <img src="assets/avatars/22.png" alt="" width="18" height="18" style="flex-shrink:0;display:block;border-radius:50%">
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#0c92ff;">grey_dunlin_58</span>
+                      <span style="flex:1"></span>
+                      <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;">2m</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span style="flex:1;min-width:0;font:700 14px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.01em;text-wrap:pretty">OH NO</span>
+                      <span class="hd" style="display:flex;align-items:center;gap:5px;font:600 10px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0">
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17s-6-3.9-6-8a3.5 3.5 0 016-2.4A3.5 3.5 0 0116 9c0 4.1-6 8-6 8z"></path></svg>9
+                      </span>
+                    </div>
+                  </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid #1e293b;">
+                    
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <img src="assets/avatars/22.png" alt="" width="18" height="18" style="flex-shrink:0;display:block;border-radius:50%">
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#0c92ff;">lime_shrike_02</span>
+                      <span style="flex:1"></span>
+                      <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;">2m</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span style="flex:1;min-width:0;font:700 14px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.01em;text-wrap:pretty">CALL IT</span>
+                      <span class="hd" style="display:flex;align-items:center;gap:5px;font:600 10px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0">
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17s-6-3.9-6-8a3.5 3.5 0 016-2.4A3.5 3.5 0 0116 9c0 4.1-6 8-6 8z"></path></svg>1
+                      </span>
+                    </div>
+                  </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid #1e293b;">
+                    
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <img src="assets/avatars/3.png" alt="" width="18" height="18" style="flex-shrink:0;display:block;border-radius:50%">
+                      <span style="font:600 11px/1 'pressStart',monospace;color:#fe2f97;">ochre_vole_86</span>
+                      <span style="flex:1"></span>
+                      <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;">4m</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span style="flex:1;min-width:0;font:700 14px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.01em;text-wrap:pretty">DEFENSE</span>
+                      <span class="hd" style="display:flex;align-items:center;gap:5px;font:600 10px/1 'pressStart',monospace;color:#94a3b8;flex-shrink:0">
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M10 17s-6-3.9-6-8a3.5 3.5 0 016-2.4A3.5 3.5 0 0116 9c0 4.1-6 8-6 8z"></path></svg>5
+                      </span>
+                    </div>
+                  </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showChrome&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Frame&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props || {};
+    return { chromeOn: p.showChrome ?? true };
+  }
+}
+</script>
+</body>
+</html>

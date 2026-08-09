@@ -84,7 +84,17 @@ const WelcomeHero: React.FC<{
       marginBottom: '4px',
       fontFamily: FONT,
     }}>
-      <div style={{ padding: '22px 24px 20px' }}>
+      <div style={{ display: 'flex', gap: '18px', padding: '22px 24px 20px' }}>
+        {/* The league crest, at a size that reads as a mark rather than a favicon. It is
+            the same asset the header wears at 28px; here it anchors the block. */}
+        <img
+          src="/avatars/league_logo.png"
+          alt=""
+          width={56}
+          height={56}
+          style={{ borderRadius: '50%', flexShrink: 0, marginTop: '2px' }}
+        />
+        <div style={{ minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px', flexWrap: 'wrap' }}>
           <h1 style={{ ...font(800, 26, 1.1, '-0.03em'), color: TEXT.primary, margin: 0 }}>
             Welcome to Floosball
@@ -114,6 +124,7 @@ const WelcomeHero: React.FC<{
           watching. Follow a team, call the results, and build a roster out of the players
           making it happen.
         </p>
+        </div>
       </div>
 
       <div style={{
