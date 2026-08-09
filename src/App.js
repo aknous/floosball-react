@@ -11,8 +11,7 @@ import PrognosticationsPage from './Views/Prognostications/PrognosticationsPage'
 import TeamsPage from './Views/Teams/TeamsPage'
 import Team from './Views/Teams/TeamPage'
 import Player from './Views/Players/PlayerPage'
-import Stats from './Views/Stats/Stats'
-import Players from './Views/Players/PlayersPage'
+import StatsPage from './Views/Stats/StatsPage'
 import HistoryPage from './Views/History/HistoryPage'
 import Results from './Views/Results/Results.js'
 import AdminPage from './Views/Admin/AdminPage'
@@ -67,7 +66,11 @@ function AppRoutes({ headerHeight }) {
       <Route exact path='/dashboard' element={<Navigate to='/' replace />} />
       <Route exact path='/dashboard/legacy' element={<DashboardNew headerHeight={headerHeight} />} />
       <Route exact path='/dashboard/old' element={<Dashboard />} />
-      <Route exact path='/players' element={<Players />} />
+      {/* The players list became the league's stats page — players and teams,
+          any season, career, both sides of the ball. `/players` stays as a
+          redirect because old links and bookmarks point at it. */}
+      <Route exact path='/stats' element={<StatsPage />} />
+      <Route exact path='/players' element={<Navigate to='/stats' replace />} />
       <Route exact path='/teams' element={<TeamsPage />} />
       <Route path='/team/:id' element={<Team />} />
       <Route path='/players/:id' element={<Player />} />

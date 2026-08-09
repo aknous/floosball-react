@@ -46,7 +46,7 @@ const LEAGUE_ITEMS: NavEntry[] = [
   { key: 'front', label: 'Front page', path: '/', icon: ICON('M10 2 2 8v10h6v-6h4v6h6V8l-8-6z') },
   { key: 'games', label: 'Games', path: '/games', icon: ICON('M3 2h2v1l11 4-11 4v7H3V2z') },
   { key: 'standings', label: 'Standings', path: '/standings', icon: ICON('M3 3h14v3H3V3zm0 5h14v3H3V8zm0 5h14v3H3v-3z') },
-  { key: 'players', label: 'Players', path: '/players', icon: ICON('M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z') },
+  { key: 'stats', label: 'Stats', path: '/stats', icon: ICON('M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z') },
 ]
 
 const YOURS_ITEMS: NavEntry[] = [
