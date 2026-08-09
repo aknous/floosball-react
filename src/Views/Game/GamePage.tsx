@@ -276,7 +276,7 @@ const GamePage: React.FC = () => {
         </div>
 
         {periods.map((value, i) => (
-          <div key={i} style={{ ...font(600, 13), color: TEXT.secondary, textAlign: 'center', ...TABULAR }}>
+          <div key={i} style={{ ...font(600, 16), color: TEXT.secondary, textAlign: 'center', ...TABULAR }}>
             {value}
           </div>
         ))}
@@ -346,7 +346,7 @@ const GamePage: React.FC = () => {
             }}>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: `minmax(0,1fr) repeat(${quarterLine?.labels.length ?? 0}, 30px) 52px`,
+                gridTemplateColumns: `minmax(0,1fr) repeat(${quarterLine?.labels.length ?? 0}, 34px) 56px`,
                 alignItems: 'center',
                 columnGap: '8px',
               }}>
@@ -355,10 +355,12 @@ const GamePage: React.FC = () => {
                     <span />
                     {quarterLine.labels.map(label => (
                       <span key={label} style={{
-                        ...font(700, 9, 1, '0.1em'), color: TEXT.muted, textAlign: 'center',
+                        ...font(700, 11, 1, '0.1em'), color: TEXT.muted, textAlign: 'center',
                       }}>{label}</span>
                     ))}
-                    <span style={{ ...font(700, 9, 1, '0.1em'), color: TEXT.muted, textAlign: 'right' }}>T</span>
+                    {/* No heading over the total — the biggest number on a
+                        scoreboard does not need to be labelled. */}
+                    <span />
                   </>
                 )}
                 {teamRow('away')}
@@ -373,22 +375,15 @@ const GamePage: React.FC = () => {
                 marginTop: '11px', paddingTop: '10px',
                 borderTop: `1px solid ${BORDER.hairline}`,
               }}>
-                {isLive && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span className="pulse" style={{
-                      width: '6px', height: '6px', borderRadius: '50%',
-                      background: ACCENT.live, display: 'block',
-                    }} />
-                    <span style={{ ...font(700, 10, 1, '0.12em'), color: ACCENT.live }}>LIVE</span>
-                  </span>
-                )}
+                {/* No LIVE badge. A moving clock and a down-and-distance say the
+                    game is on; the badge was repeating them. */}
                 <span style={{ ...font(800, 17, 1), color: TEXT.primary, ...TABULAR }}>
                   {gameData.status === 'Final'
                     ? `FINAL${gameData.isOvertime ? ' / OT' : ''}`
                     : periodClock}
                 </span>
                 <span style={{ flex: 1 }} />
-                <span style={{ ...font(600, 10, 1.4, '0.1em'), color: TEXT.muted }}>
+                <span style={{ ...font(600, 13, 1.4, '0.06em'), color: TEXT.secondary }}>
                   {/* ⚠️ Distance is `yardsToFirstDown`; `yardsToGo` does not exist
                       on the payload and rendered "4 & undefined". A scheduled game
                       carries down 0, hence `> 0` rather than a null check. */}
