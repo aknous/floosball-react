@@ -1344,12 +1344,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
 
           {/* Left panel: Scoreboard + Status + WP */}
           <div style={{
-            // On the route this is the game-state column, and it is a FIXED
-            // measure rather than a share: the field and the WP chart do not get
-            // better with more width, so everything past this belongs to the
-            // plays and the box score. As a percentage it grew with the window
-            // and stole the width the box score actually needed.
-            flex: stacked ? '0 0 auto' : asPage ? '0 0 400px' : '0 0 40%',
+            // The game-state column. Bounded rather than a free share.
+            //
+            // The FLOOR is what matters: at 30% of a 1500px window the clamp sat
+            // on its minimum and the pitch came out smaller than the old modal
+            // drew it (~448 wide, from a 40% panel of a 1200px modal). 470 puts
+            // the field back at that size on the narrowest screen that runs
+            // three columns; the ceiling lets it breathe on a big monitor
+            // without eating the width the box score wants.
+            flex: stacked ? '0 0 auto' : asPage ? '0 0 clamp(470px, 32%, 540px)' : '0 0 40%',
             minWidth: 0,
             // The route separates its columns with a gap, not a rule — the
             // panels already have their own borders and a divider between two
@@ -1366,8 +1369,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 ⚠️ Only the two SCORE ROWS are hidden on the route — the route has
                 a full-width scoreboard band above the grid. The frames and innings
                 line scores live in this same block and must stay, or the two
-                formats that have no quarter breakdown lose their whole line score. */}
-            <div style={{ padding: '16px', backgroundColor: '#1e293b' }}>
+                formats that have no quarter breakdown lose their whole line score.
+                Which is also why the block itself collapses on the route in a
+                STANDARD game: with the score rows, the quarter line and rally all
+                gone, what was left was 32px of padding around nothing. */}
+            <div style={{
+              padding: '16px', backgroundColor: '#1e293b',
+              display: asPage && !gameData.innings?.active && !gameData.frames?.active
+                ? 'none' : 'block',
+            }}>
 
               {/* Home team — outer flex row holds RallyButton and score
                   OUTSIDE the TeamHoverCard wrapper so hovering the
@@ -1558,7 +1568,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                     </table>
                   </div>
                 )
-              })() : (dQuarterScores && !gameData.innings?.active && !gameData.frames?.active) ? (
+              })() : (!asPage && dQuarterScores && !gameData.innings?.active && !gameData.frames?.active) ? (
+                /* ⚠️ Route only: the quarter line moved INTO the scoreboard band,
+                   where a score and its breakdown belong together. The innings
+                   and frames lines above stay here — they are a different shape
+                   and too wide for the band. */
                 <div style={{ borderTop: '1px solid #334155', marginTop: '12px', paddingTop: '8px' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
                     <thead>
@@ -1610,11 +1624,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               )}
             </div>
 
-            {/* Game status + down/distance */}
+            {/* Game status + down/distance.
+                On the route the clock and the down are already in the scoreboard
+                band, so those two rows are hidden and this block survives only for
+                the FORMAT rows below it — drive clock, target, bust, plays per
+                quarter, chess-clock budgets — which the band has no room for. */}
             <div style={{ padding: '10px 16px', borderBottom: '1px solid #334155', textAlign: 'center' }}>
               {/* Row 1: clock / final */}
               <div style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '600', marginBottom: '3px',
-                            display: 'inline-flex', alignItems: 'center', gap: '6px',
+                            display: asPage ? 'none' : 'inline-flex', alignItems: 'center', gap: '6px',
                             justifyContent: 'center', width: '100%' }}>
                 {replayActive ? (
                   <span>{`${dQuarter > 4 ? 'OT' : `Q${dQuarter}`}  •  ${dClock}`}</span>
@@ -1664,7 +1682,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 )}
               </div>
               {/* Row 2: down & distance (active games + replay) */}
-              {(gameData.status === 'Active' || replayActive) && (() => {
+              {!asPage && (gameData.status === 'Active' || replayActive) && (() => {
                 const down = dDown
                 const distance = dDistance
                 const yardLine = dYardLine
@@ -2119,7 +2137,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                     viewBox={`0 0 ${FW} ${FH}`}
                     style={{
                       width: '100%', height: 'auto', display: 'block', borderRadius: '4px',
-                      ...(asPage ? { maxWidth: '762px', margin: '0 auto' } : {}),
+                      ...(asPage ? { maxWidth: '540px', margin: '0 auto' } : {}),
                     }}
                   >
                     {/* Home end zone (LEFT) */}

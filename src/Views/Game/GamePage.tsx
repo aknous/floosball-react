@@ -187,6 +187,24 @@ const GamePage: React.FC = () => {
   const isYours = yourTeamId != null
     && (Number(gameData.homeTeam.id) === yourTeamId || Number(gameData.awayTeam.id) === yourTeamId)
 
+  /**
+   * The period breakdown for the band. Standard clock formats only — innings and
+   * frames carry their own line score, which is wider and stays beside the field.
+   * OT only appears once someone has played one.
+   */
+  const quarterLine = (() => {
+    const qs = gameData.quarterScores
+    if (!qs || gameData.innings?.active || gameData.frames?.active) return null
+    const hasOt = (qs.home?.ot ?? 0) > 0 || (qs.away?.ot ?? 0) > 0
+    const keys = hasOt ? ['q1', 'q2', 'q3', 'q4', 'ot'] : ['q1', 'q2', 'q3', 'q4']
+    const labels = keys.map(k => k.toUpperCase())
+    const rowFor = (side: 'away' | 'home') => ({
+      abbr: (side === 'home' ? gameData.homeTeam : gameData.awayTeam).abbr as string,
+      values: keys.map(k => (qs[side]?.[k] ?? 0) as number),
+    })
+    return { labels, rows: [rowFor('away'), rowFor('home')] }
+  })()
+
   const teamBlock = (side: 'home' | 'away') => {
     const team = side === 'home' ? gameData.homeTeam : gameData.awayTeam
     const colour = side === 'home' ? homeColor : awayDisplayColor
@@ -278,7 +296,6 @@ const GamePage: React.FC = () => {
           <Chevron dir="right" />
         </NavPlate>
         <span style={{ flex: 1 }} />
-        <span style={{ ...font(600, 10, 1, '0.12em'), color: TEXT.muted }}>INTEREST ORDER</span>
         {isYours && (
           <span style={{
             ...font(700, 10, 1, '0.1em'), color: ACCENT.ownTeam,
@@ -333,6 +350,47 @@ const GamePage: React.FC = () => {
         </div>
         {teamBlock('home')}
       </div>
+
+      {/* The period breakdown, under the scores it breaks down. It used to sit
+          in its own panel down the left column, which read as an unrelated
+          table — a scoreboard is the total AND the line, together.
+          Standard clock formats only: innings and frames have their own,
+          wider line score, and it stays beside the field. */}
+      {quarterLine && (
+        <div style={{
+          display: 'flex', justifyContent: 'center',
+          padding: '0 28px 14px', maxWidth: contentMax, margin: '0 auto',
+        }}>
+          <table style={{ borderCollapse: 'collapse', ...TABULAR }}>
+            <thead>
+              <tr>
+                <th style={{ width: '52px' }} />
+                {quarterLine.labels.map(label => (
+                  <th key={label} style={{
+                    ...font(700, 10, 1, '0.1em'), color: TEXT.muted,
+                    padding: '0 11px 4px', textAlign: 'center',
+                  }}>{label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {quarterLine.rows.map(row => (
+                <tr key={row.abbr}>
+                  <td style={{ ...font(700, 11, 1, '0.04em'), color: TEXT.muted, paddingRight: '10px' }}>
+                    {row.abbr}
+                  </td>
+                  {row.values.map((value, i) => (
+                    <td key={i} style={{
+                      ...font(600, 13), color: TEXT.secondary,
+                      padding: '2px 11px', textAlign: 'center',
+                    }}>{value}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       </div>
 
       {/* Body. The COLUMNS are decided inside the game view, not here: the rail
