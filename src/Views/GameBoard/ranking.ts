@@ -22,9 +22,9 @@ export type Ranked = {
 /**
  * The single interest chip a card may carry, most-interesting first.
  *
- * ⚠️ TIED and 1-SCORE are both gated on `closenessCounts`. Every game kicks off 0-0, so
+ * ⚠️ TIED and CLOSE GAME are both gated on `closenessCounts`. Every game kicks off 0-0, so
  * ungated the whole board reads TIED at the start of a slate — and gating only TIED just
- * hands all sixteen cards a 1-SCORE chip instead, since 0-0 is also within one score.
+ * hands all sixteen cards a CLOSE GAME chip instead, since 0-0 is also within one score.
  *
  * UPSET and FEATURED need no gate: the backend only raises an upset from Q2 with the
  * underdog genuinely ahead on win probability, and FEATURED is decided pre-game.
@@ -34,7 +34,7 @@ export function chipFor(game: CurrentGame): ChipKind | null {
   const close = closenessCounts(game)
   if (close && margin === 0) return 'TIED'
   if (game.isUpsetAlert) return 'UPSET'
-  if (close && margin <= ONE_SCORE) return '1-SCORE'
+  if (close && margin <= ONE_SCORE) return 'CLOSE GAME'
   if (game.isFeatured) return 'FEATURED'
   return null
 }

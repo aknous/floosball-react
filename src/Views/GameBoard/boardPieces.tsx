@@ -77,11 +77,11 @@ export const MomentumFlame: React.FC<{ magnitude: number; size: number }> = ({ m
   )
 }
 
-export type ChipKind = 'TIED' | '1-SCORE' | 'UPSET' | 'FEATURED'
+export type ChipKind = 'TIED' | 'CLOSE GAME' | 'UPSET' | 'FEATURED'
 
 export const CHIP_COLOR: Record<ChipKind, string> = {
   TIED: ACCENT.live,
-  '1-SCORE': ACCENT.live,
+  'CLOSE GAME': ACCENT.live,
   UPSET: ACCENT.upset,
   FEATURED: ACCENT.featured,
 }

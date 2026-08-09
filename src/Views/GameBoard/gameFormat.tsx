@@ -259,7 +259,7 @@ export function leadingSide(game: CurrentGame): 'home' | 'away' | 'tied' {
  *
  * Every game starts 0-0, so without this every card on a fresh slate reads TIED — sixteen
  * identical chips saying nothing. Gating only TIED would just move the problem, because a
- * 0-0 game is also within one score, so the whole board would read 1-SCORE instead. Both
+ * 0-0 game is also within one score, so the whole board would read CLOSE GAME instead. Both
  * chips are gated on this, and so is the interest ranking that uses them.
  *
  * "Far enough" is a FORMAT question, since none of these share a notion of halfway:
