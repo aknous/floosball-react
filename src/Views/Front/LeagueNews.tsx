@@ -151,8 +151,13 @@ const mark = (item: NewsItem, size: number): React.ReactNode => {
   if (item.core === 'league') {
     return (
       <span style={slot}>
-        <img src="/avatars/league_logo.svg" alt="" width={size} height={size}
-             style={{ display: 'block' }} />
+        {/* ⚠️ The PNG and a 50% radius, matching every other league mark in the app
+            (the header badge and the welcome card both render it exactly this way).
+            The first pass used the .svg with square corners — it happens to be a
+            circular pie chart so it looked close, but it was the one instance that
+            did not match, and the radius had been dropped in a refactor. */}
+        <img src="/avatars/league_logo.png" alt="" width={size} height={size}
+             style={{ display: 'block', borderRadius: '50%' }} />
       </span>
     )
   }
