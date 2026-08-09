@@ -315,7 +315,7 @@ const FrontPage: React.FC = () => {
           <LeagueNews lead={news.lead} items={news.items} />
           <TopPlayers
             rows={leaders}
-            favouriteTeamId={favouriteTeamId}
+            categoryLabels={LEADER_CATEGORIES.map(c => c.label)}
             fantasyPlayerIds={fantasyPlayerIds}
           />
         </div>

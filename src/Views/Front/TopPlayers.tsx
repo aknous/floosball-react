@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import PlayerAvatar from '@/Components/PlayerAvatar'
 import { BG, BORDER, TEXT, ACCENT, TABULAR, font } from '@/Components/Shell/tokens'
-import { readableTeamColor } from '@/utils/colors'
 import { Stars } from '@/Components/Stars'
 import { SectionHeader, RelationTag } from './frontPieces'
 
@@ -22,28 +21,32 @@ export interface LeaderRow {
 /**
  * Who currently leads each stat category — one row per leaderboard, best player first.
  *
+ * The FANTASY tag is the reason this belongs on a personal landing page rather than only
+ * on the stats page. A YOURS tag was here too and came out (owner): being on your
+ * favourite club is true of a quarter of the league and says nothing about the player,
+ * where having drafted them is a choice you actually made.
+ *
  * It is a board of LEADERS, not a single ranking: every row is the top of a different
  * category, so the eight or ten rows span passing, running, catching, kicking and fantasy
  * rather than being eight quarterbacks stacked by yards.
- *
- * The RELATIONSHIP TAGS are the point of it being here rather than only on the stats
- * page — YOURS when the player is on the user's favourite team, FANTASY when they are on
- * their fantasy roster. Without them this is the stats page in miniature; with them it is
- * a reason to look.
- */
+ * */
 const TopPlayers: React.FC<{
   rows: LeaderRow[]
-  favouriteTeamId: number | null
+  /** The categories the board tracks, so empty rows can still be labelled. */
+  categoryLabels: string[]
   fantasyPlayerIds: Set<number>
-}> = ({ rows, favouriteTeamId, fantasyPlayerIds }) => {
-  if (rows.length === 0) return null
+}> = ({ rows, categoryLabels, fantasyPlayerIds }) => {
+  // A brand-new league has no leader in any category yet. The panel still renders, one
+  // blank row per leaderboard, rather than vanishing (owner) — an absent module reads as
+  // broken, where a labelled empty row reads as "nobody has done this yet". The rows are
+  // the same height either way, so the page does not jump when the first result lands.
+  const placeholders = categoryLabels.slice(rows.length)
 
   return (
     <div style={{ marginTop: '26px' }}>
       <SectionHeader title="TOP PLAYERS" link={{ to: '/players', label: 'ALL STATS →' }} />
       <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}` }}>
         {rows.map((row, i) => {
-          const yours = favouriteTeamId != null && row.teamId === favouriteTeamId
           const fantasy = fantasyPlayerIds.has(row.id)
           return (
             <div
@@ -68,7 +71,6 @@ const TopPlayers: React.FC<{
                   the player, and the shared component colours it by band (gold/green/blue/
                   grey/red) instead of the flat amber this used to draw. */}
               <Stars stars={row.ratingStars} size={15} tracking={1.5} />
-              {yours && <RelationTag label="YOURS" color={readableTeamColor(row.teamColor)} />}
               {fantasy && <RelationTag label="FANTASY" color={ACCENT.success} />}
               <span style={{ ...font(500, 11, 1, '0.06em'), color: TEXT.muted, whiteSpace: 'nowrap' }}>
                 {row.position} · {row.teamAbbr}
@@ -85,6 +87,35 @@ const TopPlayers: React.FC<{
             </div>
           )
         })}
+
+        {placeholders.map((label, i) => (
+          <div
+            key={label}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px',
+              minHeight: '44px', boxSizing: 'border-box',
+              borderBottom: i < placeholders.length - 1 ? `1px solid ${BORDER.hairline}` : 'none',
+            }}
+          >
+            <span style={{ ...font(700, 12), color: TEXT.faint, width: '16px', flexShrink: 0, ...TABULAR }}>
+              {rows.length + i + 1}
+            </span>
+            <span style={{
+              width: '22px', height: '22px', borderRadius: '50%',
+              border: `1px dashed ${BORDER.raised}`, boxSizing: 'border-box', flexShrink: 0,
+            }} />
+            <span style={{ ...font(400, 12), color: TEXT.dim }}>No leader yet</span>
+            <span style={{ flex: 1 }} />
+            <span style={{
+              ...font(700, 10, 1, '0.1em'), color: TEXT.dim,
+              width: '96px', textAlign: 'right', flexShrink: 0,
+            }}>{label}</span>
+            <span style={{
+              ...font(800, 16), color: TEXT.dim, ...TABULAR,
+              width: '62px', textAlign: 'right', flexShrink: 0,
+            }}>—</span>
+          </div>
+        ))}
       </div>
     </div>
   )

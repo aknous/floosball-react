@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useGames } from '@/contexts/GamesContext'
+import { FaDiscord } from 'react-icons/fa'
 import { BG, BORDER, TEXT, ACCENT, FONT, NAV_WIDTH, font } from './tokens'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -65,12 +66,6 @@ const AWARDS_ITEM: NavEntry = {
 // The one link that leaves the app. It sits under the user's own entries rather than in
 // either league group, because it is not a page — it is where you go to talk to people.
 const DISCORD_URL = 'https://discord.gg/b4DZn3mVfP'
-
-const DiscordIcon: React.FC = () => (
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
-    <path d="M20.3 4.5A19.8 19.8 0 0015.4 3l-.24.5a18.3 18.3 0 015.3 2.6 17.9 17.9 0 00-17-.6c.5-.3 1-.6 1.6-.9A18.3 18.3 0 018.8 3.5L8.6 3a19.8 19.8 0 00-4.9 1.5C.9 8.7.1 12.8.5 16.9a19.9 19.9 0 006 3l.5-.8c-.9-.4-1.8-.9-2.6-1.5l.6-.4a14.2 14.2 0 0012 0l.6.4c-.8.6-1.7 1.1-2.6 1.5l.5.8a19.9 19.9 0 006-3c.5-4.8-.8-8.9-3.2-12.4zM8.4 14.5c-1.2 0-2.1-1.1-2.1-2.4S7.2 9.7 8.4 9.7s2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4zm7.2 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4z" />
-  </svg>
-)
 
 const GROUP_LABEL: React.CSSProperties = {
   ...font(700, 10, 1, '0.16em'),
@@ -239,7 +234,7 @@ const AppNav: React.FC = () => {
         onMouseEnter={e => { e.currentTarget.style.color = '#ffffff' }}
         onMouseLeave={e => { e.currentTarget.style.color = TEXT.muted }}
       >
-        <DiscordIcon />
+        <FaDiscord size={17} style={{ flexShrink: 0 }} />
         <span style={{ ...font(500, 13), whiteSpace: 'nowrap' }}>Discord</span>
       </a>
 
