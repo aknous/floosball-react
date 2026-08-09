@@ -255,7 +255,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
   const [activeTab, setActiveTab] = useState<'box' | 'plays' | 'stats'>('plays')
   const [showHighlightsOnly, setShowHighlightsOnly] = useState(false)
   const [expandedPlayKey, setExpandedPlayKey] = useState<string | null>(null)
-  const [expandedStatKey, setExpandedStatKey] = useState<string | null>(null)
   // The league's current downs-per-series (a mutable rule) so the ACTUAL last down
   // is colored urgent, not a hardcoded 4th.
   const [lastDown, setLastDown] = useState(4)
@@ -3045,14 +3044,22 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                           {posLabel}
                         </span>
                       )}
-                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '1px' }}>
-                        <PlayerHoverCard playerId={p.id} playerName={p.name}>
-                          <span title={isCharged ? 'Charged' : isAwakened ? 'Awakened' : undefined} style={{ fontSize: '14px', color: nameColor, fontWeight: isCharged ? 700 : isAwakened ? 600 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', ...(nameGlow ? { textShadow: nameGlow } : {}) }}>
+                      {/* Stars BESIDE the name, not under it. This panel is the
+                          widest thing on the page and was stacking them to save
+                          width it has spare, at the cost of height it does not. */}
+                      <PlayerHoverCard playerId={p.id} playerName={p.name}>
+                        <Link
+                          to={`/players/${p.id}`}
+                          style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0, textDecoration: 'none' }}
+                        >
+                          <span title={isCharged ? 'Charged' : isAwakened ? 'Awakened' : undefined} style={{ fontSize: '14px', color: nameColor, fontWeight: isCharged ? 700 : isAwakened ? 600 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(nameGlow ? { textShadow: nameGlow } : {}) }}>
                             {p.name}
                           </span>
-                        </PlayerHoverCard>
-                        {p.ratingStars != null && <Stars stars={p.ratingStars} size={11} />}
-                      </div>
+                          {p.ratingStars != null && (
+                            <span style={{ flexShrink: 0 }}><Stars stars={p.ratingStars} size={14} tracking={1.5} /></span>
+                          )}
+                        </Link>
+                      </PlayerHoverCard>
                     </div>
                   )
                 }
@@ -3069,234 +3076,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                   return         { label: 'Sunken',   color: '#ef4444' }
                 }
 
-                // Renders the mental-modifier breakdown panel that drops down
-                // beneath an expanded player row.
-                const renderBreakdownPanel = (
-                  mb: MentalBreakdown | undefined,
-                  cnf?: number,
-                  det?: number,
-                  dispositionLabel?: string,
-                  cnfNow?: number,
-                  detNow?: number,
-                  cnfDrift?: number,
-                  detDrift?: number,
-                  thisFP?: number,
-                  seasonAvgFP?: number,
-                  seasonGP?: number,
-                  pressureHandling?: number,
-                  teamPressureModifier?: number,
-                ) => {
-                  const stage = (label: string, value: number, sublabel?: string) => {
-                    if (value === 0 && !sublabel) return null
-                    const color = value > 0 ? '#86efac' : value < 0 ? '#fca5a5' : '#94a3b8'
-                    const sign = value > 0 ? '+' : ''
-                    return (
-                      <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
-                          <span style={{ color: '#cbd5e1' }}>{label}</span>
-                          <span style={{ color, fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
-                            {value !== 0 ? `${sign}${value}` : '±0'}
-                          </span>
-                        </div>
-                        {sublabel && (
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>{sublabel}</span>
-                        )}
-                      </div>
-                    )
-                  }
-                  const totalColor = mb ? (mb.totalDelta > 0 ? '#86efac' : mb.totalDelta < 0 ? '#fca5a5' : '#94a3b8') : '#94a3b8'
-                  const totalSign = mb && mb.totalDelta > 0 ? '+' : ''
-                  const hasAnyStage = !!mb && (
-                    mb.fatigue !== 0 || mb.disposition !== 0 || mb.cap !== 0
-                  )
-                  const hasMindset = cnf != null || det != null
-
-                  // Render confidence/det as a before-and-after pair with
-                  // a drift number. The drift is the punchline — it's how
-                  // much the player's mood moved during the game, and
-                  // it's amplified ~25× per play in _mentalDrift so even
-                  // -1.5 means ~-2.2 effective rating points on every
-                  // gate. That's typically a bigger driver of a bad game
-                  // than the pre-game multiplier stack.
-                  const tierPill = (v: number) => {
-                    const { label: tier, color } = modLabel(v)
-                    return (
-                      <span style={{
-                        fontSize: '10px', fontWeight: 600,
-                        color,
-                        backgroundColor: `${color}1a`,
-                        border: `1px solid ${color}55`,
-                        padding: '1px 7px', borderRadius: '3px',
-                        letterSpacing: '0.03em',
-                      }}>{tier}</span>
-                    )
-                  }
-                  const mindsetRow = (label: string, base?: number, now?: number, drift?: number) => {
-                    if (base == null && now == null) return null
-                    // Show pre → now transition only when drift is large
-                    // enough to matter (~0.8+ rating points/play once
-                    // amplified through _mentalDrift). Below that, render
-                    // a single tier badge — the tier name carries the
-                    // signal without a duplicate value.
-                    const hasShift = drift != null && Math.abs(drift) >= 0.5
-                    const display = hasShift && now != null ? now : (base ?? now ?? 0)
-                    return (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
-                        <span style={{ color: '#cbd5e1' }}>{label}</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {hasShift && base != null && (
-                            <>
-                              {tierPill(base)}
-                              <span style={{ color: '#475569', fontSize: '11px' }}>→</span>
-                            </>
-                          )}
-                          {tierPill(display)}
-                        </span>
-                      </div>
-                    )
-                  }
-
-                  // Pressure status — pressureHandling tier + team stakes
-                  // multiplier. Together these tell users how exposed
-                  // this player is to clutch-moment over/underperformance.
-                  const pressureHandlingTier = (v: number) => {
-                    if (v >= 6)  return { label: 'Ice',     color: '#22c55e' }
-                    if (v >= 2)  return { label: 'Cool',    color: '#86efac' }
-                    if (v >= -1) return { label: 'Even',    color: '#94a3b8' }
-                    if (v >= -5) return { label: 'Wobbly',  color: '#f59e0b' }
-                    return         { label: 'Choker',  color: '#ef4444' }
-                  }
-                  const teamPressureTier = (v: number) => {
-                    if (v >= 2.4)  return { label: 'Championship', color: '#ef4444' }
-                    if (v >= 1.8)  return { label: 'Must-Win',     color: '#f59e0b' }
-                    if (v >= 1.3)  return { label: 'High Stakes',  color: '#f59e0b' }
-                    if (v >= 1.1)  return { label: 'Elevated',     color: '#94a3b8' }
-                    if (v >= 0.85) return { label: 'Normal',       color: '#94a3b8' }
-                    return           { label: 'Low Stakes',    color: '#64748b' }
-                  }
-                  const hasPressure = pressureHandling != null || teamPressureModifier != null
-
-                  // Generic status row — label on left, tier badge on
-                  // right. Drives personality/mental/pressure sections.
-                  const badgeRow = (
-                    label: string,
-                    tier: { label: string; color: string },
-                  ) => (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
-                      <span style={{ color: '#cbd5e1' }}>{label}</span>
-                      <span style={{
-                        fontSize: '10px', fontWeight: 600,
-                        color: tier.color,
-                        backgroundColor: `${tier.color}1a`,
-                        border: `1px solid ${tier.color}55`,
-                        padding: '1px 7px', borderRadius: '3px',
-                        letterSpacing: '0.03em',
-                      }}>{tier.label}</span>
-                    </div>
-                  )
-                  return (
-                    <div style={{
-                      padding: '12px 14px',
-                      backgroundColor: '#0b1424',
-                      borderTop: '1px solid #1e293b',
-                      display: 'flex', flexDirection: 'column', gap: '8px',
-                    }}>
-                      {mb && (
-                        <>
-                          <div style={{
-                            fontSize: '11px', color: '#94a3b8',
-                            fontWeight: 700, letterSpacing: '0.06em',
-                          }}>
-                            PRE-GAME RATING
-                          </div>
-                          <div style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            gap: '12px', padding: '6px 8px', borderRadius: '3px',
-                            backgroundColor: '#0f172a', border: '1px solid #1e293b',
-                            maxWidth: '320px',
-                          }}>
-                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>Effective rating</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontVariantNumeric: 'tabular-nums' }}>
-                              <span style={{ fontSize: '12px', color: '#94a3b8' }}>{mb.baseline}</span>
-                              <span style={{ fontSize: '11px', color: '#475569' }}>→</span>
-                              <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 700 }}>{mb.final}</span>
-                              <span style={{
-                                fontSize: '10px', fontWeight: 700,
-                                color: totalColor,
-                                backgroundColor: `${totalColor}1a`,
-                                border: `1px solid ${totalColor}55`,
-                                padding: '1px 6px', borderRadius: '3px',
-                              }}>
-                                {totalSign}{mb.totalDelta}
-                              </span>
-                            </span>
-                          </div>
-                          {hasAnyStage ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '320px' }}>
-                              {stage('Fatigue', mb.fatigue)}
-                              {stage('Team disposition', mb.disposition, dispositionLabel)}
-                              {stage('Soft cap', mb.cap)}
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                              No rating modifiers active.
-                            </div>
-                          )}
-                        </>
-                      )}
-                      {/* Order by explanatory power for a player's
-                          performance: live mindset (most volatile,
-                          biggest in-game amplifier), then pressure,
-                          personality, finally mental attributes. */}
-                      {hasMindset && (
-                        <>
-                          <div style={{
-                            fontSize: '11px', color: '#94a3b8',
-                            fontWeight: 700, letterSpacing: '0.06em',
-                            marginTop: '4px',
-                          }}>
-                            CURRENT STATE
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '320px' }}>
-                            {cnf != null && mindsetRow('Confidence', cnf, cnfNow, cnfDrift)}
-                            {det != null && mindsetRow('Determination', det, detNow, detDrift)}
-                          </div>
-                        </>
-                      )}
-                      {hasPressure && (
-                        <>
-                          <div style={{
-                            fontSize: '11px', color: '#94a3b8',
-                            fontWeight: 700, letterSpacing: '0.06em',
-                            marginTop: '4px',
-                          }}>
-                            PRESSURE
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '320px' }}>
-                            {pressureHandling != null && badgeRow(
-                              'Pressure handling',
-                              pressureHandlingTier(pressureHandling),
-                            )}
-                            {teamPressureModifier != null && badgeRow(
-                              'Team stakes',
-                              teamPressureTier(teamPressureModifier),
-                            )}
-                          </div>
-                        </>
-                      )}
-                      {/* PERSONALITY + MENTAL sections moved to the
-                          player hover card + profile page. Those attrs
-                          are static — they belong on the player's
-                          profile, not in a per-game breakdown. */}
-                    </div>
-                  )
-                }
-
                 // Section card — full-width panel with section title, then column
                 // headers, then home/away player groups separated by team-color
-                // bars. Rows are click-to-expand: each row toggles a panel that
-                // breaks out the pre-game mental modifiers (fatigue / form /
-                // context / cap) for that player.
+                // bars.
+                //
+                // A row is a LINK to that player's page. It used to expand a
+                // panel of pre-game mental modifiers (fatigue / form / context /
+                // cap) and effective rating; that is career-shaped detail and
+                // belongs on the profile, not folded into a box score.
                 type StatRow = {
                   cells: React.ReactNode[]
                   mb?: MentalBreakdown
@@ -3336,18 +3123,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                         <div style={{ padding: '10px 14px', fontSize: '12px', color: '#475569', borderTop: '1px solid #1e293b' }}>—</div>
                       ) : rows.map((row, ri) => {
                         const key = row.pid != null ? `${label}-${abbr}-${row.pid}` : `${label}-${abbr}-${ri}`
-                        const canExpand = !!row.mb || row.cnf != null || row.det != null
-                          || row.pressureHandling != null || row.teamPressureModifier != null
-                        const isExpanded = canExpand && expandedStatKey === key
-                        const onToggle = () => {
-                          if (!canExpand) return
-                          setExpandedStatKey(isExpanded ? null : key)
-                        }
+                        // No expander. The mental-state / effective-rating panel
+                        // that used to open here is the player's own business and
+                        // the row now just goes to their page.
+                        const canExpand = false
+                        const isExpanded = false
                         return (
                           <React.Fragment key={key}>
                             <div
-                              onClick={onToggle}
-                              className={canExpand ? 'stat-row-expandable' : undefined}
                               style={{
                                 display: 'grid',
                                 gridTemplateColumns: template,
@@ -3358,8 +3141,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                                 color: '#e2e8f0',
                                 fontVariantNumeric: 'tabular-nums',
                                 alignItems: 'center',
-                                cursor: canExpand ? 'pointer' : 'default',
-                                backgroundColor: isExpanded ? '#11203a' : 'transparent',
+                                backgroundColor: 'transparent',
                               }}
                             >
                               {row.cells.map((c, i) => {
@@ -3370,21 +3152,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                                       minWidth: 0, overflow: 'hidden',
                                     }}>
                                       <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>{c}</div>
-                                      {canExpand && (
-                                        <span style={{
-                                          color: '#94a3b8',
-                                          fontSize: '14px',
-                                          fontWeight: 700,
-                                          transition: 'transform 0.15s, color 0.15s',
-                                          transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          paddingLeft: '8px',
-                                          flexShrink: 0,
-                                          lineHeight: 1,
-                                        }}>▾</span>
-                                      )}
                                     </div>
                                   )
                                 }
@@ -3396,12 +3163,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                                 )
                               })}
                             </div>
-                            {isExpanded && renderBreakdownPanel(
-                              row.mb, row.cnf, row.det, row.dispositionLabel,
-                              row.cnfNow, row.detNow, row.cnfDrift, row.detDrift,
-                              row.thisFP, row.seasonAvgFP, row.seasonGP,
-                              row.pressureHandling, row.teamPressureModifier,
-                            )}
                           </React.Fragment>
                         )
                       })}
