@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { GameModalNew } from '@/Components/GameModalNew'
+import { GameModalNew, PAGE_THREE_COLUMN_MIN } from '@/Components/GameModalNew'
 import RallyButton from '@/Components/GameModal/RallyPanel'
 import TeamHoverCard from '@/Components/TeamHoverCard'
 import { useGames } from '@/contexts/GamesContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
 import { rankGames } from '@/Views/GameBoard/ranking'
@@ -28,18 +29,23 @@ import GameBleachers, { useRailEntries } from './gameBleachers'
  */
 
 /**
- * The design is a fixed 1440px screen with a 196px nav, so the content it was
- * drawn against is 1244px wide.
+ * How wide the page is allowed to get.
  *
- * Without a cap the body grid grows with the window while the rail stays 372px
- * — every extra pixel of monitor goes into the left column, and the field,
- * being `width: 100%` of a 600×220 viewBox, grows with it until it is a mural.
- * Capped and centred, the layout holds the proportions it was drawn at.
+ * The handoff drew a fixed 1440px screen (1244px of content beside the 196px
+ * nav) with the game stacked over the plays. Running the plays BESIDE the field
+ * instead — three columns — needs more room than that, so the cap is higher
+ * whenever three columns are actually in play, and falls back to the drawn
+ * measure when they are not.
  *
- * The bands stay full-bleed (their background and bottom rule span the window);
- * only their CONTENT is capped, so nothing looks cut off on a wide display.
+ * A cap either way: the rail is a fixed 372px, so on an uncapped page every
+ * extra pixel of monitor lands in the game column, and the field — `width:100%`
+ * of a 600×220 viewBox — grows with it until the pitch is a mural.
+ *
+ * The bands stay full-bleed (background and bottom rule span the window); only
+ * their CONTENT is capped, so nothing reads as cut off on a wide display.
  */
-const CONTENT_MAX = 1244
+const CONTENT_MAX_STACKED = 1244
+const CONTENT_MAX_THREE_COLUMN = 1720
 
 const FlameIcon: React.FC<{ color: string }> = ({ color }) => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill={color} style={{ flexShrink: 0, display: 'block' }}>
@@ -117,6 +123,11 @@ const GamePage: React.FC = () => {
 
   // Reset the frozen order when the round changes underneath us.
   useEffect(() => { rankedRef.current = null }, [seasonState?.currentWeek])
+
+  // Must agree with GameModalNew's own threshold, or the page caps at a width
+  // the three columns cannot use.
+  const threeColumn = !useIsMobile(PAGE_THREE_COLUMN_MIN)
+  const contentMax = threeColumn ? CONTENT_MAX_THREE_COLUMN : CONTENT_MAX_STACKED
 
   const railEntries = useRailEntries(gameData?.plays)
 
@@ -222,7 +233,7 @@ const GamePage: React.FC = () => {
       }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap',
-        padding: '13px 28px', maxWidth: CONTENT_MAX, margin: '0 auto',
+        padding: '13px 28px', maxWidth: contentMax, margin: '0 auto',
       }}>
         <NavPlate to="/games">
           <span style={{ ...font(800, 14), color: TEXT.body }}>←</span>
@@ -261,7 +272,7 @@ const GamePage: React.FC = () => {
       }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '26px',
-        padding: '18px 28px', maxWidth: CONTENT_MAX, margin: '0 auto',
+        padding: '18px 28px', maxWidth: contentMax, margin: '0 auto',
       }}>
         {teamBlock('away')}
         <div style={{
@@ -304,7 +315,7 @@ const GamePage: React.FC = () => {
       <div style={{
         display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 372px', gap: '22px',
         padding: '20px 28px 32px', alignItems: 'start',
-        maxWidth: CONTENT_MAX, margin: '0 auto',
+        maxWidth: contentMax, margin: '0 auto',
       }}>
         <GameModalNew gameId={id} layout="page" onClose={() => navigate('/games')} />
 

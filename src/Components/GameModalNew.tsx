@@ -22,6 +22,15 @@ import { ordinal } from '@/utils/ordinal'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+/**
+ * Viewport width at which the game route runs three columns — game state, plays,
+ * Bleachers — instead of stacking the first two.
+ *
+ * Exported because the page sets its own max width off the same threshold: the
+ * two have to agree or the layout caps at a width the columns cannot use.
+ */
+export const PAGE_THREE_COLUMN_MIN = 1400
+
 interface GameModalNewProps {
   onClose: () => void
   gameId: number
@@ -256,10 +265,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
   // phone gives the stats area ~540px which is too tight for 6 columns
   // and a readable player name. Engage the condensed layout below 1000px.
   const isTightStats = useIsMobile(1000)
-  // The modal's body is two columns side by side; the page stacks them, because
-  // the route already spends its horizontal room on the Bleachers rail. Mobile
-  // stacked first and the page reuses exactly that path.
-  const stacked = isMobile || asPage
+  /**
+   * The modal's body is two columns side by side: game state left, plays right.
+   *
+   * The route keeps that split whenever there is room for it, which makes the
+   * page THREE columns — state, plays, Bleachers — so the play feed is beside
+   * the field rather than below it. That was the point of the route: you should
+   * not have to scroll past the pitch to watch the game.
+   *
+   * Below `PAGE_THREE_COLUMN_MIN` the two panels stack (the mobile path) and the
+   * page falls back to game-over-talk.
+   */
+  const pageNarrow = useIsMobile(PAGE_THREE_COLUMN_MIN)
+  const stacked = isMobile || (asPage && pageNarrow)
 
   // Get game from central state and fetch plays
   const { games, fetchGamePlays } = useGames()
@@ -1301,20 +1319,30 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
           display: 'flex',
           flexDirection: stacked ? 'column' : 'row',
           gap: asPage ? '16px' : 0,
-          overflow: stacked ? (asPage ? 'visible' : 'auto') : 'hidden',
+          // The modal clips and scrolls inside itself; the page must not, or the
+          // columns inherit a height nothing has set and collapse.
+          overflow: asPage ? 'visible' : stacked ? 'auto' : 'hidden',
+          alignItems: asPage && !stacked ? 'flex-start' : undefined,
           minHeight: 0,
         }}>
 
           {/* Left panel: Scoreboard + Status + WP */}
           <div style={{
-            flex: stacked ? '0 0 auto' : '0 0 40%',
+            // On the route this is the game-state column. 42% rather than the
+            // modal's 40% because it has to hold the field AND the WP chart
+            // while the plays column keeps enough room to read a description
+            // without wrapping every line.
+            flex: stacked ? '0 0 auto' : asPage ? '0 1 42%' : '0 0 40%',
             minWidth: 0,
-            borderRight: stacked ? 'none' : '1px solid #334155',
+            // The route separates its columns with a gap, not a rule — the
+            // panels already have their own borders and a divider between two
+            // bordered stacks reads as a double line.
+            borderRight: stacked || asPage ? 'none' : '1px solid #334155',
             borderBottom: stacked && !asPage ? '1px solid #334155' : 'none',
             display: 'flex',
             flexDirection: 'column',
             gap: asPage ? '16px' : 0,
-            overflowY: stacked ? 'visible' : 'auto'
+            overflowY: stacked || asPage ? 'visible' : 'auto'
           }}>
 
             {/* Scores.
@@ -2392,15 +2420,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
             })()}
           </div>
 
-          {/* Right panel: Tabs + scrollable content. On the route this sits UNDER
-              the field rather than beside it, and its own scroller is released so
-              the page scrolls as one document. */}
+          {/* Right panel: Tabs + scrollable content. On a wide route this is the
+              MIDDLE column, beside the field; stacked, it falls below it. */}
           <div style={{
             flex: stacked ? 'none' : 1,
             display: 'flex', flexDirection: 'column',
             overflow: stacked ? 'visible' : 'hidden',
             minWidth: 0,
             ...(asPage ? { background: '#131e2f', border: '1px solid #1e293b' } : {}),
+            // The feed scrolls WITHIN its column so the page stays about one
+            // screen — the whole reason for putting it beside the field. Left
+            // unbounded it would grow to the length of the play list and the
+            // page would scroll exactly as far as before.
+            ...(asPage && !stacked ? { maxHeight: 'calc(100vh - 250px)' } : {}),
           }}>
 
             {/* Tab bar — hidden for Scheduled games. On the route it is the
