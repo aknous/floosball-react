@@ -146,7 +146,11 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minHeight: '46px' }}>
         <Crest teamId={team?.id} size={36} possession={live && possessionTeam === side} />
-        <div style={{ flex: 1, minWidth: 0 }}>
+        {/* ⚠️ Shrink-to-fit, NOT flex: 1. Growing this block pushed the record all
+            the way across to the scoreboard, which put a club's name and its record
+            at opposite ends of the row with nothing in between. It sizes to the name
+            now and the record follows immediately; the spacer below takes the slack. */}
+        <div style={{ flexShrink: 1, minWidth: 0 }}>
           <div style={{ ...font(500, 13), color: TEXT.muted, whiteSpace: 'nowrap' }}>{team?.city}</div>
           <div style={{
             ...font(ahead ? 800 : 600, 21, 1, '-0.02em'),
@@ -163,11 +167,13 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             The momentum flame travels with it — both describe the club's state
             right now rather than its name. */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
-          {hasMomentum && <MomentumFlame magnitude={momentumMagnitude} size={14} />}
           <span style={{ ...font(600, 13, 1), color: TEXT.muted, ...TABULAR, whiteSpace: 'nowrap' }}>
             {team?.record}
           </span>
+          {hasMomentum && <MomentumFlame magnitude={momentumMagnitude} size={14} />}
         </div>
+
+        <span style={{ flex: 1, minWidth: 0 }} />
         <div style={{
           ...CLUSTER, ...SCORE_PANEL,
           ...(side === 'home' ? { borderBottom: `1px solid ${BORDER.hairline}` } : {}),
