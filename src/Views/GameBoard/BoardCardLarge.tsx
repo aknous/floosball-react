@@ -147,17 +147,26 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minHeight: '46px' }}>
         <Crest teamId={team?.id} size={36} possession={live && possessionTeam === side} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ ...font(500, 13), color: TEXT.muted, whiteSpace: 'nowrap' }}>{team?.city}</span>
-            <span style={{ ...font(500, 12), color: TEXT.muted, ...TABULAR }}>{team?.record}</span>
-            {hasMomentum && <MomentumFlame magnitude={momentumMagnitude} size={14} />}
-          </div>
+          <div style={{ ...font(500, 13), color: TEXT.muted, whiteSpace: 'nowrap' }}>{team?.city}</div>
           <div style={{
             ...font(ahead ? 800 : 600, 21, 1, '-0.02em'),
             color: ahead ? TEXT.primary : TEXT.muted,
             marginTop: '3px',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{team?.name}</div>
+        </div>
+
+        {/* The record sits beside the WHOLE identity block (owner), not tucked
+            against the city. It describes the club, not the city line, and on the
+            top line it read as part of the city — "Anaheim 5-0" as one phrase.
+            Centred across both lines it reads as what it is: a season to date.
+            The momentum flame travels with it — both describe the club's state
+            right now rather than its name. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
+          {hasMomentum && <MomentumFlame magnitude={momentumMagnitude} size={14} />}
+          <span style={{ ...font(600, 13, 1), color: TEXT.muted, ...TABULAR, whiteSpace: 'nowrap' }}>
+            {team?.record}
+          </span>
         </div>
         <div style={{
           ...CLUSTER, ...SCORE_PANEL,
