@@ -10,6 +10,12 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 // Mirrors api/auth.validateUsername. Duplicated ON PURPOSE: the server is the authority
 // and re-checks everything, but a name typed here should fail as you type rather than on
 // submit. Keep the two in step — the server's message wins if they ever disagree.
+//
+// ⚠️ One DELIBERATE divergence: NAME_MAX applies only to a name typed into the box, never
+// to a suggestion. `localNameError` is called on `ownName` alone and must stay that way.
+// The generator produces names past 20 characters (22% of two-digit ones), and the server
+// exempts any name it could have generated itself — so length-checking a suggestion here
+// would refuse a name the server would happily take.
 const NAME_MIN = 3
 const NAME_MAX = 20
 const NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/
