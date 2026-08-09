@@ -7,7 +7,7 @@ import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { GameModalNew } from '@/Components/GameModalNew'
-import { BG, BORDER, TEXT, ACCENT, FONT, RAIL_WIDTH, font } from '@/Components/Shell/tokens'
+import { BG, BORDER, TEXT, ACCENT, FONT, RAIL_WIDTH, CORES_WIDTH, font } from '@/Components/Shell/tokens'
 import WelcomeHero from './WelcomeHero'
 import LeagueNews, { type NewsItem } from './LeagueNews'
 import TopPlayers, { type LeaderRow } from './TopPlayers'
@@ -297,22 +297,25 @@ const FrontPage: React.FC = () => {
 
   return (
     <>
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: `minmax(0,1fr) ${RAIL_WIDTH}px`,
-        gap: '30px',
-        alignItems: 'start',
-        padding: '26px 28px 40px',
-        fontFamily: FONT,
-      }}>
-        <WelcomeHero
-          signedIn={!!user}
-          seasonNumber={seasonState.seasonNumber}
-          weekLabel={seasonState.currentWeekText || `Week ${seasonState.currentWeek}`}
-          liveCount={liveCount}
-        />
+      <div
+        className={user ? 'frontGrid' : 'frontGrid noRail'}
+        style={{
+          '--coresWidth': `${CORES_WIDTH}px`,
+          '--railWidth': `${RAIL_WIDTH}px`,
+          padding: '26px 28px 40px',
+          fontFamily: FONT,
+        } as React.CSSProperties}
+      >
+        <div className="frontHero">
+          <WelcomeHero
+            signedIn={!!user}
+            seasonNumber={seasonState.seasonNumber}
+            weekLabel={seasonState.currentWeekText || `Week ${seasonState.currentWeek}`}
+            liveCount={liveCount}
+          />
+        </div>
 
-        <div style={{ minWidth: 0 }}>
+        <div className="frontMain" style={{ minWidth: 0 }}>
           {!user && <SignedOutPanel />}
           <LeagueNews lead={news.lead} items={news.items} />
           <TopPlayers
@@ -322,23 +325,34 @@ const FrontPage: React.FC = () => {
           />
         </div>
 
-        {/* The rail. The Cores panel sits below the personal cards and shows for signed-out
-            visitors too — the state of the simulation is not a personal stat, and it is
-            the one thing on this page that is about the world rather than about you. */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', minWidth: 0 }}>
-          {user && myTeam && (
-            <YourTeamCard
-              team={myTeam}
-              leagueName={myLeagueName}
-              liveGame={myLiveGame}
-              nextFixture={nextFixture}
-              recent={recent}
-              onOpenGame={setOpenGameId}
-            />
-          )}
-          {user && <YourNumbers cells={numbersCells} actions={numbersActions} />}
+        {/* The Cores get a column of their own, immediately left of the personal rail.
+            It is deliberately not IN the rail: this is the one thing on the page that is
+            about the world rather than about you, it shows for signed-out visitors too,
+            and it is about to carry anomaly status and Aris/Pyre rule-vote notices — so
+            it needs to be able to run long without pushing your own cards down. */}
+        <div className="frontCores" style={{ minWidth: 0 }}>
           <CoresStatusPanel />
         </div>
+
+        {/* The personal rail. Signed out it does not render at all, and the grid drops to
+            two columns so the Cores take that side rather than leaving a dead gutter. */}
+        {user && (
+          <div className="frontRail" style={{
+            display: 'flex', flexDirection: 'column', gap: '22px', minWidth: 0,
+          }}>
+            {myTeam && (
+              <YourTeamCard
+                team={myTeam}
+                leagueName={myLeagueName}
+                liveGame={myLiveGame}
+                nextFixture={nextFixture}
+                recent={recent}
+                onOpenGame={setOpenGameId}
+              />
+            )}
+            <YourNumbers cells={numbersCells} actions={numbersActions} />
+          </div>
+        )}
       </div>
 
       {openGameId != null && (

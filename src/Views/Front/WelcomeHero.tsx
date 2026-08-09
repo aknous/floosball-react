@@ -77,7 +77,6 @@ const WelcomeHero: React.FC<{
 
   return (
     <div style={{
-      gridColumn: '1 / -1',
       background: BG.card,
       border: `1px solid ${BORDER.hairline}`,
       marginBottom: '4px',

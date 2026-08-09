@@ -92,6 +92,8 @@ export const FOOTER_HEIGHT = 40
 
 export const NAV_WIDTH = 196
 export const RAIL_WIDTH = 330
+/** The Cores' own column on the front page, left of the personal rail. */
+export const CORES_WIDTH = 280
 
 /**
  * Shorthand for the `font:` values the handoffs are written in, so a component can say
