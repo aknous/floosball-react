@@ -473,7 +473,7 @@ const Gauge: React.FC<{
  *  scales, and reading them as 0..1 pinned every team under half a bar — the
  *  panel showed three near-empty tracks whichever team you opened.
  *
- *  Each gets its own domain. These are MEASURED across all 24 teams, not taken
+ *  Each gets its own domain. These are MEASURED across the whole league, not taken
  *  from the ranges quoted in computeLockerRoom's docstring: those describe the
  *  roster average, and the real league spread is several times wider (fortitude
  *  runs about −1.0 to +1.1, not −0.2 to +0.4). Calibrated to the docstring, a

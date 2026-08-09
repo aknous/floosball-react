@@ -1016,6 +1016,16 @@
   .plate:hover { transform: none; }
 }
 
+/* A charged badge — the player profile's Awakened mark. A slow opacity breath,
+   never a scale or a glow: the badge sits inline in the character panel and
+   anything that changes its box would shift the rows around it. */
+@keyframes charge { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.pulse { animation: charge 2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; }
+}
+
 /* The live dot on the game board and the front page's Happening now band. A slow
    opacity pulse, not a scale ring — sixteen of these breathing at once has to read as
    ambient rather than as sixteen things demanding attention. */

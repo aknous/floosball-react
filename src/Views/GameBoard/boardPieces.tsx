@@ -1,8 +1,11 @@
 import React from 'react'
 import { BG, BORDER, TEXT, ACCENT, MOMENTUM, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 
-/** Crests exist for team ids 1-24. Anything above renders a placeholder. */
-export const CREST_MAX_ID = 24
+/** Crests exist for team ids 1-32 (`public/avatars/{id}.png`, regenerated from
+ *  config.json). Anything above renders a placeholder. This stayed at 24 when
+ *  the league grew to 32, so eight clubs drew a dashed circle everywhere a
+ *  crest appears while their artwork sat on disk unused. */
+export const CREST_MAX_ID = 32
 
 /**
  * A crest, or a same-size dashed circle when the team has no artwork yet.
