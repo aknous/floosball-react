@@ -11,6 +11,10 @@ export interface NumbersCell {
   label: string
   note: string
   noteColor?: string
+  /** Where this number's activity lives. A route, or an action for surfaces that are
+      modals rather than pages (the Shop). A cell with neither stays inert. */
+  to?: string
+  onClick?: () => void
 }
 
 export interface NumbersAction {
@@ -32,19 +36,33 @@ const YourNumbers: React.FC<{
   actions: NumbersAction[]
 }> = ({ cells, actions }) => (
   <div>
-    <SectionHeader title="YOUR NUMBERS" link={{ to: '/fantasy', label: 'DETAIL →' }} rail />
+    {/* No DETAIL link. It went to /fantasy, which is right for one cell of four — now that
+        each number is its own doorway, a single header link pointing at one of them is
+        both redundant and wrong three times out of four. */}
+    <SectionHeader title="YOUR NUMBERS" rail />
     <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}` }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))' }}>
-        {cells.map((cell, i) => (
-          <div
-            key={cell.key}
-            style={{
-              padding: '13px 14px',
-              borderRight: i % 2 === 0 ? `1px solid ${BORDER.hairline}` : 'none',
-              borderBottom: i < 2 ? `1px solid ${BORDER.hairline}` : 'none',
-              minWidth: 0,
-            }}
-          >
+        {cells.map((cell, i) => {
+          const cellStyle = {
+            display: 'block', width: '100%', textAlign: 'left' as const,
+            padding: '13px 14px',
+            borderRight: i % 2 === 0 ? `1px solid ${BORDER.hairline}` : 'none',
+            borderBottom: i < 2 ? `1px solid ${BORDER.hairline}` : 'none',
+            borderTop: 'none', borderLeft: 'none',
+            background: 'none', minWidth: 0,
+            textDecoration: 'none',
+            cursor: (cell.to || cell.onClick) ? 'pointer' : 'default',
+          }
+          // Each number is a doorway to the thing that produces it. The Shop is a modal
+          // rather than a page, so that one dispatches instead of navigating.
+          const Cell = ({ children }: { children: React.ReactNode }) =>
+            cell.to
+              ? <Link to={cell.to} className="row" style={cellStyle}>{children}</Link>
+              : cell.onClick
+                ? <button type="button" onClick={cell.onClick} className="row" style={cellStyle}>{children}</button>
+                : <div style={cellStyle}>{children}</div>
+          return (
+          <Cell key={cell.key}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px' }}>
               <span style={{ ...font(800, 24), color: cell.valueColor || TEXT.primary, ...TABULAR }}>
                 {cell.value}
@@ -60,8 +78,9 @@ const YourNumbers: React.FC<{
               ...font(700, 10), color: cell.noteColor || TEXT.muted, marginTop: '6px',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{cell.note}</div>
-          </div>
-        ))}
+          </Cell>
+          )
+        })}
       </div>
 
       {actions.length > 0 && (

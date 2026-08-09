@@ -250,6 +250,7 @@ const FrontPage: React.FC = () => {
         key: 'fantasy',
         value: seasonTotal.toFixed(1),
         label: 'FANTASY POINTS',
+        to: '/fantasy',
         note: rank ? `${rank} in the league` : 'Not ranked yet',
         noteColor: rank ? ACCENT.live : TEXT.muted,
       },
@@ -258,6 +259,10 @@ const FrontPage: React.FC = () => {
         value: (user?.floobits ?? 0).toLocaleString(),
         valueColor: ACCENT.warning,
         label: 'FLOOBITS',
+        // The Shop is a modal, not a route — the header's floobits chip opens it the same
+        // way. Navigating to /cards would land on the collection, which is where floobits
+        // have already been spent rather than where you spend them.
+        onClick: () => window.dispatchEvent(new Event('floosball:show-shop')),
         note: `${(myEntry?.weekTotal ?? 0).toFixed(0)} FP this week`,
       },
       {
@@ -265,6 +270,7 @@ const FrontPage: React.FC = () => {
         value: showcase?.grade ?? '—',
         suffix: showcase?.dividendRate ? `×${showcase.dividendRate}` : undefined,
         label: 'SHOWCASE GRADE',
+        to: '/cards?view=showcase',
         note: showcase
           ? `${showcase.slotCount} of ${showcase.maxSlots} slots · ${showcase.score} pts`
           : 'Nothing on show',
@@ -275,6 +281,7 @@ const FrontPage: React.FC = () => {
         suffix: pickem ? `${pickem.accuracy}%` : undefined,
         valueColor: pickem && pickem.correct * 2 >= pickem.total ? ACCENT.live : TEXT.primary,
         label: 'PROGNOSTICATIONS',
+        to: '/prognostications',
         note: pickem ? `${pickem.total} called this season` : 'No calls yet',
       },
     ]

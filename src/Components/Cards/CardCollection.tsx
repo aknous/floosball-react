@@ -85,7 +85,14 @@ const CardCollection: React.FC = () => {
   const { getToken, updateFloobits } = useAuth()
   const isMobile = useIsMobile()
 
-  const [view, setView] = useState<ViewMode>('collection')
+  // Deep-linkable, so the front page's SHOWCASE GRADE cell lands on the showcase rather
+  // than on the collection with the user left to find it. Read once at mount rather than
+  // through a router hook — the view is user state after that, and re-syncing it to the
+  // URL would fight the pills.
+  const [view, setView] = useState<ViewMode>(() => {
+    const requested = new URLSearchParams(window.location.search).get('view')
+    return requested === 'vault' || requested === 'showcase' ? requested : 'collection'
+  })
   const [cards, setCards] = useState<CardData[]>([])
   const [loading, setLoading] = useState(true)
   const [editionFilter, setEditionFilter] = useState('all')
