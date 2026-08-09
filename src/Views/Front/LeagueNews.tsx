@@ -57,6 +57,7 @@ const CATEGORY_COLOR: Record<string, string> = {
   eliminated: TEXT.muted,
   cores: ACCENT.cards,
   schedule: ACCENT.info,
+  announcement: ACCENT.ownTeam,
 }
 
 /** Shorter display names where the raw category reads awkwardly in a 104px column. */
@@ -66,6 +67,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   rules: 'RULE CHANGE',
   criticality: 'INSTABILITY',
   schedule: 'SCHEDULE',
+  announcement: 'ANNOUNCEMENT',
 }
 
 // A Core speaks in their OWN colour, not the generic Cores colour — with the feed now
@@ -134,7 +136,10 @@ const isDivider = (item: NewsItem) => DIVIDER_CATEGORIES.has(item.rawCategory)
 // be odd for it to render as an ordinary row when it does not. A clinch is deliberately
 // NOT here — it happens sixteen times a season, and highlighting the routine is how a
 // highlight stops meaning anything.
-const NOTEWORTHY_CATEGORIES = new Set(['record', 'anomaly_transition', 'criticality', 'rules'])
+// `announcement` is here because somebody chose to write it. Every other row in this
+// feed is a system reporting an event; a hand-written notice is by definition the one
+// worth stopping on, so it renders at the noteworthy weight rather than as an ordinary row.
+const NOTEWORTHY_CATEGORIES = new Set(['record', 'anomaly_transition', 'criticality', 'rules', 'announcement'])
 const isNoteworthy = (item: NewsItem) => NOTEWORTHY_CATEGORIES.has(item.rawCategory)
 
 const DIVIDER_TINT = '0d'      // ~5%

@@ -452,6 +452,38 @@ const AdminContent: React.FC<{
   const [namesError, setNamesError] = useState<string | null>(null)
   const [namesLoading, setNamesLoading] = useState(false)
 
+  // ── League news announcement ──────────────────────────────────────────────
+  const [newsText, setNewsText] = useState('')
+  const [newsTeamId, setNewsTeamId] = useState('')
+  const [newsPosted, setNewsPosted] = useState<string | null>(null)
+  const [newsError, setNewsError] = useState<string | null>(null)
+  const [newsLoading, setNewsLoading] = useState(false)
+  const NEWS_MAX = 280
+
+  const handlePostNews = async () => {
+    const text = newsText.trim()
+    if (!text) return
+    setNewsLoading(true)
+    setNewsError(null)
+    setNewsPosted(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/league-news`, {
+        method: 'POST',
+        headers: await buildHeaders(),
+        body: JSON.stringify({ text, teamId: newsTeamId ? Number(newsTeamId) : null }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.detail || 'Request failed')
+      setNewsPosted(`Posted to season ${json.data?.season}, week ${json.data?.week}.`)
+      setNewsText('')
+      setNewsTeamId('')
+    } catch (e: any) {
+      setNewsError(e.message)
+    } finally {
+      setNewsLoading(false)
+    }
+  }
+
   const handleAddNames = async () => {
     const names = namesInput.split('\n').map(n => n.trim()).filter(Boolean)
     if (!names.length) return
@@ -826,7 +858,7 @@ const AdminContent: React.FC<{
     }
   }, [password])
 
-  type Section = 'monitor' | 'analytics' | 'achievements' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users' | 'settings'
+  type Section = 'monitor' | 'analytics' | 'achievements' | 'requests' | 'allowlist' | 'names' | 'news' | 'players' | 'cards' | 'floobits' | 'users' | 'settings'
   const [activeSection, setActiveSection] = useState<Section>('monitor')
 
   // Load the Discord submission queue lazily — only when the Names tab is open, and
@@ -1007,6 +1039,7 @@ const AdminContent: React.FC<{
     { id: 'requests', label: 'Requests' },
     { id: 'allowlist', label: 'Allowlist' },
     { id: 'names', label: 'Names' },
+    { id: 'news', label: 'News' },
     { id: 'players', label: 'Players' },
     { id: 'cards', label: 'Cards' },
     { id: 'floobits', label: 'Floobits' },
@@ -1986,6 +2019,58 @@ const AdminContent: React.FC<{
           )}
         </div>
       </div>}
+
+      {/* League News — a hand-written row in the feed everything else publishes to
+          automatically. Its own `announcement` category, so a reader can tell a written
+          notice from a reported result and the feed's per-category caps cannot drop it. */}
+      {activeSection === 'news' && <div style={sectionStyle}>
+        <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>Post to League News</h2>
+        <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px', lineHeight: 1.5 }}>
+          Goes straight to the front page feed and out over the websocket to anyone reading
+          it. Season and week are stamped from the sim. One clause reads best — every other
+          row in that feed is a single sentence.
+        </div>
+
+        <div style={{ marginBottom: '12px' }}>
+          <div style={labelStyle}>Announcement</div>
+          <textarea
+            value={newsText}
+            onChange={e => setNewsText(e.target.value.slice(0, NEWS_MAX))}
+            rows={3}
+            style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+            placeholder="The league will pause for maintenance after tonight's slate."
+          />
+          <div style={{
+            fontSize: '11px', marginTop: '4px', textAlign: 'right',
+            color: newsText.length > NEWS_MAX - 40 ? '#f59e0b' : '#64748b',
+          }}>{newsText.length} / {NEWS_MAX}</div>
+        </div>
+
+        <div style={{ marginBottom: '14px' }}>
+          <div style={labelStyle}>Club (optional — attaches a crest to the row)</div>
+          <input
+            value={newsTeamId}
+            onChange={e => setNewsTeamId(e.target.value.replace(/[^0-9]/g, ''))}
+            style={{ ...inputStyle, maxWidth: '160px' }}
+            placeholder="Team id"
+          />
+        </div>
+
+        <button
+          onClick={handlePostNews}
+          disabled={newsLoading || !newsText.trim()}
+          style={{ ...btnStyle, opacity: newsLoading || !newsText.trim() ? 0.5 : 1 }}
+        >
+          {newsLoading ? 'Posting…' : 'Post announcement'}
+        </button>
+        {newsPosted && (
+          <div style={{ marginTop: '10px', fontSize: '13px', color: '#22c55e' }}>{newsPosted}</div>
+        )}
+        {newsError && (
+          <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{newsError}</div>
+        )}
+      </div>}
+
 
       {/* Create Players */}
       {activeSection === 'players' && <div style={sectionStyle}>
