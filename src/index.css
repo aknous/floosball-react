@@ -1061,30 +1061,16 @@
   .heroTiles { border-left: none; border-top: 1px solid #1e293b; }
 }
 
-/* The front page runs three columns: the news and player table, then the Cores, then
-   the personal rail. The widths come in as custom properties from tokens.ts so this
-   rule and the token cannot drift apart.
+/* The front page runs the news and player table beside a personal rail. The rail width
+   comes in as a custom property from tokens.ts so this rule and the token cannot drift.
 
-   Three columns need roughly 1520px of viewport before the left column is squeezed too
-   hard to read a player row. Below that the Cores fold back above the rail, which is
-   where they lived before they earned a column. Signed out there is no rail at all, so
-   the Cores take that side themselves. */
+   Signed out there is no rail at all, so the grid drops to one column rather than
+   leaving a dead gutter down the right. */
 .frontGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--coresWidth) var(--railWidth);
+  grid-template-columns: minmax(0, 1fr) var(--railWidth);
   gap: 30px;
   align-items: start;
 }
-.frontGrid > .frontHero  { grid-column: 1 / -1; }
-.frontGrid > .frontMain  { grid-column: 1; }
-.frontGrid > .frontCores { grid-column: 2; }
-.frontGrid > .frontRail  { grid-column: 3; }
-
-.frontGrid.noRail { grid-template-columns: minmax(0, 1fr) var(--railWidth); }
-
-@media (max-width: 1520px) {
-  .frontGrid { grid-template-columns: minmax(0, 1fr) var(--railWidth); }
-  .frontGrid > .frontMain  { grid-row: 2 / span 2; }
-  .frontGrid > .frontCores { grid-column: 2; grid-row: 2; }
-  .frontGrid > .frontRail  { grid-column: 2; grid-row: 3; }
-}
+.frontGrid > .frontHero { grid-column: 1 / -1; }
+.frontGrid.noRail { grid-template-columns: minmax(0, 1fr); }

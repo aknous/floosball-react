@@ -361,8 +361,15 @@ export const OnboardingModal: React.FC = () => {
 
   // Username step
   const isUsernameStep = needsUsername && !usernameChosen
-  // Info step index (0-based within INFO_STEPS)
-  const infoIndex = step - 1
+  // Info step index (0-based within INFO_STEPS).
+  //
+  // ⚠️ CLAMPED. `step` is persisted, and INFO_STEPS[infoIndex].title reads straight off
+  // the array — so a step that lands past the end throws during render, and because this
+  // modal mounts above the whole app that is a WHITE SCREEN on every subsequent load, not
+  // a broken dialog. Recovering needed the persisted step reset; clearing browser storage
+  // did not help. Reachable by advancing faster than React re-renders (rapid clicks, a
+  // held key, a double-fire) and by any future change to the length of INFO_STEPS.
+  const infoIndex = Math.max(0, Math.min(step - 1, INFO_STEPS.length - 1))
   const isLastInfoStep = infoIndex === INFO_STEPS.length - 1
 
   return ReactDOM.createPortal(

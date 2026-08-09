@@ -7,13 +7,12 @@ import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { GameModalNew } from '@/Components/GameModalNew'
-import { BG, BORDER, TEXT, ACCENT, FONT, RAIL_WIDTH, CORES_WIDTH, font } from '@/Components/Shell/tokens'
+import { BG, BORDER, TEXT, ACCENT, FONT, RAIL_WIDTH, font } from '@/Components/Shell/tokens'
 import WelcomeHero from './WelcomeHero'
 import LeagueNews, { type NewsItem } from './LeagueNews'
 import TopPlayers, { type LeaderRow } from './TopPlayers'
 import YourTeamCard, { type RecentResult } from './YourTeamCard'
 import YourNumbers, { type NumbersCell, type NumbersAction } from './YourNumbers'
-import CoresStatusPanel from './CoresStatusPanel'
 import type { LeagueStandings, TeamStanding } from '@/Views/Standings/standingsTypes'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -300,7 +299,6 @@ const FrontPage: React.FC = () => {
       <div
         className={user ? 'frontGrid' : 'frontGrid noRail'}
         style={{
-          '--coresWidth': `${CORES_WIDTH}px`,
           '--railWidth': `${RAIL_WIDTH}px`,
           padding: '26px 28px 40px',
           fontFamily: FONT,
@@ -325,17 +323,9 @@ const FrontPage: React.FC = () => {
           />
         </div>
 
-        {/* The Cores get a column of their own, immediately left of the personal rail.
-            It is deliberately not IN the rail: this is the one thing on the page that is
-            about the world rather than about you, it shows for signed-out visitors too,
-            and it is about to carry anomaly status and Aris/Pyre rule-vote notices — so
-            it needs to be able to run long without pushing your own cards down. */}
-        <div className="frontCores" style={{ minWidth: 0 }}>
-          <CoresStatusPanel />
-        </div>
-
-        {/* The personal rail. Signed out it does not render at all, and the grid drops to
-            two columns so the Cores take that side rather than leaving a dead gutter. */}
+        {/* The personal rail. Signed out it does not render at all and the grid drops to
+            a single column — the Cores used to hold that side, and they now ride at the
+            top of the news instead. */}
         {user && (
           <div className="frontRail" style={{
             display: 'flex', flexDirection: 'column', gap: '22px', minWidth: 0,

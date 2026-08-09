@@ -2,6 +2,7 @@ import React from 'react'
 import { BG, BORDER, TEXT, ACCENT, TABULAR, font } from '@/Components/Shell/tokens'
 import { Crest } from '@/Views/GameBoard/boardPieces'
 import { SectionHeader, timeAgo } from './frontPieces'
+import { CoresBand } from './CoresStatusPanel'
 
 export interface NewsStat {
   label: string
@@ -76,6 +77,8 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
     <div>
       <SectionHeader title="LEAGUE NEWS" link={{ to: '/history', label: 'ALL →' }} />
       <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}` }}>
+        {/* The state of the league, at the head of the league's news. */}
+        <CoresBand />
         {lead && (
           <div style={{
             display: 'flex', gap: '16px', padding: '16px',

@@ -10,7 +10,8 @@ import { CoreIcon, coreColor } from '@/utils/coresVisual'
 
 const NONE_KEY = 'none'
 
-function useCountdown(closesAt: string | null): string | null {
+/** Shared with the front page's Cores band, so the two countdowns cannot disagree. */
+export function useCountdown(closesAt: string | null): string | null {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000)
