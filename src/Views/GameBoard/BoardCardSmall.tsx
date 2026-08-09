@@ -44,24 +44,14 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
 
   const homeWp = Math.round(game.homeWinProbability ?? 50)
   const awayWp = 100 - homeWp
-  // On a final, read the favourite off the SCORE — the win probability has already
-  // resolved to 100/0 and would name the winner by definition.
   // Who is ahead is a FORMAT question — in frames it is frames won, not points.
   const leader = leadingSide(game)
-  const homeFavoured = isFinal ? leader !== 'away' : homeWp >= awayWp
-  const favouredAbbr = homeFavoured ? home?.abbr : away?.abbr
-  const favouredPct = homeFavoured ? homeWp : awayWp
-  // Both sides get the correction even though only one is drawn — the helper is applied
-  // per side so a future change that shows both cannot reintroduce a mismatched pair.
-  const favouredText = readableTeamColor(homeFavoured ? homeFill : awayFill)
-
-  const wpHistory = (game.plays || [])
-    .filter((p: any) => typeof p?.homeWinProbability === 'number')
-    .slice(-24)
-    .map((p: any) => (homeFavoured ? p.homeWinProbability : 100 - p.homeWinProbability))
-  const swing = wpHistory.length >= 2
-    ? Math.round(wpHistory[wpHistory.length - 1] - wpHistory[0])
-    : 0
+  // Both sides, matching the large card (owner). The single favoured-side figure
+  // that used to sit here made the reader do the subtraction to learn the other
+  // half, and the swing counter beside it was a third number in a strip three
+  // pixels tall. Applied per side so the pair cannot end up mismatched.
+  const awayText = readableTeamColor(awayFill)
+  const homeText = readableTeamColor(homeFill)
 
   const accent = pinned ? pinnedAccent : chip ? CHIP_COLOR[chip] : BORDER.hairline
   const possessionTeam = game.homeTeamPoss ? 'home' : game.awayTeamPoss ? 'away' : null
@@ -147,13 +137,15 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           simply drop it rather than showing an empty strip. */}
       {!isFinal && (
         <div style={{ paddingTop: '12px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', alignItems: 'center', gap: '9px' }}>
+          <span style={{
+            ...font(awayWp > homeWp ? 800 : 600, 11), color: awayText,
+            ...TABULAR, whiteSpace: 'nowrap', flexShrink: 0,
+          }}>{away?.abbr} {awayWp}%</span>
           <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={3} />
-          <span style={{ ...font(700, 11), color: favouredText, ...TABULAR, whiteSpace: 'nowrap', flexShrink: 0 }}>
-            {favouredAbbr} {favouredPct}%
-          </span>
-          <span style={{ ...font(600, 10), color: TEXT.muted, ...TABULAR, flexShrink: 0 }}>
-            {swing >= 0 ? '▲' : '▼'}{Math.abs(swing)}
-          </span>
+          <span style={{
+            ...font(homeWp > awayWp ? 800 : 600, 11), color: homeText,
+            ...TABULAR, whiteSpace: 'nowrap', flexShrink: 0,
+          }}>{homeWp}% {home?.abbr}</span>
         </div>
       )}
     </div>
