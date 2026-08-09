@@ -395,22 +395,20 @@ const GamePage: React.FC = () => {
             </div>
           )}
           railContent={(
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
-              {/* No header. The buttons say "Cheer" and carry their club's crest
-                  and colour, so a RALLY label above them only repeated what they
-                  already show. */}
-              {isLive && (
-                <div style={{
-                  background: BG.card, border: `1px solid ${BORDER.hairline}`,
-                  padding: '14px', display: 'flex', gap: '10px',
-                }}>
+            <GameBleachers
+              entries={railEntries}
+              watching={watching}
+              gameId={id}
+              // No header on the cheer row. The buttons say "Cheer" and carry
+              // their club's crest and colour, so a RALLY label only repeated
+              // what they already show.
+              rally={isLive ? (
+                <>
                   <RallyButton game={gameData} teamId={Number(gameData.homeTeam.id)} teamColor={homeColor} />
                   <RallyButton game={gameData} teamId={Number(gameData.awayTeam.id)} teamColor={awayDisplayColor} />
-                </div>
-              )}
-
-              <GameBleachers entries={railEntries} watching={watching} gameId={id} />
-            </div>
+                </>
+              ) : undefined}
+            />
           )}
         />
       </div>

@@ -54,7 +54,12 @@ const Chevron: React.FC<{ open: boolean }> = ({ open }) => (
   </svg>
 )
 
-const GameFeedComposer: React.FC<{ gameId: number }> = ({ gameId }) => {
+const GameFeedComposer: React.FC<{
+  gameId: number
+  /** The player and sideline voices, appended below the fan posts in the same
+   *  scroller — the rail is one feed, not two stacked ones. */
+  extraEntries?: React.ReactNode
+}> = ({ gameId, extraEntries }) => {
   const { user, getToken } = useAuth()
   const [groups, setGroups] = useState<CatalogGroup[]>([])
   const [posts, setPosts] = useState<FeedPost[]>([])
@@ -120,8 +125,9 @@ const GameFeedComposer: React.FC<{ gameId: number }> = ({ gameId }) => {
   const canPost = !!user?.favoriteTeamId
 
   return (
-    <>
-      <div style={{ padding: '13px 14px', borderBottom: `1px solid ${BORDER.hairline}` }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      {/* The composer is pinned; everything said scrolls under it. */}
+      <div style={{ padding: '13px 14px', borderBottom: `1px solid ${BORDER.hairline}`, flexShrink: 0 }}>
         <button
           onClick={() => (canPost ? setOpen(o => !o) : undefined)}
           style={{
@@ -173,6 +179,7 @@ const GameFeedComposer: React.FC<{ gameId: number }> = ({ gameId }) => {
         )}
       </div>
 
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
       {posts.map(p => {
         const colour = p.teamColor ? readableTeamColor(p.teamColor) : TEXT.muted
         return (
@@ -199,7 +206,9 @@ const GameFeedComposer: React.FC<{ gameId: number }> = ({ gameId }) => {
           </div>
         )
       })}
-    </>
+      {extraEntries}
+      </div>
+    </div>
   )
 }
 

@@ -3580,6 +3580,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               width: stacked ? '100%' : '372px',
               flexShrink: 0,
               minWidth: 0,
+              // Fills the row like the plays panel beside it, so the feed can
+              // run to the bottom of the page instead of stopping short.
+              ...(stacked ? {} : { display: 'flex', flexDirection: 'column', minHeight: 0 }),
             }}>{railContent}</div>
           )}
 

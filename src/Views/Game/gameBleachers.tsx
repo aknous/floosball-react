@@ -143,12 +143,19 @@ const GameBleachers: React.FC<{
   entries: RailEntry[]
   watching: number | null
   gameId: number
-}> = ({ entries, watching, gameId }) => (
-  <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}` }}>
+  /** The two cheer buttons. Inside the panel rather than floating above it —
+   *  rallying IS being in the stands, and as its own card it read as a
+   *  separate feature that happened to sit nearby. */
+  rally?: React.ReactNode
+}> = ({ entries, watching, gameId, rally }) => (
+  <div style={{
+    background: BG.card, border: `1px solid ${BORDER.hairline}`,
+    display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0,
+  }}>
     <div style={{
       padding: '12px 16px', background: BG.panel,
       borderBottom: `1px solid ${BORDER.raised}`,
-      display: 'flex', alignItems: 'center', gap: '11px',
+      display: 'flex', alignItems: 'center', gap: '11px', flexShrink: 0,
     }}>
       <span style={{ ...font(800, 12, 1, '0.1em'), color: TEXT.strong }}>THE BLEACHERS</span>
       <span style={{ flex: 1 }} />
@@ -160,17 +167,28 @@ const GameBleachers: React.FC<{
       )}
     </div>
 
-    {/* The fan half: shouts at THIS game, from either stand. */}
-    <GameFeedComposer gameId={gameId} />
+    {rally && (
+      <div style={{
+        padding: '12px 14px', borderBottom: `1px solid ${BORDER.hairline}`,
+        display: 'flex', gap: '10px', flexShrink: 0,
+      }}>{rally}</div>
+    )}
 
-    <div style={{ maxHeight: '520px', overflowY: 'auto' }}>
-      {entries.map(entry => <Entry key={entry.key} entry={entry} />)}
-      {entries.length === 0 && (
-        <div style={{ padding: '28px 16px', textAlign: 'center', ...font(400, 12, 1.5), color: TEXT.muted }}>
-          Nobody has said anything yet.
-        </div>
-      )}
-    </div>
+    {/* The fan half: shouts at THIS game, from either stand. The player and
+        sideline voices ride in the same scroller. */}
+    <GameFeedComposer
+      gameId={gameId}
+      extraEntries={
+        <>
+          {entries.map(entry => <Entry key={entry.key} entry={entry} />)}
+          {entries.length === 0 && (
+            <div style={{ padding: '28px 16px', textAlign: 'center', ...font(400, 12, 1.5), color: TEXT.muted }}>
+              Nobody has said anything yet.
+            </div>
+          )}
+        </>
+      }
+    />
   </div>
 )
 
