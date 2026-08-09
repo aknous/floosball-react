@@ -5,9 +5,10 @@ import { useGames } from '@/contexts/GamesContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
+import { useFloosball } from '@/contexts/FloosballContext'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { BG, BORDER, TEXT, ACCENT, FONT, RAIL_WIDTH, font } from '@/Components/Shell/tokens'
-import HappeningNow from './HappeningNow'
+import WelcomeHero from './WelcomeHero'
 import LeagueNews, { type NewsItem } from './LeagueNews'
 import TopPlayers, { type LeaderRow } from './TopPlayers'
 import YourTeamCard, { type RecentResult } from './YourTeamCard'
@@ -61,6 +62,7 @@ const FrontPage: React.FC = () => {
   const { unclaimedCount } = useAchievements()
   const { myEntry } = useFantasySnapshot()
   const { event: wsEvent } = useSeasonWebSocket()
+  const { seasonState } = useFloosball()
 
   const [openGameId, setOpenGameId] = useState<number | null>(null)
   const [news, setNews] = useState<{ lead: NewsItem | null; items: NewsItem[] }>({ lead: null, items: [] })
@@ -291,7 +293,7 @@ const FrontPage: React.FC = () => {
     return actions
   }, [gameList, unclaimedCount])
 
-  const favouriteColor = myTeam?.color ?? null
+  const liveCount = gameList.filter(g => g.status === 'Active').length
 
   return (
     <>
@@ -303,11 +305,11 @@ const FrontPage: React.FC = () => {
         padding: '26px 28px 40px',
         fontFamily: FONT,
       }}>
-        <HappeningNow
-          games={gameList}
-          favouriteTeamId={favouriteTeamId}
-          favouriteColor={favouriteColor}
-          onOpen={setOpenGameId}
+        <WelcomeHero
+          signedIn={!!user}
+          seasonNumber={seasonState.seasonNumber}
+          weekLabel={seasonState.currentWeekText || `Week ${seasonState.currentWeek}`}
+          liveCount={liveCount}
         />
 
         <div style={{ minWidth: 0 }}>
