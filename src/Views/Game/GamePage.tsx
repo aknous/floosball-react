@@ -289,7 +289,9 @@ const GamePage: React.FC = () => {
   }
 
   return (
-    <div style={{ fontFamily: FONT }}>
+    // Fills the shell's content column, so the plays panel below can be told to
+    // run to the bottom of the page instead of guessing at a height.
+    <div style={{ fontFamily: FONT, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
 
       {/* Nav bar — back to the board, and the round in its interest order. */}
       <div style={{
@@ -318,12 +320,6 @@ const GamePage: React.FC = () => {
           <Chevron dir="right" />
         </NavPlate>
         <span style={{ flex: 1 }} />
-        {isYours && (
-          <span style={{
-            ...font(700, 10, 1, '0.1em'), color: ACCENT.ownTeam,
-            border: '1px solid rgba(244,114,182,0.35)', padding: '5px 8px',
-          }}>YOUR TEAM</span>
-        )}
       </div>
       </div>
 
@@ -331,8 +327,9 @@ const GamePage: React.FC = () => {
           only earns one while the Plays view is up, and only that component
           knows which view that is. */}
       <div style={{
-        padding: '20px 28px 32px',
+        padding: '20px 28px 24px',
         maxWidth: contentMax, margin: '0 auto',
+        flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column',
       }}>
         <GameModalNew
           gameId={id}
@@ -341,7 +338,7 @@ const GamePage: React.FC = () => {
           scoreboard={(
             <div style={{
               background: `linear-gradient(100deg, ${awayDisplayColor}1a 0%, ${BG.card} 45%, ${BG.card} 55%, ${homeColor}22 100%)`,
-              border: `1px solid ${BORDER.hairline}`,
+              borderBottom: `1px solid ${BORDER.raised}`,
               padding: '13px 15px',
             }}>
               <div style={{

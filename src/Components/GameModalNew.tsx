@@ -299,6 +299,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
   const pageNarrow = useIsMobile(PAGE_THREE_COLUMN_MIN)
   const stacked = isMobile || (asPage && pageNarrow)
 
+
   // Get game from central state and fetch plays
   const { games, fetchGamePlays } = useGames()
   const liveGameData = useMemo(() => games.get(gameId), [games, gameId])
@@ -1234,6 +1235,28 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
   const flameColor = absMomentum >= 25 ? '#f97316' : absMomentum >= 15 ? '#fb923c' : '#fdba74'
   const flameGlow = absMomentum >= 25 ? '0 0 6px #f97316' : 'none'
 
+  /**
+   * Whether the status block has anything left to render on the route.
+   *
+   * Its two normal rows (clock, down and distance) live in the scoreboard there,
+   * so what remains is purely format-specific. A standard game with no drive
+   * clock leaves it empty, and an empty bordered block between the scoreboard
+   * and the field is exactly the dead space it looks like.
+   *
+   * ⚠️ Declared HERE, not up with the other layout flags: it reads `gameData`
+   * and `replayActive`, both of which are initialised further down. Placing it
+   * above them threw "Cannot access 'gameData' before initialization" on mount.
+   */
+  const hasStatusExtras = (() => {
+    const notScheduled = gameData?.status !== 'Scheduled'
+    if (gameData?.status === 'Active' && !replayActive && gameData?.driveClock) return true
+    if (gameFormat === 'target' && notScheduled) return true
+    if (gameFormat === 'bust' && notScheduled) return true
+    if (gameFormat === 'play_limit' && gameData?.playLimit?.active) return true
+    if (gameFormat === 'chess_clock' && gameData?.chessClock?.active && notScheduled) return true
+    return false
+  })()
+
   if (!gameData) {
     return (
       <div style={{
@@ -1255,7 +1278,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
   return (
     <div
       onClick={asPage ? undefined : onClose}
-      style={asPage ? { minWidth: 0 } : {
+      style={asPage ? { minWidth: 0, flex: 1, minHeight: 0, display: 'flex' } : {
         position: 'fixed',
         inset: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -1271,7 +1294,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
         style={asPage ? {
           // On the route these two wrappers stop being chrome and become a plain
           // container: the page owns the background, the scrolling and the width.
-          display: 'flex', flexDirection: 'column', minWidth: 0,
+          display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1, minHeight: 0,
         } : {
           backgroundColor: '#0f172a',
           borderRadius: isMobile ? '0' : '12px',
@@ -1340,15 +1363,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
 
         {/* Body: two-column in the modal, stacked on mobile and on the route */}
         <div style={{
-          flex: asPage ? 'none' : 1,
+          flex: 1,
+          minHeight: 0,
           display: 'flex',
           flexDirection: stacked ? 'column' : 'row',
           gap: asPage ? '16px' : 0,
           // The modal clips and scrolls inside itself; the page must not, or the
           // columns inherit a height nothing has set and collapse.
           overflow: asPage ? 'visible' : stacked ? 'auto' : 'hidden',
-          alignItems: asPage && !stacked ? 'flex-start' : undefined,
-          minHeight: 0,
+          alignItems: asPage && !stacked ? 'stretch' : undefined,
         }}>
 
           {/* Left panel: Scoreboard + Status + WP */}
@@ -1363,6 +1386,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
             // without eating the width the box score wants.
             flex: stacked ? '0 0 auto' : asPage ? '0 0 clamp(470px, 32%, 540px)' : '0 0 40%',
             minWidth: 0,
+            // One container on the route. Scoreboard, field and chart were three
+            // bare blocks with gaps between them, which read as unrelated things
+            // stacked up rather than one column about the game.
+            ...(asPage ? {
+              background: '#131e2f',
+              border: '1px solid #1e293b',
+              alignSelf: 'flex-start',
+            } : {}),
             // The route separates its columns with a gap, not a rule — the
             // panels already have their own borders and a divider between two
             // bordered stacks reads as a double line.
@@ -1370,7 +1401,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
             borderBottom: stacked && !asPage ? '1px solid #334155' : 'none',
             display: 'flex',
             flexDirection: 'column',
-            gap: asPage ? '16px' : 0,
+            gap: 0,
             overflowY: stacked || asPage ? 'visible' : 'auto'
           }}>
 
@@ -1636,11 +1667,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
             </div>
 
             {/* Game status + down/distance.
-                On the route the clock and the down are already in the scoreboard
-                band, so those two rows are hidden and this block survives only for
-                the FORMAT rows below it — drive clock, target, bust, plays per
-                quarter, chess-clock budgets — which the band has no room for. */}
-            <div style={{ padding: '10px 16px', borderBottom: '1px solid #334155', textAlign: 'center' }}>
+                On the route the clock and the down are already in the scoreboard,
+                so those two rows are hidden and this block survives only for the
+                FORMAT rows below it — drive clock, target, bust, plays per
+                quarter, chess-clock budgets.
+                ⚠️ Which is why it collapses when none of them apply: a standard
+                game with no drive clock was left with 20px of padding and a rule
+                around nothing, sitting between the scoreboard and the field. */}
+            <div style={{
+              padding: '10px 16px', borderBottom: '1px solid #334155', textAlign: 'center',
+              display: asPage && !hasStatusExtras ? 'none' : 'block',
+            }}>
               {/* Row 1: clock / final */}
               <div style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '600', marginBottom: '3px',
                             display: asPage ? 'none' : 'inline-flex', alignItems: 'center', gap: '6px',
@@ -2487,11 +2524,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
             overflow: stacked ? 'visible' : 'hidden',
             minWidth: 0,
             ...(asPage ? { background: '#131e2f', border: '1px solid #1e293b' } : {}),
-            // The feed scrolls WITHIN its column so the page stays about one
-            // screen — the whole reason for putting it beside the field. Left
-            // unbounded it would grow to the length of the play list and the
-            // page would scroll exactly as far as before.
-            ...(asPage && !stacked ? { maxHeight: 'calc(100vh - 250px)' } : {}),
+            // Runs to the bottom of the page and scrolls inside itself. It used
+            // to take a fixed `100vh - 250px`, which guessed at the chrome above
+            // it and left a strip of dead page underneath.
+            ...(asPage && !stacked ? { height: '100%', minHeight: 0 } : {}),
           }}>
 
             {/* Tab bar — hidden for Scheduled games. On the route it is the
