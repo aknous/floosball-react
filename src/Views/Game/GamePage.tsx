@@ -266,7 +266,9 @@ const GamePage: React.FC = () => {
             {gameData.status === 'Final'
               ? `${gameData.homeTeam.abbr} ${gameData.homeScore} · ${gameData.awayTeam.abbr} ${gameData.awayScore}`
               : [
-                  gameData.down != null && gameData.yardsToFirstDown != null
+                  // `> 0`, not `!= null`: a scheduled game carries down 0 and
+                  // distance 0, which rendered "0th & 0" before kickoff.
+                  Number(gameData.down) > 0 && gameData.yardsToFirstDown != null
                     ? `${ordinal(Number(gameData.down))} & ${gameData.yardsToFirstDown}`
                     : null,
                   gameData.yardLine,
