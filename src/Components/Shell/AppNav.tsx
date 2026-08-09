@@ -5,6 +5,7 @@ import { useAchievements } from '@/contexts/AchievementsContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useGames } from '@/contexts/GamesContext'
 import { SiDiscord } from 'react-icons/si'
+import { FaTrophy } from 'react-icons/fa'
 import { BG, BORDER, TEXT, ACCENT, FONT, NAV_WIDTH, font } from './tokens'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -51,9 +52,9 @@ const LEAGUE_ITEMS: NavEntry[] = [
 const YOURS_ITEMS: NavEntry[] = [
   { key: 'team', label: 'Your team', path: '/front-office', icon: ICON('M4 2h12v16h-4v-4h-4v4H4V2z') },
   { key: 'pickem', label: 'Prognostications', path: '/prognostications', icon: ICON('M2 12l4-6 4 4 4-7 4 9v4H2v-4z') },
-  { key: 'fantasy', label: 'Fantasy', path: '/fantasy', icon: ICON('M3 4h14v3H3V4zm1 5h12v7H4V9z') },
+  { key: 'fantasy', label: 'Fantasy', path: '/fantasy', icon: ICON('M10 1l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L1.4 7.3l6-.8L10 1z') },
   { key: 'cards', label: 'Cards', path: '/cards', icon: ICON('M5 2h10a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1zm1 3v4h8V5H6z') },
-  { key: 'achievements', label: 'Achievements', path: '/achievements', icon: ICON('M10 1l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L1.4 7.3l6-.8L10 1z') },
+  { key: 'achievements', label: 'Achievements', path: '/achievements', icon: <FaTrophy size={16} style={{ flexShrink: 0 }} /> },
 ]
 
 const AWARDS_ITEM: NavEntry = {
