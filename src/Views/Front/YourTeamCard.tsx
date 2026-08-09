@@ -2,6 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, TABULAR, font } from '@/Components/Shell/tokens'
+import { getContrastTextColor } from '@/utils/colors'
 import { Crest } from '@/Views/GameBoard/boardPieces'
 import { SectionHeader } from './frontPieces'
 import type { TeamStanding } from '@/Views/Standings/standingsTypes'
@@ -49,6 +50,11 @@ const YourTeamCard: React.FC<{
   const ourScore = liveGame ? (isHome ? liveGame.homeScore : liveGame.awayScore) ?? 0 : 0
   const theirScore = liveGame ? (isHome ? liveGame.awayScore : liveGame.homeScore) ?? 0 : 0
 
+  // Text sitting ON the club's colour. Black or white by luminance, with the
+  // secondary line at 80% of whichever was chosen.
+  const onTeamColor = getContrastTextColor(team.color)
+  const onTeamColorMuted = onTeamColor === '#000000' ? 'rgba(0,0,0,0.72)' : 'rgba(255,255,255,0.85)'
+
   return (
     <div>
       <SectionHeader title="YOUR TEAM" link={{ to: `/team/${team.id}`, label: 'TEAM PAGE →' }} rail />
@@ -62,10 +68,16 @@ const YourTeamCard: React.FC<{
         }}>
           <Crest teamId={team.id} size={34} />
           <div style={{ minWidth: 0 }}>
-            <div style={{ ...font(800, 18, 1, '-0.02em'), color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {/* ⚠️ The plate is the club's own colour, so the text on it cannot be
+                a constant. White washes out on a light primary — Cleveland,
+                Minnesota, Detroit — and this card is the one panel a fan sees
+                every visit. `getContrastTextColor` picks black or white off the
+                background's luminance; the secondary line rides the same choice
+                at reduced alpha rather than assuming a white base. */}
+            <div style={{ ...font(800, 18, 1, '-0.02em'), color: onTeamColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {team.city} {team.name}
             </div>
-            <div style={{ ...font(700, 10, 1, '0.1em'), color: 'rgba(255,255,255,0.85)', marginTop: '6px' }}>
+            <div style={{ ...font(700, 10, 1, '0.1em'), color: onTeamColorMuted, marginTop: '6px' }}>
               {team.wins}-{team.losses} · {ordinal(team.rankLastWeek && team.seed == null ? team.rankLastWeek : team.seed ?? 0).toUpperCase()} IN THE {leagueName.split(' ')[0].toUpperCase()}
             </div>
           </div>
