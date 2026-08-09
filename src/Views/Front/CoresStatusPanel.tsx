@@ -1,5 +1,4 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
 import { useCoresStatus } from '@/contexts/CoresStatusContext'
 import { useRuleVote } from '@/contexts/RuleVoteContext'
 import { useCountdown } from '@/Components/RuleVoteModal'
@@ -16,13 +15,17 @@ import { BG, BORDER, TEXT, ACCENT, FONT, font } from '@/Components/Shell/tokens'
  * the head of it — and when the Cores do have something to say, the anomaly climbing or
  * Aris and Pyre calling a rule vote, it lands directly above the stories it explains.
  *
+ * ⚠️ No CONTROL ROOM link. It pointed at /about, which has no Cores content at all — the
+ * control room does not exist yet, so the link promised a room and delivered a FAQ. Put it
+ * back when there is somewhere for it to go.
+ *
  * Deliberately NUMBER-FREE. `/api/cores/status` returns a qualitative band and nothing
  * else — the raw aggregate and threshold stay in the ungated debug endpoint and the
  * ephemeral control-room feed. The band IS the information; a percentage would turn a
  * mood into a progress bar.
  */
 export const CoresBand: React.FC = () => {
-  const { status, lines, loading } = useCoresStatus()
+  const { status, loading } = useCoresStatus()
   const rv = useRuleVote()
   const countdown = useCountdown(rv.closesAt)
   if (loading) return null
@@ -31,13 +34,13 @@ export const CoresBand: React.FC = () => {
   const label = status.label || band.label
   const description = status.description || band.fallback
 
-  // The most recent line, whoever said it. One line, not a feed — the control room is
-  // where the conversation lives, and the Cores also publish into the feed below.
-  const latest = lines.length > 0 ? lines[0] : null
+  // ⚠️ No "most recent Core line" here any more. It read from the same `cores` news rows
+  // the feed below now renders, so it was the same content twice — and worse, a single
+  // turn lifted out of a conversation, where the feed shows the whole exchange in order.
+  // It existed because the band used to be the ONLY place a Core appeared on this page.
 
-  // A ballot is the Cores' current business, so while one is open it takes the slot the
-  // ambient line otherwise holds — showing both means saying the same thing twice, since
-  // the Core who called the vote also publishes a line about it into the feed below.
+  // The one thing the band carries besides the state: something that needs the reader to
+  // act. Everything the Cores merely SAY belongs in the feed below.
   const ballotOpen = rv.open && rv.votingOpen
   const hasVoted = rv.multiSelect ? rv.myPicks.length > 0 : !!rv.myPick
   // The context types these as `string | null`; the Core helpers take `string | undefined`.
@@ -76,17 +79,9 @@ export const CoresBand: React.FC = () => {
             CONTAINED
           </span>
         )}
-        <Link
-          to="/about"
-          className="hd"
-          style={{
-            ...font(700, 9, 1, '0.12em'), color: TEXT.muted,
-            textDecoration: 'none', flexShrink: 0,
-          }}
-        >CONTROL ROOM &rarr;</Link>
       </div>
 
-      {ballotOpen ? (
+      {ballotOpen && (
         <button
           type="button"
           onClick={rv.openModal}
@@ -127,24 +122,6 @@ export const CoresBand: React.FC = () => {
             color: hasVoted ? TEXT.muted : ACCENT.warning, flexShrink: 0,
           }}>{hasVoted ? 'VOTE IN' : 'VOTE \u2192'}</span>
         </button>
-      ) : latest && (
-        <div style={{
-          display: 'flex', gap: '10px', alignItems: 'flex-start',
-          padding: '11px 14px', borderBottom: `1px solid ${BORDER.hairline}`,
-          background: BG.panel,
-        }}>
-          <span style={{ paddingTop: '1px', flexShrink: 0 }}>
-            <CoreIcon core={latest.core} color={coreColor(latest.core)} size={14} />
-          </span>
-          <span style={{ minWidth: 0, display: 'flex', gap: '9px', flexWrap: 'wrap' }}>
-            <span style={{ ...font(700, 10, 1.4, '0.1em'), color: coreColor(latest.core) }}>
-              {(latest.coreDisplayName || 'CORE').toUpperCase()}
-            </span>
-            <span style={{ ...font(400, 12, 1.4), color: TEXT.muted, textWrap: 'pretty' as any }}>
-              {latest.text}
-            </span>
-          </span>
-        </div>
       )}
     </div>
   )
