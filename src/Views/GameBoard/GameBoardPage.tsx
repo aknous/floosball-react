@@ -6,12 +6,13 @@ import { useScoringModel } from '@/contexts/ScoringModelContext'
 import { useOpenGame } from '@/hooks/useOpenGame'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { ScoreboardWeekNav } from '@/Components/ScoreboardWeekNav'
-import { BG, BORDER, TEXT, ACCENT, FONT, font } from '@/Components/Shell/tokens'
+import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import BoardCardLarge from './BoardCardLarge'
 import BoardCardSmall from './BoardCardSmall'
 import { rankGames, chipFor, type Ranked } from './ranking'
 import { PulsingDot } from './boardPieces'
 import ActiveRulesStrip from './ActiveRulesStrip'
+import { useNextGameCountdown } from '@/hooks/useNextGameCountdown'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const DENSITY_KEY = 'floosball:boardDensity'
@@ -118,6 +119,11 @@ const GameBoardPage: React.FC = () => {
     return { pillText: `${total} TO COME`, pillColor: TEXT.muted }
   })()
 
+  // Time to the next kickoff. Null in the no-wall-clock timing modes and while
+  // games are running, so the chip simply does not appear — which is the normal
+  // case, not a failure.
+  const { text: countdown } = useNextGameCountdown(seasonState.nextGameStartTime)
+
   // The pinned card wears the user's own team colour as its top border. That is a FILL,
   // so it uses the raw colour; only the PINNED label uses the corrected pink.
   const pinnedGame = ordered.find(o => o.pinned)?.game
@@ -147,6 +153,25 @@ const GameBoardPage: React.FC = () => {
           {liveCount > 0 && <PulsingDot size={5} />}
           {pillText}
         </span>
+
+        {/* Next kickoff. Sits with the status pill because it answers the same
+            question — what is happening on this board right now — and it is the
+            only thing worth reading when nothing is live. */}
+        {countdown && (
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: '7px',
+            ...font(700, 10, 1, '0.1em'), color: ACCENT.info,
+            border: `1px solid ${ACCENT.info}40`,
+            padding: '5px 8px', whiteSpace: 'nowrap',
+          }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                 stroke={ACCENT.info} strokeWidth="2.4" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v5l3 2" strokeLinecap="round" />
+            </svg>
+            <span style={TABULAR}>NEXT IN {countdown}</span>
+          </span>
+        )}
 
         <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />
 

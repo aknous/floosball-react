@@ -16,6 +16,7 @@ import HelpModal, { HelpButton, GuideSection } from '@/Components/HelpModal'
 import TutorialOverlay from '@/Components/Tutorial/TutorialOverlay'
 import TourPrompt from '@/Components/Tutorial/TourPrompt'
 import { useTutorial, TutorialStep } from '@/Components/Tutorial/useTutorial'
+import { useNextGameCountdown } from '@/hooks/useNextGameCountdown'
 
 type StandingsView = 'standings' | 'powerRankings'
 type TabView = 'highlights' | 'pickem' | 'standings' | 'leaders'
@@ -110,30 +111,6 @@ const DASHBOARD_TOUR_STEPS: TutorialStep[] = [
   },
 ]
 
-const useNextGameCountdown = (nextGameStartTime: string | null) => {
-  const [countdown, setCountdown] = useState('')
-  useEffect(() => {
-    if (!nextGameStartTime) { setCountdown(''); return }
-    const target = new Date(nextGameStartTime).getTime()
-    const tick = () => {
-      const remaining = Math.max(0, target - Date.now())
-      if (remaining <= 0) { setCountdown(''); return }
-      const hrs = Math.floor(remaining / 3600000)
-      const mins = Math.floor((remaining % 3600000) / 60000)
-      const secs = Math.floor((remaining % 60000) / 1000)
-      if (hrs > 0) {
-        setCountdown(`${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`)
-      } else {
-        setCountdown(`${mins}:${secs.toString().padStart(2, '0')}`)
-      }
-    }
-    tick()
-    const interval = setInterval(tick, 1000)
-    return () => clearInterval(interval)
-  }, [nextGameStartTime])
-  return countdown
-}
-
 const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }) => {
   const { seasonState } = useFloosball()
   const { refetch } = useGames()
@@ -153,7 +130,7 @@ const DashboardNew: React.FC<{ headerHeight?: number }> = ({ headerHeight = 64 }
   const isMobile = useIsMobile()
   const isTablet = useIsMobile(1200)
   const isOffseason = seasonState?.currentWeekText === 'Offseason'
-  const nextGameCountdown = useNextGameCountdown(seasonState?.nextGameStartTime)
+  const { text: nextGameCountdown } = useNextGameCountdown(seasonState?.nextGameStartTime)
   const tour = useTutorial({ tourId: 'dashboard', steps: DASHBOARD_TOUR_STEPS })
 
   useEffect(() => { refetch() }, [])
