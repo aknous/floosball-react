@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useGames } from '@/contexts/GamesContext'
-import { FaDiscord } from 'react-icons/fa'
+import { SiDiscord } from 'react-icons/si'
 import { BG, BORDER, TEXT, ACCENT, FONT, NAV_WIDTH, font } from './tokens'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -234,7 +234,28 @@ const AppNav: React.FC = () => {
         onMouseEnter={e => { e.currentTarget.style.color = '#ffffff' }}
         onMouseLeave={e => { e.currentTarget.style.color = TEXT.muted }}
       >
-        <FaDiscord size={17} style={{ flexShrink: 0 }} />
+        {/* ⚠️ OPTICALLY sized, not nominally. Measured against its neighbours, this is
+            what "misshapen" actually was: every other nav icon draws 10-14.6px of ink
+            inside a 17px box, while SiDiscord's glyph fills its viewBox edge to edge — at
+            size 17 it rendered 17px wide, flush to x=0, wider than anything near it and
+            with none of their built-in padding. FaDiscord was worse still (a 640x512
+            viewBox letterboxed into a square).
+            The Discord mark is genuinely wide and short — its glyph is only 0.76 as tall
+            as it is wide — so it reads SMALL next to icons drawing 11-14.6px of ink
+            height. Sized to match them on HEIGHT: 19 puts its ink at 14.5px tall, in line
+            with its neighbours. The fixed 17px box keeps every label in the rail on the
+            same left edge, and the extra pixel of width either side is a logo overhanging
+            its slot rather than anything shifting. */}
+        <span style={{
+          width: '17px', display: 'flex', justifyContent: 'center',
+          flexShrink: 0, overflow: 'visible',
+        }}>
+          {/* flexShrink:0 on the icon matters: without it the 17px slot squeezes the
+              19px svg back down to 17 wide, and SVG letterboxing then scales the glyph to
+              13px tall again — exactly the size this was meant to fix. It overhangs the
+              slot by a pixel each side instead, which is a logo being a logo. */}
+          <SiDiscord size={19} style={{ flexShrink: 0 }} />
+        </span>
         <span style={{ ...font(500, 13), whiteSpace: 'nowrap' }}>Discord</span>
       </a>
 
