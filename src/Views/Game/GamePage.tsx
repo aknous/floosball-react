@@ -199,70 +199,92 @@ const GamePage: React.FC = () => {
     const keys = hasOt ? ['q1', 'q2', 'q3', 'q4', 'ot'] : ['q1', 'q2', 'q3', 'q4']
     const labels = keys.map(k => k.toUpperCase())
     const rowFor = (side: 'away' | 'home') => ({
+      side,
       abbr: (side === 'home' ? gameData.homeTeam : gameData.awayTeam).abbr as string,
       values: keys.map(k => (qs[side]?.[k] ?? 0) as number),
     })
     return { labels, rows: [rowFor('away'), rowFor('home')] }
   })()
 
-  const teamBlock = (side: 'home' | 'away') => {
+  /**
+   * One row of the scoreboard: crest, club, its period scores, its total.
+   *
+   * The band used to be two team blocks with a spacer shoving each score to the
+   * middle, and the period line as a separate centred table underneath. That is
+   * a lot of empty band for four numbers. As rows against shared period columns
+   * it is the shape a scoreboard actually has, and the width goes to the numbers
+   * instead of the gap.
+   */
+  /**
+   * The period and the clock as one string.
+   *
+   * Innings and frames have no quarter clock at all and say so in their own
+   * words; everything else reads "Q3 · 8:21", with OT past regulation.
+   */
+  const periodClock = (() => {
+    if (gameData.innings?.active) {
+      const inn = gameData.innings
+      return `${inn.half === 'bottom' ? 'BOT' : 'TOP'} ${inn.inning}`
+    }
+    if (gameData.frames?.active && !gameData.frames.overtime) {
+      return `Frame ${gameData.frames.currentFrame}`
+    }
+    const q = Number(gameData.quarter) || 0
+    const label = q > 4 ? 'OT' : q > 0 ? `Q${q}` : null
+    const clock = gameData.timeRemaining
+    return [label, clock].filter(Boolean).join(' · ') || '—'
+  })()
+
+  const teamRow = (side: 'home' | 'away') => {
     const team = side === 'home' ? gameData.homeTeam : gameData.awayTeam
-    const colour = side === 'home' ? homeColor : awayDisplayColor
     const score = side === 'home' ? gameData.homeScore : gameData.awayScore
     const hasBall = isLive && gameData.possession === team.abbr
     const hasMomentum = isLive && gameData.momentumTeam === team.abbr
     const record = side === 'home' ? gameData.homeRecord : gameData.awayRecord
+    const periods = quarterLine?.rows.find(r => r.side === side)?.values ?? []
 
-    const identity = (
-      <>
-        <TeamHoverCard teamId={team.id}>
-          <img
-            src={`/avatars/${team.id}.png`}
-            alt=""
-            width={46}
-            height={46}
-            style={{
-              borderRadius: '50%', flexShrink: 0, display: 'block',
-              // The possession ring — the one thing on the band that moves.
-              outline: hasBall ? '2px solid #ffffff' : 'none',
-              outlineOffset: '3px',
-            }}
-          />
-        </TeamHoverCard>
-        <span style={{ minWidth: 0 }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-            <span style={{ ...font(500, 12, 1, '0.04em'), color: TEXT.muted }}>{team.city}</span>
-            {record && <span style={{ ...font(500, 11), color: TEXT.muted }}>{record}</span>}
-          </span>
-          <Link to={`/team/${team.id}`} style={{ textDecoration: 'none' }}>
-            <span style={{
-              display: 'block', ...font(800, 24, 1, '-0.025em'), color: TEXT.primary,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>{team.name}</span>
-          </Link>
-        </span>
-      </>
-    )
-
-    // The flame rides the SCORE, not the record line — momentum is about who is
-    // taking the game over, so it belongs next to the number that says so. It
-    // sits on the outer side of each score so the two big numbers stay
-    // symmetric about the centre clock.
-    const scoreEl = (
-      <span style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-        {side === 'away' && hasMomentum && <FlameIcon color={flameColor} size={30} glow={flameGlow} />}
-        <span style={{ ...font(800, 46, 1), color: TEXT.primary, ...TABULAR }}>
-          {score ?? 0}
-        </span>
-        {side === 'home' && hasMomentum && <FlameIcon color={flameColor} size={30} glow={flameGlow} />}
-      </span>
-    )
-
-    // Away reads left-to-right, home right-to-left, matching the field's ends.
     return (
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '14px', justifyContent: side === 'home' ? 'flex-end' : 'flex-start' }}>
-        {side === 'away' ? <>{identity}<span style={{ flex: 1 }} />{scoreEl}</> : <>{scoreEl}<span style={{ flex: 1 }} />{identity}</>}
-      </div>
+      <React.Fragment key={side}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, padding: '5px 0' }}>
+          <TeamHoverCard teamId={team.id}>
+            <img
+              src={`/avatars/${team.id}.png`}
+              alt=""
+              width={32}
+              height={32}
+              style={{
+                borderRadius: '50%', flexShrink: 0, display: 'block',
+                // The possession ring — the one thing on the band that moves.
+                outline: hasBall ? '2px solid #ffffff' : 'none',
+                outlineOffset: '2px',
+              }}
+            />
+          </TeamHoverCard>
+          <span style={{ minWidth: 0 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+              <span style={{ ...font(500, 11, 1, '0.04em'), color: TEXT.muted }}>{team.city}</span>
+              {record && <span style={{ ...font(500, 10), color: TEXT.muted }}>{record}</span>}
+            </span>
+            <Link to={`/team/${team.id}`} style={{ textDecoration: 'none' }}>
+              <span style={{
+                display: 'block', ...font(800, 17, 1.1, '-0.025em'), color: TEXT.primary,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>{team.name}</span>
+            </Link>
+          </span>
+          {hasMomentum && <FlameIcon color={flameColor} size={20} glow={flameGlow} />}
+        </div>
+
+        {periods.map((value, i) => (
+          <div key={i} style={{ ...font(600, 13), color: TEXT.secondary, textAlign: 'center', ...TABULAR }}>
+            {value}
+          </div>
+        ))}
+
+        <div style={{ ...font(800, 28, 1), color: TEXT.primary, textAlign: 'right', ...TABULAR }}>
+          {score ?? 0}
+        </div>
+      </React.Fragment>
     )
   }
 
@@ -305,94 +327,6 @@ const GamePage: React.FC = () => {
       </div>
       </div>
 
-      {/* Scoreboard band — away tint left, home tint right, matching the field.
-          The gradient spans the window; the teams sit on the capped measure. */}
-      <div style={{
-        borderBottom: `1px solid ${BORDER.raised}`,
-        background: `linear-gradient(100deg, ${awayDisplayColor}1a 0%, ${BG.shell} 42%, ${BG.shell} 58%, ${homeColor}22 100%)`,
-      }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '26px',
-        padding: '18px 28px', maxWidth: contentMax, margin: '0 auto',
-      }}>
-        {teamBlock('away')}
-        <div style={{
-          flexShrink: 0, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', gap: '9px', padding: '0 8px',
-        }}>
-          {isLive && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span className="pulse" style={{
-                width: '6px', height: '6px', borderRadius: '50%',
-                background: ACCENT.live, display: 'block',
-              }} />
-              <span style={{ ...font(700, 11, 1, '0.12em'), color: ACCENT.live }}>LIVE</span>
-            </span>
-          )}
-          <span style={{ ...font(800, 26, 1), color: TEXT.primary, ...TABULAR }}>
-            {gameData.status === 'Final' ? 'FINAL' : (gameData.timeRemaining ?? '—')}
-          </span>
-          <span style={{ ...font(600, 10, 1, '0.1em'), color: TEXT.muted, textAlign: 'center' }}>
-            {/* ⚠️ Distance is `yardsToFirstDown`, not `yardsToGo` — the latter does
-                not exist on the payload and rendered "4 & undefined". Goal-line
-                carries the string "Goal" rather than a number. */}
-            {gameData.status === 'Final'
-              ? `${gameData.homeTeam.abbr} ${gameData.homeScore} · ${gameData.awayTeam.abbr} ${gameData.awayScore}`
-              : [
-                  // `> 0`, not `!= null`: a scheduled game carries down 0 and
-                  // distance 0, which rendered "0th & 0" before kickoff.
-                  Number(gameData.down) > 0 && gameData.yardsToFirstDown != null
-                    ? `${ordinal(Number(gameData.down))} & ${gameData.yardsToFirstDown}`
-                    : null,
-                  gameData.yardLine,
-                ].filter(Boolean).join(' · ') || '—'}
-          </span>
-        </div>
-        {teamBlock('home')}
-      </div>
-
-      {/* The period breakdown, under the scores it breaks down. It used to sit
-          in its own panel down the left column, which read as an unrelated
-          table — a scoreboard is the total AND the line, together.
-          Standard clock formats only: innings and frames have their own,
-          wider line score, and it stays beside the field. */}
-      {quarterLine && (
-        <div style={{
-          display: 'flex', justifyContent: 'center',
-          padding: '0 28px 14px', maxWidth: contentMax, margin: '0 auto',
-        }}>
-          <table style={{ borderCollapse: 'collapse', ...TABULAR }}>
-            <thead>
-              <tr>
-                <th style={{ width: '52px' }} />
-                {quarterLine.labels.map(label => (
-                  <th key={label} style={{
-                    ...font(700, 10, 1, '0.1em'), color: TEXT.muted,
-                    padding: '0 11px 4px', textAlign: 'center',
-                  }}>{label}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {quarterLine.rows.map(row => (
-                <tr key={row.abbr}>
-                  <td style={{ ...font(700, 11, 1, '0.04em'), color: TEXT.muted, paddingRight: '10px' }}>
-                    {row.abbr}
-                  </td>
-                  {row.values.map((value, i) => (
-                    <td key={i} style={{
-                      ...font(600, 13), color: TEXT.secondary,
-                      padding: '2px 11px', textAlign: 'center',
-                    }}>{value}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      </div>
-
       {/* Body. The COLUMNS are decided inside the game view, not here: the rail
           only earns one while the Plays view is up, and only that component
           knows which view that is. */}
@@ -404,6 +338,70 @@ const GamePage: React.FC = () => {
           gameId={id}
           layout="page"
           onClose={() => navigate('/games')}
+          scoreboard={(
+            <div style={{
+              background: `linear-gradient(100deg, ${awayDisplayColor}1a 0%, ${BG.card} 45%, ${BG.card} 55%, ${homeColor}22 100%)`,
+              border: `1px solid ${BORDER.hairline}`,
+              padding: '13px 15px',
+            }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: `minmax(0,1fr) repeat(${quarterLine?.labels.length ?? 0}, 30px) 52px`,
+                alignItems: 'center',
+                columnGap: '8px',
+              }}>
+                {quarterLine && (
+                  <>
+                    <span />
+                    {quarterLine.labels.map(label => (
+                      <span key={label} style={{
+                        ...font(700, 9, 1, '0.1em'), color: TEXT.muted, textAlign: 'center',
+                      }}>{label}</span>
+                    ))}
+                    <span style={{ ...font(700, 9, 1, '0.1em'), color: TEXT.muted, textAlign: 'right' }}>T</span>
+                  </>
+                )}
+                {teamRow('away')}
+                {teamRow('home')}
+              </div>
+
+              {/* Where the game IS, under the board that says where it stands.
+                  The quarter belongs here with the clock — "8:21" alone does not
+                  tell you whether this is the first quarter or the last. */}
+              <div style={{
+                display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap',
+                marginTop: '11px', paddingTop: '10px',
+                borderTop: `1px solid ${BORDER.hairline}`,
+              }}>
+                {isLive && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span className="pulse" style={{
+                      width: '6px', height: '6px', borderRadius: '50%',
+                      background: ACCENT.live, display: 'block',
+                    }} />
+                    <span style={{ ...font(700, 10, 1, '0.12em'), color: ACCENT.live }}>LIVE</span>
+                  </span>
+                )}
+                <span style={{ ...font(800, 17, 1), color: TEXT.primary, ...TABULAR }}>
+                  {gameData.status === 'Final'
+                    ? `FINAL${gameData.isOvertime ? ' / OT' : ''}`
+                    : periodClock}
+                </span>
+                <span style={{ flex: 1 }} />
+                <span style={{ ...font(600, 10, 1.4, '0.1em'), color: TEXT.muted }}>
+                  {/* ⚠️ Distance is `yardsToFirstDown`; `yardsToGo` does not exist
+                      on the payload and rendered "4 & undefined". A scheduled game
+                      carries down 0, hence `> 0` rather than a null check. */}
+                  {[
+                    Number(gameData.down) > 0 && gameData.yardsToFirstDown != null
+                      ? `${ordinal(Number(gameData.down))} & ${gameData.yardsToFirstDown}`
+                      : null,
+                    gameData.yardLine,
+                  ].filter(Boolean).join(' · ')}
+                </span>
+              </div>
+            </div>
+          )}
           railContent={(
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
               {/* No header. The buttons say "Cheer" and carry their club's crest

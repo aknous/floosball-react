@@ -207,18 +207,11 @@ const AppNav: React.FC = () => {
         display: 'flex',
         flexDirection: 'column',
         fontFamily: FONT,
-        // Stick to the viewport and scroll internally. The rail grew taller than
-        // the screen once the version badge joined the foot of it, and a nav
-        // that scrolls with the PAGE puts its own footer below the fold.
-        //
-        // ⚠️ `100vh` is WRONG here: the nav starts below the header, so a full
-        // viewport height overhangs the bottom by exactly the header — which
-        // left the badge a few pixels out of reach. `100dvh - header` is what
-        // the rail actually has.
-        position: 'sticky',
-        top: 0,
-        alignSelf: 'flex-start',
-        height: 'calc(100dvh - var(--app-header-h, 60px))',
+        // Fills the shell row, top to bottom, and never moves — the shell owns
+        // the viewport and the content column is the thing that scrolls. Any
+        // overflow is handled INSIDE the rail (the item list below), so the
+        // badge at its foot is always where the foot is.
+        height: '100%',
         overflow: 'hidden',
       }}
     >

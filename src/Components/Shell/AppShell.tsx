@@ -17,42 +17,32 @@ import { BG, BORDER, FONT } from './tokens'
  * Responsive below desktop was not designed; the old mobile Navbar still covers phones.
  */
 const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // The nav is sticky and full-height, so it has to know how tall the header is
-  // to avoid overhanging the viewport by exactly that much. Measured rather than
-  // assumed: the header grows when the beta strip or a season banner is up.
-  const headerRef = React.useRef<HTMLDivElement>(null)
-  React.useEffect(() => {
-    const el = headerRef.current
-    if (!el) return
-    const apply = () => document.documentElement.style.setProperty(
-      '--app-header-h', `${el.getBoundingClientRect().height}px`)
-    apply()
-    const ro = new ResizeObserver(apply)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
   return (
   <div
     className="font-pixel"
     style={{
-      minHeight: '100vh',
+      // ⚠️ The SHELL owns the viewport and does not scroll; the content column
+      // does. With the document scrolling instead, a full-height nav could only
+      // be `sticky`, and once the header scrolled away the nav was short by
+      // exactly the header's height — you could scroll past its bottom edge and
+      // see the page behind it. Nothing to be short of if the page never moves.
+      height: '100dvh',
+      overflow: 'hidden',
       width: '100%',
       background: BG.shell,
-      borderBottom: `1px solid ${BORDER.hairline}`,
       fontFamily: FONT,
       display: 'flex',
       flexDirection: 'column',
     }}
   >
-    <div ref={headerRef}><AppHeader /></div>
+    <AppHeader />
     <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
       <AppNav />
-      {/* No footer on desktop any more, so nothing to reserve height for — the
-          version badge lives at the foot of the nav and the page runs to the
-          bottom of the viewport. */}
+      {/* The one scroller on the page. No footer to reserve height for either —
+          the version badge lives at the foot of the nav. */}
       <main style={{
-        flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
+        flex: 1, minWidth: 0, minHeight: 0, overflowY: 'auto',
+        display: 'flex', flexDirection: 'column',
       }}>
         {children}
       </main>

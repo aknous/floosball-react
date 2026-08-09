@@ -56,6 +56,15 @@ interface GameModalNewProps {
    * studying a stat line.
    */
   railContent?: React.ReactNode
+  /**
+   * The scoreboard, rendered at the head of the GAME-STATE column.
+   *
+   * It was a full-width band across the top of the route, which is a lot of
+   * gutter for two rows of numbers — the clubs sat at the far edges and the
+   * middle was empty. In the left column it sits directly above the field it
+   * describes and the width goes to the numbers.
+   */
+  scoreboard?: React.ReactNode
 }
 
 interface ReplayControlBarProps {
@@ -241,7 +250,7 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
 }
 
 
-export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, layout = 'modal', railContent }) => {
+export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, layout = 'modal', railContent, scoreboard }) => {
   const asPage = layout === 'page'
   const [activeTab, setActiveTab] = useState<'box' | 'plays' | 'stats'>('plays')
   const [showHighlightsOnly, setShowHighlightsOnly] = useState(false)
@@ -1364,6 +1373,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
             gap: asPage ? '16px' : 0,
             overflowY: stacked || asPage ? 'visible' : 'auto'
           }}>
+
+            {asPage && scoreboard}
 
             {/* Scores.
                 ⚠️ Only the two SCORE ROWS are hidden on the route — the route has
