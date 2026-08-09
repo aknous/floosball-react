@@ -7,7 +7,7 @@ import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameForm
 import type { ScoringModel } from '@/utils/displayScore'
 import {
   Crest, MomentumFlame, InterestChip, SectionLabel, SplitBar,
-  CHIP_COLOR, RedZoneChip, inRedZone, RED_ZONE, type ChipKind,
+  CHIP_COLOR, inRedZone, RED_ZONE, type ChipKind,
 } from './boardPieces'
 
 /** Footer containers: a panel, its cells, and the rule between them. Defined once so
@@ -259,7 +259,13 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           }}>
             <SectionLabel>LAST PLAY</SectionLabel>
             {lastPlay ? (
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '9px', minWidth: 0 }}>
+              /* ⚠️ CENTER, not baseline. The row mixes 10-15px type with a
+                 bordered tag whose baseline sits inside its own padding, so on a
+                 baseline row the chip and the numbers never agreed. Every span
+                 below also pins lineHeight to 1 — an unset line box is ~1.2x the
+                 font size and differs per span, which shifts the centre of each
+                 item by a different amount. */
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
                 {lastPlay.teamAbbr && (
                   <span style={{
                     ...font(700, 12, 1, '0.04em'),
@@ -272,11 +278,11 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                 </span>
                 {lastPlay.yards != null && (
                   <span style={{
-                    ...font(800, 15), ...TABULAR, whiteSpace: 'nowrap',
+                    ...font(800, 15, 1), ...TABULAR, whiteSpace: 'nowrap',
                     color: lastPlay.yards < 0 ? ACCENT.negative : TEXT.primary,
                   }}>
                     {lastPlay.unsigned || lastPlay.yards <= 0 ? lastPlay.yards : `+${lastPlay.yards}`}
-                    <span style={{ ...font(500, 11), color: TEXT.muted }}> YD</span>
+                    <span style={{ ...font(500, 11, 1), color: TEXT.muted }}> YD</span>
                   </span>
                 )}
                 {lastPlay.tag && (
@@ -288,7 +294,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                 )}
               </div>
             ) : (
-              <span style={{ ...font(400, 14), color: TEXT.muted }}>
+              <span style={{ ...font(400, 14, 1), color: TEXT.muted }}>
                 {live ? 'Waiting on the snap' : '—'}
               </span>
             )}
@@ -312,7 +318,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                 <>
                   <span style={RULE} />
                   <span style={{
-                    ...CELL, ...font(700, 13), color: TEXT.secondary,
+                    ...CELL, ...font(700, 13, 1), color: TEXT.secondary,
                     ...TABULAR, whiteSpace: 'nowrap',
                   }}>{downText}</span>
                 </>
@@ -321,22 +327,15 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                 <>
                   <span style={RULE} />
                   <span style={{
-                    ...CELL, ...font(600, 13), ...TABULAR, whiteSpace: 'nowrap',
+                    ...CELL, ...font(600, 13, 1), ...TABULAR, whiteSpace: 'nowrap',
                     color: redZone ? RED_ZONE : TEXT.muted,
                   }}>{game.yardLine}</span>
                 </>
               )}
-              {/* No abbr: the spot immediately to the left already names the side
-                  of the field, and the possession ring names who has it. */}
-              {situationLive && redZone && (
-                <>
-                  <span style={RULE} />
-                  <span style={{
-                    ...CELL, ...font(700, 10, 1, '0.08em'), color: RED_ZONE,
-                    whiteSpace: 'nowrap',
-                  }}>RED ZONE</span>
-                </>
-              )}
+              {/* ⚠️ No RED ZONE cell (owner): the panel's own tint already says it,
+                  and spelling it out beside a red container is the same fact
+                  twice. The small card still needs its chip — it has no panel to
+                  tint and no spot to colour. */}
             </div>
           )}
         </div>
