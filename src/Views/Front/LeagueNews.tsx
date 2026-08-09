@@ -116,6 +116,29 @@ const colorFor = (item: NewsItem) =>
 // several speakers, and tinting the whole row with the first one's colour would claim the
 // conversation for whoever happened to open it.
 const railFor = (item: NewsItem) => CATEGORY_COLOR[item.rawCategory] || TEXT.muted
+
+// Rows that mark WHEN rather than report WHAT. A week starting is not a story competing
+// with the others for attention — it is the line between them — so it renders as a tinted
+// band instead of a row, and the feed reads as a run of weeks rather than one long list.
+const DIVIDER_CATEGORIES = new Set(['schedule'])
+const isDivider = (item: NewsItem) => DIVIDER_CATEGORIES.has(item.rawCategory)
+
+// Three weights of row, and the tint is what separates them. A record falling or a rule
+// changing is a thing you want to catch while scanning; an upset or a Cores line is worth
+// reading but not worth stopping for; a week starting is structure.
+//
+// The divider tint is deliberately WEAKER than the noteworthy one — a separator that
+// draws more eye than the news it separates is backwards.
+// Owner's list (2026-08-08): records, awakenings, threshold crossings. `rules` rides along
+// because a rule actually changing is already weighted to take the headline, so it would
+// be odd for it to render as an ordinary row when it does not. A clinch is deliberately
+// NOT here — it happens sixteen times a season, and highlighting the routine is how a
+// highlight stops meaning anything.
+const NOTEWORTHY_CATEGORIES = new Set(['record', 'anomaly_transition', 'criticality', 'rules'])
+const isNoteworthy = (item: NewsItem) => NOTEWORTHY_CATEGORIES.has(item.rawCategory)
+
+const DIVIDER_TINT = '0d'      // ~5%
+const NOTEWORTHY_TINT = '1c'   // ~11%
 const labelFor = (item: NewsItem) => CATEGORY_LABEL[item.rawCategory] || item.category
 
 /**
@@ -203,6 +226,28 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
         )}
 
         {items.map((item, i) => {
+          if (isDivider(item)) return (
+            <div
+              key={item.id}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '7px 16px 7px 14px',
+                // A tint of the row's own colour, not a flat grey — it stays a schedule
+                // line, just one that separates rather than competes.
+                background: `${railFor(item)}${DIVIDER_TINT}`,
+                borderLeft: `2px solid ${railFor(item)}`,
+                borderBottom: i < items.length - 1 ? `1px solid ${BORDER.hairline}` : 'none',
+              }}
+            >
+              <span style={{
+                flex: 1, minWidth: 0,
+                ...font(700, 10, 1.3, '0.12em'), color: TEXT.secondary,
+              }}>{item.text.toUpperCase()}</span>
+              <span style={{ ...font(400, 10), color: TEXT.muted, flexShrink: 0 }}>
+                {timeAgo(item.at)}
+              </span>
+            </div>
+          )
           const turns = coreTurns(item)
           if (turns) return (
             <div
@@ -249,6 +294,7 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
             style={{
               display: 'flex', alignItems: 'center', gap: '14px',
               padding: '12px 16px 12px 14px',
+              background: isNoteworthy(item) ? `${railFor(item)}${NOTEWORTHY_TINT}` : undefined,
               borderLeft: `2px solid ${railFor(item)}`,
               borderBottom: i < items.length - 1 ? `1px solid ${BORDER.hairline}` : 'none',
             }}
@@ -269,7 +315,12 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
                 }} />
               </span>
             )}
-            <span style={{ flex: 1, minWidth: 0, ...font(400, 12, 1.45), color: TEXT.body, textWrap: 'pretty' as any }}>
+            <span style={{
+              flex: 1, minWidth: 0,
+              ...font(isNoteworthy(item) ? 600 : 400, 12, 1.45),
+              color: isNoteworthy(item) ? TEXT.primary : TEXT.body,
+              textWrap: 'pretty' as any,
+            }}>
               {item.text}
             </span>
             <span style={{ ...font(400, 10), color: TEXT.muted, flexShrink: 0 }}>{timeAgo(item.at)}</span>
