@@ -142,31 +142,33 @@ const isDivider = (item: NewsItem) => DIVIDER_CATEGORIES.has(item.rawCategory)
  * Everything else gets the category dot, which keeps the column's width so the rows
  * stay aligned whatever is in it.
  */
-const rowMark = (item: NewsItem): React.ReactNode => {
-  if (item.teamId) return <Crest teamId={item.teamId} size={20} />
+const mark = (item: NewsItem, size: number): React.ReactNode => {
   const slot: React.CSSProperties = {
-    width: '20px', display: 'flex', justifyContent: 'center',
-    alignItems: 'center', flexShrink: 0,
+    width: `${size}px`, height: `${size}px`,
+    display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0,
   }
+  if (item.teamId) return <Crest teamId={item.teamId} size={size} />
   if (item.core === 'league') {
     return (
       <span style={slot}>
-        <img src="/avatars/league_logo.svg" alt="" width={18} height={18}
-             style={{ display: 'block', borderRadius: '50%' }} />
+        <img src="/avatars/league_logo.svg" alt="" width={size} height={size}
+             style={{ display: 'block' }} />
       </span>
     )
   }
   if (item.core) {
     return (
       <span style={slot}>
-        <CoreIcon core={item.core} color={coreColor(item.core)} size={16} />
+        <CoreIcon core={item.core} color={coreColor(item.core)} size={Math.round(size * 0.8)} />
       </span>
     )
   }
   return (
     <span style={slot}>
       <span style={{
-        width: '6px', height: '6px', borderRadius: '50%', background: colorFor(item),
+        width: `${Math.max(6, Math.round(size * 0.3))}px`,
+        height: `${Math.max(6, Math.round(size * 0.3))}px`,
+        borderRadius: '50%', background: colorFor(item),
       }} />
     </span>
   )
@@ -229,7 +231,7 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
               padding: '14px 0',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '9px',
             }}>
-              <Crest teamId={lead.teamId} size={44} />
+              {mark(lead, 44)}
               <span style={{ ...font(700, 9, 1, '0.12em'), color: TEXT.muted }}>
                 WEEK {lead.week}
               </span>
@@ -250,6 +252,15 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
                 ...font(800, 20, 1.25, '-0.02em'), color: TEXT.primary,
                 margin: '11px 0 0', textWrap: 'balance' as any,
               }}>{lead.text}</h2>
+
+              {/* Prose beneath the headline, on hand-written items only. */}
+              {lead.body && (
+                <p style={{
+                  ...font(400, 13, 1.6), color: TEXT.secondary,
+                  margin: '10px 0 0', whiteSpace: 'pre-wrap',
+                  textWrap: 'pretty' as any,
+                }}>{lead.body}</p>
+              )}
 
               {/* A rule change or a threshold crossing leads with no numbers under it —
                   for the anomaly a strip would be wrong, not just empty, since every
@@ -355,7 +366,7 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
                 event gets their club's, resolved server-side. The category dot stands in
                 when neither applies (a Cores line, a rule change), so the column keeps its
                 width and the rows stay aligned. */}
-            {rowMark(item)}
+            {mark(item, 20)}
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{
                 display: 'block',
