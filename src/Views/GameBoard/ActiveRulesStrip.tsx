@@ -16,9 +16,14 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
  * about an absence.
  *
  * The pill states the one thing worth knowing at a glance (standard, or how many
- * rules are off default) and the popover carries EVERY active rule, not just the
- * changed ones — "see all active rules" is the question a reader actually has,
- * and a changed-only list cannot answer "so what IS a touchdown worth".
+ * rules are off default) and the popover lists the rules that are actually IN
+ * PLAY as things that could change — the ones the Cores can put to a vote.
+ *
+ * ⚠️ Scoped to `mutable` (owner). The full ruleset includes a dozen fields no
+ * ballot can ever touch — extra-point value, kickoff spot, overtime length — and
+ * listing them makes the popover a specification rather than a thing to watch.
+ * The interesting question is "what could change under these games", so a rule
+ * nobody can vote on is noise here.
  */
 
 /** Ordered groups. Rules with no group fall into a final catch-all, so a new one
@@ -29,6 +34,7 @@ const GROUPS: { title: string; keys: string[] }[] = [
   { title: 'Scoring', keys: ['touchdownPoints', 'fieldGoalPoints', 'extraPointPoints', 'twoPointConversionPoints', 'safetyPoints'] },
   { title: 'Clock', keys: ['quarterLengthSeconds', 'overtimeLengthSeconds', 'clockStopsOnDeadBall'] },
   { title: 'Field', keys: ['kickoffPosition', 'twoPointConversionDistance', 'patSnapDistance'] },
+  { title: 'Dormant mechanics', keys: ['conversionLadderEnabled', 'driveClockEnabled', 'sidelineGoalsEnabled', 'contestedScoringEnabled'] },
 ]
 
 const LABELS: Record<string, string> = {
@@ -47,6 +53,11 @@ const LABELS: Record<string, string> = {
   kickoffPosition: 'Kickoff from',
   twoPointConversionDistance: 'Two-point distance',
   patSnapDistance: 'Extra-point snap',
+  // Dormant mechanics — votable ON, so they belong in a list of what can change.
+  conversionLadderEnabled: 'Conversion Ladder',
+  driveClockEnabled: 'Drive Clock',
+  sidelineGoalsEnabled: 'Sideline Goals',
+  contestedScoringEnabled: 'Contested Scoring',
 }
 
 const formatValue = (key: string, value: any): string => {
@@ -55,6 +66,9 @@ const formatValue = (key: string, value: any): string => {
   if (key === 'gameFormat' || key === 'scoringModel') {
     return String(value).replace(/_/g, ' ').toUpperCase()
   }
+  // A dormant MECHANIC is on or off, not yes or no — matching the valueLabels the
+  // ballot itself uses for these fields.
+  if (key.endsWith('Enabled')) return value ? 'On' : 'Off'
   if (typeof value === 'boolean') return value ? 'yes' : 'no'
   if (key.endsWith('Seconds')) {
     const minutes = Math.floor(Number(value) / 60)
@@ -69,6 +83,8 @@ const formatValue = (key: string, value: any): string => {
 interface RulesPayload {
   rules: Record<string, any>
   defaults: Record<string, any>
+  /** Fields the Rulebook exposes as changeable — i.e. what a ballot can reach. */
+  mutable: string[]
   changed: string[]
   lastChange?: { core: string; label: string; from?: any; to?: any; kind?: string } | null
   changeCount: number
@@ -120,13 +136,27 @@ const ActiveRulesStrip: React.FC = () => {
   const changedSet = new Set(changed)
   const rules = data.rules || {}
 
+  // `mutable` is the server's own list of what the Rulebook exposes as changeable.
+  // ⚠️ Not hardcoded here on purpose: the votable set is defined once server-side
+  // (RULEBOOK_EXPOSED_FIELDS, intersected with the engine's mutable fields), and a
+  // copy in this file would drift the first time a rule is added or withdrawn.
+  const votable = new Set(data.mutable || [])
+  // ⚠️ `mutable` is what the RULEBOOK exposes, which is one field wider than what a
+  // BALLOT can reach: safetyPoints is deliberately excluded from RULE_VOTE_CANDIDATES
+  // ("safeties are too infrequent for the option to feel worth it", owner 2026-07-12)
+  // while still being a mutable field. It is the only place the two sets disagree.
+  votable.delete('safetyPoints')
+
   // Grouped, with anything the server added but this file does not know about
   // collected at the end rather than dropped.
+  const inPlay = (k: string) => votable.has(k) && rules[k] !== undefined
   const grouped = GROUPS
-    .map(g => ({ title: g.title, keys: g.keys.filter(k => rules[k] !== undefined) }))
+    .map(g => ({ title: g.title, keys: g.keys.filter(inPlay) }))
     .filter(g => g.keys.length > 0)
+  // A newly-votable rule this file has no group for still shows up, rather than
+  // being silently dropped from a list that claims to be what can change.
   const known = new Set(GROUPS.flatMap(g => g.keys))
-  const extras = Object.keys(rules).filter(k => !known.has(k))
+  const extras = Object.keys(rules).filter(k => !known.has(k) && inPlay(k))
   if (extras.length) grouped.push({ title: 'Other', keys: extras })
 
   const accent = changed.length > 0 ? ACCENT.rules : TEXT.muted
