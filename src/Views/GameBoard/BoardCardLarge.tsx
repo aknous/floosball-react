@@ -8,7 +8,7 @@ import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameForm
 import type { ScoringModel } from '@/utils/displayScore'
 import {
   Crest, MomentumFlame, InterestChip, PulsingDot, SectionLabel, SplitBar,
-  ScrollingLine, CHIP_COLOR, type ChipKind,
+  ScrollingLine, CHIP_COLOR, RedZoneChip, inRedZone, RED_ZONE, type ChipKind,
 } from './boardPieces'
 
 /**
@@ -59,6 +59,11 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
 
   // The last play as structure, not prose — see lastPlaySummary for why.
   const lastPlay = lastPlaySummary(game)
+
+  const redZone = inRedZone(game)
+  // A score leaves the down and the spot holding pre-score values until the
+  // next drive starts, so the row shows only the clock through that gap.
+  const situationLive = !lastPlay?.afterScore
 
   // Who turned up, for a game that is over. Empty while a game is live or if nobody
   // cleared the minimums, in which case the row says so rather than printing filler.
@@ -158,12 +163,18 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minHeight: '20px' }}>
         {live && <PulsingDot size={6} />}
+        {/* ⚠️ The running clock is NOT here — it moved down to the situation row
+            (owner), where the quarter, the down, the spot and the red zone read
+            as one line. Duplicating it in both places is the same number twice.
+            The states that are not a running clock stay: they are the card's
+            status, and they have no situation row to live in (a final replaces
+            that row with team stats, and halftime suppresses it). */}
         {isFinal ? (
           <span style={{ ...font(700, 12, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>FINAL</span>
         ) : live ? (
           game.isHalftime
             ? <span style={{ ...font(700, 12, 1, '0.08em'), color: ACCENT.live, ...TABULAR }}>HALFTIME</span>
-            : <FormatClock game={game} size="large" />
+            : null
         ) : (
           <span style={{ ...font(700, 12, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>SCHEDULED</span>
         )}
@@ -248,7 +259,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                   ...font(stat.betterSide === 'away' ? 800 : 500, 14),
                   color: stat.betterSide === 'away' ? TEXT.primary : TEXT.muted,
                 }}>{stat.away}</span>
-                <span style={{ ...font(400, 11), color: BORDER.raised }}>/</span>
+                <span style={{ ...font(400, 11), color: TEXT.muted }}>/</span>
                 <span style={{
                   ...font(stat.betterSide === 'home' ? 800 : 500, 14),
                   color: stat.betterSide === 'home' ? TEXT.primary : TEXT.muted,
@@ -277,7 +288,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                   ...font(800, 15), ...TABULAR, whiteSpace: 'nowrap',
                   color: lastPlay.yards < 0 ? ACCENT.negative : TEXT.primary,
                 }}>
-                  {lastPlay.yards > 0 ? `+${lastPlay.yards}` : lastPlay.yards}
+                  {lastPlay.unsigned || lastPlay.yards <= 0 ? lastPlay.yards : `+${lastPlay.yards}`}
                   <span style={{ ...font(500, 11), color: TEXT.muted }}> YD</span>
                 </span>
               )}
@@ -301,26 +312,34 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               they are one thought, and the row had the space sitting empty. */}
           {/* Not at halftime: nobody is on the clock, so the down and the spot are
               last drive's, and the row would state a situation that is over. */}
-          {live && !game.isHalftime && (game.downText || game.yardLine) && (
+          {live && !game.isHalftime && (
             <>
               <span style={{ flex: 1 }} />
-              <span style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexShrink: 0 }}>
-                {game.downText && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                {/* FormatClock, not a hand-rolled quarter + time: an innings game
+                    or a chess-clock game does not have either. */}
+                <FormatClock game={game} size="large" />
+                {situationLive && <span style={{ ...font(400, 11), color: TEXT.muted }}>·</span>}
+                {situationLive && game.downText && (
                   <span style={{ ...font(700, 13), color: TEXT.secondary, ...TABULAR, whiteSpace: 'nowrap' }}>
                     {game.downText}
                   </span>
                 )}
-                {game.downText && game.yardLine && (
-                  <span style={{ ...font(400, 11), color: BORDER.raised }}>·</span>
+                {situationLive && game.downText && game.yardLine && (
+                  <span style={{ ...font(400, 11), color: TEXT.muted }}>·</span>
                 )}
-                {game.yardLine && (
+                {situationLive && game.yardLine && (
                   <span style={{
                     ...font(600, 13), ...TABULAR, whiteSpace: 'nowrap',
-                    // Red zone is the one field position worth colouring — it is
-                    // the difference between a drive and a scoring chance.
-                    color: (game.yardsToEndzone ?? 99) <= 20 ? ACCENT.warning : TEXT.muted,
+                    // Matched to the chip beside it so the spot and the flag read
+                    // as one signal rather than two.
+                    color: redZone ? RED_ZONE : TEXT.muted,
                   }}>{game.yardLine}</span>
                 )}
+                {/* No abbr here: the spot immediately to the left already names
+                    the side of the field, and the possession ring names who has
+                    it. On the small card there is no such context, so it does. */}
+                {situationLive && redZone && <RedZoneChip size="large" />}
               </span>
             </>
           )}

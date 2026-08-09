@@ -24,9 +24,27 @@ export interface PlaySummary {
   action: string
   /** Signed yards, or null where yardage says nothing (a kneel, an extra point). */
   yards: number | null
+  /** A punt's gross is a distance, not a gain, so it prints without a sign. */
+  unsigned: boolean
   /** The outcome worth flagging, if there is one. */
   tag: string | null
   tagColor: string
+  /**
+   * A score just landed and the next drive has not started.
+   *
+   * ⚠️ In that gap the game's down and distance are NOT a live down — the ball
+   * is spotted for the try (or waiting on a kickoff) while the down fields still
+   * hold whatever they held before the score. Observed on the board as
+   * "2-PT FAILED" sitting beside "2nd & 9 · COL 2", which cannot both be true.
+   * `GameModalNew` already works around this by printing "Npt Try" in place of
+   * down and distance; the card suppresses the situation instead, since it has
+   * no room to explain itself.
+   *
+   * A turnover is deliberately NOT in here. A punt, pick or fumble hands the
+   * ball straight over at a known spot, so the situation stays valid — only a
+   * score opens a gap.
+   */
+  afterScore: boolean
 }
 
 /** playResult value → the short badge and its colour. */
@@ -117,11 +135,23 @@ export function lastPlaySummary(game: CurrentGame): PlaySummary | null {
   // The action already says PUNT; a "Punt" badge beside it is the same word twice.
   if (tag === null && result === 'Punt') tag = null
 
+  const afterScore = !!play.isTouchdown
+    || play.conversionPoints != null
+    || rawType === 'ExtraPoint'
+    || result.includes('Touchdown')
+    || result.includes('2-Pt')
+    || result.includes('XP')
+    || result.startsWith('Conversion')
+    || result === 'Field Goal is Good'
+    || result === 'Safety'
+
   return {
     teamAbbr: typeof play.offensiveTeam === 'string' ? play.offensiveTeam : null,
     action,
     yards,
     tag,
     tagColor,
+    afterScore,
+    unsigned: action === 'PUNT',
   }
 }

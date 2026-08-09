@@ -1,5 +1,6 @@
 import React from 'react'
 import { BG, BORDER, TEXT, ACCENT, MOMENTUM, FONT, TABULAR, font } from '@/Components/Shell/tokens'
+import type { CurrentGame } from '@/hooks/useCurrentGames'
 
 /** Crests exist for team ids 1-32 (`public/avatars/{id}.png`, regenerated from
  *  config.json). Anything above renders a placeholder. This stayed at 24 when
@@ -76,6 +77,39 @@ export const MomentumFlame: React.FC<{ magnitude: number; size: number }> = ({ m
     </svg>
   )
 }
+
+/** Red is the one colour football already agrees on for this. */
+export const RED_ZONE = '#f87171'
+
+/**
+ * Is somebody inside the twenty?
+ *
+ * ⚠️ `yardsToEndzone` is measured to the OFFENSE's target end zone, so it is the
+ * right number regardless of which club has the ball — no possession-side maths.
+ * Halftime is excluded along with everything else non-live: the spot then belongs
+ * to a drive that is already over, so the card would flag a threat that no longer
+ * exists.
+ */
+export function inRedZone(game: CurrentGame): boolean {
+  if (game.status !== 'Active' || game.isHalftime) return false
+  const toGo = game.yardsToEndzone
+  return typeof toGo === 'number' && toGo > 0 && toGo <= 20
+}
+
+/** The team inside the twenty is about to score, and that is worth a glance. */
+export const RedZoneChip: React.FC<{ abbr?: string | null; size: 'large' | 'small' }> = ({ abbr, size }) => (
+  <span style={{
+    display: 'flex', alignItems: 'center', gap: '5px',
+    ...font(700, size === 'large' ? 10 : 9, 1, '0.08em'),
+    color: RED_ZONE,
+    background: 'rgba(248,113,113,0.12)',
+    border: `1px solid ${RED_ZONE}59`,
+    padding: size === 'large' ? '3px 6px' : '3px 5px',
+    whiteSpace: 'nowrap', flexShrink: 0,
+  }}>
+    {abbr ? `${abbr} RED ZONE` : 'RED ZONE'}
+  </span>
+)
 
 export type ChipKind = 'TIED' | 'CLOSE GAME' | 'UPSET' | 'FEATURED'
 

@@ -2,7 +2,10 @@ import React from 'react'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
-import { Crest, MomentumFlame, InterestChip, PulsingDot, SplitBar, CHIP_COLOR, type ChipKind } from './boardPieces'
+import {
+  Crest, MomentumFlame, InterestChip, PulsingDot, SplitBar, CHIP_COLOR,
+  RedZoneChip, inRedZone, type ChipKind,
+} from './boardPieces'
 import { FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
 
@@ -130,6 +133,9 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
         )}
         <span style={{ flex: 1 }} />
         {/* No format badge (owner) — the rules strip names the format once at the top. */}
+        {/* Named on this density: the small card has no field position and no
+            last play, so an unattributed RED ZONE would not say whose threat. */}
+        {inRedZone(game) && <RedZoneChip abbr={game.possession} size="small" />}
         {chip && <InterestChip kind={chip} size="small" />}
       </div>
 
