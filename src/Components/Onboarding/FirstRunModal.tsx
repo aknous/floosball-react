@@ -69,6 +69,8 @@ export const FirstRunModal: React.FC = () => {
   const [saving, setSaving] = useState(false)
 
   const open = !!user && !user.hasCompletedOnboarding && !dismissed
+  const current = user?.username ?? null
+  const assigned = !!current && user?.usernameIsGenerated !== false
 
   /** Ask the server for a fresh set of suggestions. */
   const loadOptions = useCallback(async () => {
@@ -153,12 +155,32 @@ export const FirstRunModal: React.FC = () => {
           <>
             <div style={{ ...font(700, 10, 1, '0.14em'), color: ACCENT.info }}>WELCOME</div>
             <h2 style={{ ...font(800, 21, 1.2, '-0.02em'), color: TEXT.primary, margin: '10px 0 8px' }}>
-              What should we call you?
+              {assigned ? 'We picked a name for you' : 'What should we call you?'}
             </h2>
-            <p style={{ ...font(400, 13, 1.55), color: TEXT.secondary, margin: '0 0 18px' }}>
+            <p style={{ ...font(400, 13, 1.55), color: TEXT.secondary, margin: '0 0 16px' }}>
               This is the name on leaderboards and anything you post. You can change it
               once a season.
             </p>
+
+            {/* ⚠️ A first-run reader ALREADY HAS a name: auth provisions one at signup.
+                Asking "what should we call you?" over a name they were never shown
+                reads as though nothing has happened yet, and the only place the name
+                appeared was inside the KEEP button, which is not where anyone looks to
+                find out what they are called. */}
+            {current && (
+              <div style={{
+                background: BG.panel, border: `1px solid ${BORDER.hairline}`,
+                padding: '11px 13px', marginBottom: '16px',
+              }}>
+                <div style={{ ...font(700, 9, 1, '0.14em'), color: TEXT.muted }}>
+                  {assigned ? 'ASSIGNED AT SIGNUP' : 'YOUR NAME'}
+                </div>
+                <div style={{
+                  ...font(800, 15, 1.3), color: TEXT.primary, marginTop: '4px',
+                  wordBreak: 'break-word',
+                }}>{current}</div>
+              </div>
+            )}
 
             {options.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
@@ -204,7 +226,7 @@ export const FirstRunModal: React.FC = () => {
               value={name}
               onChange={e => { setName(e.target.value); setError(null) }}
               onKeyDown={e => { if (e.key === 'Enter' && name.trim()) saveName(name) }}
-              placeholder="or type your own"
+              placeholder={current ? 'or type a different one' : 'or type your own'}
               style={{
                 width: '100%', boxSizing: 'border-box', background: BG.panel,
                 border: `1px solid ${BORDER.raised}`, color: TEXT.primary,
@@ -219,9 +241,11 @@ export const FirstRunModal: React.FC = () => {
               <Btn onClick={() => saveName(name)} disabled={saving || !name.trim()}>
                 {saving ? 'SAVING…' : 'USE THIS NAME'}
               </Btn>
-              {/* Keeping the generated name is a legitimate answer, not a skip. */}
+              {/* Keeping the assigned name is a legitimate answer, not a skip. The
+                  name itself is spelled out above, so the button does not have to
+                  carry it and blow out on a long one. */}
               <Btn kind="quiet" onClick={() => setStep('team')}>
-                KEEP {user?.username ?? 'MY NAME'}
+                {current ? 'KEEP IT' : 'SKIP'}
               </Btn>
             </div>
           </>
