@@ -335,14 +335,16 @@ const PrognosticationsPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Auto-pick sits ABOVE the board (owner): it is a control the reader may
+                want to change, and the leaderboard is the thing they read afterwards. */}
+            <AutoPickPanel />
+
             <Leaderboard
               season={board.season}
               week={board.week}
               weekNumber={board.weekNumber}
               myUserId={user?.id}
             />
-
-            <AutoPickPanel />
           </div>
         )}
       </div>
