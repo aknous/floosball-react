@@ -112,38 +112,54 @@ const Side: React.FC<{
         opacity: dimmed ? 0.45 : 1,
       }}
     >
-      {/* ⚠️ The club and its win probability share ONE line, mirrored outward. Stacked
-          in four centred rows the panel was tall and its width went unused — the card
-          was mostly empty space. */}
+      {/* ⚠️ Both rows run EDGE TO EDGE, club on the outside and the numbers on the
+          inside. Grouped at one end they left a hole down the middle of every panel,
+          and the multiplier — the price of this side, and half the decision — ended up
+          buried in a run of small text instead of sitting where the eye already is,
+          next to the gutter. */}
       <span style={{
-        display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0,
+        display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+        justifyContent: 'space-between',
         flexDirection: rtl ? 'row-reverse' : 'row',
       }}>
-        <Crest teamId={team.id} size={22} />
         <span style={{
-          ...font(picked ? 800 : 700, 14, 1, '0.02em'),
-          color: picked ? accent : TEXT.body,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{team.abbr}</span>
+          display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0,
+          flexDirection: rtl ? 'row-reverse' : 'row',
+        }}>
+          <Crest teamId={team.id} size={22} />
+          <span style={{
+            ...font(picked ? 800 : 700, 14, 1, '0.02em'),
+            color: picked ? accent : TEXT.body,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{team.abbr}</span>
+        </span>
         <span style={{
-          ...font(800, 21, 1), ...TABULAR,
+          ...font(800, 21, 1), ...TABULAR, flexShrink: 0,
           color: winPct >= 50 ? TEXT.primary : TEXT.muted,
         }}>{winPct}%</span>
       </span>
 
       <span style={{
-        display: 'flex', alignItems: 'baseline', gap: '8px', minWidth: 0,
+        display: 'flex', alignItems: 'baseline', gap: '10px', width: '100%',
+        justifyContent: 'space-between',
         flexDirection: rtl ? 'row-reverse' : 'row',
       }}>
-        <span style={{
-          ...font(800, 13, 1), ...TABULAR,
-          color: multiplier >= 1.5 ? ACCENT.live : multiplier < 0.8 ? TEXT.muted : TEXT.body,
-        }}>{multiplier.toFixed(1)}x</span>
-        <span style={{ ...font(500, 11), color: TEXT.muted, ...TABULAR }}>{points} pts</span>
         <span style={{ ...font(400, 11), color: TEXT.muted, ...TABULAR, whiteSpace: 'nowrap' }}>
           {standing ? `${standing.wins}-${standing.losses}` : team.record}
           {' · '}
           {Math.round(standing?.elo ?? team.elo)}
+        </span>
+        <span style={{
+          display: 'flex', alignItems: 'baseline', gap: '5px', flexShrink: 0,
+          flexDirection: rtl ? 'row-reverse' : 'row',
+        }}>
+          <span style={{
+            ...font(800, 17, 1), ...TABULAR,
+            color: multiplier >= 1.5 ? ACCENT.live : multiplier < 0.8 ? TEXT.muted : TEXT.body,
+          }}>{multiplier.toFixed(1)}x</span>
+          {/* ⚠️ Keeps its unit. Bare, it read as part of the multiplier — and on the
+              mirrored side the row reverses, so "11 1.5x" could be either number. */}
+          <span style={{ ...font(500, 10), color: TEXT.muted, ...TABULAR }}>{points} pts</span>
         </span>
       </span>
     </button>
