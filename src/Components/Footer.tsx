@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAppSettings } from '@/hooks/useAppSettings'
@@ -100,6 +100,23 @@ export const VersionPill: React.FC<{ align?: 'left' | 'right' }> = ({ align = 'r
     return () => document.removeEventListener('mousedown', handler)
   }, [showChangelog])
 
+  /**
+   * ⚠️ The panel is PORTALLED and positioned from the badge's own box.
+   *
+   * It used to be an absolutely-positioned child of the badge, which worked while the
+   * badge lived in a footer bar. The version pill now sits at the foot of the left nav,
+   * and that nav is `overflow: hidden` (so its item list scrolls inside it rather than
+   * pushing the badge below the fold), so the panel was clipped to the 196px rail and
+   * the release notes were unreadable. No z-index fixes that: `overflow: hidden` on an
+   * ancestor clips a descendant however high it stacks.
+   */
+  const [anchor, setAnchor] = useState<{ left: number; bottom: number } | null>(null)
+  useLayoutEffect(() => {
+    if (!showChangelog || !badgeRef.current) { setAnchor(null); return }
+    const r = badgeRef.current.getBoundingClientRect()
+    setAnchor({ left: r.left, bottom: window.innerHeight - r.top })
+  }, [showChangelog])
+
   return (
     <div ref={badgeRef} style={{ position: 'relative' }}>
       <button
@@ -122,20 +139,20 @@ export const VersionPill: React.FC<{ align?: 'left' | 'right' }> = ({ align = 'r
         v{APP_VERSION}
       </button>
 
-      {showChangelog && (
+      {showChangelog && anchor && ReactDOM.createPortal(
         <div
           ref={panelRef}
           style={{
-            position: 'absolute',
-            bottom: 'calc(100% + 8px)',
-            ...(align === 'left' ? { left: 0 } : { right: 0 }),
+            position: 'fixed',
+            bottom: `${anchor.bottom + 8}px`,
+            left: `${anchor.left}px`,
             width: isMobile ? '280px' : '340px',
             maxHeight: '60vh',
             backgroundColor: '#1e293b',
             border: '1px solid #334155',
             borderRadius: '10px',
             boxShadow: '0 -8px 30px rgba(0,0,0,0.4)',
-            zIndex: 100,
+            zIndex: 10060,
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column' as const,
@@ -173,7 +190,8 @@ export const VersionPill: React.FC<{ align?: 'left' | 'right' }> = ({ align = 'r
               </button>
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
 
       {showAllNotes && ReactDOM.createPortal(

@@ -12,6 +12,98 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.00',
+    date: '2026-08-10',
+    changes: [],
+    sections: [
+      {
+        label: 'A New Floosball',
+        items: [
+          '[Everywhere] The whole app is rebuilt. New shell, new left nav, and a redesign of the front page, game board, standings, stats, game pages, team pages and prognostications.',
+          '[Games] Games have their own page instead of a modal. The field, the play feed and the Bleachers sit side by side, and a game from any past week opens.',
+          '[Games] The Bleachers on every game. Shout at the game as it happens, and see the players and sidelines react.',
+          '[Front Page] A live ticker of the current slate across the top, your team, your numbers, and the league news feed.',
+          '[Search] A command palette in the header. Jump to any page, team or player.',
+        ],
+      },
+      {
+        label: 'The League',
+        items: [
+          '[League] 32 clubs, in two leagues of 16, split into eight divisions of four.',
+          '[League] A 28 week season built around your division: 12 games against your three rivals, 12 against the rest of your league, and 4 interleague. The last game day is all division games.',
+          '[League] Winning your division is now an honour, recorded alongside league titles and Floos Bowls. With eight divisions it is what most clubs are playing for.',
+          '[Standings] A real board: divisions, projected playoff seeds, games back of the cut, recent form and week to week movement.',
+          '[Standings] The first playoff tiebreaker is division record inside a division, and league record for a wildcard.',
+        ],
+      },
+      {
+        label: 'League News',
+        items: [
+          '[News] The news feed is persisted and cumulative. Stories are published the moment they happen and stay put, rather than being regenerated each week.',
+          '[News] The Cores appear in the feed in their own voices, reacting to the season, to results, and to each other.',
+          '[News] Anomalies, awakenings, rule changes, records, clinches and upsets all publish as they happen.',
+          '[News] League announcements, written and pinned by hand, and postable as one of the Cores.',
+        ],
+      },
+      {
+        label: 'Prognostications',
+        items: [
+          '[Pick-Em] Its own page, rebuilt. Each matchup is a card with both clubs facing off, their win probability, record and rating, and what each side pays.',
+          '[Pick-Em] Open a matchup for recent form, streak, point differential and division standing.',
+          '[Pick-Em] Call the whole day at once and submit in one go. Finished slates collapse so the games you can still pick come first.',
+          '[Pick-Em] Auto-pick modes, and a new option to never pick against your own team.',
+        ],
+      },
+      {
+        label: 'Stats and Records',
+        items: [
+          '[Stats] The stats page can be asked a question: filter by position, status and season, compare players or clubs side by side, and switch between season and career.',
+          '[Stats] Win probability added is now shown in wins.',
+          '[Games] A finished game keeps its box score, team totals and quarter line, so a week one game still reads properly in week 24.',
+          '[Teams] Playoff history on every club, rebuilt from the games themselves.',
+        ],
+      },
+      {
+        label: 'Cards and Fantasy',
+        items: [
+          '[Cards] Glitch cards. During an instability a card can be marked, and pays an extra unpredictable bonus on top of its printed effect.',
+          '[Cards] Every card effect with an eligible player is now minted each season, instead of relying on a roll to cover the pool.',
+          '[Cards] Packs and the daily shop no longer repeat an effect within a draw.',
+          '[Fantasy] Your live fantasy points now sit in the header beside your Floobits.',
+        ],
+      },
+      {
+        label: 'Simulation',
+        items: [
+          '[Simulation] A leading defense now stops the clock when its lead is about to evaporate, instead of letting an offense milk the clock inside field goal range.',
+          '[Simulation] An offense one score from the lead holds the ball and scores late, rather than racing and handing the game back.',
+          '[Simulation] A game is only called an upset once the ratings have settled, a quarter of the way into the season.',
+        ],
+      },
+      {
+        label: 'Accounts',
+        items: [
+          '[Accounts] The beta is open. No more request screen.',
+          '[Accounts] Choose your own username, and change it once a season.',
+          '[Accounts] Onboarding asks two things, a name and a team, and then gets out of the way.',
+          '[Teams] New marks and colours for the Pops, the Curd and the Trains, and a new league crest.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Fixes] Division records were reset by every restart, so the playoff tiebreaker was comparing partial seasons.',
+          '[Fixes] Criticality and its suppression never reached the news feed.',
+          '[Fixes] A restart stacked another copy of the season onto each club, so team pages showed 56 weeks, then 84.',
+          '[Fixes] Divisions were forgotten on restart, which cost the standings board its division column and division winners their guaranteed seeds.',
+          '[Fixes] The quarter by quarter line was never recorded on any finished game.',
+          '[Fixes] Achievements whose systems no longer exist are retired, and several that no longer matched their own description are corrected.',
+          '[Fixes] Fan posts move from ten an hour to a short cooldown, so a fan watching a whole game can react to all of it.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.25.0',
     date: '2026-08-02',
     changes: [],

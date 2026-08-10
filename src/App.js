@@ -4,6 +4,7 @@ import Navbar from './Components/Navbar.js'
 import GameBar from './Components/GameBar'
 import { SidebarProvider } from './contexts/SidebarContext'
 import AppShell from './Components/Shell/AppShell'
+import MobileNotice from './Components/Shell/MobileNotice'
 import FrontPage from './Views/Front/FrontPage'
 import GameBoardPage from './Views/GameBoard/GameBoardPage'
 import StandingsPage from './Views/Standings/StandingsPage'
@@ -110,16 +111,26 @@ function AppLayout() {
     }
   }, [isMobile])
 
+  // ⚠️ Mounted ABOVE the desktop/mobile branch. Mobile does not render AppShell at all.
+  // It keeps the original Navbar and GameBar, because the redesign handoffs were
+  // desktop-only, so a notice living inside the shell would never appear on the one
+  // kind of device it is meant for.
+  const notice = <MobileNotice />
+
   if (!isMobile) {
     return (
-      <AppShell>
-        <AppRoutes headerHeight={headerHeight} />
-      </AppShell>
+      <>
+        {notice}
+        <AppShell>
+          <AppRoutes headerHeight={headerHeight} />
+        </AppShell>
+      </>
     )
   }
 
   return (
     <div className='min-h-screen relative font-pixel' style={{ backgroundColor: '#0f172a' }}>
+      {notice}
       <div ref={headerRef} className='fixed w-full top-0 z-50'>
         <Navbar />
         <BetaBanner />
