@@ -175,9 +175,13 @@ const GameBoardPage: React.FC = () => {
     : null
   const pinnedAccent = pinnedTeam?.color || ACCENT.ownTeam
 
-  // ⚠️ One card per row on a phone whatever the density. Four 90px columns is not a
-  // game card, it is a colour swatch.
+  // ⚠️ A phone gets the SMALL card, always, one per row (owner). The large card carries
+  // a quarter-by-quarter line, leaders and a team-stat comparison, which is a lot of
+  // detail to read on a phone and made every card a screenful. The small card is the
+  // score, the clubs and the state, which is what a board is for. The density toggle
+  // goes with it: a control with one reachable option is not a control.
   const narrow = useIsMobile(SHELL_MOBILE_MAX)
+  const cardSize: Density = narrow ? 'small' : density
   const columns = narrow ? 1 : (density === 'large' ? 2 : 4)
 
   const renderGrid = (items: Ranked[]) => (
@@ -191,7 +195,7 @@ const GameBoardPage: React.FC = () => {
       alignItems: 'start',
     }}>
       {items.map(({ game, chip, pinned }) => (
-        density === 'large' ? (
+        cardSize === 'large' ? (
           <BoardCardLarge
             key={game.id}
             game={game}
@@ -272,7 +276,8 @@ const GameBoardPage: React.FC = () => {
 
         <span style={{ flex: 1 }} />
 
-        <span style={{ ...font(700, 10, 1, '0.12em'), color: TEXT.muted, flexShrink: 0 }}>DENSITY</span>
+        {!narrow && <span style={{ ...font(700, 10, 1, '0.12em'), color: TEXT.muted, flexShrink: 0 }}>DENSITY</span>}
+        {!narrow && (
         <div style={{ display: 'flex', background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
           {(['large', 'small'] as Density[]).map((option, i) => {
             const active = density === option
@@ -292,6 +297,7 @@ const GameBoardPage: React.FC = () => {
             )
           })}
         </div>
+        )}
       </div>
 
       <div style={{
