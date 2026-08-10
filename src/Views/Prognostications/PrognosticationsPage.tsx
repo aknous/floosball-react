@@ -251,10 +251,14 @@ const PrognosticationsPage: React.FC = () => {
                   )}
                 </div>
 
+                {/* ⚠️ The COLUMN gap is much wider than the row gap. The cards are two
+                    panels facing each other, so a narrow gutter between columns let the
+                    right-hand club of one matchup sit beside the left-hand club of the
+                    next and read as a pairing of its own. The cards give up the width. */}
                 {!collapsed && (
                   <div style={{
-                    display: 'grid', gap: '10px',
-                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(430px, 1fr))',
+                    display: 'grid', rowGap: '10px', columnGap: '30px',
+                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(400px, 1fr))',
                   }}>
                     {slot.games.map(g => (
                       <MatchupCard
