@@ -107,7 +107,11 @@ const FrontPage: React.FC = () => {
   const [standingsTick, setStandingsTick] = useState(0)
   const [leadersTick, setLeadersTick] = useState(0)
   useEffect(() => {
-    const type = (wsEvent as any)?.type
+    // ⚠️ `.event`, NOT `.type`. Every season-socket payload is keyed `event` (see
+    // api/event_models.py); `.type` is only ever sent BY the client, on identify and
+    // watch. Reading `.type` here yielded undefined for every message, so this effect
+    // never fired once and the panel below only ever refreshed on mount.
+    const type = (wsEvent as any)?.event ?? (wsEvent as any)?.type
     // The feed is cumulative and published as things happen, so it refetches on anything
     // that PRODUCES news — a finished game (upsets, big games, records), a league_news
     // broadcast (clinches, rule changes, awakenings, criticality) — not just on the week

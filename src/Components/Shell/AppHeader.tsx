@@ -80,7 +80,11 @@ const AppHeader: React.FC<{ onOpenNav?: () => void }> = ({ onOpenNav }) => {
   }, [])
 
   useEffect(() => {
-    const type = (wsEvent as any)?.type
+    // ⚠️ `.event`, NOT `.type`. Every season-socket payload is keyed `event` (see
+    // api/event_models.py); `.type` is only ever sent BY the client, on identify and
+    // watch. Reading `.type` here yielded undefined for every message, so this effect
+    // never fired once and the panel below only ever refreshed on mount.
+    const type = (wsEvent as any)?.event ?? (wsEvent as any)?.type
     if (type === 'season_end' || type === 'season_start') {
       axios.get(`${API_BASE}/reigning-champion?t=${Date.now()}`)
         .then(res => setChampion(res.data?.data || null))
