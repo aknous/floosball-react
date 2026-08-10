@@ -10,6 +10,8 @@ export interface AuthUser {
   favoriteTeamId: number | null
   pendingFavoriteTeamId: number | null
   favoriteTeamLockedSeason: number | null
+  /** False once week 1 has kicked off: a switch is then booked for next season. */
+  canChangeFavoriteTeam?: boolean
   floobits: number
   hasCompletedOnboarding: boolean
   emailOptOut: boolean
@@ -227,6 +229,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           favoriteTeamId: teamId,
           pendingFavoriteTeamId: null,
           favoriteTeamLockedSeason: data.favoriteTeamLockedSeason ?? prev.favoriteTeamLockedSeason,
+          canChangeFavoriteTeam: data.canChangeNow ?? prev.canChangeFavoriteTeam,
         } : prev)
       }
     }
