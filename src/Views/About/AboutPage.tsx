@@ -457,28 +457,28 @@ const EquipmentSlotDiagram: React.FC<{ isMobile: boolean }> = ({ isMobile }) => 
 /**
  * The power bar, shown rather than described.
  *
- * ⚠️ The paragraph this sits under was the single most confusing thing in the guide for
- * new readers, and it was also wrong: it said a BENCHED player never fills the bar, and
- * the fantasy/cards fusion removed the bench. There is nowhere to sit a player; the way
- * you miss the bar is that your player has a quiet week.
+ * ⚠️ There is NO threshold mark part-way along the track, and an earlier version of this
+ * drew one. `gateFill` is `playerFP / threshold` clamped to 1, so the bar is FULL at
+ * exactly the threshold — filling it IS clearing it, which is why the feature is called
+ * a power bar and not a meter. Drawing a tick invented a second idea to learn.
  *
- * Three rows because the third is the one prose keeps failing to land: some cards run
- * INVERSE and are on while the player stays under. Showing the same bar producing
- * opposite answers explains it faster than a sentence can.
+ * The inverse row is the reason this is a graphic at all: those cards compute
+ * `(threshold - playerFP) / threshold`, so they start FULL and DRAIN as the player
+ * scores. One rule covers both — a full bar is on, an empty one is off — and that reads
+ * instantly as a picture and clumsily as a sentence.
  */
 const PowerBarVisual: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
-  const MARK = 62          // where the threshold sits, as a % of the track
-  const ON = '#7fd8a0'     // the same green the card itself uses for a met bar
+  const ON = '#7fd8a0'     // the same green the card itself uses for a live bar
   const OFF = '#64748b'
   const INV = '#fbbf24'
 
   const rows: { label: string; fill: number; color: string; state: string; note: string }[] = [
-    { label: 'Quiet week', fill: 34, color: OFF, state: 'OFF',
-      note: 'under the mark, so the effect scores nothing' },
-    { label: 'Big week', fill: 88, color: ON, state: 'ON',
-      note: 'at or past the mark, so the effect pays' },
-    { label: 'Inverse card', fill: 34, color: INV, state: 'ON',
-      note: 'a few cards want the opposite and run while the player stays under' },
+    { label: 'Quiet week', fill: 38, color: OFF, state: 'OFF',
+      note: 'the bar is part full, so the effect scores nothing' },
+    { label: 'Big week', fill: 100, color: ON, state: 'ON',
+      note: 'filled, so the effect pays' },
+    { label: 'Inverse card', fill: 62, color: INV, state: 'ON',
+      note: 'a few cards start full and drain as the player scores, so they run until the bar empties' },
   ]
 
   return (
@@ -493,20 +493,14 @@ const PowerBarVisual: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
             fontSize: isMobile ? '11px' : '12px', fontWeight: 700, color: '#cbd5e1',
           }}>{r.label}</span>
 
-          {/* The track, with the threshold drawn ON it — the number matters far less
-              than the fact that there is a line and you are one side of it. */}
           <div style={{
-            position: 'relative', flex: '1 1 140px', minWidth: '120px',
+            flex: '1 1 140px', minWidth: '120px',
             height: '12px', borderRadius: '6px',
             backgroundColor: 'rgba(51,65,85,0.55)', overflow: 'hidden',
           }}>
             <div style={{
               width: `${r.fill}%`, height: '100%',
               backgroundColor: r.color, opacity: 0.85,
-            }} />
-            <div style={{
-              position: 'absolute', left: `${MARK}%`, top: '-3px',
-              width: '2px', height: '18px', backgroundColor: '#e2e8f0',
             }} />
           </div>
 
@@ -523,9 +517,6 @@ const PowerBarVisual: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
           }}>{r.note}</span>
         </div>
       ))}
-      <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#64748b', margin: 0 }}>
-        The white line is that card's mark.
-      </p>
     </div>
   )
 }
@@ -1318,17 +1309,18 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>The Power Bar</p>
             <p style={textStyle}>
-              A card only pays out when its own player has a good week. Each card carries a mark on its FP
-              bar, and the bar fills with that player's Fantasy Points as the games run. Reach the mark and
-              the effect pays in full; fall short and it scores nothing. There is no partial credit.
+              A card only pays out when its own player has a good week. Every card has an FP bar that fills
+              as that player scores, and the card's effect is on only while the bar is FULL. Fill it and the
+              effect pays in full; come up short and it scores nothing. There is no partial credit for a
+              bar that is nearly there.
             </p>
             <PowerBarVisual isMobile={isMobile} />
             <p style={textStyle}>
-              The mark moves with the card, not with you. A rarer card depicts a better player and asks more
-              of them, and each position has its own scale, so a kicker's mark is nowhere near a
-              quarterback's. An All-Pro card sits lower than the rest, because the best players deliver more
-              often. A few cards have no mark at all, and chance cards use the bar to show their odds rather
-              than an on/off line.
+              How much it takes to fill belongs to the card, not to you. A rarer card depicts a better
+              player and asks more of them, and each position is on its own scale, so filling a kicker's bar
+              is nothing like filling a quarterback's. An All-Pro card fills more easily than the rest,
+              because the best players deliver more often. A few cards have no bar at all, and a chance
+              card's bar shows its odds of triggering rather than an on-or-off line.
             </p>
 
             <p style={labelStyle}>Scoring</p>
