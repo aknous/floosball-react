@@ -69,10 +69,10 @@ const Tile: React.FC<{ game: CurrentGame; onOpen: (id: number) => void }> = ({ g
       {framesWon != null ? (
         <span style={{
           ...font(ahead ? 800 : 600, 12, 1), ...TABULAR,
-          color: ahead ? ACCENT.live : TEXT.dim, whiteSpace: 'nowrap',
-        }}>{framesWon}<span style={{ ...font(500, 9), color: TEXT.faint }}> FR</span></span>
+          color: ahead ? ACCENT.live : TEXT.muted, whiteSpace: 'nowrap',
+        }}>{framesWon}<span style={{ ...font(500, 9), color: TEXT.muted }}> FR</span></span>
       ) : team?.record ? (
-        <span style={{ ...font(500, 10), color: TEXT.dim, ...TABULAR, whiteSpace: 'nowrap' }}>
+        <span style={{ ...font(500, 10), color: TEXT.muted, ...TABULAR, whiteSpace: 'nowrap' }}>
           {team.record}
         </span>
       ) : null}
@@ -105,7 +105,7 @@ const Tile: React.FC<{ game: CurrentGame; onOpen: (id: number) => void }> = ({ g
         {/* The situation, on the line that already says when. A scheduled game has no
             down to report and a final has no situation left, so both stay bare. */}
         {live && !game.isHalftime && (
-          <span style={{ ...font(500, 10, 1), color: TEXT.faint, ...TABULAR, whiteSpace: 'nowrap' }}>
+          <span style={{ ...font(500, 10, 1), color: TEXT.muted, ...TABULAR, whiteSpace: 'nowrap' }}>
             {downAndDistance(game) ?? game.yardLine ?? ''}
           </span>
         )}

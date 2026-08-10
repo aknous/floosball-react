@@ -376,7 +376,10 @@ const GamePage: React.FC = () => {
     // A won frame reads green, a halved one amber, a lost one recedes. Everything
     // else in the band is neutral, which is the point: in match play the only thing
     // that matters is who took the frame.
-    const TONE_COLOR = { won: ACCENT.live, tie: ACCENT.warning, lost: TEXT.faint } as const
+    // ⚠️ A lost frame's number is content, so it sits at the readable floor (muted)
+    // rather than receding to #475569. The winner is separated by COLOUR and WEIGHT,
+    // which is enough contrast without making half the line score unreadable.
+    const TONE_COLOR = { won: ACCENT.live, tie: ACCENT.warning, lost: TEXT.muted } as const
 
     return (
       <React.Fragment key={side}>
@@ -424,7 +427,9 @@ const GamePage: React.FC = () => {
           return (
             <div key={i} style={{
               ...font(t === 'won' ? 800 : 600, 16),
-              color: value == null ? TEXT.ghost : t ? TONE_COLOR[t] : TEXT.secondary,
+              // A dash for an unplayed period is decoration, not content, so it may sit
+              // below the floor; every real number stays at or above muted.
+              color: value == null ? TEXT.faint : t ? TONE_COLOR[t] : TEXT.secondary,
               textAlign: 'center', ...TABULAR,
             }}>
               {value == null ? '-' : value}
