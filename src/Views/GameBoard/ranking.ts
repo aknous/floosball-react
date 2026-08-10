@@ -26,8 +26,11 @@ export type Ranked = {
  * ungated the whole board reads TIED at the start of a slate — and gating only TIED just
  * hands all sixteen cards a CLOSE GAME chip instead, since 0-0 is also within one score.
  *
- * UPSET and FEATURED need no gate: the backend only raises an upset from Q2 with the
- * underdog genuinely ahead on win probability, and FEATURED is decided pre-game.
+ * UPSET and FEATURED need no gate HERE, because the backend does the gating. An upset is
+ * only raised from Q2 with the underdog genuinely ahead on win probability, and only from
+ * `UPSET_MIN_WEEK` onward — team ELO regresses halfway to 1500 at every season reset, so
+ * the opening weeks price the whole league as average and an early "upset" is last
+ * season's residue rather than this season's form. FEATURED is decided pre-game.
  */
 export function chipFor(game: CurrentGame): ChipKind | null {
   const margin = Math.abs((game.homeScore ?? 0) - (game.awayScore ?? 0))
