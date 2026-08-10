@@ -223,7 +223,7 @@ export const TeamFeed: React.FC<Props> = ({
               ? 'Sign in to post'
               : !canPost
                 ? 'Visiting fan — you can read, but not join in'
-                : remaining != null
+                : remaining != null && remaining <= 10
                   ? `${remaining} post${remaining === 1 ? '' : 's'} left this hour`
                   : ''}
         </div>
@@ -317,7 +317,7 @@ export const TeamFeed: React.FC<Props> = ({
         <div style={{ marginTop: '8px', fontSize: '12px', color: error ? '#f87171' : '#94a3b8' }}>
           {error
             ? error
-            : remaining != null
+            : remaining != null && remaining <= 10
               ? `${remaining} post${remaining === 1 ? '' : 's'} left this hour`
               : ''}
         </div>

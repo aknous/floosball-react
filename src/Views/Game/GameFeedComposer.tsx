@@ -66,6 +66,23 @@ const GameFeedComposer: React.FC<{
   const [remaining, setRemaining] = useState<number | null>(null)
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /**
+   * ⚠️ Seconds until the next post is allowed — the limiter a fan actually meets.
+   * The hourly cap used to be the only one and it was ten an hour, so someone
+   * watching a whole match ran out partway through and sat silent for the finish.
+   * The cap is a runaway backstop now; a few seconds between shouts is the real rule.
+   *
+   * Seeded from the server on every load and post, then ticked down locally. The
+   * server rounds UP, so the button never comes back a moment before a post would
+   * be accepted.
+   */
+  const [cooldown, setCooldown] = useState(0)
+
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const id = setInterval(() => setCooldown(c => Math.max(0, c - 1)), 1000)
+    return () => clearInterval(id)
+  }, [cooldown])
 
   useEffect(() => {
     fetch(`${API_BASE}/games/${gameId}/feed/catalog`)
@@ -84,6 +101,7 @@ const GameFeedComposer: React.FC<{
       if (!json?.success) return
       setPosts(json.data.posts ?? [])
       setRemaining(json.data.postsRemaining ?? null)
+      setCooldown(json.data.cooldownSeconds ?? 0)
     } catch { /* keep whatever we had */ }
   }, [gameId, user, getToken])
 
@@ -115,6 +133,7 @@ const GameFeedComposer: React.FC<{
         return
       }
       setRemaining(json.data?.postsRemaining ?? remaining)
+      setCooldown(json.data?.cooldownSeconds ?? 0)
       loadFeed()
     } catch {
       setPosts(prev => prev.filter(p => p.id !== optimistic.id))
@@ -123,6 +142,8 @@ const GameFeedComposer: React.FC<{
   }
 
   const canPost = !!user?.favoriteTeamId
+  const waiting = canPost && cooldown > 0
+  const triggerEnabled = canPost && !waiting
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -135,19 +156,25 @@ const GameFeedComposer: React.FC<{
         flexShrink: 0, position: 'relative', zIndex: 5,
       }}>
         <button
-          onClick={() => (canPost ? setOpen(o => !o) : undefined)}
+          onClick={() => (triggerEnabled ? setOpen(o => !o) : undefined)}
           style={{
             display: 'flex', alignItems: 'center', width: '100%',
-            padding: '10px 12px', cursor: canPost ? 'pointer' : 'default',
+            padding: '10px 12px', cursor: triggerEnabled ? 'pointer' : 'default',
             background: open ? '#243044' : BG.panel,
             border: `1px solid ${open ? '#64748b' : BORDER.raised}`,
-            fontFamily: FONT, ...font(700, 12), color: TEXT.secondary,
+            fontFamily: FONT, ...font(700, 12),
+            color: waiting ? TEXT.muted : TEXT.secondary,
           }}
         >
+          {/* The wait is on the BUTTON, not in a message under it. It is the reason
+              the button is not doing anything, so it belongs where the reader is
+              already looking. */}
           <span style={{ flex: 1, textAlign: 'left' }}>
-            {canPost ? 'Say something' : user ? 'Pick a club to join in' : 'Sign in to join in'}
+            {waiting ? `Take a breath — ${cooldown}s`
+              : canPost ? 'Say something'
+                : user ? 'Pick a club to join in' : 'Sign in to join in'}
           </span>
-          {canPost && <Chevron open={open} />}
+          {triggerEnabled && <Chevron open={open} />}
         </button>
 
         {open && (
@@ -191,7 +218,10 @@ const GameFeedComposer: React.FC<{
         {error && (
           <div style={{ ...font(400, 11), color: ACCENT.negative, paddingTop: '8px' }}>{error}</div>
         )}
-        {canPost && remaining != null && (
+        {/* ⚠️ Only shown when the hourly cap is genuinely in reach. At 90 an hour it
+            is a backstop, and printing "87 posts left this hour" under every shout
+            advertises a limit nobody is going to hit as though it were a budget. */}
+        {canPost && remaining != null && remaining <= 10 && (
           <div style={{ ...font(400, 11), color: TEXT.muted, paddingTop: '8px' }}>
             {remaining} posts left this hour
           </div>
