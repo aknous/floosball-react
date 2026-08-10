@@ -24,7 +24,10 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 const NAME_MIN = 3
 const NAME_MAX = 20
-const NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/
+// ⚠️ Mirrors `_USERNAME_RE` in api/auth.py — a name may start with a digit or an
+// underscore (owner, 2026-08-10). The server is still the authority; this only
+// decides whether we stop the request before it leaves.
+const NAME_RE = /^[A-Za-z0-9_][A-Za-z0-9_]*$/
 
 /** Mirrors api/auth.validateUsername so a bad name fails as you type. The server
  *  re-checks everything and its message wins if the two ever disagree. */
@@ -33,7 +36,7 @@ const localNameError = (name: string): string | null => {
   if (!n) return null
   if (n.length < NAME_MIN) return `At least ${NAME_MIN} characters`
   if (n.length > NAME_MAX) return `${NAME_MAX} characters or fewer`
-  if (!NAME_RE.test(n)) return 'Letters, numbers and underscores, starting with a letter'
+  if (!NAME_RE.test(n)) return 'Letters, numbers and underscores'
   return null
 }
 
@@ -60,27 +63,34 @@ export const FirstRunModal: React.FC = () => {
   const [step, setStep] = useState<'name' | 'team'>('name')
   const [dismissed, setDismissed] = useState(false)
   const [options, setOptions] = useState<string[]>([])
+  const [rolling, setRolling] = useState(false)
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const open = !!user && !user.hasCompletedOnboarding && !dismissed
 
+  /** Ask the server for a fresh set of suggestions. */
+  const loadOptions = useCallback(async () => {
+    setRolling(true)
+    try {
+      const tok = await getToken()
+      const res = await fetch(`${API_BASE}/users/me/username-options`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      })
+      const json = await res.json()
+      setOptions(json?.options ?? [])
+    } catch {
+      /* free entry still works without suggestions */
+    } finally {
+      setRolling(false)
+    }
+  }, [getToken])
+
   useEffect(() => {
     if (!open || options.length) return
-    let cancelled = false
-    ;(async () => {
-      try {
-        const tok = await getToken()
-        const res = await fetch(`${API_BASE}/users/me/username-options`, {
-          headers: { Authorization: `Bearer ${tok}` },
-        })
-        const json = await res.json()
-        if (!cancelled) setOptions(json?.options ?? [])
-      } catch { /* free entry still works without suggestions */ }
-    })()
-    return () => { cancelled = true }
-  }, [open, options.length, getToken])
+    loadOptions()
+  }, [open, options.length, loadOptions])
 
   /** Mark it done so this never reappears, then close. Best-effort: a reader who
    *  got this far should not be trapped by a failed write. */
@@ -95,8 +105,18 @@ export const FirstRunModal: React.FC = () => {
     } catch { /* the flag is a convenience, not a gate */ }
   }, [getToken, refetchUser])
 
-  const saveName = async (chosen: string) => {
-    const local = localNameError(chosen)
+  /**
+   * `offered` marks a name that came from the server's own suggestions.
+   *
+   * ⚠️ Those skip the local rules. The client cannot fully reproduce the server's
+   * validation — the length cap is waived for names the generator itself could have
+   * produced, and that check needs the server's vocabulary — so applying the plain
+   * rule to a clicked suggestion refused the app's own offer without ever sending it.
+   * The server remains the authority either way; this only decides whether we stop
+   * the request before it leaves.
+   */
+  const saveName = async (chosen: string, offered = false) => {
+    const local = offered ? null : localNameError(chosen)
     if (local) { setError(local); return }
     setSaving(true); setError(null)
     try {
@@ -145,15 +165,38 @@ export const FirstRunModal: React.FC = () => {
                 {options.map(o => (
                   <button
                     key={o}
-                    onClick={() => saveName(o)}
-                    disabled={saving}
+                    onClick={() => saveName(o, true)}
+                    disabled={saving || rolling}
                     style={{
                       ...font(600, 12), color: TEXT.secondary, background: BG.panel,
                       border: `1px solid ${BORDER.raised}`, padding: '8px 11px',
-                      cursor: saving ? 'default' : 'pointer', fontFamily: FONT,
+                      cursor: saving || rolling ? 'default' : 'pointer', fontFamily: FONT,
+                      opacity: rolling ? 0.5 : 1,
                     }}
                   >{o}</button>
                 ))}
+                {/* Four names you did not choose is not a choice. The button sits with
+                    the suggestions rather than beside the field, because it acts on
+                    them and not on what you typed. */}
+                <button
+                  onClick={loadOptions}
+                  disabled={saving || rolling}
+                  title="Show four different names"
+                  style={{
+                    ...font(600, 12), color: TEXT.muted, background: 'transparent',
+                    border: `1px dashed ${BORDER.raised}`, padding: '8px 11px',
+                    cursor: saving || rolling ? 'default' : 'pointer', fontFamily: FONT,
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                  }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 20 20" fill="none"
+                    stroke={TEXT.muted} strokeWidth="2" strokeLinecap="round"
+                    style={{ flexShrink: 0 }}>
+                    <path d="M17 10a7 7 0 11-2.05-4.95" />
+                    <path d="M17 2v4h-4" />
+                  </svg>
+                  {rolling ? 'Rolling' : 'More'}
+                </button>
               </div>
             )}
 

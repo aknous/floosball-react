@@ -3,7 +3,6 @@ import React, { useEffect, useState, useRef } from 'react'
 import { SidebarProvider } from './contexts/SidebarContext'
 import Navbar from './Components/Navbar.js'
 import AppShell from './Components/Shell/AppShell'
-import MobileNotice from './Components/Shell/MobileNotice'
 import FrontPage from './Views/Front/FrontPage'
 import GameBoardPage from './Views/GameBoard/GameBoardPage'
 import StandingsPage from './Views/Standings/StandingsPage'
@@ -96,15 +95,17 @@ function AppRoutes() {
  * desktop layout with no responsive collapse drawn. That left two chromes to keep in
  * step and put pre-redesign furniture around redesigned pages. `AppShell` now collapses
  * its nav into a drawer below `SHELL_MOBILE_MAX` and every page stacks.
+ *
+ * The "phones are still being redone" notice that stood here went with that work. It was
+ * honest while the mobile pass was outstanding; leaving it up once the pass landed would
+ * tell a phone reader the finished layout is unfinished, which is the same misread the
+ * notice existed to prevent.
  */
 function AppLayout() {
   return (
-    <>
-      <MobileNotice />
-      <AppShell>
-        <AppRoutes />
-      </AppShell>
-    </>
+    <AppShell>
+      <AppRoutes />
+    </AppShell>
   )
 }
 
