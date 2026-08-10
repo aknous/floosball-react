@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useAppSettings } from '@/hooks/useAppSettings'
 import { CHANGELOG, ChangelogEntry } from '@/data/changelog'
+import { FONT } from '@/Components/Shell/tokens'
 import { ChangelogLine } from '@/Components/ChangelogLine'
 
 const SECTION_COLORS: Record<string, string> = {
@@ -143,6 +144,11 @@ export const VersionPill: React.FC<{ align?: 'left' | 'right' }> = ({ align = 'r
         <div
           ref={panelRef}
           style={{
+            // ⚠️ The font has to be set HERE. The panel is portalled to document.body,
+            // which is outside the `.font-pixel` subtree it used to inherit from when it
+            // was a child of the badge, so portalling it silently dropped it to the
+            // browser default.
+            fontFamily: FONT,
             position: 'fixed',
             bottom: `${anchor.bottom + 8}px`,
             left: `${anchor.left}px`,
