@@ -57,6 +57,28 @@ const YOURS_ITEMS: NavEntry[] = [
   { key: 'achievements', label: 'Achievements', path: '/achievements', icon: <FaTrophy size={16} style={{ flexShrink: 0 }} /> },
 ]
 
+/**
+ * How the game works.
+ *
+ * ⚠️ Sits BELOW the two groups rather than inside either, next to Discord. It is not a
+ * league page and it is not one of yours — it is the other thing you reach for when you
+ * are stuck, which is exactly what Discord is, so the two read as a pair at the foot.
+ *
+ * Outside the `user` gate on purpose: `/about` is one of the two routes that render
+ * signed out (App.js), so a reader who has not made an account can still read it.
+ * The old sidebar carried it and the redesigned rail dropped it.
+ */
+const GUIDE_ITEM: NavEntry = {
+  key: 'guide',
+  label: 'Guide',
+  path: '/about',
+  icon: (
+    <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" style={{ flexShrink: 0 }}>
+      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+    </svg>
+  ),
+}
+
 const AWARDS_ITEM: NavEntry = {
   key: 'awards',
   label: 'Awards',
@@ -232,6 +254,8 @@ const AppNav: React.FC = () => {
         </>
       )}
 
+      <div style={{ marginTop: '14px' }}>{renderItem(GUIDE_ITEM)}</div>
+
       <a
         href={DISCORD_URL}
         target="_blank"
@@ -241,7 +265,6 @@ const AppNav: React.FC = () => {
           alignItems: 'center',
           gap: '11px',
           padding: '9px 18px',
-          marginTop: '4px',
           textDecoration: 'none',
           color: TEXT.muted,
           borderLeft: '3px solid transparent',
