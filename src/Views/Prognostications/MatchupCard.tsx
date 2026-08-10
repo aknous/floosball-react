@@ -14,7 +14,7 @@ import type { TeamStanding } from '@/Views/Standings/standingsTypes'
  * asked to judge. This is the shape the old `PickRow` had and it was the right one.
  *
  * ⚠️ Three numbers on the face, the rest behind MORE. The first build put form, streak,
- * differential, division record, record and the multiplier on one line for both clubs —
+ * differential, division record, record and the points on one line for both clubs —
  * every number useful, and sixteen cards of it a wall.
  *
  * Team context comes from `/api/standings`, joined by id: the standings board already
@@ -87,13 +87,12 @@ const Side: React.FC<{
   /** Away reads left-to-right, home reads right-to-left, so the two mirror the gutter. */
   align: 'left' | 'right'
   winPct: number
-  multiplier: number
   points: number
   picked: boolean
   dimmed: boolean
   disabled: boolean
   onPick: () => void
-}> = ({ team, standing, align, winPct, multiplier, points, picked, dimmed, disabled, onPick }) => {
+}> = ({ team, standing, align, winPct, points, picked, dimmed, disabled, onPick }) => {
   const accent = readableTeamColor(team.color || '#94a3b8')
   const rtl = align === 'right'
   return (
@@ -114,7 +113,7 @@ const Side: React.FC<{
     >
       {/* ⚠️ Both rows run EDGE TO EDGE, club on the outside and the numbers on the
           inside. Grouped at one end they left a hole down the middle of every panel,
-          and the multiplier — the price of this side, and half the decision — ended up
+          and the points — the price of this side, and half the decision — ended up
           buried in a run of small text instead of sitting where the eye already is,
           next to the gutter. */}
       <span style={{
@@ -153,21 +152,19 @@ const Side: React.FC<{
           display: 'flex', alignItems: 'baseline', gap: '5px', flexShrink: 0,
           flexDirection: rtl ? 'row-reverse' : 'row',
         }}>
-          {/* ⚠️ THE POINTS LEAD, the multiplier explains them. It used to be the other
-              way round — a big "1.5x" with the points as a footnote — and readers were
-              asking what a pick was actually worth. The multiplier is the reason for
-              the number, not the number itself.
-              ⚠️ EACH SPAN CARRIES ITS OWN UNIT, because this row REVERSES on the home
-              side. Splitting the value from its unit across the two spans rendered as
-              "pts · 0.7x 7" once mirrored. Self-contained, either order reads. */}
+          {/* ⚠️ THE POINTS, AND ONLY THE POINTS (owner). The card used to print the
+              multiplier beside them, which is just the arithmetic that produced the
+              number the reader already has. Two numbers where one is derived from the
+              other is what made this confusing.
+              The colour keeps the intuition: a big payout reads live-green, a heavy
+              favorite recedes. Same information, no second number to reconcile.
+              ⚠️ The unit stays glued to the value — this row REVERSES on the home
+              side, and a bare number left "pts" stranded across the mirror. */}
           <span style={{
             ...font(800, 17, 1), ...TABULAR, whiteSpace: 'nowrap',
-            color: multiplier >= 1.5 ? ACCENT.live : multiplier < 0.8 ? TEXT.muted : TEXT.body,
+            color: points >= 15 ? ACCENT.live : points < 8 ? TEXT.muted : TEXT.body,
           }}>
             {points}<span style={{ ...font(500, 10), marginLeft: '3px' }}>pts</span>
-          </span>
-          <span style={{ ...font(500, 10), color: TEXT.muted, ...TABULAR, whiteSpace: 'nowrap' }}>
-            {multiplier.toFixed(1)}x
           </span>
         </span>
       </span>
@@ -205,7 +202,7 @@ export const MatchupCard: React.FC<{
       <div style={{ display: 'flex', alignItems: 'stretch', gap: '4px', padding: '4px' }}>
         <Side
           team={away} standing={awayStanding} align="left"
-          winPct={wp.away} multiplier={awayMult}
+          winPct={wp.away}
           points={multiplierToPoints(timing, awayMult)}
           picked={awayPicked} dimmed={hasPick && !awayPicked}
           disabled={!game.pickable}
@@ -243,7 +240,7 @@ export const MatchupCard: React.FC<{
 
         <Side
           team={home} standing={homeStanding} align="right"
-          winPct={wp.home} multiplier={homeMult}
+          winPct={wp.home}
           points={multiplierToPoints(timing, homeMult)}
           picked={homePicked} dimmed={hasPick && !homePicked}
           disabled={!game.pickable}

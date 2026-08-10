@@ -174,10 +174,14 @@ const PrognosticationsPage: React.FC = () => {
             {day != null ? `Day ${day + 1}` : 'Today'}
             {' · '}Picks lock at kickoff.
           </span>
+          {/* ⚠️ Stated in POINTS, not multipliers (owner). The card shows each team's
+              points, so quoting a multiplier here asked the reader to do the same sum
+              the card had already done for them. 10 base, 3.0x and 0.4x bounds, so the
+              real range is 4 to 30 — say that instead. */}
           <span style={{ display: 'block', ...font(400, 12, 1.5), color: TEXT.secondary, marginTop: '4px' }}>
-            A correct pick pays <strong style={{ color: TEXT.body }}>10 points</strong>, times that
-            team's multiplier. Back an underdog and it pays more, up to 3x; take a heavy
-            favorite and it pays as little as 0.4x. A wrong pick scores nothing.
+            Each team shows what a correct pick on them is worth: about
+            {' '}<strong style={{ color: TEXT.body }}>10 points</strong> on an even game, up to 30 for a
+            big underdog and as few as 4 for a heavy favorite. A wrong pick scores nothing.
           </span>
         </span>
         <span style={{ flex: 1 }} />
@@ -341,8 +345,7 @@ const PrognosticationsPage: React.FC = () => {
                 </div>
               )}
               <div style={{ padding: '13px 15px', ...font(400, 11, 1.6), color: TEXT.muted }}>
-                Underdogs pay up to 3x, big favorites as little as 0.4x. Picking before
-                kickoff pays the most.
+                Underdogs pay the most, big favorites the least. Picks close at kickoff.
               </div>
             </div>
 
