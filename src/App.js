@@ -26,6 +26,7 @@ import BracketView from './Views/Bracket/BracketView'
 import Dashboard from './Views/Dashboard/Dashboard'
 import DashboardNew from './Views/Dashboard/DashboardNew'
 import LandingPage from './Views/Landing/LandingPage'
+import FirstRunModal from './Components/Onboarding/FirstRunModal'
 import WelcomeModal from './Components/WelcomeModal'
 import SurveyModal from './Components/SurveyModal'
 import RuleVoteModal from './Components/RuleVoteModal'
@@ -221,6 +222,7 @@ function AuthGate() {
   if (!isSignedIn) return <LandingPage />
   return (
     <>
+      <FirstRunModal />
       <WelcomeModal />
       <SurveyModal />
       <RuleVoteModal />
