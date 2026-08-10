@@ -158,6 +158,7 @@ interface TeamData {
   history: HistoryRow[]
   coach: Coach | null
   fundingTier?: string
+  division?: string | null
   floosbowlChampion?: boolean
   clinchedPlayoffs?: boolean
   clinchedTopSeed?: boolean
@@ -871,16 +872,17 @@ export default function TeamPage() {
           </span>
 
           <div style={{ minWidth: 0 }}>
-            {/* Market lives here rather than in the facts row: it's an
-                identity fact like the city and the league, not a performance
-                one, and it was the weakest of the four things competing for
-                that scan line. */}
+            {/* City, league, DIVISION. The third slot used to carry the funding
+                tier (the market size), which is an economy fact and changes with
+                how much the fans have put in — a club's division is the thing a
+                reader actually needs to place it, and at four divisions per league
+                it is what most of them are playing for. */}
             <div style={{
               fontSize: '13px', letterSpacing: '0.12em', fontWeight: 700,
               color: 'rgba(255,255,255,0.92)',
             }}>
               {team.city} &middot; {team.league}
-              {team.fundingTier && <> &middot; {titleCase(team.fundingTier)}</>}
+              {team.division && <> &middot; {team.division}</>}
             </div>
             <h1 style={{
               margin: '4px 0 0', fontSize: `${heroName}px`, lineHeight: 0.94,

@@ -2774,26 +2774,38 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               })()}
               {gameData.status !== 'Scheduled' && activeTab === 'plays' && (
                 <>
-                  {/* All / Highlights toggle */}
-                  <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
-                    {(['all', 'highlights'] as const).map(mode => (
+                  {/* ⚠️ The SEGMENTED control the rest of the app uses — one bordered
+                      strip, hairline dividers between cells, the active cell filled
+                      and inverted. This was two rounded blue pills, the last of the
+                      old style left on this surface. Kept byte-identical in shape to
+                      the standings view switcher and the board's density toggle. */}
+                  <div style={{
+                    display: 'inline-flex', marginBottom: '14px',
+                    background: '#0f172a', border: '1px solid #1e293b',
+                  }}>
+                    {(['all', 'highlights'] as const).map((mode, i) => {
+                      const active = (mode === 'highlights') === showHighlightsOnly
+                      return (
                       <button
                         key={mode}
                         onClick={() => setShowHighlightsOnly(mode === 'highlights')}
                         style={{
-                          padding: '4px 12px',
-                          borderRadius: '6px',
+                          padding: '8px 13px',
                           border: 'none',
+                          borderLeft: i > 0 ? '1px solid #1e293b' : 'none',
                           cursor: 'pointer',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          backgroundColor: (mode === 'highlights') === showHighlightsOnly ? '#3b82f6' : '#1e293b',
-                          color: (mode === 'highlights') === showHighlightsOnly ? '#fff' : '#64748b',
+                          fontFamily: 'inherit',
+                          fontSize: '11px',
+                          letterSpacing: '0.02em',
+                          fontWeight: active ? 800 : 500,
+                          background: active ? '#cbd5e1' : 'transparent',
+                          color: active ? '#0f172a' : '#64748b',
                         }}
                       >
-                        {mode === 'all' ? 'All Plays' : 'Highlights'}
+                        {mode === 'all' ? 'ALL PLAYS' : 'HIGHLIGHTS'}
                       </button>
-                    ))}
+                      )
+                    })}
                   </div>
 
                   {(!gameData.plays || gameData.plays.length === 0) ? (
