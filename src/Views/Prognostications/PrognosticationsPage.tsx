@@ -6,6 +6,7 @@ import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, RAIL_WIDTH, font } from '@/Com
 import type { TeamStanding, LeagueStandings } from '@/Views/Standings/standingsTypes'
 import MatchupCard, { pickWasCorrect } from './MatchupCard'
 import AutoPickPanel from './AutoPickPanel'
+import Leaderboard, { type BoardEntry } from './Leaderboard'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -58,6 +59,9 @@ const PrognosticationsPage: React.FC = () => {
   type Line = { points: number; correct: number; total: number; rank: number }
   const [season, setSeason] = useState<Line | null>(null)
   const [thisWeek, setThisWeek] = useState<Line | null>(null)
+  // The same fetch already feeds the rail's own line — no second request for the board.
+  const [board, setBoard] = useState<{ season: BoardEntry[]; week: BoardEntry[]; weekNumber: number | null }>(
+    { season: [], week: [], weekNumber: null })
 
   // Team context for every club on the slate. One fetch, joined by id.
   useEffect(() => {
@@ -101,6 +105,11 @@ const PrognosticationsPage: React.FC = () => {
         if (!cancelled) {
           setSeason(mineIn(data?.season?.entries))
           setThisWeek(mineIn(data?.week?.entries))
+          setBoard({
+            season: data?.season?.entries ?? [],
+            week: data?.week?.entries ?? [],
+            weekNumber: data?.week?.week ?? null,
+          })
         }
       } catch { /* the rail hides itself */ }
     })()
@@ -325,6 +334,13 @@ const PrognosticationsPage: React.FC = () => {
                 kickoff pays the most.
               </div>
             </div>
+
+            <Leaderboard
+              season={board.season}
+              week={board.week}
+              weekNumber={board.weekNumber}
+              myUserId={user?.id}
+            />
 
             <AutoPickPanel />
           </div>
