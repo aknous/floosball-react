@@ -3,7 +3,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import PlayerAvatar from '@/Components/PlayerAvatar'
-import { BG, BORDER, TEXT, ACCENT, TABULAR, font, SHELL_MOBILE_MAX } from '@/Components/Shell/tokens'
+import { BG, BORDER, TEXT, ACCENT, TABULAR, AWAKENED_NAME, font, SHELL_MOBILE_MAX } from '@/Components/Shell/tokens'
 import { Stars } from '@/Components/Stars'
 import { SectionHeader, RelationTag } from './frontPieces'
 
@@ -15,6 +15,8 @@ export interface LeaderRow {
   teamId: number | null
   teamColor: string
   ratingStars: number
+  /** Currently AWAKENED — the name is lit. */
+  awakened?: boolean
   statLabel: string
   statValue: string
 }
@@ -74,6 +76,10 @@ const TopPlayers: React.FC<{
                     ...font(800, 13), color: TEXT.strong, whiteSpace: 'nowrap',
                     textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis',
                     display: 'block', maxWidth: narrow ? '150px' : 'none',
+                    // Awakened last so it wins the colour, and applied to the NAME
+                    // rather than the row: it is a fact about the player, and lighting
+                    // the whole row would compete with the stat beside it.
+                    ...(row.awakened ? AWAKENED_NAME : {}),
                   }}
                 >{row.name}</Link>
               </PlayerHoverCard>

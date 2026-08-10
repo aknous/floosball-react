@@ -1317,7 +1317,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
     if (gameFormat === 'target' && notScheduled) return true
     if (gameFormat === 'bust' && notScheduled) return true
     if (gameFormat === 'play_limit' && gameData?.playLimit?.active) return true
-    if (gameFormat === 'chess_clock' && gameData?.chessClock?.active && notScheduled) return true
+    // ⚠️ NOT gated on `gameFormat`. The REST payload does not carry gameFormat, so on
+    // first load it is undefined and only a later game_state tick fills it in — which
+    // is why the offence clock appeared some seconds after the page opened rather than
+    // with it. `chessClock.active` is emitted by ChessClockFormat.stateExtra and by
+    // nothing else, so it already implies the format and it DOES arrive over REST.
+    if (gameData?.chessClock?.active && notScheduled) return true
     return false
   })()
 
@@ -1858,7 +1863,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               )}
               {/* Game format: frames (match play) — the match is frames won, not points */}
               {/* Game format: chess_clock — each team's remaining offense-time budget */}
-              {gameFormat === 'chess_clock' && gameData.chessClock?.active && gameData.status !== 'Scheduled' && (() => {
+              {/* ⚠️ MODAL ONLY, and not gated on `gameFormat` — see hasStatusExtras. The
+                  page shows each club's budget as a column on its own row in the
+                  scoreboard band, which is what "the clock for each team" means; this
+                  centre strip makes the reader match an abbreviation back to a row, so
+                  running both put the same number on screen twice. */}
+              {!asPage && gameData.chessClock?.active && gameData.status !== 'Scheduled' && (() => {
                 const cc = gameData.chessClock!
                 // Offense-budget health: green (plenty) -> yellow (getting low) -> red
                 // (running out / locked out).

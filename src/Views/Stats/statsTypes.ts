@@ -12,6 +12,8 @@ export interface StatsPlayerRow {
   status: 'active' | 'fa' | 'prospect' | 'retired'
   playerRating: number
   ratingStars: number
+  /** Currently AWAKENED — the name is lit, same as the leader boards. */
+  awakened?: boolean
 
   gamesPlayed: number
   seasonsPlayed: number | null

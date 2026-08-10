@@ -116,3 +116,38 @@ export const font = (
   lineHeight: typeof lineHeight === 'number' ? lineHeight : lineHeight,
   ...(letterSpacing ? { letterSpacing } : {}),
 })
+
+/**
+ * An AWAKENED player's name: blue, and lit.
+ *
+ * ⚠️ ONE definition, imported everywhere a player is listed. The glow means the same
+ * thing on every surface, so a leader board that lights a name while the stats table
+ * leaves it plain reads as a bug in whichever one the reader trusts less. It started
+ * as an inline literal in PlayerLeaders and was about to become a third copy.
+ *
+ * ⚠️ `filter: drop-shadow`, NOT `text-shadow`, and that is the whole fix. Every name
+ * cell sets `overflow: hidden` to get `text-overflow: ellipsis`, and an element's
+ * overflow clips its own text-shadow at the padding box — measured on the front page,
+ * an `<a>` 98x13px holding a 34px halo, so the glow was sliced off square on all four
+ * sides and read as a blue rectangle rather than light. A filter is applied AFTER that
+ * clip and paints outside the border box, so the bloom escapes with no padding, no
+ * negative-margin compensation, and no change to the link's click target. Padding was
+ * tried first and worked visually, but it grew the anchor by 20px vertically and had it
+ * overlapping the rows above and below.
+ *
+ * drop-shadow also follows the ALPHA of the glyphs rather than boxing them, which is
+ * what makes it read as light coming off the letters.
+ *
+ * Tuned to the TEXT: layers out to 18px on 13px type, none of them dense. The original
+ * had a 0.95-alpha core at 3px, which closed the gaps BETWEEN letters and welded them
+ * into a lit slab. Light has to start soft to read as light.
+ */
+export const AWAKENED_NAME = {
+  color: '#60a5fa',
+  fontWeight: 600,
+  filter: [
+    'drop-shadow(0 0 4px rgba(96,165,250,0.55))',
+    'drop-shadow(0 0 10px rgba(96,165,250,0.30))',
+    'drop-shadow(0 0 18px rgba(96,165,250,0.14))',
+  ].join(' '),
+} as const

@@ -324,6 +324,36 @@ const GamePage: React.FC = () => {
     : null
 
   /**
+   * Chess clock: each club's REMAINING OFFENSE BUDGET, per team, on its own row.
+   *
+   * ⚠️ In this format the budget is the thing you actually watch — once a club runs
+   * out it cannot get the ball back, so "8:21" on the game clock says nothing about
+   * who is running out of game. The board carried the quarter line and the score and
+   * never showed it; only the old modal did.
+   *
+   * A per-team COLUMN rather than a line underneath, because it is a per-team number
+   * and the band already has the shape for one (frames won took the same slot).
+   */
+  const chess = gameData.chessClock?.active && gameData.status !== 'Scheduled'
+    ? {
+        home: gameData.chessClock.homeBudget ?? 0,
+        away: gameData.chessClock.awayBudget ?? 0,
+        homeLockedOut: !!gameData.chessClock.homeLockedOut,
+        awayLockedOut: !!gameData.chessClock.awayLockedOut,
+      }
+    : null
+
+  /** Budget health, matching the thresholds the game modal has always used. */
+  const CHESS_LOW_SECS = 60
+  const CHESS_HIGH_SECS = 300
+  const chessClockText = (secs: number, locked: boolean) =>
+    locked ? 'OUT' : `${Math.floor(Math.max(0, secs) / 60)}:${String(Math.max(0, Math.round(secs)) % 60).padStart(2, '0')}`
+  const chessClockColor = (secs: number, locked: boolean) =>
+    locked || secs <= CHESS_LOW_SECS ? ACCENT.negative
+      : secs <= CHESS_HIGH_SECS ? ACCENT.warning
+      : ACCENT.live
+
+  /**
    * ⚠️ The period columns TIGHTEN past five of them. A quarter line is four columns and
    * leaves the club plenty of room; six frames plus FR plus PTS at the same widths left
    * about 40px for the name and rendered "Monum..." / "Stran...". Innings can run to
@@ -449,6 +479,21 @@ const GamePage: React.FC = () => {
             solved this: frames, a hairline, then the points at 45% size and muted, all
             in one tight cluster — so this uses that component rather than a second
             implementation of the same idea, and inherits its level-match highlight. */}
+        {chess && (
+          <div style={{
+            ...font(800, 15, 1), ...TABULAR, textAlign: 'right',
+            color: chessClockColor(
+              side === 'home' ? chess.home : chess.away,
+              side === 'home' ? chess.homeLockedOut : chess.awayLockedOut,
+            ),
+          }}>
+            {chessClockText(
+              side === 'home' ? chess.home : chess.away,
+              side === 'home' ? chess.homeLockedOut : chess.awayLockedOut,
+            )}
+          </div>
+        )}
+
         <div style={{ textAlign: 'right' }}>
           <FormatScore
             game={gameData}
@@ -545,6 +590,7 @@ const GamePage: React.FC = () => {
                 gridTemplateColumns: [
                   'minmax(0,1fr)',
                   `repeat(${periodCount}, ${CELL_W}px)`,
+                  chess ? '62px' : null,
                   framesWon ? '78px' : '56px',
                 ].filter(Boolean).join(' '),
                 alignItems: 'center',
@@ -564,6 +610,11 @@ const GamePage: React.FC = () => {
                     {/* In frames the big number is frames WON and the small one beside
                         it is points, so the pair is labelled. Everywhere else the biggest
                         number on a scoreboard does not need a heading. */}
+                    {chess && (
+                      <span style={{ ...font(700, 10, 1, '0.1em'), color: TEXT.muted, textAlign: 'right' }}>
+                        CLOCK
+                      </span>
+                    )}
                     <span style={framesWon
                       ? { ...font(700, 10, 1, '0.1em'), color: TEXT.muted, textAlign: 'right' }
                       : undefined}>{framesWon ? 'FRAMES · PTS' : null}</span>

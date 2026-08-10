@@ -168,16 +168,8 @@ const GameBleachers: React.FC<{
         sideline voices ride in the same scroller. */}
     <GameFeedComposer
       gameId={gameId}
-      extraEntries={
-        <>
-          {entries.map(entry => <Entry key={entry.key} entry={entry} />)}
-          {entries.length === 0 && (
-            <div style={{ padding: '28px 16px', textAlign: 'center', ...font(400, 12, 1.5), color: TEXT.muted }}>
-              Nobody has said anything yet.
-            </div>
-          )}
-        </>
-      }
+      hasExtraEntries={entries.length > 0}
+      extraEntries={<>{entries.map(entry => <Entry key={entry.key} entry={entry} />)}</>}
     />
   </div>
 )

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import TeamHoverCard from '@/Components/TeamHoverCard'
 import { useAuth } from '@/contexts/AuthContext'
-import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font, SHELL_MOBILE_MAX } from '@/Components/Shell/tokens'
+import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font, SHELL_MOBILE_MAX, AWAKENED_NAME } from '@/Components/Shell/tokens'
 import { Crest } from '@/Views/GameBoard/boardPieces'
 import {
   Segmented, Pill, StatusChip, FilterLabel, Rule, SearchBox, CompareButton,
@@ -250,6 +250,7 @@ const StatsPage: React.FC = () => {
               ...font(600, 13), color: TEXT.primary,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               minWidth: 0,
+              ...(row.awakened ? AWAKENED_NAME : {}),
             }}>{row.name}</span>
             {/* Stars BESIDE the name, not under it (owner) — the lead column has the
                 width for both on one line, and stacking them made every row two lines
@@ -459,6 +460,7 @@ const StatsPage: React.FC = () => {
                   <span style={{
                     display: 'block', ...font(700, 12), color: TEXT.primary,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    ...(row.awakened ? AWAKENED_NAME : {}),
                   }}>{row.name}</span>
                   <span style={{ ...font(500, 10), color: TEXT.muted }}>
                     {row.position}{row.teamAbbr ? ` · ${row.teamAbbr}` : ''}
