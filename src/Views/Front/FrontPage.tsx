@@ -33,6 +33,18 @@ const NEWS_LENGTH = 10
  * the board reads as a tour of the season instead of a ranking. Ten rows: enough to fill
  * the board without turning it into the stats page.
  */
+/**
+ * How deep to fetch per category, so the de-duplication below has something to work
+ * with.
+ *
+ * ⚠️ It was 3, and FANTASY PTS came back BLANK because of it. Fantasy points is a
+ * composite of the nine categories above it and is drawn LAST, so by the time it is
+ * reached nine players are already on the board and its own top three are the players
+ * who put them there. Measured on a live season: 2 free candidates in the top 3
+ * against 8 in the top 12 — the pool was the constraint, not the data.
+ */
+const LEADER_POOL = 12
+
 const LEADER_CATEGORIES: { category: string; label: string; format?: (v: number) => string }[] = [
   { category: 'passing_yards', label: 'PASS YDS' },
   { category: 'passing_tds', label: 'PASS TDS' },
@@ -95,7 +107,11 @@ const FrontPage: React.FC = () => {
   const [standingsTick, setStandingsTick] = useState(0)
   const [leadersTick, setLeadersTick] = useState(0)
   useEffect(() => {
-    const type = (wsEvent as any)?.type
+    // ⚠️ `.event`, NOT `.type`. Every season-socket payload is keyed `event` (see
+    // api/event_models.py); `.type` is only ever sent BY the client, on identify and
+    // watch. Reading `.type` here yielded undefined for every message, so this effect
+    // never fired once and the panel below only ever refreshed on mount.
+    const type = (wsEvent as any)?.event ?? (wsEvent as any)?.type
     // The feed is cumulative and published as things happen, so it refetches on anything
     // that PRODUCES news — a finished game (upsets, big games, records), a league_news
     // broadcast (clinches, rule changes, awakenings, criticality) — not just on the week
@@ -126,7 +142,7 @@ const FrontPage: React.FC = () => {
     let cancelled = false
     Promise.all(LEADER_CATEGORIES.map(async ({ category, label, format }) => {
       try {
-        const res = await fetch(`${API_BASE}/stats/leaders?category=${category}&limit=3`)
+        const res = await fetch(`${API_BASE}/stats/leaders?category=${category}&limit=${LEADER_POOL}`)
         const json = await res.json()
         const list = json?.data?.leaders ?? json?.leaders ?? []
         return list.map((p: any) => ({
@@ -152,7 +168,14 @@ const FrontPage: React.FC = () => {
       const seen = new Set<number>()
       const rows: LeaderRow[] = []
       perCategory.forEach(list => {
-        const pick = list.find((p: any) => p.raw > 0 && !seen.has(p.id))
+        // Prefer someone not already on the board, so one two-way star does not take
+        // three of the ten rows.
+        const fresh = list.find((p: any) => p.raw > 0 && !seen.has(p.id))
+        // ⚠️ But a REPEATED name beats an EMPTY row. If every candidate is already
+        // shown, the category still has a leader and the reader still came to see who
+        // it is; printing "No leader yet" against a category somebody is leading is
+        // simply wrong. Only a category nobody has scored in stays blank.
+        const pick = fresh ?? list.find((p: any) => p.raw > 0)
         if (pick) { seen.add(pick.id); rows.push(pick) }
       })
       setLeaders(rows)

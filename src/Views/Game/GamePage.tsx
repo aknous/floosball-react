@@ -365,7 +365,14 @@ const GamePage: React.FC = () => {
   // one thing on a scoreboard that must never truncate. The quarter, frame or inning
   // breakdown is a detail; who is playing and what the score is are not.
   const periodCount = narrow ? 0 : (periodLine?.labels.length ?? 0)
-  const tight = periodCount > 5
+  // ⚠️ The chess clock counts toward the squeeze, at roughly the two period cells its
+  // 62px is worth. The rule only counted PERIODS, so a chess-clock game — four
+  // quarters, well under the threshold — never tightened, and its extra column plus
+  // the momentum flame ate the name instead: "Washington Monum..." on a club the band
+  // had room for a moment earlier. The flame is the part that makes it intermittent,
+  // which is why it reads as a glitch rather than a layout limit.
+  const numberColumns = periodCount + (chess ? 2 : 0)
+  const tight = numberColumns > 5
   const CELL_W = tight ? 25 : 34
   const COL_GAP = tight ? 5 : 8
 
@@ -590,7 +597,9 @@ const GamePage: React.FC = () => {
                 gridTemplateColumns: [
                   'minmax(0,1fr)',
                   `repeat(${periodCount}, ${CELL_W}px)`,
-                  chess ? '62px' : null,
+                  // The clock holds "12:34" or "OUT" and nothing wider, so it takes
+                  // only what those need — and gives up more once the band is tight.
+                  chess ? (tight ? '46px' : '54px') : null,
                   framesWon ? '78px' : '56px',
                 ].filter(Boolean).join(' '),
                 alignItems: 'center',

@@ -66,7 +66,11 @@ const StandingsPage: React.FC = () => {
   // `standings_update` replaces the payload live; `week_start` and a finished game both
   // move records, so they refetch too.
   useEffect(() => {
-    const type = (wsEvent as any)?.type
+    // ⚠️ `.event`, NOT `.type`. Every season-socket payload is keyed `event` (see
+    // api/event_models.py); `.type` is only ever sent BY the client, on identify and
+    // watch. Reading `.type` here yielded undefined for every message, so this effect
+    // never fired once and the panel below only ever refreshed on mount.
+    const type = (wsEvent as any)?.event ?? (wsEvent as any)?.type
     if (type === 'standings_update' || type === 'week_start' || type === 'game_end') load()
   }, [wsEvent, load])
 
