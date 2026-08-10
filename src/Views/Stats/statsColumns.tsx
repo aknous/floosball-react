@@ -72,9 +72,32 @@ const defRating: Column<StatsPlayerRow> = {
   tint: r => (r.impact.defensiveRating != null ? statRampColor(r.impact.defensiveRating) : undefined),
 }
 
+/**
+ * Win probability added, IN WINS.
+ *
+ * ⚠️ The stored figure is in PERCENTAGE POINTS — `floosball_game._resolvePlayWpa`
+ * takes the swing as `newHomeWp - previousHomeWp` off a 0-100 win probability and
+ * sums it over the season. So a season total arrives in the hundreds (measured on
+ * prod: the season-12 leader at 679.2), which reads as a meaningless number: no
+ * football WPA scale anywhere is quoted in percentage points.
+ *
+ * 100 points of accumulated swing is one full win's worth of leverage, so the
+ * column divides by that and says so in its label. 679.2 becomes +6.8 wins, which
+ * squares with the measured positional impact of a quarterback (+1.70 wins for a
+ * ±12% rating swing).
+ *
+ * ⚠️ DISPLAY ONLY. The raw value stays raw everywhere else — `MVP_WPA_WEIGHT` and
+ * the z-scores behind `mvpScore` consume it directly, and rescaling at the source
+ * would silently move the MVP ballot.
+ */
+const WPA_POINTS_PER_WIN = 100
+
 const wpa: Column<StatsPlayerRow> = {
-  key: 'wpa', label: 'WPA', width: W.rate,
-  cell: r => (r.impact.wpa == null ? dash : signed(r.impact.wpa.toFixed(1))),
+  key: 'wpa', label: 'WPA WINS', width: W.wideRate,
+  cell: r => (r.impact.wpa == null ? dash
+    : signed((r.impact.wpa / WPA_POINTS_PER_WIN).toFixed(1))),
+  // Sorted on the raw figure: dividing by a constant cannot change the order, and
+  // sorting the rounded display value would tie rows that are not actually tied.
   sort: r => r.impact.wpa ?? 0,
   tint: r => signedTint(r.impact.wpa),
 }

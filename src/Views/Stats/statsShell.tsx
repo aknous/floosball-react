@@ -8,14 +8,22 @@ import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shel
  * different table per position and read as four different pages.
  */
 
-/** The three column widths, and nothing else. */
+/** The column widths, and nothing else. */
 export const W = {
   /** counts — GP, REC, TD, INT */
   count: 44,
-  /** rates and ratings — RCV%, YPR, PERF, WPA */
+  /** rates and ratings — RCV%, YPR, PERF */
   rate: 52,
   /** volume and totals — YDS, PTS */
   volume: 58,
+  /**
+   * A rate whose LABEL needs the extra room, not its value.
+   *
+   * ⚠️ Added for `WPA WINS`. The unit has to be in the header — the figure is
+   * meaningless without it (see the wpa column) — and at `rate` the label ran into
+   * PERF beside it and the two read as one word, "PERFWPA WINS".
+   */
+  wideRate: 68,
 } as const
 
 export interface Column<Row> {
