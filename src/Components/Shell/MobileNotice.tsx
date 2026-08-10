@@ -45,15 +45,26 @@ const MobileNotice: React.FC = () => {
 
   return ReactDOM.createPortal(
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 10050,
+      // ⚠️ Anchored TOP LEFT, not centred, and sized off `vw` rather than a percentage
+      // of its parent. Centring only lands correctly when the box being centred in is
+      // exactly the visible width, and on a page whose content overflows horizontally
+      // it is not: the card ended up centred in the wider layout and its right-hand
+      // side ran off an iPhone. Anchored left it starts at a known 12px whatever the
+      // page is doing underneath.
+      position: 'fixed', top: 0, left: 0, zIndex: 10050,
+      width: '100vw', height: '100vh', maxWidth: '100vw',
       background: 'rgba(2,6,23,0.92)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '22px', fontFamily: FONT,
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start',
+      padding: '12px', boxSizing: 'border-box', overflow: 'hidden',
+      fontFamily: FONT,
     }}>
       <div style={{
-        width: '100%', maxWidth: '420px',
+        // Narrow enough for a 320px phone even before the vw clamp does anything.
+        width: 'min(340px, calc(100vw - 24px))',
+        maxHeight: 'calc(100vh - 24px)', overflowY: 'auto',
+        marginTop: '11vh', boxSizing: 'border-box',
         background: BG.card, border: `1px solid ${BORDER.raised}`,
-        padding: '24px 22px 20px',
+        padding: '22px 18px 18px',
       }}>
         <div style={{ ...font(700, 10, 1, '0.14em'), color: ACCENT.warning }}>
           REDESIGN IN PROGRESS
