@@ -1084,3 +1084,14 @@
 }
 .frontGrid > .frontHero { grid-column: 1 / -1; }
 .frontGrid.noRail { grid-template-columns: minmax(0, 1fr); }
+
+/* Phones: one column, the rail falls below the main column, and the page gives back
+   the 28px side padding that a 390px screen cannot spare. 900px matches
+   SHELL_MOBILE_MAX in tokens.ts, where the nav also becomes a drawer. */
+@media (max-width: 900px) {
+  .frontGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding: 14px 10px 28px !important;
+  }
+}

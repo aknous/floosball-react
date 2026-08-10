@@ -1,8 +1,7 @@
 import './index.css';
 import React, { useEffect, useState, useRef } from 'react'
-import Navbar from './Components/Navbar.js'
-import GameBar from './Components/GameBar'
 import { SidebarProvider } from './contexts/SidebarContext'
+import Navbar from './Components/Navbar.js'
 import AppShell from './Components/Shell/AppShell'
 import MobileNotice from './Components/Shell/MobileNotice'
 import FrontPage from './Views/Front/FrontPage'
@@ -57,7 +56,7 @@ import { ChakraProvider } from '@chakra-ui/react'
  * other way so old links and bookmarks still land somewhere sensible; `/dashboard/old`
  * keeps the original for comparison while the redesign settles.
  */
-function AppRoutes({ headerHeight }) {
+function AppRoutes() {
   return (
     <Routes>
       <Route exact path='/' element={<FrontPage />} />
@@ -68,7 +67,7 @@ function AppRoutes({ headerHeight }) {
       <Route exact path='/standings' element={<StandingsPage />} />
       <Route exact path='/prognostications' element={<PrognosticationsPage />} />
       <Route exact path='/dashboard' element={<Navigate to='/' replace />} />
-      <Route exact path='/dashboard/legacy' element={<DashboardNew headerHeight={headerHeight} />} />
+      <Route exact path='/dashboard/legacy' element={<DashboardNew />} />
       <Route exact path='/dashboard/old' element={<Dashboard />} />
       {/* The players list became the league's stats page — players and teams,
           any season, career, both sides of the ball. `/players` stays as a
@@ -92,55 +91,20 @@ function AppRoutes({ headerHeight }) {
 }
 
 /**
- * Desktop runs the redesigned shell (Components/Shell): full-width header, fixed 196px
- * nav, content column. Mobile keeps the original Navbar + GameBar, because the handoffs
- * are a fixed 1440px desktop layout and explicitly did not design a responsive collapse.
+ * ⚠️ ONE SHELL, phones included. Mobile used to fall through to the original Navbar,
+ * GameBar, BetaBanner and Footer, because the redesign handoffs were a fixed 1440px
+ * desktop layout with no responsive collapse drawn. That left two chromes to keep in
+ * step and put pre-redesign furniture around redesigned pages. `AppShell` now collapses
+ * its nav into a drawer below `SHELL_MOBILE_MAX` and every page stacks.
  */
 function AppLayout() {
-  const headerRef = useRef(null)
-  const [headerHeight, setHeaderHeight] = useState(64)
-  const isMobile = useIsMobile()
-
-  useEffect(() => {
-    if (isMobile && headerRef.current) {
-      const observer = new ResizeObserver(() => {
-        if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight)
-      })
-      observer.observe(headerRef.current)
-      return () => observer.disconnect()
-    }
-  }, [isMobile])
-
-  // ⚠️ Mounted ABOVE the desktop/mobile branch. Mobile does not render AppShell at all.
-  // It keeps the original Navbar and GameBar, because the redesign handoffs were
-  // desktop-only, so a notice living inside the shell would never appear on the one
-  // kind of device it is meant for.
-  const notice = <MobileNotice />
-
-  if (!isMobile) {
-    return (
-      <>
-        {notice}
-        <AppShell>
-          <AppRoutes headerHeight={headerHeight} />
-        </AppShell>
-      </>
-    )
-  }
-
   return (
-    <div className='min-h-screen relative font-pixel' style={{ backgroundColor: '#0f172a' }}>
-      {notice}
-      <div ref={headerRef} className='fixed w-full top-0 z-50'>
-        <Navbar />
-        <BetaBanner />
-      </div>
-      <div style={{ paddingTop: headerHeight, paddingBottom: 33 }}>
-        <GameBar />
-        <AppRoutes headerHeight={headerHeight} />
-        <Footer />
-      </div>
-    </div>
+    <>
+      <MobileNotice />
+      <AppShell>
+        <AppRoutes />
+      </AppShell>
+    </>
   )
 }
 

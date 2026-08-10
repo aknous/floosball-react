@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { usePickEmDay } from '@/hooks/usePickEmDay'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, RAIL_WIDTH, font } from '@/Components/Shell/tokens'
+import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, RAIL_WIDTH, SHELL_MOBILE_MAX, font } from '@/Components/Shell/tokens'
 import type { TeamStanding, LeagueStandings } from '@/Views/Standings/standingsTypes'
 import MatchupCard, { pickWasCorrect } from './MatchupCard'
 import AutoPickPanel from './AutoPickPanel'
@@ -47,7 +47,9 @@ const HeaderStat: React.FC<{ value: React.ReactNode; label: string; color?: stri
 
 const PrognosticationsPage: React.FC = () => {
   const { user, getToken } = useAuth()
-  const isMobile = useIsMobile()
+  // ⚠️ The SHELL's breakpoint, not the hook's 768 default. Between 768 and 900 the
+  // nav is already a drawer while this page still thought it had desktop room.
+  const isMobile = useIsMobile(SHELL_MOBILE_MAX)
   const {
     slots, day, loading, submitting, dirtyCount,
     setPick, pickFavoritesForSlot, submitAll,
@@ -157,7 +159,7 @@ const PrognosticationsPage: React.FC = () => {
       {/* Header band: what today is, and how far through it you are. */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap',
-        padding: '15px 28px', background: BG.shell,
+        padding: isMobile ? '12px 12px' : '15px 28px', background: BG.shell,
         borderBottom: `1px solid ${BORDER.hairline}`,
       }}>
         <span>
@@ -184,7 +186,7 @@ const PrognosticationsPage: React.FC = () => {
 
       <div style={{
         display: 'flex', alignItems: 'flex-start', gap: '20px',
-        padding: '18px 28px 28px',
+        padding: isMobile ? '12px 10px 24px' : '18px 28px 28px',
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           {loading ? (

@@ -90,6 +90,13 @@ export const TABULAR = { fontVariantNumeric: 'tabular-nums' } as const
  */
 export const FOOTER_HEIGHT = 40
 
+/**
+ * Below this the shell switches to its phone layout: the nav becomes a drawer and
+ * every page stacks. 900 rather than 768 because the three-column pages (front page,
+ * game page) need more than a phone's width before their rails are worth showing.
+ */
+export const SHELL_MOBILE_MAX = 900
+
 export const NAV_WIDTH = 196
 export const RAIL_WIDTH = 330
 

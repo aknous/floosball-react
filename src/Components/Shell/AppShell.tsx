@@ -1,31 +1,47 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import AppHeader from './AppHeader'
 import AppNav from './AppNav'
-import { BG, BORDER, FONT } from './tokens'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { BG, FONT, SHELL_MOBILE_MAX } from './tokens'
 
 /**
- * The frame the three redesigned pages sit in: full-width header, fixed 196px nav, and a
- * content column that owns its own padding.
+ * The frame every page sits in: header, nav, and a content column that owns its padding.
  *
  * ⚠️ The shell fills the VIEWPORT. The handoffs were drawn at 1440px and an earlier
- * version of this capped the shell there and centred it, which reproduced the prototype
- * faithfully and looked wrong in a real browser — two dead gutters of page background on
- * a wide monitor. 1440px was the artboard, not a layout constraint. Every page inside
- * uses flexible columns (the nav is fixed, the content is `1fr`, the front page's rail is
- * a fixed 330px), so they all stretch correctly.
+ * version capped the shell there and centred it, which reproduced the prototype
+ * faithfully and looked wrong in a real browser: two dead gutters of page background on
+ * a wide monitor. 1440px was the artboard, not a layout constraint.
  *
- * Responsive below desktop was not designed; the old mobile Navbar still covers phones.
+ * ⚠️ MOBILE uses this shell too, with the nav as a drawer. It used to fall through to a
+ * separate legacy chrome (the old Navbar, GameBar, BetaBanner and Footer), which meant
+ * two headers to keep in step and a phone seeing pre-redesign furniture around
+ * redesigned pages. One shell, one header, and the nav slides in.
  */
 const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const isMobile = useIsMobile(SHELL_MOBILE_MAX)
+  const [navOpen, setNavOpen] = useState(false)
+  const location = useLocation()
+
+  // Going somewhere closes the drawer. Without this it stays open over the page you
+  // just asked for.
+  useEffect(() => { setNavOpen(false) }, [location.pathname])
+
+  // A drawer over the page must not leave the page scrolling underneath it.
+  useEffect(() => {
+    if (!isMobile) return
+    document.body.style.overflow = navOpen ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [navOpen, isMobile])
+
   return (
   <div
     className="font-pixel"
     style={{
-      // ⚠️ The SHELL owns the viewport and does not scroll; the content column
-      // does. With the document scrolling instead, a full-height nav could only
-      // be `sticky`, and once the header scrolled away the nav was short by
-      // exactly the header's height — you could scroll past its bottom edge and
-      // see the page behind it. Nothing to be short of if the page never moves.
+      // ⚠️ The SHELL owns the viewport and does not scroll; the content column does.
+      // With the document scrolling instead, a full-height nav could only be `sticky`,
+      // and once the header scrolled away the nav was short by exactly the header's
+      // height. Nothing to be short of if the page never moves.
       height: '100dvh',
       overflow: 'hidden',
       width: '100%',
@@ -35,11 +51,31 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       flexDirection: 'column',
     }}
   >
-    <AppHeader />
-    <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-      <AppNav />
-      {/* The one scroller on the page. No footer to reserve height for either —
-          the version badge lives at the foot of the nav. */}
+    <AppHeader onOpenNav={isMobile ? () => setNavOpen(true) : undefined} />
+    <div style={{ display: 'flex', flex: 1, minHeight: 0, position: 'relative' }}>
+      {isMobile ? (
+        navOpen && (
+          <>
+            <div
+              onClick={() => setNavOpen(false)}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 70,
+                background: 'rgba(2,6,23,0.72)',
+              }}
+            />
+            <div style={{
+              position: 'fixed', top: 0, bottom: 0, left: 0, zIndex: 71,
+              boxShadow: '2px 0 24px rgba(0,0,0,0.55)',
+            }}>
+              <AppNav />
+            </div>
+          </>
+        )
+      ) : (
+        <AppNav />
+      )}
+      {/* The one scroller on the page. No footer to reserve height for either: the
+          version badge lives at the foot of the nav. */}
       <main style={{
         flex: 1, minWidth: 0, minHeight: 0, overflowY: 'auto',
         display: 'flex', flexDirection: 'column',

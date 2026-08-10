@@ -1,8 +1,9 @@
+import { useIsMobile } from '@/hooks/useIsMobile'
 import React from 'react'
 import { Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import PlayerAvatar from '@/Components/PlayerAvatar'
-import { BG, BORDER, TEXT, ACCENT, TABULAR, font } from '@/Components/Shell/tokens'
+import { BG, BORDER, TEXT, ACCENT, TABULAR, font, SHELL_MOBILE_MAX } from '@/Components/Shell/tokens'
 import { Stars } from '@/Components/Stars'
 import { SectionHeader, RelationTag } from './frontPieces'
 
@@ -36,6 +37,10 @@ const TopPlayers: React.FC<{
   categoryLabels: string[]
   fantasyPlayerIds: Set<number>
 }> = ({ rows, categoryLabels, fantasyPlayerIds }) => {
+  // ⚠️ A phone keeps rank, player, stat and value. The stars, the fantasy tag and
+  // the position/club line are all on the player's own page, and together they were
+  // 160px of a 370px row.
+  const narrow = useIsMobile(SHELL_MOBILE_MAX)
   // A brand-new league has no leader in any category yet. The panel still renders, one
   // blank row per leaderboard, rather than vanishing (owner) — an absent module reads as
   // broken, where a labelled empty row reads as "nobody has done this yet". The rows are
@@ -53,7 +58,8 @@ const TopPlayers: React.FC<{
               key={row.id}
               className="row"
               style={{
-                display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px',
+                display: 'flex', alignItems: 'center', gap: narrow ? '8px' : '12px',
+                padding: narrow ? '10px 11px' : '11px 16px', minWidth: 0,
                 borderBottom: i < rows.length - 1 ? `1px solid ${BORDER.hairline}` : 'none',
               }}
             >
@@ -64,25 +70,31 @@ const TopPlayers: React.FC<{
               <PlayerHoverCard playerId={row.id} playerName={row.name}>
                 <Link
                   to={`/players/${row.id}`}
-                  style={{ ...font(800, 13), color: TEXT.strong, whiteSpace: 'nowrap', textDecoration: 'none' }}
+                  style={{
+                    ...font(800, 13), color: TEXT.strong, whiteSpace: 'nowrap',
+                    textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis',
+                    display: 'block', maxWidth: narrow ? '150px' : 'none',
+                  }}
                 >{row.name}</Link>
               </PlayerHoverCard>
               {/* Stars sit BESIDE the name, not out at the far right — a rating belongs to
                   the player, and the shared component colours it by band (gold/green/blue/
                   grey/red) instead of the flat amber this used to draw. */}
-              <Stars stars={row.ratingStars} size={18} tracking={2} />
-              {fantasy && <RelationTag label="FANTASY" color={ACCENT.success} />}
-              <span style={{ ...font(500, 11, 1, '0.06em'), color: TEXT.muted, whiteSpace: 'nowrap' }}>
-                {row.position} · {row.teamAbbr}
-              </span>
+              {!narrow && <Stars stars={row.ratingStars} size={18} tracking={2} />}
+              {!narrow && fantasy && <RelationTag label="FANTASY" color={ACCENT.success} />}
+              {!narrow && (
+                <span style={{ ...font(500, 11, 1, '0.06em'), color: TEXT.muted, whiteSpace: 'nowrap' }}>
+                  {row.position} · {row.teamAbbr}
+                </span>
+              )}
               <span style={{ flex: 1 }} />
               <span style={{
                 ...font(700, 12, 1, '0.08em'), color: TEXT.secondary,
-                width: '104px', textAlign: 'right', flexShrink: 0,
+                width: narrow ? '74px' : '104px', textAlign: 'right', flexShrink: 0,
               }}>{row.statLabel}</span>
               <span style={{
                 ...font(800, 19), color: TEXT.primary, ...TABULAR,
-                width: '68px', textAlign: 'right', flexShrink: 0,
+                width: narrow ? '52px' : '68px', textAlign: 'right', flexShrink: 0,
               }}>{row.statValue}</span>
             </div>
           )

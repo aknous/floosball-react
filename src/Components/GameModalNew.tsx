@@ -347,6 +347,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
    * yet, because plays are coming.
    */
   const hasPlayFeed = gameDataStatusForPlays(gameData)
+  // Phone: the box score header gives its crests and type back to the club names.
+  const narrowBox = isMobile
   useEffect(() => {
     if (!hasPlayFeed && activeTab === 'plays') setActiveTab('box')
   }, [hasPlayFeed, activeTab])
@@ -2763,25 +2765,42 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                       marginBottom: '12px',
                       backgroundImage: `linear-gradient(90deg, ${homeColor}1a 0%, transparent 35%, transparent 65%, ${awayColor}1a 100%)`,
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end', minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: narrowBox ? '7px' : '12px', justifyContent: 'flex-end', minWidth: 0 }}>
+                        {/* ⚠️ A phone shows the ABBREVIATION, not the city and full name.
+                            Three blocks either side of a "vs" gutter leaves about 46px per
+                            club at 375px, which truncated "Cranes" to "Cran..." however far
+                            the crest and type were shrunk. An abbreviation is unambiguous
+                            and always fits; the full name is on the scoreboard above. */}
                         <div style={{ textAlign: 'right', minWidth: 0 }}>
-                          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeCity}</div>
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeName}</div>
-                          <div style={{ fontSize: '11px', fontWeight: 700, color: homeColor, letterSpacing: '0.08em', marginTop: '2px' }}>{homeAbbr}</div>
+                          {narrowBox ? (
+                            <div style={{ fontSize: '17px', fontWeight: 800, color: homeColor, letterSpacing: '0.06em' }}>{homeAbbr}</div>
+                          ) : (
+                            <>
+                              <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeCity}</div>
+                              <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeName}</div>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: homeColor, letterSpacing: '0.08em', marginTop: '2px' }}>{homeAbbr}</div>
+                            </>
+                          )}
                         </div>
-                        <img src={`/avatars/${homeId}.png`} alt={homeName} style={{ width: '52px', height: '52px', flexShrink: 0 }} />
+                        <img src={`/avatars/${homeId}.png`} alt={homeName} style={{ width: narrowBox ? '38px' : '52px', height: narrowBox ? '38px' : '52px', flexShrink: 0 }} />
                       </div>
                       <div style={{
                         fontSize: '11px', fontWeight: 700, color: '#475569',
                         textTransform: 'uppercase', letterSpacing: '0.15em',
                         padding: '0 4px',
                       }}>vs</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-start', minWidth: 0 }}>
-                        <img src={`/avatars/${awayId}.png`} alt={awayName} style={{ width: '52px', height: '52px', flexShrink: 0 }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: narrowBox ? '7px' : '12px', justifyContent: 'flex-start', minWidth: 0 }}>
+                        <img src={`/avatars/${awayId}.png`} alt={awayName} style={{ width: narrowBox ? '38px' : '52px', height: narrowBox ? '38px' : '52px', flexShrink: 0 }} />
                         <div style={{ textAlign: 'left', minWidth: 0 }}>
-                          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayCity}</div>
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayName}</div>
-                          <div style={{ fontSize: '11px', fontWeight: 700, color: awayColor, letterSpacing: '0.08em', marginTop: '2px' }}>{awayAbbr}</div>
+                          {narrowBox ? (
+                            <div style={{ fontSize: '17px', fontWeight: 800, color: awayColor, letterSpacing: '0.06em' }}>{awayAbbr}</div>
+                          ) : (
+                            <>
+                              <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayCity}</div>
+                              <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayName}</div>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: awayColor, letterSpacing: '0.08em', marginTop: '2px' }}>{awayAbbr}</div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -3026,17 +3045,23 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                       marginBottom: '12px',
                       backgroundImage: `linear-gradient(90deg, ${homeColor}1a 0%, transparent 35%, transparent 65%, ${awayColor}1a 100%)`,
                     }}>
-                      {/* Home side */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end', minWidth: 0 }}>
+                      {/* Home side. Abbreviation only on a phone, same as the box score. */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: narrowBox ? '7px' : '12px', justifyContent: 'flex-end', minWidth: 0 }}>
                         <div style={{ textAlign: 'right', minWidth: 0 }}>
-                          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeCity}</div>
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeName}</div>
-                          <div style={{ fontSize: '11px', fontWeight: 700, color: homeColor, letterSpacing: '0.08em', marginTop: '2px' }}>{homeAbbr}</div>
+                          {narrowBox ? (
+                            <div style={{ fontSize: '17px', fontWeight: 800, color: homeColor, letterSpacing: '0.06em' }}>{homeAbbr}</div>
+                          ) : (
+                            <>
+                              <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeCity}</div>
+                              <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeName}</div>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: homeColor, letterSpacing: '0.08em', marginTop: '2px' }}>{homeAbbr}</div>
+                            </>
+                          )}
                         </div>
                         <img
                           src={`/avatars/${homeId}.png`}
                           alt={homeName}
-                          style={{ width: '52px', height: '52px', flexShrink: 0 }}
+                          style={{ width: narrowBox ? '38px' : '52px', height: narrowBox ? '38px' : '52px', flexShrink: 0 }}
                         />
                       </div>
                       {/* Center divider */}
@@ -3053,9 +3078,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                           style={{ width: '52px', height: '52px', flexShrink: 0 }}
                         />
                         <div style={{ textAlign: 'left', minWidth: 0 }}>
+                          {narrowBox ? (
+                            <div style={{ fontSize: '17px', fontWeight: 800, color: awayColor, letterSpacing: '0.06em' }}>{awayAbbr}</div>
+                          ) : (
+                            <>
                           <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayCity}</div>
                           <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayName}</div>
                           <div style={{ fontSize: '11px', fontWeight: 700, color: awayColor, letterSpacing: '0.08em', marginTop: '2px' }}>{awayAbbr}</div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
