@@ -186,7 +186,7 @@ const WelcomeModal: React.FC = () => {
               <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                 <span style={{ color: '#f59e0b', fontSize: '13px', flexShrink: 0, marginTop: '1px' }}>!</span>
                 <span style={{ color: '#cbd5e1', fontSize: '13px', lineHeight: '1.5' }}>
-                  Your lineup is empty. Head to <strong style={{ color: '#e2e8f0' }}>Fantasy</strong> and equip a card in each slot — those cards are your lineup, and they score for you every week.
+                  Your lineup is empty. Head to <strong style={{ color: '#e2e8f0' }}>Fantasy</strong> and equip a card in each slot. Those cards are your lineup, and they score for you every week.
                 </span>
               </div>
             </div>
