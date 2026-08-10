@@ -59,7 +59,15 @@ const GameFeedComposer: React.FC<{
   /** The player and sideline voices, appended below the fan posts in the same
    *  scroller — the rail is one feed, not two stacked ones. */
   extraEntries?: React.ReactNode
-}> = ({ gameId, extraEntries }) => {
+  /**
+   * Whether `extraEntries` actually has anything in it.
+   *
+   * ⚠️ A ReactNode is always truthy, even when it renders to nothing, so the feed
+   * cannot work this out by looking. The caller knows and has to say. It is only
+   * needed for the empty state below.
+   */
+  hasExtraEntries?: boolean
+}> = ({ gameId, extraEntries, hasExtraEntries = false }) => {
   const { user, getToken } = useAuth()
   const [groups, setGroups] = useState<CatalogGroup[]>([])
   const [posts, setPosts] = useState<FeedPost[]>([])
@@ -256,6 +264,19 @@ const GameFeedComposer: React.FC<{
         )
       })}
       {extraEntries}
+      {/* ⚠️ THE EMPTY STATE BELONGS HERE, not in the caller's extraEntries, because
+          this is the only place that can see BOTH halves of the feed. It used to sit
+          in gameBleachers gated on the rail entries alone, so posting a shout left
+          "Nobody has said anything yet." sitting underneath the shout you had just
+          made: `posts` had grown, and the condition could not see it. */}
+      {posts.length === 0 && !hasExtraEntries && (
+        <div style={{
+          padding: '28px 16px', textAlign: 'center',
+          ...font(400, 12, 1.5), color: TEXT.muted,
+        }}>
+          Nobody has said anything yet.
+        </div>
+      )}
       </div>
     </div>
   )
