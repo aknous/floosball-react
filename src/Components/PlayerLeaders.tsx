@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { AWAKENED_NAME } from '@/Components/Shell/tokens'
 import { Link } from 'react-router-dom'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -213,9 +214,9 @@ export const PlayerLeaders: React.FC<{ embedded?: boolean }> = ({ embedded = fal
                     to={`/players/${player.id}`}
                     style={{
                       fontSize: '14px',
-                      color: player.awakened ? '#60a5fa' : '#e2e8f0',
+                      color: '#e2e8f0',
                       textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      ...(player.awakened ? { fontWeight: 600, textShadow: '0 0 10px rgba(96,165,250,0.95), 0 0 22px rgba(96,165,250,0.6), 0 0 34px rgba(96,165,250,0.32)' } : {}),
+                      ...(player.awakened ? AWAKENED_NAME : {}),
                     }}
                   >
                     {player.name}

@@ -137,6 +137,7 @@ const FrontPage: React.FC = () => {
           teamId: p.teamId,
           teamColor: p.teamColor,
           ratingStars: p.ratingStars,
+          awakened: !!p.awakened,
           statLabel: label,
           statValue: format ? format(p.statValue) : Number(p.statValue).toLocaleString(),
           raw: p.statValue,

@@ -116,3 +116,20 @@ export const font = (
   lineHeight: typeof lineHeight === 'number' ? lineHeight : lineHeight,
   ...(letterSpacing ? { letterSpacing } : {}),
 })
+
+/**
+ * An AWAKENED player's name: blue, and lit.
+ *
+ * ⚠️ ONE definition, imported everywhere a player is listed. The glow means the same
+ * thing on every surface, so a leader board that lights a name while the stats table
+ * leaves it plain reads as a bug in whichever one the reader trusts less. It started
+ * as an inline literal in PlayerLeaders and was about to become a third copy.
+ *
+ * Layered shadows rather than one: a single blur reads as a smudge at 14px, three at
+ * widening radii read as light coming off the text.
+ */
+export const AWAKENED_NAME = {
+  color: '#60a5fa',
+  fontWeight: 600,
+  textShadow: '0 0 10px rgba(96,165,250,0.95), 0 0 22px rgba(96,165,250,0.6), 0 0 34px rgba(96,165,250,0.32)',
+} as const
