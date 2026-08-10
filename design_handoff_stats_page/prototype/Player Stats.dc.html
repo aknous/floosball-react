@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-Regular.ttf');font-weight:400;font-style:normal}
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-Medium.ttf');font-weight:500;font-style:normal}
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-SemiBold.ttf');font-weight:600;font-style:normal}
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-Bold.ttf');font-weight:700;font-style:normal}
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-ExtraBold.ttf');font-weight:800;font-style:normal}
+html,body{margin:0;padding:0;background:#070c15;font-family:'pressStart',ui-monospace,monospace;color:#e2e8f0}
+a{color:#f1f5f9;text-decoration:none}
+a:hover{color:#ffffff}
+.hd:hover{color:#ffffff!important}
+.row:hover{background-color:rgba(255,255,255,0.04)!important}
+.plate{transition:border-color 140ms ease,background-color 140ms ease}
+.plate:hover{border-color:#475569!important;background:#1b2739!important}
+.chip:hover{border-color:#64748b!important;color:#f1f5f9!important}
+.th:hover{color:#e2e8f0!important}
+</style>
+</helmet>
+
+<section style="padding:56px 64px 40px;display:flex;flex-direction:column;gap:28px">
+
+  <div style="display:flex;align-items:baseline;gap:16px;max-width:1060px">
+    <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.14em;background:#ec3013;padding:6px 9px">TURN 2</span>
+    <div>
+      <h2 style="font:800 26px/1 'pressStart',monospace;color:#f8fafc;line-height:1.1;margin:0;letter-spacing:-0.03em">Filters up top, columns get the room</h2>
+      <p style="font:400 13px/1 'pressStart',monospace;color:#94a3b8;line-height:1.6;margin:8px 0 0;text-wrap:pretty">Leaders band and MVP are gone &mdash; pure stats. <a href="#1b">1b</a>&rsquo;s controls (pill groups, status chips with counts) move into a filter bar across the top, so the 232px rail comes back as table width. That buys five more columns at the same density: catch rate, air yards, YAC, separation, drops and long all sit on screen with the box-score line, no expand and no horizontal scroll. The page is now the whole stats surface: a <strong style="color:#cbd5e1;font-weight:700">PLAYERS / TEAMS</strong> switch beside the title, and team stats get the identical shell &mdash; <a href="#2b">2b</a> offense, <a href="#2c">2c</a> defense, the SIDE pill swapping the column set the same way the position filter does for players. One row height, one header, three column widths, one number style, everywhere.</p>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:56px;align-items:flex-start;flex-wrap:wrap">
+    <div id="2a" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px;max-width:1440px">
+        <span style="font:800 12px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.1em;background:#f8fafc;padding:6px 9px">2a</span>
+        <span style="font:800 17px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.02em">Filter bar</span>
+        <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5">Everything across the top. Eighteen columns, nothing hidden.</span>
+      </div>
+
+      <div data-screen-label="2a Filter bar" style="width:1440px;background:#0b1220;border:1px solid #1e293b;display:flex;flex-direction:column;overflow:hidden">
+
+        <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:22px;padding:14px 22px;background:#0f172a;border-bottom:1px solid #1e293b">
+          <div style="display:flex;align-items:center;gap:9px">
+            <img src="assets/avatars/league_logo.png" alt="" width="28" height="28" style="border-radius:50%">
+            <span style="font:800 20px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.02em">Floosball</span>
+            <span style="font:700 9px/1 'pressStart',monospace;color:#f59e0b;background:rgba(245,158,11,0.28);padding:3px 5px;letter-spacing:0.06em">BETA</span>
+          </div>
+          <span style="width:1px;height:22px;background:#1e293b"></span>
+          <span style="font:600 13px/1 'pressStart',monospace;color:#cbd5e1;">Season 16</span>
+          <span style="font:400 13px/1 'pressStart',monospace;color:#94a3b8;">Week 15 of 28</span>
+          <span style="flex:1"></span>
+          <label style="display:flex;align-items:center;gap:8px;background:#131e2f;border:1px solid #1e293b;padding:7px 11px;width:196px">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="#94a3b8"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+            <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;">Teams, players, cards</span>
+          </label>
+          <a href="#2a" class="hd" style="display:flex;align-items:center;gap:6px;font:700 13px/1 'pressStart',monospace;color:#f59e0b;">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8"></circle></svg>1,240
+          </a>
+          <a href="#2a" class="plate" style="display:flex;align-items:center;gap:9px;background:#131e2f;border:1px solid #1e293b;padding:5px 10px 5px 6px">
+            <img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+            <span style="font:600 12px/1 'pressStart',monospace;color:#cbd5e1;">quiet_oyster_41</span>
+          </a>
+        </div>
+        </sc-if>
+
+        <div style="display:flex;flex:1;min-height:0">
+          <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+          <div style="width:196px;flex-shrink:0;background:#0f172a;border-right:1px solid #1e293b;padding:18px 0 22px;display:flex;flex-direction:column">
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:0 18px 9px">THE LEAGUE</div>
+            <a href="#2a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2 2 8v10h6v-6h4v6h6V8l-8-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Front page</span>
+            </a>
+            <a href="#2a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 2h2v1l11 4-11 4v7H3V2z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Games</span><span style="flex:1"></span><span style="font:700 10px/1 'pressStart',monospace;color:#4ade80;">16</span>
+            </a>
+            <a href="#2a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h14v3H3V3zm0 5h14v3H3V8zm0 5h14v3H3v-3z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Standings</span>
+            </a>
+            <a href="#2a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h6v6H3V3zm0 8h6v6H3v-6zm8-8h6v6h-6V3zm0 8h6v6h-6v-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Teams</span>
+            </a>
+            <a href="#2a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#f1f5f9;background:rgba(74,222,128,0.10);border-left:3px solid #4ade80">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
+              <span style="font:700 13px/1 'pressStart',monospace">Stats</span>
+            </a>
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:22px 18px 9px">YOURS</div>
+            <a href="#2a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <img src="assets/avatars/3.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%">
+              <span style="font:500 13px/1 'pressStart',monospace;color:inherit;">Broads</span>
+              <span style="flex:1"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:#f472b6;flex-shrink:0"></span>
+            </a>
+            <a href="#2a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M2 12l4-6 4 4 4-7 4 9v4H2v-4z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Prognostications</span>
+            </a>
+            <a href="#2a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4h14v3H3V4zm1 5h12v7H4V9z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Fantasy</span>
+            </a>
+            <a href="#2a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M5 2h10a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1zm1 3v4h8V5H6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Cards</span>
+            </a>
+            <span style="flex:1"></span>
+            <div style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5;letter-spacing:0.12em;padding:18px 18px 0">INSTANCE 498b<br>SIM 2.4.1</div>
+          </div>
+          </sc-if>
+
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+            <div style="display:flex;align-items:center;gap:14px;padding:17px 24px 15px;border-bottom:1px solid #1e293b">
+              <h1 style="font:800 22px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.025em;margin:0">Stats</h1>
+              <div style="display:flex;background:#0f172a;border:1px solid #1e293b">
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:8px 13px;background:#cbd5e1">PLAYERS</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 13px;border-left:1px solid #1e293b">TEAMS</span>
+              </div>
+              <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8">Wide receivers &middot; 96 players</span>
+              <span style="flex:1"></span>
+              <a href="#2a" class="plate" style="display:flex;align-items:center;gap:9px;background:#131e2f;border:1px solid #334155;padding:8px 12px">
+                <span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em">SEASON</span>
+                <span style="font:800 13px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">16</span>
+                <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 8l5 5 5-5"></path></svg>
+              </a>
+              <div style="display:flex;background:#0f172a;border:1px solid #1e293b">
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:9px 14px;background:#cbd5e1">SEASON</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:9px 14px;border-left:1px solid #1e293b">CAREER</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 24px;background:#0d1526;border-bottom:1px solid #1e293b;flex-wrap:wrap">
+              <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em;width:64px;flex-shrink:0">POSITION</span>
+              <div style="display:flex;gap:5px">
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">ALL</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">QB</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">RB</span>
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;background:#cbd5e1;border:1px solid #cbd5e1;padding:6px 10px">WR</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">TE</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">K</span>
+              </div>
+              <span style="width:1px;height:24px;background:#334155"></span>
+              <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">DEFENSE</span>
+              <div style="display:flex;gap:5px">
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">S</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">LB</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">CB</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">DE</span>
+              </div>
+              <span style="flex:1"></span>
+              <span style="font:600 11px/1 'pressStart',monospace;color:#38bdf8;letter-spacing:0.06em;white-space:nowrap">3 SELECTED</span>
+              <a href="#2a" class="plate" style="display:flex;align-items:center;gap:8px;background:rgba(56,189,248,0.12);border:1px solid #38bdf8;padding:7px 13px">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="#38bdf8" style="display:block"><path d="M3 3h5v14H3V3zm9 0h5v14h-5V3z"></path></svg>
+                <span style="font:800 11px/1 'pressStart',monospace;color:#7dd3fc;letter-spacing:0.08em;white-space:nowrap">COMPARE</span>
+              </a>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 24px;background:#0d1526;border-bottom:1px solid #334155;flex-wrap:wrap">
+              <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em;width:64px;flex-shrink:0">STATUS</span>
+              <div style="display:flex;gap:5px">
+                <span style="display:flex;align-items:center;gap:7px;font:600 11px/1 'pressStart',monospace;color:#e2e8f0;background:rgba(56,189,248,0.12);border:1px solid #38bdf8;padding:6px 10px">Active<span style="font:500 10px/1 'pressStart',monospace;color:#7dd3fc;font-variant-numeric:tabular-nums">96</span></span>
+                <span style="display:flex;align-items:center;gap:7px;font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">Free agents<span style="font:500 10px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">11</span></span>
+                <span style="display:flex;align-items:center;gap:7px;font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">Prospects<span style="font:500 10px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">24</span></span>
+                <span style="display:flex;align-items:center;gap:7px;font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">Retired<span style="font:500 10px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">418</span></span>
+                <span style="display:flex;align-items:center;gap:7px;font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">Followed<span style="font:500 10px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">7</span></span>
+              </div>
+              <span style="width:1px;height:24px;background:#334155"></span>
+              <label style="display:flex;align-items:center;gap:8px;background:#0b1220;border:1px solid #1e293b;padding:7px 10px;width:220px">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="#94a3b8" style="display:block"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+                <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">Search player by name</span>
+              </label>
+              <span style="flex:1"></span>
+              <a href="#2a" class="hd" style="font:600 11px/1 'pressStart',monospace;color:#94a3b8;white-space:nowrap">Reset all filters</a>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:0;padding:0 24px;background:#0f172a;border-bottom:1px solid #334155">
+              <span style="width:24px;flex-shrink:0"></span>
+              <span class="th" style="width:214px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0">PLAYER</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0">TEAM</span>
+              <span style="flex:1;min-width:0"></span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">GP</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">REC</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">TGT</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">RCV%</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:800 10px/1 'pressStart',monospace;color:#e2e8f0;letter-spacing:0.1em;padding:10px 0;text-align:right">YDS &#9660;</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">YPR</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">AIR</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">YAC</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">SEP</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">DRP</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">LNG</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">TD</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">PERF</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">WPA</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">PTS</span>
+            </div>
+
+            <div style="background:#0b1220">
+
+              <div class="row" style="display:flex;align-items:center;gap:0;padding:0 24px;border-bottom:1px solid #16202f;background:rgba(56,189,248,0.07);box-shadow:inset 3px 0 0 #38bdf8">
+                <span style="width:24px;flex-shrink:0;display:flex;align-items:center"><span style="width:12px;height:12px;background:#38bdf8;display:flex;align-items:center;justify-content:center"><svg width="8" height="8" viewBox="0 0 20 20" fill="none" stroke="#0b1220" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4 4 8-8"></path></svg></span></span>
+                <span style="width:214px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:7px 0"><img src="assets/avatars/3.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%"><a href="#2a" style="font:600 12px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Coco Mattel</a></span>
+                <span style="width:52px;flex-shrink:0;font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">PHI</span>
+                <span style="flex:1;min-width:0"></span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">71</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">106</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">67.0</span>
+                <span style="width:58px;flex-shrink:0;font:700 12px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">1,142</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">16.1</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">812</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">330</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">68</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">4</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">47</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">9</span>
+                <span style="width:52px;flex-shrink:0;font:600 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">92</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">+3.8</span>
+                <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">168.2</span>
+              </div>
+
+              <div class="row" style="display:flex;align-items:center;gap:0;padding:0 24px;border-bottom:1px solid #16202f;background:rgba(56,189,248,0.07);box-shadow:inset 3px 0 0 #38bdf8">
+                <span style="width:24px;flex-shrink:0;display:flex;align-items:center"><span style="width:12px;height:12px;background:#38bdf8;display:flex;align-items:center;justify-content:center"><svg width="8" height="8" viewBox="0 0 20 20" fill="none" stroke="#0b1220" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4 4 8-8"></path></svg></span></span>
+                <span style="width:214px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:7px 0"><img src="assets/avatars/22.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%"><a href="#2a" style="font:600 12px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Kevin Oddly</a></span>
+                <span style="width:52px;flex-shrink:0;font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">SFP</span>
+                <span style="flex:1;min-width:0"></span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">68</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">112</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">60.7</span>
+                <span style="width:58px;flex-shrink:0;font:700 12px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">1,088</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">16.0</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">795</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">293</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#eab308;text-align:right;font-variant-numeric:tabular-nums">61</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">5</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">54</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">7</span>
+                <span style="width:52px;flex-shrink:0;font:600 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">86</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">+2.4</span>
+                <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">152.8</span>
+              </div>
+
+              <div class="row" style="display:flex;align-items:center;gap:0;padding:0 24px;border-bottom:1px solid #16202f;background:rgba(56,189,248,0.07);box-shadow:inset 3px 0 0 #38bdf8">
+                <span style="width:24px;flex-shrink:0;display:flex;align-items:center"><span style="width:12px;height:12px;background:#38bdf8;display:flex;align-items:center;justify-content:center"><svg width="8" height="8" viewBox="0 0 20 20" fill="none" stroke="#0b1220" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4 4 8-8"></path></svg></span></span>
+                <span style="width:214px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:7px 0"><img src="assets/avatars/21.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%"><a href="#2a" style="font:600 12px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Marzipan Dukes</a></span>
+                <span style="width:52px;flex-shrink:0;font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">MIA</span>
+                <span style="flex:1;min-width:0"></span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">74</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">109</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">67.9</span>
+                <span style="width:58px;flex-shrink:0;font:700 12px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">1,061</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14.3</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">690</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">371</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">72</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">3</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">39</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">6</span>
+                <span style="width:52px;flex-shrink:0;font:600 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">88</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">+2.9</span>
+                <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">150.1</span>
+              </div>
+
+              <sc-for list="{{ wideRows }}" as="w" hint-placeholder-count="11">
+                <div class="row" style="display:flex;align-items:center;gap:0;padding:0 24px;border-bottom:1px solid #16202f">
+                  <span style="width:24px;flex-shrink:0;display:flex;align-items:center"><span style="width:12px;height:12px;border:1px solid #475569;display:block"></span></span>
+                  <span style="width:214px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:7px 0"><img src="{{ w.avatar }}" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%"><a href="#2a" style="font:600 12px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ w.name }}</a></span>
+                  <span style="width:52px;flex-shrink:0;font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">{{ w.team }}</span>
+                  <span style="flex:1;min-width:0"></span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ w.gp }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ w.rec }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ w.tgt }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ w.rcv }}</span>
+                  <span style="width:58px;flex-shrink:0;font:700 12px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">{{ w.yds }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ w.ypr }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ w.air }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ w.yac }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:{{ w.sepColor }};text-align:right;font-variant-numeric:tabular-nums">{{ w.sep }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ w.drp }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ w.lng }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ w.td }}</span>
+                  <span style="width:52px;flex-shrink:0;font:600 12px/1 'pressStart',monospace;color:{{ w.perfColor }};text-align:right;font-variant-numeric:tabular-nums">{{ w.perf }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:{{ w.wpaColor }};text-align:right;font-variant-numeric:tabular-nums">{{ w.wpa }}</span>
+                  <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ w.pts }}</span>
+                </div>
+              </sc-for>
+
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 24px">
+                <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">Showing {{ shownCount }} of 96 wide receivers</span>
+                <span style="flex:1"></span>
+                <a href="#2a" class="chip" style="font:700 11px/1 'pressStart',monospace;color:#cbd5e1;border:1px solid #334155;padding:7px 14px;letter-spacing:0.06em">LOAD MORE</a>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="2b" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px;max-width:1440px">
+        <span style="font:800 12px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.1em;background:#f8fafc;padding:6px 9px">2b</span>
+        <span style="font:800 17px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.02em">Teams &middot; offense</span>
+        <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5">Same shell, team rows. All 24, ranked.</span>
+      </div>
+
+      <div data-screen-label="2b Teams offense" style="width:1440px;background:#0b1220;border:1px solid #1e293b;display:flex;flex-direction:column;overflow:hidden">
+        <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:22px;padding:14px 22px;background:#0f172a;border-bottom:1px solid #1e293b">
+          <div style="display:flex;align-items:center;gap:9px">
+            <img src="assets/avatars/league_logo.png" alt="" width="28" height="28" style="border-radius:50%">
+            <span style="font:800 20px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.02em">Floosball</span>
+            <span style="font:700 9px/1 'pressStart',monospace;color:#f59e0b;background:rgba(245,158,11,0.28);padding:3px 5px;letter-spacing:0.06em">BETA</span>
+          </div>
+          <span style="width:1px;height:22px;background:#1e293b"></span>
+          <span style="font:600 13px/1 'pressStart',monospace;color:#cbd5e1;">Season 16</span>
+          <span style="font:400 13px/1 'pressStart',monospace;color:#94a3b8;">Week 15 of 28</span>
+          <span style="flex:1"></span>
+          <label style="display:flex;align-items:center;gap:8px;background:#131e2f;border:1px solid #1e293b;padding:7px 11px;width:196px">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="#94a3b8"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+            <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;">Teams, players, cards</span>
+          </label>
+          <a href="#2b" class="hd" style="display:flex;align-items:center;gap:6px;font:700 13px/1 'pressStart',monospace;color:#f59e0b;">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8"></circle></svg>1,240
+          </a>
+          <a href="#2b" class="plate" style="display:flex;align-items:center;gap:9px;background:#131e2f;border:1px solid #1e293b;padding:5px 10px 5px 6px">
+            <img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+            <span style="font:600 12px/1 'pressStart',monospace;color:#cbd5e1;">quiet_oyster_41</span>
+          </a>
+        </div>
+        </sc-if>
+
+        <div style="display:flex;flex:1;min-height:0">
+          <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+          <div style="width:196px;flex-shrink:0;background:#0f172a;border-right:1px solid #1e293b;padding:18px 0 22px;display:flex;flex-direction:column">
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:0 18px 9px">THE LEAGUE</div>
+            <a href="#2b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2 2 8v10h6v-6h4v6h6V8l-8-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Front page</span>
+            </a>
+            <a href="#2b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 2h2v1l11 4-11 4v7H3V2z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Games</span><span style="flex:1"></span><span style="font:700 10px/1 'pressStart',monospace;color:#4ade80;">16</span>
+            </a>
+            <a href="#2b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h14v3H3V3zm0 5h14v3H3V8zm0 5h14v3H3v-3z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Standings</span>
+            </a>
+            <a href="#2b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h6v6H3V3zm0 8h6v6H3v-6zm8-8h6v6h-6V3zm0 8h6v6h-6v-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Teams</span>
+            </a>
+            <a href="#2b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#f1f5f9;background:rgba(74,222,128,0.10);border-left:3px solid #4ade80">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
+              <span style="font:700 13px/1 'pressStart',monospace">Stats</span>
+            </a>
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:22px 18px 9px">YOURS</div>
+            <a href="#2b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <img src="assets/avatars/3.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%">
+              <span style="font:500 13px/1 'pressStart',monospace;color:inherit;">Broads</span>
+              <span style="flex:1"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:#f472b6;flex-shrink:0"></span>
+            </a>
+            <a href="#2b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M2 12l4-6 4 4 4-7 4 9v4H2v-4z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Prognostications</span>
+            </a>
+            <a href="#2b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4h14v3H3V4zm1 5h12v7H4V9z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Fantasy</span>
+            </a>
+            <a href="#2b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M5 2h10a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1zm1 3v4h8V5H6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Cards</span>
+            </a>
+            <span style="flex:1"></span>
+            <div style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5;letter-spacing:0.12em;padding:18px 18px 0">INSTANCE 498b<br>SIM 2.4.1</div>
+          </div>
+          </sc-if>
+
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+            <div style="display:flex;align-items:center;gap:14px;padding:17px 24px 15px;border-bottom:1px solid #1e293b">
+              <h1 style="font:800 22px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.025em;margin:0">Stats</h1>
+              <div style="display:flex;background:#0f172a;border:1px solid #1e293b">
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 13px">PLAYERS</span>
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:8px 13px;background:#cbd5e1;border-left:1px solid #1e293b">TEAMS</span>
+              </div>
+              <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8">Offense &middot; 24 teams</span>
+              <span style="flex:1"></span>
+              <a href="#2b" class="plate" style="display:flex;align-items:center;gap:9px;background:#131e2f;border:1px solid #334155;padding:8px 12px">
+                <span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em">SEASON</span>
+                <span style="font:800 13px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">16</span>
+                <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 8l5 5 5-5"></path></svg>
+              </a>
+              <div style="display:flex;background:#0f172a;border:1px solid #1e293b">
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:9px 14px;background:#cbd5e1">SEASON</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:9px 14px;border-left:1px solid #1e293b">CAREER</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 24px;background:#0d1526;border-bottom:1px solid #334155;flex-wrap:wrap">
+              <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em;width:64px;flex-shrink:0">SIDE</span>
+              <div style="display:flex;gap:5px">
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;background:#cbd5e1;border:1px solid #cbd5e1;padding:6px 10px">OFFENSE</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">DEFENSE</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">SPECIAL TEAMS</span>
+              </div>
+              <span style="width:1px;height:24px;background:#334155"></span>
+              <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">SHOW</span>
+              <div style="display:flex;background:#0b1220;border:1px solid #1e293b">
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:6px 11px;background:#cbd5e1">PER GAME</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:6px 11px;border-left:1px solid #1e293b">TOTALS</span>
+              </div>
+              <span style="width:1px;height:24px;background:#334155"></span>
+              <label style="display:flex;align-items:center;gap:8px;background:#0b1220;border:1px solid #1e293b;padding:7px 10px;width:220px">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="#94a3b8" style="display:block"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+                <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">Search team by name</span>
+              </label>
+              <span style="flex:1"></span>
+              <a href="#2b" class="plate" style="display:flex;align-items:center;gap:8px;background:#0b1220;border:1px solid #334155;padding:7px 13px">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="#94a3b8" style="display:block"><path d="M3 3h5v14H3V3zm9 0h5v14h-5V3z"></path></svg>
+                <span style="font:800 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;white-space:nowrap">COMPARE</span>
+              </a>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:0;padding:0 24px;background:#0f172a;border-bottom:1px solid #334155">
+              <span style="width:24px;flex-shrink:0"></span>
+              <span class="th" style="width:34px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0">RK</span>
+              <span class="th" style="width:240px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0">TEAM</span>
+              <span style="flex:1;min-width:0"></span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">GP</span>
+              <span class="th" style="width:48px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">PF</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">PPG</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:800 10px/1 'pressStart',monospace;color:#e2e8f0;letter-spacing:0.1em;padding:10px 0;text-align:right">YDS/G &#9660;</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">PASS/G</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">RUSH/G</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">1ST/G</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">3RD%</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">TO</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">SK ALW</span>
+              <span class="th" style="width:72px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">PEN</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">TOP</span>
+            </div>
+
+            <div style="background:#0b1220">
+              <sc-for list="{{ teamOffense }}" as="t" hint-placeholder-count="24">
+                <div class="row" style="display:flex;align-items:center;gap:0;padding:0 24px;border-bottom:1px solid #16202f">
+                  <span style="width:24px;flex-shrink:0;display:flex;align-items:center"><span style="width:12px;height:12px;border:1px solid #475569;display:block"></span></span>
+                  <span style="width:34px;flex-shrink:0;font:600 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">{{ t.rank }}</span>
+                  <span style="width:240px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:7px 0"><img src="{{ t.avatar }}" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%"><a href="#2b" style="font:600 12px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</a></span>
+                  <span style="flex:1;min-width:0"></span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14</span>
+                  <span style="width:48px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.pf }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.ppg }}</span>
+                  <span style="width:58px;flex-shrink:0;font:700 12px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">{{ t.ydsG }}</span>
+                  <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.passG }}</span>
+                  <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.rushG }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.firstG }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.third }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.to }}</span>
+                  <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.skAlw }}</span>
+                  <span style="width:72px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.pen }}</span>
+                  <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.top }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="2c" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px;max-width:1440px">
+        <span style="font:800 12px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.1em;background:#f8fafc;padding:6px 9px">2c</span>
+        <span style="font:800 17px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.02em">Teams &middot; defense</span>
+        <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5">The SIDE pill swaps the column set. Nothing else moves.</span>
+      </div>
+
+      <div data-screen-label="2c Teams defense" style="width:1440px;background:#0b1220;border:1px solid #1e293b;display:flex;flex-direction:column;overflow:hidden">
+        <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:22px;padding:14px 22px;background:#0f172a;border-bottom:1px solid #1e293b">
+          <div style="display:flex;align-items:center;gap:9px">
+            <img src="assets/avatars/league_logo.png" alt="" width="28" height="28" style="border-radius:50%">
+            <span style="font:800 20px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.02em">Floosball</span>
+            <span style="font:700 9px/1 'pressStart',monospace;color:#f59e0b;background:rgba(245,158,11,0.28);padding:3px 5px;letter-spacing:0.06em">BETA</span>
+          </div>
+          <span style="width:1px;height:22px;background:#1e293b"></span>
+          <span style="font:600 13px/1 'pressStart',monospace;color:#cbd5e1;">Season 16</span>
+          <span style="font:400 13px/1 'pressStart',monospace;color:#94a3b8;">Week 15 of 28</span>
+          <span style="flex:1"></span>
+          <label style="display:flex;align-items:center;gap:8px;background:#131e2f;border:1px solid #1e293b;padding:7px 11px;width:196px">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="#94a3b8"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+            <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;">Teams, players, cards</span>
+          </label>
+          <a href="#2c" class="hd" style="display:flex;align-items:center;gap:6px;font:700 13px/1 'pressStart',monospace;color:#f59e0b;">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8"></circle></svg>1,240
+          </a>
+          <a href="#2c" class="plate" style="display:flex;align-items:center;gap:9px;background:#131e2f;border:1px solid #1e293b;padding:5px 10px 5px 6px">
+            <img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+            <span style="font:600 12px/1 'pressStart',monospace;color:#cbd5e1;">quiet_oyster_41</span>
+          </a>
+        </div>
+        </sc-if>
+
+        <div style="display:flex;flex:1;min-height:0">
+          <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+          <div style="width:196px;flex-shrink:0;background:#0f172a;border-right:1px solid #1e293b;padding:18px 0 22px;display:flex;flex-direction:column">
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:0 18px 9px">THE LEAGUE</div>
+            <a href="#2c" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2 2 8v10h6v-6h4v6h6V8l-8-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Front page</span>
+            </a>
+            <a href="#2c" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 2h2v1l11 4-11 4v7H3V2z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Games</span><span style="flex:1"></span><span style="font:700 10px/1 'pressStart',monospace;color:#4ade80;">16</span>
+            </a>
+            <a href="#2c" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h14v3H3V3zm0 5h14v3H3V8zm0 5h14v3H3v-3z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Standings</span>
+            </a>
+            <a href="#2c" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h6v6H3V3zm0 8h6v6H3v-6zm8-8h6v6h-6V3zm0 8h6v6h-6v-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Teams</span>
+            </a>
+            <a href="#2c" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#f1f5f9;background:rgba(74,222,128,0.10);border-left:3px solid #4ade80">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
+              <span style="font:700 13px/1 'pressStart',monospace">Stats</span>
+            </a>
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:22px 18px 9px">YOURS</div>
+            <a href="#2c" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <img src="assets/avatars/3.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%">
+              <span style="font:500 13px/1 'pressStart',monospace;color:inherit;">Broads</span>
+              <span style="flex:1"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:#f472b6;flex-shrink:0"></span>
+            </a>
+            <a href="#2c" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M2 12l4-6 4 4 4-7 4 9v4H2v-4z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Prognostications</span>
+            </a>
+            <a href="#2c" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4h14v3H3V4zm1 5h12v7H4V9z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Fantasy</span>
+            </a>
+            <a href="#2c" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M5 2h10a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1zm1 3v4h8V5H6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Cards</span>
+            </a>
+            <span style="flex:1"></span>
+            <div style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5;letter-spacing:0.12em;padding:18px 18px 0">INSTANCE 498b<br>SIM 2.4.1</div>
+          </div>
+          </sc-if>
+
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+            <div style="display:flex;align-items:center;gap:14px;padding:17px 24px 15px;border-bottom:1px solid #1e293b">
+              <h1 style="font:800 22px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.025em;margin:0">Stats</h1>
+              <div style="display:flex;background:#0f172a;border:1px solid #1e293b">
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 13px">PLAYERS</span>
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:8px 13px;background:#cbd5e1;border-left:1px solid #1e293b">TEAMS</span>
+              </div>
+              <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8">Defense &middot; 24 teams</span>
+              <span style="flex:1"></span>
+              <a href="#2c" class="plate" style="display:flex;align-items:center;gap:9px;background:#131e2f;border:1px solid #334155;padding:8px 12px">
+                <span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em">SEASON</span>
+                <span style="font:800 13px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">16</span>
+                <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 8l5 5 5-5"></path></svg>
+              </a>
+              <div style="display:flex;background:#0f172a;border:1px solid #1e293b">
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:9px 14px;background:#cbd5e1">SEASON</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:9px 14px;border-left:1px solid #1e293b">CAREER</span>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:14px;padding:12px 24px;background:#0d1526;border-bottom:1px solid #334155;flex-wrap:wrap">
+              <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em;width:64px;flex-shrink:0">SIDE</span>
+              <div style="display:flex;gap:5px">
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">OFFENSE</span>
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;background:#cbd5e1;border:1px solid #cbd5e1;padding:6px 10px">DEFENSE</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 10px">SPECIAL TEAMS</span>
+              </div>
+              <span style="width:1px;height:24px;background:#334155"></span>
+              <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">SHOW</span>
+              <div style="display:flex;background:#0b1220;border:1px solid #1e293b">
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:6px 11px;background:#cbd5e1">PER GAME</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:6px 11px;border-left:1px solid #1e293b">TOTALS</span>
+              </div>
+              <span style="width:1px;height:24px;background:#334155"></span>
+              <label style="display:flex;align-items:center;gap:8px;background:#0b1220;border:1px solid #1e293b;padding:7px 10px;width:220px">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="#94a3b8" style="display:block"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+                <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">Search team by name</span>
+              </label>
+              <span style="flex:1"></span>
+              <a href="#2c" class="plate" style="display:flex;align-items:center;gap:8px;background:#0b1220;border:1px solid #334155;padding:7px 13px">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="#94a3b8" style="display:block"><path d="M3 3h5v14H3V3zm9 0h5v14h-5V3z"></path></svg>
+                <span style="font:800 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;white-space:nowrap">COMPARE</span>
+              </a>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:0;padding:0 24px;background:#0f172a;border-bottom:1px solid #334155">
+              <span style="width:24px;flex-shrink:0"></span>
+              <span class="th" style="width:34px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0">RK</span>
+              <span class="th" style="width:240px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0">TEAM</span>
+              <span style="flex:1;min-width:0"></span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">GP</span>
+              <span class="th" style="width:48px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">PA</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">PA/G</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:800 10px/1 'pressStart',monospace;color:#e2e8f0;letter-spacing:0.1em;padding:10px 0;text-align:right">YDS/G &#9650;</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">PASS/G</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">RUSH/G</span>
+              <span class="th" style="width:48px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">SACK</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">INT</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">FF</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">TAKE</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">3RD%</span>
+              <span class="th" style="width:62px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">MARGIN</span>
+            </div>
+
+            <div style="background:#0b1220">
+              <sc-for list="{{ teamDefense }}" as="d" hint-placeholder-count="24">
+                <div class="row" style="display:flex;align-items:center;gap:0;padding:0 24px;border-bottom:1px solid #16202f">
+                  <span style="width:24px;flex-shrink:0;display:flex;align-items:center"><span style="width:12px;height:12px;border:1px solid #475569;display:block"></span></span>
+                  <span style="width:34px;flex-shrink:0;font:600 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">{{ d.rank }}</span>
+                  <span style="width:240px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:7px 0"><img src="{{ d.avatar }}" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%"><a href="#2c" style="font:600 12px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ d.name }}</a></span>
+                  <span style="flex:1;min-width:0"></span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14</span>
+                  <span style="width:48px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ d.pa }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ d.paG }}</span>
+                  <span style="width:58px;flex-shrink:0;font:700 12px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">{{ d.ydsG }}</span>
+                  <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ d.passG }}</span>
+                  <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ d.rushG }}</span>
+                  <span style="width:48px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ d.sk }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ d.int }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ d.ff }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ d.take }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ d.third }}</span>
+                  <span style="width:62px;flex-shrink:0;font:600 12px/1 'pressStart',monospace;color:{{ d.marginColor }};text-align:right;font-variant-numeric:tabular-nums">{{ d.margin }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display:flex;align-items:baseline;gap:16px;max-width:1060px;margin-top:20px">
+    <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.14em;background:#ec3013;padding:6px 9px">TURN 1</span>
+    <div>
+      <h2 style="font:800 26px/1 'pressStart',monospace;color:#f8fafc;line-height:1.1;margin:0;letter-spacing:-0.03em">One table, every stat</h2>
+      <p style="font:400 13px/1 'pressStart',monospace;color:#94a3b8;line-height:1.6;margin:8px 0 0;text-wrap:pretty">The mess today is that every position renders a differently-sized table. Both directions below fix that the same way: <strong style="color:#cbd5e1;font-weight:700">one shell</strong> &mdash; one row height, one header, three column widths (44 count, 52 rate, 58 volume), one number style &mdash; and the position filter swaps which columns sit in it, never how they look. Defense is a peer of offense: the filter runs <strong style="color:#cbd5e1;font-weight:700">ALL QB RB WR TE K</strong>, then a rule, then <strong style="color:#cbd5e1;font-weight:700">S LB CB DE</strong>, and picking one swaps to the defensive column set. Season and career are two controls, not two pages. A leaders band sits above the table and follows the position filter; MVP rank rides in it. Rows tick to select and the toolbar Compare button opens a full-screen comparison. Both are shown at Season 16, position WR, sorted by receiving yards, with three players selected &mdash; the difference is <a href="#1a">1a</a> keeps a readable row and hides the advanced line behind an expand, while <a href="#1b">1b</a> puts a filter rail on the left and shows every column at once.</p>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:56px;align-items:flex-start;flex-wrap:wrap">
+
+    <div id="1a" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px;max-width:1440px">
+        <span style="font:800 12px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.1em;background:#f8fafc;padding:6px 9px">1a</span>
+        <span style="font:800 17px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.02em">Toolbar</span>
+        <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5">Everything in one bar. Readable rows, advanced line behind an expand.</span>
+      </div>
+
+      <div data-screen-label="1a Toolbar" style="width:1440px;background:#0b1220;border:1px solid #1e293b;display:flex;flex-direction:column;overflow:hidden">
+
+        <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:22px;padding:14px 22px;background:#0f172a;border-bottom:1px solid #1e293b">
+          <div style="display:flex;align-items:center;gap:9px">
+            <img src="assets/avatars/league_logo.png" alt="" width="28" height="28" style="border-radius:50%">
+            <span style="font:800 20px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.02em">Floosball</span>
+            <span style="font:700 9px/1 'pressStart',monospace;color:#f59e0b;background:rgba(245,158,11,0.28);padding:3px 5px;letter-spacing:0.06em">BETA</span>
+          </div>
+          <span style="width:1px;height:22px;background:#1e293b"></span>
+          <span style="font:600 13px/1 'pressStart',monospace;color:#cbd5e1;">Season 16</span>
+          <span style="font:400 13px/1 'pressStart',monospace;color:#94a3b8;">Week 15 of 28</span>
+          <span style="flex:1"></span>
+          <label style="display:flex;align-items:center;gap:8px;background:#131e2f;border:1px solid #1e293b;padding:7px 11px;width:196px">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="#94a3b8"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+            <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;">Teams, players, cards</span>
+          </label>
+          <a href="#1a" class="hd" style="display:flex;align-items:center;gap:6px;font:700 13px/1 'pressStart',monospace;color:#f59e0b;">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8"></circle></svg>1,240
+          </a>
+          <a href="#1a" class="plate" style="display:flex;align-items:center;gap:9px;background:#131e2f;border:1px solid #1e293b;padding:5px 10px 5px 6px">
+            <img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+            <span style="font:600 12px/1 'pressStart',monospace;color:#cbd5e1;">quiet_oyster_41</span>
+          </a>
+        </div>
+        </sc-if>
+
+        <div style="display:flex;flex:1;min-height:0">
+          <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+          <div style="width:196px;flex-shrink:0;background:#0f172a;border-right:1px solid #1e293b;padding:18px 0 22px;display:flex;flex-direction:column">
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:0 18px 9px">THE LEAGUE</div>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2 2 8v10h6v-6h4v6h6V8l-8-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Front page</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 2h2v1l11 4-11 4v7H3V2z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Games</span><span style="flex:1"></span><span style="font:700 10px/1 'pressStart',monospace;color:#4ade80;">16</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h14v3H3V3zm0 5h14v3H3V8zm0 5h14v3H3v-3z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Standings</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h6v6H3V3zm0 8h6v6H3v-6zm8-8h6v6h-6V3zm0 8h6v6h-6v-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Teams</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#f1f5f9;background:rgba(74,222,128,0.10);border-left:3px solid #4ade80">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
+              <span style="font:700 13px/1 'pressStart',monospace">Stats</span>
+            </a>
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:22px 18px 9px">YOURS</div>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <img src="assets/avatars/3.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%">
+              <span style="font:500 13px/1 'pressStart',monospace;color:inherit;">Broads</span>
+              <span style="flex:1"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:#f472b6;flex-shrink:0"></span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M2 12l4-6 4 4 4-7 4 9v4H2v-4z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Prognostications</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4h14v3H3V4zm1 5h12v7H4V9z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Fantasy</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M5 2h10a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1zm1 3v4h8V5H6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Cards</span>
+            </a>
+            <span style="flex:1"></span>
+            <div style="font:400 10px/1 'pressStart',monospace;color:#7286a0;line-height:1.5;letter-spacing:0.12em;padding:18px 18px 0">INSTANCE 498b<br>SIM 2.4.1</div>
+          </div>
+          </sc-if>
+
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+            <div style="display:flex;align-items:center;gap:16px;padding:18px 28px 16px;border-bottom:1px solid #1e293b">
+              <h1 style="font:800 24px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.025em;margin:0">Player stats</h1>
+              <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8">1,152 players &middot; every season since S1</span>
+              <span style="flex:1"></span>
+              <a href="#1a" class="plate" style="display:flex;align-items:center;gap:10px;background:#131e2f;border:1px solid #334155;padding:8px 12px">
+                <span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em">SEASON</span>
+                <span style="font:800 13px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">16</span>
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 8l5 5 5-5"></path></svg>
+              </a>
+              <div style="display:flex;background:#0f172a;border:1px solid #1e293b">
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:9px 14px;background:#cbd5e1">SEASON</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:9px 14px;border-left:1px solid #1e293b">CAREER</span>
+              </div>
+            </div>
+
+            <sc-if value="{{ leadersOn }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:16px 28px;border-bottom:1px solid #1e293b;background:#0d1526">
+              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:11px">
+                <span style="font:800 11px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.12em">WIDE RECEIVER LEADERS</span>
+                <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">Season 16 &middot; follows the position filter</span>
+                <span style="flex:1"></span>
+                <a href="#1a" class="hd" style="font:600 11px/1 'pressStart',monospace;color:#94a3b8">Hide</a>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px">
+
+                <div style="background:#131e2f;border:1px solid #1e293b;padding:11px 13px;display:flex;flex-direction:column;gap:8px">
+                  <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">RECEIVING YARDS</span>
+                  <div style="display:flex;align-items:center;gap:9px">
+                    <img src="assets/avatars/3.png" alt="" width="24" height="24" style="flex-shrink:0;display:block;border-radius:50%">
+                    <span style="min-width:0;flex:1;font:700 13px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Coco Mattel</span>
+                    <span style="font:800 18px/1 'pressStart',monospace;color:#f8fafc;font-variant-numeric:tabular-nums">1,142</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:4px">
+                    <span style="display:flex;gap:8px;font:500 10px/1 'pressStart',monospace;color:#94a3b8"><span style="width:9px">2</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Kevin Oddly</span><span style="font-variant-numeric:tabular-nums">1,088</span></span>
+                    <span style="display:flex;gap:8px;font:500 10px/1 'pressStart',monospace;color:#94a3b8"><span style="width:9px">3</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Marzipan Dukes</span><span style="font-variant-numeric:tabular-nums">1,061</span></span>
+                  </div>
+                </div>
+
+                <div style="background:#131e2f;border:1px solid #1e293b;padding:11px 13px;display:flex;flex-direction:column;gap:8px">
+                  <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">RECEPTIONS</span>
+                  <div style="display:flex;align-items:center;gap:9px">
+                    <img src="assets/avatars/21.png" alt="" width="24" height="24" style="flex-shrink:0;display:block;border-radius:50%">
+                    <span style="min-width:0;flex:1;font:700 13px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Marzipan Dukes</span>
+                    <span style="font:800 18px/1 'pressStart',monospace;color:#f8fafc;font-variant-numeric:tabular-nums">74</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:4px">
+                    <span style="display:flex;gap:8px;font:500 10px/1 'pressStart',monospace;color:#94a3b8"><span style="width:9px">2</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Coco Mattel</span><span style="font-variant-numeric:tabular-nums">71</span></span>
+                    <span style="display:flex;gap:8px;font:500 10px/1 'pressStart',monospace;color:#94a3b8"><span style="width:9px">3</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Kevin Oddly</span><span style="font-variant-numeric:tabular-nums">68</span></span>
+                  </div>
+                </div>
+
+                <div style="background:#131e2f;border:1px solid #1e293b;padding:11px 13px;display:flex;flex-direction:column;gap:8px">
+                  <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">RECEIVING TDS</span>
+                  <div style="display:flex;align-items:center;gap:9px">
+                    <img src="assets/avatars/3.png" alt="" width="24" height="24" style="flex-shrink:0;display:block;border-radius:50%">
+                    <span style="min-width:0;flex:1;font:700 13px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Coco Mattel</span>
+                    <span style="font:800 18px/1 'pressStart',monospace;color:#f8fafc;font-variant-numeric:tabular-nums">9</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:4px">
+                    <span style="display:flex;gap:8px;font:500 10px/1 'pressStart',monospace;color:#94a3b8"><span style="width:9px">2</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Chi Chi Eichelberger</span><span style="font-variant-numeric:tabular-nums">8</span></span>
+                    <span style="display:flex;gap:8px;font:500 10px/1 'pressStart',monospace;color:#94a3b8"><span style="width:9px">3</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Kevin Oddly</span><span style="font-variant-numeric:tabular-nums">7</span></span>
+                  </div>
+                </div>
+
+                <div style="background:#131e2f;border:1px solid #1e293b;padding:11px 13px;display:flex;flex-direction:column;gap:8px">
+                  <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">PERF RATING</span>
+                  <div style="display:flex;align-items:center;gap:9px">
+                    <img src="assets/avatars/3.png" alt="" width="24" height="24" style="flex-shrink:0;display:block;border-radius:50%">
+                    <span style="min-width:0;flex:1;font:700 13px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Coco Mattel</span>
+                    <span style="font:800 18px/1 'pressStart',monospace;color:#4ade80;font-variant-numeric:tabular-nums">92</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:4px">
+                    <span style="display:flex;gap:8px;font:500 10px/1 'pressStart',monospace;color:#94a3b8"><span style="width:9px">2</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Marzipan Dukes</span><span style="font-variant-numeric:tabular-nums">88</span></span>
+                    <span style="display:flex;gap:8px;font:500 10px/1 'pressStart',monospace;color:#94a3b8"><span style="width:9px">3</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Kevin Oddly</span><span style="font-variant-numeric:tabular-nums">86</span></span>
+                  </div>
+                </div>
+
+                <div style="background:#131e2f;border:1px solid rgba(167,139,250,0.35);padding:11px 13px;display:flex;flex-direction:column;gap:8px">
+                  <span style="font:700 9px/1 'pressStart',monospace;color:#c4b5fd;letter-spacing:0.14em">MVP RANK</span>
+                  <div style="display:flex;align-items:center;gap:9px">
+                    <img src="assets/avatars/3.png" alt="" width="24" height="24" style="flex-shrink:0;display:block;border-radius:50%">
+                    <span style="min-width:0;flex:1;font:700 13px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Coco Mattel</span>
+                    <span style="font:800 18px/1 'pressStart',monospace;color:#c4b5fd;font-variant-numeric:tabular-nums">#3</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:4px">
+                    <span style="display:flex;gap:8px;font:500 10px/1 'pressStart',monospace;color:#94a3b8"><span style="width:9px">4</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Marzipan Dukes</span><span style="font-variant-numeric:tabular-nums">&mdash;</span></span>
+                    <span style="display:flex;gap:8px;font:500 10px/1 'pressStart',monospace;color:#94a3b8"><span style="width:9px">9</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Kevin Oddly</span><span style="font-variant-numeric:tabular-nums">&mdash;</span></span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+            </sc-if>
+
+            <div style="display:flex;align-items:center;gap:12px;padding:14px 28px;border-bottom:1px solid #1e293b;background:#0f172a;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;background:#0b1220;border:1px solid #1e293b">
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 12px">ALL</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 12px;border-left:1px solid #1e293b">QB</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 12px;border-left:1px solid #1e293b">RB</span>
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:8px 12px;background:#cbd5e1;border-left:1px solid #1e293b">WR</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 12px;border-left:1px solid #1e293b">TE</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 12px;border-left:1px solid #1e293b">K</span>
+                <span style="width:1px;align-self:stretch;background:#334155;margin:0 3px"></span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 12px">S</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 12px;border-left:1px solid #1e293b">LB</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 12px;border-left:1px solid #1e293b">CB</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 12px;border-left:1px solid #1e293b">DE</span>
+              </div>
+              <a href="#1a" class="plate" style="display:flex;align-items:center;gap:9px;background:#0b1220;border:1px solid #1e293b;padding:8px 11px">
+                <span style="font:600 11px/1 'pressStart',monospace;color:#cbd5e1">Active</span>
+                <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 8l5 5 5-5"></path></svg>
+              </a>
+              <a href="#1a" class="plate" style="display:flex;align-items:center;gap:9px;background:#0b1220;border:1px solid #1e293b;padding:8px 11px">
+                <span style="font:600 11px/1 'pressStart',monospace;color:#cbd5e1">All teams</span>
+                <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 8l5 5 5-5"></path></svg>
+              </a>
+              <label style="display:flex;align-items:center;gap:8px;background:#0b1220;border:1px solid #1e293b;padding:8px 11px;width:210px">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="#94a3b8" style="display:block"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+                <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">Search player by name</span>
+              </label>
+              <span style="flex:1"></span>
+              <span style="font:600 11px/1 'pressStart',monospace;color:#38bdf8;letter-spacing:0.06em;white-space:nowrap">3 SELECTED</span>
+              <a href="#1a" class="plate" style="display:flex;align-items:center;gap:8px;background:rgba(56,189,248,0.12);border:1px solid #38bdf8;padding:8px 14px">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="#38bdf8" style="display:block"><path d="M3 3h5v14H3V3zm9 0h5v14h-5V3z"></path></svg>
+                <span style="font:800 11px/1 'pressStart',monospace;color:#7dd3fc;letter-spacing:0.08em;white-space:nowrap">COMPARE</span>
+              </a>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:0;padding:0 28px;background:#0f172a;border-bottom:1px solid #334155">
+              <span style="width:26px;flex-shrink:0"></span>
+              <span class="th" style="flex:1;min-width:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:11px 0">PLAYER</span>
+              <span class="th" style="width:56px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:11px 0">TEAM</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:11px 0;text-align:right">GP</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:11px 0;text-align:right">REC</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:11px 0;text-align:right">TGT</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:800 10px/1 'pressStart',monospace;color:#e2e8f0;letter-spacing:0.1em;padding:11px 0;text-align:right">YDS &#9660;</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:11px 0;text-align:right">YPR</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:11px 0;text-align:right">TD</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:11px 0;text-align:right">PERF</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:11px 0;text-align:right">WPA</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:11px 0;text-align:right">PTS</span>
+              <span style="width:30px;flex-shrink:0"></span>
+            </div>
+
+            <div style="background:#0b1220">
+
+              <div style="border-bottom:1px solid #1e293b;background:rgba(56,189,248,0.07);box-shadow:inset 3px 0 0 #38bdf8">
+                <div style="display:flex;align-items:center;gap:0;padding:0 28px">
+                  <span style="width:26px;flex-shrink:0;display:flex;align-items:center"><span style="width:13px;height:13px;background:#38bdf8;display:flex;align-items:center;justify-content:center"><svg width="9" height="9" viewBox="0 0 20 20" fill="none" stroke="#0b1220" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4 4 8-8"></path></svg></span></span>
+                  <span style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:10px 0"><img src="assets/avatars/3.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%"><a href="#1a" style="font:600 13px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Coco Mattel</a><span style="font:700 9px/1 'pressStart',monospace;color:#c4b5fd;letter-spacing:0.1em;border:1px solid rgba(167,139,250,0.4);padding:3px 4px;flex-shrink:0">MVP 3</span></span>
+                  <span style="width:56px;flex-shrink:0;font:600 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">PHI</span>
+                  <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14</span>
+                  <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">71</span>
+                  <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">106</span>
+                  <span style="width:58px;flex-shrink:0;font:700 13px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">1,142</span>
+                  <span style="width:52px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">16.1</span>
+                  <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">9</span>
+                  <span style="width:52px;flex-shrink:0;font:600 13px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">92</span>
+                  <span style="width:52px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">+3.8</span>
+                  <span style="width:58px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">168.2</span>
+                  <span style="width:30px;flex-shrink:0;font:700 12px/1 'pressStart',monospace;color:#38bdf8;text-align:right">&minus;</span>
+                </div>
+                <div style="padding:4px 28px 16px 55px;display:flex;gap:28px;background:#0f172a;border-top:1px solid #1e293b">
+                  <div style="flex:1;min-width:0;padding-top:12px">
+                    <div style="font:700 9px/1 'pressStart',monospace;color:#cbd5e1;letter-spacing:0.12em;padding-bottom:4px;border-bottom:1px solid #1e293b;margin-bottom:6px">RECEIVING DETAIL</div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Catch rate</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">67.0%</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Air yards</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">812</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">YAC</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">330</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Separation</span><span style="display:flex;align-items:center;gap:6px"><span style="width:52px;height:6px;background:#334155;display:block"><span style="display:block;width:68%;height:100%;background:#22c55e"></span></span><span style="font:600 10px/1 'pressStart',monospace;color:#22c55e;width:24px;text-align:right;font-variant-numeric:tabular-nums">68</span></span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Drops</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">4</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Long</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">47</span></div>
+                  </div>
+                  <div style="flex:1;min-width:0;padding-top:12px">
+                    <div style="font:700 9px/1 'pressStart',monospace;color:#cbd5e1;letter-spacing:0.12em;padding-bottom:4px;border-bottom:1px solid #1e293b;margin-bottom:6px">IMPACT</div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Perf rating</span><span style="font:600 10px/1 'pressStart',monospace;color:#22c55e;font-variant-numeric:tabular-nums">92</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Win prob added</span><span style="font:600 10px/1 'pressStart',monospace;color:#22c55e;font-variant-numeric:tabular-nums">+3.8%</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Clutch plays</span><span style="font:600 10px/1 'pressStart',monospace;color:#06b6d4;font-variant-numeric:tabular-nums">6</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Choke plays</span><span style="font:600 10px/1 'pressStart',monospace;color:#f87171;font-variant-numeric:tabular-nums">1</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Big plays</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">11</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Fantasy pts</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">168.2</span></div>
+                  </div>
+                  <div style="flex:1;min-width:0;padding-top:12px">
+                    <div style="font:700 9px/1 'pressStart',monospace;color:#cbd5e1;letter-spacing:0.12em;padding-bottom:4px;border-bottom:1px solid #1e293b;margin-bottom:6px">DEFENSE &mdash; SAFETY</div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Tackles</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">41</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Interceptions</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">2</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Passes defended</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">7</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Forced fumbles</span><span style="font:600 10px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">1</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:2px 0"><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">Defensive rating</span><span style="display:flex;align-items:center;gap:6px"><span style="width:52px;height:6px;background:#334155;display:block"><span style="display:block;width:74%;height:100%;background:#eab308"></span></span><span style="font:600 10px/1 'pressStart',monospace;color:#eab308;width:24px;text-align:right;font-variant-numeric:tabular-nums">74</span></span></div>
+                    <div style="margin-top:9px"><a href="#1a" class="hd" style="font:600 10px/1 'pressStart',monospace;color:#38bdf8">Open player page &rarr;</a></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row" style="border-bottom:1px solid #1e293b;background:rgba(56,189,248,0.07);box-shadow:inset 3px 0 0 #38bdf8">
+                <div style="display:flex;align-items:center;gap:0;padding:0 28px">
+                  <span style="width:26px;flex-shrink:0;display:flex;align-items:center"><span style="width:13px;height:13px;background:#38bdf8;display:flex;align-items:center;justify-content:center"><svg width="9" height="9" viewBox="0 0 20 20" fill="none" stroke="#0b1220" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4 4 8-8"></path></svg></span></span>
+                  <span style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:10px 0"><img src="assets/avatars/22.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%"><a href="#1a" style="font:600 13px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Kevin Oddly</a></span>
+                  <span style="width:56px;flex-shrink:0;font:600 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">SFP</span>
+                  <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14</span>
+                  <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">68</span>
+                  <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">112</span>
+                  <span style="width:58px;flex-shrink:0;font:700 13px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">1,088</span>
+                  <span style="width:52px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">16.0</span>
+                  <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">7</span>
+                  <span style="width:52px;flex-shrink:0;font:600 13px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">86</span>
+                  <span style="width:52px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">+2.4</span>
+                  <span style="width:58px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">152.8</span>
+                  <span style="width:30px;flex-shrink:0;font:600 12px/1 'pressStart',monospace;color:#94a3b8;text-align:right">+</span>
+                </div>
+              </div>
+
+              <div class="row" style="border-bottom:1px solid #1e293b;background:rgba(56,189,248,0.07);box-shadow:inset 3px 0 0 #38bdf8">
+                <div style="display:flex;align-items:center;gap:0;padding:0 28px">
+                  <span style="width:26px;flex-shrink:0;display:flex;align-items:center"><span style="width:13px;height:13px;background:#38bdf8;display:flex;align-items:center;justify-content:center"><svg width="9" height="9" viewBox="0 0 20 20" fill="none" stroke="#0b1220" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4 4 8-8"></path></svg></span></span>
+                  <span style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:10px 0"><img src="assets/avatars/21.png" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%"><a href="#1a" style="font:600 13px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Marzipan Dukes</a></span>
+                  <span style="width:56px;flex-shrink:0;font:600 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">MIA</span>
+                  <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14</span>
+                  <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">74</span>
+                  <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">109</span>
+                  <span style="width:58px;flex-shrink:0;font:700 13px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">1,061</span>
+                  <span style="width:52px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14.3</span>
+                  <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">6</span>
+                  <span style="width:52px;flex-shrink:0;font:600 13px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">88</span>
+                  <span style="width:52px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">+2.9</span>
+                  <span style="width:58px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">150.1</span>
+                  <span style="width:30px;flex-shrink:0;font:600 12px/1 'pressStart',monospace;color:#94a3b8;text-align:right">+</span>
+                </div>
+              </div>
+
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="11">
+                <div class="row" style="border-bottom:1px solid #1e293b">
+                  <div style="display:flex;align-items:center;gap:0;padding:0 28px">
+                    <span style="width:26px;flex-shrink:0;display:flex;align-items:center"><span style="width:13px;height:13px;border:1px solid #475569;display:block"></span></span>
+                    <span style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:10px 0"><img src="{{ r.avatar }}" alt="" width="20" height="20" style="flex-shrink:0;display:block;border-radius:50%"><a href="#1a" style="font:600 13px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</a></span>
+                    <span style="width:56px;flex-shrink:0;font:600 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">{{ r.team }}</span>
+                    <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.gp }}</span>
+                    <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.rec }}</span>
+                    <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.tgt }}</span>
+                    <span style="width:58px;flex-shrink:0;font:700 13px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">{{ r.yds }}</span>
+                    <span style="width:52px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.ypr }}</span>
+                    <span style="width:44px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.td }}</span>
+                    <span style="width:52px;flex-shrink:0;font:600 13px/1 'pressStart',monospace;color:{{ r.perfColor }};text-align:right;font-variant-numeric:tabular-nums">{{ r.perf }}</span>
+                    <span style="width:52px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:{{ r.wpaColor }};text-align:right;font-variant-numeric:tabular-nums">{{ r.wpa }}</span>
+                    <span style="width:58px;flex-shrink:0;font:500 13px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.pts }}</span>
+                    <span style="width:30px;flex-shrink:0;font:600 12px/1 'pressStart',monospace;color:#94a3b8;text-align:right">+</span>
+                  </div>
+                </div>
+              </sc-for>
+
+              <div style="display:flex;align-items:center;gap:12px;padding:14px 28px">
+                <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">Showing 14 of 96 wide receivers</span>
+                <span style="flex:1"></span>
+                <a href="#1a" class="chip" style="font:700 11px/1 'pressStart',monospace;color:#cbd5e1;border:1px solid #334155;padding:7px 14px;letter-spacing:0.06em">LOAD MORE</a>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="1b" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px;max-width:1440px">
+        <span style="font:800 12px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.1em;background:#f8fafc;padding:6px 9px">1b</span>
+        <span style="font:800 17px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.02em">Filter rail</span>
+        <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5">Facets down the left, every column on screen, no expand needed.</span>
+      </div>
+
+      <div data-screen-label="1b Filter rail" style="width:1440px;background:#0b1220;border:1px solid #1e293b;display:flex;flex-direction:column;overflow:hidden">
+
+        <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:22px;padding:14px 22px;background:#0f172a;border-bottom:1px solid #1e293b">
+          <div style="display:flex;align-items:center;gap:9px">
+            <img src="assets/avatars/league_logo.png" alt="" width="28" height="28" style="border-radius:50%">
+            <span style="font:800 20px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.02em">Floosball</span>
+            <span style="font:700 9px/1 'pressStart',monospace;color:#f59e0b;background:rgba(245,158,11,0.28);padding:3px 5px;letter-spacing:0.06em">BETA</span>
+          </div>
+          <span style="width:1px;height:22px;background:#1e293b"></span>
+          <span style="font:600 13px/1 'pressStart',monospace;color:#cbd5e1;">Season 16</span>
+          <span style="font:400 13px/1 'pressStart',monospace;color:#94a3b8;">Week 15 of 28</span>
+          <span style="flex:1"></span>
+          <label style="display:flex;align-items:center;gap:8px;background:#131e2f;border:1px solid #1e293b;padding:7px 11px;width:196px">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="#94a3b8"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+            <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;">Teams, players, cards</span>
+          </label>
+          <a href="#1b" class="hd" style="display:flex;align-items:center;gap:6px;font:700 13px/1 'pressStart',monospace;color:#f59e0b;">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8"></circle></svg>1,240
+          </a>
+          <a href="#1b" class="plate" style="display:flex;align-items:center;gap:9px;background:#131e2f;border:1px solid #1e293b;padding:5px 10px 5px 6px">
+            <img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+            <span style="font:600 12px/1 'pressStart',monospace;color:#cbd5e1;">quiet_oyster_41</span>
+          </a>
+        </div>
+        </sc-if>
+
+        <div style="display:flex;flex:1;min-height:0">
+          <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+          <div style="width:196px;flex-shrink:0;background:#0f172a;border-right:1px solid #1e293b;padding:18px 0 22px;display:flex;flex-direction:column">
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:0 18px 9px">THE LEAGUE</div>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2 2 8v10h6v-6h4v6h6V8l-8-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Front page</span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 2h2v1l11 4-11 4v7H3V2z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Games</span><span style="flex:1"></span><span style="font:700 10px/1 'pressStart',monospace;color:#4ade80;">16</span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h14v3H3V3zm0 5h14v3H3V8zm0 5h14v3H3v-3z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Standings</span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h6v6H3V3zm0 8h6v6H3v-6zm8-8h6v6h-6V3zm0 8h6v6h-6v-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Teams</span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#f1f5f9;background:rgba(74,222,128,0.10);border-left:3px solid #4ade80">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
+              <span style="font:700 13px/1 'pressStart',monospace">Stats</span>
+            </a>
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:22px 18px 9px">YOURS</div>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <img src="assets/avatars/3.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%">
+              <span style="font:500 13px/1 'pressStart',monospace;color:inherit;">Broads</span>
+              <span style="flex:1"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:#f472b6;flex-shrink:0"></span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M2 12l4-6 4 4 4-7 4 9v4H2v-4z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Prognostications</span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4h14v3H3V4zm1 5h12v7H4V9z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Fantasy</span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M5 2h10a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1zm1 3v4h8V5H6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Cards</span>
+            </a>
+            <span style="flex:1"></span>
+            <div style="font:400 10px/1 'pressStart',monospace;color:#7286a0;line-height:1.5;letter-spacing:0.12em;padding:18px 18px 0">INSTANCE 498b<br>SIM 2.4.1</div>
+          </div>
+          </sc-if>
+
+          <div style="width:232px;flex-shrink:0;background:#0d1526;border-right:1px solid #1e293b;padding:18px 0;display:flex;flex-direction:column;gap:18px">
+
+            <div style="padding:0 16px">
+              <div style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em;margin-bottom:8px">SCOPE</div>
+              <a href="#1b" class="plate" style="display:flex;align-items:center;gap:9px;background:#0b1220;border:1px solid #334155;padding:9px 11px;margin-bottom:6px">
+                <span style="font:700 11px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em">SEASON</span>
+                <span style="font:800 13px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">16</span>
+                <span style="flex:1"></span>
+                <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 8l5 5 5-5"></path></svg>
+              </a>
+              <div style="display:flex;background:#0b1220;border:1px solid #1e293b">
+                <span style="flex:1;text-align:center;font:800 10px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.08em;padding:8px 0;background:#cbd5e1">SEASON</span>
+                <span style="flex:1;text-align:center;font:500 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;padding:8px 0;border-left:1px solid #1e293b">CAREER</span>
+              </div>
+            </div>
+
+            <div style="padding:0 16px">
+              <div style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em;margin-bottom:8px">POSITION</div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 9px">ALL</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 9px">QB</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 9px">RB</span>
+                <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;background:#cbd5e1;border:1px solid #cbd5e1;padding:6px 9px">WR</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 9px">TE</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 9px">K</span>
+              </div>
+              <div style="height:1px;background:#1e293b;margin:0 0 8px"></div>
+              <div style="font:600 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.12em;margin-bottom:7px">DEFENSE</div>
+              <div style="display:flex;flex-wrap:wrap;gap:5px">
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 9px">S</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 9px">LB</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 9px">CB</span>
+                <span style="font:500 11px/1 'pressStart',monospace;color:#94a3b8;background:#0b1220;border:1px solid #1e293b;padding:6px 9px">DE</span>
+              </div>
+            </div>
+
+            <div style="padding:0 16px">
+              <div style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em;margin-bottom:8px">STATUS</div>
+              <div style="display:flex;flex-direction:column;gap:1px">
+                <span style="display:flex;align-items:center;gap:9px;padding:5px 0"><span style="width:12px;height:12px;background:#38bdf8;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="8" height="8" viewBox="0 0 20 20" fill="none" stroke="#0b1220" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4 4 8-8"></path></svg></span><span style="flex:1;font:600 11px/1 'pressStart',monospace;color:#e2e8f0">Active</span><span style="font:500 10px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">96</span></span>
+                <span style="display:flex;align-items:center;gap:9px;padding:5px 0"><span style="width:12px;height:12px;border:1px solid #475569;display:block;flex-shrink:0"></span><span style="flex:1;font:500 11px/1 'pressStart',monospace;color:#94a3b8">Free agents</span><span style="font:500 10px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">11</span></span>
+                <span style="display:flex;align-items:center;gap:9px;padding:5px 0"><span style="width:12px;height:12px;border:1px solid #475569;display:block;flex-shrink:0"></span><span style="flex:1;font:500 11px/1 'pressStart',monospace;color:#94a3b8">Prospects</span><span style="font:500 10px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">24</span></span>
+                <span style="display:flex;align-items:center;gap:9px;padding:5px 0"><span style="width:12px;height:12px;border:1px solid #475569;display:block;flex-shrink:0"></span><span style="flex:1;font:500 11px/1 'pressStart',monospace;color:#94a3b8">Retired</span><span style="font:500 10px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">418</span></span>
+                <span style="display:flex;align-items:center;gap:9px;padding:5px 0"><span style="width:12px;height:12px;border:1px solid #475569;display:block;flex-shrink:0"></span><span style="flex:1;font:500 11px/1 'pressStart',monospace;color:#94a3b8">Followed</span><span style="font:500 10px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">7</span></span>
+              </div>
+            </div>
+
+            <div style="padding:0 16px">
+              <div style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em;margin-bottom:8px">TEAM</div>
+              <label style="display:flex;align-items:center;gap:8px;background:#0b1220;border:1px solid #1e293b;padding:8px 10px">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="#94a3b8" style="display:block"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+                <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">All 24 teams</span>
+              </label>
+            </div>
+
+            <div style="padding:0 16px">
+              <div style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em;margin-bottom:8px">MINIMUM GAMES</div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="flex:1;height:4px;background:#0b1220;display:flex"><span style="width:36%;background:#38bdf8"></span></span>
+                <span style="font:700 11px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums;width:16px;text-align:right">5</span>
+              </div>
+            </div>
+
+            <span style="flex:1"></span>
+
+            <div style="padding:0 16px">
+              <a href="#1b" class="hd" style="font:600 11px/1 'pressStart',monospace;color:#94a3b8">Reset all filters</a>
+            </div>
+
+          </div>
+
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+            <div style="display:flex;align-items:center;gap:14px;padding:15px 24px;border-bottom:1px solid #1e293b">
+              <h1 style="font:800 20px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.025em;margin:0">Wide receivers</h1>
+              <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">96 players &middot; Season 16 &middot; min 5 games</span>
+              <span style="flex:1"></span>
+              <span style="font:600 11px/1 'pressStart',monospace;color:#38bdf8;letter-spacing:0.06em;white-space:nowrap">3 SELECTED</span>
+              <a href="#1b" class="plate" style="display:flex;align-items:center;gap:8px;background:rgba(56,189,248,0.12);border:1px solid #38bdf8;padding:7px 13px">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="#38bdf8" style="display:block"><path d="M3 3h5v14H3V3zm9 0h5v14h-5V3z"></path></svg>
+                <span style="font:800 11px/1 'pressStart',monospace;color:#7dd3fc;letter-spacing:0.08em;white-space:nowrap">COMPARE</span>
+              </a>
+            </div>
+
+            <sc-if value="{{ leadersOn }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:stretch;gap:0;border-bottom:1px solid #1e293b;background:#0d1526">
+              <div style="display:flex;flex-direction:column;justify-content:center;gap:5px;padding:11px 16px;border-right:1px solid #1e293b;flex-shrink:0">
+                <span style="font:800 9px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.12em">WR</span>
+                <span style="font:800 9px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.12em">LEADERS</span>
+              </div>
+              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:11px 14px;border-right:1px solid #1e293b">
+                <img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+                <span style="min-width:0;flex:1;display:flex;flex-direction:column;gap:4px">
+                  <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.12em">REC YDS</span>
+                  <span style="font:600 11px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Coco Mattel</span>
+                </span>
+                <span style="font:800 16px/1 'pressStart',monospace;color:#f8fafc;font-variant-numeric:tabular-nums;flex-shrink:0">1,142</span>
+              </div>
+              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:11px 14px;border-right:1px solid #1e293b">
+                <img src="assets/avatars/21.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+                <span style="min-width:0;flex:1;display:flex;flex-direction:column;gap:4px">
+                  <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.12em">RECEPTIONS</span>
+                  <span style="font:600 11px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Marzipan Dukes</span>
+                </span>
+                <span style="font:800 16px/1 'pressStart',monospace;color:#f8fafc;font-variant-numeric:tabular-nums;flex-shrink:0">74</span>
+              </div>
+              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:11px 14px;border-right:1px solid #1e293b">
+                <img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+                <span style="min-width:0;flex:1;display:flex;flex-direction:column;gap:4px">
+                  <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.12em">REC TDS</span>
+                  <span style="font:600 11px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Coco Mattel</span>
+                </span>
+                <span style="font:800 16px/1 'pressStart',monospace;color:#f8fafc;font-variant-numeric:tabular-nums;flex-shrink:0">9</span>
+              </div>
+              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:11px 14px;border-right:1px solid #1e293b">
+                <img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+                <span style="min-width:0;flex:1;display:flex;flex-direction:column;gap:4px">
+                  <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.12em">PERF RATING</span>
+                  <span style="font:600 11px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Coco Mattel</span>
+                </span>
+                <span style="font:800 16px/1 'pressStart',monospace;color:#4ade80;font-variant-numeric:tabular-nums;flex-shrink:0">92</span>
+              </div>
+              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;padding:11px 14px">
+                <img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+                <span style="min-width:0;flex:1;display:flex;flex-direction:column;gap:4px">
+                  <span style="font:700 9px/1 'pressStart',monospace;color:#c4b5fd;letter-spacing:0.12em">MVP RANK</span>
+                  <span style="font:600 11px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Coco Mattel</span>
+                </span>
+                <span style="font:800 16px/1 'pressStart',monospace;color:#c4b5fd;font-variant-numeric:tabular-nums;flex-shrink:0">#3</span>
+              </div>
+            </div>
+            </sc-if>
+
+            <div style="display:flex;align-items:center;gap:0;padding:0 24px;background:#0f172a;border-bottom:1px solid #334155">
+              <span style="width:24px;flex-shrink:0"></span>
+              <span class="th" style="width:186px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0">PLAYER</span>
+              <span class="th" style="width:50px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0">TEAM</span>
+              <span class="th" style="flex:1;min-width:0"></span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">GP</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">REC</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">TGT</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">RCV%</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:800 10px/1 'pressStart',monospace;color:#e2e8f0;letter-spacing:0.1em;padding:10px 0;text-align:right">YDS &#9660;</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">YPR</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">AIR</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">YAC</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">SEP</span>
+              <span class="th" style="width:44px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">TD</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">PERF</span>
+              <span class="th" style="width:52px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">WPA</span>
+              <span class="th" style="width:58px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;padding:10px 0;text-align:right">PTS</span>
+            </div>
+
+            <div style="background:#0b1220">
+
+              <div class="row" style="display:flex;align-items:center;gap:0;padding:0 24px;border-bottom:1px solid #16202f;background:rgba(56,189,248,0.07);box-shadow:inset 3px 0 0 #38bdf8">
+                <span style="width:24px;flex-shrink:0;display:flex;align-items:center"><span style="width:12px;height:12px;background:#38bdf8;display:flex;align-items:center;justify-content:center"><svg width="8" height="8" viewBox="0 0 20 20" fill="none" stroke="#0b1220" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4 4 8-8"></path></svg></span></span>
+                <span style="width:186px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:7px 0"><img src="assets/avatars/3.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%"><a href="#1b" style="font:600 12px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Coco Mattel</a></span>
+                <span style="width:50px;flex-shrink:0;font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">PHI</span>
+                <span style="flex:1;min-width:0"><span style="font:700 8px/1 'pressStart',monospace;color:#c4b5fd;letter-spacing:0.1em;border:1px solid rgba(167,139,250,0.4);padding:3px 4px">MVP 3</span></span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">71</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">106</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">67.0</span>
+                <span style="width:58px;flex-shrink:0;font:700 12px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">1,142</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">16.1</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">812</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">330</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">68</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">9</span>
+                <span style="width:52px;flex-shrink:0;font:600 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">92</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">+3.8</span>
+                <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">168.2</span>
+              </div>
+
+              <div class="row" style="display:flex;align-items:center;gap:0;padding:0 24px;border-bottom:1px solid #16202f;background:rgba(56,189,248,0.07);box-shadow:inset 3px 0 0 #38bdf8">
+                <span style="width:24px;flex-shrink:0;display:flex;align-items:center"><span style="width:12px;height:12px;background:#38bdf8;display:flex;align-items:center;justify-content:center"><svg width="8" height="8" viewBox="0 0 20 20" fill="none" stroke="#0b1220" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4 4 8-8"></path></svg></span></span>
+                <span style="width:186px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:7px 0"><img src="assets/avatars/22.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%"><a href="#1b" style="font:600 12px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Kevin Oddly</a></span>
+                <span style="width:50px;flex-shrink:0;font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">SFP</span>
+                <span style="flex:1;min-width:0"></span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">68</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">112</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">60.7</span>
+                <span style="width:58px;flex-shrink:0;font:700 12px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">1,088</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">16.0</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">795</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">293</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#eab308;text-align:right;font-variant-numeric:tabular-nums">61</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">7</span>
+                <span style="width:52px;flex-shrink:0;font:600 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">86</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">+2.4</span>
+                <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">152.8</span>
+              </div>
+
+              <div class="row" style="display:flex;align-items:center;gap:0;padding:0 24px;border-bottom:1px solid #16202f;background:rgba(56,189,248,0.07);box-shadow:inset 3px 0 0 #38bdf8">
+                <span style="width:24px;flex-shrink:0;display:flex;align-items:center"><span style="width:12px;height:12px;background:#38bdf8;display:flex;align-items:center;justify-content:center"><svg width="8" height="8" viewBox="0 0 20 20" fill="none" stroke="#0b1220" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4 4 8-8"></path></svg></span></span>
+                <span style="width:186px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:7px 0"><img src="assets/avatars/21.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%"><a href="#1b" style="font:600 12px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Marzipan Dukes</a></span>
+                <span style="width:50px;flex-shrink:0;font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">MIA</span>
+                <span style="flex:1;min-width:0"></span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">74</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">109</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">67.9</span>
+                <span style="width:58px;flex-shrink:0;font:700 12px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">1,061</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">14.3</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">690</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">371</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">72</span>
+                <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">6</span>
+                <span style="width:52px;flex-shrink:0;font:600 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">88</span>
+                <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#4ade80;text-align:right;font-variant-numeric:tabular-nums">+2.9</span>
+                <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">150.1</span>
+              </div>
+
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="11">
+                <div class="row" style="display:flex;align-items:center;gap:0;padding:0 24px;border-bottom:1px solid #16202f">
+                  <span style="width:24px;flex-shrink:0;display:flex;align-items:center"><span style="width:12px;height:12px;border:1px solid #475569;display:block"></span></span>
+                  <span style="width:186px;flex-shrink:0;display:flex;align-items:center;gap:8px;padding:7px 0"><img src="{{ r.avatar }}" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%"><a href="#1b" style="font:600 12px/1 'pressStart',monospace;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</a></span>
+                  <span style="width:50px;flex-shrink:0;font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.04em">{{ r.team }}</span>
+                  <span style="flex:1;min-width:0"></span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.gp }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.rec }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.tgt }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.rcv }}</span>
+                  <span style="width:58px;flex-shrink:0;font:700 12px/1 'pressStart',monospace;color:#f1f5f9;text-align:right;font-variant-numeric:tabular-nums">{{ r.yds }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.ypr }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.air }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.yac }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:{{ r.sepColor }};text-align:right;font-variant-numeric:tabular-nums">{{ r.sep }}</span>
+                  <span style="width:44px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.td }}</span>
+                  <span style="width:52px;flex-shrink:0;font:600 12px/1 'pressStart',monospace;color:{{ r.perfColor }};text-align:right;font-variant-numeric:tabular-nums">{{ r.perf }}</span>
+                  <span style="width:52px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:{{ r.wpaColor }};text-align:right;font-variant-numeric:tabular-nums">{{ r.wpa }}</span>
+                  <span style="width:58px;flex-shrink:0;font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ r.pts }}</span>
+                </div>
+              </sc-for>
+
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 24px">
+                <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">Showing 14 of 96 wide receivers</span>
+                <span style="flex:1"></span>
+                <a href="#1b" class="chip" style="font:700 11px/1 'pressStart',monospace;color:#cbd5e1;border:1px solid #334155;padding:7px 14px;letter-spacing:0.06em">LOAD MORE</a>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showChrome&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Mock&quot;},&quot;showLeaders&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Turn 1 only&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props || {};
+    const raw = [
+      ['Chi Chi Eichelberger', 'PHI', 3, 14, 63, 94, '67.0', '977', '15.5', 701, 276, 66, 8, 84, '+2.1', '143.7', 3, 41],
+      ['Tuna Melt Jr.', 'TAM', 23, 13, 59, 101, '58.4', '941', '15.9', 728, 213, 55, 7, 79, '+1.6', '136.1', 5, 52],
+      ['Bevel Sanderson', 'SFP', 22, 14, 61, 97, '62.9', '903', '14.8', 640, 263, 63, 5, 81, '+1.2', '128.3', 4, 38],
+      ['Wanda Pilcrow', 'BOS', 2, 14, 57, 88, '64.8', '889', '15.6', 651, 238, 64, 6, 80, '+1.5', '126.9', 3, 44],
+      ['Dungeness Krabb', 'SEA', 10, 12, 54, 83, '65.1', '861', '15.9', 618, 243, 67, 6, 83, '+1.9', '122.1', 2, 49],
+      ['Ricky Two Sinks', 'LVR', 17, 14, 62, 105, '59.0', '848', '13.7', 552, 296, 58, 4, 74, '+0.6', '118.8', 7, 36],
+      ['Pontiac Gaines', 'DET', 8, 14, 51, 79, '64.6', '812', '15.9', 596, 216, 62, 7, 78, '+1.1', '117.2', 3, 51],
+      ['Fern Alabaster', 'MIN', 9, 13, 55, 90, '61.1', '796', '14.5', 559, 237, 60, 5, 76, '+0.9', '111.6', 4, 40],
+      ['Buddy Cologne', 'KCS', 14, 14, 49, 86, '57.0', '741', '15.1', 570, 171, 52, 5, 70, '+0.2', '103.1', 6, 33],
+      ['Hoss Perrywinkle', 'COL', 12, 14, 47, 77, '61.0', '703', '15.0', 512, 191, 57, 4, 71, '\u22120.3', '96.3', 5, 37],
+      ['Salad Fingers Moss', 'ARI', 16, 12, 44, 74, '59.5', '668', '15.2', 487, 181, 54, 3, 68, '\u22120.8', '88.8', 4, 35],
+    ];
+    // Same ramps the sim's insights panel already uses: attrColor for ratings
+    // (80/70), qualityColor for 0-100 quality metrics (65/40), sign for deltas.
+    const attrColor = v => v >= 80 ? '#4ade80' : v >= 70 ? '#eab308' : '#f87171';
+    const qualityColor = v => v >= 65 ? '#4ade80' : v >= 40 ? '#eab308' : '#f87171';
+    const deltaColor = s => s.charAt(0) === '+' ? '#4ade80' : s.charAt(0) === '\u2212' ? '#f87171' : '#94a3b8';
+    const rows = raw.map(r => ({
+      name: r[0], team: r[1], avatar: 'assets/avatars/' + r[2] + '.png',
+      gp: r[3], rec: r[4], tgt: r[5], rcv: r[6], yds: r[7], ypr: r[8],
+      air: r[9], yac: r[10], sep: r[11], td: r[12], perf: r[13], wpa: r[14], pts: r[15],
+      drp: r[16], lng: r[17],
+      perfColor: attrColor(r[13]), sepColor: qualityColor(r[11]), wpaColor: deltaColor(r[14]),
+    }));
+    // ── Team stats ──
+    const offRaw = [
+      ['Philadelphia Broads','PHI',3,371,'26.5','388.4','251.6','136.8','21.4','44.1',14,22,'78\u2013612','31:12'],
+      ['Miami Neon','MIA',21,358,'25.6','381.2','268.9','112.3','20.9','43.0',17,26,'86\u2013701','30:04'],
+      ['Boston Normals','BOS',2,349,'24.9','374.6','240.1','134.5','20.6','42.2',15,24,'71\u2013548','30:41'],
+      ['Seattle Cranes','SEA',10,341,'24.4','369.0','233.7','135.3','20.1','41.5',16,21,'69\u2013533','30:58'],
+      ['Las Vegas Residents','LVR',17,336,'24.0','364.8','259.2','105.6','19.8','40.8',21,29,'92\u2013744','29:22'],
+      ['Detroit Caddies','DET',8,328,'23.4','358.1','228.4','129.7','19.6','40.1',18,25,'74\u2013566','30:15'],
+      ['San Francisco Phones','SFP',22,322,'23.0','352.9','244.3','108.6','19.2','39.4',19,27,'81\u2013638','29:47'],
+      ['Tampa Bay Bees','TAM',23,317,'22.6','348.2','236.6','111.6','18.9','38.9',20,23,'77\u2013599','29:33'],
+      ['Minnesota Pops','MIN',9,311,'22.2','343.7','221.9','121.8','18.6','38.2',17,22,'68\u2013521','30:09'],
+      ['New York Strangers','NYS',1,305,'21.8','338.4','214.2','124.2','18.3','37.6',16,20,'72\u2013559','30:27'],
+      ['Colorado Oysters','COL',12,299,'21.4','333.1','209.8','123.3','18.0','37.0',22,26,'83\u2013651','29:18'],
+      ['Kansas City Slippers','KCS',14,293,'20.9','328.6','218.4','110.2','17.7','36.3',23,28,'79\u2013624','29:02'],
+      ['Chicago Beans','CHI',7,288,'20.6','324.0','198.7','125.3','17.4','35.8',19,24,'70\u2013538','30:33'],
+      ['Pittsburgh Melons','PIT',5,282,'20.1','319.5','205.1','114.4','17.1','35.1',20,25,'75\u2013581','29:51'],
+      ['Cleveland Rocks','CLE',6,277,'19.8','314.8','193.2','121.6','16.8','34.5',21,27,'81\u2013627','29:39'],
+      ['Washington Monuments','WAS',4,271,'19.4','310.2','201.6','108.6','16.5','33.9',22,23,'73\u2013564','29:26'],
+      ['Vancouver Pinecones','VAN',11,266,'19.0','305.7','188.4','117.3','16.2','33.2',24,30,'88\u2013693','28:54'],
+      ['New Orleans Tuesdays','NOR',13,260,'18.6','301.3','196.8','104.5','15.9','32.6',23,26,'76\u2013592','29:11'],
+      ['Anaheim Rhyme','ANA',18,254,'18.1','296.9','184.1','112.8','15.6','32.0',25,29,'84\u2013662','28:47'],
+      ['San Diego Sand Dollars','SND',15,249,'17.8','292.4','190.7','101.7','15.3','31.3',24,27,'78\u2013608','29:05'],
+      ['Arizona Dry Heat','ARI',16,243,'17.4','288.1','179.9','108.2','15.0','30.7',26,31,'90\u2013712','28:33'],
+      ['St. Louis Wafflecones','STL',19,238,'17.0','283.6','186.3','97.3','14.7','30.1',25,28,'82\u2013644','28:58'],
+      ['Anchorage Truckers','ANC',20,232,'16.6','279.2','174.8','104.4','14.4','29.4',27,32,'87\u2013681','28:41'],
+      ['Georgia Classics','GAC',24,226,'16.1','274.7','181.2','93.5','14.1','28.8',28,30,'85\u2013669','28:26'],
+    ];
+    const teamOffense = offRaw.map((t, i) => ({
+      rank: i + 1, name: t[0], abbr: t[1], avatar: 'assets/avatars/' + t[2] + '.png',
+      pf: t[3], ppg: t[4], ydsG: t[5], passG: t[6], rushG: t[7],
+      firstG: t[8], third: t[9] + '%', to: t[10], skAlw: t[11], pen: t[12], top: t[13],
+    }));
+
+    const defRaw = [
+      ['Boston Normals','BOS',2,241,'17.2','289.4','186.2','103.2',38,16,11,27,'34.2','+12'],
+      ['Philadelphia Broads','PHI',3,248,'17.7','294.1','191.6','102.5',41,14,9,23,'34.9','+9'],
+      ['Detroit Caddies','DET',8,256,'18.3','299.8','179.4','120.4',35,15,12,27,'35.6','+9'],
+      ['New York Strangers','NYS',1,263,'18.8','305.2','194.7','110.5',33,13,8,21,'36.3','+5'],
+      ['Seattle Cranes','SEA',10,269,'19.2','310.6','188.3','122.3',36,12,10,22,'37.0','+6'],
+      ['Pittsburgh Melons','PIT',5,274,'19.6','315.1','197.8','117.3',39,11,9,20,'37.6','0'],
+      ['Minnesota Pops','MIN',9,280,'20.0','319.7','202.4','117.3',31,14,7,21,'38.1','+4'],
+      ['Chicago Beans','CHI',7,286,'20.4','324.3','191.1','133.2',34,10,8,18,'38.7','\u22121'],
+      ['Miami Neon','MIA',21,291,'20.8','328.8','213.6','115.2',29,12,6,18,'39.2','+1'],
+      ['Cleveland Rocks','CLE',6,297,'21.2','333.4','205.9','127.5',37,9,10,19,'39.8','\u22122'],
+      ['Colorado Oysters','COL',12,303,'21.6','338.0','210.2','127.8',30,11,7,18,'40.3','\u22124'],
+      ['Washington Monuments','WAS',4,308,'22.0','342.5','199.5','143.0',32,10,9,19,'40.9','\u22123'],
+      ['San Francisco Phones','SFP',22,314,'22.4','347.1','218.7','128.4',33,13,8,21,'41.4','+2'],
+      ['Tampa Bay Bees','TAM',23,320,'22.9','351.7','224.3','127.4',28,9,6,15,'42.0','\u22125'],
+      ['Vancouver Pinecones','VAN',11,325,'23.2','356.2','207.8','148.4',31,8,7,15,'42.5','\u22129'],
+      ['Las Vegas Residents','LVR',17,331,'23.6','360.8','229.6','131.2',27,12,5,17,'43.1','\u22124'],
+      ['New Orleans Tuesdays','NOR',13,337,'24.1','365.4','215.1','150.3',30,7,8,15,'43.6','\u22128'],
+      ['Kansas City Slippers','KCS',14,342,'24.4','369.9','233.2','136.7',26,10,6,16,'44.2','\u22127'],
+      ['Anaheim Rhyme','ANA',18,348,'24.9','374.5','221.4','153.1',29,8,7,15,'44.7','\u221210'],
+      ['San Diego Sand Dollars','SND',15,354,'25.3','379.1','237.8','141.3',25,9,5,14,'45.3','\u221210'],
+      ['Arizona Dry Heat','ARI',16,359,'25.6','383.6','226.7','156.9',28,6,6,12,'45.8','\u221214'],
+      ['St. Louis Wafflecones','STL',19,365,'26.1','388.2','242.3','145.9',24,8,4,12,'46.4','\u221213'],
+      ['Anchorage Truckers','ANC',20,371,'26.5','392.8','231.9','160.9',26,5,5,10,'46.9','\u221217'],
+      ['Georgia Classics','GAC',24,376,'26.9','397.3','247.6','149.7',23,7,3,10,'47.5','\u221218'],
+    ];
+    const teamDefense = defRaw.map((t, i) => ({
+      rank: i + 1, name: t[0], abbr: t[1], avatar: 'assets/avatars/' + t[2] + '.png',
+      pa: t[3], paG: t[4], ydsG: t[5], passG: t[6], rushG: t[7],
+      sk: t[8], int: t[9], ff: t[10], take: t[11], third: t[12] + '%',
+      margin: t[13], marginColor: deltaColor(t[13]),
+    }));
+
+    return {
+      rows,
+      wideRows: rows,
+      teamOffense,
+      teamDefense,
+      shownCount: rows.length + 3,
+      chromeOn: p.showChrome ?? true,
+      leadersOn: p.showLeaders ?? true,
+    };
+  }
+}
+
+</script>
+</body>
+</html>

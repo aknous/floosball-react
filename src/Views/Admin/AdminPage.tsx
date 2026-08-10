@@ -452,6 +452,109 @@ const AdminContent: React.FC<{
   const [namesError, setNamesError] = useState<string | null>(null)
   const [namesLoading, setNamesLoading] = useState(false)
 
+  // ── League news announcements ─────────────────────────────────────────────
+  type Announcement = {
+    id: number; headline: string; body: string | null; pinned: boolean
+    teamId: number | null; core: string | null
+    season: number; week: number; createdAt: string | null
+  }
+  // Two different things, which is why they are two controls. "Post as" decides whether
+  // the row is a written notice or a line in a Core's voice — a Core post threads with
+  // the sim's own Cores lines and is prefixed with their name. "Icon" only applies to a
+  // league notice, since a Core post already has one.
+  const NEWS_CORES = ['cassian', 'pyre', 'aris', 'halverson', 'vera']
+  const NEWS_ICONS = [
+    { value: 'none', label: 'No icon' },
+    { value: 'league', label: 'League mark' },
+    { value: 'team', label: 'Club crest' },
+  ]
+  const HEADLINE_MAX = 160
+  const BODY_MAX = 1200
+
+  const [newsHeadline, setNewsHeadline] = useState('')
+  const [newsBody, setNewsBody] = useState('')
+  const [newsPostAs, setNewsPostAs] = useState('league')
+  const [newsIcon, setNewsIcon] = useState('none')
+  const [newsTeamId, setNewsTeamId] = useState('')
+  const [newsPinned, setNewsPinned] = useState(false)
+  // Set while editing an existing row; null while composing a new one. The same form
+  // does both, so the copy cannot drift between a create form and an edit form.
+  const [newsEditId, setNewsEditId] = useState<number | null>(null)
+  const [newsPosted, setNewsPosted] = useState<string | null>(null)
+  const [newsError, setNewsError] = useState<string | null>(null)
+  const [newsLoading, setNewsLoading] = useState(false)
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+
+  const loadAnnouncements = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/league-news`, { headers: await buildHeaders() })
+      const json = await res.json()
+      if (res.ok) setAnnouncements(json.data?.items ?? [])
+    } catch { /* the composer still works without the list */ }
+  }
+
+  const resetNewsForm = () => {
+    setNewsEditId(null); setNewsHeadline(''); setNewsBody('')
+    setNewsPostAs('league'); setNewsIcon('none'); setNewsTeamId(''); setNewsPinned(false)
+  }
+
+  const handlePostNews = async () => {
+    const headline = newsHeadline.trim()
+    if (!headline) return
+    setNewsLoading(true); setNewsError(null); setNewsPosted(null)
+    try {
+      const body = {
+        headline, body: newsBody.trim() || null,
+        postAs: newsPostAs, icon: newsIcon,
+        teamId: newsTeamId ? Number(newsTeamId) : null, pinned: newsPinned,
+      }
+      const res = await fetch(
+        newsEditId ? `${API_BASE}/admin/league-news/${newsEditId}` : `${API_BASE}/admin/league-news`,
+        { method: newsEditId ? 'PATCH' : 'POST', headers: await buildHeaders(), body: JSON.stringify(body) },
+      )
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.detail || 'Request failed')
+      setNewsPosted(newsEditId ? 'Announcement updated.' : 'Posted to the league news.')
+      resetNewsForm()
+      loadAnnouncements()
+    } catch (e: any) {
+      setNewsError(e.message)
+    } finally {
+      setNewsLoading(false)
+    }
+  }
+
+  const editAnnouncement = (a: Announcement) => {
+    setNewsEditId(a.id)
+    setNewsHeadline(a.headline)
+    setNewsBody(a.body ?? '')
+    const asCore = a.core && a.core !== 'league' ? a.core : null
+    setNewsPostAs(asCore ?? 'league')
+    setNewsIcon(a.core === 'league' ? 'league' : a.teamId ? 'team' : 'none')
+    setNewsTeamId(a.teamId ? String(a.teamId) : '')
+    setNewsPinned(a.pinned)
+    setNewsPosted(null); setNewsError(null)
+  }
+
+  const setAnnouncementPinned = async (id: number, pinned: boolean) => {
+    try {
+      await fetch(`${API_BASE}/admin/league-news/${id}`, {
+        method: 'PATCH', headers: await buildHeaders(), body: JSON.stringify({ pinned }),
+      })
+      loadAnnouncements()
+    } catch { /* list refresh will show the truth */ }
+  }
+
+  const deleteAnnouncement = async (id: number) => {
+    try {
+      await fetch(`${API_BASE}/admin/league-news/${id}`, {
+        method: 'DELETE', headers: await buildHeaders(),
+      })
+      if (newsEditId === id) resetNewsForm()
+      loadAnnouncements()
+    } catch { /* list refresh will show the truth */ }
+  }
+
   const handleAddNames = async () => {
     const names = namesInput.split('\n').map(n => n.trim()).filter(Boolean)
     if (!names.length) return
@@ -826,7 +929,7 @@ const AdminContent: React.FC<{
     }
   }, [password])
 
-  type Section = 'monitor' | 'analytics' | 'achievements' | 'requests' | 'allowlist' | 'names' | 'players' | 'cards' | 'floobits' | 'users' | 'settings'
+  type Section = 'monitor' | 'analytics' | 'achievements' | 'requests' | 'allowlist' | 'names' | 'news' | 'players' | 'cards' | 'floobits' | 'users' | 'settings'
   const [activeSection, setActiveSection] = useState<Section>('monitor')
 
   // Load the Discord submission queue lazily — only when the Names tab is open, and
@@ -836,6 +939,12 @@ const AdminContent: React.FC<{
     if (activeSection === 'names') fetchSubmissions(subFilter)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSection, subFilter])
+
+  // Same lazy pattern for the announcement list.
+  React.useEffect(() => {
+    if (activeSection === 'news') loadAnnouncements()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection])
 
   // Auto-refresh monitor every 30s when active
   useEffect(() => {
@@ -1007,6 +1116,7 @@ const AdminContent: React.FC<{
     { id: 'requests', label: 'Requests' },
     { id: 'allowlist', label: 'Allowlist' },
     { id: 'names', label: 'Names' },
+    { id: 'news', label: 'News' },
     { id: 'players', label: 'Players' },
     { id: 'cards', label: 'Cards' },
     { id: 'floobits', label: 'Floobits' },
@@ -1986,6 +2096,166 @@ const AdminContent: React.FC<{
           )}
         </div>
       </div>}
+
+      {/* League News — hand-written rows in the feed everything else publishes to
+          automatically. Their own `announcement` category, so a reader can tell a
+          written notice from a reported result and the feed's per-category caps
+          cannot drop it. */}
+      {activeSection === 'news' && <div style={sectionStyle}>
+        <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '6px' }}>
+          {newsEditId ? 'Edit announcement' : 'Post to League News'}
+        </h2>
+        <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px', lineHeight: 1.5 }}>
+          Goes to the front page feed and out over the websocket. Season and week are
+          stamped from the sim. An unpinned notice is pushed out once about forty newer
+          items are published, which a busy slate does in a day. Pin it to hold it.
+          Posting as a Core writes a line in their voice, threaded with the sim's own.
+        </div>
+
+        <div style={{ marginBottom: '12px' }}>
+          <div style={labelStyle}>Headline</div>
+          <input
+            value={newsHeadline}
+            onChange={e => setNewsHeadline(e.target.value.slice(0, HEADLINE_MAX))}
+            style={inputStyle}
+            placeholder="The league will pause after tonight's slate"
+          />
+          <div style={{
+            fontSize: '11px', marginTop: '4px', textAlign: 'right',
+            color: newsHeadline.length > HEADLINE_MAX - 20 ? '#f59e0b' : '#64748b',
+          }}>{newsHeadline.length} / {HEADLINE_MAX}</div>
+        </div>
+
+        <div style={{ marginBottom: '12px' }}>
+          <div style={labelStyle}>Body (optional)</div>
+          <textarea
+            value={newsBody}
+            onChange={e => setNewsBody(e.target.value.slice(0, BODY_MAX))}
+            rows={5}
+            style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+            placeholder="Anything that needs more than a headline. Line breaks are kept."
+          />
+          <div style={{
+            fontSize: '11px', marginTop: '4px', textAlign: 'right',
+            color: newsBody.length > BODY_MAX - 100 ? '#f59e0b' : '#64748b',
+          }}>{newsBody.length} / {BODY_MAX}</div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '14px' }}>
+          <div>
+            <div style={labelStyle}>Post as</div>
+            <select
+              value={newsPostAs}
+              onChange={e => setNewsPostAs(e.target.value)}
+              style={{ ...inputStyle, maxWidth: '200px' }}
+            >
+              <option value="league">The league</option>
+              {NEWS_CORES.map(c => (
+                <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+              ))}
+            </select>
+          </div>
+          {/* A Core post already carries that Core's icon and colour, so the icon
+              picker only applies to a league notice. */}
+          {newsPostAs === 'league' && (
+            <div>
+              <div style={labelStyle}>Icon</div>
+              <select
+                value={newsIcon}
+                onChange={e => setNewsIcon(e.target.value)}
+                style={{ ...inputStyle, maxWidth: '200px' }}
+              >
+                {NEWS_ICONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          )}
+          {newsPostAs === 'league' && newsIcon === 'team' && (
+            <div>
+              <div style={labelStyle}>Team id</div>
+              <input
+                value={newsTeamId}
+                onChange={e => setNewsTeamId(e.target.value.replace(/[^0-9]/g, ''))}
+                style={{ ...inputStyle, maxWidth: '120px' }}
+                placeholder="1-32"
+              />
+            </div>
+          )}
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            fontSize: '13px', color: '#cbd5e1', cursor: 'pointer', paddingBottom: '8px',
+          }}>
+            <input type="checkbox" checked={newsPinned} onChange={e => setNewsPinned(e.target.checked)} />
+            Pin to the top of the feed
+          </label>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            onClick={handlePostNews}
+            disabled={newsLoading || !newsHeadline.trim()}
+            style={{ ...btnStyle, opacity: newsLoading || !newsHeadline.trim() ? 0.5 : 1 }}
+          >
+            {newsLoading ? 'Saving…' : newsEditId ? 'Save changes' : 'Post announcement'}
+          </button>
+          {newsEditId && (
+            <button onClick={resetNewsForm} style={{ ...btnStyle, background: '#334155' }}>
+              Cancel
+            </button>
+          )}
+        </div>
+        {newsPosted && (
+          <div style={{ marginTop: '10px', fontSize: '13px', color: '#22c55e' }}>{newsPosted}</div>
+        )}
+        {newsError && (
+          <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{newsError}</div>
+        )}
+
+        <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '28px 0 10px' }}>
+          Posted announcements
+        </h3>
+        {announcements.length === 0 ? (
+          <div style={{ fontSize: '13px', color: '#64748b' }}>Nothing posted yet.</div>
+        ) : announcements.map(a => (
+          <div key={a.id} style={{
+            display: 'flex', alignItems: 'flex-start', gap: '12px',
+            padding: '10px 12px', marginBottom: '8px',
+            background: a.pinned ? 'rgba(244,114,182,0.08)' : '#0f172a',
+            border: `1px solid ${a.pinned ? 'rgba(244,114,182,0.35)' : '#1e293b'}`,
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#e2e8f0' }}>
+                {a.pinned && <span style={{ color: '#f472b6', marginRight: '7px' }}>PINNED</span>}
+                {a.headline}
+              </div>
+              {a.body && (
+                <div style={{
+                  fontSize: '12px', color: '#94a3b8', marginTop: '4px',
+                  whiteSpace: 'pre-wrap', maxHeight: '60px', overflow: 'hidden',
+                }}>{a.body}</div>
+              )}
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '5px' }}>
+                Season {a.season}, week {a.week}
+                {a.core ? ` · ${a.core}` : a.teamId ? ` · team ${a.teamId}` : ''}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              <button
+                onClick={() => setAnnouncementPinned(a.id, !a.pinned)}
+                style={{ ...btnStyle, padding: '5px 10px', fontSize: '12px', background: '#334155' }}
+              >{a.pinned ? 'Unpin' : 'Pin'}</button>
+              <button
+                onClick={() => editAnnouncement(a)}
+                style={{ ...btnStyle, padding: '5px 10px', fontSize: '12px', background: '#334155' }}
+              >Edit</button>
+              <button
+                onClick={() => deleteAnnouncement(a.id)}
+                style={{ ...btnStyle, padding: '5px 10px', fontSize: '12px', background: '#7f1d1d' }}
+              >Delete</button>
+            </div>
+          </div>
+        ))}
+      </div>}
+
 
       {/* Create Players */}
       {activeSection === 'players' && <div style={sectionStyle}>

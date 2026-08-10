@@ -56,6 +56,15 @@ export interface CardBreakdownEntry {
   gateThreshold?: number
   gateInverse?: boolean       // inverse gate — active WHILE under the threshold
   gateAllPro?: boolean        // All-Pro card: its bar is lowered 30%
+  // Glitch (docs/GLITCH_CARDS.md). A card marked during a Criticality pays an extra
+  // unpredictable bonus on top of its printed effect — it never degrades it.
+  glitched?: boolean
+  glitchChance?: number       // this week's trigger odds (0-1); drives the scramble intensity
+  glitchTriggered?: boolean   // resolves at WEEK END — false while live means "not yet rolled"
+  glitchOutcome?: string | null  // surge name; only ever SHOWN when glitchReadable
+  glitchFp?: number           // extra FP the surge added
+  glitchMultDelta?: number    // extra FPx delta the surge added
+  glitchReadable?: boolean    // true only when the on-card player is awakened
 }
 
 export interface ChanceAmplifier {
@@ -357,6 +366,13 @@ export function useFantasySnapshot(userId?: number): UseFantasySnapshotResult {
               gateThreshold: cb.gateThreshold ?? 0,
               gateInverse: cb.gateInverse ?? false,
               gateAllPro: cb.gateAllPro ?? false,
+              glitched: cb.glitched ?? false,
+              glitchChance: cb.glitchChance ?? 0,
+              glitchTriggered: cb.glitchTriggered ?? false,
+              glitchOutcome: cb.glitchOutcome ?? null,
+              glitchFp: cb.glitchFp ?? 0,
+              glitchMultDelta: cb.glitchMultDelta ?? 0,
+              glitchReadable: cb.glitchReadable ?? false,
             })),
             equationSummary: e.equationSummary ?? existing?.equationSummary ?? undefined,
             favoriteTeamData: e.favoriteTeamData ?? existing?.favoriteTeamData ?? null,

@@ -4,6 +4,7 @@ import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import { GateMeter } from './gateMeter'
 import { positionColor } from '@/Components/Cards/positionColors'
 import type { CardBreakdownEntry, EquationSummary, ModifierInfo } from '@/hooks/useFantasySnapshot'
+import GlitchLine from './GlitchLine'
 
 // The card-scoring breakdown panel. Rendered by ScoringPane on the fantasy page.
 // Extracted from the retired FantasyRoster component (fusion cleanup) — it was the
@@ -148,21 +149,20 @@ const RosterCardRow: React.FC<{
             {(b!.tier ?? 1) >= 2 && (
               <span style={{
                 fontSize: '9px', fontWeight: 800, color: '#fbbf24',
-                background: 'rgba(251,191,36,0.14)', border: '1px solid rgba(251,191,36,0.35)',
-                borderRadius: '3px', padding: '0 4px', flexShrink: 0,
+                background: 'rgba(251,191,36,0.14)', border: '1px solid rgba(251,191,36,0.35)', padding: '0 4px', flexShrink: 0,
               }}>{TIER_ROMAN[b!.tier ?? 1] ?? b!.tier}</span>
             )}
             {b!.matchMultiplied && (
               <span style={{
                 color: '#60a5fa', fontSize: '10px', fontWeight: '700', flexShrink: 0,
-                backgroundColor: 'rgba(96,165,250,0.15)', padding: '2px 5px', borderRadius: '3px',
+                backgroundColor: 'rgba(96,165,250,0.15)', padding: '2px 5px',
               }}>MATCH</span>
             )}
             {bTag && (
               <HoverTooltip text={mod === bTag.activeModifier ? bTag.activeText : bTag.tooltip} color={bTag.color}>
                 <span style={{
                   color: bTag.color, fontSize: '10px', flexShrink: 0,
-                  backgroundColor: `${bTag.color}30`, padding: '2px 5px', borderRadius: '3px',
+                  backgroundColor: `${bTag.color}30`, padding: '2px 5px',
                 }}>{bTag.label}</span>
               </HoverTooltip>
             )}
@@ -328,6 +328,21 @@ const RosterCardRow: React.FC<{
           <span style={{ color: sub.chip.color, fontSize: '12px', fontWeight: '600', textDecoration: sub.negated ? 'line-through' : 'none' }}>{sub.chip.str}</span>
         </div>
       ))}
+      {/* Glitch: corrupted noise until the week resolves, then the payout. The OUTCOME
+          stays unreadable unless the on-card player is awakened. */}
+      {bd.glitched && (
+        <div style={{ paddingLeft: '28px' }}>
+          <GlitchLine
+            chance={bd.glitchChance ?? 0}
+            resolved={!!bd.chanceResolved}
+            triggered={!!bd.glitchTriggered}
+            outcome={bd.glitchOutcome}
+            readable={bd.glitchReadable}
+            fp={bd.glitchFp}
+            multDelta={bd.glitchMultDelta}
+          />
+        </div>
+      )}
     </>
   )
 }
@@ -357,7 +372,6 @@ export const PointsBreakdownPanel: React.FC<{
         cursor: 'pointer', userSelect: 'none',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '5px 8px',
-        borderRadius: '6px',
         backgroundColor: 'rgba(255,255,255,0.04)',
       }}
     >
@@ -399,7 +413,7 @@ export const PointsBreakdownPanel: React.FC<{
 
   return (
     <div style={{
-      backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '10px',
+      backgroundColor: '#0f172a', border: '1px solid #334155',
       padding: '10px 14px', marginTop: '0px',
     }}>
       {/* Roster & Cards — each roster slot with its card effect beneath it */}
@@ -548,7 +562,7 @@ export const PointsBreakdownPanel: React.FC<{
             {expanded['formula'] && (
             <div style={{
               marginTop: '4px', padding: '10px 12px',
-              backgroundColor: 'rgba(245,158,11,0.10)', borderRadius: '8px',
+              backgroundColor: 'rgba(245,158,11,0.10)',
               borderBottom: '2px solid rgba(245,158,11,0.5)',
             }}>
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.4px', color: '#f59e0b', marginBottom: '6px', textTransform: 'uppercase' }}>
@@ -568,7 +582,7 @@ export const PointsBreakdownPanel: React.FC<{
           {expanded['formula'] && (
           <div style={{
             marginTop: '4px', padding: '10px 12px',
-            backgroundColor: 'rgba(99,102,241,0.10)', borderRadius: '8px',
+            backgroundColor: 'rgba(99,102,241,0.10)',
             borderBottom: '2px solid rgba(99,102,241,0.5)',
           }}>
             <div style={{ fontSize: '13px', color: '#e2e8f0', fontFamily: 'monospace', lineHeight: '1.8' }}>

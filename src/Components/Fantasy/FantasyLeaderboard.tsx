@@ -124,7 +124,6 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
 
   const toggleStyle = (active: boolean): React.CSSProperties => ({
     padding: '6px 14px',
-    borderRadius: '6px',
     border: 'none',
     backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'transparent',
     color: active ? '#60a5fa' : '#64748b',
@@ -161,7 +160,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
         onClick={() => setShowPrizes(p => !p)}
         style={{
           cursor: 'pointer', userSelect: 'none', marginBottom: '12px',
-          padding: '6px 10px', borderRadius: '6px',
+          padding: '6px 10px',
           backgroundColor: 'rgba(234,179,8,0.10)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}
@@ -180,7 +179,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
         const topPctPrize = mode === 'season' ? SEASON_TOP_PCT_PRIZE : WEEKLY_TOP_PCT_PRIZE
         return (
           <div style={{
-            marginBottom: '12px', padding: '10px 12px', borderRadius: '8px',
+            marginBottom: '12px', padding: '10px 12px',
             backgroundColor: 'rgba(234,179,8,0.10)',
             borderBottom: '2px solid rgba(234,179,8,0.5)',
             display: 'flex', flexDirection: 'column', gap: '6px',
@@ -192,7 +191,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                   <span style={{
                     width: '28px', textAlign: 'center', fontWeight: '700',
                     color: rs.color, backgroundColor: rs.bg,
-                    padding: '2px 4px', borderRadius: '4px', fontSize: '10px',
+                    padding: '2px 4px', fontSize: '10px',
                   }}>{rs.label}</span>
                   <span style={{ color: '#eab308', fontWeight: '600', marginLeft: 'auto' }}>
                     {prizes[rank]}F
@@ -239,7 +238,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                                 fontSize: '10px', fontWeight: '700',
                                 color: RANK_STYLE[entry.rank].color,
                                 backgroundColor: RANK_STYLE[entry.rank].bg,
-                                padding: '2px 4px', borderRadius: '4px',
+                                padding: '2px 4px',
                               }}>{RANK_STYLE[entry.rank].label}</span>
                             : entry.rank}
                         </div>
@@ -248,7 +247,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             <img
                               src={`/avatars/${entry.favoriteTeamData.teamId}.png`}
                               alt=""
-                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
+                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, }}
                             />
                           )}
                           <div style={nameStyleFn(isMobile)}>
@@ -297,7 +296,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             <img
                               src={`/avatars/${meEntry.favoriteTeamData.teamId}.png`}
                               alt=""
-                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
+                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, }}
                             />
                           )}
                           <div style={nameStyleFn(isMobile)}>
@@ -359,7 +358,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                                 fontSize: '10px', fontWeight: '700',
                                 color: RANK_STYLE[entry.rank].color,
                                 backgroundColor: RANK_STYLE[entry.rank].bg,
-                                padding: '2px 4px', borderRadius: '4px',
+                                padding: '2px 4px',
                               }}>{RANK_STYLE[entry.rank].label}</span>
                             : entry.rank}
                         </div>
@@ -368,7 +367,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             <img
                               src={`/avatars/${entry.favoriteTeamId}.png`}
                               alt=""
-                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
+                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, }}
                             />
                           )}
                           <div style={nameStyleFn(isMobile)}>
@@ -417,7 +416,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             <img
                               src={`/avatars/${meEntry.favoriteTeamId}.png`}
                               alt=""
-                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, borderRadius: '3px' }}
+                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, }}
                             />
                           )}
                           <div style={nameStyleFn(isMobile)}>
@@ -467,7 +466,6 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
 
 const cardStyleFn = (mobile: boolean): React.CSSProperties => ({
   backgroundColor: '#1e293b',
-  borderRadius: '14px',
   border: '1px solid #334155',
   padding: mobile ? '12px' : '24px',
 })
@@ -476,8 +474,7 @@ const rowStyle = (isExpanded: boolean, mobile: boolean, isMe: boolean = false): 
   display: 'flex', alignItems: 'center', gap: mobile ? '8px' : '14px',
   width: '100%', padding: mobile ? '8px 10px' : '12px 16px',
   backgroundColor: isMe ? '#253348' : isExpanded ? 'rgba(255,255,255,0.06)' : 'transparent',
-  borderLeft: isMe ? '2px solid #3b82f6' : '2px solid transparent',
-  borderRadius: '8px', cursor: 'pointer',
+  borderLeft: isMe ? '2px solid #3b82f6' : '2px solid transparent', cursor: 'pointer',
   fontFamily: 'inherit', textAlign: 'left',
   transition: 'background 0.1s',
 })

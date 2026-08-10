@@ -12,6 +12,77 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.00',
+    date: '2026-08-10',
+    changes: [],
+    sections: [
+      {
+        label: 'A New Floosball',
+        items: [
+          '[Everywhere] New shell and left nav. Front page, game board, standings, stats, game pages, team pages and prognostications all rebuilt.',
+          '[Games] Games have their own page instead of a modal. Field, play feed and Bleachers side by side. Past weeks open.',
+          '[Games] The Bleachers on every game. Post during the game and watch players and sidelines react.',
+          '[Front Page] Live ticker of the current slate, your team, your numbers, and league news.',
+          '[Search] Command palette in the header for any page, team or player.',
+          '[Mobile] The phone layout is not part of this redesign yet.',
+        ],
+      },
+      {
+        label: 'The League',
+        items: [
+          '[League] 32 clubs in two leagues of 16, split into eight divisions of four.',
+          '[League] 28 week season: 12 games against your three division rivals, 12 against the rest of your league, 4 interleague. The last game day is all division games.',
+          '[League] Division titles are now recorded, alongside league titles and Floos Bowls.',
+          '[Standings] Divisions, projected seeds, games back of the cut, recent form and weekly movement.',
+          '[Standings] First playoff tiebreaker is division record inside a division, league record for a wildcard.',
+          '[Playoffs] 16 teams, 8 per league. The bracket appears in the nav once the regular season ends.',
+        ],
+      },
+      {
+        label: 'League News',
+        items: [
+          '[News] The feed is persisted. Stories publish as they happen and stay.',
+          '[News] The Cores appear in the feed in their own voices.',
+          '[News] Awakenings, rule changes, records, clinches, upsets and instability all publish.',
+          '[News] League announcements, written and pinned by hand.',
+        ],
+      },
+      {
+        label: 'Prognostications',
+        items: [
+          '[Pick-Em] Its own page. Each matchup shows both clubs, win probability, record, rating, and what each side pays.',
+          '[Pick-Em] Open a matchup for form, streak, point differential and division record.',
+          '[Pick-Em] Call the whole day at once. Finished slates collapse.',
+          '[Pick-Em] Auto-pick modes, plus an option to never pick against your own team.',
+        ],
+      },
+      {
+        label: 'Stats and Records',
+        items: [
+          '[Stats] Filter by position, status and season. Compare players or clubs side by side. Season or career.',
+          '[Stats] Win probability added is shown in wins.',
+          '[Games] Finished games keep their box score, team totals and quarter line.',
+          '[Teams] Playoff history on every club.',
+        ],
+      },
+      {
+        label: 'Cards and Fantasy',
+        items: [
+          '[Cards] Every effect with an eligible player is minted each season.',
+          '[Cards] Packs and the daily shop no longer repeat an effect in one draw.',
+          '[Fantasy] Live fantasy points in the header, beside your Floobits.',
+        ],
+      },
+      {
+        label: 'Accounts',
+        items: [
+          '[Accounts] The beta is open. The request screen is gone.',
+          '[Accounts] Choose your own username, changeable once a season.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v0.25.0',
     date: '2026-08-02',
     changes: [],

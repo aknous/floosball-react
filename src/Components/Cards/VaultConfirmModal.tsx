@@ -74,7 +74,7 @@ export default function VaultConfirmModal({ cards, onClose, onComplete }: VaultC
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: '560px', maxHeight: '90vh',
-          backgroundColor: '#0f172a', border: `1px solid ${GOLD}44`, borderRadius: '12px',
+          backgroundColor: '#0f172a', border: `1px solid ${GOLD}44`,
           display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'pressStart',
         }}
       >
@@ -100,7 +100,7 @@ export default function VaultConfirmModal({ cards, onClose, onComplete }: VaultC
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
           {/* Warning */}
           <div style={{
-            padding: '12px 14px', borderRadius: '8px', marginBottom: '16px',
+            padding: '12px 14px', marginBottom: '16px',
             border: `1px solid ${GOLD}33`, background: 'rgba(251,191,36,0.08)',
           }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: GOLD, marginBottom: '6px' }}>
@@ -137,7 +137,7 @@ export default function VaultConfirmModal({ cards, onClose, onComplete }: VaultC
             onClick={() => { if (!busy) onClose() }}
             disabled={busy}
             style={{
-              padding: '10px 18px', borderRadius: '8px', border: '1px solid #334155',
+              padding: '10px 18px', border: '1px solid #334155',
               background: 'transparent', color: '#94a3b8', fontFamily: 'pressStart',
               fontSize: '12px', fontWeight: 700, cursor: busy ? 'not-allowed' : 'pointer',
             }}
@@ -148,7 +148,7 @@ export default function VaultConfirmModal({ cards, onClose, onComplete }: VaultC
             onClick={handleConfirm}
             disabled={busy}
             style={{
-              padding: '10px 18px', borderRadius: '8px', border: 'none',
+              padding: '10px 18px', border: 'none',
               background: `linear-gradient(135deg, ${GOLD}, #d97706)`,
               color: '#1a1206', fontFamily: 'pressStart', fontSize: '12px', fontWeight: 800,
               cursor: busy ? 'not-allowed' : 'pointer', opacity: busy ? 0.7 : 1,

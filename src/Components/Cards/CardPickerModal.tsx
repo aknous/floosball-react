@@ -39,7 +39,6 @@ const PickerCard: React.FC<{
     >
       <div style={{
         position: 'relative',
-        borderRadius: '14px',
         boxShadow: isMatch && !disabled ? '0 0 0 2px #60a5fa, 0 0 12px rgba(96,165,250,0.3)' : 'none',
       }}>
         {/* Apply the disabled wash to JUST the card art so the
@@ -61,7 +60,7 @@ const PickerCard: React.FC<{
             position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
             fontSize: '9px', color: '#60a5fa', fontWeight: '700',
             backgroundColor: 'rgba(96,165,250,0.15)',
-            padding: '2px 5px', borderRadius: '4px',
+            padding: '2px 5px',
             border: '1px solid rgba(96,165,250,0.3)',
             zIndex: 1,
           }}>
@@ -74,7 +73,7 @@ const PickerCard: React.FC<{
             transform: 'translate(-50%, -50%)',
             fontSize: '12px', color: '#0f172a', fontWeight: '800',
             backgroundColor: '#fbbf24',
-            padding: '6px 12px', borderRadius: '6px',
+            padding: '6px 12px',
             border: '2px solid #f59e0b',
             boxShadow: '0 4px 14px rgba(0,0,0,0.5), 0 0 0 4px rgba(251,191,36,0.25)',
             zIndex: 2, whiteSpace: 'nowrap' as const,
@@ -95,7 +94,7 @@ const PickerCard: React.FC<{
               display: 'inline-flex', alignItems: 'center',
               fontSize: '12px', fontWeight: 700,
               color: style.color, backgroundColor: style.bg,
-              padding: '4px 10px', borderRadius: '5px',
+              padding: '4px 10px',
               border: `1px solid ${style.color}55`,
               fontVariantNumeric: 'tabular-nums' as const,
               whiteSpace: 'nowrap' as const,
@@ -121,7 +120,6 @@ const PickerCard: React.FC<{
         style={{
           backgroundColor: disabled ? '#1e293b' : 'rgba(59,130,246,0.85)',
           border: `1px solid ${disabled ? '#334155' : 'rgba(96,165,250,0.5)'}`,
-          borderRadius: '6px',
           color: disabled ? '#64748b' : '#fff',
           fontSize: '10px', fontWeight: '700',
           fontFamily: 'pressStart',
@@ -257,8 +255,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
           // Fixed height so the modal doesn't jump around as filters change
           // the card count. Card grid inside handles its own scrolling.
           height: isMobile ? '92vh' : '85vh',
-          backgroundColor: '#1e293b', border: '1px solid #334155',
-          borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
+          backgroundColor: '#1e293b', border: '1px solid #334155', boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
           fontFamily: 'pressStart', display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
         }}
@@ -295,7 +292,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
               onClick={() => setMyTeamsOnly(v => !v)}
               style={{
                 marginTop: '8px', fontSize: '10px', fontWeight: '700', fontFamily: 'pressStart',
-                padding: '5px 11px', borderRadius: '6px', cursor: 'pointer',
+                padding: '5px 11px', cursor: 'pointer',
                 border: `1px solid ${myTeamsOnly ? '#38bdf8' : '#475569'}`,
                 backgroundColor: myTeamsOnly ? 'rgba(56,189,248,0.16)' : 'transparent',
                 color: myTeamsOnly ? '#7dd3fc' : '#94a3b8',

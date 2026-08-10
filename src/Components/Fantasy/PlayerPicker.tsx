@@ -80,7 +80,7 @@ const CardBadge: React.FC<{ card: PlayerCardInfo }> = ({ card }) => {
       display: 'inline-flex', alignItems: 'center', gap: '5px',
       fontSize: '11px', fontWeight: '700', color: style.color,
       backgroundColor: style.bg,
-      padding: '3px 8px', borderRadius: '4px',
+      padding: '3px 8px',
       border: 'none',
       whiteSpace: 'nowrap',
     }}>
@@ -103,7 +103,6 @@ const CardBadge: React.FC<{ card: PlayerCardInfo }> = ({ card }) => {
           transform: 'translate(-50%, -100%)',
           backgroundColor: '#0f172a',
           border: `1px solid ${catColor}40`,
-          borderRadius: '8px',
           padding: '8px 12px',
           fontSize: '10px',
           color: '#e2e8f0',
@@ -277,8 +276,7 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
       <div
         style={{
           width: '100%', maxWidth: '560px', maxHeight: '80vh',
-          backgroundColor: '#1e293b', border: '1px solid #334155',
-          borderRadius: '14px', boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
+          backgroundColor: '#1e293b', border: '1px solid #334155', boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
           fontFamily: 'pressStart', display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
         }}
@@ -316,7 +314,6 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
                       fontSize: '11px',
                       fontWeight: 700,
                       letterSpacing: '0.04em',
-                      borderRadius: '999px',
                       border: `1px solid ${active ? '#a78bfa' : '#334155'}`,
                       backgroundColor: active ? 'rgba(167,139,250,0.18)' : 'transparent',
                       color: active ? '#c4b5fd' : '#94a3b8',
@@ -362,7 +359,6 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
                           fontWeight: 700,
                           letterSpacing: 'normal',
                           textTransform: 'none',
-                          borderRadius: '999px',
                           border: `1px solid ${equippedOnly ? '#22c55e' : '#475569'}`,
                           backgroundColor: equippedOnly ? 'rgba(34,197,94,0.15)' : 'transparent',
                           color: equippedOnly ? '#86efac' : '#94a3b8',

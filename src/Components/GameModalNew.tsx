@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useGames } from '@/contexts/GamesContext'
+import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { XIcon } from '@heroicons/react/solid'
 import PlayerHoverCard from './PlayerHoverCard'
@@ -22,9 +23,59 @@ import { ordinal } from '@/utils/ordinal'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+/**
+ * Viewport width at which the game route runs three columns — game state, plays,
+ * Bleachers — instead of stacking the first two.
+ *
+ * Exported because the page sets its own max width off the same threshold: the
+ * two have to agree or the layout caps at a width the columns cannot use.
+ */
+export const PAGE_THREE_COLUMN_MIN = 1500
+
 interface GameModalNewProps {
   onClose: () => void
   gameId: number
+  /**
+   * A game the live context does NOT hold — one from a past week, rebuilt from the
+   * database by the route above.
+   *
+   * ⚠️ Passed in rather than fetched here. `GamesContext` only carries the current
+   * round, so this component resolved nothing for an archived game and rendered
+   * "Game not found" inside a page that had already found it. A second fetch in
+   * here would race the route's own and could disagree with it.
+   */
+  fallbackGame?: CurrentGame
+  /**
+   * `modal` (default) is the overlay opened from the board, the team page and
+   * the front page. `page` is the same game rendered inline as the left column
+   * of the game route — no overlay, no card, no close button, and no scores
+   * block, because the route puts a full-width scoreboard band above it.
+   *
+   * A prop rather than a fork: everything that makes this component worth
+   * reusing — the field SVG, the WP chart, replay, the play rows and their
+   * insights, the box score — is identical in both, and a copy would drift.
+   */
+  layout?: 'modal' | 'page'
+  /**
+   * The Bleachers rail, rendered BESIDE the play feed rather than as a sibling
+   * column of the page.
+   *
+   * It lives here because it belongs to the Plays view: the fan feed is what you
+   * read while watching, and the box score and player stats are a different job
+   * that wants the width instead. As a page-level column it took 372px away
+   * from a box score that needed it and gave it to a feed nobody reads while
+   * studying a stat line.
+   */
+  railContent?: React.ReactNode
+  /**
+   * The scoreboard, rendered at the head of the GAME-STATE column.
+   *
+   * It was a full-width band across the top of the route, which is a lot of
+   * gutter for two rows of numbers — the clubs sat at the far edges and the
+   * middle was empty. In the left column it sits directly above the field it
+   * describes and the width goes to the numbers.
+   */
+  scoreboard?: React.ReactNode
 }
 
 interface ReplayControlBarProps {
@@ -210,11 +261,22 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
 }
 
 
-export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) => {
+const TABS = ['plays', 'box', 'stats'] as const
+
+/** Plays are only ever available live, or on a finished game still held in memory. */
+function gameDataStatusForPlays(game: any): boolean {
+  if (!game) return true
+  const plays = (game.plays ?? []) as any[]
+  if (game.status !== 'Final') return true
+  return plays.some(p => !p.event && !p.isSidelineCutaway)
+}
+
+export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, layout = 'modal', railContent, scoreboard, fallbackGame }) => {
+  const asPage = layout === 'page'
   const [activeTab, setActiveTab] = useState<'box' | 'plays' | 'stats'>('plays')
+
   const [showHighlightsOnly, setShowHighlightsOnly] = useState(false)
   const [expandedPlayKey, setExpandedPlayKey] = useState<string | null>(null)
-  const [expandedStatKey, setExpandedStatKey] = useState<string | null>(null)
   // The league's current downs-per-series (a mutable rule) so the ACTUAL last down
   // is colored urgent, not a hardcoded 4th.
   const [lastDown, setLastDown] = useState(4)
@@ -244,10 +306,26 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // phone gives the stats area ~540px which is too tight for 6 columns
   // and a readable player name. Engage the condensed layout below 1000px.
   const isTightStats = useIsMobile(1000)
-  
+  /**
+   * The modal's body is two columns side by side: game state left, plays right.
+   *
+   * The route keeps that split whenever there is room for it, which makes the
+   * page THREE columns — state, plays, Bleachers — so the play feed is beside
+   * the field rather than below it. That was the point of the route: you should
+   * not have to scroll past the pitch to watch the game.
+   *
+   * Below `PAGE_THREE_COLUMN_MIN` the two panels stack (the mobile path) and the
+   * page falls back to game-over-talk.
+   */
+  const pageNarrow = useIsMobile(PAGE_THREE_COLUMN_MIN)
+  const stacked = isMobile || (asPage && pageNarrow)
+
+
   // Get game from central state and fetch plays
   const { games, fetchGamePlays } = useGames()
-  const liveGameData = useMemo(() => games.get(gameId), [games, gameId])
+  // The live row wins whenever there is one — those are websocket-updated, and a
+  // rebuilt snapshot would go stale mid-drive.
+  const liveGameData = useMemo(() => games.get(gameId) ?? fallbackGame, [games, gameId, fallbackGame])
   // Freeze last known data so the modal stays populated after week rollover clears the game
   const frozenRef = useRef(liveGameData)
   if (liveGameData) frozenRef.current = liveGameData
@@ -257,6 +335,21 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   // as plays merge/arrive can't reset the guard. Reset on game switch below.
   const modalOpenedAtRef = useRef(Date.now())
   const gameData = frozenRef.current
+
+  /**
+   * Is there a play feed at all?
+   *
+   * ⚠️ Play-by-play is deliberately NOT persisted (owner) — it lives only on the
+   * in-memory game object, which is the trade that keeps the games table small. So a
+   * FINISHED game rebuilt from the database has a box score and player stats and no
+   * plays, and the tab opened on an empty panel that read as a bug rather than as a
+   * design decision. A live or scheduled game keeps the tab even with nothing in it
+   * yet, because plays are coming.
+   */
+  const hasPlayFeed = gameDataStatusForPlays(gameData)
+  useEffect(() => {
+    if (!hasPlayFeed && activeTab === 'plays') setActiveTab('box')
+  }, [hasPlayFeed, activeTab])
   // Prefer THIS game's own downs-per-series (Criticality chaos can set it to 3 or 5,
   // differing from the season-wide /api/rules value) so the true last down is colored
   // urgent, not a hardcoded 4th. Falls back to the /api/rules value for older payloads.
@@ -689,6 +782,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     if (play.type === 'reaction' || play.event?.type === 'reaction') return null
 
     // Sideline cutaway — flavor entry between plays, formatted to mirror a regular play row
+    // On the route these live in the Bleachers rail instead — rendering them
+    // here as well printed every cutaway twice, once in each column.
+    if (asPage && play.isSidelineCutaway) return null
     if (play.isSidelineCutaway && play.sidelineCutaway) {
       const cutaway = play.sidelineCutaway
       const accent = personalityAccent(cutaway.personality)
@@ -823,12 +919,24 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
     const bigPlayTeamColor = homeGained ? gameData.homeTeam.color : awayDisplayColor
     const wpaValue = homeGained ? (play.homeWpa ?? 0) : (play.awayWpa ?? 0)
     const hasAccent = isBigPlay || isClutchPlay || isChokePlay || isMomentumShift
+    // Precedence is the source's own: big -> clutch -> choke -> momentum.
+    const accentColor = isBigPlay ? '#f59e0b'
+      : isClutchPlay ? '#06b6d4'
+      : isChokePlay ? '#ef4444'
+      : isMomentumShift ? '#f97316'
+      : null
     const playKey = play.playNumber != null ? `pn-${play.playNumber}` : `${keyPrefix}-${index}`
     const hasInsights = play.insights && Object.keys(play.insights).length > 0
     const isExpanded = expandedPlayKey === playKey
 
     return (
-      <div key={playKey} style={{ borderBottom: '1px solid #334155' }}>
+      <div key={playKey} style={{
+        // ⚠️ The accent is the row's OWN DIVIDER, not a rail down its left edge.
+        // A 3px coloured bar on a tinted row is the house style of every AI-built
+        // dashboard; colouring the separator the row already has marks it just as
+        // clearly without borrowing that look.
+        borderBottom: accentColor ? `1px solid ${accentColor}` : '1px solid #334155',
+      }}>
         <div
           onClick={hasInsights ? () => setExpandedPlayKey(isExpanded ? null : playKey) : undefined}
           className={hasGlitch ? (isGlitchL3 ? 'anomaly-row-l3' : isGlitchL2 ? 'anomaly-row-l2' : 'anomaly-row-l1') : hasAwakened ? 'awakened-row' : undefined}
@@ -837,17 +945,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             paddingTop: '6px',
             paddingLeft: '10px',
             paddingRight: '6px',
-            boxShadow: isBigPlay ? 'inset 3px 0 0 #f59e0b'
-              : isClutchPlay ? 'inset 3px 0 0 #06b6d4'
-              : isChokePlay ? 'inset 3px 0 0 #ef4444'
-              : isMomentumShift ? 'inset 3px 0 0 #f97316'
-              : 'none',
-            backgroundColor: isBigPlay ? '#1a1300'
-              : isClutchPlay ? '#001a1f'
-              : isChokePlay ? '#1a0500'
-              : isMomentumShift ? '#1a0f00'
+            // A wash that fades out across the row rather than a flat fill, so the
+            // colour is strongest where the marker is and the description still
+            // sits on the page's own background.
+            background: accentColor
+              ? `linear-gradient(90deg, ${accentColor}26 0%, ${accentColor}0d 42%, transparent 78%)`
               : 'transparent',
-            borderRadius: hasAccent ? '4px' : '0',
+            borderRadius: 0,
             display: 'flex',
             gap: '12px',
             cursor: hasInsights ? 'pointer' : 'default',
@@ -1046,19 +1150,37 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 {play.reaction.text}
               </p>
             )}
+            {/* A player's reaction belongs WITH the play he is reacting to — it
+                is about that snap, and in the rail it lost the thing it was
+                about. Sideline cutaways are the opposite: they fire between
+                plays and belong in the Bleachers. */}
             {play.personalityEvent && (() => {
               const accent = personalityAccent(play.personalityEvent.personality)
               return (
-                <div style={{ margin: '4px 0 0' }}>
+                // A quote mark rather than a coloured left rail. The rail was the
+                // same device the big-play highlight used, so a reaction and a
+                // 60-yard run were flagged identically; a quote says "someone
+                // said this" on its own and the personality colour rides it.
+                <div style={{
+                  margin: '5px 0 0',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '7px',
+                  padding: '6px 9px',
+                  // Tinted block, no rail: the background is what sets a quote
+                  // apart from the play above it, and the personality colour
+                  // still rides it without borrowing the highlight's device.
+                  background: `${accent}1a`,
+                }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill={accent}
+                       style={{ flexShrink: 0, marginTop: '2px', opacity: 0.85 }}>
+                    <path d="M9.5 5C6.5 6.6 4.8 9.3 4.8 12.6V19h6.4v-6.4H8.1c0-2 .7-3.6 2.4-4.7L9.5 5Zm9 0c-3 1.6-4.7 4.3-4.7 7.6V19h6.4v-6.4h-3.1c0-2 .7-3.6 2.4-4.7L18.5 5Z" />
+                  </svg>
                   <p style={{
                     fontSize: '13px',
                     color: '#e2e8f0',
                     fontStyle: 'italic',
                     margin: 0,
-                    backgroundColor: `${accent}10`,
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    borderLeft: `2px solid ${accent}`,
                   }}>
                     {play.personalityEvent.text}
                   </p>
@@ -1175,6 +1297,28 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
   const flameColor = absMomentum >= 25 ? '#f97316' : absMomentum >= 15 ? '#fb923c' : '#fdba74'
   const flameGlow = absMomentum >= 25 ? '0 0 6px #f97316' : 'none'
 
+  /**
+   * Whether the status block has anything left to render on the route.
+   *
+   * Its two normal rows (clock, down and distance) live in the scoreboard there,
+   * so what remains is purely format-specific. A standard game with no drive
+   * clock leaves it empty, and an empty bordered block between the scoreboard
+   * and the field is exactly the dead space it looks like.
+   *
+   * ⚠️ Declared HERE, not up with the other layout flags: it reads `gameData`
+   * and `replayActive`, both of which are initialised further down. Placing it
+   * above them threw "Cannot access 'gameData' before initialization" on mount.
+   */
+  const hasStatusExtras = (() => {
+    const notScheduled = gameData?.status !== 'Scheduled'
+    if (gameData?.status === 'Active' && !replayActive && gameData?.driveClock) return true
+    if (gameFormat === 'target' && notScheduled) return true
+    if (gameFormat === 'bust' && notScheduled) return true
+    if (gameFormat === 'play_limit' && gameData?.playLimit?.active) return true
+    if (gameFormat === 'chess_clock' && gameData?.chessClock?.active && notScheduled) return true
+    return false
+  })()
+
   if (!gameData) {
     return (
       <div style={{
@@ -1195,8 +1339,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
   return (
     <div
-      onClick={onClose}
-      style={{
+      onClick={asPage ? undefined : onClose}
+      style={asPage ? { minWidth: 0, flex: 1, minHeight: 0, display: 'flex' } : {
         position: 'fixed',
         inset: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -1208,8 +1352,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
       }}
     >
       <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
+        onClick={asPage ? undefined : (e) => e.stopPropagation()}
+        style={asPage ? {
+          // On the route these two wrappers stop being chrome and become a plain
+          // container: the page owns the background, the scrolling and the width.
+          display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1, minHeight: 0,
+        } : {
           backgroundColor: '#0f172a',
           borderRadius: isMobile ? '0' : '12px',
           width: '100%',
@@ -1220,9 +1368,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           overflow: 'hidden'
         }}
       >
-        {/* Header */}
+        {/* Header — the watching count, the cheer bar and the close button. The
+            route carries all three in its own nav bar and scoreboard band. */}
         <div style={{
-          display: 'flex',
+          display: asPage ? 'none' : 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '12px 20px',
@@ -1274,27 +1423,69 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
           </button>
         </div>
 
-        {/* Body: two-column on desktop, stacked on mobile */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: isMobile ? 'auto' : 'hidden', minHeight: 0 }}>
+        {/* Body: two-column in the modal, stacked on mobile and on the route */}
+        <div style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: stacked ? 'column' : 'row',
+          gap: asPage ? '16px' : 0,
+          // The modal clips and scrolls inside itself; the page must not, or the
+          // columns inherit a height nothing has set and collapse.
+          overflow: asPage ? 'visible' : stacked ? 'auto' : 'hidden',
+          alignItems: asPage && !stacked ? 'stretch' : undefined,
+        }}>
 
           {/* Left panel: Scoreboard + Status + WP */}
           <div style={{
-            flex: isMobile ? '0 0 auto' : '0 0 40%',
+            // The game-state column. Bounded rather than a free share.
+            //
+            // The FLOOR is what matters: at 30% of a 1500px window the clamp sat
+            // on its minimum and the pitch came out smaller than the old modal
+            // drew it (~448 wide, from a 40% panel of a 1200px modal). 470 puts
+            // the field back at that size on the narrowest screen that runs
+            // three columns; the ceiling lets it breathe on a big monitor
+            // without eating the width the box score wants.
+            flex: stacked ? '0 0 auto' : asPage ? '0 0 clamp(470px, 32%, 540px)' : '0 0 40%',
             minWidth: 0,
-            borderRight: isMobile ? 'none' : '1px solid #334155',
-            borderBottom: isMobile ? '1px solid #334155' : 'none',
+            // One container on the route. Scoreboard, field and chart were three
+            // bare blocks with gaps between them, which read as unrelated things
+            // stacked up rather than one column about the game.
+            ...(asPage ? {
+              background: '#131e2f',
+              border: '1px solid #1e293b',
+              alignSelf: 'flex-start',
+            } : {}),
+            // The route separates its columns with a gap, not a rule — the
+            // panels already have their own borders and a divider between two
+            // bordered stacks reads as a double line.
+            borderRight: stacked || asPage ? 'none' : '1px solid #334155',
+            borderBottom: stacked && !asPage ? '1px solid #334155' : 'none',
             display: 'flex',
             flexDirection: 'column',
-            overflowY: isMobile ? 'visible' : 'auto'
+            gap: 0,
+            overflowY: stacked || asPage ? 'visible' : 'auto'
           }}>
 
-            {/* Scores */}
-            <div style={{ padding: '16px', backgroundColor: '#1e293b' }}>
+            {asPage && scoreboard}
+
+            {/* Scores.
+                ⚠️ The whole block collapses on the route, in EVERY format. It used
+                to survive for innings and frames, because the route's scoreboard
+                band could not draw their line scores and this block could — so a
+                frames game showed the new band with nothing between the club and
+                its total, and this old scoreboard underneath it. The band handles
+                all three formats now (`GamePage.periodLine`), so what is left here
+                is 32px of padding around nothing. */}
+            <div style={{
+              padding: '16px', backgroundColor: '#1e293b',
+              display: asPage ? 'none' : 'block',
+            }}>
 
               {/* Home team — outer flex row holds RallyButton and score
                   OUTSIDE the TeamHoverCard wrapper so hovering the
                   cheer button doesn't pop the team tooltip. */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '12px' }}>
+              <div style={{ display: asPage ? 'none' : 'flex', alignItems: 'center', gap: '10px', paddingBottom: '12px' }}>
                 <TeamHoverCard teamId={gameData.homeTeam.id}>
                   <div style={{
                     width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
@@ -1328,7 +1519,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               </div>
 
               {/* Home timeouts */}
-              {gameData.status === 'Active' && gameData.homeTimeouts != null && hasTimeouts && (
+              {!asPage && gameData.status === 'Active' && gameData.homeTimeouts != null && hasTimeouts && (
                 <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingBottom: '8px' }}>
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{
@@ -1342,7 +1533,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
               {/* Away team — RallyButton and score sit outside the
                   TeamHoverCard wrapper, same pattern as Home. */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingTop: '12px', borderTop: '1px solid #334155' }}>
+              <div style={{ display: asPage ? 'none' : 'flex', alignItems: 'center', gap: '10px', paddingTop: '12px', borderTop: '1px solid #334155' }}>
                 <TeamHoverCard teamId={gameData.awayTeam.id}>
                   <div style={{
                     width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
@@ -1376,7 +1567,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               </div>
 
               {/* Away timeouts */}
-              {gameData.status === 'Active' && gameData.awayTimeouts != null && hasTimeouts && (
+              {!asPage && gameData.status === 'Active' && gameData.awayTimeouts != null && hasTimeouts && (
                 <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingTop: '8px' }}>
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{
@@ -1480,7 +1671,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                     </table>
                   </div>
                 )
-              })() : (dQuarterScores && !gameData.innings?.active && !gameData.frames?.active) ? (
+              })() : (!asPage && dQuarterScores && !gameData.innings?.active && !gameData.frames?.active) ? (
+                /* ⚠️ Route only: the quarter line moved INTO the scoreboard band,
+                   where a score and its breakdown belong together. The innings
+                   and frames lines above stay here — they are a different shape
+                   and too wide for the band. */
                 <div style={{ borderTop: '1px solid #334155', marginTop: '12px', paddingTop: '8px' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
                     <thead>
@@ -1514,8 +1709,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
 
               {/* Rally buttons — one per team, side-by-side below the
                   scoreboard. Each is a "Cheer for <Team>" CTA that
-                  charges floobits and bumps that team's confidence. */}
-              {gameData.status === 'Active' && (
+                  charges floobits and bumps that team's confidence.
+                  On the route these sit at the top of the Bleachers rail, with
+                  the rest of the fan voice, rather than under the scores. */}
+              {!asPage && gameData.status === 'Active' && (
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
@@ -1530,11 +1727,21 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               )}
             </div>
 
-            {/* Game status + down/distance */}
-            <div style={{ padding: '10px 16px', borderBottom: '1px solid #334155', textAlign: 'center' }}>
+            {/* Game status + down/distance.
+                On the route the clock and the down are already in the scoreboard,
+                so those two rows are hidden and this block survives only for the
+                FORMAT rows below it — drive clock, target, bust, plays per
+                quarter, chess-clock budgets.
+                ⚠️ Which is why it collapses when none of them apply: a standard
+                game with no drive clock was left with 20px of padding and a rule
+                around nothing, sitting between the scoreboard and the field. */}
+            <div style={{
+              padding: '10px 16px', borderBottom: '1px solid #334155', textAlign: 'center',
+              display: asPage && !hasStatusExtras ? 'none' : 'block',
+            }}>
               {/* Row 1: clock / final */}
               <div style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '600', marginBottom: '3px',
-                            display: 'inline-flex', alignItems: 'center', gap: '6px',
+                            display: asPage ? 'none' : 'inline-flex', alignItems: 'center', gap: '6px',
                             justifyContent: 'center', width: '100%' }}>
                 {replayActive ? (
                   <span>{`${dQuarter > 4 ? 'OT' : `Q${dQuarter}`}  •  ${dClock}`}</span>
@@ -1584,7 +1791,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 )}
               </div>
               {/* Row 2: down & distance (active games + replay) */}
-              {(gameData.status === 'Active' || replayActive) && (() => {
+              {!asPage && (gameData.status === 'Active' || replayActive) && (() => {
                 const down = dDown
                 const distance = dDistance
                 const yardLine = dYardLine
@@ -1684,8 +1891,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 the field-viz IIFE) and gated with a single condition — moving it
                 or using (A || B) && (...) trips an eslint-plugin-react-hooks
                 false-positive in this file. */}
-            {gameData.status !== 'Scheduled' && (
-              <div style={{ padding: '2px 16px 6px', display: 'flex', alignItems: 'center', gap: '8px', minHeight: '26px' }}>
+            {/* ⚠️ Also hidden on a FINISHED game with no play feed. The field graphic
+                draws the ball where the last play left it, and without plays there is
+                no last play — it renders a frozen, meaningless field. Same reason the
+                Plays tab goes: play-by-play is not persisted, so a game rebuilt from
+                the database has a box score and nothing to animate. */}
+            {gameData.status !== 'Scheduled' && hasPlayFeed && (
+              <div style={{
+                // On the route the scoreboard sits directly above this, and the
+                // Catch Up button was landing hard against its bottom rule.
+                padding: asPage ? '12px 16px 6px' : '2px 16px 6px',
+                display: 'flex', alignItems: 'center', gap: '8px', minHeight: '26px',
+              }}>
                 <ReplayControlBar
                   active={replayActive}
                   playing={replayPlaying}
@@ -1704,8 +1921,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               </div>
             )}
 
-            {/* Field Position Visualization */}
-            {gameData.status !== 'Scheduled' && (() => {
+            {/* Field Position Visualization.
+                ⚠️ Needs the play feed too — the ball is drawn where the last play left
+                it, so without plays this is an empty pitch with a ball on the goal line
+                that never moved. */}
+            {gameData.status !== 'Scheduled' && hasPlayFeed && (() => {
               const FW = 600, FH = 220
               const EZW = FW / 12 // end zone = 10/120 of total width ≈ 50 SVG units
 
@@ -1824,6 +2044,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               let playStroke = '#60a5fa'
               let playDash = 'none'
               let playEndX: number | null = null
+              // Punt legs, drawn in addition to the kick arc.
+              let puntReturnFromX: number | null = null
+              let puntReturnToX: number | null = null
+              let puntTouchbackFromX: number | null = null
+              let puntTouchbackToX: number | null = null
 
               if (isHoopShot && ballX != null) {
                 // Hoop shot — arc from the ball up to the target hoop (midfield or the
@@ -1837,16 +2062,53 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 playStroke = hoopMade ? '#22c55e' : '#94a3b8'   // green make / grey incompletion
                 playDash = '6,3'
                 playEndX = hoopX
-              } else if (playType === 'PUNT' && ballX != null && ballAbsYfl != null && Math.abs(yardsGained) >= 1) {
-                // Punt: draw arc forward from LOS to landing spot
-                const puntEndX = toX(ballAbsYfl + yardsGained * lastPlayDir)
-                const midPX = (ballX + puntEndX) / 2
-                const arcH = Math.min(Math.abs(puntEndX - ballX) * 0.35, 45)
-                const peakY = midY - Math.min(arcH * 1.6, 60)
-                playPath = `M${ballX},${midY} Q${midPX},${peakY} ${puntEndX},${midY}`
-                playStroke = '#a78bfa'
-                playDash = '8,4'
-                playEndX = puntEndX
+              } else if (playType === 'PUNT' && lastPlay) {
+                // Punt: the ARC is the kick, drawn from the punt's own line of
+                // scrimmage to where the ball actually came down; the RETURN is a
+                // separate straight leg back from the landing spot. Previously this
+                // drew ONE arc to the post-return spot, which is neither where the
+                // ball landed nor how it got there.
+                //
+                // puntLanding / the return are measured from the RECEIVING team's own
+                // goal line, which is the same frame as the punting team's
+                // yards-to-endzone — so the abs conversion is identical to a LOS.
+                const toAbs = (yte: number) => (lastPlayDir === 1 ? 110 - yte : 10 + yte)
+                const losYte = deriveYardsToEndzone(lastPlay)
+                const puntLanding = (lastPlay as any)?.puntLanding as number | null | undefined
+                const isTouchback = Boolean((lastPlay as any)?.puntTouchback)
+                const retYards = Number((lastPlay as any)?.returnYards ?? 0)
+                const startX = losYte != null ? toX(toAbs(losYte)) : ballX
+
+                if (startX != null) {
+                  // A touchback carries the ball THROUGH the end zone, so the arc
+                  // runs to the back of it rather than stopping at a landing spot.
+                  const endZoneX = lastPlayDir === 1 ? toX(112) : toX(8)
+                  const landX = isTouchback
+                    ? endZoneX
+                    : (puntLanding != null ? toX(toAbs(puntLanding)) : ballX)
+
+                  if (landX != null) {
+                    const midPX = (startX + landX) / 2
+                    const arcH = Math.min(Math.abs(landX - startX) * 0.35, 45)
+                    const peakY = midY - Math.min(arcH * 1.6, 60)
+                    playPath = `M${startX},${midY} Q${midPX},${peakY} ${landX},${midY}`
+                    playStroke = '#a78bfa'
+                    playDash = '8,4'
+                    playEndX = landX
+
+                    if (isTouchback) {
+                      // Ball placed at the 20 — draw the spot-back as its own leg so
+                      // it reads as a placement, not part of the kick.
+                      puntTouchbackFromX = landX
+                      puntTouchbackToX = toX(toAbs(20))
+                    } else if (retYards > 0 && puntLanding != null) {
+                      // The return advances AWAY from the receiving team's own goal,
+                      // so the spot increases.
+                      puntReturnFromX = landX
+                      puntReturnToX = toX(toAbs(puntLanding + retYards))
+                    }
+                  }
+                }
               } else if (playType === 'FIELDGOAL' && lastPlay) {
                 // A kick gains no yards, so it never hits the yardage branch
                 // below. Anchor on the kick's own line of scrimmage (from its
@@ -1987,7 +2249,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 <div style={{ padding: '0 16px 16px' }}>
                   {/* "Field Position" label + replay controls live on the row
                       above (consolidated), so no header here. */}
-                  <svg viewBox={`0 0 ${FW} ${FH}`} style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '4px' }}>
+                  {/* ⚠️ `width: 100%` on a 600×220 viewBox means the field is as
+                      tall as its container is wide, divided by 2.7. In the modal
+                      the container is a 40% panel; on the route it is the whole
+                      left column, so without a ceiling the pitch grows with the
+                      monitor. 762 is the width it was drawn at (the design's
+                      794px column less its 16px padding). */}
+                  <svg
+                    viewBox={`0 0 ${FW} ${FH}`}
+                    style={{
+                      width: '100%', height: 'auto', display: 'block', borderRadius: '4px',
+                      ...(asPage ? { maxWidth: '540px', margin: '0 auto' } : {}),
+                    }}
+                  >
                     {/* Home end zone (LEFT) */}
                     <rect x={0} y={0} width={EZW} height={FH} fill={homeTeam.color} opacity={0.4} />
                     {/* Away end zone (RIGHT) */}
@@ -2121,6 +2395,40 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                       />
                     )}
 
+                    {/* Punt return — a solid leg back from the landing spot, so the
+                        kick and the run-back read as two different things. */}
+                    {puntReturnFromX != null && puntReturnToX != null && (
+                      <>
+                        <path d={`M${puntReturnFromX},${midY} L${puntReturnToX},${midY}`}
+                          fill="none" stroke="#38bdf8" strokeWidth={3}
+                          strokeLinecap="round" opacity={0.95}
+                        />
+                        {/* landing spot marker */}
+                        <circle cx={puntReturnFromX} cy={midY} r={3.5}
+                          fill="#a78bfa" opacity={0.95} />
+                        <polygon
+                          points={`${puntReturnToX},${midY - 5} ${puntReturnToX + (puntReturnToX >= puntReturnFromX ? 8 : -8)},${midY} ${puntReturnToX},${midY + 5}`}
+                          fill="#38bdf8" opacity={0.95}
+                        />
+                      </>
+                    )}
+
+                    {/* Touchback — the ball carried through the end zone, then gets
+                        spotted at the 20. Dashed amber so it reads as a placement
+                        rather than as yardage anyone gained. */}
+                    {puntTouchbackFromX != null && puntTouchbackToX != null && (
+                      <>
+                        <path d={`M${puntTouchbackFromX},${midY} L${puntTouchbackToX},${midY}`}
+                          fill="none" stroke="#fbbf24" strokeWidth={2}
+                          strokeDasharray="3,3" strokeLinecap="round" opacity={0.85}
+                        />
+                        <circle cx={puntTouchbackToX} cy={midY} r={4}
+                          fill="none" stroke="#fbbf24" strokeWidth={2} opacity={0.95} />
+                        <text x={puntTouchbackToX} y={midY - 10} textAnchor="middle"
+                          fontSize={9} fill="#fbbf24" opacity={0.95}>TB</text>
+                      </>
+                    )}
+
                     {/* Arrowhead at end of play */}
                     {playEndX != null && playPath && Math.abs(yardsGained) >= 1 && (
                       <polygon
@@ -2218,8 +2526,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               )
             })()}
 
-            {/* Win Probability chart */}
-            {gameData.homeWinProbability !== undefined && (() => {
+            {/* Win Probability chart.
+                ⚠️ Needs the play feed too — the curve is built from the per-play win
+                probabilities, so a game rebuilt from the database draws a flat line at
+                0%/100% that looks like the match was never in doubt. */}
+            {gameData.homeWinProbability !== undefined && hasPlayFeed && (() => {
               const homeColor = gameData.homeTeam.color
               const awayColor = awayDisplayColor
               const homeSecondary = gameData.homeTeam.secondaryColor
@@ -2269,13 +2580,65 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             })()}
           </div>
 
-          {/* Right panel: Tabs + scrollable content */}
-          <div style={{ flex: isMobile ? 'none' : 1, display: 'flex', flexDirection: 'column', overflow: isMobile ? 'visible' : 'hidden', minWidth: 0 }}>
+          {/* The right REGION of the route: the tabs panel, and — only while the
+              Plays view is up — the Bleachers beside it. Switching to Box Score
+              or Player Stats hands the rail's width to the table, which is the
+              view that actually wants it. `display: contents` in the modal so
+              this wrapper adds nothing there. */}
+          <div style={asPage ? {
+            flex: stacked ? 'none' : 1,
+            display: 'flex',
+            flexDirection: stacked ? 'column' : 'row',
+            alignItems: 'stretch',
+            gap: '16px',
+            minWidth: 0,
+          } : { display: 'contents' }}>
 
-            {/* Tab bar — hidden for Scheduled games */}
+          {/* Tabs + scrollable content. */}
+          <div style={{
+            flex: stacked ? 'none' : 1,
+            display: 'flex', flexDirection: 'column',
+            overflow: stacked ? 'visible' : 'hidden',
+            minWidth: 0,
+            ...(asPage ? { background: '#131e2f', border: '1px solid #1e293b' } : {}),
+            // Runs to the bottom of the page and scrolls inside itself. It used
+            // to take a fixed `100vh - 250px`, which guessed at the chrome above
+            // it and left a strip of dead page underneath.
+            ...(asPage && !stacked ? { height: '100%', minHeight: 0 } : {}),
+          }}>
+
+            {/* Tab bar — hidden for Scheduled games. On the route it is the
+                page's segmented control: one object, shared with the stats page
+                and the standings view switcher. */}
             {gameData.status !== 'Scheduled' && (
-              <div style={{ padding: '10px 16px', borderBottom: '1px solid #334155', flexShrink: 0, display: 'flex', gap: '4px' }}>
-                {(['plays', 'box', 'stats'] as const).map(tab => (
+              <div style={asPage ? {
+                padding: '12px 16px', background: '#0f172a',
+                borderBottom: '1px solid #334155', flexShrink: 0,
+                display: 'flex', alignItems: 'center', gap: '11px',
+              } : { padding: '10px 16px', borderBottom: '1px solid #334155', flexShrink: 0, display: 'flex', gap: '4px' }}>
+                {asPage ? (
+                  <div style={{ display: 'flex', background: '#0f172a', border: '1px solid #1e293b' }}>
+                    {TABS.filter(t => t !== 'plays' || hasPlayFeed).map((tab, i) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        style={{
+                          padding: '8px 13px',
+                          border: 'none',
+                          borderLeft: i > 0 ? '1px solid #1e293b' : 'none',
+                          cursor: 'pointer',
+                          fontFamily: "'pressStart', ui-monospace, monospace",
+                          fontSize: '11px', lineHeight: 1, letterSpacing: '0.08em',
+                          fontWeight: activeTab === tab ? 800 : 500,
+                          backgroundColor: activeTab === tab ? '#cbd5e1' : 'transparent',
+                          color: activeTab === tab ? '#0b1220' : '#94a3b8',
+                        }}
+                      >
+                        {tab === 'plays' ? 'PLAYS' : tab === 'box' ? 'BOX SCORE' : 'PLAYER STATS'}
+                      </button>
+                    ))}
+                  </div>
+                ) : TABS.filter(t => t !== 'plays' || hasPlayFeed).map(tab => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -2298,7 +2661,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
             )}
 
             {/* Tab content — fills all remaining height */}
-            <div style={{ flex: isMobile ? 'none' : 1, overflowY: isMobile ? 'visible' : 'auto', padding: '16px' }}>
+            <div style={{ flex: stacked ? 'none' : 1, overflowY: stacked ? 'visible' : 'auto', padding: '16px' }}>
 
               {/* Matchup preview for Scheduled games */}
               {gameData.status === 'Scheduled' && (() => {
@@ -2460,26 +2823,38 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
               })()}
               {gameData.status !== 'Scheduled' && activeTab === 'plays' && (
                 <>
-                  {/* All / Highlights toggle */}
-                  <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
-                    {(['all', 'highlights'] as const).map(mode => (
+                  {/* ⚠️ The SEGMENTED control the rest of the app uses — one bordered
+                      strip, hairline dividers between cells, the active cell filled
+                      and inverted. This was two rounded blue pills, the last of the
+                      old style left on this surface. Kept byte-identical in shape to
+                      the standings view switcher and the board's density toggle. */}
+                  <div style={{
+                    display: 'inline-flex', marginBottom: '14px',
+                    background: '#0f172a', border: '1px solid #1e293b',
+                  }}>
+                    {(['all', 'highlights'] as const).map((mode, i) => {
+                      const active = (mode === 'highlights') === showHighlightsOnly
+                      return (
                       <button
                         key={mode}
                         onClick={() => setShowHighlightsOnly(mode === 'highlights')}
                         style={{
-                          padding: '4px 12px',
-                          borderRadius: '6px',
+                          padding: '8px 13px',
                           border: 'none',
+                          borderLeft: i > 0 ? '1px solid #1e293b' : 'none',
                           cursor: 'pointer',
-                          fontSize: '12px',
-                          fontWeight: '600',
-                          backgroundColor: (mode === 'highlights') === showHighlightsOnly ? '#3b82f6' : '#1e293b',
-                          color: (mode === 'highlights') === showHighlightsOnly ? '#fff' : '#64748b',
+                          fontFamily: 'inherit',
+                          fontSize: '11px',
+                          letterSpacing: '0.02em',
+                          fontWeight: active ? 800 : 500,
+                          background: active ? '#cbd5e1' : 'transparent',
+                          color: active ? '#0f172a' : '#64748b',
                         }}
                       >
-                        {mode === 'all' ? 'All Plays' : 'Highlights'}
+                        {mode === 'all' ? 'ALL PLAYS' : 'HIGHLIGHTS'}
                       </button>
-                    ))}
+                      )
+                    })}
                   </div>
 
                   {(!gameData.plays || gameData.plays.length === 0) ? (
@@ -2759,14 +3134,22 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                           {posLabel}
                         </span>
                       )}
-                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '1px' }}>
-                        <PlayerHoverCard playerId={p.id} playerName={p.name}>
-                          <span title={isCharged ? 'Charged' : isAwakened ? 'Awakened' : undefined} style={{ fontSize: '14px', color: nameColor, fontWeight: isCharged ? 700 : isAwakened ? 600 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', ...(nameGlow ? { textShadow: nameGlow } : {}) }}>
+                      {/* Stars BESIDE the name, not under it. This panel is the
+                          widest thing on the page and was stacking them to save
+                          width it has spare, at the cost of height it does not. */}
+                      <PlayerHoverCard playerId={p.id} playerName={p.name}>
+                        <Link
+                          to={`/players/${p.id}`}
+                          style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0, textDecoration: 'none' }}
+                        >
+                          <span title={isCharged ? 'Charged' : isAwakened ? 'Awakened' : undefined} style={{ fontSize: '14px', color: nameColor, fontWeight: isCharged ? 700 : isAwakened ? 600 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(nameGlow ? { textShadow: nameGlow } : {}) }}>
                             {p.name}
                           </span>
-                        </PlayerHoverCard>
-                        {p.ratingStars != null && <Stars stars={p.ratingStars} size={11} />}
-                      </div>
+                          {p.ratingStars != null && (
+                            <span style={{ flexShrink: 0 }}><Stars stars={p.ratingStars} size={14} tracking={1.5} /></span>
+                          )}
+                        </Link>
+                      </PlayerHoverCard>
                     </div>
                   )
                 }
@@ -2783,234 +3166,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                   return         { label: 'Sunken',   color: '#ef4444' }
                 }
 
-                // Renders the mental-modifier breakdown panel that drops down
-                // beneath an expanded player row.
-                const renderBreakdownPanel = (
-                  mb: MentalBreakdown | undefined,
-                  cnf?: number,
-                  det?: number,
-                  dispositionLabel?: string,
-                  cnfNow?: number,
-                  detNow?: number,
-                  cnfDrift?: number,
-                  detDrift?: number,
-                  thisFP?: number,
-                  seasonAvgFP?: number,
-                  seasonGP?: number,
-                  pressureHandling?: number,
-                  teamPressureModifier?: number,
-                ) => {
-                  const stage = (label: string, value: number, sublabel?: string) => {
-                    if (value === 0 && !sublabel) return null
-                    const color = value > 0 ? '#86efac' : value < 0 ? '#fca5a5' : '#94a3b8'
-                    const sign = value > 0 ? '+' : ''
-                    return (
-                      <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
-                          <span style={{ color: '#cbd5e1' }}>{label}</span>
-                          <span style={{ color, fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
-                            {value !== 0 ? `${sign}${value}` : '±0'}
-                          </span>
-                        </div>
-                        {sublabel && (
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>{sublabel}</span>
-                        )}
-                      </div>
-                    )
-                  }
-                  const totalColor = mb ? (mb.totalDelta > 0 ? '#86efac' : mb.totalDelta < 0 ? '#fca5a5' : '#94a3b8') : '#94a3b8'
-                  const totalSign = mb && mb.totalDelta > 0 ? '+' : ''
-                  const hasAnyStage = !!mb && (
-                    mb.fatigue !== 0 || mb.disposition !== 0 || mb.cap !== 0
-                  )
-                  const hasMindset = cnf != null || det != null
-
-                  // Render confidence/det as a before-and-after pair with
-                  // a drift number. The drift is the punchline — it's how
-                  // much the player's mood moved during the game, and
-                  // it's amplified ~25× per play in _mentalDrift so even
-                  // -1.5 means ~-2.2 effective rating points on every
-                  // gate. That's typically a bigger driver of a bad game
-                  // than the pre-game multiplier stack.
-                  const tierPill = (v: number) => {
-                    const { label: tier, color } = modLabel(v)
-                    return (
-                      <span style={{
-                        fontSize: '10px', fontWeight: 600,
-                        color,
-                        backgroundColor: `${color}1a`,
-                        border: `1px solid ${color}55`,
-                        padding: '1px 7px', borderRadius: '3px',
-                        letterSpacing: '0.03em',
-                      }}>{tier}</span>
-                    )
-                  }
-                  const mindsetRow = (label: string, base?: number, now?: number, drift?: number) => {
-                    if (base == null && now == null) return null
-                    // Show pre → now transition only when drift is large
-                    // enough to matter (~0.8+ rating points/play once
-                    // amplified through _mentalDrift). Below that, render
-                    // a single tier badge — the tier name carries the
-                    // signal without a duplicate value.
-                    const hasShift = drift != null && Math.abs(drift) >= 0.5
-                    const display = hasShift && now != null ? now : (base ?? now ?? 0)
-                    return (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
-                        <span style={{ color: '#cbd5e1' }}>{label}</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {hasShift && base != null && (
-                            <>
-                              {tierPill(base)}
-                              <span style={{ color: '#475569', fontSize: '11px' }}>→</span>
-                            </>
-                          )}
-                          {tierPill(display)}
-                        </span>
-                      </div>
-                    )
-                  }
-
-                  // Pressure status — pressureHandling tier + team stakes
-                  // multiplier. Together these tell users how exposed
-                  // this player is to clutch-moment over/underperformance.
-                  const pressureHandlingTier = (v: number) => {
-                    if (v >= 6)  return { label: 'Ice',     color: '#22c55e' }
-                    if (v >= 2)  return { label: 'Cool',    color: '#86efac' }
-                    if (v >= -1) return { label: 'Even',    color: '#94a3b8' }
-                    if (v >= -5) return { label: 'Wobbly',  color: '#f59e0b' }
-                    return         { label: 'Choker',  color: '#ef4444' }
-                  }
-                  const teamPressureTier = (v: number) => {
-                    if (v >= 2.4)  return { label: 'Championship', color: '#ef4444' }
-                    if (v >= 1.8)  return { label: 'Must-Win',     color: '#f59e0b' }
-                    if (v >= 1.3)  return { label: 'High Stakes',  color: '#f59e0b' }
-                    if (v >= 1.1)  return { label: 'Elevated',     color: '#94a3b8' }
-                    if (v >= 0.85) return { label: 'Normal',       color: '#94a3b8' }
-                    return           { label: 'Low Stakes',    color: '#64748b' }
-                  }
-                  const hasPressure = pressureHandling != null || teamPressureModifier != null
-
-                  // Generic status row — label on left, tier badge on
-                  // right. Drives personality/mental/pressure sections.
-                  const badgeRow = (
-                    label: string,
-                    tier: { label: string; color: string },
-                  ) => (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', fontSize: '12px' }}>
-                      <span style={{ color: '#cbd5e1' }}>{label}</span>
-                      <span style={{
-                        fontSize: '10px', fontWeight: 600,
-                        color: tier.color,
-                        backgroundColor: `${tier.color}1a`,
-                        border: `1px solid ${tier.color}55`,
-                        padding: '1px 7px', borderRadius: '3px',
-                        letterSpacing: '0.03em',
-                      }}>{tier.label}</span>
-                    </div>
-                  )
-                  return (
-                    <div style={{
-                      padding: '12px 14px',
-                      backgroundColor: '#0b1424',
-                      borderTop: '1px solid #1e293b',
-                      display: 'flex', flexDirection: 'column', gap: '8px',
-                    }}>
-                      {mb && (
-                        <>
-                          <div style={{
-                            fontSize: '11px', color: '#94a3b8',
-                            fontWeight: 700, letterSpacing: '0.06em',
-                          }}>
-                            PRE-GAME RATING
-                          </div>
-                          <div style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            gap: '12px', padding: '6px 8px', borderRadius: '3px',
-                            backgroundColor: '#0f172a', border: '1px solid #1e293b',
-                            maxWidth: '320px',
-                          }}>
-                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>Effective rating</span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontVariantNumeric: 'tabular-nums' }}>
-                              <span style={{ fontSize: '12px', color: '#94a3b8' }}>{mb.baseline}</span>
-                              <span style={{ fontSize: '11px', color: '#475569' }}>→</span>
-                              <span style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: 700 }}>{mb.final}</span>
-                              <span style={{
-                                fontSize: '10px', fontWeight: 700,
-                                color: totalColor,
-                                backgroundColor: `${totalColor}1a`,
-                                border: `1px solid ${totalColor}55`,
-                                padding: '1px 6px', borderRadius: '3px',
-                              }}>
-                                {totalSign}{mb.totalDelta}
-                              </span>
-                            </span>
-                          </div>
-                          {hasAnyStage ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '320px' }}>
-                              {stage('Fatigue', mb.fatigue)}
-                              {stage('Team disposition', mb.disposition, dispositionLabel)}
-                              {stage('Soft cap', mb.cap)}
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                              No rating modifiers active.
-                            </div>
-                          )}
-                        </>
-                      )}
-                      {/* Order by explanatory power for a player's
-                          performance: live mindset (most volatile,
-                          biggest in-game amplifier), then pressure,
-                          personality, finally mental attributes. */}
-                      {hasMindset && (
-                        <>
-                          <div style={{
-                            fontSize: '11px', color: '#94a3b8',
-                            fontWeight: 700, letterSpacing: '0.06em',
-                            marginTop: '4px',
-                          }}>
-                            CURRENT STATE
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '320px' }}>
-                            {cnf != null && mindsetRow('Confidence', cnf, cnfNow, cnfDrift)}
-                            {det != null && mindsetRow('Determination', det, detNow, detDrift)}
-                          </div>
-                        </>
-                      )}
-                      {hasPressure && (
-                        <>
-                          <div style={{
-                            fontSize: '11px', color: '#94a3b8',
-                            fontWeight: 700, letterSpacing: '0.06em',
-                            marginTop: '4px',
-                          }}>
-                            PRESSURE
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '320px' }}>
-                            {pressureHandling != null && badgeRow(
-                              'Pressure handling',
-                              pressureHandlingTier(pressureHandling),
-                            )}
-                            {teamPressureModifier != null && badgeRow(
-                              'Team stakes',
-                              teamPressureTier(teamPressureModifier),
-                            )}
-                          </div>
-                        </>
-                      )}
-                      {/* PERSONALITY + MENTAL sections moved to the
-                          player hover card + profile page. Those attrs
-                          are static — they belong on the player's
-                          profile, not in a per-game breakdown. */}
-                    </div>
-                  )
-                }
-
                 // Section card — full-width panel with section title, then column
                 // headers, then home/away player groups separated by team-color
-                // bars. Rows are click-to-expand: each row toggles a panel that
-                // breaks out the pre-game mental modifiers (fatigue / form /
-                // context / cap) for that player.
+                // bars.
+                //
+                // A row is a LINK to that player's page. It used to expand a
+                // panel of pre-game mental modifiers (fatigue / form / context /
+                // cap) and effective rating; that is career-shaped detail and
+                // belongs on the profile, not folded into a box score.
                 type StatRow = {
                   cells: React.ReactNode[]
                   mb?: MentalBreakdown
@@ -3050,18 +3213,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                         <div style={{ padding: '10px 14px', fontSize: '12px', color: '#475569', borderTop: '1px solid #1e293b' }}>—</div>
                       ) : rows.map((row, ri) => {
                         const key = row.pid != null ? `${label}-${abbr}-${row.pid}` : `${label}-${abbr}-${ri}`
-                        const canExpand = !!row.mb || row.cnf != null || row.det != null
-                          || row.pressureHandling != null || row.teamPressureModifier != null
-                        const isExpanded = canExpand && expandedStatKey === key
-                        const onToggle = () => {
-                          if (!canExpand) return
-                          setExpandedStatKey(isExpanded ? null : key)
-                        }
+                        // No expander. The mental-state / effective-rating panel
+                        // that used to open here is the player's own business and
+                        // the row now just goes to their page.
+                        const canExpand = false
+                        const isExpanded = false
                         return (
                           <React.Fragment key={key}>
                             <div
-                              onClick={onToggle}
-                              className={canExpand ? 'stat-row-expandable' : undefined}
                               style={{
                                 display: 'grid',
                                 gridTemplateColumns: template,
@@ -3072,8 +3231,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                                 color: '#e2e8f0',
                                 fontVariantNumeric: 'tabular-nums',
                                 alignItems: 'center',
-                                cursor: canExpand ? 'pointer' : 'default',
-                                backgroundColor: isExpanded ? '#11203a' : 'transparent',
+                                backgroundColor: 'transparent',
                               }}
                             >
                               {row.cells.map((c, i) => {
@@ -3084,21 +3242,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                                       minWidth: 0, overflow: 'hidden',
                                     }}>
                                       <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>{c}</div>
-                                      {canExpand && (
-                                        <span style={{
-                                          color: '#94a3b8',
-                                          fontSize: '14px',
-                                          fontWeight: 700,
-                                          transition: 'transform 0.15s, color 0.15s',
-                                          transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          paddingLeft: '8px',
-                                          flexShrink: 0,
-                                          lineHeight: 1,
-                                        }}>▾</span>
-                                      )}
                                     </div>
                                   )
                                 }
@@ -3110,12 +3253,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                                 )
                               })}
                             </div>
-                            {isExpanded && renderBreakdownPanel(
-                              row.mb, row.cnf, row.det, row.dispositionLabel,
-                              row.cnfNow, row.detNow, row.cnfDrift, row.detDrift,
-                              row.thisFP, row.seasonAvgFP, row.seasonGP,
-                              row.pressureHandling, row.teamPressureModifier,
-                            )}
                           </React.Fragment>
                         )
                       })}
@@ -3284,6 +3421,22 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId }) =
                 )
               })()}
             </div>
+          </div>
+
+          {/* The Bleachers, beside the play feed. Plays only — the other two
+              views are reading a table, and the rail's width is better spent
+              there than on a feed you are not watching. */}
+          {asPage && railContent && activeTab === 'plays' && (
+            <div style={{
+              width: stacked ? '100%' : '372px',
+              flexShrink: 0,
+              minWidth: 0,
+              // Fills the row like the plays panel beside it, so the feed can
+              // run to the bottom of the page instead of stopping short.
+              ...(stacked ? {} : { display: 'flex', flexDirection: 'column', minHeight: 0 }),
+            }}>{railContent}</div>
+          )}
+
           </div>
 
         </div>

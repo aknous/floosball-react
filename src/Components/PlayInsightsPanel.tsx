@@ -1,5 +1,6 @@
 import React from 'react'
 import { PlayInsights } from '@/types/websocket'
+import { statRampColor } from '@/utils/ratingColors'
 
 interface PlayInsightsPanelProps {
   insights: PlayInsights
@@ -110,12 +111,9 @@ function qualityColor(v: number): string {
   return '#ef4444'
 }
 
-/** Color for player attributes (60-100 range). */
-function attrColor(v: number): string {
-  if (v >= 80) return '#22c55e'
-  if (v >= 70) return '#eab308'
-  return '#ef4444'
-}
+/** Color for player attributes (60-100 range). Shared with the profile and
+ *  stats pages so one number reads the same colour wherever it appears. */
+const attrColor = statRampColor
 
 /** Contextual label for quality ratings (0-100, thresholds 65/40). */
 function qualityText(v: number, labels: [string, string, string]): string {

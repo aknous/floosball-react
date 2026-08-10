@@ -73,8 +73,7 @@ export default function ShowcaseViewerModal({ userId, onClose }: ShowcaseViewerM
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: '760px', maxHeight: '90vh',
-          borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
+          width: '100%', maxWidth: '760px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column',
           fontFamily: 'pressStart',
           background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(251,191,36,0.08), transparent 70%), linear-gradient(180deg, #141b30 0%, #0a0e1a 100%)',
           border: '1px solid rgba(251,191,36,0.25)',
@@ -112,8 +111,7 @@ export default function ShowcaseViewerModal({ userId, onClose }: ShowcaseViewerM
               {data!.activeSets.map(s => (
                 <span key={s.key} style={{
                   fontSize: '11px', color: '#fbbf24', fontWeight: 700,
-                  background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)',
-                  borderRadius: '4px', padding: '2px 7px',
+                  background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)', padding: '2px 7px',
                 }}>◆ {s.name}</span>
               ))}
             </div>

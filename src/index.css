@@ -845,3 +845,242 @@
   .tp-snap { scroll-snap-type: none; }
 }
 
+
+
+/* ── Glitched card treatment (docs/GLITCH_CARDS.md) ───────────────────────
+   A card marked during a Criticality.
+
+   ⚠️ Two earlier versions were wrong in opposite ways, both worth recording.
+   A tinted wash plus a breathing rim WASHED THE CARD OUT — a permanent colour cast
+   fights the edition gradient and the art, and reads as "this card is tinted" rather
+   than "this card is unstable". Before that, an outer glow was invisible entirely,
+   because TradingCard's container sets overflow:hidden and clips it.
+
+   A glitch is not a state the card is bathed in — it is something that HAPPENS to it.
+   So the card looks completely normal ~92% of the time and briefly breaks: a scanline
+   pass, a chroma split, and a horizontal slice offset, all over in ~250ms. Nothing is
+   tinted, nothing is permanently dimmed, and at rest the card is untouched.
+
+   Pacing is deliberately slow (7s). This sits on screen for as long as a collection view
+   is open, which is why it does not use the play-feed animations — they sway, slam and
+   strobe on a line that is gone in seconds. */
+
+/* Pass 1: scanlines + chroma, invisible except for a brief tear. */
+@keyframes glitched-card-tear {
+  0%, 90%, 100% { opacity: 0; transform: translateX(0); }
+  91%  { opacity: 0.55; transform: translateX(-2px); }
+  93%  { opacity: 0.30; transform: translateX(2px); }
+  95%  { opacity: 0.60; transform: translateX(-1px); }
+  97%  { opacity: 0; transform: translateX(0); }
+}
+/* Pass 2: a single horizontal band that slips sideways, offset in time from the tear so
+   the two do not fire together and read as one big flash. */
+@keyframes glitched-card-slip {
+  0%, 40%, 100% { opacity: 0; }
+  42% { opacity: 1; clip-path: inset(28% 0 64% 0); transform: translateX(-4px); }
+  45% { opacity: 1; clip-path: inset(52% 0 40% 0); transform: translateX(3px); }
+  47% { opacity: 0; }
+}
+
+.glitched-card { position: relative; }
+
+.glitched-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  border-radius: 6px;
+  /* Scanlines + a chroma cast. Both ride the opacity keyframes, so at rest this
+     contributes NOTHING — the card is its normal self. */
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(196,181,253,0.16) 0px,
+      rgba(196,181,253,0.16) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    linear-gradient(90deg, rgba(244,114,182,0.10), transparent 40%, rgba(56,189,248,0.10));
+  opacity: 0;
+  animation: glitched-card-tear 7s steps(1) infinite;
+}
+
+.glitched-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(233,213,255,0.22), rgba(139,92,246,0.10));
+  opacity: 0;
+  animation: glitched-card-slip 7s steps(1) infinite;
+}
+
+/* Awakened: the player is in CONTROL, so the card stops tearing. It keeps a warm cast
+   and a slow scanline drift instead — deliberate rather than cracking, which is the same
+   distinction the anomaly ladder draws. */
+@keyframes glitched-card-steady {
+  0%, 100% { opacity: 0.14; }
+  50%      { opacity: 0.26; }
+}
+.glitched-card.glitched-card-awakened::before { animation: none; opacity: 0; }
+.glitched-card.glitched-card-awakened::after {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(253,224,138,0.14) 0px,
+    rgba(253,224,138,0.14) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  animation: glitched-card-steady 4.6s ease-in-out infinite;
+}
+
+/* The week a surge actually fires: the same tear, briefly much busier. */
+@keyframes glitched-card-surge {
+  0%   { opacity: 0.85; transform: translateX(-5px); }
+  20%  { opacity: 0.35; transform: translateX(5px); }
+  40%  { opacity: 0.80; transform: translateX(-3px); }
+  70%  { opacity: 0.30; transform: translateX(2px); }
+  100% { opacity: 0; transform: translateX(0); }
+}
+.glitched-card-surged::after {
+  animation: glitched-card-surge 1.4s steps(1) 2, glitched-card-tear 7s steps(1) infinite 2.8s;
+}
+
+/* Text chroma. Same green split the play feed uses (rgba(57,255,20) / rgba(16,185,129))
+   so a glitched card and a glitching play read as the same phenomenon.
+
+   Two differences from glitch-chroma-l1, both because a card is READ rather than glanced
+   at. The cycle is 13s against the feed's 6s, and the baseline carries NO shadow at all —
+   the feed keeps a permanent 1.5px split, which on body text you are actually reading
+   just looks like a rendering fault. Here the text is clean until it briefly is not.
+
+   text-shadow inherits, so putting this on the container covers every label on the card
+   without touching each one. No transform: shifting a whole card's text is nauseating in
+   a way shifting one feed line is not. */
+@keyframes glitched-card-text {
+  0%, 26%, 100% { text-shadow: none; }
+  27% { text-shadow: 1.5px 0 0 rgba(57,255,20,0.65), -1.5px 0 0 rgba(16,185,129,0.65); }
+  29% { text-shadow: 2.5px 0 0 rgba(57,255,20,0.8), -2.5px 1px 0 rgba(16,185,129,0.8); }
+  31% { text-shadow: none; }
+  72% { text-shadow: -2px 1px 0 rgba(57,255,20,0.7), 2.5px -1px 0 rgba(16,185,129,0.75); }
+  74% { text-shadow: 1.5px 0 0 rgba(57,255,20,0.6), -1.5px 0 0 rgba(16,185,129,0.6); }
+  76% { text-shadow: none; }
+}
+.glitched-card { animation: glitched-card-text 13s steps(1) infinite; }
+
+/* Awakened is in CONTROL, so its text does not tear. */
+.glitched-card.glitched-card-awakened { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Stop every animation, and hide only the OVERLAYS. Note the card element itself must
+     keep its opacity — an earlier version grouped it with the pseudo-elements and set
+     opacity:0 on all of them, which hid the entire card for anyone with reduced motion on.
+     The text-shadow keyframes also have to be cancelled explicitly, since animation:none
+     leaves whatever the last computed shadow was. */
+  .glitched-card,
+  .glitched-card::after,
+  .glitched-card::before,
+  .glitched-card.glitched-card-awakened::after,
+  .glitched-card-surged::after { animation: none; }
+  .glitched-card { text-shadow: none; }
+  .glitched-card::after,
+  .glitched-card::before { opacity: 0; }
+}
+
+/* ---------------------------------------------------------------------------
+   Redesigned shell (Components/Shell + the front page, game board, standings).
+
+   Three shared hover behaviours, kept in CSS because they are pure presentation
+   and every one of them is applied to dozens of elements per page:
+
+     .row   — a list row or a grid cell that is a link
+     .plate — a raised element that lifts on hover (cards, chips, the user chip)
+     .hd    — a header/nav link that only brightens
+
+   Depth in this system is background steps plus 1px borders, so none of these
+   add a shadow.
+   --------------------------------------------------------------------------- */
+.row { transition: background-color 140ms ease; }
+.row:hover { background-color: rgba(255,255,255,0.04); }
+
+.plate { transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease; }
+.plate:hover { border-color: #475569; background: #1b2739; transform: translateY(-2px); }
+
+.hd { transition: color 140ms ease; }
+.hd:hover { color: #ffffff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .plate:hover { transform: none; }
+}
+
+/* A charged badge — the player profile's Awakened mark. A slow opacity breath,
+   never a scale or a glow: the badge sits inline in the character panel and
+   anything that changes its box would shift the rows around it. */
+@keyframes charge { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.pulse { animation: charge 2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; }
+}
+
+/* The live dot on the game board and the front page's Happening now band. A slow
+   opacity pulse, not a scale ring — sixteen of these breathing at once has to read as
+   ambient rather than as sixteen things demanding attention. */
+@keyframes boardLiveDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.board-live-dot { animation: boardLiveDot 2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .board-live-dot { animation: none; }
+}
+
+/* The Cores band dot on the front page. Its period comes from the band itself
+   (see coresVisual.CRITICALITY_BANDS.pulseMs), set inline as animation-duration,
+   so the dot visibly quickens as the season tenses without needing one keyframe
+   set per band. */
+@keyframes coresBandPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.cores-band-dot { animation-name: coresBandPulse; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cores-band-dot { animation: none; }
+}
+
+/* A too-long single line (the game board's LAST PLAY) travels out and back so the end of
+   it can be read. Distance comes from `--marquee-shift`, set inline after measuring, and
+   the duration is set inline too so the speed is constant regardless of length. It rests
+   at both ends rather than snapping. */
+@keyframes boardMarquee {
+  0%, 12%   { transform: translateX(0); }
+  46%, 58%  { transform: translateX(var(--marquee-shift, 0)); }
+  92%, 100% { transform: translateX(0); }
+}
+.board-marquee { animation-name: boardMarquee; animation-iteration-count: infinite; animation-timing-function: linear; }
+
+@media (prefers-reduced-motion: reduce) {
+  .board-marquee { animation: none; }
+}
+
+/* The welcome hero sits the activity tiles BESIDE the headline block, so the rule
+   between them is vertical. Once the two stop fitting side by side and the tiles wrap
+   underneath, that rule has to become horizontal or it reads as a stray line down the
+   left edge. Inline styles cannot express that, so it lives here. */
+.heroTiles { border-left: 1px solid #1e293b; }
+@media (max-width: 1120px) {
+  .heroTiles { border-left: none; border-top: 1px solid #1e293b; }
+}
+
+/* The front page runs the news and player table beside a personal rail. The rail width
+   comes in as a custom property from tokens.ts so this rule and the token cannot drift.
+
+   Signed out there is no rail at all, so the grid drops to one column rather than
+   leaving a dead gutter down the right. */
+.frontGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--railWidth);
+  gap: 30px;
+  align-items: start;
+}
+.frontGrid > .frontHero { grid-column: 1 / -1; }
+.frontGrid.noRail { grid-template-columns: minmax(0, 1fr); }

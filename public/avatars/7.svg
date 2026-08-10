@@ -1,0 +1,11 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <clipPath id="clip5242deeb"><circle cx="128.0" cy="128.0" r="128.0"/></clipPath>
+                
+            </defs>
+            <g clip-path="url(#clip5242deeb)">
+                <rect width="256" height="256" fill="#B0BEC5"/>
+                <polyline points="-64.0,140.8 128.0,41.0 320.0,140.8" stroke="#0D47A1" stroke-width="41.0" fill="none" stroke-linejoin="miter"/>
+                <polyline points="-64.0,243.2 128.0,143.4 320.0,243.2" stroke="#0D47A1" stroke-width="41.0" fill="none" stroke-linejoin="miter"/>
+            </g>
+        </svg>

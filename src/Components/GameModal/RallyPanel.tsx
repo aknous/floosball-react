@@ -148,7 +148,10 @@ const RallyButton: React.FC<RallyButtonProps> = ({ game, teamId, teamColor }) =>
   const showTeamIcon = !flashing && lockoutLeft === 0
 
   return (
-    <HoverTooltip content={tooltipContent} color={color}>
+    // The tooltip wrapper is an inline span by default, which gives the button
+    // inside it nothing to be `width: 100%` OF — the pair sat at their text
+    // width instead of splitting the row. A flex item so two share it evenly.
+    <HoverTooltip content={tooltipContent} color={color} style={{ display: 'block', flex: '1 1 0', minWidth: 0 }}>
       <button
         onClick={fire}
         disabled={disabled}

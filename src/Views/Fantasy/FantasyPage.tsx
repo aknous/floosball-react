@@ -196,7 +196,7 @@ function DayModifierBadge() {
         onClick={() => setOpen(o => !o)}
         style={{
           display: 'flex', alignItems: 'center', gap: '7px',
-          padding: '5px 10px', borderRadius: '6px',
+          padding: '5px 10px',
           backgroundColor: `${c}15`,
           border: open ? `1px solid ${c}` : '1px solid transparent',
           color: c, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
@@ -217,7 +217,7 @@ function DayModifierBadge() {
         <div style={{
           position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 20000,
           minWidth: '230px',
-          backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px',
+          backgroundColor: '#1e293b', border: '1px solid #475569',
           boxShadow: '0 8px 24px rgba(0,0,0,0.5)', padding: '8px',
         }}>
           <div style={{
@@ -233,7 +233,7 @@ function DayModifierBadge() {
               return (
                 <div key={s.week} style={{
                   display: 'flex', alignItems: 'center', gap: '8px',
-                  padding: '6px', borderRadius: '6px',
+                  padding: '6px',
                   backgroundColor: s.isActive ? `${sc}1a` : 'transparent',
                   opacity: s.isPast ? 0.5 : 1,
                 }}>
@@ -320,7 +320,6 @@ function LockCountdown() {
       padding: '10px 16px',
       backgroundColor: 'rgba(59,130,246,0.10)',
       borderBottom: '2px solid rgba(59,130,246,0.5)',
-      borderRadius: '8px',
     }}>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
@@ -375,7 +374,6 @@ const FantasyPage: React.FC = () => {
               gap: '8px', padding: '20px 16px',
               backgroundColor: 'rgba(99,102,241,0.08)',
               border: '1px solid rgba(99,102,241,0.25)',
-              borderRadius: '10px',
             }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#818cf8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7" />
@@ -416,7 +414,6 @@ const FantasyPage: React.FC = () => {
                     style={{
                       display: 'flex', alignItems: 'center', gap: '6px',
                       padding: '8px 14px',
-                      borderRadius: '8px',
                       border: 'none',
                       backgroundColor: 'rgba(148,163,184,0.10)',
                       color: '#94a3b8',
@@ -447,7 +444,6 @@ const FantasyPage: React.FC = () => {
                     style={{
                       display: 'flex', alignItems: 'center', gap: '6px',
                       padding: '8px 14px',
-                      borderRadius: '8px',
                       border: 'none',
                       backgroundColor: 'rgba(234,179,8,0.12)',
                       color: '#eab308',
@@ -524,7 +520,6 @@ const FantasyPage: React.FC = () => {
             style={{
               background: 'transparent',
               border: '1px solid #475569',
-              borderRadius: '6px',
               color: '#94a3b8',
               fontSize: '11px',
               padding: '6px 14px',
@@ -577,7 +572,7 @@ const FantasyPage: React.FC = () => {
             ))}
           </div>
         </GuideSection>
-        <GuideSection title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Streak Cards <span style={{ fontSize: '10px', color: '#fb923c', backgroundColor: '#fb923c18', padding: '1px 5px', borderRadius: '3px', border: '1px solid #fb923c40', fontWeight: '600' }}>STRK</span></span>}>
+        <GuideSection title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Streak Cards <span style={{ fontSize: '10px', color: '#fb923c', backgroundColor: '#fb923c18', padding: '1px 5px', border: '1px solid #fb923c40', fontWeight: '600' }}>STRK</span></span>}>
           Streak cards carry a counter that grows each week the streak condition is met (e.g.
           the card's player's team wins, your roster scores a TD, a kicker makes a 35+ yard
           FG). If the condition is not met, the streak resets. The card's bonus scales with
@@ -585,14 +580,14 @@ const FantasyPage: React.FC = () => {
           cards provides a synergy bonus: each additional active streak contributes extra
           growth to the others.
         </GuideSection>
-        <GuideSection title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Chance Cards <span style={{ fontSize: '10px', color: '#c084fc', backgroundColor: '#c084fc18', padding: '1px 5px', borderRadius: '3px', border: '1px solid #c084fc40', fontWeight: '600' }}>CHC</span></span>}>
+        <GuideSection title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Chance Cards <span style={{ fontSize: '10px', color: '#c084fc', backgroundColor: '#c084fc18', padding: '1px 5px', border: '1px solid #c084fc40', fontWeight: '600' }}>CHC</span></span>}>
           A chance card's power bar is its trigger odds. The bar fills from the card player's FP
           plus the card's own condition (struggling roster players, the player's own yardage, and
           so on). A guaranteed floor always pays; the fuller the bar, the better your odds at the
           enhanced payout. The roll resolves after games complete. Equipping multiple chance cards
           adds an innate synergy that lifts every chance card's odds.
         </GuideSection>
-        <GuideSection title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Conditional Cards <span style={{ fontSize: '10px', color: '#60a5fa', backgroundColor: '#60a5fa18', padding: '1px 5px', borderRadius: '3px', border: '1px solid #60a5fa40', fontWeight: '600' }}>CND</span></span>}>
+        <GuideSection title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>Conditional Cards <span style={{ fontSize: '10px', color: '#60a5fa', backgroundColor: '#60a5fa18', padding: '1px 5px', border: '1px solid #60a5fa40', fontWeight: '600' }}>CND</span></span>}>
           Conditional cards trigger their bonus when a specific stat threshold is met during a
           game (e.g. a QB throws for 250+ yards, a RB rushes for 100+ yards). The bonus is
           all-or-nothing: if the condition is met you receive the full effect, otherwise

@@ -170,3 +170,54 @@ export function effectiveAwayColor(homeColor?: string | null, awayColor?: string
   }
   return away
 }
+
+// ── Team colors used as TEXT ─────────────────────────────────────────────────
+// Bar fills use a team's raw primary. Text cannot: a good few config primaries are
+// dark saturated magenta/violet/blue that sit under 4.5:1 on the redesigned card
+// surfaces.
+//
+// `lightenColor` is the long-standing GameCard helper, hoisted here so there is one
+// copy instead of the two it had inside that file. It is NOT sufficient on its own —
+// its 0.45 luminance target still leaves 10 of the 32 teams short, and Philadelphia
+// measures 4.41:1 on the pinned card. `readableTeamColor` is what components should
+// actually call.
+
+/** Lift a dark colour toward 0.45 luminance. Returns the input if already light. */
+export function lightenColor(hex: string): string {
+  const h = (hex || '').replace('#', '')
+  if (h.length !== 6) return hex || '#cbd5e1'
+  const r = parseInt(h.slice(0, 2), 16)
+  const g = parseInt(h.slice(2, 4), 16)
+  const b = parseInt(h.slice(4, 6), 16)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+  if (luminance > 0.45) return `#${h}`
+  const boost = 0.45 / Math.max(luminance, 0.05)
+  const clamp = (v: number) => Math.min(255, Math.round(v * boost))
+  return `#${clamp(r).toString(16).padStart(2, '0')}${clamp(g).toString(16).padStart(2, '0')}${clamp(b).toString(16).padStart(2, '0')}`
+}
+
+/**
+ * The card surfaces a team-coloured label is drawn on in the redesigned pages.
+ * `#17222f` (the own-team card) is the LIGHTER of the two, so it is the binding
+ * constraint for light text — clearing it clears `#131e2f` as well.
+ */
+export const TEAM_TEXT_BACKGROUND = '#17222f'
+
+/**
+ * A team's colour, made safe to use as TEXT on the redesigned card surfaces.
+ *
+ * Delegates to `readableOnDark`, which lifts in HSL and therefore keeps the hue — a
+ * navy team stays recognisably navy rather than drifting toward white, which is what
+ * a blend-toward-#f8fafc correction does to it.
+ *
+ * Apply it to BOTH sides of a paired figure (the two halves of a win-probability
+ * gauge, say). Correcting only the favoured side leaves the same number pair wildly
+ * mismatched in legibility.
+ */
+export function readableTeamColor(
+  hex?: string | null,
+  background: string = TEAM_TEXT_BACKGROUND,
+  minRatio = 4.6,
+): string {
+  return readableOnDark(hex, background, minRatio)
+}

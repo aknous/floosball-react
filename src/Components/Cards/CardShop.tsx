@@ -156,7 +156,6 @@ const CardShop: React.FC = () => {
         <div style={{
           padding: '12px 16px',
           marginBottom: '16px',
-          borderRadius: '8px',
           backgroundColor: 'rgba(239,68,68,0.1)',
           border: '1px solid rgba(239,68,68,0.25)',
           color: '#fca5a5',
@@ -172,7 +171,7 @@ const CardShop: React.FC = () => {
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         marginBottom: '24px', padding: '12px 16px',
-        backgroundColor: '#1e293b', borderRadius: '8px', border: '1px solid #334155',
+        backgroundColor: '#1e293b', border: '1px solid #334155',
       }}>
         <span style={{ fontSize: '13px', color: '#94a3b8' }}>Your Balance</span>
         <span style={{ fontSize: '16px', fontWeight: '700', color: '#eab308' }}>
@@ -199,7 +198,6 @@ const CardShop: React.FC = () => {
           return (
             <div key={pack.id} style={{
               width: isMobile ? '100%' : '260px',
-              borderRadius: '10px',
               border: `2px solid ${colors.border}`,
               background: colors.bg,
               padding: '20px',
@@ -235,7 +233,6 @@ const CardShop: React.FC = () => {
                   disabled={!canBuy}
                   style={{
                     width: '100%', padding: '10px',
-                    borderRadius: '6px',
                     border: `1px solid ${canBuy ? colors.border : '#334155'}`,
                     backgroundColor: canBuy ? `${colors.border}30` : 'rgba(51,65,85,0.3)',
                     color: canBuy ? colors.accent : '#475569',
@@ -282,7 +279,7 @@ const CardShop: React.FC = () => {
                   {(card.ownedEffectCount ?? 0) > 0 && (
                     <span style={{
                       fontSize: '10px', fontFamily: 'pressStart', fontWeight: 600,
-                      color: '#fbbf24', padding: '2px 6px', borderRadius: '5px',
+                      color: '#fbbf24', padding: '2px 6px',
                       border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.10)',
                     }}>
                       You own {card.ownedEffectCount}
@@ -293,7 +290,6 @@ const CardShop: React.FC = () => {
                     disabled={!canAfford || isBuying || !user || !shopOpen}
                     style={{
                       padding: '6px 14px',
-                      borderRadius: '6px',
                       border: `1px solid ${canAfford && shopOpen ? '#eab308' : '#334155'}`,
                       backgroundColor: canAfford && shopOpen ? 'rgba(234,179,8,0.12)' : 'rgba(51,65,85,0.3)',
                       color: canAfford && shopOpen ? '#eab308' : '#475569',

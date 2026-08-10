@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import { calcStars, STAR_COLORS } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { POSITION_COLORS } from '@/Components/Cards/positionColors'
+import GlitchMark from './GlitchMark'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -261,6 +262,16 @@ export interface CardData {
   isActive: boolean
   isEquipped?: boolean
   vaulted?: boolean  // permanently in the Vault — can't equip/sell/combine
+  // Glitch (docs/GLITCH_CARDS.md): marked during a Criticality. Purely a visual flag
+  // here — the extra payout is resolved server-side at week end.
+  glitched?: boolean
+  glitchedSeason?: number | null
+  glitchedWeek?: number | null
+  // True when the on-card player is AWAKENED, which converges the treatment on the
+  // existing gold rather than the unstable violet.
+  glitchAwakened?: boolean
+  // The week a surge actually fired — the one moment the card is allowed to move.
+  glitchSurged?: boolean
   // Player's stat line for the card's season — shown on the back of a vaulted
   // card (which drops its effect and becomes a keepsake player card).
   playerStats?: {
@@ -328,6 +339,21 @@ const TIER_BADGE_DIMS = {
 }
 
 const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
+
+// Glitch marker (docs/GLITCH_CARDS.md). A breathing rim alone cannot carry "this card is
+// different" at a glance in a lineup of six — it reads as ambient card art. This is the
+// unmistakable part; the rim is the atmosphere. Mirrors the tier badge's corner placement
+// on the opposite side so the two never collide.
+// Vertical offsets mirror TIER_BADGE_DIMS so the mark clears the top badge row (the
+// season chip lives there) and sits opposite the tier hexagon rather than on top of it.
+// `font` is gone: the mark is an SVG now and sizes itself from the box (GLYPH_FILL in
+// GlitchMark), rather than from a font-size tuned for block characters.
+const GLITCH_MARK_DIMS = {
+  xs: { top: 25, right: 6, size: 12 },
+  sm: { top: 32, right: 8, size: 15 },
+  md: { top: 42, right: 10, size: 18 },
+  lg: { top: 53, right: 13, size: 22 },
+}
 const HEX_CLIP = 'polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%)'
 
 // Delegate to calcStars + STAR_COLORS so the card's tier color can't drift out
@@ -836,6 +862,16 @@ const TradingCard: React.FC<TradingCardProps> = ({
   // text, no behavior tags, no upgrade-tier chrome — just the player + stats.
   const isVaulted = !!card.vaulted
 
+  // Glitched cards take the AWAKENED treatment's shape (a glow that breathes in
+  // intensity and never moves) rather than the glitch-feed animations, which sway and
+  // strobe — fine for a line passing through a feed, unpleasant on a card someone is
+  // reading for minutes. See the note in index.css.
+  const glitchClass = card.glitched
+    ? ['glitched-card',
+       card.glitchAwakened ? 'glitched-card-awakened' : '',
+       card.glitchSurged ? 'glitched-card-surged' : ''].filter(Boolean).join(' ')
+    : ''
+
   // Upgrade tier: hexagon badge shown for tier 2+ (un-upgraded base cards stay
   // clean), full gold ring added at the max tier (IV) to flag a fully-upgraded card.
   const cardTier = card.tier || 1
@@ -900,13 +936,29 @@ const TradingCard: React.FC<TradingCardProps> = ({
     }
   }
 
+  const gm = GLITCH_MARK_DIMS[size]
+
   return (
     <div
+      className={glitchClass || undefined}
       style={containerStyle}
       onClick={handleCardClick}
       onMouseEnter={() => { setHovered(true); onHoverChange?.(true) }}
       onMouseLeave={() => { setHovered(false); onHoverChange?.(false) }}
     >
+      {/* Glitch marker — the at-a-glance signal that this card caught something. */}
+      {card.glitched && (
+        <GlitchMark
+          size={gm.size}
+          top={gm.top}
+          right={gm.right}
+          awakened={card.glitchAwakened}
+          title={card.glitchedSeason
+            ? `Glitched in the Season ${card.glitchedSeason} Criticality (week ${card.glitchedWeek})`
+            : 'Glitched during a Criticality'}
+        />
+      )}
+
       {/* Flip-zone affordance — only when an external onClick is wired up.
           Subtle vertical strip on the right edge with a flip glyph so users
           discover the zone without ugly visual noise. */}

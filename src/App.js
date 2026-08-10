@@ -2,13 +2,18 @@ import './index.css';
 import React, { useEffect, useState, useRef } from 'react'
 import Navbar from './Components/Navbar.js'
 import GameBar from './Components/GameBar'
-import Sidebar from './Components/Sidebar'
-import { SidebarProvider, SIDEBAR_WIDTH_COLLAPSED } from './contexts/SidebarContext'
+import { SidebarProvider } from './contexts/SidebarContext'
+import AppShell from './Components/Shell/AppShell'
+import MobileNotice from './Components/Shell/MobileNotice'
+import FrontPage from './Views/Front/FrontPage'
+import GameBoardPage from './Views/GameBoard/GameBoardPage'
+import StandingsPage from './Views/Standings/StandingsPage'
+import PrognosticationsPage from './Views/Prognostications/PrognosticationsPage'
 import TeamsPage from './Views/Teams/TeamsPage'
 import Team from './Views/Teams/TeamPage'
 import Player from './Views/Players/PlayerPage'
-import Stats from './Views/Stats/Stats'
-import Players from './Views/Players/PlayersPage'
+import StatsPage from './Views/Stats/StatsPage'
+import GamePage from './Views/Game/GamePage'
 import HistoryPage from './Views/History/HistoryPage'
 import Results from './Views/Results/Results.js'
 import AdminPage from './Views/Admin/AdminPage'
@@ -21,11 +26,9 @@ import AwardsPage from './Views/Awards/AwardsPage'
 import BracketView from './Views/Bracket/BracketView'
 import Dashboard from './Views/Dashboard/Dashboard'
 import DashboardNew from './Views/Dashboard/DashboardNew'
-import BetaBlockedPage from './Components/Auth/BetaBlockedPage'
 import LandingPage from './Views/Landing/LandingPage'
-import { OnboardingModal } from './Components/Onboarding/OnboardingModal'
+import FirstRunModal from './Components/Onboarding/FirstRunModal'
 import WelcomeModal from './Components/WelcomeModal'
-import FrontOfficeModal from './Components/FrontOfficeModal'
 import SurveyModal from './Components/SurveyModal'
 import RuleVoteModal from './Components/RuleVoteModal'
 import { Footer } from './Components/Footer'
@@ -47,48 +50,94 @@ import PendingPackResumer from './Components/Cards/PendingPackResumer'
 import HalftimeShowModal from './Components/HalftimeShowModal'
 import { ChakraProvider } from '@chakra-ui/react'
 
+/**
+ * Every route, shared by both shells.
+ *
+ * `/` is the front page now, not a redirect to the dashboard. `/dashboard` redirects the
+ * other way so old links and bookmarks still land somewhere sensible; `/dashboard/old`
+ * keeps the original for comparison while the redesign settles.
+ */
+function AppRoutes({ headerHeight }) {
+  return (
+    <Routes>
+      <Route exact path='/' element={<FrontPage />} />
+      <Route exact path='/games' element={<GameBoardPage />} />
+      {/* The live game moved out of a modal and onto its own route, which is
+          what gave the fan feed somewhere to live. */}
+      <Route path='/game/:gameId' element={<GamePage />} />
+      <Route exact path='/standings' element={<StandingsPage />} />
+      <Route exact path='/prognostications' element={<PrognosticationsPage />} />
+      <Route exact path='/dashboard' element={<Navigate to='/' replace />} />
+      <Route exact path='/dashboard/legacy' element={<DashboardNew headerHeight={headerHeight} />} />
+      <Route exact path='/dashboard/old' element={<Dashboard />} />
+      {/* The players list became the league's stats page — players and teams,
+          any season, career, both sides of the ball. `/players` stays as a
+          redirect because old links and bookmarks point at it. */}
+      <Route exact path='/stats' element={<StatsPage />} />
+      <Route exact path='/players' element={<Navigate to='/stats' replace />} />
+      <Route exact path='/teams' element={<TeamsPage />} />
+      <Route path='/team/:id' element={<Team />} />
+      <Route path='/players/:id' element={<Player />} />
+      <Route exact path='/fantasy' element={<FantasyPage />} />
+      <Route exact path='/cards' element={<CardsPage />} />
+      <Route exact path='/achievements' element={<AchievementsPage />} />
+      <Route exact path='/front-office' element={<FrontOfficeRedirect />} />
+      <Route exact path='/awards' element={<AwardsPage />} />
+      <Route exact path='/bracket' element={<BracketView />} />
+      <Route exact path='/history' element={<HistoryPage />} />
+      <Route exact path='/about' element={<AboutPage />} />
+      <Route exact path='/admin' element={<AdminPage />} />
+    </Routes>
+  )
+}
+
+/**
+ * Desktop runs the redesigned shell (Components/Shell): full-width header, fixed 196px
+ * nav, content column. Mobile keeps the original Navbar + GameBar, because the handoffs
+ * are a fixed 1440px desktop layout and explicitly did not design a responsive collapse.
+ */
 function AppLayout() {
   const headerRef = useRef(null)
   const [headerHeight, setHeaderHeight] = useState(64)
   const isMobile = useIsMobile()
-  const sidebarWidth = isMobile ? 0 : SIDEBAR_WIDTH_COLLAPSED
 
   useEffect(() => {
-    if (!headerRef.current) return
-    const observer = new ResizeObserver(() => {
-      setHeaderHeight(headerRef.current.offsetHeight)
-    })
-    observer.observe(headerRef.current)
-    return () => observer.disconnect()
-  }, [])
+    if (isMobile && headerRef.current) {
+      const observer = new ResizeObserver(() => {
+        if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight)
+      })
+      observer.observe(headerRef.current)
+      return () => observer.disconnect()
+    }
+  }, [isMobile])
+
+  // ⚠️ Mounted ABOVE the desktop/mobile branch. Mobile does not render AppShell at all.
+  // It keeps the original Navbar and GameBar, because the redesign handoffs were
+  // desktop-only, so a notice living inside the shell would never appear on the one
+  // kind of device it is meant for.
+  const notice = <MobileNotice />
+
+  if (!isMobile) {
+    return (
+      <>
+        {notice}
+        <AppShell>
+          <AppRoutes headerHeight={headerHeight} />
+        </AppShell>
+      </>
+    )
+  }
 
   return (
     <div className='min-h-screen relative font-pixel' style={{ backgroundColor: '#0f172a' }}>
-      {!isMobile && <Sidebar headerHeight={headerHeight} />}
+      {notice}
       <div ref={headerRef} className='fixed w-full top-0 z-50'>
         <Navbar />
         <BetaBanner />
       </div>
-      <div style={{ paddingTop: headerHeight, paddingBottom: 33, marginLeft: sidebarWidth, transition: 'margin-left 0.2s ease' }}>
+      <div style={{ paddingTop: headerHeight, paddingBottom: 33 }}>
         <GameBar />
-        <Routes>
-          <Route exact path='/' element={<Navigate to='/dashboard' />} />
-          <Route exact path='/dashboard' element={<DashboardNew headerHeight={headerHeight} />} />
-          <Route exact path='/dashboard/old' element={<Dashboard />} />
-          <Route exact path='/players' element={<Players />} />
-          <Route exact path='/teams' element={<TeamsPage />} />
-          <Route path='/team/:id' element={<Team />} />
-          <Route path='/players/:id' element={<Player />} />
-          <Route exact path='/fantasy' element={<FantasyPage />} />
-          <Route exact path='/cards' element={<CardsPage />} />
-          <Route exact path='/achievements' element={<AchievementsPage />} />
-          <Route exact path='/front-office' element={<FrontOfficeRedirect />} />
-          <Route exact path='/awards' element={<AwardsPage />} />
-          <Route exact path='/bracket' element={<BracketView />} />
-          <Route exact path='/history' element={<HistoryPage />} />
-          <Route exact path='/about' element={<AboutPage />} />
-          <Route exact path='/admin' element={<AdminPage />} />
-        </Routes>
+        <AppRoutes headerHeight={headerHeight} />
         <Footer />
       </div>
     </div>
@@ -158,7 +207,7 @@ function BetaBanner() {
 
 function AuthGate() {
   const { isSignedIn, isLoaded } = useUser()
-  const { betaBlocked, loading } = useAuth()
+  const { loading } = useAuth()
   const location = useLocation()
 
   // Always allow /about and /admin without auth
@@ -182,12 +231,10 @@ function AuthGate() {
 
   if (!isLoaded || loading) return null
   if (!isSignedIn) return <LandingPage />
-  if (betaBlocked) return <BetaBlockedPage />
   return (
     <>
-      <OnboardingModal />
+      <FirstRunModal />
       <WelcomeModal />
-      <FrontOfficeModal />
       <SurveyModal />
       <RuleVoteModal />
       <AppLayout />

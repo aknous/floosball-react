@@ -9,6 +9,7 @@ import { Stars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import TeamNavStrip from '@/Components/TeamNavStrip'
 import { GameModalNew } from '@/Components/GameModalNew'
+import { useOpenGame } from '@/hooks/useOpenGame'
 import CareerStageBadge from '@/Components/CareerStageBadge'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { CoachProfileTags } from '@/Components/CoachProfile'
@@ -157,6 +158,7 @@ interface TeamData {
   history: HistoryRow[]
   coach: Coach | null
   fundingTier?: string
+  division?: string | null
   floosbowlChampion?: boolean
   clinchedPlayoffs?: boolean
   clinchedTopSeed?: boolean
@@ -473,7 +475,7 @@ const Gauge: React.FC<{
  *  scales, and reading them as 0..1 pinned every team under half a bar — the
  *  panel showed three near-empty tracks whichever team you opened.
  *
- *  Each gets its own domain. These are MEASURED across all 24 teams, not taken
+ *  Each gets its own domain. These are MEASURED across the whole league, not taken
  *  from the ranges quoted in computeLockerRoom's docstring: those describe the
  *  roster average, and the real league spread is several times wider (fortitude
  *  runs about −1.0 to +1.1, not −0.2 to +0.4). Calibrated to the docstring, a
@@ -645,7 +647,8 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true)
   const [tick, setTick] = useState(0)
   const [width, setWidth] = useState(window.innerWidth)
-  const [openGameId, setOpenGameId] = useState<number | null>(null)
+  // Desktop routes to the game's own page; mobile keeps the modal.
+  const { openGame, modalGameId, closeGame } = useOpenGame()
   const [stages, setStages] = useState<Record<number, string>>({})
   const [stadiumLevel, setStadiumLevel] = useState(1)
 
@@ -869,16 +872,17 @@ export default function TeamPage() {
           </span>
 
           <div style={{ minWidth: 0 }}>
-            {/* Market lives here rather than in the facts row: it's an
-                identity fact like the city and the league, not a performance
-                one, and it was the weakest of the four things competing for
-                that scan line. */}
+            {/* City, league, DIVISION. The third slot used to carry the funding
+                tier (the market size), which is an economy fact and changes with
+                how much the fans have put in — a club's division is the thing a
+                reader actually needs to place it, and at four divisions per league
+                it is what most of them are playing for. */}
             <div style={{
               fontSize: '13px', letterSpacing: '0.12em', fontWeight: 700,
               color: 'rgba(255,255,255,0.92)',
             }}>
               {team.city} &middot; {team.league}
-              {team.fundingTier && <> &middot; {titleCase(team.fundingTier)}</>}
+              {team.division && <> &middot; {team.division}</>}
             </div>
             <h1 style={{
               margin: '4px 0 0', fontSize: `${heroName}px`, lineHeight: 0.94,
@@ -1082,7 +1086,7 @@ export default function TeamPage() {
             type="button"
             className="tp-fact-cell"
             disabled={!nextGame || !canOpen(nextGame)}
-            onClick={() => nextGame && canOpen(nextGame) && setOpenGameId(nextGame.gameId)}
+            onClick={() => nextGame && canOpen(nextGame) && openGame(nextGame.gameId)}
             style={{
               ...FOCUS_RING(secondary),
               font: 'inherit', textAlign: 'left', width: '100%',
@@ -1299,7 +1303,7 @@ export default function TeamPage() {
                         type="button"
                         className="tp-sched-row"
                         disabled={!canOpen(g)}
-                        onClick={() => canOpen(g) && setOpenGameId(g.gameId)}
+                        onClick={() => canOpen(g) && openGame(g.gameId)}
                         style={{
                           ...FOCUS_RING(secondary),
                           width: '100%', textAlign: 'left',
@@ -1368,8 +1372,8 @@ export default function TeamPage() {
           page rather than falling through one long column. */}
       <SectionRail sections={railSections} accent={readableOnDark(secondary)} enabled={!stacked} />
 
-      {openGameId != null && (
-        <GameModalNew gameId={openGameId} onClose={() => setOpenGameId(null)} />
+      {modalGameId != null && (
+        <GameModalNew gameId={modalGameId} onClose={closeGame} />
       )}
     </div>
   )

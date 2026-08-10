@@ -137,7 +137,6 @@ export const filterPillStyle = (active: boolean): React.CSSProperties => ({
   border: `1px solid ${active ? '#3b82f6' : '#334155'}`,
   backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'transparent',
   color: active ? '#60a5fa' : '#94a3b8',
-  borderRadius: '4px',
   cursor: 'pointer',
   transition: 'all 0.1s',
 })
@@ -187,7 +186,7 @@ export const CardSearchInput: React.FC<{
       style={{
         width: '100%', padding: '8px 28px 8px 10px', fontSize: '12px',
         fontFamily: 'inherit', backgroundColor: '#0f172a', color: '#e2e8f0',
-        border: '1px solid #334155', borderRadius: '6px', outline: 'none',
+        border: '1px solid #334155', outline: 'none',
         boxSizing: 'border-box',
       }}
     />
@@ -281,8 +280,7 @@ export const CardFilterControls: React.FC<{
           onChange={e => onPatch({ sort: e.target.value as CardSortMode })}
           style={{
             padding: '4px 8px', fontSize: '11px', fontFamily: 'inherit',
-            backgroundColor: '#0f172a', color: '#e2e8f0', border: '1px solid #334155',
-            borderRadius: '4px', cursor: 'pointer', outline: 'none',
+            backgroundColor: '#0f172a', color: '#e2e8f0', border: '1px solid #334155', cursor: 'pointer', outline: 'none',
           }}
         >
           {showMatchSort && <option value="match">Match first</option>}

@@ -49,9 +49,45 @@ const notifTypeColors = {
   favorite_team: '#f43f5e',
 }
 
-function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker }) {
+// Exported so the redesigned shell header (Components/Shell/AppHeader) mounts the SAME
+// account menu rather than growing a second one that drifts from this.
+export function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker }) {
   const { user, logout, getToken } = useAuth()
   const [emailOptOut, setEmailOptOut] = useState(user?.emailOptOut ?? false)
+  // Renaming lives here for now because this dropdown is the only account surface that
+  // exists. Its real home is the profile page (next-season item 4); moving it is a lift
+  // and shift, since all the rules live server-side.
+  const [renaming, setRenaming] = useState(false)
+  const [nameDraft, setNameDraft] = useState(user?.username || '')
+  const [nameBusy, setNameBusy] = useState(false)
+  const [nameError, setNameError] = useState(null)
+
+  const submitName = useCallback(async () => {
+    const next = (nameDraft || '').trim()
+    if (!next || next === user?.username) { setRenaming(false); return }
+    setNameBusy(true); setNameError(null)
+    try {
+      const tok = await getToken()
+      const res = await fetch(`${API_BASE}/users/me/username`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+        body: JSON.stringify({ username: next }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setRenaming(false)
+        window.location.reload()   // the name is rendered in a dozen places
+      } else {
+        // 400 validation, 409 taken, 429 already renamed this season — the server writes
+        // a usable sentence for each, so show it rather than inventing our own.
+        setNameError(body.detail || 'That did not work.')
+      }
+    } catch {
+      setNameError('Something went wrong.')
+    } finally {
+      setNameBusy(false)
+    }
+  }, [nameDraft, user, getToken])
   const [emailDayReport, setEmailDayReport] = useState(user?.emailDayReport ?? true)
   const [emailSeasonReport, setEmailSeasonReport] = useState(user?.emailSeasonReport ?? true)
   const panelRef = useRef(null)
@@ -118,6 +154,74 @@ function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker 
         {user?.email && (
           <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {user.email}
+          </div>
+        )}
+      </div>
+
+      <div style={{ padding: '8px 14px', borderBottom: '1px solid #334155' }}>
+        {!renaming ? (
+          <button
+            onClick={() => { setNameDraft(user?.username || ''); setNameError(null); setRenaming(true) }}
+            disabled={user?.canChangeUsername === false}
+            title={user?.canChangeUsername === false
+              ? 'You have already changed your name this season'
+              : 'Change your display name'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+              padding: 0, background: 'none', border: 'none', fontFamily: 'inherit',
+              textAlign: 'left',
+              cursor: user?.canChangeUsername === false ? 'default' : 'pointer',
+              opacity: user?.canChangeUsername === false ? 0.45 : 1,
+            }}
+          >
+            <span style={{ fontSize: '11px', color: '#cbd5e1', flex: 1 }}>
+              {user?.canChangeUsername === false ? 'Name locked until next season' : 'Change Name'}
+            </span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </button>
+        ) : (
+          <div>
+            <input
+              value={nameDraft}
+              autoFocus
+              maxLength={20}
+              spellCheck={false}
+              onChange={e => { setNameDraft(e.target.value); setNameError(null) }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') submitName()
+                if (e.key === 'Escape') { setRenaming(false); setNameError(null) }
+              }}
+              style={{
+                width: '100%', boxSizing: 'border-box', padding: '6px 8px',
+                borderRadius: '5px', border: `1px solid ${nameError ? '#b45309' : '#334155'}`,
+                background: '#0f172a', color: '#e2e8f0', fontSize: '12px',
+                fontFamily: 'inherit', outline: 'none',
+              }}
+            />
+            <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+              <button
+                onClick={submitName}
+                disabled={nameBusy}
+                style={{
+                  flex: 1, padding: '5px', borderRadius: '5px', border: 'none',
+                  background: '#3b82f6', color: '#fff', fontSize: '11px',
+                  fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
+                }}
+              >{nameBusy ? 'Saving...' : 'Save'}</button>
+              <button
+                onClick={() => { setRenaming(false); setNameError(null) }}
+                style={{
+                  padding: '5px 10px', borderRadius: '5px', border: '1px solid #334155',
+                  background: 'none', color: '#94a3b8', fontSize: '11px',
+                  fontFamily: 'inherit', cursor: 'pointer',
+                }}
+              >Cancel</button>
+            </div>
+            <div style={{ fontSize: '10px', color: nameError ? '#fbbf24' : '#64748b', marginTop: '5px' }}>
+              {nameError || 'One change per season.'}
+            </div>
           </div>
         )}
       </div>

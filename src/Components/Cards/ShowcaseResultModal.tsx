@@ -38,7 +38,7 @@ export default function ShowcaseResultModal({ result, onClose }: ShowcaseResultM
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: '380px', borderRadius: '16px', overflow: 'hidden',
+          width: '100%', maxWidth: '380px', overflow: 'hidden',
           fontFamily: 'pressStart', textAlign: 'center', padding: '28px 24px',
           background: `radial-gradient(ellipse 90% 60% at 50% 0%, ${gradeColor}1f, transparent 70%), linear-gradient(180deg, #141b30 0%, #0a0e1a 100%)`,
           border: `1px solid ${gradeColor}55`,
@@ -75,7 +75,7 @@ export default function ShowcaseResultModal({ result, onClose }: ShowcaseResultM
         <button
           onClick={onClose}
           style={{
-            width: '100%', padding: '11px', borderRadius: '8px', border: 'none',
+            width: '100%', padding: '11px', border: 'none',
             background: `linear-gradient(135deg, ${GOLD}, #d97706)`,
             color: '#1a1206', fontFamily: 'pressStart', fontWeight: 800, fontSize: '13px',
             cursor: 'pointer',

@@ -74,7 +74,6 @@ export const ScoringPane: React.FC = () => {
 // dashboard columns read as siblings.
 const cardStyleFn = (mobile: boolean): React.CSSProperties => ({
   backgroundColor: '#1e293b',
-  borderRadius: '14px',
   border: '1px solid #334155',
   padding: mobile ? '12px' : '24px',
 })
