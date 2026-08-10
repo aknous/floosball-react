@@ -24,7 +24,10 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 const NAME_MIN = 3
 const NAME_MAX = 20
-const NAME_RE = /^[A-Za-z][A-Za-z0-9_]*$/
+// ⚠️ Mirrors `_USERNAME_RE` in api/auth.py — a name may start with a digit or an
+// underscore (owner, 2026-08-10). The server is still the authority; this only
+// decides whether we stop the request before it leaves.
+const NAME_RE = /^[A-Za-z0-9_][A-Za-z0-9_]*$/
 
 /** Mirrors api/auth.validateUsername so a bad name fails as you type. The server
  *  re-checks everything and its message wins if the two ever disagree. */
@@ -33,7 +36,7 @@ const localNameError = (name: string): string | null => {
   if (!n) return null
   if (n.length < NAME_MIN) return `At least ${NAME_MIN} characters`
   if (n.length > NAME_MAX) return `${NAME_MAX} characters or fewer`
-  if (!NAME_RE.test(n)) return 'Letters, numbers and underscores, starting with a letter'
+  if (!NAME_RE.test(n)) return 'Letters, numbers and underscores'
   return null
 }
 
