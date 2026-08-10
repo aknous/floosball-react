@@ -156,13 +156,18 @@ const Side: React.FC<{
           {/* ⚠️ THE POINTS LEAD, the multiplier explains them. It used to be the other
               way round — a big "1.5x" with the points as a footnote — and readers were
               asking what a pick was actually worth. The multiplier is the reason for
-              the number, not the number itself. */}
+              the number, not the number itself.
+              ⚠️ EACH SPAN CARRIES ITS OWN UNIT, because this row REVERSES on the home
+              side. Splitting the value from its unit across the two spans rendered as
+              "pts · 0.7x 7" once mirrored. Self-contained, either order reads. */}
           <span style={{
-            ...font(800, 17, 1), ...TABULAR,
+            ...font(800, 17, 1), ...TABULAR, whiteSpace: 'nowrap',
             color: multiplier >= 1.5 ? ACCENT.live : multiplier < 0.8 ? TEXT.muted : TEXT.body,
-          }}>{points}</span>
+          }}>
+            {points}<span style={{ ...font(500, 10), marginLeft: '3px' }}>pts</span>
+          </span>
           <span style={{ ...font(500, 10), color: TEXT.muted, ...TABULAR, whiteSpace: 'nowrap' }}>
-            pts · {multiplier.toFixed(1)}x
+            {multiplier.toFixed(1)}x
           </span>
         </span>
       </span>
@@ -222,9 +227,16 @@ export const MatchupCard: React.FC<{
           ) : (
             <>
               <span style={{ ...font(600, 12), color: TEXT.muted }}>vs</span>
-              <span style={{ ...font(500, 11), color: TEXT.muted, ...TABULAR }}>
-                {game.pickable ? `${timing.toFixed(2)}x` : 'LOCKED'}
-              </span>
+              {/* ⚠️ The TIMING multiplier used to live here. Picks close at kickoff
+                  now, so it is 1.00x on every pickable game and told the reader
+                  nothing — it was two multipliers on one card where only one varies.
+                  LOCKED still earns the slot: it is the difference between a game you
+                  can still call and one that has gone. */}
+              {!game.pickable && (
+                <span style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted }}>
+                  LOCKED
+                </span>
+              )}
             </>
           )}
         </div>
