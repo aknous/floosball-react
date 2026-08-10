@@ -21,7 +21,6 @@ const SECTION_GROUPS: SectionCategory[] = [
       { id: 'how-to-watch', title: 'How to Watch' },
       { id: 'play-indicators', title: 'Play Indicators' },
       { id: 'game-badges', title: 'Game Badges' },
-      { id: 'teams-players', title: 'Teams & Players' },
       { id: 'season-schedule', title: 'Season Schedule' },
       { id: 'prognosticate', title: 'Prognosticate' },
       { id: 'team-funding', title: 'Facilities' },
@@ -455,6 +454,82 @@ const EquipmentSlotDiagram: React.FC<{ isMobile: boolean }> = ({ isMobile }) => 
 
 // ── Roster slot visual ────────────────────────────────────────────────────
 
+/**
+ * The power bar, shown rather than described.
+ *
+ * ⚠️ The paragraph this sits under was the single most confusing thing in the guide for
+ * new readers, and it was also wrong: it said a BENCHED player never fills the bar, and
+ * the fantasy/cards fusion removed the bench. There is nowhere to sit a player; the way
+ * you miss the bar is that your player has a quiet week.
+ *
+ * Three rows because the third is the one prose keeps failing to land: some cards run
+ * INVERSE and are on while the player stays under. Showing the same bar producing
+ * opposite answers explains it faster than a sentence can.
+ */
+const PowerBarVisual: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
+  const MARK = 62          // where the threshold sits, as a % of the track
+  const ON = '#7fd8a0'     // the same green the card itself uses for a met bar
+  const OFF = '#64748b'
+  const INV = '#fbbf24'
+
+  const rows: { label: string; fill: number; color: string; state: string; note: string }[] = [
+    { label: 'Quiet week', fill: 34, color: OFF, state: 'OFF',
+      note: 'under the mark, so the effect scores nothing' },
+    { label: 'Big week', fill: 88, color: ON, state: 'ON',
+      note: 'at or past the mark, so the effect pays' },
+    { label: 'Inverse card', fill: 34, color: INV, state: 'ON',
+      note: 'a few cards want the opposite and run while the player stays under' },
+  ]
+
+  return (
+    <div style={{ margin: '14px 0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {rows.map(r => (
+        <div key={r.label} style={{
+          display: 'flex', alignItems: 'center',
+          gap: isMobile ? '8px' : '12px', flexWrap: 'wrap',
+        }}>
+          <span style={{
+            width: isMobile ? '76px' : '92px', flexShrink: 0,
+            fontSize: isMobile ? '11px' : '12px', fontWeight: 700, color: '#cbd5e1',
+          }}>{r.label}</span>
+
+          {/* The track, with the threshold drawn ON it — the number matters far less
+              than the fact that there is a line and you are one side of it. */}
+          <div style={{
+            position: 'relative', flex: '1 1 140px', minWidth: '120px',
+            height: '12px', borderRadius: '6px',
+            backgroundColor: 'rgba(51,65,85,0.55)', overflow: 'hidden',
+          }}>
+            <div style={{
+              width: `${r.fill}%`, height: '100%',
+              backgroundColor: r.color, opacity: 0.85,
+            }} />
+            <div style={{
+              position: 'absolute', left: `${MARK}%`, top: '-3px',
+              width: '2px', height: '18px', backgroundColor: '#e2e8f0',
+            }} />
+          </div>
+
+          <span style={{
+            flexShrink: 0, fontSize: isMobile ? '9px' : '10px', fontWeight: 800,
+            letterSpacing: '0.08em', color: r.state === 'ON' ? r.color : OFF,
+            border: `1px solid ${r.state === 'ON' ? r.color : OFF}`,
+            borderRadius: '4px', padding: '2px 6px',
+          }}>{r.state}</span>
+
+          <span style={{
+            flexBasis: isMobile ? '100%' : 'auto', flex: isMobile ? undefined : '1 1 180px',
+            fontSize: isMobile ? '11px' : '12px', color: '#94a3b8', lineHeight: 1.4,
+          }}>{r.note}</span>
+        </div>
+      ))}
+      <p style={{ fontSize: isMobile ? '11px' : '12px', color: '#64748b', margin: 0 }}>
+        The white line is that card's mark.
+      </p>
+    </div>
+  )
+}
+
 const RosterSlotVisual: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const slots = [
     { label: 'QB', color: '#ef4444' },
@@ -615,19 +690,25 @@ const AboutPage: React.FC = () => {
           {/* How to Watch */}
           <Section id="how-to-watch" title="How to Watch">
             <p style={textStyle}>
-              The <Link to="/dashboard" style={linkStyle}>Dashboard</Link> is your home base. When games are
-              live, you'll see game cards with real-time scores. Click any game card to open the game modal.
-              The Highlights feed on the dashboard shows key moments (touchdowns, turnovers, big plays,
-              clutch/choke moments) across all games at once.
+              The <Link to="/games" style={linkStyle}>Game Board</Link> is where a slate lives. Every game
+              gets a card with a live score, and the board orders them by how interesting they are right
+              now rather than by kickoff time, so the close one is near the top. Click a card to open that
+              game.
             </p>
 
-            <p style={labelStyle}>Game Modal</p>
+            <p style={labelStyle}>The Game Page</p>
             <p style={textStyle}>
-              The game modal is split into two panels. The left panel shows the scoreboard, field position,
-              and win probability. The right panel has three tabs: Plays, Box Score, and Stats.
+              A game is its own page, in three columns. On the left, the scoreboard, field position and win
+              probability. In the middle, the play feed with Box Score and Player Stats beside it. On the
+              right, the Bleachers: who else is watching, what they are shouting, and the players and
+              coaches reacting on the sideline.
+            </p>
+            <p style={textStyle}>
+              A finished game keeps its box score and player stats. It does not keep its play feed, field
+              graphic or win-probability chart, so those disappear once a game is final.
             </p>
 
-            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Left Panel</p>
+            <p style={{ ...labelStyle, fontSize: '13px', marginTop: '12px' }}>Left Column</p>
             <p style={{ ...textStyle, marginBottom: '6px' }}>
               The scoreboard shows each team's avatar, city, name, record, ELO rating, score, and remaining
               timeouts. During live games, a white ring appears around the avatar of the team with possession,
@@ -731,13 +812,18 @@ const AboutPage: React.FC = () => {
               down and distance, play description, and a color-coded result badge.
             </p>
             {bulletList([
-              'Blue badges: First Down',
-              'Green badges: Touchdown, Field Goal, Extra Point Good, 2-Pt conversion',
-              'Red badges: Fumble, Interception, Turnover on Downs, Drive Clock Expired, Safety',
-              'Orange badges: Sack',
-              'Amber badges: 4th Down stop, 2-Pt conversion failure, Missed Extra Point',
-              'Gray badges: Punt, Missed Field Goal',
+              'Blue: first down',
+              'Green: touchdown, field goal, extra point, two-point conversion, conversion ladder, sideline goal',
+              'Red: fumble, interception, turnover on downs, drive clock expired, safety, bust, contest lost',
+              'Orange: sack',
+              'Amber: stopped on the last down, missed extra point, failed conversion, provisional score',
+              'Grey: punt, missed field goal, missed sideline goal',
             ])}
+            <p style={{ ...textStyle, marginTop: '6px', marginBottom: '10px' }}>
+              The amber down badge follows the ACTUAL last down rather than always the fourth. Downs per
+              series is a rule the Cores can change, so in a five-down game it is fifth down that turns
+              amber. Several of these results only appear in alternate formats.
+            </p>
             <p style={{ ...textStyle, marginTop: '6px', marginBottom: '10px' }}>
               Plays with special significance get a colored left border and label: amber for Big Plays
               (with WPA impact), cyan for Clutch Plays, red for Choke Plays, and orange for Momentum Shifts.
@@ -1067,7 +1153,7 @@ const AboutPage: React.FC = () => {
           {/* Game Badges */}
           <Section id="game-badges" title="Game Badges">
             <p style={{ ...textStyle, marginBottom: '16px' }}>
-              Some games on the dashboard are highlighted with special badges:
+              Some games on the board carry a badge:
             </p>
             <div style={indicatorRow}>
               <span style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.05em', flexShrink: 0 }}>
@@ -1091,16 +1177,6 @@ const AboutPage: React.FC = () => {
           </Section>
 
           {/* Teams & Players */}
-          <Section id="teams-players" title="Teams & Players">
-            <p style={textStyle}>
-              The league is made up of procedurally generated teams, each with unique rosters, coaches, and
-              geometric avatars. Visit the <Link to="/players" style={linkStyle}>Players</Link> page
-              to browse the full player database. You can filter by position and status to find who you're
-              looking for. Each player has attributes (speed, strength, awareness, pressure handling, etc.)
-              that directly affect how they perform on the field.
-            </p>
-          </Section>
-
           {/* Season Schedule */}
           <Section id="season-schedule" title="Season Schedule">
             <p style={{ ...textStyle, marginBottom: '16px' }}>
@@ -1110,7 +1186,7 @@ const AboutPage: React.FC = () => {
             {[
               { day: 'Monday \u2013 Thursday', label: 'Regular Season', desc: '28 rounds of games played across 4 days (7 rounds per day). Each round kicks off on the hour from 12 PM to 6 PM. Every team plays a mix of intra-league and inter-league matchups.' },
               { day: 'Thursday Evening', label: 'MVP Announcement', desc: 'After the final regular season round, the season MVP is announced. MVP is decided by a fan vote: players are ranked into a shortlist by a performance and win-probability value metric, and fans vote for the winner (the metric serves as the tiebreaker and fallback if too few fans vote).' },
-              { day: 'Friday', label: 'Playoffs', desc: 'All playoff rounds are played on Friday: two rounds of playoff games, the league championships, and the Floos Bowl. 6 teams per league qualify, with the top 2 seeds earning a first-round bye.' },
+              { day: 'Friday', label: 'Playoffs', desc: 'All playoff rounds are played on Friday: two rounds of playoff games, the league championships, and the Floos Bowl. The top 8 of each league qualify, which is the four division winners plus four wildcards. Sixteen teams is a clean bracket, so nobody gets a bye, and the field re-seeds every round rather than following a fixed ladder.' },
               { day: 'Saturday', label: 'Retirements & Free Agency', desc: 'Players with expiring contracts and aging veterans retire. Retirees become eligible for the Hall of Fame, where fans vote on inductions (with a points-based auto-induct for slam-dunk careers). Then teams sign available free agents to fill roster gaps. Draft order goes from worst record to best, with the champion picking last.' },
               { day: 'Sunday', label: 'Offseason & New Season', desc: 'Coaches train and develop their players. Players may improve, regress, or stay the same based on coaching ability. Performance ratings reset, team ratings are recalculated, and a new schedule is generated for the next season.' },
             ].map((item, i) => (
@@ -1170,8 +1246,9 @@ const AboutPage: React.FC = () => {
               threshold in a single week and you get a bonus payout on top of that.
             </p>
             <p style={textStyle}>
-              Weekly and season-long leaderboards rank everyone by total points. You can find Prognosticate
-              on the <Link to="/dashboard" style={linkStyle}>Dashboard</Link>.
+              Weekly and season-long leaderboards rank everyone by total points. Picks live on
+              the <Link to="/prognostications" style={linkStyle}>Prognostications</Link> page, where you can
+              take a whole day's slate at once.
             </p>
           </Section>
 
@@ -1241,8 +1318,17 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>The Power Bar</p>
             <p style={textStyle}>
-              Every card has an FP power bar. Its effect turns on once that player fills the bar for the week
-              (clears their position's FP threshold). A benched player never fills it, so the effect stays off.
+              A card only pays out when its own player has a good week. Each card carries a mark on its FP
+              bar, and the bar fills with that player's Fantasy Points as the games run. Reach the mark and
+              the effect pays in full; fall short and it scores nothing. There is no partial credit.
+            </p>
+            <PowerBarVisual isMobile={isMobile} />
+            <p style={textStyle}>
+              The mark moves with the card, not with you. A rarer card depicts a better player and asks more
+              of them, and each position has its own scale, so a kicker's mark is nowhere near a
+              quarterback's. An All-Pro card sits lower than the rest, because the best players deliver more
+              often. A few cards have no mark at all, and chance cards use the bar to show their odds rather
+              than an on/off line.
             </p>
 
             <p style={labelStyle}>Scoring</p>
@@ -1408,8 +1494,11 @@ const AboutPage: React.FC = () => {
           {/* ── Card Effects ── */}
           <Section id="card-effects" title="Card Effects">
             <p style={{ ...textStyle, marginBottom: '12px' }}>
-              Each card has a named effect drawn from a shared pool. Effects are not tied to specific
-              positions, so any player's card could have any effect.
+              Each card has a named effect. Most are drawn from a shared pool that any position can
+              roll, but the pool is not the same for everyone: some effects belong to one position only,
+              because they are built on a stat that position produces. A quarterback can roll effects a
+              kicker never will, and a few are excluded where the maths does not work, such as an
+              escalating touchdown effect on a tight end who scores too rarely to climb it.
             </p>
             <p style={{ ...textStyle, marginTop: '10px', marginBottom: '12px' }}>
               The color of the effect name on a card tells you what it produces:
@@ -1472,10 +1561,9 @@ const AboutPage: React.FC = () => {
           {/* ── Card Packs ── */}
           <Section id="card-packs" title="Card Packs">
             <p style={{ ...textStyle, marginBottom: '14px' }}>
-              Packs are the main way to get new cards. Three tiers are available in
-              the <Link to="/dashboard" style={linkStyle}>Shop</Link>, plus rotating themed packs.
-              Most packs share the same rarity odds; higher tiers just give more cards. The Champion and
-              All-Pro prestige packs are the exception, guaranteeing at least one Holographic-or-better card.
+              Packs are the main way to get new cards. The Shop opens from your Floobits balance in the
+              header. Most packs share the same rarity odds and the tier just buys more cards; the packs
+              that guarantee something say so below. Everyone also gets one free Starter Pack per season.
             </p>
             <div style={{
               display: 'grid',
@@ -1502,11 +1590,27 @@ const AboutPage: React.FC = () => {
                 </div>
               ))}
             </div>
-            <p style={{ ...textStyle, marginTop: '14px', fontSize: '12px', color: '#94a3b8' }}>
-              Themed packs (rotating in the Shop) cost 60 Floobits, reveal 3 and keep 2, with the same odds.
-              Their value is the filter: only players at a specific position, or cards that pay a specific output type.
-              The once-per-season Champion and All-Pro prestige packs cost 85 Floobits, reveal 5 and keep 3, and
-              guarantee at least one Holographic-or-better card from last season's champion roster or All-Pro team.
+            <p style={{ ...labelStyle, marginTop: '16px' }}>Themed Packs</p>
+            <p style={{ ...textStyle, marginBottom: '8px' }}>
+              These rotate through the Shop. All of them cost 60 Floobits and reveal 3, keep 2, on the same
+              odds as a Humble Pack. You are not buying better cards, you are buying a smaller haystack.
+            </p>
+            {bulletList([
+              'Position packs: one position only, so you can go looking for the slot you still need',
+              'Output packs: only cards that pay a specific output type',
+              'Rookie packs: this season\'s draft class',
+              'Team packs: one team\'s players, one pack per team',
+            ])}
+
+            <p style={{ ...labelStyle, marginTop: '16px' }}>Prestige Packs</p>
+            {bulletList([
+              'Champion Pack, 85 Floobits, reveal 5 keep 3: last season\'s champion roster, guaranteed Holographic or better',
+              'All-Pro Pack, 85 Floobits, reveal 5 keep 3: last season\'s All-Pro team, guaranteed Holographic or better',
+              'Collection Pack, 90 Floobits, reveal 5 keep 3: past-season greats, guaranteed Prismatic or better and nothing below Holographic',
+            ])}
+            <p style={{ ...textStyle, marginTop: '8px', fontSize: '12px', color: '#94a3b8' }}>
+              The Collection Pack can afford to be that generous because its cards can never be equipped.
+              They go to your Vault and score in the Showcase, so there is no power to creep.
             </p>
           </Section>
 
@@ -1665,19 +1769,28 @@ const AboutPage: React.FC = () => {
             </p>
             {bulletList([
               'Weekly fantasy: your weekly FP converts to Floobits on a tapering curve (more FP earns more, with diminishing returns, no hard cap)',
+              'Supporter: back a team and earn a dividend every week without doing anything. Tenure with the same team raises it, and the team playing well nudges it up. Switching teams sets your tenure back, so it rewards staying put',
+              'Spectating: watching a live game fills a bar as plays go by, and each full segment pays out. Points scored while you watch fill it faster, and so does watching your own team',
+              'Showcase: vaulted cards pay a weekly dividend based on their score',
               'Weekly leaderboard: 1st = 30, 2nd = 20, 3rd = 15 (top 25% get 5)',
               'Season leaderboard: 1st = 200, 2nd = 125, 3rd = 75 (top 25% get 25)',
-              'Prognostications: points x 0.5 Floobits, plus weekly prizes and Clairvoyant bonus',
+              'Prognostications: points x 0.5 Floobits, plus weekly prizes and the Clairvoyant bonus',
+              'Achievements: one-off payouts, and the season goals can be re-earned each year',
               'Favorite team clinches playoffs: 25',
               'Favorite team clinches top seed: 50',
-              'Favorite team wins Floosbowl: 150',
-              'Floobit card effects: earn bonus Floobits weekly from equipped cards',
+              'Favorite team wins the Floos Bowl: 150',
+              'Floobit card effects: bonus Floobits each week from equipped cards',
+              'Selling cards you do not want',
             ])}
+            <p style={{ ...textStyle, marginTop: '8px', fontSize: '12px', color: '#94a3b8' }}>
+              Supporter and Spectator income exists so there is a way to earn that does not run through
+              fantasy. You can follow a team, watch games, and still get somewhere.
+            </p>
             <p style={{ ...textStyle, fontWeight: '600', color: '#e2e8f0', marginBottom: '6px', marginTop: '12px' }}>
               Spending:
             </p>
             {bulletList([
-              'Card Packs: Humble (40), themed packs (60), Grand (70), Champion and All-Pro (85), Exquisite (100)',
+              'Card Packs: Humble (40), themed packs (60), Grand (70), Champion and All-Pro (85), Collection (90), Exquisite (100)',
               'Card Upgrades: Floobits to Level Up a card a tier',
               'Daily Selection cards and rerolls (escalating cost)',
               'Power-Ups: Annulment, Accession, Patronage, Endowment',
