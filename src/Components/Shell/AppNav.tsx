@@ -137,7 +137,12 @@ const AppNav: React.FC = () => {
     return () => { cancelled = true }
   }, [favouriteTeamId])
 
-  const yoursItems = [...YOURS_ITEMS]
+  // ⚠️ No team entry without a team (owner). It rendered as "Your team" with a
+  // generic building icon and went to /front-office, which without a club is a page
+  // about nobody. The offer to pick one lives on the front page's own team panel,
+  // where there is a league on screen to pick from; the nav is for places you
+  // already have.
+  const yoursItems = YOURS_ITEMS.filter(i => i.key !== 'team' || favouriteTeamId != null)
   // Awards voting is season's-end only, and it DOES notify — so it takes the dot
   // treatment, and it takes it at the end of the group.
   if (awardsOpen) yoursItems.push(AWARDS_ITEM)
