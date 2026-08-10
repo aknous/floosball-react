@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { useGames } from '@/contexts/GamesContext'
+import { useFloosball } from '@/contexts/FloosballContext'
 import { SiDiscord } from 'react-icons/si'
 import { VersionPill } from '@/Components/Footer'
 import { FaTrophy } from 'react-icons/fa'
@@ -79,6 +80,21 @@ const GUIDE_ITEM: NavEntry = {
   ),
 }
 
+/**
+ * The playoff bracket, which only exists once there is one.
+ *
+ * ⚠️ The route was live and nothing linked it, so the bracket was reachable only by
+ * typing /bracket — through the four weeks of the year it is the most interesting page
+ * in the app. It appears the same way Awards does: when its moment arrives, and not
+ * before, because a bracket in week 3 is an empty grid.
+ */
+const BRACKET_ITEM: NavEntry = {
+  key: 'bracket',
+  label: 'Bracket',
+  path: '/bracket',
+  icon: ICON('M2 3h6v3H5v3H3V6H2V3zm10 0h6v3h-1v3h-2V6h-3V3zM2 11h6v3H5v3H3v-3H2v-3zm10 0h6v3h-1v3h-2v-3h-3v-3z'),
+}
+
 const AWARDS_ITEM: NavEntry = {
   key: 'awards',
   label: 'Awards',
@@ -89,6 +105,9 @@ const AWARDS_ITEM: NavEntry = {
 // The one link that leaves the app. It sits under the user's own entries rather than in
 // either league group, because it is not a page — it is where you go to talk to people.
 const DISCORD_URL = 'https://discord.gg/b4DZn3mVfP'
+
+/** Matches the header's own idea of where the regular season ends. */
+const REGULAR_SEASON_WEEKS = 28
 
 const GROUP_LABEL: React.CSSProperties = {
   ...font(700, 10, 1, '0.16em'),
@@ -112,6 +131,7 @@ const AppNav: React.FC = () => {
   const { user } = useAuth()
   const { unclaimedCount } = useAchievements()
   const { games } = useGames()
+  const { seasonState } = useFloosball()
 
   const [awardsOpen, setAwardsOpen] = useState(false)
   useEffect(() => {
@@ -165,6 +185,13 @@ const AppNav: React.FC = () => {
   // where there is a league on screen to pick from; the nav is for places you
   // already have.
   const yoursItems = YOURS_ITEMS.filter(i => i.key !== 'team' || favouriteTeamId != null)
+  // ⚠️ Past the regular season, the bracket joins THE LEAGUE group — it is a view of
+  // the competition, not one of the reader's own things. `currentWeek` climbs past 28
+  // into the playoff weeks (29-32) and `seasonComplete` covers the gap between the
+  // Floos Bowl and the next season starting, so the entry survives the whole postseason
+  // rather than vanishing the moment the last game ends.
+  const inPlayoffs = seasonState.currentWeek > REGULAR_SEASON_WEEKS || seasonState.seasonComplete
+  const leagueItems = inPlayoffs ? [...LEAGUE_ITEMS, BRACKET_ITEM] : LEAGUE_ITEMS
   // Awards voting is season's-end only, and it DOES notify — so it takes the dot
   // treatment, and it takes it at the end of the group.
   if (awardsOpen) yoursItems.push(AWARDS_ITEM)
@@ -245,7 +272,7 @@ const AppNav: React.FC = () => {
           where the version badge was ending up on a short viewport. */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
       <div style={GROUP_LABEL}>THE LEAGUE</div>
-      {LEAGUE_ITEMS.map(renderItem)}
+      {leagueItems.map(renderItem)}
 
       {user && (
         <>
