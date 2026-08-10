@@ -7,6 +7,9 @@ import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { UserDropdown } from '@/Components/Navbar'
 import { FavoriteTeamModal } from '@/Components/Auth/FavoriteTeamModal'
 import ShopModal from '@/Components/Shop/ShopModal'
+import CommandPalette from './CommandPalette'
+import HoverTooltip from '@/Components/HoverTooltip'
+import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from './tokens'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -20,7 +23,8 @@ const TrophyIcon: React.FC = () => (
 )
 
 const SearchIcon: React.FC = () => (
-  <svg width="13" height="13" viewBox="0 0 20 20" fill={TEXT.dim} style={{ flexShrink: 0 }}>
+  // currentColor, so the button it sits in can light it up on hover.
+  <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style={{ flexShrink: 0 }}>
     <path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z" />
   </svg>
 )
@@ -47,6 +51,7 @@ const AppHeader: React.FC = () => {
   const [showShop, setShowShop] = useState(false)
   const [notifications, setNotifications] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [showPalette, setShowPalette] = useState(false)
 
   const getTokenRef = useRef(getToken)
   getTokenRef.current = getToken
@@ -141,6 +146,20 @@ const AppHeader: React.FC = () => {
     }
   }, [])
 
+  // Cmd/Ctrl+K opens the palette from anywhere. ⚠️ Not a bare "/" as well: this app has
+  // real text inputs on the fantasy, cards and admin pages, and a bare-key shortcut
+  // swallows the first slash a reader types into one of them.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setShowPalette(o => !o)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   const weekLabel = seasonState.seasonComplete
     ? seasonState.currentWeekText
     : seasonState.currentWeek > REGULAR_SEASON_WEEKS
@@ -203,7 +222,22 @@ const AppHeader: React.FC = () => {
 
         <span style={{ flex: 1 }} />
 
-        <ShellSearch />
+        <button
+          onClick={() => setShowPalette(true)}
+          aria-label="Search"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '7px',
+            background: 'none', border: 'none', cursor: 'pointer',
+            padding: 0, fontFamily: FONT, color: TEXT.muted,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.color = TEXT.body }}
+          onMouseLeave={e => { e.currentTarget.style.color = TEXT.muted }}
+        >
+          <SearchIcon />
+          <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.faint }}>⌘K</span>
+        </button>
+
+        {user && <FantasyTicker userId={user.id} />}
 
         {user && (
           <button
@@ -255,105 +289,51 @@ const AppHeader: React.FC = () => {
 
       <FavoriteTeamModal visible={showTeamPicker} onClose={() => setShowTeamPicker(false)} />
       {showShop && <ShopModal isOpen={showShop} onClose={() => setShowShop(false)} />}
+      <CommandPalette open={showPalette} onClose={() => setShowPalette(false)} />
     </>
   )
 }
 
 /**
- * Search is a live filter over teams and players. It stays a plain field with a results
- * panel rather than a route — the header is not a place to lose your page from.
+ * This week's fantasy points, beside the Floobits they will become.
+ *
+ * It is the WEEK, not the season, because the week is the number that moves — that is
+ * what makes it a ticker rather than a statistic, and the season total is one hover away.
+ * The two chips are deliberately the same shape as each other: a glyph and a number, no
+ * pill, no background. They are the two currencies the reader is accumulating.
+ *
+ * ⚠️ Hidden once the regular season is over. Fantasy scoring stops at week 28, so past
+ * that the number is frozen and reads as broken rather than final.
  */
-const ShellSearch: React.FC = () => {
-  const [query, setQuery] = useState('')
-  const [open, setOpen] = useState(false)
-  const [results, setResults] = useState<{ teams: any[]; players: any[] }>({ teams: [], players: [] })
-  const boxRef = useRef<HTMLDivElement>(null)
+const FantasyTicker: React.FC<{ userId?: number }> = ({ userId }) => {
+  const { seasonState } = useFloosball()
+  const { myEntry } = useFantasySnapshot(userId)
 
-  useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [])
+  if (!myEntry) return null
+  if (seasonState.seasonComplete || seasonState.currentWeek > REGULAR_SEASON_WEEKS) return null
 
-  useEffect(() => {
-    const term = query.trim().toLowerCase()
-    if (term.length < 2) { setResults({ teams: [], players: [] }); return }
-    let cancelled = false
-    const id = setTimeout(async () => {
-      try {
-        const [teamsRes, playersRes] = await Promise.all([
-          fetch(`${API_BASE}/teams`).then(r => r.json()),
-          fetch(`${API_BASE}/players?limit=600`).then(r => r.json()),
-        ])
-        if (cancelled) return
-        const teams = (teamsRes?.data ?? teamsRes ?? []) as any[]
-        const players = (playersRes?.data ?? playersRes ?? []) as any[]
-        setResults({
-          teams: teams.filter(t => `${t.city} ${t.name}`.toLowerCase().includes(term)).slice(0, 4),
-          players: players.filter(p => (p.name || '').toLowerCase().includes(term)).slice(0, 6),
-        })
-      } catch { /* leave the last results up */ }
-    }, 220)
-    return () => { cancelled = true; clearTimeout(id) }
-  }, [query])
-
-  const hasResults = results.teams.length > 0 || results.players.length > 0
+  const week = (myEntry.weekPlayerFP ?? 0) + (myEntry.weekCardBonus ?? 0)
+  const season = myEntry.seasonTotal ?? 0
 
   return (
-    <div ref={boxRef} style={{ position: 'relative' }}>
-      <label style={{
-        display: 'flex', alignItems: 'center', gap: '8px',
-        background: BG.card, border: `1px solid ${BORDER.hairline}`,
-        padding: '7px 11px', width: '196px',
-      }}>
-        <SearchIcon />
-        <input
-          value={query}
-          onChange={e => { setQuery(e.target.value); setOpen(true) }}
-          onFocus={() => setOpen(true)}
-          placeholder="Teams, players, cards"
-          style={{
-            ...font(400, 12), color: TEXT.body,
-            background: 'transparent', border: 'none', outline: 'none',
-            width: '100%', minWidth: 0, fontFamily: FONT,
-          }}
-        />
-      </label>
-      {open && hasResults && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', right: 0, width: '260px',
-          background: BG.card, border: `1px solid ${BORDER.raised}`, zIndex: 60,
-        }}>
-          {results.teams.map(t => (
-            <NavLink
-              key={`t${t.id}`}
-              to={`/team/${t.id}`}
-              className="row"
-              onClick={() => { setOpen(false); setQuery('') }}
-              style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 11px', textDecoration: 'none' }}
-            >
-              <img src={`/avatars/${t.id}.png`} alt="" width={18} height={18} style={{ borderRadius: '50%' }} />
-              <span style={{ ...font(600, 12), color: TEXT.body }}>{t.city} {t.name}</span>
-            </NavLink>
-          ))}
-          {results.players.map(p => (
-            <NavLink
-              key={`p${p.id}`}
-              to={`/players/${p.id}`}
-              className="row"
-              onClick={() => { setOpen(false); setQuery('') }}
-              style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 11px', textDecoration: 'none' }}
-            >
-              <span style={{ ...font(600, 12), color: TEXT.body }}>{p.name}</span>
-              <span style={{ flex: 1 }} />
-              <span style={{ ...font(400, 10, 1, '0.08em'), color: TEXT.muted }}>{p.position}</span>
-            </NavLink>
-          ))}
-        </div>
-      )}
-    </div>
+    <HoverTooltip
+      text={`${season.toFixed(1)} FP this season${myEntry.rank ? ` · ranked ${myEntry.rank}` : ''}`}
+      color={ACCENT.live}
+    >
+      <NavLink
+        to="/fantasy"
+        style={{
+          display: 'flex', alignItems: 'center', gap: '6px',
+          textDecoration: 'none', ...font(700, 13), color: ACCENT.live, ...TABULAR,
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style={{ flexShrink: 0 }}>
+          <path d="M10 1l2.6 5.5 6 .8-4.4 4.2 1.1 6L10 14.6 4.7 17.5l1.1-6L1.4 7.3l6-.8L10 1z" />
+        </svg>
+        {week.toFixed(1)}
+        <span style={{ ...font(600, 10, 1, '0.08em'), color: ACCENT.success }}>FP</span>
+      </NavLink>
+    </HoverTooltip>
   )
 }
 

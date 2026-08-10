@@ -60,7 +60,11 @@ const FrontPage: React.FC = () => {
   const { user } = useAuth()
   const { games } = useGames()
   const { unclaimedCount } = useAchievements()
-  const { myEntry } = useFantasySnapshot()
+  // ⚠️ The userId argument is not optional in practice — `myEntry` is
+  // `entries.find(e => e.userId === userId)`, which is undefined without it. Called
+  // bare, this page's own fantasy cell read 0.0 and "Not ranked yet" for every reader
+  // forever, and the leaders table never marked a player the reader had rostered.
+  const { myEntry } = useFantasySnapshot(user?.id)
   const { event: wsEvent } = useSeasonWebSocket()
   const { seasonState } = useFloosball()
 
