@@ -9,7 +9,7 @@ import { useFloosball } from '@/contexts/FloosballContext'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { useOpenGame } from '@/hooks/useOpenGame'
 import { BG, BORDER, TEXT, ACCENT, FONT, RAIL_WIDTH, font } from '@/Components/Shell/tokens'
-import WelcomeHero from './WelcomeHero'
+import LiveTicker from './LiveTicker'
 import LeagueNews, { type NewsItem } from './LeagueNews'
 import TopPlayers, { type LeaderRow } from './TopPlayers'
 import YourTeamCard, { type RecentResult } from './YourTeamCard'
@@ -325,7 +325,6 @@ const FrontPage: React.FC = () => {
     return actions
   }, [gameList, unclaimedCount])
 
-  const liveCount = gameList.filter(g => g.status === 'Active').length
 
   return (
     <>
@@ -338,11 +337,13 @@ const FrontPage: React.FC = () => {
         } as React.CSSProperties}
       >
         <div className="frontHero">
-          <WelcomeHero
-            signedIn={!!user}
-            seasonNumber={seasonState.seasonNumber}
+          {/* The rail carries the SLATE now (owner). It was a static welcome message
+              beside four nav links that duplicated the sidebar — nothing in it was
+              live or unavailable elsewhere, which is exactly why it read as sparse. */}
+          <LiveTicker
+            games={gameList}
             weekLabel={seasonState.currentWeekText || `Week ${seasonState.currentWeek}`}
-            liveCount={liveCount}
+            onOpen={openGame}
           />
         </div>
 
