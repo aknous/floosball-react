@@ -34,7 +34,9 @@ const DivisionBlock: React.FC<{
       }}>
         <span style={{ ...font(800, 13, 1, '0.06em'), color: TEXT.strong }}>{name}</span>
         <span style={{ flex: 1 }} />
-        <span style={{ ...font(600, 10), color: TEXT.muted }}>LEADS</span>
+        {/* No "LEADS" label (owner). The club on the top row IS the leader — saying so
+            in words is the header restating the table underneath it. The crest stays
+            because it is a marker, not a sentence. */}
         <Crest teamId={leader?.id} size={18} />
         <span style={{ ...font(700, 11), color: TEXT.secondary }}>{leader?.abbr}</span>
       </div>

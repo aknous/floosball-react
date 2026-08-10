@@ -55,4 +55,4 @@ export interface LeagueStandings {
   standings: TeamStanding[]
 }
 
-export type StandingsView = 'division' | 'league' | 'wildcard'
+export type StandingsView = 'division' | 'league'

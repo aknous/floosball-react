@@ -4,7 +4,6 @@ import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { BG, BORDER, TEXT, ACCENT, PLAYOFF, FONT, font } from '@/Components/Shell/tokens'
 import ByDivision from './ByDivision'
 import ByLeague from './ByLeague'
-import WildCardRace from './WildCardRace'
 import type { LeagueStandings, StandingsView } from './standingsTypes'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -13,8 +12,12 @@ const VIEW_KEY = 'floosball:standingsView'
 const VIEWS: { key: StandingsView; label: string }[] = [
   { key: 'division', label: 'BY DIVISION' },
   { key: 'league', label: 'BY LEAGUE' },
-  { key: 'wildcard', label: 'WILD CARD RACE' },
 ]
+
+// ⚠️ The wild card race view was REMOVED (owner): it was a nice object but a confusing
+// one, and the division and league views already answer everything it did. Anyone whose
+// stored preference still says 'wildcard' is sent to the league view rather than left
+// staring at nothing.
 
 /**
  * Standings for a 32-club league: two leagues of 16, four divisions of four in each,
@@ -31,7 +34,10 @@ const StandingsPage: React.FC = () => {
   const { event: wsEvent } = useSeasonWebSocket()
 
   const [view, setView] = useState<StandingsView>(() => {
-    try { return (localStorage.getItem(VIEW_KEY) as StandingsView) || 'league' } catch { return 'league' }
+    try {
+      const saved = localStorage.getItem(VIEW_KEY) as StandingsView
+      return saved === 'division' || saved === 'league' ? saved : 'league'
+    } catch { return 'league' }
   })
   const [leagues, setLeagues] = useState<LeagueStandings[] | null>(null)
   const [error, setError] = useState(false)
@@ -109,10 +115,8 @@ const StandingsPage: React.FC = () => {
           <StandingsSkeleton />
         ) : view === 'division' ? (
           <ByDivision leagues={leagues} favouriteTeamId={favouriteTeamId} />
-        ) : view === 'league' ? (
-          <ByLeague leagues={leagues} favouriteTeamId={favouriteTeamId} />
         ) : (
-          <WildCardRace leagues={leagues} favouriteTeamId={favouriteTeamId} />
+          <ByLeague leagues={leagues} favouriteTeamId={favouriteTeamId} />
         )}
       </div>
     </>
@@ -143,7 +147,6 @@ const Legend: React.FC = () => {
     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
       {item(swatch(PLAYOFF.topSeedRing, PLAYOFF.topSeedFill, PLAYOFF.topSeedText), 'TOP SEED')}
       {item(swatch(PLAYOFF.divisionRing, PLAYOFF.divisionFill), 'DIVISION WINNER')}
-      {item(swatch(PLAYOFF.wildcardRing, PLAYOFF.wildcardFill), 'WILD CARD')}
       {item(<span style={{ ...font(800, 11), color: ACCENT.negative }}>×</span>, 'ELIMINATED')}
     </div>
   )

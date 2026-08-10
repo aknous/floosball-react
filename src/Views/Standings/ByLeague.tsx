@@ -34,7 +34,7 @@ const ByLeague: React.FC<{
             <span style={{ flex: 1, height: '1px', background: BORDER.hairline }} />
             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ width: '14px', height: '2px', background: PLAYOFF.cutline }} />
-              <span style={{ ...font(600, 10, 1, '0.08em'), color: PLAYOFF.cutlineText }}>CUTLINE AFTER SEED 8</span>
+              <span style={{ ...font(600, 10, 1, '0.08em'), color: PLAYOFF.cutlineText }}>PLAYOFF LINE</span>
             </span>
           </div>
 
@@ -121,13 +121,6 @@ const ByLeague: React.FC<{
               )
             })}
           </div>
-
-          <SectionNote label="SEEDING">
-            Seeds 1 to 4 are the four division winners. A division is won on record, then on
-            division record. Seeds 5 to 8 are the wild cards. Teams from different divisions
-            are separated by league record instead, because they did not play the same
-            division slate. Point differential settles anything still level.
-          </SectionNote>
         </div>
       )
     })}
