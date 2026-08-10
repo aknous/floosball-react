@@ -25,9 +25,7 @@ import AwardsPage from './Views/Awards/AwardsPage'
 import BracketView from './Views/Bracket/BracketView'
 import Dashboard from './Views/Dashboard/Dashboard'
 import DashboardNew from './Views/Dashboard/DashboardNew'
-import BetaBlockedPage from './Components/Auth/BetaBlockedPage'
 import LandingPage from './Views/Landing/LandingPage'
-import { OnboardingModal } from './Components/Onboarding/OnboardingModal'
 import WelcomeModal from './Components/WelcomeModal'
 import SurveyModal from './Components/SurveyModal'
 import RuleVoteModal from './Components/RuleVoteModal'
@@ -197,7 +195,7 @@ function BetaBanner() {
 
 function AuthGate() {
   const { isSignedIn, isLoaded } = useUser()
-  const { betaBlocked, loading } = useAuth()
+  const { loading } = useAuth()
   const location = useLocation()
 
   // Always allow /about and /admin without auth
@@ -221,10 +219,8 @@ function AuthGate() {
 
   if (!isLoaded || loading) return null
   if (!isSignedIn) return <LandingPage />
-  if (betaBlocked) return <BetaBlockedPage />
   return (
     <>
-      <OnboardingModal />
       <WelcomeModal />
       <SurveyModal />
       <RuleVoteModal />

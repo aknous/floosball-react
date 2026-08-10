@@ -364,7 +364,7 @@ const FrontPage: React.FC = () => {
           <div className="frontRail" style={{
             display: 'flex', flexDirection: 'column', gap: '22px', minWidth: 0,
           }}>
-            {myTeam && (
+            {myTeam ? (
               <YourTeamCard
                 team={myTeam}
                 leagueName={myLeagueName}
@@ -373,6 +373,30 @@ const FrontPage: React.FC = () => {
                 recent={recent}
                 onOpenGame={openGame}
               />
+            ) : (
+              /* ⚠️ The team picker is no longer forced open at sign-in (owner). This is
+                 where it is offered instead: a panel in the place the club would occupy,
+                 shown only to a signed-in reader who has not chosen one. Asking here
+                 means asking with the league already on screen behind it, rather than
+                 through a modal over a page they have not seen yet. */
+              <div style={{
+                background: BG.card, border: `1px solid ${BORDER.hairline}`,
+                padding: '20px 18px',
+              }}>
+                <div style={{ ...font(700, 11, 1, '0.12em'), color: TEXT.muted }}>YOUR TEAM</div>
+                <div style={{ ...font(400, 13, 1.5), color: TEXT.secondary, margin: '10px 0 16px' }}>
+                  Pick a club and this panel follows them all season — live score, next
+                  fixture, recent form.
+                </div>
+                <button
+                  onClick={() => window.dispatchEvent(new Event('floosball:show-favorite-team-picker'))}
+                  style={{
+                    ...font(700, 12, 1, '0.06em'), color: BG.shell, background: ACCENT.info,
+                    border: 'none', padding: '10px 16px', cursor: 'pointer',
+                    fontFamily: FONT, width: '100%',
+                  }}
+                >PICK A TEAM</button>
+              </div>
             )}
             <YourNumbers cells={numbersCells} actions={numbersActions} />
           </div>

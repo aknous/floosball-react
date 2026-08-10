@@ -121,10 +121,12 @@ const AppHeader: React.FC = () => {
     } catch { /* keep last */ }
   }
 
-  // A user with no favourite team gets the picker, and the rest of the app can open
-  // these two from anywhere (the achievements page does).
+  // ⚠️ The picker is NO LONGER forced open (owner). Landing on a modal before you
+  // have seen anything is the worst moment to ask someone to pick a club — the
+  // front page's own team panel offers it instead, once there is a league on
+  // screen to pick from. The modal itself stays: `floosball:open-team-picker`
+  // opens it from the team panel, the achievements page and anywhere else.
   useEffect(() => {
-    if (user && user.favoriteTeamId == null) setShowTeamPicker(true)
     if (!user) setShowUserMenu(false)
   }, [user])
 
