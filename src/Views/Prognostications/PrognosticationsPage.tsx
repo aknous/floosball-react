@@ -132,10 +132,10 @@ const PrognosticationsPage: React.FC = () => {
     try {
       const { saved, skipped } = await submitAll()
       setFlash(skipped > 0
-        ? `Saved ${saved} pick${saved !== 1 ? 's' : ''}, ${skipped} skipped because the game had finished`
+        ? `Saved ${saved}, skipped ${skipped} already final`
         : `Saved ${saved} pick${saved !== 1 ? 's' : ''}`)
     } catch {
-      setFlash('Those did not save. Try again.')
+      setFlash('Could not save. Try again.')
     }
     setTimeout(() => setFlash(null), 4000)
   }
@@ -157,7 +157,7 @@ const PrognosticationsPage: React.FC = () => {
           </h1>
           <span style={{ display: 'block', ...font(400, 12), color: TEXT.muted, marginTop: '6px' }}>
             {day != null ? `Day ${day + 1}` : 'Today'}
-            {' · '}Call every game, then submit. A pick locks when its game goes final.
+            {' · '}Picks lock when a game goes final.
           </span>
         </span>
         <span style={{ flex: 1 }} />
@@ -187,7 +187,7 @@ const PrognosticationsPage: React.FC = () => {
               padding: '48px', textAlign: 'center', ...font(400, 13), color: TEXT.muted,
               background: BG.panel, border: `1px solid ${BORDER.hairline}`,
             }}>
-              No games scheduled today. The next slate will appear here.
+              No games today.
             </div>
           ) : orderedSlots.map(slot => {
             const open = slot.games.filter(g => g.pickable && g.userPick == null).length
@@ -223,7 +223,7 @@ const PrognosticationsPage: React.FC = () => {
                   </span>
                   <span style={{ flex: 1 }} />
                   {open > 0 && !collapsed && (
-                    // A shortcut, not a recommendation — favourites pay the least, which
+                    // A shortcut, not a recommendation — favorites pay the least, which
                     // is exactly why it is offered as a starting point to edit rather
                     // than a button that finishes your day for you.
                     <button
@@ -233,7 +233,7 @@ const PrognosticationsPage: React.FC = () => {
                         background: 'transparent', border: `1px solid ${BORDER.raised}`,
                         padding: '6px 10px', cursor: 'pointer', fontFamily: FONT,
                       }}
-                    >FILL WITH FAVOURITES</button>
+                    >FILL FAVORITES</button>
                   )}
                   {slot.isPast && (
                     <button
@@ -298,7 +298,7 @@ const PrognosticationsPage: React.FC = () => {
                 </div>
               ) : (
                 <div style={{ padding: '20px 15px', ...font(400, 12), color: TEXT.muted }}>
-                  Make your first picks and your season line appears here.
+                  No picks yet.
                 </div>
               )}
               {thisWeek && thisWeek.total > 0 && (
@@ -317,9 +317,8 @@ const PrognosticationsPage: React.FC = () => {
                 </div>
               )}
               <div style={{ padding: '13px 15px', ...font(400, 11, 1.6), color: TEXT.muted }}>
-                Underdogs pay up to 3x and heavy favourites as little as 0.4x, so the
-                multiplier beside each club is what a correct call on that side is worth.
-                Picking before kickoff pays the most.
+                Underdogs pay up to 3x, big favorites as little as 0.4x. Picking before
+                kickoff pays the most.
               </div>
             </div>
 
@@ -341,7 +340,7 @@ const PrognosticationsPage: React.FC = () => {
             <span style={{ ...font(600, 12), color: ACCENT.live }}>{flash}</span>
           ) : (
             <span style={{ ...font(600, 12), color: TEXT.secondary }}>
-              {dirtyCount} pick{dirtyCount !== 1 ? 's' : ''} not saved yet
+              {dirtyCount} unsaved
             </span>
           )}
           <span style={{ flex: 1 }} />

@@ -20,10 +20,10 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 type Mode = 'off' | 'favorites' | 'underdogs' | 'random'
 
 const MODES: { key: Mode; label: string; hint: string }[] = [
-  { key: 'off', label: 'Off', hint: 'Games you miss score nothing' },
-  { key: 'favorites', label: 'Favourites', hint: 'The higher-rated club every time' },
-  { key: 'underdogs', label: 'Underdogs', hint: 'The longer price every time' },
-  { key: 'random', label: 'Random', hint: 'A coin flip per game' },
+  { key: 'off', label: 'Off', hint: 'Missed games score nothing' },
+  { key: 'favorites', label: 'Favorites', hint: 'Higher-rated club' },
+  { key: 'underdogs', label: 'Underdogs', hint: 'Longer price' },
+  { key: 'random', label: 'Random', hint: 'Coin flip' },
 ]
 
 const AutoPickPanel: React.FC = () => {
@@ -69,8 +69,8 @@ const AutoPickPanel: React.FC = () => {
 
       <div style={{ padding: '11px 15px 13px' }}>
         <p style={{ ...font(400, 11, 1.6), color: TEXT.muted, margin: '0 0 11px' }}>
-          Fills in any game you did not call before it kicked off. It never overwrites a
-          pick you made, and it takes the pre-game rate rather than the best one going.
+          Fills games you miss. Never overwrites your own picks, and takes the
+          pre-game rate.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
@@ -106,7 +106,7 @@ const AutoPickPanel: React.FC = () => {
       </div>
 
       {/* ⚠️ Only shown with a club to be loyal TO. Offering it to someone with no
-          favourite team is offering a setting that cannot do anything. */}
+          favorite team is offering a setting that cannot do anything. */}
       {hasTeam && (
         <div style={{ borderTop: `1px solid ${BORDER.hairline}`, padding: '12px 15px' }}>
           <button
@@ -137,8 +137,8 @@ const AutoPickPanel: React.FC = () => {
               </span>
               <span style={{ display: 'block', ...font(400, 10, 1.6), color: TEXT.muted, marginTop: '4px' }}>
                 {mode === 'off'
-                  ? 'Choose an auto-pick mode above to use this.'
-                  : 'Auto-pick takes your club in any game they play, whatever the mode would have chosen. It costs points on average.'}
+                  ? 'Pick a mode above first.'
+                  : 'Takes your team whatever the mode would have chosen. Costs points on average.'}
               </span>
             </span>
           </button>
