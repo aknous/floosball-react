@@ -9,7 +9,9 @@ export interface NumbersCell {
   suffix?: string
   valueColor?: string
   label: string
-  note: string
+  /** Optional — a cell with nothing worth saying underneath renders without it,
+   *  rather than being given filler to satisfy the type. */
+  note?: string
   noteColor?: string
   /** Where this number's activity lives. A route, or an action for surfaces that are
       modals rather than pages (the Shop). A cell with neither stays inert. */
@@ -74,10 +76,15 @@ const YourNumbers: React.FC<{
             <div style={{ ...font(700, 9, 1, '0.12em'), color: TEXT.muted, marginTop: '7px' }}>
               {cell.label}
             </div>
-            <div style={{
-              ...font(700, 10), color: cell.noteColor || TEXT.muted, marginTop: '6px',
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>{cell.note}</div>
+            {/* ⚠️ Rendered only when there IS a note. An always-on empty div still
+                took its 6px margin and its line box, so a cell without one sat
+                shorter than its neighbours and the row lost its baseline. */}
+            {cell.note && (
+              <div style={{
+                ...font(700, 10), color: cell.noteColor || TEXT.muted, marginTop: '6px',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>{cell.note}</div>
+            )}
           </Cell>
           )
         })}

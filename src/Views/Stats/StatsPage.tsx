@@ -235,7 +235,7 @@ const StatsPage: React.FC = () => {
 
   const playerLeads: LeadCell<StatsPlayerRow>[] = [
     {
-      header: 'PLAYER', width: 214,
+      header: 'PLAYER', width: 268,
       render: row => (
         <PlayerHoverCard playerId={row.id} playerName={row.name}>
           <Link to={`/players/${row.id}`} style={{
@@ -244,18 +244,17 @@ const StatsPage: React.FC = () => {
             {/* A player's mark IS their club's crest — identity here belongs to
                 the team, and the same circle appears on every other surface. */}
             <Crest teamId={row.teamId} size={17} />
-            <span style={{ minWidth: 0 }}>
-              <span style={{
-                display: 'block',
-                ...font(600, 13), color: TEXT.primary,
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>{row.name}</span>
-              {/* The star band under the name (owner). `ratingStars` already rides on
-                  the row, so this is a render change only — and it is the one piece of
-                  a player's quality the numeric columns never show, since PERF measures
-                  what they DID this season rather than what they are. */}
-              <Stars stars={row.ratingStars} size={12} tracking={1.5} />
-            </span>
+            <span style={{
+              ...font(600, 13), color: TEXT.primary,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              minWidth: 0,
+            }}>{row.name}</span>
+            {/* Stars BESIDE the name, not under it (owner) — the lead column has the
+                width for both on one line, and stacking them made every row two lines
+                tall for a five-glyph band. flexShrink 0 so a long name truncates and
+                the rating survives, which is the same order of sacrifice the rest of
+                the app uses. */}
+            <Stars stars={row.ratingStars} size={12} tracking={1.5} />
           </Link>
         </PlayerHoverCard>
       ),

@@ -70,19 +70,19 @@ const TopPlayers: React.FC<{
               {/* Stars sit BESIDE the name, not out at the far right — a rating belongs to
                   the player, and the shared component colours it by band (gold/green/blue/
                   grey/red) instead of the flat amber this used to draw. */}
-              <Stars stars={row.ratingStars} size={15} tracking={1.5} />
+              <Stars stars={row.ratingStars} size={18} tracking={2} />
               {fantasy && <RelationTag label="FANTASY" color={ACCENT.success} />}
               <span style={{ ...font(500, 11, 1, '0.06em'), color: TEXT.muted, whiteSpace: 'nowrap' }}>
                 {row.position} · {row.teamAbbr}
               </span>
               <span style={{ flex: 1 }} />
               <span style={{
-                ...font(700, 10, 1, '0.1em'), color: TEXT.secondary,
-                width: '96px', textAlign: 'right', flexShrink: 0,
+                ...font(700, 12, 1, '0.08em'), color: TEXT.secondary,
+                width: '104px', textAlign: 'right', flexShrink: 0,
               }}>{row.statLabel}</span>
               <span style={{
-                ...font(800, 16), color: TEXT.primary, ...TABULAR,
-                width: '62px', textAlign: 'right', flexShrink: 0,
+                ...font(800, 19), color: TEXT.primary, ...TABULAR,
+                width: '68px', textAlign: 'right', flexShrink: 0,
               }}>{row.statValue}</span>
             </div>
           )
@@ -107,12 +107,12 @@ const TopPlayers: React.FC<{
             <span style={{ ...font(400, 12), color: TEXT.dim }}>No leader yet</span>
             <span style={{ flex: 1 }} />
             <span style={{
-              ...font(700, 10, 1, '0.1em'), color: TEXT.dim,
-              width: '96px', textAlign: 'right', flexShrink: 0,
+              ...font(700, 12, 1, '0.08em'), color: TEXT.dim,
+              width: '104px', textAlign: 'right', flexShrink: 0,
             }}>{label}</span>
             <span style={{
-              ...font(800, 16), color: TEXT.dim, ...TABULAR,
-              width: '62px', textAlign: 'right', flexShrink: 0,
+              ...font(800, 19), color: TEXT.dim, ...TABULAR,
+              width: '68px', textAlign: 'right', flexShrink: 0,
             }}>—</span>
           </div>
         ))}

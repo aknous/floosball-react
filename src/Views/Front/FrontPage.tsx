@@ -70,7 +70,11 @@ const FrontPage: React.FC = () => {
   const [leaders, setLeaders] = useState<LeaderRow[]>([])
   const [leagues, setLeagues] = useState<LeagueStandings[]>([])
   const [showcase, setShowcase] = useState<any>(null)
-  const [pickem, setPickem] = useState<{ correct: number; total: number; accuracy: number } | null>(null)
+  const [pickem, setPickem] = useState<{
+    correct: number; total: number; accuracy: number
+    /** This week's slate, so the cell can lead with the games in front of the reader. */
+    weekCorrect: number; weekTotal: number
+  } | null>(null)
 
   const gameList = useMemo(() => Array.from(games.values()), [games])
   const favouriteTeamId = user?.favoriteTeamId ?? null
@@ -174,9 +178,15 @@ const FrontPage: React.FC = () => {
         ])
         if (cancelled) return
         setShowcase(showcaseRes?.data ?? null)
+        // The endpoint returns BOTH boards in one payload — the season entries were
+        // already being read and the week ones thrown away.
         const mine = (pickemRes?.data?.season?.entries ?? []).find((e: any) => e.userId === user.id)
+        const mineWeek = (pickemRes?.data?.week?.entries ?? []).find((e: any) => e.userId === user.id)
         setPickem(mine
-          ? { correct: mine.correctCount, total: mine.totalPicks, accuracy: mine.accuracy }
+          ? {
+            correct: mine.correctCount, total: mine.totalPicks, accuracy: mine.accuracy,
+            weekCorrect: mineWeek?.correctCount ?? 0, weekTotal: mineWeek?.totalPicks ?? 0,
+          }
           : null)
       } catch { /* cells fall back to placeholders */ }
     }
@@ -265,16 +275,23 @@ const FrontPage: React.FC = () => {
         // way. Navigating to /cards would land on the collection, which is where floobits
         // have already been spent rather than where you spend them.
         onClick: () => window.dispatchEvent(new Event('floosball:show-shop')),
-        note: `${(myEntry?.weekTotal ?? 0).toFixed(0)} FP this week`,
+        // ⚠️ No note. It read "0 FP this week" under a floobits balance, which is a
+        // fantasy-points figure sitting under a currency and answering a question
+        // nobody asked of that cell — the FANTASY POINTS cell two along already
+        // carries the season figure.
       },
       {
         key: 'showcase',
         value: showcase?.grade ?? '—',
-        suffix: showcase?.dividendRate ? `×${showcase.dividendRate}` : undefined,
-        label: 'SHOWCASE GRADE',
+        // ⚠️ The dividend RATE came off (owner). As a bare "×0.13" beside a letter
+        // grade it explained nothing — it is the rate that turns showcase points
+        // into floobits, which is a mechanic, not a status. The grade says how the
+        // showcase is doing and the points say how much of it there is; that is the
+        // whole job of an at-a-glance cell.
+        label: 'SHOWCASE',
         to: '/cards?view=showcase',
         note: showcase
-          ? `${showcase.slotCount} of ${showcase.maxSlots} slots · ${showcase.score} pts`
+          ? `${showcase.score} pts · ${showcase.slotCount} of ${showcase.maxSlots} slots`
           : 'Nothing on show',
       },
       {
@@ -284,7 +301,14 @@ const FrontPage: React.FC = () => {
         valueColor: pickem && pickem.correct * 2 >= pickem.total ? ACCENT.live : TEXT.primary,
         label: 'PROGNOSTICATIONS',
         to: '/prognostications',
-        note: pickem ? `${pickem.total} called this season` : 'No calls yet',
+        // "Calls" was the old word for it (owner) — these are PICKS. And the cell
+        // showed only a season total, which says nothing about the slate a reader is
+        // actually watching, so this week's record leads and the season follows.
+        note: pickem
+          ? (pickem.weekTotal > 0
+            ? `${pickem.weekCorrect}/${pickem.weekTotal} this week · ${pickem.total} picks this season`
+            : `${pickem.total} picks this season`)
+          : 'No picks yet',
       },
     ]
   }, [myEntry, user, showcase, pickem])
@@ -293,7 +317,7 @@ const FrontPage: React.FC = () => {
     const actions: NumbersAction[] = []
     const openPicks = gameList.filter(g => g.status === 'Scheduled').length
     if (openPicks > 0) {
-      actions.push({ label: `CALL ${openPicks} GAMES`, to: '/prognostications', color: ACCENT.info })
+      actions.push({ label: `PICK ${openPicks} GAMES`, to: '/prognostications', color: ACCENT.info })
     }
     if (unclaimedCount > 0) {
       actions.push({ label: `CLAIM ${unclaimedCount} REWARDS`, to: '/achievements', color: ACCENT.warning })
