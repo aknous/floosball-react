@@ -84,7 +84,8 @@ const Detail: React.FC<{ standing?: TeamStanding; align: 'left' | 'right' }> = (
 const Side: React.FC<{
   team: PickEmGame['homeTeam']
   standing?: TeamStanding
-  isHome: boolean
+  /** Away reads left-to-right, home reads right-to-left, so the two mirror the gutter. */
+  align: 'left' | 'right'
   winPct: number
   multiplier: number
   points: number
@@ -92,16 +93,18 @@ const Side: React.FC<{
   dimmed: boolean
   disabled: boolean
   onPick: () => void
-}> = ({ team, standing, isHome, winPct, multiplier, points, picked, dimmed, disabled, onPick }) => {
+}> = ({ team, standing, align, winPct, multiplier, points, picked, dimmed, disabled, onPick }) => {
   const accent = readableTeamColor(team.color || '#94a3b8')
+  const rtl = align === 'right'
   return (
     <button
       onClick={disabled ? undefined : onPick}
       className={disabled ? undefined : 'plate'}
       style={{
         flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', gap: '5px', padding: '11px 8px 10px',
-        fontFamily: FONT, textAlign: 'center',
+        alignItems: rtl ? 'flex-end' : 'flex-start', gap: '4px',
+        padding: '9px 11px', fontFamily: FONT,
+        textAlign: rtl ? 'right' : 'left',
         background: picked ? `${team.color}22` : BG.card,
         border: `1px solid ${picked ? accent : 'transparent'}`,
         cursor: disabled ? 'default' : 'pointer',
@@ -109,32 +112,39 @@ const Side: React.FC<{
         opacity: dimmed ? 0.45 : 1,
       }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
-        <Crest teamId={team.id} size={20} />
+      {/* ⚠️ The club and its win probability share ONE line, mirrored outward. Stacked
+          in four centred rows the panel was tall and its width went unused — the card
+          was mostly empty space. */}
+      <span style={{
+        display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0,
+        flexDirection: rtl ? 'row-reverse' : 'row',
+      }}>
+        <Crest teamId={team.id} size={22} />
         <span style={{
-          ...font(picked ? 800 : 700, 13, 1, '0.02em'),
+          ...font(picked ? 800 : 700, 14, 1, '0.02em'),
           color: picked ? accent : TEXT.body,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{team.abbr}</span>
-        {isHome && <span style={{ ...font(700, 8, 1, '0.1em'), color: TEXT.muted }}>H</span>}
-      </span>
-
-      <span style={{ ...font(800, 20, 1), ...TABULAR, color: winPct >= 50 ? TEXT.primary : TEXT.muted }}>
-        {winPct}%
-      </span>
-
-      <span style={{ ...font(500, 10), color: TEXT.muted, ...TABULAR }}>
-        {standing ? `${standing.wins}-${standing.losses}` : team.record}
-        {' · '}
-        {Math.round(standing?.elo ?? team.elo)}
+        <span style={{
+          ...font(800, 21, 1), ...TABULAR,
+          color: winPct >= 50 ? TEXT.primary : TEXT.muted,
+        }}>{winPct}%</span>
       </span>
 
       <span style={{
-        ...font(800, 13, 1), ...TABULAR, marginTop: '1px',
-        color: multiplier >= 1.5 ? ACCENT.live : multiplier < 0.8 ? TEXT.faint : TEXT.body,
+        display: 'flex', alignItems: 'baseline', gap: '8px', minWidth: 0,
+        flexDirection: rtl ? 'row-reverse' : 'row',
       }}>
-        {multiplier.toFixed(1)}x
-        <span style={{ ...font(500, 9), color: TEXT.muted }}> {points} pts</span>
+        <span style={{
+          ...font(800, 13, 1), ...TABULAR,
+          color: multiplier >= 1.5 ? ACCENT.live : multiplier < 0.8 ? TEXT.muted : TEXT.body,
+        }}>{multiplier.toFixed(1)}x</span>
+        <span style={{ ...font(500, 11), color: TEXT.muted, ...TABULAR }}>{points} pts</span>
+        <span style={{ ...font(400, 11), color: TEXT.muted, ...TABULAR, whiteSpace: 'nowrap' }}>
+          {standing ? `${standing.wins}-${standing.losses}` : team.record}
+          {' · '}
+          {Math.round(standing?.elo ?? team.elo)}
+        </span>
       </span>
     </button>
   )
@@ -169,7 +179,7 @@ export const MatchupCard: React.FC<{
     }}>
       <div style={{ display: 'flex', alignItems: 'stretch', gap: '4px', padding: '4px' }}>
         <Side
-          team={away} standing={awayStanding} isHome={false}
+          team={away} standing={awayStanding} align="left"
           winPct={wp.away} multiplier={awayMult}
           points={multiplierToPoints(timing, awayMult)}
           picked={awayPicked} dimmed={hasPick && !awayPicked}
@@ -179,20 +189,20 @@ export const MatchupCard: React.FC<{
 
         {/* The gutter: what the game is doing, and what it pays right now. */}
         <div style={{
-          width: '44px', flexShrink: 0, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: '4px',
+          width: '54px', flexShrink: 0, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: '3px',
         }}>
           {settled ? (
             <span style={{
-              ...font(700, 9, 1, '0.08em'), textAlign: 'center',
+              ...font(700, 12, 1, '0.04em'), textAlign: 'center',
               color: !hasPick ? TEXT.muted : correct ? ACCENT.live : ACCENT.negative,
             }}>
               {!hasPick ? '—' : correct ? `+${game.result?.pointsEarned ?? 0}` : 'MISS'}
             </span>
           ) : (
             <>
-              <span style={{ ...font(600, 10), color: TEXT.muted }}>vs</span>
-              <span style={{ ...font(500, 9), color: TEXT.muted, ...TABULAR }}>
+              <span style={{ ...font(600, 12), color: TEXT.muted }}>vs</span>
+              <span style={{ ...font(500, 11), color: TEXT.muted, ...TABULAR }}>
                 {game.pickable ? `${timing.toFixed(2)}x` : 'LOCKED'}
               </span>
             </>
@@ -200,7 +210,7 @@ export const MatchupCard: React.FC<{
         </div>
 
         <Side
-          team={home} standing={homeStanding} isHome
+          team={home} standing={homeStanding} align="right"
           winPct={wp.home} multiplier={homeMult}
           points={multiplierToPoints(timing, homeMult)}
           picked={homePicked} dimmed={hasPick && !homePicked}

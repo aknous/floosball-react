@@ -19,11 +19,13 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 type Mode = 'off' | 'favorites' | 'underdogs' | 'random'
 
-const MODES: { key: Mode; label: string; hint: string }[] = [
-  { key: 'off', label: 'Off', hint: 'Missed games score nothing' },
-  { key: 'favorites', label: 'Favorites', hint: 'Higher-rated club' },
-  { key: 'underdogs', label: 'Underdogs', hint: 'Longer price' },
-  { key: 'random', label: 'Random', hint: 'Coin flip' },
+// ⚠️ No per-option hint (owner). "Favorites" and "Underdogs" say what they do; a line
+// of explanation under each turned a four-item list into sixteen lines of text.
+const MODES: { key: Mode; label: string }[] = [
+  { key: 'off', label: 'Off' },
+  { key: 'favorites', label: 'Favorites' },
+  { key: 'underdogs', label: 'Underdogs' },
+  { key: 'random', label: 'Random' },
 ]
 
 const AutoPickPanel: React.FC = () => {
@@ -90,15 +92,10 @@ const AutoPickPanel: React.FC = () => {
                   cursor: saving ? 'default' : 'pointer',
                 }}
               >
-                <span style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{
-                    display: 'block', ...font(active ? 700 : 500, 12),
-                    color: active ? TEXT.primary : TEXT.body,
-                  }}>{m.label}</span>
-                  <span style={{ display: 'block', ...font(400, 10), color: TEXT.muted, marginTop: '3px' }}>
-                    {m.hint}
-                  </span>
-                </span>
+                <span style={{
+                  minWidth: 0, flex: 1, ...font(active ? 700 : 500, 12),
+                  color: active ? TEXT.primary : TEXT.body,
+                }}>{m.label}</span>
               </button>
             )
           })}
