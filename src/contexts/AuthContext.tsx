@@ -36,7 +36,8 @@ interface AuthContextType {
   logout: () => void
   setFavoriteTeam: (teamId: number) => Promise<void>
   refetchLineup: () => Promise<void>
-  refetchUser: () => Promise<void>
+  /** Resolves true when the user was loaded (or definitively refused). */
+  refetchUser: () => Promise<boolean>
   updateFloobits: (balance: number) => void
   followPlayer: (playerId: number) => Promise<void>
   unfollowPlayer: (playerId: number) => Promise<void>
@@ -81,21 +82,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [])
 
-  const refetchUser = useCallback(async () => {
+  /**
+   * Load the app-side user for the current Clerk session.
+   *
+   * ⚠️ Returns whether it SUCCEEDED. It used to swallow everything and return
+   * nothing, which meant the caller could not tell a real "no user" from a failed
+   * request — and paired with the one-shot guard below, a single bad response left
+   * the app permanently rendering its signed-out state to a signed-in reader. A
+   * dead SIGN IN button on the front page is what that looks like from outside:
+   * Clerk still has the session, so pressing it does nothing at all.
+   */
+  const refetchUser = useCallback(async (): Promise<boolean> => {
     try {
       const tok = await getTokenRef.current()
-      if (!tok) return
+      if (!tok) return false
       const res = await fetch(`${API_BASE}/users/me`, {
         headers: { Authorization: `Bearer ${tok}` },
       })
       if (res.ok) {
         setBetaBlocked(false)
         setAppUser(await res.json())
-      } else if (res.status === 403) {
-        setBetaBlocked(true)
+        return true
       }
+      if (res.status === 403) {
+        setBetaBlocked(true)
+        return true   // a real answer, not a failure to get one
+      }
+      return false
     } catch {
-      // silent
+      return false
     }
   }, [])
 
@@ -115,8 +130,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (didFetchRef.current) return
     didFetchRef.current = true
     setLoading(true)
-    refetchUser().finally(() => setLoading(false))
+
+    // ⚠️ RETRY. The guard above fires once per session, so without this a single
+    // failed load (a backend restarting under an open tab is the ordinary case)
+    // stranded the app until someone reloaded by hand. Backs off, gives up after a
+    // handful, and never blocks the first paint.
+    let cancelled = false
+    const attempt = async (n: number): Promise<void> => {
+      const ok = await refetchUser()
+      if (ok || cancelled || n >= 4) return
+      await new Promise(r => setTimeout(r, Math.min(8000, 700 * 2 ** n)))
+      if (!cancelled) return attempt(n + 1)
+    }
+    attempt(0).finally(() => { if (!cancelled) setLoading(false) })
     refetchLineup()
+    return () => { cancelled = true }
   }, [isSignedIn, isLoaded, refetchUser, refetchLineup])
 
   // Refresh the lineup on card equip/unequip so every consumer (roster-match
