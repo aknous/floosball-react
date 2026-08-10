@@ -1,38 +1,318 @@
-import React from 'react'
-import { PickEmProvider } from '@/contexts/PickEmContext'
-import { PickEmPanel } from '@/Components/PickEm/PickEmPanel'
-import { BG, BORDER, TEXT, FONT, font } from '@/Components/Shell/tokens'
+import React, { useEffect, useMemo, useState } from 'react'
+import { usePickEmDay } from '@/hooks/usePickEmDay'
+import { useAuth } from '@/contexts/AuthContext'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, RAIL_WIDTH, font } from '@/Components/Shell/tokens'
+import type { TeamStanding, LeagueStandings } from '@/Views/Standings/standingsTypes'
+import MatchupCard from './MatchupCard'
+
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 /**
- * Prognostications gets its own route because the redesigned nav gives it one — it used
- * to be a tab inside the dashboard's right rail, which no longer exists.
+ * Prognostications.
  *
- * This is deliberately a thin frame around the existing `PickEmPanel` rather than a
- * redesign of it: pick-em was not part of the three design handoffs, and rebuilding it
- * on spec I don't have would be guessing.
+ * ⚠️ This REPLACES a thin frame around `PickEmPanel`, which was the dashboard's old
+ * right-rail tab moved across unchanged — its own comment said so. That component was
+ * built for a 300px rail: a stack of narrow rows carrying two abbreviations, two
+ * records and a multiplier. On a full-width page it left most of the screen empty and
+ * still did not tell a reader enough to pick with.
+ *
+ * The page now answers the two questions a picker actually has, in this order:
+ *   1. what is this matchup  — form, streak, differential, division standing, odds
+ *   2. what is it worth      — the per-side multiplier and the points it pays
+ *
+ * Team context comes from `/api/standings`, joined by team id. The standings board
+ * already computes form, streaks and differentials, so nothing new is asked of the
+ * backend — see MatchupCard for why that mattered.
+ *
+ * The whole-day flow is kept from the old panel and is the one part of it worth
+ * keeping: stage every pick for the day, then submit once. A once-a-day reader should
+ * not have to make seven round trips.
  */
-const PrognosticationsPage: React.FC = () => (
-  <>
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: '14px',
-      padding: '15px 28px', background: BG.shell,
-      borderBottom: `1px solid ${BORDER.hairline}`, fontFamily: FONT,
-    }}>
-      <h1 style={{ ...font(800, 22, 1, '-0.03em'), color: TEXT.primary, margin: 0 }}>Prognostications</h1>
-      <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />
-      <span style={{ ...font(400, 12), color: TEXT.muted }}>
-        Call every game of the day. A pick locks when its game goes final.
-      </span>
-    </div>
 
-    <div style={{ padding: '18px 28px 28px', fontFamily: FONT }}>
-      <div style={{ maxWidth: '760px' }}>
-        <PickEmProvider>
-          <PickEmPanel />
-        </PickEmProvider>
-      </div>
-    </div>
-  </>
+const HeaderStat: React.FC<{ value: React.ReactNode; label: string; color?: string }> = ({
+  value, label, color,
+}) => (
+  <span style={{ minWidth: 0 }}>
+    <span style={{ display: 'block', ...font(800, 19, 1), color: color ?? TEXT.primary, ...TABULAR }}>
+      {value}
+    </span>
+    <span style={{ display: 'block', ...font(700, 9, 1, '0.12em'), color: TEXT.muted, marginTop: '5px' }}>
+      {label}
+    </span>
+  </span>
 )
+
+const PrognosticationsPage: React.FC = () => {
+  const { user, getToken } = useAuth()
+  const isMobile = useIsMobile()
+  const {
+    slots, day, loading, submitting, dirtyCount,
+    setPick, pickFavoritesForSlot, submitAll,
+  } = usePickEmDay()
+
+  const [standings, setStandings] = useState<Map<number, TeamStanding>>(new Map())
+  const [flash, setFlash] = useState<string | null>(null)
+  type Line = { points: number; correct: number; total: number; rank: number }
+  const [season, setSeason] = useState<Line | null>(null)
+  const [thisWeek, setThisWeek] = useState<Line | null>(null)
+
+  // Team context for every club on the slate. One fetch, joined by id.
+  useEffect(() => {
+    let cancelled = false
+    fetch(`${API_BASE}/standings`)
+      .then(r => r.json())
+      .then((json: LeagueStandings[]) => {
+        if (cancelled || !Array.isArray(json)) return
+        const map = new Map<number, TeamStanding>()
+        json.forEach(lg => (lg.standings ?? []).forEach(t => map.set(Number(t.id), t)))
+        setStandings(map)
+      })
+      .catch(() => { /* the cards fall back to the record on the pick-em payload */ })
+    return () => { cancelled = true }
+  }, [])
+
+  // The reader's own season line, for the rail.
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const tok = await getToken()
+        const res = await fetch(`${API_BASE}/pickem/leaderboard`, {
+          headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+        })
+        const json = await res.json()
+        // ⚠️ The payload is `data.season.entries` / `data.week.entries` — there is no
+        // flat `leaderboard` key. Reading one left the rail permanently showing its
+        // empty state to a reader with 224 picks on the board.
+        const data = json?.data ?? json
+        const mineIn = (entries: any[]): Line | null => {
+          const row = (entries ?? []).find((r: any) => Number(r.userId) === Number(user.id))
+          return row ? {
+            points: row.totalPoints ?? 0,
+            correct: row.correctCount ?? 0,
+            total: row.totalPicks ?? 0,
+            rank: row.rank ?? 0,
+          } : null
+        }
+        if (!cancelled) {
+          setSeason(mineIn(data?.season?.entries))
+          setThisWeek(mineIn(data?.week?.entries))
+        }
+      } catch { /* the rail hides itself */ }
+    })()
+    return () => { cancelled = true }
+  }, [user, getToken])
+
+  const { totalGames, pickedGames, openGames } = useMemo(() => {
+    let total = 0, picked = 0, open = 0
+    slots.forEach(s => s.games.forEach(g => {
+      total += 1
+      if (g.userPick != null) picked += 1
+      if (g.pickable && g.userPick == null) open += 1
+    }))
+    return { totalGames: total, pickedGames: picked, openGames: open }
+  }, [slots])
+
+  const handleSubmit = async () => {
+    try {
+      const { saved, skipped } = await submitAll()
+      setFlash(skipped > 0
+        ? `Saved ${saved} pick${saved !== 1 ? 's' : ''}, ${skipped} skipped because the game had finished`
+        : `Saved ${saved} pick${saved !== 1 ? 's' : ''}`)
+    } catch {
+      setFlash('Those did not save. Try again.')
+    }
+    setTimeout(() => setFlash(null), 4000)
+  }
+
+  const accuracy = season && season.total > 0
+    ? Math.round((season.correct / season.total) * 100) : null
+
+  return (
+    <div style={{ fontFamily: FONT }}>
+      {/* Header band: what today is, and how far through it you are. */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap',
+        padding: '15px 28px', background: BG.shell,
+        borderBottom: `1px solid ${BORDER.hairline}`,
+      }}>
+        <span>
+          <h1 style={{ ...font(800, 22, 1, '-0.03em'), color: TEXT.primary, margin: 0 }}>
+            Prognostications
+          </h1>
+          <span style={{ display: 'block', ...font(400, 12), color: TEXT.muted, marginTop: '6px' }}>
+            {day != null ? `Day ${day + 1}` : 'Today'}
+            {' · '}Call every game, then submit. A pick locks when its game goes final.
+          </span>
+        </span>
+        <span style={{ flex: 1 }} />
+        {totalGames > 0 && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: '26px' }}>
+            <HeaderStat value={`${pickedGames}/${totalGames}`} label="PICKED" />
+            <HeaderStat
+              value={openGames}
+              label="STILL OPEN"
+              color={openGames > 0 ? ACCENT.warning : TEXT.muted}
+            />
+          </span>
+        )}
+      </div>
+
+      <div style={{
+        display: 'flex', alignItems: 'flex-start', gap: '20px',
+        padding: '18px 28px 28px',
+      }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {loading ? (
+            <div style={{ padding: '48px', textAlign: 'center', ...font(400, 13), color: TEXT.muted }}>
+              Loading the slate.
+            </div>
+          ) : slots.length === 0 ? (
+            <div style={{
+              padding: '48px', textAlign: 'center', ...font(400, 13), color: TEXT.muted,
+              background: BG.panel, border: `1px solid ${BORDER.hairline}`,
+            }}>
+              No games scheduled today. The next slate will appear here.
+            </div>
+          ) : slots.map(slot => {
+            const open = slot.games.filter(g => g.pickable && g.userPick == null).length
+            return (
+              <div key={slot.week} style={{ marginBottom: '22px' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  paddingBottom: '9px', marginBottom: '11px',
+                  borderBottom: `1px solid ${BORDER.raised}`,
+                }}>
+                  <span style={{ ...font(800, 13, 1, '0.02em'), color: TEXT.strong }}>
+                    {slot.label}
+                  </span>
+                  <span style={{ ...font(400, 11), color: TEXT.muted }}>
+                    {slot.games.length} game{slot.games.length !== 1 ? 's' : ''}
+                  </span>
+                  <span style={{ flex: 1 }} />
+                  {open > 0 && (
+                    // A shortcut, not a recommendation — favourites pay the least, which
+                    // is exactly why it is offered as a starting point to edit rather
+                    // than a button that finishes your day for you.
+                    <button
+                      onClick={() => pickFavoritesForSlot(slot.week)}
+                      style={{
+                        ...font(700, 10, 1, '0.08em'), color: TEXT.secondary,
+                        background: 'transparent', border: `1px solid ${BORDER.raised}`,
+                        padding: '6px 10px', cursor: 'pointer', fontFamily: FONT,
+                      }}
+                    >FILL WITH FAVOURITES</button>
+                  )}
+                </div>
+
+                <div style={{
+                  display: 'grid', gap: '10px',
+                  gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))',
+                }}>
+                  {slot.games.map(g => (
+                    <MatchupCard
+                      key={`${slot.week}:${g.gameIndex}`}
+                      game={g}
+                      standings={standings}
+                      staged={false}
+                      onPick={teamId => setPick(slot.week, g.gameIndex, teamId)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {!isMobile && user && (
+          <div style={{ width: `${RAIL_WIDTH}px`, flexShrink: 0 }}>
+            <div style={{ background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
+              <div style={{
+                ...font(700, 11, 1, '0.1em'), color: TEXT.secondary,
+                padding: '12px 15px', borderBottom: `1px solid ${BORDER.hairline}`,
+              }}>YOUR SEASON</div>
+              {season ? (
+                <div style={{
+                  display: 'grid', gridTemplateColumns: '1fr 1fr',
+                  borderBottom: `1px solid ${BORDER.hairline}`,
+                }}>
+                  <div style={{ padding: '14px 15px', borderRight: `1px solid ${BORDER.hairline}` }}>
+                    <HeaderStat value={season.points.toLocaleString()} label="POINTS" color={ACCENT.warning} />
+                  </div>
+                  <div style={{ padding: '14px 15px' }}>
+                    <HeaderStat value={season.rank ? `#${season.rank}` : '—'} label="RANK" />
+                  </div>
+                  <div style={{ padding: '14px 15px', borderTop: `1px solid ${BORDER.hairline}`, borderRight: `1px solid ${BORDER.hairline}` }}>
+                    <HeaderStat value={`${season.correct}/${season.total}`} label="CORRECT" />
+                  </div>
+                  <div style={{ padding: '14px 15px', borderTop: `1px solid ${BORDER.hairline}` }}>
+                    <HeaderStat value={accuracy != null ? `${accuracy}%` : '—'} label="ACCURACY" />
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: '20px 15px', ...font(400, 12), color: TEXT.muted }}>
+                  Make your first picks and your season line appears here.
+                </div>
+              )}
+              {thisWeek && thisWeek.total > 0 && (
+                <div style={{
+                  display: 'flex', alignItems: 'baseline', gap: '8px',
+                  padding: '11px 15px', borderBottom: `1px solid ${BORDER.hairline}`,
+                }}>
+                  <span style={{ ...font(700, 10, 1, '0.1em'), color: TEXT.muted }}>THIS WEEK</span>
+                  <span style={{ flex: 1 }} />
+                  <span style={{ ...font(700, 13), color: TEXT.body, ...TABULAR }}>
+                    {thisWeek.correct}/{thisWeek.total}
+                  </span>
+                  <span style={{ ...font(700, 13), color: ACCENT.warning, ...TABULAR }}>
+                    {thisWeek.points} pts
+                  </span>
+                </div>
+              )}
+              <div style={{ padding: '13px 15px', ...font(400, 11, 1.6), color: TEXT.muted }}>
+                Underdogs pay up to 3x and heavy favourites as little as 0.4x, so the
+                multiplier beside each club is what a correct call on that side is worth.
+                Picking before kickoff pays the most.
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* The submit bar only exists when there is something to submit, so it is never
+          a permanent strip of chrome across the bottom of the page. */}
+      {(dirtyCount > 0 || flash) && (
+        <div style={{
+          position: 'sticky', bottom: 0, zIndex: 20,
+          display: 'flex', alignItems: 'center', gap: '14px',
+          padding: '13px 28px', background: BG.shell,
+          borderTop: `1px solid ${BORDER.raised}`,
+        }}>
+          {flash ? (
+            <span style={{ ...font(600, 12), color: ACCENT.live }}>{flash}</span>
+          ) : (
+            <span style={{ ...font(600, 12), color: TEXT.secondary }}>
+              {dirtyCount} pick{dirtyCount !== 1 ? 's' : ''} not saved yet
+            </span>
+          )}
+          <span style={{ flex: 1 }} />
+          {dirtyCount > 0 && (
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              style={{
+                ...font(700, 12, 1, '0.06em'), color: BG.shell, background: ACCENT.live,
+                border: 'none', padding: '10px 18px', fontFamily: FONT,
+                cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.6 : 1,
+              }}
+            >{submitting ? 'SAVING' : 'SUBMIT PICKS'}</button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default PrognosticationsPage
