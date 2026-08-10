@@ -208,7 +208,7 @@ const GameFeedComposer: React.FC<{
           <span style={{ flex: 1, textAlign: 'left' }}>
             {waiting ? `Take a breath — ${cooldown}s`
               : canPost ? 'Say something'
-                : user ? 'Pick a club to join in' : 'Sign in to join in'}
+                : user ? 'Pick a team to join in' : 'Sign in to join in'}
           </span>
           {triggerEnabled && <Chevron open={open} />}
         </button>
