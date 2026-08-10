@@ -1,6 +1,8 @@
 export interface PickEmTeam {
   id: number
   name: string
+  /** Optional: older payloads predate it, so the picker falls back to the abbr. */
+  city?: string
   abbr: string
   color: string
   record: string

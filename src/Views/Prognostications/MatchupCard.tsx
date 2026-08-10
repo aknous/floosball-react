@@ -101,11 +101,18 @@ const Side: React.FC<{
       className={disabled ? undefined : 'plate'}
       style={{
         flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
-        alignItems: rtl ? 'flex-end' : 'flex-start', gap: '4px',
-        padding: '9px 11px', fontFamily: FONT,
+        alignItems: rtl ? 'flex-end' : 'flex-start', gap: '8px',
+        padding: '13px 14px', fontFamily: FONT,
         textAlign: rtl ? 'right' : 'left',
-        background: picked ? `${team.color}22` : BG.card,
+        // ⚠️ EVERY SIDE CARRIES ITS CLUB'S COLOUR, not just the one you picked. A
+        // board of sixteen matchups was sixteen identical grey boxes, and readers said
+        // they could not tell one game from another at a glance. The wash is faint
+        // (0x0e) so it tints rather than shouts, and the edge rail is the club's own
+        // colour at full strength — the two together make a card identifiable before
+        // any text is read.
+        background: picked ? `${team.color}22` : `${team.color}0e`,
         border: `1px solid ${picked ? accent : 'transparent'}`,
+        [rtl ? 'borderRight' : 'borderLeft']: `3px solid ${accent}`,
         cursor: disabled ? 'default' : 'pointer',
         // The side you did NOT take recedes, so the call reads at a glance.
         opacity: dimmed ? 0.45 : 1,
@@ -125,15 +132,25 @@ const Side: React.FC<{
           display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0,
           flexDirection: rtl ? 'row-reverse' : 'row',
         }}>
-          <Crest teamId={team.id} size={22} />
-          <span style={{
-            ...font(picked ? 800 : 700, 14, 1, '0.02em'),
-            color: picked ? accent : TEXT.body,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{team.abbr}</span>
+          {/* ⚠️ The CREST and the NAME, both bigger. This showed a 22px crest and a
+              three-letter code, which is the least distinctive way to render a club:
+              the abbreviations are similar, and the crest was too small to read as a
+              mark. The name is the thing a reader recognises. */}
+          <Crest teamId={team.id} size={34} />
+          <span style={{ minWidth: 0 }}>
+            <span style={{
+              display: 'block', ...font(500, 10, 1, '0.06em'), color: TEXT.muted,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{team.city ?? team.abbr}</span>
+            <span style={{
+              display: 'block', ...font(picked ? 800 : 700, 16, 1.15, '-0.01em'),
+              color: picked ? accent : TEXT.primary, marginTop: '2px',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{team.name}</span>
+          </span>
         </span>
         <span style={{
-          ...font(800, 21, 1), ...TABULAR, flexShrink: 0,
+          ...font(800, 19, 1), ...TABULAR, flexShrink: 0,
           color: winPct >= 50 ? TEXT.primary : TEXT.muted,
         }}>{winPct}%</span>
       </span>
