@@ -34,10 +34,24 @@ const n = (v: any, digits = 0): string => {
 const pct = (v: any): string => (v == null ? dash : `${Number(v).toFixed(1)}`)
 
 /** Signed, and the only place a raw stat takes a colour. */
-const signed = (v: any): string => {
+/**
+ * A signed figure, to `digits` decimal places.
+ *
+ * ⚠️ IT TAKES `digits` BECAUSE IT USED NOT TO, and that quietly discarded every
+ * decimal its callers formatted. `n()` rounds to a whole number unless told otherwise,
+ * so a cell that carefully produced "2.06" had it re-parsed and rounded straight back
+ * to "+2". The WPA wins column had been shipping whole wins the entire time while its
+ * own code said `.toFixed(1)`.
+ *
+ * Rounds BEFORE testing the sign, so a value that displays as zero is not handed a
+ * "+" or a "-" it does not deserve.
+ */
+const signed = (v: any, digits = 0): string => {
   if (v == null) return dash
   const value = Number(v)
-  return value > 0 ? `+${n(value)}` : n(value)
+  if (!Number.isFinite(value)) return dash
+  const rounded = Number(value.toFixed(digits))
+  return rounded > 0 ? `+${n(rounded, digits)}` : n(rounded, digits)
 }
 const signedTint = (v: any): string =>
   v == null || Number(v) === 0 ? TEXT.secondary : Number(v) > 0 ? ACCENT.live : ACCENT.negative
@@ -82,9 +96,15 @@ const defRating: Column<StatsPlayerRow> = {
  * football WPA scale anywhere is quoted in percentage points.
  *
  * 100 points of accumulated swing is one full win's worth of leverage, so the
- * column divides by that and says so in its label. 679.2 becomes +6.8 wins, which
+ * column divides by that and says so in its label. 679.2 becomes +6.79 wins, which
  * squares with the measured positional impact of a quarterback (+1.70 wins for a
  * ±12% rating swing).
+ *
+ * ⚠️ TWO decimals (owner). Dividing by 100 costs two orders of magnitude, so a single
+ * decimal binned everyone into tenths of a win and left most of the table looking
+ * tied. The precision is real rather than invented: the server stores this rounded to
+ * 2dp in POINTS, which is 0.0001 of a win, so two decimals here sits well inside what
+ * was actually measured.
  *
  * ⚠️ DISPLAY ONLY. The raw value stays raw everywhere else — `MVP_WPA_WEIGHT` and
  * the z-scores behind `mvpScore` consume it directly, and rescaling at the source
@@ -95,7 +115,7 @@ const WPA_POINTS_PER_WIN = 100
 const wpa: Column<StatsPlayerRow> = {
   key: 'wpa', label: 'WPA WINS', width: W.wideRate,
   cell: r => (r.impact.wpa == null ? dash
-    : signed((r.impact.wpa / WPA_POINTS_PER_WIN).toFixed(1))),
+    : signed(r.impact.wpa / WPA_POINTS_PER_WIN, 2)),
   // Sorted on the raw figure: dividing by a constant cannot change the order, and
   // sorting the rounded display value would tie rows that are not actually tied.
   sort: r => r.impact.wpa ?? 0,
