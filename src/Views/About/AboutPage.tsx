@@ -549,11 +549,14 @@ const AboutPage: React.FC = () => {
                 backgroundColor: 'rgba(245,158,11,0.30)', padding: '2px 6px',
                 borderRadius: '4px', letterSpacing: '0.5px',
               }}>
-                CLOSED BETA
+                {/* ⚠️ Not CLOSED BETA. The allowlist gate is off and anyone can sign
+                    up, so "closed" told a reader who had just walked in that they
+                    were not supposed to be here. */}
+                BETA
               </span>
             </div>
             <p style={{ ...textStyle, fontSize: '13px' }}>
-              Welcome to the Floosball closed beta. The simulation is under active development,
+              Welcome to the Floosball beta. The simulation is under active development,
               so features may change, balancing will be adjusted, and new systems will be added
               throughout the beta period. Season data (fantasy points, cards, floobits) may
               occasionally be reset as we fix bugs and improve the game. If you run into any
