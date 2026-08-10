@@ -11,6 +11,7 @@ import {
 } from './statsShell'
 import { playerColumns, teamColumns, DEFAULT_SORT, TEAM_DEFAULT_SORT } from './statsColumns'
 import { Stars } from '@/Components/Stars'
+import ComparePanel from './ComparePanel'
 import type {
   StatsPlayerRow, StatsPlayersResponse, StatsTeamRow, StatsTeamsResponse,
 } from './statsTypes'
@@ -73,6 +74,9 @@ const StatsPage: React.FC = () => {
   const [sortKey, setSortKey] = useState<string>(DEFAULT_SORT.ALL)
   const [sortAsc, setSortAsc] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  // The comparison is OPENED, not implied by the selection: ticking a fourth row
+  // should not make a panel appear under the reader's cursor.
+  const [comparing, setComparing] = useState(false)
 
   const careerScope = scope === 'career'
 
@@ -375,7 +379,7 @@ const StatsPage: React.FC = () => {
                 {selected.size} SELECTED
               </span>
             )}
-            <CompareButton count={selected.size} onClick={() => { /* comparison view is a follow-up */ }} />
+            <CompareButton count={selected.size} onClick={() => setComparing(true)} />
           </div>
 
           {/* Filter row 2 — status and search */}
@@ -436,8 +440,49 @@ const StatsPage: React.FC = () => {
               {selected.size} SELECTED
             </span>
           )}
-          <CompareButton count={selected.size} onClick={() => { /* comparison view is a follow-up */ }} />
+          <CompareButton count={selected.size} onClick={() => setComparing(true)} />
         </div>
+      )}
+
+      {comparing && selected.size > 0 && (
+        mode === 'players' ? (
+          <ComparePanel
+            rows={playerRows.filter(r => selected.has(r.id))}
+            columns={playerColumns(position, careerScope)}
+            subject="players"
+            onClose={() => setComparing(false)}
+            title={row => (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                <Crest teamId={row.teamId} size={17} />
+                <span style={{ minWidth: 0 }}>
+                  <span style={{
+                    display: 'block', ...font(700, 12), color: TEXT.primary,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>{row.name}</span>
+                  <span style={{ ...font(500, 10), color: TEXT.muted }}>
+                    {row.position}{row.teamAbbr ? ` · ${row.teamAbbr}` : ''}
+                  </span>
+                </span>
+              </span>
+            )}
+          />
+        ) : (
+          <ComparePanel
+            rows={teamRows.filter(r => selected.has(r.id))}
+            columns={teamColumns(side, teamPer === 'game')}
+            subject="clubs"
+            onClose={() => setComparing(false)}
+            title={row => (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                <Crest teamId={row.id} size={17} />
+                <span style={{
+                  ...font(700, 12), color: TEXT.primary,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>{row.name}</span>
+              </span>
+            )}
+          />
+        )
       )}
 
       {error ? (
@@ -470,7 +515,14 @@ const StatsPage: React.FC = () => {
           selected={selected}
           onToggle={toggle}
           selectionFull={selected.size >= MAX_COMPARE}
-          emptyMessage="No clubs match this search."
+          emptyMessage={
+            // ⚠️ Two different emptinesses. "No clubs match" is a lie when the season
+            // simply has not been played yet — which is exactly what a reader sees
+            // right after a fresh season starts, and it reads as a broken page.
+            teamRows.length === 0 && !search.trim()
+              ? 'No games have been played this season yet.'
+              : 'No clubs match this search.'
+          }
         />
       )}
 
