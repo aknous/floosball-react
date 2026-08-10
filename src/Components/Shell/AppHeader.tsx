@@ -146,20 +146,6 @@ const AppHeader: React.FC = () => {
     }
   }, [])
 
-  // Cmd/Ctrl+K opens the palette from anywhere. ⚠️ Not a bare "/" as well: this app has
-  // real text inputs on the fantasy, cards and admin pages, and a bare-key shortcut
-  // swallows the first slash a reader types into one of them.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        setShowPalette(o => !o)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
   const weekLabel = seasonState.seasonComplete
     ? seasonState.currentWeekText
     : seasonState.currentWeek > REGULAR_SEASON_WEEKS
@@ -233,8 +219,11 @@ const AppHeader: React.FC = () => {
           onMouseEnter={e => { e.currentTarget.style.color = TEXT.body }}
           onMouseLeave={e => { e.currentTarget.style.color = TEXT.muted }}
         >
+          {/* ⚠️ No keyboard shortcut, and so no shortcut hint (owner). Cmd+K is
+              Chrome's own focus-the-address-bar binding, and preventDefault-ing it
+              took that away from the reader inside this one tab. The button is the
+              way in. */}
           <SearchIcon />
-          <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.faint }}>⌘K</span>
         </button>
 
         {user && <FantasyTicker userId={user.id} />}
