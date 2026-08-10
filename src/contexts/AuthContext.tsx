@@ -18,6 +18,8 @@ export interface AuthUser {
   teamFundingPct: number
   isAdmin: boolean
   autoPickMode: 'off' | 'favorites' | 'underdogs' | 'random'
+  /** Loyalty override: the auto-picker never calls against your own club. */
+  autoPickNeverAgainstFavorite?: boolean
   followedPlayerIds: number[]
 }
 

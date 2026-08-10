@@ -5,6 +5,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, RAIL_WIDTH, font } from '@/Components/Shell/tokens'
 import type { TeamStanding, LeagueStandings } from '@/Views/Standings/standingsTypes'
 import MatchupCard, { pickWasCorrect } from './MatchupCard'
+import AutoPickPanel from './AutoPickPanel'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -321,6 +322,8 @@ const PrognosticationsPage: React.FC = () => {
                 Picking before kickoff pays the most.
               </div>
             </div>
+
+            <AutoPickPanel />
           </div>
         )}
       </div>
