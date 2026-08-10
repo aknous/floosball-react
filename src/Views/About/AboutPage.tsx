@@ -466,6 +466,11 @@ const EquipmentSlotDiagram: React.FC<{ isMobile: boolean }> = ({ isMobile }) => 
  * `(threshold - playerFP) / threshold`, so they start FULL and DRAIN as the player
  * scores. One rule covers both — a full bar is on, an empty one is off — and that reads
  * instantly as a picture and clumsily as a sentence.
+ *
+ * The chance row is here because it uses the SAME widget for a different unit: its fill
+ * is the trigger probability, so a half-full chance bar is a coin flip rather than a card
+ * halfway to switching on. Nothing on the card says which kind you are looking at, so the
+ * guide has to.
  */
 const PowerBarVisual: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const ON = '#7fd8a0'     // the same green the card itself uses for a live bar
@@ -479,6 +484,8 @@ const PowerBarVisual: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
       note: 'filled, so the effect pays' },
     { label: 'Inverse card', fill: 62, color: INV, state: 'ON',
       note: 'a few cards start full and drain as the player scores, so they run until the bar empties' },
+    { label: 'Chance card', fill: 62, color: INV, state: '62%',
+      note: 'the bar is the odds, not progress. This one triggers 62 times in 100' },
   ]
 
   return (
@@ -506,8 +513,8 @@ const PowerBarVisual: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
           <span style={{
             flexShrink: 0, fontSize: isMobile ? '9px' : '10px', fontWeight: 800,
-            letterSpacing: '0.08em', color: r.state === 'ON' ? r.color : OFF,
-            border: `1px solid ${r.state === 'ON' ? r.color : OFF}`,
+            letterSpacing: '0.08em', color: r.state === 'OFF' ? OFF : r.color,
+            border: `1px solid ${r.state === 'OFF' ? OFF : r.color}`,
             borderRadius: '4px', padding: '2px 6px',
           }}>{r.state}</span>
 
@@ -1315,6 +1322,14 @@ const AboutPage: React.FC = () => {
               bar that is nearly there.
             </p>
             <PowerBarVisual isMobile={isMobile} />
+            <p style={textStyle}>
+              Chance cards borrow the same bar for something else. They are never on or off: their bar is
+              the odds themselves, so a bar at two thirds means the effect triggers about two times in
+              three. The player's FP and the card's own condition are what push those odds up. The roll is
+              settled at the end of the week, so during the week the bar reads Pending, and only afterwards
+              does it say Triggered or Missed. It turns green when it hits. The Fortunate weekly modifier
+              and the Patronage power-up both raise those odds.
+            </p>
             <p style={textStyle}>
               How much it takes to fill belongs to the card, not to you. A rarer card depicts a better
               player and asks more of them, and each position is on its own scale, so filling a kicker's bar
