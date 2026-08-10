@@ -166,9 +166,18 @@ const PrognosticationsPage: React.FC = () => {
           <h1 style={{ ...font(800, 22, 1, '-0.03em'), color: TEXT.primary, margin: 0 }}>
             Prognostications
           </h1>
+          {/* ⚠️ The rule and the maths, on the page, in one line each. Readers were
+              asking what the multipliers meant and what a pick was worth — both were
+              only discoverable by picking something and looking at the number that
+              came back. */}
           <span style={{ display: 'block', ...font(400, 12), color: TEXT.muted, marginTop: '6px' }}>
             {day != null ? `Day ${day + 1}` : 'Today'}
-            {' · '}Picks lock when a game goes final.
+            {' · '}Picks lock at kickoff.
+          </span>
+          <span style={{ display: 'block', ...font(400, 12, 1.5), color: TEXT.secondary, marginTop: '4px' }}>
+            A correct pick pays <strong style={{ color: TEXT.body }}>10 points</strong>, times that
+            team's multiplier. Back an underdog and it pays more, up to 3x; take a heavy
+            favorite and it pays as little as 0.4x. A wrong pick scores nothing.
           </span>
         </span>
         <span style={{ flex: 1 }} />

@@ -153,13 +153,17 @@ const Side: React.FC<{
           display: 'flex', alignItems: 'baseline', gap: '5px', flexShrink: 0,
           flexDirection: rtl ? 'row-reverse' : 'row',
         }}>
+          {/* ⚠️ THE POINTS LEAD, the multiplier explains them. It used to be the other
+              way round — a big "1.5x" with the points as a footnote — and readers were
+              asking what a pick was actually worth. The multiplier is the reason for
+              the number, not the number itself. */}
           <span style={{
             ...font(800, 17, 1), ...TABULAR,
             color: multiplier >= 1.5 ? ACCENT.live : multiplier < 0.8 ? TEXT.muted : TEXT.body,
-          }}>{multiplier.toFixed(1)}x</span>
-          {/* ⚠️ Keeps its unit. Bare, it read as part of the multiplier — and on the
-              mirrored side the row reverses, so "11 1.5x" could be either number. */}
-          <span style={{ ...font(500, 10), color: TEXT.muted, ...TABULAR }}>{points} pts</span>
+          }}>{points}</span>
+          <span style={{ ...font(500, 10), color: TEXT.muted, ...TABULAR, whiteSpace: 'nowrap' }}>
+            pts · {multiplier.toFixed(1)}x
+          </span>
         </span>
       </span>
     </button>
