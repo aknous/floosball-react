@@ -85,7 +85,6 @@ interface AnalyticsData {
     onboardingRate: number; onboardedCount: number
     favoriteTeams: { team: string; count: number }[]
     adoption: { fantasy: number; cards: number; pickEm: number; funding: number }
-    signupOnly: number
     churnRiskCount?: number
     dailyActiveUsers?: { date: string; count: number }[]
     onboardingFunnel?: {
@@ -252,18 +251,6 @@ const PasswordGate: React.FC<{ onAuth: (pw: string) => void }> = ({ onAuth }) =>
 
 // ── Admin content ──────────────────────────────────────────────────────────
 
-interface BetaRequest {
-  id: number
-  email: string
-  status: string
-  requestedAt: string
-}
-
-interface AllowlistEntry {
-  email: string
-  addedAt: string
-}
-
 interface AdminUser {
   id: number
   email: string
@@ -277,7 +264,6 @@ interface AdminUser {
   createdAt: string | null
   isActive: boolean
   lastLoginAt: string | null
-  betaStatus: string
   isAdmin: boolean
 }
 
@@ -317,134 +303,6 @@ const AdminContent: React.FC<{
     if (password) h['X-Admin-Password'] = password
     return h
   }, [getToken, password])
-
-  // Access mode toggle (request vs waitlist)
-  const [accessMode, setAccessMode] = useState<'request' | 'waitlist'>('request')
-  const [accessModeLoading, setAccessModeLoading] = useState(false)
-
-  const fetchAccessMode = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/admin/beta/access-mode`, { headers: await buildHeaders() })
-      if (res.ok) {
-        const data = await res.json()
-        setAccessMode(data.mode || 'request')
-      }
-    } catch { /* silent */ }
-  }, [])
-
-  React.useEffect(() => { fetchAccessMode() }, [fetchAccessMode])
-
-  const toggleAccessMode = async () => {
-    const newMode = accessMode === 'request' ? 'waitlist' : 'request'
-    setAccessModeLoading(true)
-    try {
-      const res = await fetch(`${API_BASE}/admin/beta/access-mode`, {
-        method: 'POST', headers: await buildHeaders(), body: JSON.stringify({ mode: newMode }),
-      })
-      if (res.ok) setAccessMode(newMode)
-    } catch { /* silent */ }
-    finally { setAccessModeLoading(false) }
-  }
-
-  // Beta access requests
-  const [betaRequests, setBetaRequests] = useState<BetaRequest[]>([])
-  const [requestsLoading, setRequestsLoading] = useState(false)
-  const [actioningId, setActioningId] = useState<number | null>(null)
-
-  const fetchRequests = useCallback(async () => {
-    setRequestsLoading(true)
-    try {
-      const res = await fetch(`${API_BASE}/admin/beta/requests`, { headers: await buildHeaders() })
-      if (res.ok) {
-        const data = await res.json()
-        setBetaRequests(data.requests || [])
-      }
-    } catch { /* silent */ }
-    finally { setRequestsLoading(false) }
-  }, [])
-
-  React.useEffect(() => { fetchRequests() }, [fetchRequests])
-
-  const handleApproveRequest = async (id: number) => {
-    setActioningId(id)
-    try {
-      const res = await fetch(`${API_BASE}/admin/beta/requests/${id}/approve`, {
-        method: 'POST', headers: await buildHeaders(),
-      })
-      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
-      setBetaRequests(prev => prev.filter(r => r.id !== id))
-      // Refresh allowlist if on that tab
-      fetchAllowlist()
-    } catch { /* silent */ }
-    finally { setActioningId(null) }
-  }
-
-  const handleDenyRequest = async (id: number) => {
-    setActioningId(id)
-    try {
-      const res = await fetch(`${API_BASE}/admin/beta/requests/${id}/deny`, {
-        method: 'POST', headers: await buildHeaders(),
-      })
-      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
-      setBetaRequests(prev => prev.filter(r => r.id !== id))
-    } catch { /* silent */ }
-    finally { setActioningId(null) }
-  }
-
-  // Beta allowlist
-  const [allowlist, setAllowlist] = useState<AllowlistEntry[]>([])
-  const [allowlistLoading, setAllowlistLoading] = useState(false)
-  const [allowlistInput, setAllowlistInput] = useState('')
-  const [allowlistError, setAllowlistError] = useState<string | null>(null)
-  const [allowlistSuccess, setAllowlistSuccess] = useState<string | null>(null)
-
-  const fetchAllowlist = useCallback(async () => {
-    setAllowlistLoading(true)
-    try {
-      const res = await fetch(`${API_BASE}/admin/beta/allowlist`, { headers: await buildHeaders() })
-      if (res.ok) {
-        const data = await res.json()
-        setAllowlist(data.emails || [])
-      }
-    } catch { /* silent */ }
-    finally { setAllowlistLoading(false) }
-  }, [])
-
-  React.useEffect(() => { fetchAllowlist() }, [fetchAllowlist])
-
-  const handleAddEmails = async () => {
-    const emails = allowlistInput.split(/[,\n]/).map(e => e.trim()).filter(Boolean)
-    if (!emails.length) return
-    setAllowlistError(null)
-    setAllowlistSuccess(null)
-    try {
-      const res = await fetch(`${API_BASE}/admin/beta/allowlist`, {
-        method: 'POST', headers: await buildHeaders(), body: JSON.stringify({ emails }),
-      })
-      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
-      const data = await res.json()
-      const addedCount = data.count ?? data.added?.length ?? 0
-      setAllowlistSuccess(`Added ${addedCount} email${addedCount !== 1 ? 's' : ''}`)
-      setAllowlistInput('')
-      fetchAllowlist()
-    } catch (e: any) {
-      setAllowlistError(e.message)
-    }
-  }
-
-  const handleRemoveEmail = async (email: string) => {
-    setAllowlistError(null)
-    setAllowlistSuccess(null)
-    try {
-      const res = await fetch(`${API_BASE}/admin/beta/allowlist/${encodeURIComponent(email)}`, {
-        method: 'DELETE', headers: await buildHeaders(),
-      })
-      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
-      setAllowlist(prev => prev.filter(e => e.email !== email))
-    } catch (e: any) {
-      setAllowlistError(e.message)
-    }
-  }
 
   // Name pool
   const [namesInput, setNamesInput] = useState('')
@@ -929,7 +787,7 @@ const AdminContent: React.FC<{
     }
   }, [password])
 
-  type Section = 'monitor' | 'analytics' | 'achievements' | 'requests' | 'allowlist' | 'names' | 'news' | 'players' | 'cards' | 'floobits' | 'users' | 'settings'
+  type Section = 'monitor' | 'analytics' | 'achievements' | 'names' | 'news' | 'players' | 'cards' | 'floobits' | 'users' | 'settings'
   const [activeSection, setActiveSection] = useState<Section>('monitor')
 
   // Load the Discord submission queue lazily — only when the Names tab is open, and
@@ -1113,8 +971,6 @@ const AdminContent: React.FC<{
     { id: 'monitor', label: 'Monitor' },
     { id: 'analytics', label: 'Analytics' },
     { id: 'achievements', label: 'Achievements' },
-    { id: 'requests', label: 'Requests' },
-    { id: 'allowlist', label: 'Allowlist' },
     { id: 'names', label: 'Names' },
     { id: 'news', label: 'News' },
     { id: 'players', label: 'Players' },
@@ -1141,14 +997,7 @@ const AdminContent: React.FC<{
           fontWeight: '600', letterSpacing: '0.03em',
         }}>
           {t.label}
-          {t.id === 'requests' && betaRequests.length > 0 && (
-            <span style={{
-              backgroundColor: '#ef4444', color: '#fff', fontSize: '10px',
-              fontWeight: '700', borderRadius: '8px', padding: '1px 6px',
-              marginLeft: '6px', minWidth: '16px', textAlign: 'center',
-              display: 'inline-block',
-            }}>{betaRequests.length}</span>
-          )}
+
         </button>
       ))}
     </div>
@@ -1668,11 +1517,6 @@ const AdminContent: React.FC<{
                   <div style={smallStat}>{users.onboardedCount} / {users.totalUsers}</div>
                 </div>
                 <div style={statBox}>
-                  <div style={statLabel}>Signup Only</div>
-                  <div style={{ ...statValue, color: users.signupOnly > 0 ? '#f59e0b' : '#e2e8f0' }}>{users.signupOnly}</div>
-                  <div style={smallStat}>no beta request</div>
-                </div>
-                <div style={statBox}>
                   <div style={statLabel}>Churn Risk</div>
                   <div style={{ ...statValue, color: (users.churnRiskCount ?? 0) > 0 ? '#ef4444' : '#22c55e' }}>{users.churnRiskCount ?? 0}</div>
                   <div style={smallStat}>14d+ inactive</div>
@@ -1824,150 +1668,6 @@ const AdminContent: React.FC<{
             </>}
           </>
         })()}
-      </div>}
-
-      {/* Beta Access Requests */}
-      {activeSection === 'requests' && <div style={sectionStyle}>
-        <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Beta Access Requests</h2>
-
-        {/* Access Mode Toggle */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '12px',
-          padding: '10px 14px', backgroundColor: '#0f172a',
-          borderRadius: '6px', marginBottom: '16px',
-        }}>
-          <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600' }}>Access Mode:</span>
-          <button
-            onClick={toggleAccessMode}
-            disabled={accessModeLoading}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              background: 'none', border: '1px solid #334155',
-              borderRadius: '4px', padding: '4px 12px', fontSize: '12px',
-              fontWeight: '600', cursor: accessModeLoading ? 'not-allowed' : 'pointer',
-              color: accessMode === 'waitlist' ? '#f59e0b' : '#3b82f6',
-              opacity: accessModeLoading ? 0.5 : 1,
-            }}
-          >
-            {accessMode === 'waitlist' ? 'Waitlist' : 'Request Access'}
-          </button>
-          <span style={{ fontSize: '11px', color: '#64748b' }}>
-            {accessMode === 'waitlist'
-              ? 'Users see "Join Waitlist" — no individual approvals needed'
-              : 'Users see "Request Access" — you approve individually'}
-          </span>
-        </div>
-
-        <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '16px' }}>
-          Pending requests from users who want to join the closed beta.
-        </p>
-        {requestsLoading ? (
-          <div style={{ fontSize: '13px', color: '#94a3b8' }}>Loading...</div>
-        ) : betaRequests.length === 0 ? (
-          <div style={{ fontSize: '13px', color: '#94a3b8' }}>No pending requests.</div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {betaRequests.map(r => (
-              <div key={r.id} style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                backgroundColor: '#0f172a', borderRadius: '5px',
-                padding: '8px 10px', fontSize: '13px',
-              }}>
-                <span style={{ color: '#e2e8f0', flex: 1 }}>{r.email}</span>
-                <span style={{ color: '#94a3b8', fontSize: '11px', whiteSpace: 'nowrap' }}>
-                  {new Date(r.requestedAt).toLocaleDateString()}
-                </span>
-                <button
-                  onClick={() => handleApproveRequest(r.id)}
-                  disabled={actioningId === r.id}
-                  style={{
-                    backgroundColor: '#22c55e', color: '#fff', border: 'none',
-                    borderRadius: '4px', padding: '4px 12px', fontSize: '12px',
-                    fontWeight: '600', cursor: actioningId === r.id ? 'not-allowed' : 'pointer',
-                    opacity: actioningId === r.id ? 0.5 : 1,
-                  }}
-                >Approve</button>
-                <button
-                  onClick={() => handleDenyRequest(r.id)}
-                  disabled={actioningId === r.id}
-                  style={{
-                    backgroundColor: '#334155', color: '#e2e8f0', border: 'none',
-                    borderRadius: '4px', padding: '4px 12px', fontSize: '12px',
-                    fontWeight: '600', cursor: actioningId === r.id ? 'not-allowed' : 'pointer',
-                    opacity: actioningId === r.id ? 0.5 : 1,
-                  }}
-                >Deny</button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>}
-
-      {/* Beta Allowlist */}
-      {activeSection === 'allowlist' && <div style={sectionStyle}>
-        <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Beta Allowlist</h2>
-        <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
-          Manage which emails can access the app during beta.
-        </p>
-        <div style={{ marginBottom: '12px' }}>
-          <div style={labelStyle}>Add Emails (comma or newline separated)</div>
-          <textarea
-            value={allowlistInput}
-            onChange={e => setAllowlistInput(e.target.value)}
-            rows={3}
-            style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
-            placeholder={'user@example.com, another@example.com'}
-          />
-        </div>
-        <button
-          onClick={handleAddEmails}
-          disabled={!allowlistInput.trim()}
-          style={{ ...btnStyle, opacity: !allowlistInput.trim() ? 0.5 : 1 }}
-        >
-          Add Emails
-        </button>
-        {allowlistSuccess && (
-          <div style={{ marginTop: '10px', fontSize: '13px', color: '#22c55e' }}>{allowlistSuccess}</div>
-        )}
-        {allowlistError && (
-          <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{allowlistError}</div>
-        )}
-        {allowlistLoading ? (
-          <div style={{ marginTop: '16px', fontSize: '13px', color: '#64748b' }}>Loading...</div>
-        ) : allowlist.length > 0 ? (
-          <div style={{ marginTop: '16px' }}>
-            <div style={{ ...labelStyle, marginBottom: '8px' }}>
-              Allowed Emails ({allowlist.length})
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {allowlist.map(entry => (
-                <div key={entry.email} style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
-                  backgroundColor: '#0f172a', borderRadius: '5px',
-                  padding: '6px 10px', fontSize: '13px',
-                }}>
-                  <span style={{ color: '#e2e8f0', flex: 1 }}>{entry.email}</span>
-                  <span style={{ color: '#64748b', fontSize: '11px' }}>
-                    {new Date(entry.addedAt).toLocaleDateString()}
-                  </span>
-                  <button
-                    onClick={() => handleRemoveEmail(entry.email)}
-                    style={{
-                      background: 'none', border: 'none', color: '#ef4444',
-                      cursor: 'pointer', fontSize: '13px', padding: '2px 6px',
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div style={{ marginTop: '16px', fontSize: '13px', color: '#64748b' }}>
-            No emails on the allowlist yet.
-          </div>
-        )}
       </div>}
 
       {/* Name Pool */}
@@ -2596,7 +2296,7 @@ const AdminContent: React.FC<{
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #334155' }}>
-                  {['Username', 'Email', 'Favorite Team', 'Floobits', 'Joined', 'Last Login', 'Status', 'Beta', 'Admin', ''].map(h => (
+                  {['Username', 'Email', 'Favorite Team', 'Floobits', 'Joined', 'Last Login', 'Status', 'Admin', ''].map(h => (
                     <th key={h} style={{
                       ...labelStyle, textAlign: 'left', padding: '8px 10px',
                       marginBottom: 0, whiteSpace: 'nowrap',
@@ -2645,17 +2345,6 @@ const AdminContent: React.FC<{
                         color: !u.isActive ? '#ef4444' : u.onboarded ? '#22c55e' : '#f59e0b',
                       }}>
                         {!u.isActive ? 'Inactive' : u.onboarded ? 'Active' : 'Pending'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '8px 10px' }}>
-                      <span style={{
-                        fontSize: '11px', fontWeight: '600', letterSpacing: '0.04em',
-                        color: u.betaStatus === 'approved' ? '#22c55e'
-                          : u.betaStatus === 'no_request' ? '#ef4444'
-                          : u.betaStatus === 'pending' ? '#f59e0b'
-                          : '#94a3b8',
-                      }}>
-                        {u.betaStatus === 'no_request' ? 'No Request' : u.betaStatus === 'approved' ? 'Approved' : u.betaStatus === 'pending' ? 'Pending' : u.betaStatus}
                       </span>
                     </td>
                     <td style={{ padding: '8px 10px' }}>
