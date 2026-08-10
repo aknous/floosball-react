@@ -41,6 +41,9 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
   visible, onClose,
 }) => {
   const { setFavoriteTeam, user } = useAuth()
+  // Undefined on an older payload — treat that as open, which matches how the server
+  // behaves for a first pick and never promises a lock that is not there.
+  const windowOpen = user?.canChangeFavoriteTeam !== false
   const isMobile = useIsMobile()
   const [leagues, setLeagues] = useState<LeagueBlock[]>([])
   const [confirmTeam, setConfirmTeam] = useState<PickTeam | null>(null)
@@ -169,10 +172,17 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
             <h2 style={{ ...font(800, 23, 1.15, '-0.02em'), color: TEXT.primary, margin: 0 }}>
               {hasFavorite ? 'Change your team' : 'Pick a team to follow'}
             </h2>
+            {/* ⚠️ Two different promises, and saying the wrong one is worse than
+                saying nothing. Switching is free right up to the first kickoff of
+                week 1; after that a switch is booked for next season instead. */}
             <p style={{ ...font(400, 13, 1.5), color: TEXT.secondary, margin: '7px 0 0' }}>
               Their games are highlighted across the app and they get a panel on the
-              front page. Your pick is locked for the rest of this season, so choose
-              carefully. You can change it when a new season begins.
+              front page.{' '}
+              {!hasFavorite
+                ? 'You can change this until week 1 kicks off.'
+                : windowOpen
+                  ? 'You can still switch freely until week 1 kicks off.'
+                  : 'Week 1 has started, so a switch now takes effect next season.'}
             </p>
           </div>
           <button
@@ -228,9 +238,10 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
           ))}
         </div>
 
-        {/* The confirm step is a BAND, not a second dialog. The pick is locked for a
-            season, so it deserves a deliberate second action, but stacking a modal on
-            a modal to get one loses the grid the reader was just looking at. */}
+        {/* The confirm step is a BAND, not a second dialog. A switch after kickoff is
+            locked in for a season, so it deserves a deliberate second action, but
+            stacking a modal on a modal to get one loses the grid the reader was just
+            looking at. */}
         {confirmTeam ? (
           <div style={{
             flexShrink: 0, borderTop: `1px solid ${BORDER.raised}`, background: BG.panel,
@@ -243,7 +254,7 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
               <span style={{ ...font(800, 14), color: readableTeamColor(confirmTeam.color || '#94a3b8') }}>
                 {confirmTeam.city} {confirmTeam.name}
               </span>
-              {' '}for the rest of the season?
+              {windowOpen || !hasFavorite ? '?' : ' from next season?'}
             </span>
             <span style={{ flex: 1 }} />
             <button
