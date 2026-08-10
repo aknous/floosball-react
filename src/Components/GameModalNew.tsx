@@ -1444,17 +1444,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
             {asPage && scoreboard}
 
             {/* Scores.
-                ⚠️ Only the two SCORE ROWS are hidden on the route — the route has
-                a full-width scoreboard band above the grid. The frames and innings
-                line scores live in this same block and must stay, or the two
-                formats that have no quarter breakdown lose their whole line score.
-                Which is also why the block itself collapses on the route in a
-                STANDARD game: with the score rows, the quarter line and rally all
-                gone, what was left was 32px of padding around nothing. */}
+                ⚠️ The whole block collapses on the route, in EVERY format. It used
+                to survive for innings and frames, because the route's scoreboard
+                band could not draw their line scores and this block could — so a
+                frames game showed the new band with nothing between the club and
+                its total, and this old scoreboard underneath it. The band handles
+                all three formats now (`GamePage.periodLine`), so what is left here
+                is 32px of padding around nothing. */}
             <div style={{
               padding: '16px', backgroundColor: '#1e293b',
-              display: asPage && !gameData.innings?.active && !gameData.frames?.active
-                ? 'none' : 'block',
+              display: asPage ? 'none' : 'block',
             }}>
 
               {/* Home team — outer flex row holds RallyButton and score

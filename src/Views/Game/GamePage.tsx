@@ -12,6 +12,8 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
 import { rankGames } from '@/Views/GameBoard/ranking'
+import { FormatScore } from '@/Views/GameBoard/gameFormat'
+import { useScoringModel } from '@/contexts/ScoringModelContext'
 import { ordinal } from '@/utils/ordinal'
 import GameBleachers, { useRailEntries } from './gameBleachers'
 
@@ -181,6 +183,8 @@ const GamePage: React.FC = () => {
   const threeColumn = !useIsMobile(PAGE_THREE_COLUMN_MIN)
   const contentMax = threeColumn ? CONTENT_MAX_THREE_COLUMN : CONTENT_MAX_STACKED
 
+  const scoringModel = useScoringModel()
+
   const railEntries = useRailEntries(gameData?.plays)
 
   /**
@@ -225,23 +229,109 @@ const GamePage: React.FC = () => {
     && (Number(gameData.homeTeam.id) === yourTeamId || Number(gameData.awayTeam.id) === yourTeamId)
 
   /**
-   * The period breakdown for the band. Standard clock formats only — innings and
-   * frames carry their own line score, which is wider and stays beside the field.
-   * OT only appears once someone has played one.
+   * The period breakdown for the band, in whatever the game's format calls a period.
+   *
+   * ⚠️ This used to bail out on innings and frames, which left the band as a name and
+   * a total with nothing between them, and left `GameModalNew` showing its OLD
+   * scoreboard block underneath to carry the line score. Two scoreboards on one page,
+   * one of them mostly blank. All three formats have the same SHAPE — a row per club,
+   * a column per period, a total — so they all go in the band.
+   *
+   * `null` in `values` means "not played yet" and renders as a dash, which innings
+   * needs (the home side has not batted the bottom of the current inning) and frames
+   * needs (future frames exist but have no score).
    */
-  const quarterLine = (() => {
+  const periodLine: {
+    labels: string[]
+    activeIndex: number | null
+    /** Frames only: won / lost / halved, for the cell tint. */
+    tone: ((side: 'home' | 'away', i: number) => 'won' | 'lost' | 'tie' | null) | null
+    rows: { side: 'home' | 'away'; values: (number | null)[] }[]
+  } | null = (() => {
+    const fr = gameData.frames
+    if (fr?.active) {
+      const N = fr.framesPerGame
+      const done = fr.frameResults ?? []
+      const frame = (i: number) => {   // i is 1-based
+        if (i <= done.length) return done[i - 1]
+        if (i === done.length + 1 && i <= N) return { home: fr.frameHome, away: fr.frameAway, winner: null }
+        return null
+      }
+      return {
+        labels: Array.from({ length: N }, (_, k) => String(k + 1)),
+        activeIndex: fr.currentFrame ? fr.currentFrame - 1 : null,
+        tone: (side, i) => {
+          const d: any = frame(i + 1)
+          if (!d || d.winner == null) return null
+          return d.winner === 'tie' ? 'tie' : d.winner === side ? 'won' : 'lost'
+        },
+        rows: (['away', 'home'] as const).map(side => ({
+          side,
+          values: Array.from({ length: N }, (_, k) => {
+            const d: any = frame(k + 1)
+            return d ? (side === 'home' ? d.home : d.away) : null
+          }),
+        })),
+      }
+    }
+
+    const inn = gameData.innings
+    if (inn?.active && inn.lineScore) {
+      const ls = inn.lineScore
+      return {
+        labels: ls.innings.map(String),
+        activeIndex: ls.innings.indexOf(inn.inning) >= 0 ? ls.innings.indexOf(inn.inning) : null,
+        tone: null,
+        rows: (['away', 'home'] as const).map(side => ({
+          side,
+          values: ls.innings.map((innNum: number, i: number) => {
+            // Away bats the top, home the bottom — so home's cell for the current
+            // inning stays blank until the half turns over.
+            const batted = side === 'away'
+              ? innNum <= inn.inning
+              : (innNum < inn.inning || (innNum === inn.inning && inn.half === 'bottom'))
+            return batted ? ((ls as any)[side][i] ?? 0) : null
+          }),
+        })),
+      }
+    }
+
     const qs = gameData.quarterScores
-    if (!qs || gameData.innings?.active || gameData.frames?.active) return null
+    if (!qs) return null
     const hasOt = (qs.home?.ot ?? 0) > 0 || (qs.away?.ot ?? 0) > 0
     const keys = hasOt ? ['q1', 'q2', 'q3', 'q4', 'ot'] : ['q1', 'q2', 'q3', 'q4']
-    const labels = keys.map(k => k.toUpperCase())
-    const rowFor = (side: 'away' | 'home') => ({
-      side,
-      abbr: (side === 'home' ? gameData.homeTeam : gameData.awayTeam).abbr as string,
-      values: keys.map(k => (qs[side]?.[k] ?? 0) as number),
-    })
-    return { labels, rows: [rowFor('away'), rowFor('home')] }
+    const q = Number(gameData.quarter) || 0
+    return {
+      labels: keys.map(k => k.toUpperCase()),
+      activeIndex: isLive && q > 0 ? Math.min(q - 1, keys.length - 1) : null,
+      tone: null,
+      rows: (['away', 'home'] as const).map(side => ({
+        side,
+        values: keys.map(k => (qs[side]?.[k] ?? 0) as number),
+      })),
+    }
   })()
+
+  /**
+   * In frames the SCORE does not decide the game — frames won does, with points only
+   * as the tiebreak. So the band gains a FRAMES column and the points total keeps the
+   * right-hand slot it has in every other format.
+   */
+  const framesWon = gameData.frames?.active
+    ? { home: gameData.frames.framesWonHome ?? 0, away: gameData.frames.framesWonAway ?? 0 }
+    : null
+
+  /**
+   * ⚠️ The period columns TIGHTEN past five of them. A quarter line is four columns and
+   * leaves the club plenty of room; six frames plus FR plus PTS at the same widths left
+   * about 40px for the name and rendered "Monum..." / "Stran...". Innings can run to
+   * nine. The club's name is the one thing on the band that must never truncate, so the
+   * numbers give up the width.
+   */
+  const periodCount = periodLine?.labels.length ?? 0
+  const tight = periodCount > 5
+  const CELL_W = tight ? 25 : 34
+  const COL_GAP = tight ? 5 : 8
 
   /**
    * One row of the scoreboard: crest, club, its period scores, its total.
@@ -264,7 +354,10 @@ const GamePage: React.FC = () => {
       return `${inn.half === 'bottom' ? 'BOT' : 'TOP'} ${inn.inning}`
     }
     if (gameData.frames?.active && !gameData.frames.overtime) {
-      return `Frame ${gameData.frames.currentFrame}`
+      // The frame clock is the only clock a frames game has, so it belongs beside
+      // the frame the same way a quarter clock belongs beside its quarter.
+      return [`Frame ${gameData.frames.currentFrame}`, gameData.frames.frameClock]
+        .filter(Boolean).join(' · ')
     }
     const q = Number(gameData.quarter) || 0
     const label = q > 4 ? 'OT' : q > 0 ? `Q${q}` : null
@@ -278,17 +371,27 @@ const GamePage: React.FC = () => {
     const hasBall = isLive && gameData.possession === team.abbr
     const hasMomentum = isLive && gameData.momentumTeam === team.abbr
     const record = side === 'home' ? gameData.homeRecord : gameData.awayRecord
-    const periods = quarterLine?.rows.find(r => r.side === side)?.values ?? []
+    const periods = periodLine?.rows.find(r => r.side === side)?.values ?? []
+    const tone = periodLine?.tone
+    // A won frame reads green, a halved one amber, a lost one recedes. Everything
+    // else in the band is neutral, which is the point: in match play the only thing
+    // that matters is who took the frame.
+    const TONE_COLOR = { won: ACCENT.live, tie: ACCENT.warning, lost: TEXT.faint } as const
 
     return (
       <React.Fragment key={side}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, padding: '5px 0' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: tight ? '9px' : '12px',
+          minWidth: 0, padding: '5px 0',
+          // Never let the name touch the first number, however tight the columns get.
+          paddingRight: '8px',
+        }}>
           <TeamHoverCard teamId={team.id}>
             <img
               src={`/avatars/${team.id}.png`}
               alt=""
-              width={32}
-              height={32}
+              width={tight ? 26 : 32}
+              height={tight ? 26 : 32}
               style={{
                 borderRadius: '50%', flexShrink: 0, display: 'block',
                 // The possession ring — the one thing on the band that moves.
@@ -308,7 +411,7 @@ const GamePage: React.FC = () => {
                 // line box on the name eats the gap between the two clubs —
                 // measured 23px between the names against 26px between the
                 // period numbers, which is exactly the difference in box height.
-                display: 'block', ...font(800, 17, 1, '-0.025em'), color: TEXT.primary,
+                display: 'block', ...font(800, tight ? 15 : 17, 1, '-0.025em'), color: TEXT.primary,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>{team.name}</span>
             </Link>
@@ -316,14 +419,33 @@ const GamePage: React.FC = () => {
           {hasMomentum && <FlameIcon color={flameColor} size={20} glow={flameGlow} />}
         </div>
 
-        {periods.map((value, i) => (
-          <div key={i} style={{ ...font(600, 16), color: TEXT.secondary, textAlign: 'center', ...TABULAR }}>
-            {value}
-          </div>
-        ))}
+        {periods.map((value, i) => {
+          const t = tone?.(side, i) ?? null
+          return (
+            <div key={i} style={{
+              ...font(t === 'won' ? 800 : 600, 16),
+              color: value == null ? TEXT.ghost : t ? TONE_COLOR[t] : TEXT.secondary,
+              textAlign: 'center', ...TABULAR,
+            }}>
+              {value == null ? '-' : value}
+            </div>
+          )
+        })}
 
-        <div style={{ ...font(800, 28, 1), color: TEXT.primary, textAlign: 'right', ...TABULAR }}>
-          {score ?? 0}
+        {/* ⚠️ ONE cell, not a frames column and a points column. Split across two grid
+            columns they sat a whole column gap apart and read as two unrelated scores,
+            with the club's name squeezed to make room. The large board card had already
+            solved this: frames, a hairline, then the points at 45% size and muted, all
+            in one tight cluster — so this uses that component rather than a second
+            implementation of the same idea, and inherits its level-match highlight. */}
+        <div style={{ textAlign: 'right' }}>
+          <FormatScore
+            game={gameData}
+            side={side}
+            scoringModel={scoringModel}
+            size={framesWon ? 24 : 28}
+            color={TEXT.primary}
+          />
         </div>
       </React.Fragment>
     )
@@ -409,21 +531,31 @@ const GamePage: React.FC = () => {
             }}>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: `minmax(0,1fr) repeat(${quarterLine?.labels.length ?? 0}, 34px) 56px`,
+                gridTemplateColumns: [
+                  'minmax(0,1fr)',
+                  `repeat(${periodCount}, ${CELL_W}px)`,
+                  framesWon ? '78px' : '56px',
+                ].filter(Boolean).join(' '),
                 alignItems: 'center',
-                columnGap: '8px',
+                columnGap: `${COL_GAP}px`,
               }}>
-                {quarterLine && (
+                {periodLine && (
                   <>
                     <span />
-                    {quarterLine.labels.map(label => (
+                    {periodLine.labels.map((label, i) => (
                       <span key={label} style={{
-                        ...font(700, 11, 1, '0.1em'), color: TEXT.muted, textAlign: 'center',
+                        ...font(700, 11, 1, '0.1em'),
+                        // The live period is named louder than the ones behind it.
+                        color: i === periodLine.activeIndex ? TEXT.body : TEXT.muted,
+                        textAlign: 'center',
                       }}>{label}</span>
                     ))}
-                    {/* No heading over the total — the biggest number on a
-                        scoreboard does not need to be labelled. */}
-                    <span />
+                    {/* In frames the big number is frames WON and the small one beside
+                        it is points, so the pair is labelled. Everywhere else the biggest
+                        number on a scoreboard does not need a heading. */}
+                    <span style={framesWon
+                      ? { ...font(700, 10, 1, '0.1em'), color: TEXT.muted, textAlign: 'right' }
+                      : undefined}>{framesWon ? 'FRAMES · PTS' : null}</span>
                   </>
                 )}
                 {teamRow('away')}
