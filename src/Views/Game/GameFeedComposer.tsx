@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { readableTeamColor } from '@/utils/colors'
@@ -69,6 +70,7 @@ const GameFeedComposer: React.FC<{
   hasExtraEntries?: boolean
 }> = ({ gameId, extraEntries, hasExtraEntries = false }) => {
   const { user, getToken } = useAuth()
+  const { subscribe } = useSeasonWebSocket()
   const [groups, setGroups] = useState<CatalogGroup[]>([])
   const [posts, setPosts] = useState<FeedPost[]>([])
   const [remaining, setRemaining] = useState<number | null>(null)
@@ -115,6 +117,32 @@ const GameFeedComposer: React.FC<{
 
   // Reset on a game switch so the previous match's shouts never flash up here.
   useEffect(() => { setPosts([]); setOpen(false); setError(null); loadFeed() }, [gameId, loadFeed])
+
+  /**
+   * Other people's shouts, as they land.
+   *
+   * ⚠️ The feed is SHARED — it is keyed on the game, not on you — but it only ever
+   * loaded on mount, so two people watching the same match could not see each other
+   * until one of them navigated away and back. This rides the same channel as
+   * `play_reaction_update`, which had the identical requirement and solved it first.
+   *
+   * `isMine` is not taken from the wire. The broadcast goes to every viewer, so it
+   * ships false and each client decides for itself.
+   *
+   * Deduped on id because the poster gets their own post twice: once from the POST
+   * response path and once from this broadcast.
+   */
+  useEffect(() => {
+    return subscribe((msg: any) => {
+      if (msg?.event !== 'game_feed_post') return
+      if (String(msg.gameId) !== String(gameId)) return
+      const incoming = msg.post
+      if (!incoming) return
+      setPosts(prev => (prev.some(p => p.id === incoming.id)
+        ? prev
+        : [{ ...incoming, isMine: !!user && incoming.username === user.username }, ...prev]))
+    })
+  }, [subscribe, gameId, user])
 
   const post = async (key: string, text: string) => {
     setOpen(false)
