@@ -240,6 +240,11 @@ const AppHeader: React.FC = () => {
           >
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8" /></svg>
             {(user.floobits ?? 0).toLocaleString()}
+            {/* ⚠️ The unit, so the pair of chips reads the same way: glyph, number,
+                unit. The coin alone said "this is money" and left the number itself
+                unnamed, which was fine while it was the only figure up here and
+                stopped being fine the moment an FP ticker landed beside it. */}
+            <span style={{ ...font(600, 10, 1, '0.08em'), color: ACCENT.warning }}>F</span>
           </button>
         )}
 

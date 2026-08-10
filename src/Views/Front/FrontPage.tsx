@@ -267,12 +267,18 @@ const FrontPage: React.FC = () => {
         value: seasonTotal.toFixed(1),
         label: 'FANTASY POINTS',
         to: '/fantasy',
-        note: rank ? `${rank} in the league` : 'Not ranked yet',
+        // ⚠️ "this SEASON", not this week. `rank` is the snapshot's season rank —
+        // `entries.sort(key=e["seasonTotal"])` in fantasyTracker — and the number above
+        // it is the season total, so a weekly label would name the wrong contest. The
+        // two read the same in week 1, which is where "this week" looks right.
+        note: rank ? `Ranked #${rank} this season` : 'Not ranked yet',
         noteColor: rank ? ACCENT.live : TEXT.muted,
       },
       {
         key: 'floobits',
         value: (user?.floobits ?? 0).toLocaleString(),
+        // The unit, matching the header chip and the "50F" the shop prices in.
+        suffix: 'F',
         valueColor: ACCENT.warning,
         label: 'FLOOBITS',
         // The Shop is a modal, not a route — the header's floobits chip opens it the same
