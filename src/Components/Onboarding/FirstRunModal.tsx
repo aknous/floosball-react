@@ -186,11 +186,11 @@ export const FirstRunModal: React.FC = () => {
           <>
             <div style={{ ...font(700, 10, 1, '0.14em'), color: ACCENT.info }}>ONE MORE THING</div>
             <h2 style={{ ...font(800, 21, 1.2, '-0.02em'), color: TEXT.primary, margin: '10px 0 8px' }}>
-              Pick a club to follow?
+              Pick a team to follow?
             </h2>
             <p style={{ ...font(400, 13, 1.55), color: TEXT.secondary, margin: '0 0 18px' }}>
-              Your club gets a panel on the front page — live score, next fixture, recent
-              form. You can do this later from there instead.
+              Your team gets a panel on the front page with their live score, next
+              fixture and recent form. You can also do this later from there.
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Btn onClick={() => {

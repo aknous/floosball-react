@@ -2108,7 +2108,7 @@ const AdminContent: React.FC<{
         <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px', lineHeight: 1.5 }}>
           Goes to the front page feed and out over the websocket. Season and week are
           stamped from the sim. An unpinned notice is pushed out once about forty newer
-          items are published, which a busy slate does in a day — pin it to hold it.
+          items are published, which a busy slate does in a day. Pin it to hold it.
           Posting as a Core writes a line in their voice, threaded with the sim's own.
         </div>
 

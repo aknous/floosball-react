@@ -385,8 +385,8 @@ const FrontPage: React.FC = () => {
               }}>
                 <div style={{ ...font(700, 11, 1, '0.12em'), color: TEXT.muted }}>YOUR TEAM</div>
                 <div style={{ ...font(400, 13, 1.5), color: TEXT.secondary, margin: '10px 0 16px' }}>
-                  Pick a club and this panel follows them all season — live score, next
-                  fixture, recent form.
+                  Pick a team and this panel follows them all season, with their live
+                  score, next fixture and recent form.
                 </div>
                 <button
                   onClick={() => window.dispatchEvent(new Event('floosball:show-favorite-team-picker'))}

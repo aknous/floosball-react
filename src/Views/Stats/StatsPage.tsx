@@ -310,7 +310,7 @@ const StatsPage: React.FC = () => {
   const positionWord = POSITION_PLURAL[position] ?? 'players'
   const contextLine = mode === 'players'
     ? `${positionWord.charAt(0).toUpperCase()}${positionWord.slice(1)} · ${playerRows.length} shown`
-    : `${side === 'offense' ? 'Offense' : 'Defense'} · ${teamRows.length} clubs`
+    : `${side === 'offense' ? 'Offense' : 'Defense'} · ${teamRows.length} teams`
 
   return (
     <div style={{ fontFamily: FONT }}>
@@ -432,7 +432,7 @@ const StatsPage: React.FC = () => {
             onChange={setTeamPer}
           />
           <Rule />
-          <SearchBox value={search} onChange={setSearch} placeholder="Find a club" />
+          <SearchBox value={search} onChange={setSearch} placeholder="Find a team" />
           <span style={{ flex: 1 }} />
           {selected.size > 0 && (
             <span style={{ ...font(600, 11, 1, '0.06em'), color: ACCENT.info }}>
@@ -469,7 +469,7 @@ const StatsPage: React.FC = () => {
           <ComparePanel
             rows={teamRows.filter(r => selected.has(r.id))}
             columns={teamColumns(side, teamPer === 'game')}
-            subject="clubs"
+            subject="teams"
             onClose={() => setComparing(false)}
             title={row => (
               <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
@@ -515,12 +515,12 @@ const StatsPage: React.FC = () => {
           onToggle={toggle}
           selectionFull={selected.size >= MAX_COMPARE}
           emptyMessage={
-            // ⚠️ Two different emptinesses. "No clubs match" is a lie when the season
+            // ⚠️ Two different emptinesses. "No teams match" is a lie when the season
             // simply has not been played yet — which is exactly what a reader sees
             // right after a fresh season starts, and it reads as a broken page.
             teamRows.length === 0 && !search.trim()
               ? 'No games have been played this season yet.'
-              : 'No clubs match this search.'
+              : 'No teams match this search.'
           }
         />
       )}
@@ -530,7 +530,7 @@ const StatsPage: React.FC = () => {
           <span style={{ ...font(400, 11), color: TEXT.muted }}>
             Showing {mode === 'players' ? playerRows.length : teamRows.length} of{' '}
             {mode === 'players' ? (players?.total ?? 0) : (teams?.length ?? 0)}{' '}
-            {mode === 'players' ? (POSITION_PLURAL[position] ?? 'players') : 'clubs'}
+            {mode === 'players' ? (POSITION_PLURAL[position] ?? 'players') : 'teams'}
             {mode === 'players' && careerScope ? ' · career' : ''}
           </span>
         </div>
