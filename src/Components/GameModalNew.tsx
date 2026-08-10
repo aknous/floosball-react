@@ -1891,7 +1891,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 the field-viz IIFE) and gated with a single condition — moving it
                 or using (A || B) && (...) trips an eslint-plugin-react-hooks
                 false-positive in this file. */}
-            {gameData.status !== 'Scheduled' && (
+            {/* ⚠️ Also hidden on a FINISHED game with no play feed. The field graphic
+                draws the ball where the last play left it, and without plays there is
+                no last play — it renders a frozen, meaningless field. Same reason the
+                Plays tab goes: play-by-play is not persisted, so a game rebuilt from
+                the database has a box score and nothing to animate. */}
+            {gameData.status !== 'Scheduled' && hasPlayFeed && (
               <div style={{
                 // On the route the scoreboard sits directly above this, and the
                 // Catch Up button was landing hard against its bottom rule.
@@ -1916,8 +1921,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               </div>
             )}
 
-            {/* Field Position Visualization */}
-            {gameData.status !== 'Scheduled' && (() => {
+            {/* Field Position Visualization.
+                ⚠️ Needs the play feed too — the ball is drawn where the last play left
+                it, so without plays this is an empty pitch with a ball on the goal line
+                that never moved. */}
+            {gameData.status !== 'Scheduled' && hasPlayFeed && (() => {
               const FW = 600, FH = 220
               const EZW = FW / 12 // end zone = 10/120 of total width ≈ 50 SVG units
 
@@ -2518,8 +2526,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               )
             })()}
 
-            {/* Win Probability chart */}
-            {gameData.homeWinProbability !== undefined && (() => {
+            {/* Win Probability chart.
+                ⚠️ Needs the play feed too — the curve is built from the per-play win
+                probabilities, so a game rebuilt from the database draws a flat line at
+                0%/100% that looks like the match was never in doubt. */}
+            {gameData.homeWinProbability !== undefined && hasPlayFeed && (() => {
               const homeColor = gameData.homeTeam.color
               const awayColor = awayDisplayColor
               const homeSecondary = gameData.homeTeam.secondaryColor
