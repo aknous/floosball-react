@@ -324,7 +324,7 @@ const AdminContent: React.FC<{
   const NEWS_ICONS = [
     { value: 'none', label: 'No icon' },
     { value: 'league', label: 'League mark' },
-    { value: 'team', label: 'Club crest' },
+    { value: 'team', label: 'Team crest' },
   ]
   const HEADLINE_MAX = 160
   const BODY_MAX = 1200

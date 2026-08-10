@@ -30,7 +30,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         label: 'The League',
         items: [
-          '[League] 32 clubs in two leagues of 16, split into eight divisions of four.',
+          '[League] 32 teams in two leagues of 16, split into eight divisions of four.',
           '[League] 28 week season: 12 games against your three division rivals, 12 against the rest of your league, 4 interleague. The last game day is all division games.',
           '[League] Division titles are now recorded, alongside league titles and Floos Bowls.',
           '[Standings] Divisions, projected seeds, games back of the cut, recent form and weekly movement.',
@@ -50,7 +50,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         label: 'Prognostications',
         items: [
-          '[Pick-Em] Its own page. Each matchup shows both clubs, win probability, record, rating, and what each side pays.',
+          '[Pick-Em] Its own page. Each matchup shows both teams, win probability, record, rating, and what each side pays.',
           '[Pick-Em] Open a matchup for form, streak, point differential and division record.',
           '[Pick-Em] Call the whole day at once. Finished slates collapse.',
           '[Pick-Em] Auto-pick modes, plus an option to never pick against your own team.',
@@ -59,10 +59,10 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         label: 'Stats and Records',
         items: [
-          '[Stats] Filter by position, status and season. Compare players or clubs side by side. Season or career.',
+          '[Stats] Filter by position, status and season. Compare players or teams side by side. Season or career.',
           '[Stats] Win probability added is shown in wins.',
           '[Games] Finished games keep their box score, team totals and quarter line.',
-          '[Teams] Playoff history on every club.',
+          '[Teams] Playoff history on every team.',
         ],
       },
       {

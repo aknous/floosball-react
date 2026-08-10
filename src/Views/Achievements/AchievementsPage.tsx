@@ -35,7 +35,7 @@ const ONBOARDING_HINTS: Record<string, OnboardingHint | ((user: any) => Onboardi
   rookie: {
     steps: [
       'Click the button below, or use the search icon in the header and go to Teams.',
-      'Browse the 32 clubs and pick the one you want to follow.',
+      'Browse the 32 teams and pick the one you want to follow.',
       'Confirm. You can switch freely until week 1 kicks off; after that a switch takes effect next season.',
     ],
     action: { kind: 'event', name: 'floosball:show-favorite-team-picker' },
@@ -71,19 +71,19 @@ const ONBOARDING_HINTS: Record<string, OnboardingHint | ((user: any) => Onboardi
   patron: (user: any) => ({
     steps: user?.favoriteTeamId
       ? [
-          "Open your club's page.",
+          "Open your team's page.",
           'Find the Front Office band and its Facilities.',
-          'Put any amount of Floobits in. Funding raises your club\'s market tier, which feeds player development, morale and fatigue.',
+          'Put any amount of Floobits in. Funding raises your team\'s market tier, which feeds player development, morale and fatigue.',
         ]
       : [
-          'You need a club first. Pick one, then come back.',
-          "Open your club's page and find the Front Office band.",
+          'You need a team first. Pick one, then come back.',
+          "Open your team's page and find the Front Office band.",
           'Contribute any amount of Floobits to finish this goal.',
         ],
     action: user?.favoriteTeamId
       ? { kind: 'route', path: `/team/${user.favoriteTeamId}` }
       : { kind: 'event', name: 'floosball:show-favorite-team-picker' },
-    actionLabel: user?.favoriteTeamId ? 'Go to My Club' : 'Pick a Team First',
+    actionLabel: user?.favoriteTeamId ? 'Go to My Team' : 'Pick a Team First',
   }),
 }
 
