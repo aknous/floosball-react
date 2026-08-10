@@ -1,4 +1,5 @@
 import React from 'react'
+import HoverTooltip from '@/Components/HoverTooltip'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 
 /**
@@ -29,6 +30,15 @@ export const W = {
 export interface Column<Row> {
   key: string
   label: string
+  /**
+   * What the header abbreviation MEANS, shown on hover.
+   *
+   * ⚠️ Optional, and a column with nothing worth saying must leave it out. The header
+   * used to carry `title={col.label}`, so every column had a browser tooltip that
+   * repeated the word already on screen — hovering told you "PTS" means "PTS". A
+   * tooltip that says nothing is worse than none, because it costs a hover to find out.
+   */
+  help?: string
   width: number
   /** What the cell shows. */
   cell: (row: Row) => React.ReactNode
@@ -315,7 +325,6 @@ export function StatsTable<Row extends { id: number }>({
               <button
                 key={col.key}
                 onClick={() => col.sort && onSort(col.key)}
-                title={col.label}
                 style={{
                   width: col.flexible ? undefined : `${col.width}px`,
                   // ⚠️ basis 0, NOT auto. With `1 1 auto` a flexible column sizes to
@@ -339,7 +348,13 @@ export function StatsTable<Row extends { id: number }>({
                   color: sorted ? TEXT.body : TEXT.muted,
                   whiteSpace: 'nowrap', overflow: 'hidden',
                 }}
-              >{col.label}{sorted ? (sortAsc ? ' ▲' : ' ▼') : ''}</button>
+              >{col.help
+                ? (
+                  <HoverTooltip text={col.help}>
+                    {col.label}{sorted ? (sortAsc ? ' ▲' : ' ▼') : ''}
+                  </HoverTooltip>
+                )
+                : <>{col.label}{sorted ? (sortAsc ? ' ▲' : ' ▼') : ''}</>}</button>
             )
           })}
         </div>
