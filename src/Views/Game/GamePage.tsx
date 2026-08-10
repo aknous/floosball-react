@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
-import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
+import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, SHELL_MOBILE_MAX, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
 import { rankGames } from '@/Views/GameBoard/ranking'
 import { FormatScore } from '@/Views/GameBoard/gameFormat'
@@ -181,6 +181,8 @@ const GamePage: React.FC = () => {
   // Must agree with GameModalNew's own threshold, or the page caps at a width
   // the three columns cannot use.
   const threeColumn = !useIsMobile(PAGE_THREE_COLUMN_MIN)
+  // Phone: the nav bar and the body both give back their 28px side padding.
+  const narrow = useIsMobile(SHELL_MOBILE_MAX)
   const contentMax = threeColumn ? CONTENT_MAX_THREE_COLUMN : CONTENT_MAX_STACKED
 
   const scoringModel = useScoringModel()
@@ -328,7 +330,11 @@ const GamePage: React.FC = () => {
    * nine. The club's name is the one thing on the band that must never truncate, so the
    * numbers give up the width.
    */
-  const periodCount = periodLine?.labels.length ?? 0
+  // ⚠️ A phone drops the period columns entirely. Even tightened they left about 60px
+  // for the club and rendered "Buf..." / "Cra..." on a 375px screen, and the club is the
+  // one thing on a scoreboard that must never truncate. The quarter, frame or inning
+  // breakdown is a detail; who is playing and what the score is are not.
+  const periodCount = narrow ? 0 : (periodLine?.labels.length ?? 0)
   const tight = periodCount > 5
   const CELL_W = tight ? 25 : 34
   const COL_GAP = tight ? 5 : 8
@@ -422,7 +428,7 @@ const GamePage: React.FC = () => {
           {hasMomentum && <FlameIcon color={flameColor} size={20} glow={flameGlow} />}
         </div>
 
-        {periods.map((value, i) => {
+        {!narrow && periods.map((value, i) => {
           const t = tone?.(side, i) ?? null
           return (
             <div key={i} style={{
@@ -467,7 +473,7 @@ const GamePage: React.FC = () => {
       }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap',
-        padding: '13px 28px', maxWidth: contentMax, margin: '0 auto',
+        padding: narrow ? '10px 12px' : '13px 28px', maxWidth: contentMax, margin: '0 auto',
       }}>
         <NavPlate to="/games">
           <span style={{ ...font(800, 14), color: TEXT.body }}>←</span>
@@ -519,7 +525,7 @@ const GamePage: React.FC = () => {
           only earns one while the Plays view is up, and only that component
           knows which view that is. */}
       <div style={{
-        padding: '20px 28px 24px',
+        padding: narrow ? '12px 10px 20px' : '20px 28px 24px',
         maxWidth: contentMax, margin: '0 auto',
         flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column',
       }}>
@@ -544,7 +550,7 @@ const GamePage: React.FC = () => {
                 alignItems: 'center',
                 columnGap: `${COL_GAP}px`,
               }}>
-                {periodLine && (
+                {periodLine && !narrow && (
                   <>
                     <span />
                     {periodLine.labels.map((label, i) => (

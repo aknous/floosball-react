@@ -3,6 +3,8 @@ import { useGames } from '@/contexts/GamesContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useScoringModel } from '@/contexts/ScoringModelContext'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { SHELL_MOBILE_MAX } from '@/Components/Shell/tokens'
 import { useOpenGame } from '@/hooks/useOpenGame'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { ScoreboardWeekNav } from '@/Components/ScoreboardWeekNav'
@@ -173,7 +175,10 @@ const GameBoardPage: React.FC = () => {
     : null
   const pinnedAccent = pinnedTeam?.color || ACCENT.ownTeam
 
-  const columns = density === 'large' ? 2 : 4
+  // ⚠️ One card per row on a phone whatever the density. Four 90px columns is not a
+  // game card, it is a colour swatch.
+  const narrow = useIsMobile(SHELL_MOBILE_MAX)
+  const columns = narrow ? 1 : (density === 'large' ? 2 : 4)
 
   const renderGrid = (items: Ranked[]) => (
     <div style={{
@@ -214,11 +219,12 @@ const GameBoardPage: React.FC = () => {
   return (
     <>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '14px',
-        padding: '15px 28px', background: BG.shell,
+        display: 'flex', alignItems: 'center', gap: narrow ? '9px' : '14px',
+        flexWrap: 'wrap',
+        padding: narrow ? '12px 12px' : '15px 28px', background: BG.shell,
         borderBottom: `1px solid ${BORDER.hairline}`, fontFamily: FONT,
       }}>
-        <h1 style={{ ...font(800, 22, 1, '-0.03em'), color: TEXT.primary, margin: 0 }}>Game board</h1>
+        <h1 style={{ ...font(800, narrow ? 18 : 22, 1, '-0.03em'), color: TEXT.primary, margin: 0 }}>Game board</h1>
 
         <span style={{
           display: 'flex', alignItems: 'center', gap: '6px',
@@ -289,7 +295,7 @@ const GameBoardPage: React.FC = () => {
       </div>
 
       <div style={{
-        padding: '18px 28px 28px', display: 'flex', flexDirection: 'column', gap: '14px',
+        padding: narrow ? '12px 10px 24px' : '18px 28px 28px', display: 'flex', flexDirection: 'column', gap: '14px',
         fontFamily: FONT,
       }}>
         {pastLoading ? (

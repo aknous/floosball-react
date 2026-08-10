@@ -1,9 +1,10 @@
+import { useIsMobile } from '@/hooks/useIsMobile'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import TeamHoverCard from '@/Components/TeamHoverCard'
 import { useAuth } from '@/contexts/AuthContext'
-import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
+import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font, SHELL_MOBILE_MAX } from '@/Components/Shell/tokens'
 import { Crest } from '@/Views/GameBoard/boardPieces'
 import {
   Segmented, Pill, StatusChip, FilterLabel, Rule, SearchBox, CompareButton,
@@ -52,6 +53,7 @@ const MAX_COMPARE = 4
  * so a round trip per header click would be slower and would fight the cache.
  */
 const StatsPage: React.FC = () => {
+  const narrow = useIsMobile(SHELL_MOBILE_MAX)
   const { user } = useAuth()
 
   const [mode, setMode] = useState<Mode>('players')
@@ -318,7 +320,7 @@ const StatsPage: React.FC = () => {
       {/* Title row */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: '14px',
-        padding: '17px 24px 15px', background: BG.shell,
+        padding: narrow ? '12px 12px 10px' : '17px 24px 15px', background: BG.shell,
         borderBottom: `1px solid ${BORDER.hairline}`, flexWrap: 'wrap',
       }}>
         <h1 style={{ ...font(800, 22, 1, '-0.025em'), color: TEXT.primary, margin: 0 }}>Stats</h1>

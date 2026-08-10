@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { BG, BORDER, TEXT, ACCENT, PLAYOFF, FONT, font } from '@/Components/Shell/tokens'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { SHELL_MOBILE_MAX } from '@/Components/Shell/tokens'
 import ByDivision from './ByDivision'
 import ByLeague from './ByLeague'
 import type { LeagueStandings, StandingsView } from './standingsTypes'
@@ -30,6 +32,7 @@ const VIEWS: { key: StandingsView; label: string }[] = [
  * the league view, which is where a fan actually wants to compare it against a record.
  */
 const StandingsPage: React.FC = () => {
+  const compact = useIsMobile(SHELL_MOBILE_MAX)
   const { user } = useAuth()
   const { event: wsEvent } = useSeasonWebSocket()
 
@@ -72,12 +75,13 @@ const StandingsPage: React.FC = () => {
   return (
     <>
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '14px',
-        padding: '15px 28px', background: BG.shell,
+        display: 'flex', alignItems: 'center', gap: compact ? '10px' : '14px',
+        flexWrap: 'wrap',
+        padding: compact ? '12px 12px' : '15px 28px', background: BG.shell,
         borderBottom: `1px solid ${BORDER.hairline}`, fontFamily: FONT,
       }}>
-        <h1 style={{ ...font(800, 22, 1, '-0.03em'), color: TEXT.primary, margin: 0 }}>Standings</h1>
-        <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />
+        <h1 style={{ ...font(800, compact ? 18 : 22, 1, '-0.03em'), color: TEXT.primary, margin: 0 }}>Standings</h1>
+        {!compact && <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />}
 
         <div style={{ display: 'flex', background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
           {VIEWS.map((option, i) => {
@@ -100,10 +104,12 @@ const StandingsPage: React.FC = () => {
         </div>
 
         <span style={{ flex: 1 }} />
-        <Legend />
+        {/* ⚠️ No legend on a phone. It is a key to seed colours that the rows already
+            carry, and at this width it was the thing pushing the header off screen. */}
+        {!compact && <Legend />}
       </div>
 
-      <div style={{ padding: '18px 28px 28px', fontFamily: FONT }}>
+      <div style={{ padding: compact ? '14px 10px 22px' : '18px 28px 28px', fontFamily: FONT }}>
         {error ? (
           <div style={{
             background: BG.card, border: `1px solid ${BORDER.hairline}`,
@@ -114,9 +120,9 @@ const StandingsPage: React.FC = () => {
         ) : !leagues ? (
           <StandingsSkeleton />
         ) : view === 'division' ? (
-          <ByDivision leagues={leagues} favouriteTeamId={favouriteTeamId} />
+          <ByDivision leagues={leagues} favouriteTeamId={favouriteTeamId} compact={compact} />
         ) : (
-          <ByLeague leagues={leagues} favouriteTeamId={favouriteTeamId} />
+          <ByLeague leagues={leagues} favouriteTeamId={favouriteTeamId} compact={compact} />
         )}
       </div>
     </>

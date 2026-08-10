@@ -10,7 +10,8 @@ import ShopModal from '@/Components/Shop/ShopModal'
 import CommandPalette from './CommandPalette'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
-import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from './tokens'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, SHELL_MOBILE_MAX, font } from './tokens'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -40,7 +41,15 @@ const SearchIcon: React.FC = () => (
  * anomaly status moves to the front page and the active ruleset to the game board, where
  * each has room to say something rather than being a lone glyph in the chrome.
  */
-const AppHeader: React.FC = () => {
+const MenuIcon: React.FC = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" d="M3 5h14M3 10h14M3 15h14" />
+  </svg>
+)
+
+/** `onOpenNav` is passed only on phones, where the nav is a drawer. */
+const AppHeader: React.FC<{ onOpenNav?: () => void }> = ({ onOpenNav }) => {
+  const isMobile = useIsMobile(SHELL_MOBILE_MAX)
   const { seasonState } = useFloosball()
   const { user, getToken } = useAuth()
   const { event: wsEvent } = useSeasonWebSocket()
@@ -159,27 +168,44 @@ const AppHeader: React.FC = () => {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '22px',
-          padding: '14px 22px',
+          gap: isMobile ? '10px' : '22px',
+          padding: isMobile ? '10px 12px' : '14px 22px',
           background: BG.panel,
           borderBottom: `1px solid ${BORDER.hairline}`,
           fontFamily: FONT,
         }}
       >
+        {/* ⚠️ The drawer handle comes FIRST on a phone, where the top left is where a
+            thumb expects it. */}
+        {onOpenNav && (
+          <button
+            onClick={onOpenNav}
+            aria-label="Menu"
+            style={{
+              display: 'flex', alignItems: 'center', background: 'none', border: 'none',
+              color: TEXT.body, cursor: 'pointer', padding: '2px', flexShrink: 0,
+            }}
+          ><MenuIcon /></button>
+        )}
+
         <NavLink to="/" style={{ display: 'flex', alignItems: 'center', gap: '9px', textDecoration: 'none' }}>
           <img src="/avatars/league_logo.png" alt="" width={28} height={28} style={{ borderRadius: '50%' }} />
-          <span style={{ ...font(800, 20, 1, '-0.02em'), color: TEXT.strong }}>Floosball</span>
-          <span style={{
-            ...font(700, 9, 1, '0.06em'),
-            color: ACCENT.warning,
-            background: 'rgba(245,158,11,0.28)',
-            padding: '3px 5px',
-          }}>BETA</span>
+          {!isMobile && (
+            <>
+              <span style={{ ...font(800, 20, 1, '-0.02em'), color: TEXT.strong }}>Floosball</span>
+              <span style={{
+                ...font(700, 9, 1, '0.06em'),
+                color: ACCENT.warning,
+                background: 'rgba(245,158,11,0.28)',
+                padding: '3px 5px',
+              }}>BETA</span>
+            </>
+          )}
         </NavLink>
 
-        <span style={{ width: '1px', height: '22px', background: BORDER.hairline }} />
+        {!isMobile && <span style={{ width: '1px', height: '22px', background: BORDER.hairline }} />}
 
-        {seasonState.seasonNumber > 0 && (
+        {!isMobile && seasonState.seasonNumber > 0 && (
           <>
             <span style={{ ...font(600, 13), color: TEXT.secondary }}>Season {seasonState.seasonNumber}</span>
             {/* The design specifies #64748b here. Raised to the codebase's readable-text
@@ -189,7 +215,7 @@ const AppHeader: React.FC = () => {
           </>
         )}
 
-        {champion && (
+        {!isMobile && champion && (
           <NavLink
             to={`/team/${champion.id}`}
             style={{
@@ -204,6 +230,12 @@ const AppHeader: React.FC = () => {
             </span>
             <TrophyIcon />
           </NavLink>
+        )}
+
+        {isMobile && seasonState.seasonNumber > 0 && (
+          <span style={{ ...font(500, 11), color: TEXT.muted, whiteSpace: 'nowrap' }}>
+            {`W${seasonState.currentWeek}`}
+          </span>
         )}
 
         <span style={{ flex: 1 }} />
@@ -262,9 +294,11 @@ const AppHeader: React.FC = () => {
               {user.favoriteTeamId && (
                 <img src={`/avatars/${user.favoriteTeamId}.png`} alt="" width={22} height={22} style={{ flexShrink: 0, borderRadius: '50%' }} />
               )}
-              <span style={{ ...font(600, 12), color: TEXT.secondary, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {user.username || 'User'}
-              </span>
+              {!isMobile && (
+                <span style={{ ...font(600, 12), color: TEXT.secondary, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user.username || 'User'}
+                </span>
+              )}
               {unreadCount > 0 && (
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: ACCENT.info, flexShrink: 0 }} />
               )}
