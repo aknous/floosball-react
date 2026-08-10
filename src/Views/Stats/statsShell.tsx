@@ -297,7 +297,7 @@ export function StatsTable<Row extends { id: number }>({
           {leads.map(lead => (
             <span key={lead.header} style={{
               width: `${lead.width}px`, flexShrink: 0,
-              ...font(700, 10, 1, '0.1em'), color: TEXT.muted, padding: '10px 0',
+              ...font(700, 11, 1, '0.1em'), color: TEXT.muted, padding: '10px 0',
             }}>{lead.header}</span>
           ))}
           <span style={{ flex: 1, minWidth: '60px' }} />
@@ -310,7 +310,15 @@ export function StatsTable<Row extends { id: number }>({
                 title={col.label}
                 style={{
                   width: col.flexible ? undefined : `${col.width}px`,
-                  flex: col.flexible ? '1 1 auto' : undefined,
+                  // ⚠️ basis 0, NOT auto. With `1 1 auto` a flexible column sizes to
+                  // ITS OWN TEXT plus a share of the slack — and the header's text
+                  // ("STAT LINE") is far shorter than a body cell's ("21/22 rec · 215
+                  // yd · 3 TD"). The two rows therefore computed different widths for
+                  // the same column, and every fixed column to its left was pushed out
+                  // of line by the difference (measured: 48px). Basis 0 makes the split
+                  // depend only on the row width, which header and body share.
+                  flex: col.flexible ? '1 1 0' : undefined,
+                  minWidth: col.flexible ? 0 : undefined,
                   flexShrink: 0,
                   textAlign: col.flexible ? 'left' : 'right',
                   background: 'transparent', border: 'none',
@@ -319,7 +327,7 @@ export function StatsTable<Row extends { id: number }>({
                   // come AFTER the shorthand or the shorthand resets it.
                   padding: `10px 0 10px ${col.flexible ? 16 : 0}px`,
                   cursor: col.sort ? 'pointer' : 'default', fontFamily: FONT,
-                  ...font(sorted ? 800 : 700, 10, 1, '0.1em'),
+                  ...font(sorted ? 800 : 700, 11, 1, '0.1em'),
                   color: sorted ? TEXT.body : TEXT.muted,
                   whiteSpace: 'nowrap', overflow: 'hidden',
                 }}
@@ -363,11 +371,13 @@ export function StatsTable<Row extends { id: number }>({
                 return (
                   <span key={col.key} style={{
                     width: col.flexible ? undefined : `${col.width}px`,
-                    flex: col.flexible ? '1 1 auto' : undefined,
+                    // Must match the header exactly — see the note there.
+                    flex: col.flexible ? '1 1 0' : undefined,
+                    minWidth: col.flexible ? 0 : undefined,
                     flexShrink: 0,
                     textAlign: col.flexible ? 'left' : 'right',
                     paddingLeft: col.flexible ? '16px' : undefined,
-                    ...font(sorted ? 700 : 500, 12),
+                    ...font(sorted ? 700 : 500, 13),
                     color: tint || (sorted ? TEXT.strong : TEXT.secondary),
                     ...TABULAR,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',

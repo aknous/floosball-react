@@ -10,6 +10,7 @@ import {
   SeasonPicker, StatsTable, TableSkeleton, type LeadCell,
 } from './statsShell'
 import { playerColumns, teamColumns, DEFAULT_SORT, TEAM_DEFAULT_SORT } from './statsColumns'
+import { Stars } from '@/Components/Stars'
 import type {
   StatsPlayerRow, StatsPlayersResponse, StatsTeamRow, StatsTeamsResponse,
 } from './statsTypes'
@@ -22,7 +23,6 @@ const DEFENSIVE_POSITIONS = ['S', 'LB', 'CB', 'DE'] as const
 const STATUSES = [
   { key: 'active', label: 'Active' },
   { key: 'fa', label: 'Free agents' },
-  { key: 'prospects', label: 'Prospects' },
   { key: 'retired', label: 'Retired' },
   { key: 'followed', label: 'Followed' },
 ] as const
@@ -240,10 +240,18 @@ const StatsPage: React.FC = () => {
             {/* A player's mark IS their club's crest — identity here belongs to
                 the team, and the same circle appears on every other surface. */}
             <Crest teamId={row.teamId} size={17} />
-            <span style={{
-              ...font(600, 12), color: TEXT.primary,
-              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>{row.name}</span>
+            <span style={{ minWidth: 0 }}>
+              <span style={{
+                display: 'block',
+                ...font(600, 13), color: TEXT.primary,
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>{row.name}</span>
+              {/* The star band under the name (owner). `ratingStars` already rides on
+                  the row, so this is a render change only — and it is the one piece of
+                  a player's quality the numeric columns never show, since PERF measures
+                  what they DID this season rather than what they are. */}
+              <Stars stars={row.ratingStars} size={12} tracking={1.5} />
+            </span>
           </Link>
         </PlayerHoverCard>
       ),

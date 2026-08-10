@@ -44,15 +44,19 @@ const signedTint = (v: any): string =>
 
 // ── Shared player columns ────────────────────────────────────────────────────
 
-const games = (careerScope: boolean): Column<StatsPlayerRow> => (careerScope
+/**
+ * ⚠️ GP is GONE from the season scope (owner) — every active player has played every
+ * game, so the column was a wall of the same number. SEASONS survives on the career
+ * scope, where it genuinely varies and is the denominator a reader wants.
+ *
+ * Returns null on the season scope; callers filter it out.
+ */
+const games = (careerScope: boolean): Column<StatsPlayerRow> | null => (careerScope
   ? {
     key: 'seasons', label: 'SEASONS', width: W.rate,
     cell: r => n(r.seasonsPlayed), sort: r => r.seasonsPlayed ?? 0,
   }
-  : {
-    key: 'gp', label: 'GP', width: W.count,
-    cell: r => n(r.gamesPlayed), sort: r => r.gamesPlayed,
-  })
+  : null)
 
 const perf: Column<StatsPlayerRow> = {
   key: 'perf', label: 'PERF', width: W.rate,
@@ -95,7 +99,12 @@ const statLine: Column<StatsPlayerRow> = {
   },
 }
 
+/** Filters out the null `games` column, which the season scope no longer has. */
 export function playerColumns(position: string, careerScope: boolean): Column<StatsPlayerRow>[] {
+  return _playerColumns(position, careerScope).filter(Boolean) as Column<StatsPlayerRow>[]
+}
+
+function _playerColumns(position: string, careerScope: boolean): (Column<StatsPlayerRow> | null)[] {
   const gp = games(careerScope)
 
   if (['S', 'LB', 'CB', 'DE'].includes(position)) {
@@ -180,7 +189,6 @@ export const DEFAULT_SORT: Record<string, string> = {
 export function teamColumns(side: 'offense' | 'defense', perGame: boolean): Column<StatsTeamRow>[] {
   if (side === 'defense') {
     return [
-      { key: 'gp', label: 'GP', width: W.count, cell: r => n(r.gamesPlayed), sort: r => r.gamesPlayed },
       { key: 'pa', label: 'PA', width: 48, cell: r => n(r.defense.pointsAgainst), sort: r => r.defense.pointsAgainst, lowerIsBetter: true },
       { key: 'pag', label: perGame ? 'PA/G' : 'PA', width: W.rate, cell: r => n(r.defense.pointsAllowed, 1), sort: r => r.defense.pointsAllowed, lowerIsBetter: true },
       { key: 'ydsg', label: perGame ? 'YDS/G' : 'YDS', width: W.volume, cell: r => n(r.defense.yardsAllowed, 1), sort: r => r.defense.yardsAllowed, lowerIsBetter: true },
@@ -198,7 +206,6 @@ export function teamColumns(side: 'offense' | 'defense', perGame: boolean): Colu
     ]
   }
   return [
-    { key: 'gp', label: 'GP', width: W.count, cell: r => n(r.gamesPlayed), sort: r => r.gamesPlayed },
     { key: 'pf', label: 'PF', width: 48, cell: r => n(r.offense.pointsFor), sort: r => r.offense.pointsFor },
     { key: 'ppg', label: perGame ? 'PPG' : 'PTS', width: W.rate, cell: r => n(r.offense.points, 1), sort: r => r.offense.points },
     { key: 'ydsg', label: perGame ? 'YDS/G' : 'YDS', width: W.volume, cell: r => n(r.offense.totalYards, 1), sort: r => r.offense.totalYards },
