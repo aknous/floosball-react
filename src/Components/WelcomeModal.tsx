@@ -179,16 +179,14 @@ const WelcomeModal: React.FC = () => {
                   Cards from the previous season have expired. Visit the <strong style={{ color: '#e2e8f0' }}>Shop</strong> to open packs and build a new collection.
                 </span>
               </div>
+              {/* ⚠️ These were TWO items — draft a fantasy roster, then equip cards for
+                  bonus points — and the fantasy/cards fusion made them one act. There is
+                  no separate roster to draft: the six cards you equip ARE the lineup, and
+                  they are not a bonus on top of it, they are what scores. */}
               <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                 <span style={{ color: '#f59e0b', fontSize: '13px', flexShrink: 0, marginTop: '1px' }}>!</span>
                 <span style={{ color: '#cbd5e1', fontSize: '13px', lineHeight: '1.5' }}>
-                  Your fantasy roster is empty. Head to <strong style={{ color: '#e2e8f0' }}>Fantasy</strong> to draft new players.
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                <span style={{ color: '#f59e0b', fontSize: '13px', flexShrink: 0, marginTop: '1px' }}>!</span>
-                <span style={{ color: '#cbd5e1', fontSize: '13px', lineHeight: '1.5' }}>
-                  Equip cards to your roster slots in <strong style={{ color: '#e2e8f0' }}>Cards</strong> to earn bonus Fantasy Points during games.
+                  Your lineup is empty. Head to <strong style={{ color: '#e2e8f0' }}>Fantasy</strong> and equip a card in each slot — those cards are your lineup, and they score for you every week.
                 </span>
               </div>
             </div>

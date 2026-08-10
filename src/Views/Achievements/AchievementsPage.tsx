@@ -18,48 +18,52 @@ interface OnboardingHint {
   actionLabel: string
 }
 
+/**
+ * ⚠️ THESE GO STALE SILENTLY. They name pages, panels, prices and slot counts, and
+ * nothing fails when one moves — a reader just follows an instruction to somewhere that
+ * no longer exists. Checked against the app 2026-08-10, when every one of them was
+ * wrong in some way: pick-em had moved off the dashboard to its own page, the Front
+ * Office had been merged into the team page, the Humble Pack had been 40F for a while,
+ * the lineup had grown from five slots to six plus FLEX, and swapping clubs was no
+ * longer once a season. Two of the actions fired events with no listener left
+ * (`show-pickem`, `show-markets`) and one scrolled to an anchor that had been deleted
+ * (`team-funding-contribute`), so the buttons did nothing at all.
+ *
+ * If you move a page or rename a panel, this map is part of the change.
+ */
 const ONBOARDING_HINTS: Record<string, OnboardingHint | ((user: any) => OnboardingHint | null)> = {
   rookie: {
     steps: [
-      'Click the button below, or click your user icon in the top-right and choose "Pick a Team".',
-      'Browse the 32 franchises and select the one you want to root for.',
-      'Confirm your pick. You can swap teams later, but only once per season.',
+      'Click the button below, or use the search icon in the header and go to Teams.',
+      'Browse the 32 clubs and pick the one you want to follow.',
+      'Confirm. You can switch freely until week 1 kicks off; after that a switch takes effect next season.',
     ],
     action: { kind: 'event', name: 'floosball:show-favorite-team-picker' },
     actionLabel: 'Pick a Team',
   },
   prognosticator: {
     steps: [
-      'Head to the Dashboard and find the Prognosticate panel.',
-      'Pick a winner for any one of this week\'s scheduled games.',
-      'Correct picks earn you Floobits when the game ends.',
+      'Open the Prognostications page.',
+      "Pick a winner for any of this week's games.",
+      'Correct picks earn Floobits when the game goes final, and more for backing an underdog.',
     ],
-    action: { kind: 'route', path: '/dashboard', afterEvent: 'floosball:show-pickem' },
-    actionLabel: 'Open Dashboard',
+    action: { kind: 'route', path: '/prognostications' },
+    actionLabel: 'Open Prognostications',
   },
   pack_popper: {
     steps: [
-      'Click your Floobits balance in the top-right to open the Shop.',
-      'Pick a pack tier you can afford. The Humble Pack costs 50F.',
-      'Click Open to draw random cards into your collection.',
+      'Click your Floobits balance in the header to open the Shop.',
+      'Pick a pack you can afford. The Humble Pack is the cheapest at 40F.',
+      'Open it, then keep the cards you want from the ones it reveals.',
     ],
     action: { kind: 'event', name: 'floosball:show-shop' },
     actionLabel: 'Open the Shop',
   },
-  field_general: {
-    steps: [
-      'Go to the Fantasy page.',
-      'Choose a player for each of the five roster slots (QB, RB, WR, TE, K).',
-      'Save the roster to lock in your selections for the season.',
-    ],
-    action: { kind: 'route', path: '/fantasy', afterScrollTo: '[data-tour="fantasy-roster"]' },
-    actionLabel: 'Go to Fantasy',
-  },
   deck_builder: {
     steps: [
-      'Open the Fantasy page and find the Card Equipment section at the top.',
-      'Click one of the five equipment slots to open the card picker.',
-      'Pick any card from your collection to equip it for the week.',
+      'Open the Fantasy page and find your lineup at the top.',
+      'Click an empty slot to pick a card from your collection.',
+      'Your equipped cards ARE your fantasy lineup: six slots (QB, RB, WR, WR, TE, K), and they score for you every week.',
     ],
     action: { kind: 'route', path: '/fantasy', afterScrollTo: '[data-tour="fantasy-cards"]' },
     actionLabel: 'Go to Fantasy',
@@ -67,33 +71,36 @@ const ONBOARDING_HINTS: Record<string, OnboardingHint | ((user: any) => Onboardi
   patron: (user: any) => ({
     steps: user?.favoriteTeamId
       ? [
-          'Visit Team Management.',
-          'Open the Markets tab.',
-          'Choose an amount of Floobits to donate. Contributions fund team development and recovery.',
+          "Open your club's page.",
+          'Find the Front Office band and its Facilities.',
+          'Put any amount of Floobits in. Funding raises your club\'s market tier, which feeds player development, morale and fatigue.',
         ]
       : [
-          'You need a favorite team first. Pick one before you can contribute.',
-          'Once picked, open the Markets tab on Team Management.',
-          'Donate any amount of Floobits to complete this goal.',
+          'You need a club first. Pick one, then come back.',
+          "Open your club's page and find the Front Office band.",
+          'Contribute any amount of Floobits to finish this goal.',
         ],
     action: user?.favoriteTeamId
-      ? {
-          kind: 'route',
-          path: '/front-office',
-          afterEvent: 'floosball:show-markets',
-          afterScrollTo: '[data-tour="team-funding-contribute"]',
-        }
+      ? { kind: 'route', path: `/team/${user.favoriteTeamId}` }
       : { kind: 'event', name: 'floosball:show-favorite-team-picker' },
-    actionLabel: user?.favoriteTeamId ? 'Visit My Team' : 'Pick a Team First',
+    actionLabel: user?.favoriteTeamId ? 'Go to My Club' : 'Pick a Team First',
   }),
 }
 
+/**
+ * Reward pack slugs to their shop names.
+ *
+ * ⚠️ There is NO "proper" pack and there has not been for some time; the map carried
+ * one anyway. It never showed, because nothing grants that slug — which is exactly why
+ * it survived. Unknown slugs fall through to the raw slug, so a pack added later
+ * renders readably rather than blank, and looks obviously unlabelled to whoever adds it.
+ */
 const packLabel = (slug: string) => {
   const map: Record<string, string> = {
     humble: 'Humble Pack',
-    proper: 'Proper Pack',
     grand: 'Grand Pack',
     exquisite: 'Exquisite Pack',
+    starter: 'Starter Pack',
   }
   return map[slug] ?? slug
 }
