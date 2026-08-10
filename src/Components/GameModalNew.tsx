@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useGames } from '@/contexts/GamesContext'
+import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { XIcon } from '@heroicons/react/solid'
 import PlayerHoverCard from './PlayerHoverCard'
@@ -34,6 +35,16 @@ export const PAGE_THREE_COLUMN_MIN = 1500
 interface GameModalNewProps {
   onClose: () => void
   gameId: number
+  /**
+   * A game the live context does NOT hold — one from a past week, rebuilt from the
+   * database by the route above.
+   *
+   * ⚠️ Passed in rather than fetched here. `GamesContext` only carries the current
+   * round, so this component resolved nothing for an archived game and rendered
+   * "Game not found" inside a page that had already found it. A second fetch in
+   * here would race the route's own and could disagree with it.
+   */
+  fallbackGame?: CurrentGame
   /**
    * `modal` (default) is the overlay opened from the board, the team page and
    * the front page. `page` is the same game rendered inline as the left column
@@ -250,7 +261,7 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
 }
 
 
-export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, layout = 'modal', railContent, scoreboard }) => {
+export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, layout = 'modal', railContent, scoreboard, fallbackGame }) => {
   const asPage = layout === 'page'
   const [activeTab, setActiveTab] = useState<'box' | 'plays' | 'stats'>('plays')
   const [showHighlightsOnly, setShowHighlightsOnly] = useState(false)
@@ -301,7 +312,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
 
   // Get game from central state and fetch plays
   const { games, fetchGamePlays } = useGames()
-  const liveGameData = useMemo(() => games.get(gameId), [games, gameId])
+  // The live row wins whenever there is one — those are websocket-updated, and a
+  // rebuilt snapshot would go stale mid-drive.
+  const liveGameData = useMemo(() => games.get(gameId) ?? fallbackGame, [games, gameId, fallbackGame])
   // Freeze last known data so the modal stays populated after week rollover clears the game
   const frozenRef = useRef(liveGameData)
   if (liveGameData) frozenRef.current = liveGameData

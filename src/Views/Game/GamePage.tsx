@@ -14,6 +14,8 @@ import { rankGames } from '@/Views/GameBoard/ranking'
 import { ordinal } from '@/utils/ordinal'
 import GameBleachers, { useRailEntries } from './gameBleachers'
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+
 /**
  * The live game, on its own route.
  *
@@ -102,7 +104,41 @@ const GamePage: React.FC = () => {
   const { seasonState } = useFloosball()
 
   const id = Number(gameId)
-  const gameData: any = games.get(id)
+  const liveGame: any = games.get(id)
+
+  /**
+   * A game from a PAST week, fetched on demand.
+   *
+   * ⚠️ `GamesContext` only ever holds the CURRENT round, so opening a game from an
+   * earlier week found nothing and the page said "This game is not in the current
+   * round" — which is true of the context and useless to a reader who has just
+   * clicked a result. The backend serves it perfectly well: `/api/games/{id}` falls
+   * back to rebuilding a finished game from the database, box score and all.
+   *
+   * The context stays the preferred source when it HAS the game — those rows are
+   * websocket-updated, and a fetched snapshot would go stale mid-drive.
+   */
+  const [fetched, setFetched] = useState<any>(null)
+  const [fetchState, setFetchState] = useState<'idle' | 'loading' | 'missing'>('idle')
+  useEffect(() => {
+    if (liveGame || !Number.isFinite(id)) { setFetched(null); setFetchState('idle'); return }
+    let cancelled = false
+    setFetched(null)
+    setFetchState('loading')
+    fetch(`${API_BASE}/games/${id}`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(json => {
+        if (cancelled) return
+        const data = json?.data ?? json
+        if (data && data.homeTeam && data.awayTeam) { setFetched(data); setFetchState('idle') }
+        else setFetchState('missing')
+      })
+      .catch(() => { if (!cancelled) setFetchState('missing') })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, !!liveGame])
+
+  const gameData: any = liveGame ?? fetched
 
   /**
    * Prev / next walk the GAME BOARD'S OWN interest order, not the schedule.
@@ -172,7 +208,7 @@ const GamePage: React.FC = () => {
   if (!gameData) {
     return (
       <div style={{ padding: '48px', textAlign: 'center', ...font(400, 13), color: TEXT.muted, fontFamily: FONT }}>
-        This game is not in the current round.
+        {fetchState === 'loading' ? 'Loading the game.' : 'That game could not be found.'}
       </div>
     )
   }
@@ -336,6 +372,7 @@ const GamePage: React.FC = () => {
         flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column',
       }}>
         <GameModalNew
+            fallbackGame={fetched as any}
           gameId={id}
           layout="page"
           onClose={() => navigate('/games')}
