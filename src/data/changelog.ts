@@ -68,18 +68,9 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         label: 'Cards and Fantasy',
         items: [
-          '[Cards] Glitch cards. During an instability a card can be marked and pays an extra bonus on top of its effect.',
           '[Cards] Every effect with an eligible player is minted each season.',
           '[Cards] Packs and the daily shop no longer repeat an effect in one draw.',
           '[Fantasy] Live fantasy points in the header, beside your Floobits.',
-        ],
-      },
-      {
-        label: 'Simulation',
-        items: [
-          '[Simulation] A leading defense stops the clock when its lead is about to evaporate.',
-          '[Simulation] An offense one score from the lead holds the ball and scores late.',
-          '[Simulation] Upsets are only called once ratings have settled, a quarter into the season.',
         ],
       },
       {
