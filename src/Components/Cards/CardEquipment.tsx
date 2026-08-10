@@ -136,7 +136,7 @@ const EquippedCardSlot: React.FC<{
           position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
           fontSize: '8px', color: '#60a5fa', fontWeight: '700',
           backgroundColor: 'rgba(96,165,250,0.20)',
-          padding: '2px 5px', borderRadius: '4px',
+          padding: '2px 5px',
           pointerEvents: 'none',
         }}>
           MATCH
@@ -182,7 +182,7 @@ const ProjectionPill: React.FC<{ proj: CardProjection }> = ({ proj }) => {
           display: 'inline-flex', alignItems: 'center',
           fontSize: '12px', fontWeight: 700,
           color: style.color, backgroundColor: style.bg,
-          padding: '4px 10px', borderRadius: '5px',
+          padding: '4px 10px',
           border: `1px solid ${style.color}55`,
           fontVariantNumeric: 'tabular-nums' as const,
           whiteSpace: 'nowrap' as const,
@@ -495,7 +495,6 @@ const CardEquipment: React.FC = () => {
   return (
     <div style={{
       backgroundColor: '#1e293b',
-      borderRadius: '14px',
       border: '1px solid #334155',
       padding: isMobile ? '12px' : '14px 16px',
     }}>
@@ -516,7 +515,7 @@ const CardEquipment: React.FC = () => {
           <span style={{
             fontSize: '10px', fontWeight: '700', color: '#f59e0b',
             backgroundColor: 'rgba(245,158,11,0.30)',
-            padding: '3px 8px', borderRadius: '6px',
+            padding: '3px 8px',
             display: 'inline-flex', alignItems: 'center', gap: '4px',
           }}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -533,7 +532,7 @@ const CardEquipment: React.FC = () => {
         <div style={{
           fontSize: isMobile ? '12px' : '13px', color: '#22d3ee', lineHeight: '1.5',
           marginTop: '6px', marginBottom: '6px', padding: isMobile ? '6px 10px' : '6px 14px',
-          backgroundColor: 'rgba(34,211,238,0.08)', borderRadius: '8px',
+          backgroundColor: 'rgba(34,211,238,0.08)',
           border: '1px solid rgba(34,211,238,0.3)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
@@ -570,7 +569,6 @@ const CardEquipment: React.FC = () => {
                   disabled={!canEdit}
                   style={{
                     width: isMobile ? '100%' : 160, height: 50,
-                    borderRadius: '8px',
                     border: `2px dashed ${destinationSlot === slotNum ? '#3b82f6' : '#334155'}`,
                     backgroundColor: destinationSlot === slotNum ? 'rgba(59,130,246,0.10)' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -599,7 +597,6 @@ const CardEquipment: React.FC = () => {
                   flex: isMobile ? '1 1 100%' : '1 1 0',
                   minWidth: isMobile ? undefined : 150,
                   padding: '8px 10px',
-                  borderRadius: '8px',
                   background: ed.bg,
                   border: `1.5px solid ${ed.border}`,
                   boxShadow: ed.glow ? `0 0 8px ${ed.glow}` : 'none',
@@ -641,7 +638,7 @@ const CardEquipment: React.FC = () => {
                       <span style={{
                         fontSize: '9px', color: '#60a5fa', fontWeight: '700',
                         backgroundColor: 'rgba(96,165,250,0.15)',
-                        padding: '1px 5px', borderRadius: '3px',
+                        padding: '1px 5px',
                       }}>MATCH</span>
                     )}
                     {canEdit && (
@@ -681,7 +678,7 @@ const CardEquipment: React.FC = () => {
                           marginTop: '3px',
                           fontSize: '11px', fontWeight: 700,
                           color: style.color, backgroundColor: style.bg,
-                          padding: '2px 7px', borderRadius: '4px',
+                          padding: '2px 7px',
                           fontVariantNumeric: 'tabular-nums' as const,
                           whiteSpace: 'nowrap' as const,
                         }}
@@ -738,7 +735,7 @@ const CardEquipment: React.FC = () => {
                     onClick={() => handleSlotClick(slotNum)}
                     style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px',
-                      padding: '6px', borderRadius: '12px',
+                      padding: '6px',
                       cursor: isMobile && canEdit ? 'pointer' : 'default',
                     }}
                   >
@@ -787,7 +784,6 @@ const CardEquipment: React.FC = () => {
                   style={{
                     width: isMobile ? '100%' : 160,
                     height: 80,
-                    borderRadius: '10px',
                     border: `2px dashed ${isDest ? '#3b82f6' : '#334155'}`,
                     backgroundColor: isDest ? 'rgba(59,130,246,0.12)' : 'rgba(30,41,59,0.5)',
                     display: 'flex', flexDirection: 'column',
@@ -815,7 +811,6 @@ const CardEquipment: React.FC = () => {
         <div style={{
           marginTop: '10px',
           padding: '8px 14px',
-          borderRadius: '10px',
           backgroundColor: 'rgba(99,102,241,0.10)',
           borderBottom: '2px solid rgba(99,102,241,0.5)',
         }}>
@@ -901,7 +896,7 @@ const CardEquipment: React.FC = () => {
                           position: 'absolute', top: 4, left: '50%', transform: 'translateX(-50%)',
                           fontSize: '8px', color: '#60a5fa', fontWeight: '700',
                           backgroundColor: 'rgba(96,165,250,0.20)',
-                          padding: '2px 5px', borderRadius: '4px',
+                          padding: '2px 5px',
                           pointerEvents: 'none',
                         }}>
                           MATCH
@@ -911,7 +906,7 @@ const CardEquipment: React.FC = () => {
                         <div style={{
                           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
                           fontSize: '10px', color: '#0f172a', fontWeight: '800',
-                          backgroundColor: '#fbbf24', padding: '5px 10px', borderRadius: '6px',
+                          backgroundColor: '#fbbf24', padding: '5px 10px',
                           border: '2px solid #f59e0b', whiteSpace: 'nowrap',
                           textTransform: 'uppercase', letterSpacing: '0.5px', pointerEvents: 'none',
                         }}>
@@ -930,8 +925,7 @@ const CardEquipment: React.FC = () => {
                         : destinationSlot == null ? 'Unequip a card to make room' : undefined}
                       style={{
                         backgroundColor: canEquip ? 'rgba(59,130,246,0.85)' : '#1e293b',
-                        border: `1px solid ${canEquip ? 'rgba(96,165,250,0.5)' : '#334155'}`,
-                        borderRadius: '6px', color: canEquip ? '#fff' : '#64748b',
+                        border: `1px solid ${canEquip ? 'rgba(96,165,250,0.5)' : '#334155'}`, color: canEquip ? '#fff' : '#64748b',
                         fontSize: '10px', fontWeight: '700', fontFamily: 'pressStart',
                         padding: '5px 16px', cursor: canEquip ? 'pointer' : 'not-allowed',
                         transition: 'background-color 0.15s',

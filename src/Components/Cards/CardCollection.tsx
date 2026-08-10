@@ -69,7 +69,6 @@ type ViewMode = 'collection' | 'vault' | 'showcase'
 
 const pillStyle = (active: boolean): React.CSSProperties => ({
   padding: '4px 10px',
-  borderRadius: '6px',
   border: `1px solid ${active ? '#3b82f6' : '#334155'}`,
   backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'transparent',
   color: active ? '#60a5fa' : '#94a3b8',
@@ -399,7 +398,7 @@ const CardCollection: React.FC = () => {
             <button
               onClick={() => setShowCombine(true)}
               style={{
-                padding: '8px 16px', borderRadius: '8px',
+                padding: '8px 16px',
                 background: 'rgba(96,165,250,0.15)',
                 border: 'none',
                 color: '#93bbfc', fontSize: '12px', fontWeight: '700',
@@ -428,7 +427,7 @@ const CardCollection: React.FC = () => {
             <button
               onClick={() => setShowTransplant(true)}
               style={{
-                padding: '8px 16px', borderRadius: '8px',
+                padding: '8px 16px',
                 background: 'rgba(167,139,250,0.15)',
                 border: 'none',
                 color: '#c4b5fd', fontSize: '12px', fontWeight: '700',
@@ -451,7 +450,7 @@ const CardCollection: React.FC = () => {
               <button
                 onClick={() => setVaultCards(selectedCards)}
                 style={{
-                  padding: '6px 14px', borderRadius: '6px',
+                  padding: '6px 14px',
                   backgroundColor: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)',
                   color: '#fbbf24', fontSize: '12px', fontWeight: '600',
                   cursor: 'pointer', fontFamily: 'pressStart',
@@ -468,7 +467,7 @@ const CardCollection: React.FC = () => {
                 onClick={handleSell}
                 disabled={selling}
                 style={{
-                  padding: '6px 14px', borderRadius: '6px',
+                  padding: '6px 14px',
                   backgroundColor: 'rgba(234,179,8,0.15)', border: 'none',
                   color: '#eab308', fontSize: '12px', fontWeight: '600',
                   cursor: selling ? 'not-allowed' : 'pointer', fontFamily: 'pressStart',
@@ -499,7 +498,7 @@ const CardCollection: React.FC = () => {
             style={{
               width: '100%', padding: '7px 28px 7px 10px', fontSize: '12px',
               fontFamily: 'inherit', backgroundColor: '#0f172a', color: '#e2e8f0',
-              border: '1px solid #334155', borderRadius: '6px', outline: 'none',
+              border: '1px solid #334155', outline: 'none',
               boxSizing: 'border-box',
             }}
           />
@@ -565,7 +564,7 @@ const CardCollection: React.FC = () => {
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
           style={{
-            padding: '4px 8px', borderRadius: '6px',
+            padding: '4px 8px',
             border: '1px solid #334155', backgroundColor: '#1e293b',
             color: '#cbd5e1', fontSize: '11px', fontFamily: 'pressStart',
             cursor: 'pointer',
@@ -631,7 +630,7 @@ const CardCollection: React.FC = () => {
                 <span style={{
                   fontSize: '11px', fontWeight: 700, color: '#fbbf24',
                   backgroundColor: 'rgba(251,191,36,0.12)',
-                  padding: '2px 7px', borderRadius: '5px',
+                  padding: '2px 7px',
                   fontVariantNumeric: 'tabular-nums',
                 }}>{Math.round((card as any).showcase.points)} pts</span>
               )}

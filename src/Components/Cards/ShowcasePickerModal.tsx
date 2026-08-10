@@ -34,7 +34,7 @@ const SORTS = [
 ] as const
 
 const pillStyle = (active: boolean): React.CSSProperties => ({
-  padding: '4px 10px', borderRadius: '6px',
+  padding: '4px 10px',
   border: `1px solid ${active ? '#3b82f6' : '#334155'}`,
   backgroundColor: active ? 'rgba(59,130,246,0.15)' : 'transparent',
   color: active ? '#60a5fa' : '#94a3b8',
@@ -122,7 +122,7 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: '860px', maxHeight: '90vh',
-          backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px',
+          backgroundColor: '#0f172a', border: '1px solid #334155',
           display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'pressStart',
         }}
       >
@@ -163,7 +163,7 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
               value={String(seasonFilter)}
               onChange={(e) => setSeasonFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
               style={{
-                padding: '4px 8px', borderRadius: '6px', border: '1px solid #334155',
+                padding: '4px 8px', border: '1px solid #334155',
                 backgroundColor: '#1e293b', color: '#cbd5e1', fontSize: '11px',
                 fontFamily: 'pressStart', cursor: 'pointer',
               }}
@@ -176,7 +176,7 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               style={{
-                padding: '4px 8px', borderRadius: '6px', border: '1px solid #334155',
+                padding: '4px 8px', border: '1px solid #334155',
                 backgroundColor: '#1e293b', color: '#cbd5e1', fontSize: '11px',
                 fontFamily: 'pressStart', cursor: 'pointer',
               }}
@@ -200,7 +200,7 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
               {available.map(card => (
                 <div
                   key={card.id}
-                  style={{ cursor: 'pointer', borderRadius: '12px', transition: 'transform 0.12s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
+                  style={{ cursor: 'pointer', transition: 'transform 0.12s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)' }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'none' }}
                 >
@@ -215,7 +215,7 @@ export default function ShowcasePickerModal({ open, excludeIds, onClose, onPick 
                     <span style={{
                       fontSize: '11px', fontFamily: 'pressStart', fontWeight: 700,
                       color: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.12)',
-                      border: '1px solid rgba(251,191,36,0.35)', borderRadius: '6px',
+                      border: '1px solid rgba(251,191,36,0.35)',
                       padding: '2px 8px', whiteSpace: 'nowrap',
                     }}>
                       {Math.round(card.showcase.points)} pts

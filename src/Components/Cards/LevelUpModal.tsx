@@ -130,7 +130,7 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: '720px', maxHeight: '90vh',
-          backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px',
+          backgroundColor: '#0f172a', border: '1px solid #334155',
           display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'pressStart',
         }}
       >
@@ -177,7 +177,7 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
                     yet, so the player can decide before hunting for one. */}
                 {!atMax && info?.preview && (
                   <div style={{
-                    marginBottom: '14px', padding: '12px 14px', borderRadius: '8px',
+                    marginBottom: '14px', padding: '12px 14px',
                     border: `1px solid ${GOLD}33`, background: 'rgba(251,191,36,0.06)',
                   }}>
                     <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '3px' }}>Now (Tier {ROMAN[tier]})</div>
@@ -195,7 +195,7 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
                 )}
                 {atMax ? (
                   <div style={{
-                    padding: '20px', borderRadius: '10px', textAlign: 'center',
+                    padding: '20px', textAlign: 'center',
                     border: `1px solid ${GOLD}55`, background: 'rgba(251,191,36,0.08)',
                   }}>
                     <div style={{ fontSize: '14px', fontWeight: 800, color: GOLD, marginBottom: '6px' }}>
@@ -207,7 +207,7 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
                   </div>
                 ) : offerings.length === 0 ? (
                   <div style={{
-                    padding: '20px', borderRadius: '10px', textAlign: 'center',
+                    padding: '20px', textAlign: 'center',
                     border: '1px solid #334155', background: 'rgba(30,41,59,0.4)',
                   }}>
                     <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0', marginBottom: '6px' }}>
@@ -223,7 +223,7 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
                     {/* Cost row */}
                     <div style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '10px 14px', borderRadius: '8px', marginBottom: '14px',
+                      padding: '10px 14px', marginBottom: '14px',
                       border: `1px solid ${canAfford ? '#334155' : 'rgba(239,68,68,0.4)'}`,
                       background: 'rgba(30,41,59,0.5)',
                     }}>
@@ -251,7 +251,7 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
                             key={off.id}
                             onClick={() => setChosen(isSel ? null : off)}
                             style={{
-                              cursor: 'pointer', borderRadius: '12px',
+                              cursor: 'pointer',
                               outline: isSel ? `3px solid ${GOLD}` : 'none', outlineOffset: '2px',
                               transform: isSel ? 'scale(0.96)' : 'none', transition: 'transform 0.12s',
                             }}
@@ -270,7 +270,7 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
                       onClick={handleConfirm}
                       disabled={!canConfirm}
                       style={{
-                        width: '100%', marginTop: '16px', padding: '11px', borderRadius: '8px',
+                        width: '100%', marginTop: '16px', padding: '11px',
                         border: 'none', fontFamily: 'pressStart', fontWeight: 700, fontSize: '13px',
                         background: canConfirm ? `linear-gradient(135deg, ${GOLD}, #d97706)` : '#334155',
                         color: canConfirm ? '#1a1206' : '#64748b',

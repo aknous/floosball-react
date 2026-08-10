@@ -51,7 +51,7 @@ const FantasyFusionIntroModal: React.FC<{ isOpen: boolean; onClose: () => void }
         onClick={e => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: '540px', maxHeight: '85vh',
-          backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px',
+          backgroundColor: '#0f172a', border: '1px solid #334155',
           display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'pressStart',
         }}
       >
@@ -73,7 +73,7 @@ const FantasyFusionIntroModal: React.FC<{ isOpen: boolean; onClose: () => void }
         }}>
           {POINTS.map(p => (
             <div key={p.title} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-              <div style={{ width: '4px', alignSelf: 'stretch', borderRadius: '2px', backgroundColor: p.color, flexShrink: 0 }} />
+              <div style={{ width: '4px', alignSelf: 'stretch', backgroundColor: p.color, flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: '12px', fontWeight: '700', color: '#e2e8f0', marginBottom: '3px' }}>{p.title}</div>
                 <div style={{ fontSize: '11.5px', color: '#cbd5e1', lineHeight: '1.6' }}>{p.body}</div>
@@ -86,7 +86,7 @@ const FantasyFusionIntroModal: React.FC<{ isOpen: boolean; onClose: () => void }
           <button
             onClick={onClose}
             style={{
-              background: '#38bdf8', border: 'none', borderRadius: '6px', color: '#0f172a',
+              background: '#38bdf8', border: 'none', color: '#0f172a',
               fontSize: '11px', fontWeight: '700', padding: '8px 20px', cursor: 'pointer', fontFamily: 'pressStart',
             }}
           >

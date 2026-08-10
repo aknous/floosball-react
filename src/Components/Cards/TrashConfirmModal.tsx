@@ -67,7 +67,7 @@ export default function TrashConfirmModal({ card, onClose, onComplete }: TrashCo
         onClick={(e) => e.stopPropagation()}
         style={{
           width: '100%', maxWidth: '460px',
-          backgroundColor: '#0f172a', border: `1px solid ${RED}44`, borderRadius: '12px',
+          backgroundColor: '#0f172a', border: `1px solid ${RED}44`,
           display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'pressStart',
         }}
       >
@@ -112,7 +112,7 @@ export default function TrashConfirmModal({ card, onClose, onComplete }: TrashCo
             onClick={() => { if (!busy) onClose() }}
             disabled={busy}
             style={{
-              padding: '10px 18px', borderRadius: '8px', border: '1px solid #334155',
+              padding: '10px 18px', border: '1px solid #334155',
               background: 'transparent', color: '#94a3b8', fontFamily: 'pressStart',
               fontSize: '12px', fontWeight: 700, cursor: busy ? 'not-allowed' : 'pointer',
             }}
@@ -123,7 +123,7 @@ export default function TrashConfirmModal({ card, onClose, onComplete }: TrashCo
             onClick={handleConfirm}
             disabled={busy}
             style={{
-              padding: '10px 18px', borderRadius: '8px', border: 'none',
+              padding: '10px 18px', border: 'none',
               background: RED, color: '#fff', fontFamily: 'pressStart',
               fontSize: '12px', fontWeight: 800, cursor: busy ? 'not-allowed' : 'pointer',
               opacity: busy ? 0.7 : 1,

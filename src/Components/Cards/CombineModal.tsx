@@ -126,7 +126,7 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
   return (
     <div style={{
       position: 'absolute', inset: 0, zIndex: 2,
-      backgroundColor: '#0f172a', borderRadius: '12px',
+      backgroundColor: '#0f172a',
       display: 'flex', flexDirection: 'column',
     }}>
       <div style={{
@@ -161,7 +161,6 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
             backgroundColor: '#1e293b',
             color: '#e2e8f0',
             border: '1px solid #334155',
-            borderRadius: '6px',
             outline: 'none',
             marginBottom: '8px',
           }}
@@ -217,7 +216,6 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
               backgroundColor: '#1e293b',
               color: '#e2e8f0',
               border: '1px solid #334155',
-              borderRadius: '4px',
               cursor: 'pointer',
               outline: 'none',
             }}
@@ -249,7 +247,6 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
                 position: 'relative',
                 outline: isSelected ? '3px solid #f59e0b' : 'none',
                 outlineOffset: '2px',
-                borderRadius: '12px',
                 transform: isSelected ? 'scale(0.96)' : 'none',
                 transition: 'transform 0.12s, outline-color 0.12s',
               }}
@@ -291,7 +288,7 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
           <button
             onClick={onCancel}
             style={{
-              padding: '8px 16px', borderRadius: '6px',
+              padding: '8px 16px',
               backgroundColor: 'transparent', border: '1px solid #334155',
               color: '#94a3b8', fontSize: '11px', fontWeight: 700,
               fontFamily: 'pressStart', cursor: 'pointer',
@@ -303,7 +300,7 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
             onClick={() => onConfirm(selectedCards)}
             disabled={selectedCount === 0}
             style={{
-              padding: '8px 18px', borderRadius: '6px',
+              padding: '8px 18px',
               backgroundColor: selectedCount === 0 ? '#334155' : '#f59e0b',
               border: 'none',
               color: selectedCount === 0 ? '#64748b' : '#0f172a',
@@ -350,7 +347,6 @@ function CombinePillRow<T extends string | number>({
                 border: `1px solid ${active ? '#f59e0b' : '#334155'}`,
                 backgroundColor: active ? 'rgba(245,158,11,0.15)' : 'transparent',
                 color: active ? '#f59e0b' : '#94a3b8',
-                borderRadius: '4px',
                 cursor: 'pointer',
                 transition: 'all 0.1s',
               }}
@@ -396,13 +392,12 @@ function BlenderBar({ totalValue }: { totalValue: number }) {
         </span>
       </div>
       <div style={{
-        height: '8px', backgroundColor: '#1e293b', borderRadius: '4px',
+        height: '8px', backgroundColor: '#1e293b',
         position: 'relative', overflow: 'hidden',
       }}>
         <div style={{
           height: '100%', width: `${pct}%`,
-          background: `linear-gradient(90deg, #475569, ${editionStyle?.borderColor || '#475569'})`,
-          borderRadius: '4px', transition: 'width 0.3s, background 0.3s',
+          background: `linear-gradient(90deg, #475569, ${editionStyle?.borderColor || '#475569'})`, transition: 'width 0.3s, background 0.3s',
         }} />
       </div>
       <div style={{ position: 'relative', height: '16px', marginTop: '2px' }}>
@@ -574,7 +569,6 @@ export default function CombineModal({ visible, onClose, onComplete }: CombineMo
           height: '90vh',
           backgroundColor: '#0f172a',
           border: `1px solid #334155`,
-          borderRadius: '12px',
           display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
           fontFamily: 'pressStart',
@@ -642,14 +636,13 @@ export default function CombineModal({ visible, onClose, onComplete }: CombineMo
                   <div style={{
                     display: 'flex', flexWrap: 'wrap', gap: '8px',
                     justifyContent: 'center', minHeight: '60px',
-                    padding: '12px', borderRadius: '8px',
+                    padding: '12px',
                     backgroundColor: 'rgba(30,41,59,0.3)',
                     border: '1px solid #1e293b',
                   }}>
                     {blendOfferings.map(card => (
                       <div key={card.id} style={{
-                        position: 'relative', padding: '6px 10px',
-                        borderRadius: '6px', backgroundColor: '#1e293b',
+                        position: 'relative', padding: '6px 10px', backgroundColor: '#1e293b',
                         border: `1px solid ${EDITION_STYLES[card.edition]?.borderColor || '#334155'}`,
                         display: 'flex', alignItems: 'center', gap: '6px',
                       }}>
@@ -677,7 +670,7 @@ export default function CombineModal({ visible, onClose, onComplete }: CombineMo
                     <button
                       onClick={() => setBlendPicking(true)}
                       style={{
-                        padding: '6px 16px', borderRadius: '6px',
+                        padding: '6px 16px',
                         backgroundColor: 'transparent',
                         border: `1px solid ${accentColor}60`,
                         color: accentColor, fontSize: '11px', fontWeight: '600',
@@ -690,7 +683,7 @@ export default function CombineModal({ visible, onClose, onComplete }: CombineMo
                       <button
                         onClick={() => { setBlendOfferings([]); setBlendPreview(null); setBlendError('') }}
                         style={{
-                          padding: '6px 16px', borderRadius: '6px',
+                          padding: '6px 16px',
                           backgroundColor: 'transparent',
                           border: '1px solid #ef444460',
                           color: '#ef4444', fontSize: '11px', fontWeight: '600',
@@ -712,7 +705,7 @@ export default function CombineModal({ visible, onClose, onComplete }: CombineMo
 
                   {blendPreview && (
                     <div style={{
-                      marginTop: '16px', padding: '14px', borderRadius: '8px',
+                      marginTop: '16px', padding: '14px',
                       backgroundColor: 'rgba(30,41,59,0.5)', border: '1px solid #334155',
                       textAlign: 'center',
                     }}>
@@ -738,7 +731,7 @@ export default function CombineModal({ visible, onClose, onComplete }: CombineMo
                         onClick={handleBlend}
                         disabled={actionLoading}
                         style={{
-                          padding: '10px 28px', borderRadius: '8px',
+                          padding: '10px 28px',
                           backgroundColor: accentColor, border: 'none',
                           color: '#0f172a', fontSize: '13px', fontWeight: '700',
                           cursor: actionLoading ? 'wait' : 'pointer',

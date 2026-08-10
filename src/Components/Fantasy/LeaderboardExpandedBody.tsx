@@ -73,8 +73,7 @@ const TierTag: React.FC<{ tier?: number }> = ({ tier }) => {
   return (
     <span style={{
       fontSize: '9px', fontWeight: 800, color: '#fbbf24',
-      background: 'rgba(251,191,36,0.14)', border: '1px solid rgba(251,191,36,0.35)',
-      borderRadius: '3px', padding: '0 4px', flexShrink: 0, lineHeight: '14px',
+      background: 'rgba(251,191,36,0.14)', border: '1px solid rgba(251,191,36,0.35)', padding: '0 4px', flexShrink: 0, lineHeight: '14px',
     }}>{TIER_ROMAN[tier] ?? tier}</span>
   )
 }
@@ -95,7 +94,6 @@ const TYPE_COLORS: Record<string, string> = {
 const teamAvatarSize = 16
 const teamAvatarStyle: React.CSSProperties = {
   width: teamAvatarSize, height: teamAvatarSize, flexShrink: 0,
-  borderRadius: '3px',
 }
 const teamAvatarPlaceholderStyle: React.CSSProperties = {
   width: teamAvatarSize, height: teamAvatarSize, flexShrink: 0,

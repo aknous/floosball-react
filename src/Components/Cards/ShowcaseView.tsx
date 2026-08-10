@@ -239,7 +239,7 @@ const ShowcaseView: React.FC = () => {
       }}>
       {/* Display case: framed, lit, distinct from the plain collection grid */}
       <div style={{
-        position: 'relative', borderRadius: '16px', overflow: 'hidden',
+        position: 'relative', overflow: 'hidden',
         flex: 1, minWidth: 0,
         padding: isMobile ? '14px 12px 22px' : '18px 26px 32px',
         background: 'radial-gradient(ellipse 80% 55% at 50% 0%, rgba(251,191,36,0.08), transparent 70%), linear-gradient(180deg, #141b30 0%, #0a0e1a 100%)',
@@ -352,7 +352,7 @@ const ShowcaseView: React.FC = () => {
               >
                 {/* Spotlight halo (edition-tinted) */}
                 <div style={{
-                  position: 'absolute', inset: '-14px', borderRadius: '24px', zIndex: 0,
+                  position: 'absolute', inset: '-14px', zIndex: 0,
                   background: `radial-gradient(ellipse at 50% 40%, ${EDITION_HALO[slot.card.edition] || EDITION_HALO.metallic}, transparent 70%)`,
                   filter: 'blur(12px)', pointerEvents: 'none',
                 }} />
@@ -364,7 +364,7 @@ const ShowcaseView: React.FC = () => {
                       aria-label="Remove from showcase"
                       style={{
                         position: 'absolute', top: '6px', right: '6px', zIndex: 6,
-                        width: '22px', height: '22px', borderRadius: '5px',
+                        width: '22px', height: '22px',
                         border: '1px solid rgba(239,68,68,0.5)', background: 'rgba(15,23,42,0.85)',
                         color: '#ef4444', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
@@ -388,8 +388,7 @@ const ShowcaseView: React.FC = () => {
                 onClick={() => setPickerSlot(slot.slotNumber)}
                 style={{
                   position: 'relative',
-                  width: SLOT_DIMS[cardSize].w, height: SLOT_DIMS[cardSize].h,
-                  borderRadius: '12px', border: '1px solid rgba(251,191,36,0.18)',
+                  width: SLOT_DIMS[cardSize].w, height: SLOT_DIMS[cardSize].h, border: '1px solid rgba(251,191,36,0.18)',
                   background: 'linear-gradient(180deg, rgba(251,191,36,0.05), rgba(10,14,26,0.4))',
                   cursor: 'pointer', flexShrink: 0,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -485,8 +484,7 @@ const CardScore: React.FC<{ showcase: CardShowcaseBreakdown }> = ({ showcase }) 
     <HoverTooltip content={content} color="#fbbf24">
       <span style={{
         fontSize: '12px', fontWeight: 700, color: GOLD, fontFamily: 'pressStart',
-        background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)',
-        borderRadius: '5px', padding: '3px 9px', whiteSpace: 'nowrap',
+        background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.35)', padding: '3px 9px', whiteSpace: 'nowrap',
       }}>{Math.round(showcase.points)} pts</span>
     </HoverTooltip>
   )
@@ -503,13 +501,12 @@ const ShowcasePanel: React.FC<{
   isMobile: boolean
 }> = ({ tab, setTab, data, leaderboard, onViewUser, isMobile }) => (
   <aside style={{
-    width: isMobile ? '100%' : '280px', flexShrink: 0,
-    borderRadius: '12px', border: '1px solid #1e293b',
+    width: isMobile ? '100%' : '280px', flexShrink: 0, border: '1px solid #1e293b',
     background: 'rgba(15,23,42,0.5)', padding: '14px 16px',
   }}>
     <div style={{
       display: 'flex', gap: '3px', marginBottom: '14px',
-      background: 'rgba(15,23,42,0.6)', borderRadius: '8px', padding: '3px',
+      background: 'rgba(15,23,42,0.6)', padding: '3px',
     }}>
       <PanelTab label="Sets" active={tab === 'sets'} onClick={() => setTab('sets')} />
       <PanelTab label="Leaderboard" active={tab === 'standings'} onClick={() => setTab('standings')} />
@@ -523,7 +520,7 @@ const ShowcasePanel: React.FC<{
 const PanelTab: React.FC<{ label: string; active: boolean; onClick: () => void }> = ({ label, active, onClick }) => (
   <button onClick={onClick} style={{
     flex: 1, fontSize: '12px', fontWeight: 700, fontFamily: 'pressStart', cursor: 'pointer',
-    padding: '7px 0', borderRadius: '6px', border: 'none', transition: 'all 0.12s',
+    padding: '7px 0', border: 'none', transition: 'all 0.12s',
     color: active ? '#1a1205' : '#94a3b8',
     background: active ? GOLD : 'transparent',
   }}>{label}</button>
@@ -609,7 +606,7 @@ const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
           return (
             <div key={s.key} style={{
               display: 'flex', alignItems: 'flex-start', gap: '10px',
-              padding: '9px 11px', borderRadius: '8px',
+              padding: '9px 11px',
               background: active ? 'rgba(251,191,36,0.10)' : 'rgba(148,163,184,0.05)',
               border: `1px solid ${active ? 'rgba(251,191,36,0.35)' : '#23304a'}`,
               opacity: s.status === 'locked' ? 0.85 : 1,
@@ -649,7 +646,7 @@ const StandingsList: React.FC<{ leaderboard: LeaderEntry[]; onViewUser: (id: num
             onClick={() => onViewUser(entry.userId)}
             style={{
               display: 'flex', alignItems: 'center', gap: '8px',
-              padding: '6px 8px', borderRadius: '6px', cursor: 'pointer',
+              padding: '6px 8px', cursor: 'pointer',
               background: entry.isCurrentUser ? 'rgba(251,191,36,0.1)' : 'transparent',
               border: entry.isCurrentUser ? '1px solid rgba(251,191,36,0.3)' : '1px solid transparent',
             }}

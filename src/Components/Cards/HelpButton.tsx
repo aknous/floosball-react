@@ -44,7 +44,7 @@ export default function HelpButton({ title, accent = '#94a3b8', children }: Help
             onClick={(e) => e.stopPropagation()}
             style={{
               width: '100%', maxWidth: '520px', maxHeight: '85vh',
-              background: '#0f172a', border: `1px solid ${accent}44`, borderRadius: '12px',
+              background: '#0f172a', border: `1px solid ${accent}44`,
               display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'pressStart',
             }}
           >

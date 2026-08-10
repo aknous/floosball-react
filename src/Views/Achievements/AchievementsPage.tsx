@@ -440,7 +440,6 @@ const Section: React.FC<{
               backgroundColor: allDone ? 'rgba(245,158,11,0.12)' : 'rgba(148,163,184,0.12)',
               border: `1px solid ${allDone ? 'rgba(245,158,11,0.35)' : 'rgba(148,163,184,0.25)'}`,
               padding: '2px 10px',
-              borderRadius: '999px',
               lineHeight: 1.3,
             }}>
               {completed}/{total}
@@ -531,7 +530,6 @@ const TieredFamilySummary: React.FC<{ group: GuidanceGroup }> = ({ group }) => {
     <div style={{
       backgroundColor: '#1e2d3d',
       border: allDone ? '1px solid #f59e0b' : '1px solid #2a3a4e',
-      borderRadius: '8px',
       padding: '14px 16px',
       // Match AchievementRow's season-goals height so family summaries and
       // single cards sit at the same size across the grid.
@@ -583,7 +581,7 @@ const TieredFamilySummary: React.FC<{ group: GuidanceGroup }> = ({ group }) => {
             {description}
           </div>
           <div>
-            <div style={{ height: '6px', backgroundColor: '#0f172a', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ height: '6px', backgroundColor: '#0f172a', overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${pct}%`, backgroundColor: '#3b82f6', transition: 'width 0.3s' }} />
             </div>
             <div style={{
@@ -616,7 +614,6 @@ const AchievementRow: React.FC<{
     <div style={{
       backgroundColor: '#1e2d3d',
       border: complete ? '1px solid #f59e0b' : '1px solid #2a3a4e',
-      borderRadius: '8px',
       padding: '14px 16px',
       opacity: complete ? 1 : 0.95,
       // Fixed heights per category so every card in a row is the same size:
@@ -643,7 +640,7 @@ const AchievementRow: React.FC<{
             flexShrink: 0,
             fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
             color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)',
-            padding: '3px 6px', borderRadius: '3px',
+            padding: '3px 6px',
           }}>
             DONE
           </span>
@@ -653,7 +650,7 @@ const AchievementRow: React.FC<{
       {/* Progress */}
       {!complete && a.target > 1 && (
         <div style={{ marginTop: '10px' }}>
-          <div style={{ height: '8px', backgroundColor: '#0f172a', borderRadius: '4px', overflow: 'hidden' }}>
+          <div style={{ height: '8px', backgroundColor: '#0f172a', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${pct}%`, backgroundColor: '#3b82f6', transition: 'width 0.3s' }} />
           </div>
           <div style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '6px', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
@@ -711,7 +708,7 @@ const AchievementRow: React.FC<{
               alignSelf: 'flex-start',
               fontSize: '13px', fontWeight: 600,
               color: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.12)',
-              border: '1px solid rgba(59,130,246,0.3)', borderRadius: '4px',
+              border: '1px solid rgba(59,130,246,0.3)',
               padding: '6px 12px', cursor: 'pointer',
             }}
           >
@@ -734,7 +731,6 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
     <div style={{
       backgroundColor: '#1e2d3d',
       border: unlocked ? '1px solid #f59e0b' : '1px dashed #334155',
-      borderRadius: '8px',
       padding: '14px 16px',
       opacity: unlocked ? 1 : 0.85,
       height: '130px',
@@ -764,7 +760,7 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
             flexShrink: 0,
             fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
             color: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.12)',
-            padding: '3px 6px', borderRadius: '3px',
+            padding: '3px 6px',
           }}>
             DONE
           </span>
@@ -793,7 +789,6 @@ const RewardChip: React.FC<{ text: string; color: string }> = ({ text, color }) 
     color,
     backgroundColor: `${color}20`,
     padding: '4px 10px',
-    borderRadius: '4px',
   }}>
     {text}
   </span>
@@ -915,7 +910,6 @@ const PendingRewardsSection: React.FC<{
     <section style={{
       backgroundColor: '#1e2d3d',
       border: '1px solid #f59e0b',
-      borderRadius: '8px',
       padding: '16px 18px',
       marginBottom: '24px',
     }}>
@@ -954,7 +948,6 @@ const PendingRewardsSection: React.FC<{
               padding: '10px 12px',
               backgroundColor: '#0f172a',
               border: '1px solid #2a3a4e',
-              borderRadius: '6px',
             }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: r.kind === 'pack' ? packColor(r.slug) : '#06b6d4' }}>
@@ -977,7 +970,7 @@ const PendingRewardsSection: React.FC<{
                     style={{
                       fontSize: '12px', fontWeight: 600,
                       color: '#cbd5e1', backgroundColor: 'transparent',
-                      border: '1px solid #475569', borderRadius: '4px',
+                      border: '1px solid #475569',
                       padding: '5px 10px', cursor: busy ? 'default' : 'pointer',
                       opacity: busy ? 0.5 : 1,
                     }}
@@ -993,7 +986,7 @@ const PendingRewardsSection: React.FC<{
                     style={{
                       fontSize: '12px', fontWeight: 600,
                       color: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.10)',
-                      border: '1px solid rgba(251,191,36,0.45)', borderRadius: '4px',
+                      border: '1px solid rgba(251,191,36,0.45)',
                       padding: '5px 10px',
                       cursor: busy || lockedByDefer ? 'not-allowed' : 'pointer',
                       opacity: busy || lockedByDefer ? 0.5 : 1,
@@ -1009,7 +1002,7 @@ const PendingRewardsSection: React.FC<{
                   style={{
                     fontSize: '12px', fontWeight: 700,
                     color: '#0f172a', backgroundColor: '#f59e0b',
-                    border: 'none', borderRadius: '4px',
+                    border: 'none',
                     padding: '6px 12px',
                     cursor: busy || lockedByDefer ? 'not-allowed' : 'pointer',
                     opacity: busy || lockedByDefer ? 0.5 : 1,

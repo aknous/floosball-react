@@ -145,7 +145,7 @@ const ShopProjectionPill: React.FC<{ proj: TemplateProjection }> = ({ proj }) =>
           display: 'inline-flex', alignItems: 'center',
           fontSize: '10px', fontWeight: 700,
           color: style.color, backgroundColor: style.bg,
-          padding: '2px 8px', borderRadius: '4px',
+          padding: '2px 8px',
           border: `1px solid ${style.color}55`,
           fontVariantNumeric: 'tabular-nums' as const,
           whiteSpace: 'nowrap' as const,
@@ -550,7 +550,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                       <div key={pack.id} style={{
                         width: isMobile ? '100%' : '195px',
                         minHeight: '215px',
-                        borderRadius: '8px',
                         background: colors.bg,
                         borderBottom: `2px solid ${colors.border}`,
                         padding: '14px',
@@ -566,7 +565,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             color: colors.accent,
                             background: `${colors.border}30`,
                             border: `1px solid ${colors.border}`,
-                            borderRadius: '4px',
                             padding: '3px 6px',
                             letterSpacing: '0.5px',
                           }}>
@@ -603,7 +601,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                           disabled={!canBuy}
                           style={{
                             width: '100%', padding: '8px',
-                            borderRadius: '5px',
                             border: 'none',
                             backgroundColor: canBuy ? `${colors.accent}20` : 'rgba(51,65,85,0.3)',
                             color: canBuy ? colors.accent : '#94a3b8',
@@ -647,7 +644,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
           height: isMobile ? '92vh' : '86vh',
           backgroundColor: '#0f172a',
           border: '1px solid #334155',
-          borderRadius: '12px',
           boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
           display: 'flex',
           flexDirection: 'column',
@@ -703,7 +699,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                 <div style={{
                   padding: '12px 16px',
                   marginBottom: '16px',
-                  borderRadius: '8px',
                   backgroundColor: 'rgba(168,85,247,0.1)',
                   border: '1px solid rgba(168,85,247,0.25)',
                   color: '#d8b4fe',
@@ -799,7 +794,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                   <span style={{
                                     position: 'absolute', top: '4px', left: '50%', transform: 'translateX(-50%)',
                                     fontSize: isMobile ? '9px' : '10px', fontFamily: 'pressStart', fontWeight: 600,
-                                    color: '#fbbf24', padding: '1px 6px', borderRadius: '5px',
+                                    color: '#fbbf24', padding: '1px 6px',
                                     border: '1px solid rgba(251,191,36,0.4)', background: 'rgba(15,23,42,0.9)',
                                     whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 2,
                                   }}>
@@ -815,7 +810,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                 disabled={!canAfford || isBuying3 || !user || !shopOpen}
                                 style={{
                                   padding: isMobile ? '4px 8px' : '5px 12px',
-                                  borderRadius: '5px',
                                   border: `1px solid ${canAfford && shopOpen ? '#eab308' : '#334155'}`,
                                   backgroundColor: canAfford && shopOpen ? 'rgba(234,179,8,0.12)' : 'rgba(51,65,85,0.3)',
                                   color: canAfford && shopOpen ? '#eab308' : '#94a3b8',
@@ -840,7 +834,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                           style={{
                             display: 'flex', alignItems: 'center', gap: '6px',
                             padding: '6px 14px',
-                            borderRadius: '5px',
                             border: `1px solid ${balance >= rerollCost && shopOpen ? '#a78bfa' : '#334155'}`,
                             backgroundColor: balance >= rerollCost && shopOpen ? 'rgba(167,139,250,0.12)' : 'rgba(51,65,85,0.3)',
                             color: balance >= rerollCost && shopOpen ? '#a78bfa' : '#94a3b8',
@@ -900,7 +893,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                         <div key="starter" style={{
                           width: isMobile ? '100%' : '195px',
                           minHeight: '215px',
-                          borderRadius: '8px',
                           background: colors.bg,
                           borderBottom: `2px solid ${colors.border}`,
                           padding: '14px',
@@ -932,7 +924,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             disabled={!canBuy}
                             style={{
                               width: '100%', padding: '8px',
-                              borderRadius: '5px',
                               border: 'none',
                               backgroundColor: canBuy ? `${colors.accent}20` : 'rgba(51,65,85,0.3)',
                               color: canBuy ? colors.accent : '#94a3b8',
@@ -960,7 +951,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                       disabled={themedRerolling || balance < themedRerollCost || !shopOpen}
                       style={{
                         padding: '6px 14px',
-                        borderRadius: '5px',
                         border: `1px solid ${balance >= themedRerollCost && shopOpen ? '#6366f1' : '#334155'}`,
                         backgroundColor: balance >= themedRerollCost && shopOpen ? 'rgba(99,102,241,0.12)' : 'rgba(51,65,85,0.3)',
                         color: balance >= themedRerollCost && shopOpen ? '#a5b4fc' : '#94a3b8',
@@ -1026,7 +1016,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                 <span style={{
                                   fontSize: '11px', fontWeight: 700, color: '#fbbf24',
                                   backgroundColor: 'rgba(251,191,36,0.12)',
-                                  padding: '2px 7px', borderRadius: '5px',
+                                  padding: '2px 7px',
                                   fontVariantNumeric: 'tabular-nums',
                                 }}>{Math.round(card.showcase.points)} pts</span>
                               )}
@@ -1036,7 +1026,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                 disabled={!canAfford || busy || !user}
                                 style={{
                                   font: 'inherit', fontSize: '11px', fontWeight: 700,
-                                  padding: '5px 12px', borderRadius: '6px',
+                                  padding: '5px 12px',
                                   cursor: canAfford && !busy ? 'pointer' : 'not-allowed',
                                   border: `1px solid ${canAfford ? '#a855f7' : '#334155'}`,
                                   backgroundColor: canAfford ? 'rgba(168,85,247,0.12)' : 'rgba(51,65,85,0.3)',
@@ -1108,7 +1098,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
 
                       return (
                         <div key={pu.slug} style={{
-                          borderRadius: '8px',
                           backgroundColor: '#1e293b',
                           borderBottom: `2px solid ${isPurchased ? '#334155' : style.accent}50`,
                           padding: '12px 14px',
@@ -1126,7 +1115,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               <span style={{
                                 fontSize: '10px', fontWeight: '700', color: '#22c55e',
                                 backgroundColor: 'rgba(34,197,94,0.25)',
-                                padding: '2px 6px', borderRadius: '4px',
+                                padding: '2px 6px',
                               }}>
                                 PURCHASED
                               </span>
@@ -1135,7 +1124,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               <span style={{
                                 fontSize: '10px', fontWeight: '700', color: style.accent,
                                 backgroundColor: `${style.accent}30`,
-                                padding: '2px 6px', borderRadius: '4px',
+                                padding: '2px 6px',
                               }}>
                                 ACTIVE
                               </span>
@@ -1154,7 +1143,6 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               disabled={!canBuy || isBuying || !user}
                               style={{
                                 padding: '5px 12px',
-                                borderRadius: '4px',
                                 border: 'none',
                                 backgroundColor: canBuy ? `${style.accent}20` : 'rgba(51,65,85,0.3)',
                                 color: canBuy ? style.accent : '#94a3b8',

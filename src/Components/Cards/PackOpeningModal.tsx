@@ -170,7 +170,7 @@ const ProjectionPillInline: React.FC<{ proj: TemplateProjection }> = ({ proj }) 
           display: 'inline-flex', alignItems: 'center',
           fontSize: '12px', fontWeight: 700,
           color: style.color, backgroundColor: style.bg,
-          padding: '4px 10px', borderRadius: '5px',
+          padding: '4px 10px',
           border: `1px solid ${style.color}55`,
           fontVariantNumeric: 'tabular-nums' as const,
           whiteSpace: 'nowrap' as const,
@@ -423,7 +423,6 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                   {selectable && isSelected && (
                     <div style={{
                       position: 'absolute', inset: '-8px',
-                      borderRadius: '14px',
                       border: '3px solid #22c55e',
                       boxShadow: '0 0 20px rgba(34,197,94,0.5)',
                       pointerEvents: 'none',
@@ -466,7 +465,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                         <span style={{
                           fontSize: '11px', fontWeight: 700, color: '#fbbf24',
                           backgroundColor: 'rgba(251,191,36,0.12)',
-                          padding: '2px 7px', borderRadius: '5px',
+                          padding: '2px 7px',
                           fontVariantNumeric: 'tabular-nums',
                         }}>{Math.round((card as any).showcase.points)} pts</span>
                       )}
@@ -475,7 +474,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                         <span
                           style={{
                             fontSize: '10px', fontFamily: 'pressStart', fontWeight: 600,
-                            color: '#fbbf24', padding: '2px 6px', borderRadius: '5px',
+                            color: '#fbbf24', padding: '2px 6px',
                             border: '1px solid rgba(251,191,36,0.35)', background: 'rgba(251,191,36,0.10)',
                           }}
                         >
@@ -485,7 +484,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                     </div>
                   ) : (
                     <div style={{
-                      width: 180, height: 260, borderRadius: '10px',
+                      width: 180, height: 260,
                       backgroundColor: '#1e293b', border: '2px solid #334155',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
@@ -525,7 +524,6 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                 disabled={!canConfirm}
                 style={{
                   padding: '10px 28px',
-                  borderRadius: '6px',
                   border: 'none',
                   backgroundColor: canConfirm ? '#22c55e' : '#1e293b',
                   color: canConfirm ? '#0f172a' : '#64748b',
@@ -555,7 +553,6 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
                 onClick={onClose}
                 style={{
                   padding: '10px 28px',
-                  borderRadius: '6px',
                   border: 'none',
                   backgroundColor: '#22c55e',
                   color: '#0f172a',
