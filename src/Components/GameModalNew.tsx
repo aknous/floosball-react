@@ -261,9 +261,20 @@ function getResultColor(playResult: string, lastDown = 4): string | null {
 }
 
 
+const TABS = ['plays', 'box', 'stats'] as const
+
+/** Plays are only ever available live, or on a finished game still held in memory. */
+function gameDataStatusForPlays(game: any): boolean {
+  if (!game) return true
+  const plays = (game.plays ?? []) as any[]
+  if (game.status !== 'Final') return true
+  return plays.some(p => !p.event && !p.isSidelineCutaway)
+}
+
 export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, layout = 'modal', railContent, scoreboard, fallbackGame }) => {
   const asPage = layout === 'page'
   const [activeTab, setActiveTab] = useState<'box' | 'plays' | 'stats'>('plays')
+
   const [showHighlightsOnly, setShowHighlightsOnly] = useState(false)
   const [expandedPlayKey, setExpandedPlayKey] = useState<string | null>(null)
   // The league's current downs-per-series (a mutable rule) so the ACTUAL last down
@@ -324,6 +335,21 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
   // as plays merge/arrive can't reset the guard. Reset on game switch below.
   const modalOpenedAtRef = useRef(Date.now())
   const gameData = frozenRef.current
+
+  /**
+   * Is there a play feed at all?
+   *
+   * ⚠️ Play-by-play is deliberately NOT persisted (owner) — it lives only on the
+   * in-memory game object, which is the trade that keeps the games table small. So a
+   * FINISHED game rebuilt from the database has a box score and player stats and no
+   * plays, and the tab opened on an empty panel that read as a bug rather than as a
+   * design decision. A live or scheduled game keeps the tab even with nothing in it
+   * yet, because plays are coming.
+   */
+  const hasPlayFeed = gameDataStatusForPlays(gameData)
+  useEffect(() => {
+    if (!hasPlayFeed && activeTab === 'plays') setActiveTab('box')
+  }, [hasPlayFeed, activeTab])
   // Prefer THIS game's own downs-per-series (Criticality chaos can set it to 3 or 5,
   // differing from the season-wide /api/rules value) so the true last down is colored
   // urgent, not a hardcoded 4th. Falls back to the /api/rules value for older payloads.
@@ -2581,7 +2607,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               } : { padding: '10px 16px', borderBottom: '1px solid #334155', flexShrink: 0, display: 'flex', gap: '4px' }}>
                 {asPage ? (
                   <div style={{ display: 'flex', background: '#0f172a', border: '1px solid #1e293b' }}>
-                    {(['plays', 'box', 'stats'] as const).map((tab, i) => (
+                    {TABS.filter(t => t !== 'plays' || hasPlayFeed).map((tab, i) => (
                       <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -2601,7 +2627,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                       </button>
                     ))}
                   </div>
-                ) : (['plays', 'box', 'stats'] as const).map(tab => (
+                ) : TABS.filter(t => t !== 'plays' || hasPlayFeed).map(tab => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
