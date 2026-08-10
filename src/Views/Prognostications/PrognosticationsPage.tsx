@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, RAIL_WIDTH, font } from '@/Components/Shell/tokens'
 import type { TeamStanding, LeagueStandings } from '@/Views/Standings/standingsTypes'
-import MatchupCard from './MatchupCard'
+import MatchupCard, { pickWasCorrect } from './MatchupCard'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -53,6 +53,7 @@ const PrognosticationsPage: React.FC = () => {
 
   const [standings, setStandings] = useState<Map<number, TeamStanding>>(new Map())
   const [flash, setFlash] = useState<string | null>(null)
+  const [openPast, setOpenPast] = useState<Set<number>>(new Set())
   type Line = { points: number; correct: number; total: number; rank: number }
   const [season, setSeason] = useState<Line | null>(null)
   const [thisWeek, setThisWeek] = useState<Line | null>(null)
@@ -113,6 +114,17 @@ const PrognosticationsPage: React.FC = () => {
       if (g.pickable && g.userPick == null) open += 1
     }))
     return { totalGames: total, pickedGames: picked, openGames: open }
+  }, [slots])
+
+  /**
+   * ⚠️ Slates you can still act on come FIRST, finished ones fall to the bottom (owner).
+   * The server returns them in clock order, which puts this morning's finished games
+   * above tonight's open ones — so by midday the page opened on nothing you could do.
+   * Within each group the clock order is left alone.
+   */
+  const orderedSlots = useMemo(() => {
+    const rank = (s: typeof slots[number]) => (s.isPast ? 1 : 0)
+    return [...slots].sort((a, b) => rank(a) - rank(b))
   }, [slots])
 
   const handleSubmit = async () => {
@@ -176,23 +188,40 @@ const PrognosticationsPage: React.FC = () => {
             }}>
               No games scheduled today. The next slate will appear here.
             </div>
-          ) : slots.map(slot => {
+          ) : orderedSlots.map(slot => {
             const open = slot.games.filter(g => g.pickable && g.userPick == null).length
+            // ⚠️ A slate that has finished is COLLAPSED (owner). Midday, most of the day
+            // is already played, and leading with games nobody can pick any more buries
+            // the one slate that still wants a decision. A past slate keeps its result
+            // on the header line so it is still worth having, and opens on a click.
+            const collapsed = slot.isPast && !openPast.has(slot.week)
+            const done = slot.games.filter(g => g.result).length
+            const hit = slot.games.filter(pickWasCorrect).length
+
             return (
-              <div key={slot.week} style={{ marginBottom: '22px' }}>
+              <div key={slot.week} style={{ marginBottom: collapsed ? '9px' : '22px' }}>
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: '12px',
-                  paddingBottom: '9px', marginBottom: '11px',
-                  borderBottom: `1px solid ${BORDER.raised}`,
+                  paddingBottom: '9px', marginBottom: collapsed ? 0 : '11px',
+                  borderBottom: `1px solid ${collapsed ? BORDER.hairline : BORDER.raised}`,
                 }}>
-                  <span style={{ ...font(800, 13, 1, '0.02em'), color: TEXT.strong }}>
-                    {slot.label}
-                  </span>
+                  <span style={{
+                    ...font(800, 13, 1, '0.02em'),
+                    color: collapsed ? TEXT.muted : TEXT.strong,
+                  }}>{slot.label}</span>
+                  {slot.isActive && (
+                    <span style={{ ...font(700, 9, 1, '0.1em'), color: ACCENT.live }}>LIVE</span>
+                  )}
+                  {slot.isNext && !slot.isActive && (
+                    <span style={{ ...font(700, 9, 1, '0.1em'), color: ACCENT.info }}>UP NEXT</span>
+                  )}
                   <span style={{ ...font(400, 11), color: TEXT.muted }}>
-                    {slot.games.length} game{slot.games.length !== 1 ? 's' : ''}
+                    {slot.isPast
+                      ? `${hit}/${done} correct`
+                      : `${slot.games.length} game${slot.games.length !== 1 ? 's' : ''}`}
                   </span>
                   <span style={{ flex: 1 }} />
-                  {open > 0 && (
+                  {open > 0 && !collapsed && (
                     // A shortcut, not a recommendation — favourites pay the least, which
                     // is exactly why it is offered as a starting point to edit rather
                     // than a button that finishes your day for you.
@@ -205,22 +234,37 @@ const PrognosticationsPage: React.FC = () => {
                       }}
                     >FILL WITH FAVOURITES</button>
                   )}
+                  {slot.isPast && (
+                    <button
+                      onClick={() => setOpenPast(prev => {
+                        const next = new Set(prev)
+                        if (next.has(slot.week)) next.delete(slot.week); else next.add(slot.week)
+                        return next
+                      })}
+                      style={{
+                        ...font(700, 9, 1, '0.1em'), color: TEXT.muted,
+                        background: 'transparent', border: 'none', padding: '2px 0',
+                        cursor: 'pointer', fontFamily: FONT,
+                      }}
+                    >{collapsed ? 'SHOW +' : 'HIDE −'}</button>
+                  )}
                 </div>
 
-                <div style={{
-                  display: 'grid', gap: '10px',
-                  gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))',
-                }}>
-                  {slot.games.map(g => (
-                    <MatchupCard
-                      key={`${slot.week}:${g.gameIndex}`}
-                      game={g}
-                      standings={standings}
-                      staged={false}
-                      onPick={teamId => setPick(slot.week, g.gameIndex, teamId)}
-                    />
-                  ))}
-                </div>
+                {!collapsed && (
+                  <div style={{
+                    display: 'grid', gap: '10px',
+                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(430px, 1fr))',
+                  }}>
+                    {slot.games.map(g => (
+                      <MatchupCard
+                        key={`${slot.week}:${g.gameIndex}`}
+                        game={g}
+                        standings={standings}
+                        onPick={teamId => setPick(slot.week, g.gameIndex, teamId)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )
           })}
