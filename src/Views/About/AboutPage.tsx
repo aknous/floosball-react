@@ -1689,10 +1689,26 @@ const AboutPage: React.FC = () => {
               'Higher tiers pay more (FP, FPx, or Floobits), and the card sells and scores for more',
             ])}
 
-            <p style={labelStyle}>The Combine vs Level Up</p>
+            <p style={labelStyle}>The Transplant</p>
             <p style={textStyle}>
-              The Combine fuses several cards into one of a higher <em>edition</em>. Level Up raises one card's
-              <em> tier</em>. They're two different ways to spend your spare duplicates.
+              Sometimes you pull a great effect on a player you do not want. The Transplant moves an effect
+              off one card and onto another: pick the card you want to keep, pick the card whose effect you
+              want, and the second one is consumed.
+            </p>
+            {bulletList([
+              'Both cards must be the same edition. You cannot promote an effect up a rarity this way',
+              'The card you keep holds on to its player, its tier and its Vault status, and only the effect changes',
+              'The effect is re-scaled to the player receiving it, so grafting off a star does not hand a weaker player the star\'s numbers',
+              'Position-specific effects only move onto a player whose position they work for. Shared effects go anywhere at the same edition',
+              'No-effect cards cannot donate or receive',
+              'Cost rises with edition: Metallic 40, Holographic 70, Prismatic 120, Diamond 180',
+            ])}
+
+            <p style={labelStyle}>Which one do I want?</p>
+            <p style={textStyle}>
+              Three things that sound alike. The Combine fuses several cards into one of a higher
+              <em> edition</em>. Level Up raises one card's <em>tier</em>. The Transplant keeps both fixed and
+              swaps the <em>effect</em> onto a player you would rather field.
             </p>
 
             <p style={labelStyle}>Seasonal</p>
