@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { GameModalNew, PAGE_THREE_COLUMN_MIN } from '@/Components/GameModalNew'
 import RallyButton from '@/Components/GameModal/RallyPanel'
+import CheerBar from '@/Components/CheerBar'
 import TeamHoverCard from '@/Components/TeamHoverCard'
 import { useGames } from '@/contexts/GamesContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -360,6 +361,30 @@ const GamePage: React.FC = () => {
           <Chevron dir="right" />
         </NavPlate>
         <span style={{ flex: 1 }} />
+
+        {/* ⚠️ The spectating bar lives HERE because the page hides the modal's
+            header entirely (`display: asPage ? 'none' : 'flex'` in GameModalNew),
+            and the bar was the only thing in it that still had a job. So a reader
+            who moved from the modal to the page stopped earning for watching and
+            got no indication that anything had changed.
+
+            The nav row is this page's header. It is also the right place on its
+            own terms: the bar is about the reader, not the game, so it does not
+            belong on the scoreboard band beside the score and the down. The
+            component returns null off a live game, so a final keeps a clean row.
+
+            Signed out it is hidden: every number in it would be a zero that never
+            moves, and it would promise a payout that cannot be credited. */}
+        {user && <CheerBar
+          gameId={id}
+          isLive={isLive}
+          playCount={(gameData.plays as any[] | undefined)
+            ?.filter((p: any) => !p.event && !p.isSidelineCutaway).length ?? 0}
+          score={(gameData.homeScore ?? 0) + (gameData.awayScore ?? 0)}
+          bigPlayCount={(gameData.plays as any[] | undefined)
+            ?.filter((p: any) => p.isBigPlay && !p.isSidelineCutaway).length ?? 0}
+          compact
+        />}
       </div>
       </div>
 

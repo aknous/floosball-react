@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 
 // Spectator cheer bar — the active non-fantasy income path. While you watch a
 // LIVE game (modal open, tab visible), it fills locally from the play/score
@@ -202,7 +203,9 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
   // Both re-keyed by payoutKey so each payout restarts the CSS animation.
   const payoutSweep = payoutKey > 0 ? (
     <div key={payoutKey} className="cheer-payout-sweep" style={{
-      position: 'absolute', inset: 0, borderRadius: 4, backgroundColor: C.gold, pointerEvents: 'none',
+      // No radius of its own — the bar it sits in clips it, and in the compact
+      // variant that bar is square.
+      position: 'absolute', inset: 0, backgroundColor: C.gold, pointerEvents: 'none',
     }} />
   ) : null
   const payoutBadge = payoutKey > 0 ? (
@@ -213,23 +216,31 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
     }}>+{payoutAmount} F</span>
   ) : null
 
-  // Compact single-line variant — fits inside the modal header row so it adds
-  // no vertical height.
+  // Compact single-line variant — sits in a header row, so it adds no vertical
+  // height. ⚠️ Styled from the redesign's tokens and SQUARE, unlike the panel
+  // variant below: the two headers it appears in (the modal's and the game
+  // page's nav row) both belong to the new system, where the only radius is a
+  // circle. The currency colour is the shell header's own (`ACCENT.warning`),
+  // so the number climbing here reads as the same Floobits as the one up top.
   if (compact) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', color: accent, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-          Spectating{status?.cappedOut ? ' · maxed' : earning ? '' : ' · paused'}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontFamily: FONT }}>
+        <span style={{ ...font(700, 11, 1, '0.08em'), color: accent, whiteSpace: 'nowrap' }}>
+          SPECTATING{status?.cappedOut ? ' · MAXED' : earning ? '' : ' · PAUSED'}
         </span>
         <div style={{ position: 'relative', flexShrink: 0 }}>
-          <div style={{ width: 150, height: 9, borderRadius: 4, backgroundColor: '#1e293b', overflow: 'hidden', boxShadow: barGlow, transition: 'box-shadow 0.25s ease' }}>
-            <div style={{ width: `${pct}%`, height: '100%', backgroundColor: fillColor, transition: 'width 0.5s ease, background-color 0.25s ease' }} />
+          <div style={{ width: 132, height: 8, background: BORDER.hairline, overflow: 'hidden', boxShadow: barGlow, transition: 'box-shadow 0.25s ease' }}>
+            <div style={{ width: `${pct}%`, height: '100%', background: fillColor, transition: 'width 0.5s ease, background-color 0.25s ease' }} />
             {payoutSweep}
           </div>
           {payoutBadge}
         </div>
-        <span style={{ fontSize: 12, fontWeight: flash ? 700 : 600, color: C.gold, whiteSpace: 'nowrap' }}>
-          {flash ? `+${status?.segmentPayout} F!` : `${status?.weeklyFloobits ?? 0}/${status?.weeklyCap ?? 60} F`}
+        <span style={{
+          display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap',
+          ...font(flash ? 800 : 600, 11), color: ACCENT.warning, ...TABULAR,
+        }}>
+          <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8" /></svg>
+          {flash ? `+${status?.segmentPayout}` : `${status?.weeklyFloobits ?? 0} / ${status?.weeklyCap ?? 60}`}
         </span>
       </div>
     )
