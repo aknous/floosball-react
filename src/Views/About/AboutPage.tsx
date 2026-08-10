@@ -24,9 +24,7 @@ const SECTION_GROUPS: SectionCategory[] = [
       { id: 'teams-players', title: 'Teams & Players' },
       { id: 'season-schedule', title: 'Season Schedule' },
       { id: 'prognosticate', title: 'Prognosticate' },
-      { id: 'front-office', title: 'The Front Office' },
       { id: 'team-funding', title: 'Facilities' },
-      { id: 'prospects', title: 'Prospects & Rookie Draft' },
     ],
   },
   {
@@ -142,15 +140,45 @@ const SAMPLE_CARDS: CardData[] = [
   },
 ]
 
-// ── Scroll helper (accounts for fixed header) ────────────────────────────
+// ── Scroll helper ─────────────────────────────────────────────────────────
+
+/**
+ * The element that actually scrolls this page.
+ *
+ * ⚠️ It is NOT the window. The redesigned shell owns the viewport and gives its content
+ * column (`<main>`) `overflow-y: auto`, so `document.documentElement` never scrolls at
+ * all — measured, `scrollHeight === innerHeight` while `main` sits at 15490 over a 919px
+ * box. Every helper here was written against `window.scrollY` / `window.scrollTo` and a
+ * `.fixed.w-full.top-0` header from the OLD chrome, so once this page moved into the
+ * shell the whole left contents list went dead: clicking a section did nothing and the
+ * highlight never left the first entry. It looked like broken navigation because it was.
+ */
+const scrollParent = (el: HTMLElement | null): HTMLElement | null => {
+  let p = el?.parentElement ?? null
+  while (p) {
+    const oy = getComputedStyle(p).overflowY
+    if (/(auto|scroll)/.test(oy) && p.scrollHeight > p.clientHeight + 4) return p
+    p = p.parentElement
+  }
+  return null
+}
+
+/** Breathing room above a section once it lands at the top of the scroller. */
+const SCROLL_PAD = 16
 
 const scrollToSection = (id: string) => {
   const el = document.getElementById(id)
   if (!el) return
-  const header = document.querySelector('.fixed.w-full.top-0')
-  const headerH = header ? (header as HTMLElement).offsetHeight : 64
-  const top = el.getBoundingClientRect().top + window.scrollY - headerH - 16
-  window.scrollTo({ top, behavior: 'smooth' })
+  const scroller = scrollParent(el)
+  if (scroller) {
+    const top = el.getBoundingClientRect().top
+      - scroller.getBoundingClientRect().top
+      + scroller.scrollTop - SCROLL_PAD
+    scroller.scrollTo({ top, behavior: 'smooth' })
+    return
+  }
+  // Standalone (no shell): the document scrolls after all.
+  window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - SCROLL_PAD, behavior: 'smooth' })
 }
 
 // ── Section component (always open, with anchor ID) ───────────────────────
@@ -179,6 +207,8 @@ const Section: React.FC<{ id: string; title: string; children: React.ReactNode }
 
 // ── Desktop sidebar ───────────────────────────────────────────────────────
 
+// ⚠️ `headerHeight` is 0 inside the shell — there is no fixed header above the scroller
+// any more, so sticking 64px down just left a gap at the top of the list.
 const DocSidebar: React.FC<{ activeId: string; headerHeight: number }> = ({ activeId, headerHeight }) => (
   <nav style={{
     position: 'sticky',
@@ -478,44 +508,45 @@ const RosterSlotVisual: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 const AboutPage: React.FC = () => {
   const isMobile = useIsMobile()
   const [activeSection, setActiveSection] = useState(ALL_SECTIONS[0].id)
-  const [headerHeight, setHeaderHeight] = useState(64)
+  const [headerHeight] = useState(0)
   const rafRef = useRef(0)
 
-  // Track the fixed header height (navbar + beta banner + game bar)
+  /**
+   * Which section the reader is looking at.
+   *
+   * ⚠️ Listens on the SCROLLER, not the window — see `scrollParent`. On the window it
+   * never fired once, so the contents list highlighted its first entry and stayed there
+   * however far down the page you were.
+   *
+   * The section is compared against the scroller's own top edge rather than the
+   * viewport's, since inside the shell those are different lines.
+   */
   useEffect(() => {
-    const header = document.querySelector('.fixed.w-full.top-0') as HTMLElement | null
-    if (!header) return
-    const measure = () => setHeaderHeight(header.offsetHeight)
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(header)
-    return () => ro.disconnect()
-  }, [])
+    const first = document.getElementById(ALL_SECTIONS[0].id)
+    const scroller = scrollParent(first)
+    const target: HTMLElement | Window = scroller ?? window
 
-  useEffect(() => {
     const onScroll = () => {
       cancelAnimationFrame(rafRef.current)
       rafRef.current = requestAnimationFrame(() => {
-        const offset = headerHeight + 24
+        const base = scroller ? scroller.getBoundingClientRect().top : 0
+        const offset = base + SCROLL_PAD + 8
         let currentId = ALL_SECTIONS[0].id
         for (const s of ALL_SECTIONS) {
           const el = document.getElementById(s.id)
-          if (el) {
-            const top = el.getBoundingClientRect().top
-            if (top <= offset) currentId = s.id
-          }
+          if (el && el.getBoundingClientRect().top <= offset) currentId = s.id
         }
         setActiveSection(currentId)
       })
     }
 
-    window.addEventListener('scroll', onScroll, { passive: true })
+    target.addEventListener('scroll', onScroll, { passive: true } as any)
     onScroll()
     return () => {
-      window.removeEventListener('scroll', onScroll)
+      target.removeEventListener('scroll', onScroll)
       cancelAnimationFrame(rafRef.current)
     }
-  }, [headerHeight])
+  }, [])
 
   return (
     <div style={{ backgroundColor: '#0f172a', color: '#e2e8f0' }}>
@@ -1144,69 +1175,6 @@ const AboutPage: React.FC = () => {
             </p>
           </Section>
 
-          {/* The Front Office */}
-          <Section id="front-office" title="The Front Office">
-            <p style={textStyle}>
-              The Front Office is where fans vote on their favorite team's personnel decisions. It opens
-              in Week 22 and stays open through the offseason. You'll find it on the Team Management page,
-              on the "Front Office" tab. Only signed-in users with a favorite team set can participate.
-            </p>
-
-            <p style={labelStyle}>Directives</p>
-            <p style={textStyle}>
-              As a board member you issue directives to influence what the team does at season end:
-            </p>
-            {bulletList([
-              'Fire Coach: push to fire the current head coach',
-              'Hire Coach: nominate a replacement from the available coaching pool. Only matters if the fire vote ratifies',
-              'Cut Player: release a rostered player to the FA pool',
-              'Re-Sign Player: keep a walk-season player on the roster',
-              'Free Agent Requisition: rank up to 3 replacements (FAs or your own prospects) for each projected roster opening',
-            ])}
-
-            <p style={labelStyle}>Costs</p>
-            <p style={textStyle}>
-              Each directive costs a flat Floobit fee: Fire Coach 15F, and Cut, Re-Sign, and Hire 10F each.
-              The FA Requisition ballot is a single flat fee. You cast one vote per target (yea or nay); to
-              change your mind you withdraw and recast. There are no per-type, per-target, or per-season caps,
-              and no escalating cost.
-            </p>
-
-            <p style={labelStyle}>Ratification</p>
-            <p style={textStyle}>
-              A motion passes on its net vote (backing minus opposition). It needs net votes equal to a majority
-              of the team's fanbase: half the fans who backed the team when the Front Office locked in Week 22,
-              rounded up. Once that bar is cleared there's a 45% base chance of ratification, and that chance
-              climbs to a guaranteed pass at double the bar. Ratified motions take effect in the offseason.
-              Motions that fall short either deny or expire without action.
-            </p>
-
-            <p style={labelStyle}>Free Agent Requisitions</p>
-            <p style={textStyle}>
-              FA requisitions use ranked-choice voting. For each roster slot that's projected to open,
-              you rank up to 3 candidates (6 slots by 3 candidates is 18 total). The pool includes current
-              free agents, projected walk-season players from other teams, and your own pipeline prospects.
-              If you rank a prospect above an FA at the same slot, the team promotes that prospect instead of
-              signing the FA. Those rankings drive the team's picks in the FA draft.
-            </p>
-            <p style={textStyle}>
-              With no ballot on file the team falls back to auto-logic: promote any prospect rated 70+
-              first, then sign the best available FA for any slot still open.
-            </p>
-
-            <p style={labelStyle}>Resolution Order</p>
-            <p style={textStyle}>
-              Motions resolve during the offseason in this order:
-            </p>
-            {bulletList([
-              'Fire Coach, then Hire Coach if the fire ratified',
-              'Cut Player releases ratified cuts to the FA pool',
-              'Re-Sign Player renews walk-season contracts',
-              'Rookie Draft picks in turn, pulling from ranked rookie ballots',
-              'FA Draft picks in turn, pulling from ranked FA ballots',
-            ])}
-          </Section>
-
           {/* Facilities */}
           <Section id="team-funding" title="Facilities">
             <p style={textStyle}>
@@ -1254,62 +1222,6 @@ const AboutPage: React.FC = () => {
             </p>
           </Section>
 
-          {/* Prospects & Rookie Draft */}
-          <Section id="prospects" title="Prospects & Rookie Draft">
-            <p style={textStyle}>
-              Every team has a prospect pipeline: rookies drafted into the organization who aren't yet on
-              the main roster. Prospects develop in the background each offseason and eventually get
-              promoted to starters or released to free agency.
-            </p>
-
-            <p style={labelStyle}>The Rookie Class</p>
-            <p style={textStyle}>
-              A new rookie class is generated at the start of every season and stays hidden until the
-              Front Office opens in Week 22. From that point on, you can scout the class on the Front
-              Office tab of Team Management. How accurately you can see each rookie's potential depends
-              on your coach's scouting rating plus your team's Scouting Department facility level. A top
-              scouting coach with a well-built Scouting Department sees clearer projections than a mediocre
-              coach with an undeveloped one.
-            </p>
-
-            <p style={labelStyle}>Rookie Draft</p>
-            <p style={textStyle}>
-              The rookie draft happens at the start of the offseason, before free agency. Picks go in
-              reverse order of regular-season record (worst team picks first), giving losing teams the
-              first shot at rebuilding.
-            </p>
-            <p style={textStyle}>
-              Fans can influence who their team picks by filing a rookie ballot during the board's active
-              window. The team uses your ranked list as its pick preference. Without a ballot, the team
-              auto-picks the best available rookie at a position where there's an open pipeline slot.
-            </p>
-            <p style={textStyle}>
-              Each team has up to two prospect slots per position. If a team already has two prospects at
-              that spot, it skips the pick rather than bench a current prospect. Any rookies not drafted
-              go straight into the free agent pool as undrafted players.
-            </p>
-
-            <p style={labelStyle}>Development Window</p>
-            <p style={textStyle}>
-              Prospects stay in the pipeline for up to 3 seasons. Each offseason they train and (usually)
-              improve. The Team Management prospect row shows how many seasons each prospect has left.
-              There are three ways out of the pipeline:
-            </p>
-            {bulletList([
-              'Promotion: the team calls them up to fill an open starter spot',
-              'Automatic release: if their dev window runs out without promotion, they go to the free agent pool as a rookie',
-              'FA ballot: fans rank them above free agents at their position, and the team promotes them instead of signing an FA',
-            ])}
-
-            <p style={labelStyle}>Auto-Promotion</p>
-            <p style={textStyle}>
-              When the offseason FA draft runs and a team has an open roster slot, the first thing it
-              tries is promoting a prospect rated 70 or higher at that position. If nobody qualifies, it
-              signs the best available free agent instead. A ranked FA ballot overrides this. If you rank
-              an FA above a prospect, the team signs the FA.
-            </p>
-          </Section>
-
           {/* ── Fantasy ── */}
           <Section id="fantasy" title="Fantasy">
             <p style={textStyle}>
@@ -1322,8 +1234,8 @@ const AboutPage: React.FC = () => {
             <p style={labelStyle}>Roster</p>
             <p style={textStyle}>
               Your roster has 6 slots, one per position (QB, RB, WR, WR, TE, K), each filled by an equipped
-              card. You need at least 3 filled slots to lock. An optional 7th FLEX slot (any position) can be
-              unlocked with the Conscription power-up.
+              card. You need at least 3 filled slots to lock. An optional 7th FLEX slot (any position) opens
+              when you equip an MVP card, or for four weeks with the Accession power-up.
             </p>
             <RosterSlotVisual isMobile={isMobile} />
 
@@ -1765,12 +1677,10 @@ const AboutPage: React.FC = () => {
               Spending:
             </p>
             {bulletList([
-              'Card Packs: Humble (50), Grand (100), Exquisite (150), themed packs (150 to 250)',
+              'Card Packs: Humble (40), themed packs (60), Grand (70), Champion and All-Pro (85), Exquisite (100)',
               'Card Upgrades: Floobits to Level Up a card a tier',
               'Daily Selection cards and rerolls (escalating cost)',
-              'Roster swaps: 15 Floobits base, +15 per repeat swap in same slot (season-long)',
-              'Power-Ups: Dispensation, Annulment, Conscription, Accession, Patronage, Endowment',
-              'Front Office directives (10-15 Floobits each)',
+              'Power-Ups: Annulment, Accession, Patronage, Endowment',
               'Season-end tax: 25% of unspent Floobits fund your favorite team between seasons. Teams with more funding become larger markets with better player development and morale',
             ])}
           </Section>
@@ -1782,10 +1692,12 @@ const AboutPage: React.FC = () => {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {[
-                { name: 'Dispensation', price: 50, color: '#22c55e', desc: '+1 roster swap to make an additional player change.' },
+                // ⚠️ Dispensation (extra_swap) and Conscription (temp_flex) are RETIRED —
+                // both left POWERUP_CATALOG with the fantasy/cards fusion, so the shop
+                // rejects them. Roster swaps no longer exist, and the FLEX slot is
+                // Accession's job now.
                 { name: 'Annulment', price: 60, color: '#eab308', desc: 'Your cards operate under Steady (no modifier effect) this week.' },
-                { name: 'Conscription', price: 200, color: '#a78bfa', desc: 'Adds a FLEX roster slot (any position) for 4 weeks. Limit 2/season.' },
-                { name: 'Accession', price: 200, color: '#67e8f9', desc: 'Adds a 6th card equipment slot for 4 weeks. Limit 2/season.' },
+                { name: 'Accession', price: 200, color: '#67e8f9', desc: 'Unlocks the FLEX lineup slot (any position) for 4 weeks. Limit 2/season.' },
                 { name: 'Patronage', price: 125, color: '#f472b6', desc: 'Boosts all chance card trigger rates by 10% for 3 weeks. Limit 2/season.' },
                 { name: 'Endowment', price: 100, color: '#fbbf24', desc: '+25% on all Floobits you earn (fantasy, pick-em, showcase, supporter dividends) for 4 weeks. Limit 2/season.' },
               ].map(pu => (
