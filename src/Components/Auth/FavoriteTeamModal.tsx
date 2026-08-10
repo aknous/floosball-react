@@ -121,11 +121,11 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
           display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left',
           background: current ? BG.cardOwn : BG.card,
           border: `1px solid ${current ? ACCENT.live : BORDER.hairline}`,
-          padding: '10px 12px', cursor: current ? 'default' : 'pointer',
+          padding: '8px 11px', cursor: current ? 'default' : 'pointer',
           fontFamily: FONT, minWidth: 0,
         }}
       >
-        <Crest teamId={team.id} size={34} />
+        <Crest teamId={team.id} size={30} />
         <span style={{ minWidth: 0 }}>
           <span style={{
             display: 'block', ...font(500, 12, 1, '0.06em'), color: TEXT.muted,
@@ -155,21 +155,21 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: isMobile ? '100%' : '760px',
+          width: '100%', maxWidth: isMobile ? '100%' : '880px',
           maxHeight: isMobile ? '94vh' : '88vh',
           background: BG.shell, border: `1px solid ${BORDER.raised}`,
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
         }}
       >
         <div style={{
-          padding: '18px 20px 15px', borderBottom: `1px solid ${BORDER.hairline}`,
+          padding: '15px 20px 13px', borderBottom: `1px solid ${BORDER.hairline}`,
           flexShrink: 0, display: 'flex', alignItems: 'flex-start', gap: '14px',
         }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <h2 style={{ ...font(800, 23, 1.15, '-0.02em'), color: TEXT.primary, margin: 0 }}>
               {hasFavorite ? 'Change your team' : 'Pick a team to follow'}
             </h2>
-            <p style={{ ...font(400, 14, 1.55), color: TEXT.secondary, margin: '8px 0 0' }}>
+            <p style={{ ...font(400, 13, 1.5), color: TEXT.secondary, margin: '7px 0 0' }}>
               Their games are highlighted across the app and they get a panel on the
               front page. Your pick is locked for the rest of this season, so choose
               carefully. You can change it when a new season begins.
@@ -185,25 +185,38 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
           >✕</button>
         </div>
 
-        <div style={{ overflowY: 'auto', padding: '4px 20px 18px', flex: 1 }}>
+        <div style={{ overflowY: 'auto', padding: '2px 20px 14px', flex: 1 }}>
           {total === 0 ? (
             <div style={{ padding: '40px 0', textAlign: 'center', ...font(400, 14), color: TEXT.muted }}>
               Loading the league.
             </div>
           ) : leagues.map(lg => (
-            <div key={lg.name} style={{ marginTop: '18px' }}>
+            <div key={lg.name} style={{ marginTop: '14px' }}>
               <div style={{
                 ...font(800, 14, 1, '0.12em'), color: TEXT.strong,
-                paddingBottom: '9px', borderBottom: `1px solid ${BORDER.raised}`,
+                paddingBottom: '7px', borderBottom: `1px solid ${BORDER.raised}`,
               }}>{lg.name.toUpperCase()}</div>
 
               {lg.divisions.map(div => (
-                <div key={div.name} style={{ marginTop: '13px' }}>
-                  <div style={{ ...font(700, 12, 1, '0.14em'), color: TEXT.muted, marginBottom: '8px' }}>
-                    {div.name.toUpperCase()}
-                  </div>
+                /* ⚠️ The division label sits BESIDE its row, not above it. Stacked, eight
+                   of them cost eight extra lines of height for one word each, and that
+                   was most of why the last row needed scrolling to reach. */
+                <div key={div.name} style={{
+                  display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px',
+                }}>
+                  {!isMobile && (
+                    <div style={{
+                      ...font(700, 12, 1, '0.14em'), color: TEXT.muted,
+                      width: '104px', flexShrink: 0, textAlign: 'right',
+                    }}>{div.name.toUpperCase()}</div>
+                  )}
+                  {isMobile && (
+                    <div style={{ ...font(700, 11, 1, '0.14em'), color: TEXT.muted }}>
+                      {div.name.toUpperCase()}
+                    </div>
+                  )}
                   <div style={{
-                    display: 'grid',
+                    display: 'grid', flex: 1, minWidth: 0,
                     gridTemplateColumns: `repeat(${isMobile ? 2 : 4}, minmax(0, 1fr))`,
                     gap: '7px',
                   }}>
@@ -255,7 +268,7 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
         ) : (
           <div style={{
             flexShrink: 0, borderTop: `1px solid ${BORDER.hairline}`,
-            padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '12px',
+            padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '12px',
           }}>
             {pendingMessage && (
               <span style={{ ...font(600, 13), color: ACCENT.warning }}>{pendingMessage}</span>
