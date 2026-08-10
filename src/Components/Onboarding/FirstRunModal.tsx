@@ -182,6 +182,17 @@ export const FirstRunModal: React.FC = () => {
               </div>
             )}
 
+            {/* The bridge between the name they were handed and the ways out of it.
+                Without it the suggestion buttons are four unexplained names sitting
+                under a name they did not ask for. */}
+            {options.length > 0 && (
+              <p style={{ ...font(400, 13, 1.5), color: TEXT.secondary, margin: '0 0 10px' }}>
+                {current
+                  ? "Don't like it? How about one of these, or set your own."
+                  : 'How about one of these, or set your own.'}
+              </p>
+            )}
+
             {options.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
                 {options.map(o => (
