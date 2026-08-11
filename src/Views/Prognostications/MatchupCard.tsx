@@ -164,20 +164,27 @@ const Side: React.FC<{
            rail already has from the crest, and it is what pushed the panel past its
            330px. What survives is the three things a pick is actually made on. */
         <span style={{
-          display: 'flex', alignItems: 'center', gap: '9px', width: '100%',
+          display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
           justifyContent: 'space-between',
           flexDirection: rtl ? 'row-reverse' : 'row',
         }}>
-          <Crest teamId={team.id} size={26} />
-          <span style={{
-            ...font(800, 15, 1), ...TABULAR, flexShrink: 0,
-            color: winPct >= 50 ? TEXT.primary : TEXT.muted,
-          }}>{winPct}%</span>
-          <span style={{
-            ...font(800, 15, 1), ...TABULAR, whiteSpace: 'nowrap', flexShrink: 0,
-            color: points >= 15 ? ACCENT.live : points < 8 ? TEXT.muted : TEXT.body,
-          }}>
-            {points}<span style={{ ...font(500, 9), marginLeft: '2px' }}>pts</span>
+          <Crest teamId={team.id} size={28} />
+          {/* ⚠️ STACKED, not side by side. Three things across a 150px half left the
+              points and the odds fighting for the same line, and the points — the thing
+              being decided on — read as just another figure in a row. The payout takes
+              the size, the probability sits under it as the qualifier it is. Numbers on
+              the INSIDE, mark on the outside, matching the wide card. */}
+          <span style={{ textAlign: rtl ? 'left' : 'right', flexShrink: 0 }}>
+            <span style={{
+              display: 'block', ...font(800, 18, 1), ...TABULAR, whiteSpace: 'nowrap',
+              color: points >= 15 ? ACCENT.live : points < 8 ? TEXT.muted : TEXT.body,
+            }}>
+              {points}<span style={{ ...font(500, 10), marginLeft: '2px' }}>pts</span>
+            </span>
+            <span style={{
+              display: 'block', ...font(600, 11, 1), ...TABULAR, marginTop: '4px',
+              color: winPct >= 50 ? TEXT.secondary : TEXT.muted,
+            }}>{winPct}%</span>
           </span>
         </span>
       ) : (<>
