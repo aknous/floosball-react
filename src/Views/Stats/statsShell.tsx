@@ -11,12 +11,15 @@ import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shel
 
 /** The column widths, and nothing else. */
 export const W = {
+  // ⚠️ These grew with the table's type size (owner asked for larger text). A width is
+  // a box for a string that is now ~8% wider — leaving them meant "1,400" and the /G
+  // headers truncating in place. Sized off the widest real value each class holds.
   /** counts — GP, REC, TD, INT */
-  count: 44,
+  count: 48,
   /** rates and ratings — RCV%, YPR, PERF */
-  rate: 52,
+  rate: 58,
   /** volume and totals — YDS, PTS */
-  volume: 58,
+  volume: 64,
   /**
    * A rate whose LABEL needs the extra room, not its value.
    *
@@ -24,7 +27,7 @@ export const W = {
    * meaningless without it (see the wpa column) — and at `rate` the label ran into
    * PERF beside it and the two read as one word, "PERFWPA WINS".
    */
-  wideRate: 68,
+  wideRate: 74,
 } as const
 
 export interface Column<Row> {
@@ -315,7 +318,7 @@ export function StatsTable<Row extends { id: number }>({
           {leads.map(lead => (
             <span key={lead.header} style={{
               width: `${lead.width}px`, flexShrink: 0,
-              ...font(700, 11, 1, '0.1em'), color: TEXT.muted, padding: '10px 0',
+              ...font(700, 12, 1, '0.08em'), color: TEXT.muted, padding: '10px 0',
             }}>{lead.header}</span>
           ))}
           <span style={{ flex: 1, minWidth: '60px' }} />
@@ -344,7 +347,7 @@ export function StatsTable<Row extends { id: number }>({
                   // come AFTER the shorthand or the shorthand resets it.
                   padding: `10px 0 10px ${col.flexible ? 16 : 0}px`,
                   cursor: col.sort ? 'pointer' : 'default', fontFamily: FONT,
-                  ...font(sorted ? 800 : 700, 11, 1, '0.1em'),
+                  ...font(sorted ? 800 : 700, 12, 1, '0.08em'),
                   color: sorted ? TEXT.body : TEXT.muted,
                   whiteSpace: 'nowrap', overflow: 'hidden',
                 }}
@@ -400,7 +403,7 @@ export function StatsTable<Row extends { id: number }>({
                     flexShrink: 0,
                     textAlign: col.flexible ? 'left' : 'right',
                     paddingLeft: col.flexible ? '16px' : undefined,
-                    ...font(sorted ? 700 : 500, 13),
+                    ...font(sorted ? 700 : 500, 14),
                     color: tint || (sorted ? TEXT.strong : TEXT.secondary),
                     ...TABULAR,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',

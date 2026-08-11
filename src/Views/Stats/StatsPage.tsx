@@ -255,7 +255,7 @@ const StatsPage: React.FC = () => {
                 the team, and the same circle appears on every other surface. */}
             <Crest teamId={row.teamId} size={17} />
             <span style={{
-              ...font(600, 13), color: TEXT.primary,
+              ...font(600, 14), color: TEXT.primary,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               minWidth: 0,
               ...(row.awakened ? AWAKENED_NAME : {}),
@@ -275,7 +275,7 @@ const StatsPage: React.FC = () => {
       // Neutral, not the club colour: the avatar carries identity, and thirty-two
       // brand colours down a dense table is noise.
       render: row => (
-        <span style={{ ...font(600, 10, 1, '0.04em'), color: TEXT.muted }}>
+        <span style={{ ...font(600, 11, 1, '0.04em'), color: TEXT.muted }}>
           {row.teamAbbr || (row.status === 'retired' ? '—' : 'FA')}
         </span>
       ),

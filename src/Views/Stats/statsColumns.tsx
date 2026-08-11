@@ -72,6 +72,26 @@ const games = (careerScope: boolean): Column<StatsPlayerRow> | null => (careerSc
   }
   : null)
 
+/**
+ * What the player IS, next to PERF's what-they-DID.
+ *
+ * ⚠️ A COLUMN, not just the stars in the lead cell (owner: the table had no way to sort
+ * by rating). Lead cells carry identity and take no sort, so the rating was visible on
+ * every row and orderable on none — and "who are the best players here" is the first
+ * question a stats table gets asked. The stars stay where they are; this is the number
+ * behind them.
+ *
+ * Same 60-100 scale and the same ramp as PERF, deliberately: sitting them together is
+ * what turns two numbers into a reading — a high rating over a low PERF is a player not
+ * producing what they should.
+ */
+const rating: Column<StatsPlayerRow> = {
+  key: 'rtg', label: 'RTG', help: 'Player rating, 60-100. What this player is on paper, from their attributes — PERF beside it is what they actually produced', width: W.rate,
+  cell: r => n(r.playerRating),
+  sort: r => r.playerRating ?? -1,
+  tint: r => (r.playerRating != null ? statRampColor(r.playerRating) : undefined),
+}
+
 const perf: Column<StatsPlayerRow> = {
   key: 'perf', label: 'PERF', help: 'Performance rating, 60-100. Where this player ranks against everyone at their position by what they actually produced, not by their attributes', width: W.rate,
   cell: r => n(r.impact.performanceRating),
@@ -217,6 +237,7 @@ function _playerColumns(position: string, careerScope: boolean,
       count('int', 'INT', 'Interceptions', W.count, r => r.defense.ints),
       count('pd', 'PD', 'Passes defended, broken up without intercepting', W.count, r => r.defense.passBreakups),
       count('ff', 'FF', 'Forced fumbles', W.count, r => r.defense.forcedFumbles),
+      rating,
       defRating,
       wpa,
     ]
@@ -234,7 +255,7 @@ function _playerColumns(position: string, careerScope: boolean,
         count('pint', 'INT', 'Interceptions thrown', W.count, r => r.passing.ints),
         count('sacked', 'SACK', 'Times sacked', 48, r => r.passing.sacked),
         { key: 'air', label: 'AIR', help: 'Average air yards per throw, measured where the ball was aimed rather than where it ended up. Counts incompletions', width: W.rate, cell: r => n(r.passing.airYardsSum), sort: r => r.passing.airYardsSum ?? 0 },
-        perf, wpa, points,
+        rating, perf, wpa, points,
       ]
     case 'RB':
       return [
@@ -246,7 +267,7 @@ function _playerColumns(position: string, careerScope: boolean,
         count('fum', 'FUM', 'Fumbles', W.count, r => r.rushing.fumblesLost),
         count('rec', 'REC', 'Receptions', W.count, r => r.receiving.receptions),
         count('recyds', 'RECYDS', 'Receiving yards', 62, r => r.receiving.yards),
-        perf, wpa, points,
+        rating, perf, wpa, points,
       ]
     case 'K':
       return [
@@ -257,7 +278,7 @@ function _playerColumns(position: string, careerScope: boolean,
         { key: 'klng', label: 'LNG', help: 'Longest field goal made', width: W.count, cell: r => n(r.kicking.longest), sort: r => r.kicking.longest ?? 0 },
         count('xpm', 'XPM', 'Extra points made', W.count, r => r.kicking.xps),
         count('xpa', 'XPA', 'Extra points attempted', W.count, r => r.kicking.xpAtt),
-        perf, points,
+        rating, perf, points,
       ]
     case 'WR':
     case 'TE':
@@ -272,10 +293,10 @@ function _playerColumns(position: string, careerScope: boolean,
         count('drp', 'DRP', 'Drops', W.count, r => r.receiving.drops),
         { key: 'lng', label: 'LNG', help: 'Longest reception', width: W.count, cell: r => n(r.receiving.longest), sort: r => r.receiving.longest ?? 0 },
         count('rtd', 'TD', 'Touchdowns', W.count, r => r.receiving.tds),
-        perf, wpa, points,
+        rating, perf, wpa, points,
       ]
     default:
-      return [gp, perf, wpa, points, statLineColumn(perGame)]
+      return [gp, rating, perf, wpa, points, statLineColumn(perGame)]
   }
 }
 
