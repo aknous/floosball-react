@@ -49,7 +49,7 @@ src/
     useFantasySnapshot.ts           # REST /api/fantasy/snapshot + WS leaderboard_update merge
     useGmData.ts                    # GM eligible/summary/votes/results; castVote/undoVote/submitBallot
     usePickEm.ts                    # Pick-em current-slot week + leaderboard; optimistic submitPick
-    usePickEmDay.ts                 # Whole-day picks: /api/pickem/day draft state + bulk /api/pickem/picks submit
+    usePickEmDay.ts                 # Whole-day picks: /api/pickem/day + bulk /api/pickem/picks. PICKING IS THE SUBMISSION — no submit button; each pick POSTs immediately (a pick made during an in-flight save rides the next one). Staged picks live in a Map keyed "week:gameIndex" so a refetch cannot wipe one, and a CLEAN save deliberately does NOT refetch (only a skip does)
     useModifierSchedule.ts          # /api/fantasy/modifier-schedule — day's modifier slate (active/next)
     useCardProjection.ts            # Card payout projection (owned + not-yet-owned templates)
     useAppSettings.ts               # Singleton fetch of /api/app-settings (feedback/survey toggles)
@@ -107,7 +107,7 @@ Bar/badge FILLS use a team's raw primary. **Text does not.** `readableTeamColor(
 | `/` | `Views/Front/FrontPage` | Signed-in landing: Happening now / League news / Worth watching + rail (Your team, Your numbers, The Cores) |
 | `/games` | `Views/GameBoard/GameBoardPage` | Every game of the week, Large (2-up) or Small (4-up), fixed interest ranking, active-rules strip |
 | `/standings` | `Views/Standings/StandingsPage` | Three views: By division / By league / Wild card race |
-| `/prognostications` | `Views/Prognostications/PrognosticationsPage` | Thin frame around the existing `PickEmPanel` |
+| `/prognostications` | `Views/Prognostications/PrognosticationsPage` | Head-to-head `MatchupCard`s + rail (your season, auto-pick, leaderboard). Picks save themselves — the bottom bar is an acknowledgement, and it only sits there when a save FAILED or the game had already kicked off. Settled games show a green check + the points, a red X, or a lock while a game is underway |
 | `/dashboard` | redirect → `/` | Old landing |
 | `/dashboard/legacy` | `DashboardNew` | The previous dashboard, kept for comparison |
 | `/dashboard/old` | `Dashboard` | Legacy |
