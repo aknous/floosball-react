@@ -16,6 +16,18 @@ const RANK_STYLE: Record<number, { label: string; color: string; bg: string }> =
 }
 
 const WEEKLY_PRIZES: Record<number, number> = { 1: 30, 2: 20, 3: 15 }
+/**
+ * The board scrolls rather than truncating.
+ *
+ * ⚠️ A max-height, not a full-height column. This sits beside the scoring pane, and an
+ * unbounded list of every player in the league would drag the page metres long for
+ * anyone below the middle of the table.
+ */
+const listStyle: React.CSSProperties = {
+  display: 'flex', flexDirection: 'column', gap: '4px',
+  maxHeight: '520px', overflowY: 'auto', overflowX: 'hidden',
+}
+
 const WEEKLY_TOP_PCT_PRIZE = 5
 const SEASON_PRIZES: Record<number, number> = { 1: 200, 2: 125, 3: 75 }
 const SEASON_TOP_PCT_PRIZE = 25
@@ -217,13 +229,16 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
             No locked rosters yet
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={listStyle}>
             {(() => {
-              const top5 = snapshotEntries.slice(0, 5)
-              const meInTop5 = top5.some(e => currentUserId != null && e.userId === currentUserId)
-              const meEntry = !meInTop5 ? snapshotEntries.find(e => currentUserId != null && e.userId === currentUserId) : null
+              // ⚠️ EVERYONE, not the top five (owner: users asked for a real
+              // leaderboard). A cut-off board answers "who is winning" and refuses the
+              // question most people actually have, which is "where am I". The list
+              // scrolls instead, and the reader's own row is tinted wherever it falls,
+              // so the pinned duplicate that used to sit under the top five is gone.
+              const rows = snapshotEntries
               return <>
-                {top5.map(entry => {
+                {rows.map(entry => {
                   const isExpanded = expandedUserId === entry.userId
                   const isMe = currentUserId != null && entry.userId === currentUserId
                   return (
@@ -259,7 +274,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                           <div style={pointsStyleFn(isMobile)}>{entry.seasonTotal.toFixed(0)}</div>
                           {entry.seasonCardBonus > 0 && (
                             <div style={{ fontSize: '9px', color: '#a78bfa', marginTop: '1px' }}>
-                              +{entry.seasonCardBonus.toFixed(0)} cards
+                              +{entry.seasonCardBonus.toFixed(0)} FP from cards
                             </div>
                           )}
                         </div>
@@ -281,55 +296,6 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                     </div>
                   )
                 })}
-                {meEntry && (() => {
-                  const isExpanded = expandedUserId === meEntry.userId
-                  return <>
-                    <div style={{ borderTop: '1px solid #334155', margin: '4px 0' }} />
-                    <div key={meEntry.userId}>
-                      <button
-                        onClick={() => setExpandedUserId(isExpanded ? null : meEntry.userId)}
-                        style={rowStyle(isExpanded, isMobile, true)}
-                      >
-                        <div style={rankStyleFn(meEntry.rank, isMobile)}>{meEntry.rank}</div>
-                        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {meEntry.favoriteTeamData?.teamId && (
-                            <img
-                              src={`/avatars/${meEntry.favoriteTeamData.teamId}.png`}
-                              alt=""
-                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, }}
-                            />
-                          )}
-                          <div style={nameStyleFn(isMobile)}>
-                            {meEntry.username}
-                            <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div style={pointsStyleFn(isMobile)}>{meEntry.seasonTotal.toFixed(0)}</div>
-                          {meEntry.seasonCardBonus > 0 && (
-                            <div style={{ fontSize: '9px', color: '#a78bfa', marginTop: '1px' }}>
-                              +{meEntry.seasonCardBonus.toFixed(0)} cards
-                            </div>
-                          )}
-                        </div>
-                        <div style={chevronStyle(isExpanded)}>▼</div>
-                      </button>
-                      {isExpanded && season != null && week != null && (
-                        <LeaderboardExpandedBody
-                          userId={meEntry.userId}
-                          season={season}
-                          week={week}
-                          players={meEntry.players.map(p => ({
-                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr, teamId: (p as any).teamId ?? null,
-                            points: p.earnedPoints, isPrev: p.slot === 'PREV',
-                          }))}
-                          breakdowns={meEntry.cardBreakdowns}
-                          isMobile={isMobile}
-                        />
-                      )}
-                    </div>
-                  </>
-                })()}
               </>
             })()}
           </div>
@@ -337,13 +303,12 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
       ) : (
         /* Weekly view — current week only */
         currentWeekData && currentWeekData.entries.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={listStyle}>
             {(() => {
-              const top5 = currentWeekData.entries.slice(0, 5)
-              const meInTop5 = top5.some(e => currentUserId != null && e.userId === currentUserId)
-              const meEntry = !meInTop5 ? currentWeekData.entries.find(e => currentUserId != null && e.userId === currentUserId) : null
+              // See the season branch: the whole board, scrolled, with your own row tinted.
+              const rows = currentWeekData.entries
               return <>
-                {top5.map(entry => {
+                {rows.map(entry => {
                   const isExpanded = expandedUserId === entry.userId
                   const isMe = currentUserId != null && entry.userId === currentUserId
                   return (
@@ -379,7 +344,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                           <div style={pointsStyleFn(isMobile)}>{entry.weekPoints.toFixed(0)}</div>
                           {(entry.cardBonusPoints ?? 0) > 0 && (
                             <div style={{ fontSize: '9px', color: '#a78bfa', marginTop: '1px' }}>
-                              +{entry.cardBonusPoints.toFixed(0)} cards
+                              +{entry.cardBonusPoints.toFixed(0)} FP from cards
                             </div>
                           )}
                         </div>
@@ -401,55 +366,6 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                     </div>
                   )
                 })}
-                {meEntry && (() => {
-                  const isExpanded = expandedUserId === meEntry.userId
-                  return <>
-                    <div style={{ borderTop: '1px solid #334155', margin: '4px 0' }} />
-                    <div key={meEntry.userId}>
-                      <button
-                        onClick={() => setExpandedUserId(isExpanded ? null : meEntry.userId)}
-                        style={rowStyle(isExpanded, isMobile, true)}
-                      >
-                        <div style={rankStyleFn(meEntry.rank, isMobile)}>{meEntry.rank}</div>
-                        <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {meEntry.favoriteTeamId && (
-                            <img
-                              src={`/avatars/${meEntry.favoriteTeamId}.png`}
-                              alt=""
-                              style={{ width: isMobile ? 16 : 20, height: isMobile ? 16 : 20, flexShrink: 0, }}
-                            />
-                          )}
-                          <div style={nameStyleFn(isMobile)}>
-                            {meEntry.username}
-                            <span style={{ color: '#3b82f6', marginLeft: '4px', fontSize: '10px' }}>(you)</span>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div style={pointsStyleFn(isMobile)}>{meEntry.weekPoints.toFixed(0)}</div>
-                          {(meEntry.cardBonusPoints ?? 0) > 0 && (
-                            <div style={{ fontSize: '9px', color: '#a78bfa', marginTop: '1px' }}>
-                              +{meEntry.cardBonusPoints.toFixed(0)} cards
-                            </div>
-                          )}
-                        </div>
-                        <div style={chevronStyle(isExpanded)}>▼</div>
-                      </button>
-                      {isExpanded && season != null && currentWeekData && (
-                        <LeaderboardExpandedBody
-                          userId={meEntry.userId}
-                          season={season}
-                          week={currentWeekData.week}
-                          players={meEntry.players.map(p => ({
-                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr, teamId: (p as any).teamId ?? null,
-                            points: p.weekPoints,
-                          }))}
-                          breakdowns={meEntry.cardBreakdowns}
-                          isMobile={isMobile}
-                        />
-                      )}
-                    </div>
-                  </>
-                })()}
               </>
             })()}
           </div>

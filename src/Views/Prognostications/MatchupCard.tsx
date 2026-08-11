@@ -14,7 +14,7 @@ import type { TeamStanding } from '@/Views/Standings/standingsTypes'
  * asked to judge. This is the shape the old `PickRow` had and it was the right one.
  *
  * ⚠️ Three numbers on the face, the rest behind MORE. The first build put form, streak,
- * differential, division record, record and the multiplier on one line for both clubs —
+ * differential, division record, record and the points on one line for both clubs —
  * every number useful, and sixteen cards of it a wall.
  *
  * Team context comes from `/api/standings`, joined by id: the standings board already
@@ -87,13 +87,12 @@ const Side: React.FC<{
   /** Away reads left-to-right, home reads right-to-left, so the two mirror the gutter. */
   align: 'left' | 'right'
   winPct: number
-  multiplier: number
   points: number
   picked: boolean
   dimmed: boolean
   disabled: boolean
   onPick: () => void
-}> = ({ team, standing, align, winPct, multiplier, points, picked, dimmed, disabled, onPick }) => {
+}> = ({ team, standing, align, winPct, points, picked, dimmed, disabled, onPick }) => {
   const accent = readableTeamColor(team.color || '#94a3b8')
   const rtl = align === 'right'
   return (
@@ -102,11 +101,18 @@ const Side: React.FC<{
       className={disabled ? undefined : 'plate'}
       style={{
         flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
-        alignItems: rtl ? 'flex-end' : 'flex-start', gap: '4px',
-        padding: '9px 11px', fontFamily: FONT,
+        alignItems: rtl ? 'flex-end' : 'flex-start', gap: '8px',
+        padding: '13px 14px', fontFamily: FONT,
         textAlign: rtl ? 'right' : 'left',
-        background: picked ? `${team.color}22` : BG.card,
+        // ⚠️ EVERY SIDE CARRIES ITS CLUB'S COLOUR, not just the one you picked. A
+        // board of sixteen matchups was sixteen identical grey boxes, and readers said
+        // they could not tell one game from another at a glance. The wash is faint
+        // (0x0e) so it tints rather than shouts, and the edge rail is the club's own
+        // colour at full strength — the two together make a card identifiable before
+        // any text is read.
+        background: picked ? `${team.color}22` : `${team.color}0e`,
         border: `1px solid ${picked ? accent : 'transparent'}`,
+        [rtl ? 'borderRight' : 'borderLeft']: `3px solid ${accent}`,
         cursor: disabled ? 'default' : 'pointer',
         // The side you did NOT take recedes, so the call reads at a glance.
         opacity: dimmed ? 0.45 : 1,
@@ -114,7 +120,7 @@ const Side: React.FC<{
     >
       {/* ⚠️ Both rows run EDGE TO EDGE, club on the outside and the numbers on the
           inside. Grouped at one end they left a hole down the middle of every panel,
-          and the multiplier — the price of this side, and half the decision — ended up
+          and the points — the price of this side, and half the decision — ended up
           buried in a run of small text instead of sitting where the eye already is,
           next to the gutter. */}
       <span style={{
@@ -126,15 +132,25 @@ const Side: React.FC<{
           display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0,
           flexDirection: rtl ? 'row-reverse' : 'row',
         }}>
-          <Crest teamId={team.id} size={22} />
-          <span style={{
-            ...font(picked ? 800 : 700, 14, 1, '0.02em'),
-            color: picked ? accent : TEXT.body,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{team.abbr}</span>
+          {/* ⚠️ The CREST and the NAME, both bigger. This showed a 22px crest and a
+              three-letter code, which is the least distinctive way to render a club:
+              the abbreviations are similar, and the crest was too small to read as a
+              mark. The name is the thing a reader recognises. */}
+          <Crest teamId={team.id} size={34} />
+          <span style={{ minWidth: 0 }}>
+            <span style={{
+              display: 'block', ...font(500, 10, 1, '0.06em'), color: TEXT.muted,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{team.city ?? team.abbr}</span>
+            <span style={{
+              display: 'block', ...font(picked ? 800 : 700, 16, 1.15, '-0.01em'),
+              color: picked ? accent : TEXT.primary, marginTop: '2px',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{team.name}</span>
+          </span>
         </span>
         <span style={{
-          ...font(800, 21, 1), ...TABULAR, flexShrink: 0,
+          ...font(800, 19, 1), ...TABULAR, flexShrink: 0,
           color: winPct >= 50 ? TEXT.primary : TEXT.muted,
         }}>{winPct}%</span>
       </span>
@@ -153,13 +169,20 @@ const Side: React.FC<{
           display: 'flex', alignItems: 'baseline', gap: '5px', flexShrink: 0,
           flexDirection: rtl ? 'row-reverse' : 'row',
         }}>
+          {/* ⚠️ THE POINTS, AND ONLY THE POINTS (owner). The card used to print the
+              multiplier beside them, which is just the arithmetic that produced the
+              number the reader already has. Two numbers where one is derived from the
+              other is what made this confusing.
+              The colour keeps the intuition: a big payout reads live-green, a heavy
+              favorite recedes. Same information, no second number to reconcile.
+              ⚠️ The unit stays glued to the value — this row REVERSES on the home
+              side, and a bare number left "pts" stranded across the mirror. */}
           <span style={{
-            ...font(800, 17, 1), ...TABULAR,
-            color: multiplier >= 1.5 ? ACCENT.live : multiplier < 0.8 ? TEXT.muted : TEXT.body,
-          }}>{multiplier.toFixed(1)}x</span>
-          {/* ⚠️ Keeps its unit. Bare, it read as part of the multiplier — and on the
-              mirrored side the row reverses, so "11 1.5x" could be either number. */}
-          <span style={{ ...font(500, 10), color: TEXT.muted, ...TABULAR }}>{points} pts</span>
+            ...font(800, 17, 1), ...TABULAR, whiteSpace: 'nowrap',
+            color: points >= 15 ? ACCENT.live : points < 8 ? TEXT.muted : TEXT.body,
+          }}>
+            {points}<span style={{ ...font(500, 10), marginLeft: '3px' }}>pts</span>
+          </span>
         </span>
       </span>
     </button>
@@ -196,7 +219,7 @@ export const MatchupCard: React.FC<{
       <div style={{ display: 'flex', alignItems: 'stretch', gap: '4px', padding: '4px' }}>
         <Side
           team={away} standing={awayStanding} align="left"
-          winPct={wp.away} multiplier={awayMult}
+          winPct={wp.away}
           points={multiplierToPoints(timing, awayMult)}
           picked={awayPicked} dimmed={hasPick && !awayPicked}
           disabled={!game.pickable}
@@ -218,16 +241,23 @@ export const MatchupCard: React.FC<{
           ) : (
             <>
               <span style={{ ...font(600, 12), color: TEXT.muted }}>vs</span>
-              <span style={{ ...font(500, 11), color: TEXT.muted, ...TABULAR }}>
-                {game.pickable ? `${timing.toFixed(2)}x` : 'LOCKED'}
-              </span>
+              {/* ⚠️ The TIMING multiplier used to live here. Picks close at kickoff
+                  now, so it is 1.00x on every pickable game and told the reader
+                  nothing — it was two multipliers on one card where only one varies.
+                  LOCKED still earns the slot: it is the difference between a game you
+                  can still call and one that has gone. */}
+              {!game.pickable && (
+                <span style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted }}>
+                  LOCKED
+                </span>
+              )}
             </>
           )}
         </div>
 
         <Side
           team={home} standing={homeStanding} align="right"
-          winPct={wp.home} multiplier={homeMult}
+          winPct={wp.home}
           points={multiplierToPoints(timing, homeMult)}
           picked={homePicked} dimmed={hasPick && !homePicked}
           disabled={!game.pickable}

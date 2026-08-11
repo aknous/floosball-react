@@ -166,9 +166,22 @@ const PrognosticationsPage: React.FC = () => {
           <h1 style={{ ...font(800, 22, 1, '-0.03em'), color: TEXT.primary, margin: 0 }}>
             Prognostications
           </h1>
+          {/* ⚠️ The rule and the maths, on the page, in one line each. Readers were
+              asking what the multipliers meant and what a pick was worth — both were
+              only discoverable by picking something and looking at the number that
+              came back. */}
           <span style={{ display: 'block', ...font(400, 12), color: TEXT.muted, marginTop: '6px' }}>
             {day != null ? `Day ${day + 1}` : 'Today'}
-            {' · '}Picks lock when a game goes final.
+            {' · '}Picks lock at kickoff.
+          </span>
+          {/* ⚠️ Stated in POINTS, not multipliers (owner). The card shows each team's
+              points, so quoting a multiplier here asked the reader to do the same sum
+              the card had already done for them. 10 base, 3.0x and 0.4x bounds, so the
+              real range is 4 to 30 — say that instead. */}
+          <span style={{ display: 'block', ...font(400, 12, 1.5), color: TEXT.secondary, marginTop: '4px' }}>
+            Each team shows what a correct pick on them is worth: about
+            {' '}<strong style={{ color: TEXT.body }}>10 points</strong> on an even game, up to 30 for a
+            big underdog and as few as 4 for a heavy favorite. A wrong pick scores nothing.
           </span>
         </span>
         <span style={{ flex: 1 }} />
@@ -332,8 +345,7 @@ const PrognosticationsPage: React.FC = () => {
                 </div>
               )}
               <div style={{ padding: '13px 15px', ...font(400, 11, 1.6), color: TEXT.muted }}>
-                Underdogs pay up to 3x, big favorites as little as 0.4x. Picking before
-                kickoff pays the most.
+                Underdogs pay the most, big favorites the least. Picks close at kickoff.
               </div>
             </div>
 
