@@ -70,11 +70,6 @@ const AutoPickPanel: React.FC = () => {
       }}>AUTO-PICK</div>
 
       <div style={{ padding: '11px 15px 13px' }}>
-        <p style={{ ...font(400, 11, 1.6), color: TEXT.muted, margin: '0 0 11px' }}>
-          Fills games you miss. Never overwrites your own picks, and takes the
-          pre-game rate.
-        </p>
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
           {MODES.map(m => {
             const active = mode === m.key
@@ -110,14 +105,14 @@ const AutoPickPanel: React.FC = () => {
             onClick={toggleLoyal}
             disabled={saving || mode === 'off'}
             style={{
-              display: 'flex', alignItems: 'flex-start', gap: '10px', width: '100%',
+              display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
               textAlign: 'left', background: 'transparent', border: 'none', padding: 0,
               cursor: saving || mode === 'off' ? 'default' : 'pointer', fontFamily: FONT,
               opacity: mode === 'off' ? 0.5 : 1,
             }}
           >
             <span style={{
-              width: '15px', height: '15px', flexShrink: 0, marginTop: '1px',
+              width: '15px', height: '15px', flexShrink: 0,
               border: `1px solid ${loyal ? ACCENT.ownTeam : BORDER.hover}`,
               background: loyal ? ACCENT.ownTeam : 'transparent',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -128,15 +123,8 @@ const AutoPickPanel: React.FC = () => {
                 </svg>
               )}
             </span>
-            <span style={{ minWidth: 0 }}>
-              <span style={{ display: 'block', ...font(600, 12), color: TEXT.body }}>
-                Never pick against my team
-              </span>
-              <span style={{ display: 'block', ...font(400, 10, 1.6), color: TEXT.muted, marginTop: '4px' }}>
-                {mode === 'off'
-                  ? 'Pick a mode above first.'
-                  : 'Takes your team whatever the mode would have chosen. Costs points on average.'}
-              </span>
+            <span style={{ minWidth: 0, ...font(600, 12), color: TEXT.body }}>
+              Never pick against my team
             </span>
           </button>
         </div>
