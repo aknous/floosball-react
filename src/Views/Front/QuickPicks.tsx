@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { BG, BORDER, TEXT, ACCENT, FONT, font } from '@/Components/Shell/tokens'
+import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { usePickEmDay } from '@/hooks/usePickEmDay'
 import MatchupCard from '@/Views/Prognostications/MatchupCard'
 import { SectionHeader } from './frontPieces'
@@ -51,13 +51,13 @@ const Arrow: React.FC<{
     aria-label={label}
     style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      width: '26px', height: '26px', flexShrink: 0,
+      width: '22px', height: '22px', flexShrink: 0,
       background: 'transparent', border: `1px solid ${BORDER.hairline}`,
       cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.35 : 1,
       fontFamily: FONT,
     }}
   >
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={TEXT.secondary}
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={TEXT.secondary}
          strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d={dir === 'prev' ? 'M15 5L8 12l7 7' : 'M9 5l7 7-7 7'} />
     </svg>
@@ -197,41 +197,38 @@ const QuickPicks: React.FC<{
         link={{ to: '/prognostications', label: 'ALL' }}
       />
       <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}`, padding: '12px' }}>
-        {/* The week, and then the game within it. Two rows because they are two
-            different journeys — one steps across the day, the other along a slate. */}
+        {/* ⚠️ ONE ROW, TWO STEPPERS (owner: the navigation was eating half the panel).
+            Two stacked rows spent ~70px of chrome above a ~70px card, which is a lot of
+            furniture for a thing whose job is to show one matchup. Week on the left,
+            game on the right, each with its own pair — the two journeys stay separate,
+            they just stop taking a row each. */}
         <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '8px', marginBottom: '9px',
         }}>
-          <Arrow dir="prev" label="Previous week"
-                 onClick={() => stepWeek(-1)} disabled={slots.length < 2} />
-          <span style={{
-            flex: 1, textAlign: 'center', ...font(800, 13, 1, '0.06em'), color: TEXT.body,
-          }}>
-            WEEK {shown.week}
+          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Arrow dir="prev" label="Previous week"
+                   onClick={() => stepWeek(-1)} disabled={slots.length < 2} />
+            <span style={{
+              ...font(800, 12, 1, '0.05em'), color: TEXT.body,
+              minWidth: '52px', textAlign: 'center',
+            }}>WK {shown.week}</span>
+            <Arrow dir="next" label="Next week"
+                   onClick={() => stepWeek(1)} disabled={slots.length < 2} />
           </span>
-          <Arrow dir="next" label="Next week"
-                 onClick={() => stepWeek(1)} disabled={slots.length < 2} />
+
+          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Arrow dir="prev" label="Previous game"
+                   onClick={() => step(-1)} disabled={games.length < 2} />
+            <span style={{
+              ...font(600, 12, 1), color: TEXT.muted, ...TABULAR,
+              minWidth: '44px', textAlign: 'center',
+            }}>{at + 1}/{games.length}</span>
+            <Arrow dir="next" label="Next game"
+                   onClick={() => step(1)} disabled={games.length < 2} />
+          </span>
         </div>
 
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px',
-        }}>
-          <Arrow dir="prev" label="Previous game"
-                 onClick={() => step(-1)} disabled={games.length < 2} />
-          <span style={{
-            flex: 1, textAlign: 'center', ...font(600, 12, 1, '0.06em'), color: TEXT.muted,
-          }}>
-            GAME {at + 1} OF {games.length}
-          </span>
-          <Arrow dir="next" label="Next game"
-                 onClick={() => step(1)} disabled={games.length < 2} />
-        </div>
-
-        {/* ⚠️ THE PROGNOSTICATIONS CARD ITSELF (owner), not a rail-sized lookalike. The
-            two surfaces have to agree about what a matchup looks like, what a pick looks
-            like once made, and what a settled game shows — and they only stay agreed if
-            there is one component. It brings its own MORE expander and its own
-            check / cross / lock gutter with it. */}
         {/* The card locks itself off `game.pickable` — the lock in the gutter and both
             sides inert — so a kicked-off game reads the same here as on the page. */}
         <MatchupCard game={game} standings={standings} onPick={choose} compact />
