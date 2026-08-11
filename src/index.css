@@ -1095,3 +1095,117 @@
     padding: 14px 10px 28px !important;
   }
 }
+
+/* ── Glitch intensity: full / reduced / off ───────────────────────────────
+   A reader told us the anomaly animations were bogging down their laptop and
+   were an accessibility problem for them. Three levels, set on <html> as
+   data-glitch by useGlitchIntensity, which seeds itself from
+   prefers-reduced-motion the first time.
+
+   ⚠️ THE GLITCH CLASSES CARRY NOTHING BUT ANIMATION. `.glitch-text-l1` and its
+   siblings are a single `animation:` line — no colour, no weight, nothing that
+   survives switching the animation off. So turning them off does not calm the
+   text down, it makes an anomalous player look exactly like everybody else, and
+   the state stops existing on screen. Every rule below therefore REPLACES the
+   animation with a static treatment lifted from that animation's own resting
+   frame, rather than simply removing it.
+
+   The static marker is a colour AND a dotted underline: colour alone is not a
+   marker for a reader who cannot separate these hues, which is the same
+   accessibility argument that started this. */
+
+/* REDUCED — the jitter, skew, strobe and position sweeps go; one slow breath
+   stays, so a glitched name still reads as alive without moving anything. */
+@keyframes glitch-breathe {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.72; }
+}
+
+html[data-glitch="reduced"] .glitch-text-l1,
+html[data-glitch="reduced"] .glitch-text-l1-a,
+html[data-glitch="reduced"] .glitch-text-l1-b,
+html[data-glitch="reduced"] .glitch-text-l1-c {
+  animation: glitch-breathe 4s ease-in-out infinite;
+  text-shadow: 1.5px 0 0 rgba(57, 255, 20, 0.6), -1.5px 0 0 rgba(16, 185, 129, 0.6);
+  transform: none;
+}
+
+html[data-glitch="reduced"] .glitch-text-l2,
+html[data-glitch="reduced"] .glitch-text-l2-a,
+html[data-glitch="reduced"] .glitch-text-l2-b,
+html[data-glitch="reduced"] .glitch-text-l2-c {
+  animation: glitch-breathe 3s ease-in-out infinite;
+  text-shadow: 1.5px 0 0 rgba(57, 255, 20, 0.8), -1.5px 0 0 rgba(16, 185, 129, 0.8);
+  transform: none;
+}
+
+html[data-glitch="reduced"] .glitch-text-l3,
+html[data-glitch="reduced"] .anomaly-row-l3 .glitch-text-l3,
+html[data-glitch="reduced"] .anomaly-label-l3 {
+  animation: glitch-breathe 3s ease-in-out infinite;
+  text-shadow: 0 0 6px rgba(196, 181, 253, 0.9);
+  transform: none;
+}
+
+/* The row-wide L3 convergence moves every element in the row. Nothing of it
+   survives reduced — it is the single most expensive effect on the page. */
+html[data-glitch="reduced"] .anomaly-row-l3 p,
+html[data-glitch="reduced"] .anomaly-row-l3 span:not(.anomaly-label-l3),
+html[data-glitch="reduced"] .anomaly-row-l3 div {
+  animation: none;
+  text-shadow: none;
+  transform: none;
+}
+
+/* OFF — no animation anywhere, and the state is carried entirely by the static
+   marker. `* ` rather than a list: an effect added later must not quietly come
+   back to life for the reader who switched these off. */
+html[data-glitch="off"] .glitch-text-l1,
+html[data-glitch="off"] .glitch-text-l1-a,
+html[data-glitch="off"] .glitch-text-l1-b,
+html[data-glitch="off"] .glitch-text-l1-c,
+html[data-glitch="off"] .glitch-text-l2,
+html[data-glitch="off"] .glitch-text-l2-a,
+html[data-glitch="off"] .glitch-text-l2-b,
+html[data-glitch="off"] .glitch-text-l2-c,
+html[data-glitch="off"] .glitch-text-l3,
+html[data-glitch="off"] .anomaly-label-l3,
+html[data-glitch="off"] .anomaly-row-l3 p,
+html[data-glitch="off"] .anomaly-row-l3 span,
+html[data-glitch="off"] .anomaly-row-l3 div,
+html[data-glitch="off"] .glitched-card,
+html[data-glitch="off"] .glitched-card::before,
+html[data-glitch="off"] .glitched-card::after,
+html[data-glitch="off"] .glitched-card-surged::after,
+html[data-glitch="off"] .criticality-glitch,
+html[data-glitch="off"] .criticality-glitch * {
+  animation: none !important;
+  transform: none !important;
+}
+
+/* …and this is what says "something is different" once nothing moves. */
+html[data-glitch="off"] .glitch-text-l1,
+html[data-glitch="off"] .glitch-text-l1-a,
+html[data-glitch="off"] .glitch-text-l1-b,
+html[data-glitch="off"] .glitch-text-l1-c {
+  color: #39ff14;
+  text-decoration: underline dotted 1px;
+  text-underline-offset: 3px;
+}
+
+html[data-glitch="off"] .glitch-text-l2,
+html[data-glitch="off"] .glitch-text-l2-a,
+html[data-glitch="off"] .glitch-text-l2-b,
+html[data-glitch="off"] .glitch-text-l2-c {
+  color: #39ff14;
+  text-shadow: 1px 0 0 rgba(16, 185, 129, 0.8);
+  text-decoration: underline dotted 2px;
+  text-underline-offset: 3px;
+}
+
+html[data-glitch="off"] .glitch-text-l3,
+html[data-glitch="off"] .anomaly-label-l3 {
+  color: #c4b5fd;
+  text-decoration: underline dotted 2px;
+  text-underline-offset: 3px;
+}

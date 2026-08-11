@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import axios from 'axios'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useGlitchIntensity, GLITCH_OPTIONS } from '@/hooks/useGlitchIntensity'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -54,6 +55,7 @@ const notifTypeColors = {
 export function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeamPicker }) {
   const { user, logout, getToken } = useAuth()
   const [emailOptOut, setEmailOptOut] = useState(user?.emailOptOut ?? false)
+  const { intensity: glitchIntensity, setIntensity: setGlitchIntensity } = useGlitchIntensity()
   // Renaming lives here for now because this dropdown is the only account surface that
   // exists. Its real home is the profile page (next-season item 4); moving it is a lift
   // and shift, since all the rules live server-side.
@@ -251,6 +253,35 @@ export function UserDropdown({ onClose, notifications, onMarkAllRead, onOpenTeam
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
         </svg>
       </button>
+
+      {/* ⚠️ A PER-DEVICE SETTING, deliberately not an account preference: a reader turned
+          these down because of the laptop in front of them and the way the motion reads
+          to them, and the same account on another machine may well want them on. Seeded
+          from prefers-reduced-motion, so someone who has already told their OS does not
+          have to find this to be heard. */}
+      <div style={{ padding: '8px 14px', borderBottom: '1px solid #334155' }}>
+        <div style={{ fontSize: '11px', color: '#cbd5e1', marginBottom: '6px' }}>Anomaly effects</div>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          {GLITCH_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => setGlitchIntensity(opt.key)}
+              title={opt.note}
+              style={{
+                flex: 1, padding: '5px 0', cursor: 'pointer',
+                fontFamily: 'inherit', fontSize: '10px', fontWeight: glitchIntensity === opt.key ? 700 : 500,
+                letterSpacing: '0.04em',
+                border: `1px solid ${glitchIntensity === opt.key ? '#3b82f6' : '#334155'}`,
+                backgroundColor: glitchIntensity === opt.key ? 'rgba(59,130,246,0.16)' : 'transparent',
+                color: glitchIntensity === opt.key ? '#e2e8f0' : '#94a3b8',
+              }}
+            >{opt.label}</button>
+          ))}
+        </div>
+        <div style={{ fontSize: '10px', color: '#64748b', marginTop: '6px', lineHeight: 1.45 }}>
+          {GLITCH_OPTIONS.find(o => o.key === glitchIntensity)?.note}
+        </div>
+      </div>
 
       <div style={{ padding: '8px 14px', borderBottom: '1px solid #334155' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
