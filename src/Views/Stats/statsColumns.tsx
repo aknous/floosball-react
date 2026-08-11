@@ -86,21 +86,21 @@ const games = (careerScope: boolean): Column<StatsPlayerRow> | null => (careerSc
  * producing what they should.
  */
 const rating: Column<StatsPlayerRow> = {
-  key: 'rtg', label: 'RTG', help: 'Player rating, 60-100. What this player is on paper, from their attributes — PERF beside it is what they actually produced', width: W.rate,
+  key: 'rtg', label: 'RTG', help: 'Player Rating', width: W.rate,
   cell: r => n(r.playerRating),
   sort: r => r.playerRating ?? -1,
   tint: r => (r.playerRating != null ? statRampColor(r.playerRating) : undefined),
 }
 
 const perf: Column<StatsPlayerRow> = {
-  key: 'perf', label: 'PERF', help: 'Performance rating, 60-100. Where this player ranks against everyone at their position by what they actually produced, not by their attributes', width: W.rate,
+  key: 'perf', label: 'PERF', help: 'Performance Rating', width: W.rate,
   cell: r => n(r.impact.performanceRating),
   sort: r => r.impact.performanceRating ?? -1,
   tint: r => (r.impact.performanceRating != null ? statRampColor(r.impact.performanceRating) : undefined),
 }
 
 const defRating: Column<StatsPlayerRow> = {
-  key: 'defrtg', label: 'DEF RTG', help: 'Defensive rating, 60-100. The same percentile idea applied to their defensive box score', width: 62,
+  key: 'defrtg', label: 'DEF RTG', help: 'Defensive Rating', width: 62,
   cell: r => n(r.impact.defensiveRating),
   sort: r => r.impact.defensiveRating ?? -1,
   tint: r => (r.impact.defensiveRating != null ? statRampColor(r.impact.defensiveRating) : undefined),
@@ -133,7 +133,7 @@ const defRating: Column<StatsPlayerRow> = {
 const WPA_POINTS_PER_WIN = 100
 
 const wpa: Column<StatsPlayerRow> = {
-  key: 'wpa', label: 'WPA WINS', help: 'Win probability added, converted to wins. 100 points of swing is one win, so +2.50 means their plays were worth two and a half wins of leverage', width: W.wideRate,
+  key: 'wpa', label: 'WPA WINS', help: 'Wins Added', width: W.wideRate,
   cell: r => (r.impact.wpa == null ? dash
     : signed(r.impact.wpa / WPA_POINTS_PER_WIN, 2)),
   // Sorted on the raw figure: dividing by a constant cannot change the order, and
@@ -171,9 +171,7 @@ const pointsColumn = (perGame: boolean): Column<StatsPlayerRow> => {
   return {
     key: 'pts',
     label: perGame ? 'FP/G' : 'PTS',
-    help: perGame
-      ? 'Fantasy points per game, the season total divided by games played'
-      : 'Fantasy points',
+    help: perGame ? 'Fantasy Points Per Game' : 'Fantasy Points',
     width: W.volume,
     cell: r => n(per(r.fantasyPoints, r), 1),
     sort: r => per(r.fantasyPoints, r) ?? 0,
@@ -254,7 +252,7 @@ function _playerColumns(position: string, careerScope: boolean,
         count('ptd', 'TD', 'Passing touchdowns', W.count, r => r.passing.tds),
         count('pint', 'INT', 'Interceptions thrown', W.count, r => r.passing.ints),
         count('sacked', 'SACK', 'Times sacked', 48, r => r.passing.sacked),
-        { key: 'air', label: 'AIR', help: 'Average air yards per throw, measured where the ball was aimed rather than where it ended up. Counts incompletions', width: W.rate, cell: r => n(r.passing.airYardsSum), sort: r => r.passing.airYardsSum ?? 0 },
+        { key: 'air', label: 'AIR', help: 'Average Air Yards Per Throw', width: W.rate, cell: r => n(r.passing.airYardsSum), sort: r => r.passing.airYardsSum ?? 0 },
         rating, perf, wpa, points,
       ]
     case 'RB':
