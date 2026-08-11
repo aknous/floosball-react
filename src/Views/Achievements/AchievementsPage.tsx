@@ -249,7 +249,7 @@ const AchievementsPage: React.FC = () => {
   }
 
   return (
-    <div style={{ backgroundColor: '#0f172a', color: '#e2e8f0', minHeight: '100vh', padding: '24px' }}>
+    <div style={{ backgroundColor: '#0f172a', color: '#e2e8f0', minHeight: '100%', padding: '24px' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '4px' }}>Achievements</h1>

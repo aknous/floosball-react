@@ -19,7 +19,7 @@ const CardsPage: React.FC = () => {
   return (
     <div style={{
       backgroundColor: '#0f172a',
-      minHeight: '100vh',
+      minHeight: '100%',
       fontFamily: 'pressStart',
     }}>
       <div style={{

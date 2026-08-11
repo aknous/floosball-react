@@ -779,7 +779,7 @@ export default function TeamPage() {
   // always navigate on to another team rather than hitting a dead end.
   if (loading || !team) {
     return (
-      <div style={{ backgroundColor: '#0b1220', minHeight: '100vh' }}>
+      <div style={{ backgroundColor: '#0b1220', minHeight: '100%' }}>
         <TeamNavStrip currentTeamId={team?.id ?? (id ? parseInt(id, 10) : 0)} />
         <div style={{ padding: '60px', textAlign: 'center', color: '#cbd5e1', fontSize: '14px' }}>
           {loading ? 'Loading…' : 'Team not found.'}
@@ -826,7 +826,7 @@ export default function TeamPage() {
   const canOpen = (g: ScheduleGame) => g.status !== 'Scheduled'
 
   return (
-    <div style={{ backgroundColor: '#0b1220', minHeight: '100vh' }} className="tp-page">
+    <div style={{ backgroundColor: '#0b1220', minHeight: '100%' }} className="tp-page">
 
       {/* The Overview section starts at the very top of the document, nav strip
           included. Anchoring it on the hero instead put the first snap point

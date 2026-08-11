@@ -173,7 +173,7 @@ export default function TeamsPage() {
   }, [])
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#0f172a' }}>
+    <div style={{ minHeight: '100%', backgroundColor: '#0f172a' }}>
       <div style={{
         maxWidth: '1200px',
         margin: '0 auto',
