@@ -9,6 +9,7 @@ import TeamHoverCard from './TeamHoverCard'
 import HoverTooltip from './HoverTooltip'
 import { Stars } from './Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useLineup } from '@/hooks/useLineup'
 import { PlayInsightsPanel } from './PlayInsightsPanel'
 import { personalityAccent } from '@/utils/personality'
 import { pressureHandlingTier } from '@/utils/mentalProfile'
@@ -320,6 +321,23 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
   const pageNarrow = useIsMobile(PAGE_THREE_COLUMN_MIN)
   const stacked = isMobile || (asPage && pageNarrow)
 
+
+  /**
+   * The reader's own fantasy lineup, so a player of theirs in this game is marked.
+   *
+   * ⚠️ Equipped cards ARE the fantasy roster (the fusion), so the lineup hook is the
+   * whole answer — no second notion of "my players" to keep in step. It fetches nothing
+   * for a signed-out reader (`useLineup` bails without a token), which is why this can
+   * sit unconditionally at the top of a modal anyone can open.
+   */
+  const { bySlot: myLineupBySlot } = useLineup()
+  const myPlayerIds = useMemo(() => {
+    const ids = new Set<number>()
+    Object.values(myLineupBySlot || {}).forEach(entry => {
+      if (entry?.playerId != null) ids.add(Number(entry.playerId))
+    })
+    return ids
+  }, [myLineupBySlot])
 
   // Get game from central state and fetch plays
   const { games, fetchGamePlays } = useGames()
@@ -3183,6 +3201,22 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                           to={`/players/${p.id}`}
                           style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0, textDecoration: 'none' }}
                         >
+                          {/* ⚠️ YOUR OWN PLAYER, MARKED. Watching a game and working out
+                              which of these people you are actually invested in meant
+                              holding your lineup in your head or opening another page.
+                              A badge rather than a colour: the name already carries two
+                              colours (charged gold, awakened blue) and a third would be
+                              a third thing to learn. */}
+                          {myPlayerIds.has(Number(p.id)) && (
+                            <HoverTooltip content="In your fantasy lineup">
+                              <span style={{
+                                display: 'inline-flex', alignItems: 'center', flexShrink: 0,
+                                fontSize: '9px', fontWeight: 800, letterSpacing: '0.06em',
+                                color: '#0b1220', background: '#38bdf8',
+                                padding: '2px 5px', borderRadius: '3px',
+                              }}>MINE</span>
+                            </HoverTooltip>
+                          )}
                           <span title={isCharged ? 'Charged' : isAwakened ? 'Awakened' : undefined} style={{ fontSize: '14px', color: nameColor, fontWeight: isCharged ? 700 : isAwakened ? 600 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(nameGlow ? { textShadow: nameGlow } : {}) }}>
                             {p.name}
                           </span>
@@ -3450,8 +3484,42 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 const homeDefRows = homeDefPlayers.map(defRow)
                 const awayDefRows = awayDefPlayers.map(defRow)
 
+                // Who of yours is actually out there. Counted off the two rosters in
+                // this game rather than off the lineup, so it says nothing at all when
+                // none of your players are involved — which is most games.
+                // ⚠️ `hp`/`ap` are slot-keyed (qb, rb, wr1…), not arrays — and a slot can
+                // be null where a roster spot is vacant.
+                const mineHere = [...Object.values(hp), ...Object.values(ap)]
+                  .filter((pl: any) => pl && myPlayerIds.has(Number(pl.id))) as { id: number; name: string }[]
+
                 return (
                   <div>
+                    {/* ⚠️ A COUNT AT THE TOP, because the badges are down inside whichever
+                        section a player happens to belong to. The question a reader has
+                        when they open a game is whether they have anyone in it at all,
+                        and that should not need scrolling five tables to answer. */}
+                    {mineHere.length > 0 && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: '9px', flexWrap: 'wrap',
+                        padding: '10px 14px', marginBottom: '10px',
+                        background: 'rgba(56,189,248,0.08)',
+                        border: '1px solid rgba(56,189,248,0.35)',
+                      }}>
+                        <span style={{
+                          fontSize: '9px', fontWeight: 800, letterSpacing: '0.06em',
+                          color: '#0b1220', background: '#38bdf8', padding: '2px 5px', borderRadius: '3px',
+                        }}>MINE</span>
+                        <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                          {mineHere.length === 1
+                            ? '1 of your lineup is playing:'
+                            : `${mineHere.length} of your lineup are playing:`}
+                          {' '}
+                          <span style={{ color: '#e2e8f0', fontWeight: 700 }}>
+                            {mineHere.map(pl => pl.name).join(', ')}
+                          </span>
+                        </span>
+                      </div>
+                    )}
                     {sectionCard('Passing', passingHeaders, homePassRows, awayPassRows, T_PASS)}
                     {sectionCard('Rushing', rushingHeaders, homeRushRows, awayRushRows, T_RUSH)}
                     {sectionCard('Receiving', receivingHeaders, homeRcvRows, awayRcvRows, T_RCV)}

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { personalityAccent } from '@/utils/personality'
-import GameFeedComposer from './GameFeedComposer'
+import GameFeedComposer, { type TimelineEntry } from './GameFeedComposer'
 
 /**
  * The Bleachers rail — the fan conversation, which the modal had nowhere to put.
@@ -25,6 +25,10 @@ export interface RailEntry {
   /** The play this was said about. Cutaways fire between plays and carry none. */
   playQuote?: string | null
   when?: string | null
+  /** ISO wall clock, stamped when the cutaway fired, so the rail can sort this against
+   *  the fan posts instead of stacking the two halves. Absent on a cutaway from before
+   *  the server stamped them. */
+  createdAt?: string | null
 }
 
 /**
@@ -51,6 +55,7 @@ export function railEntriesFromPlays(plays: any[] | undefined): RailEntry[] {
         teamId: cutaway.teamId,
         teamAbbr: cutaway.teamAbbr,
         playQuote: null,
+        createdAt: cutaway.createdAt ?? null,
       })
       return
     }
@@ -166,10 +171,18 @@ const GameBleachers: React.FC<{
 
     {/* The fan half: shouts at THIS game, from either stand. The player and
         sideline voices ride in the same scroller. */}
+    {/* ⚠️ Handed over as DATA, not as a rendered block. The composer is the only place
+        that can see both halves, so it is the only place that can put them in the order
+        they were said — appending a block of sideline lines after the posts is what made
+        every player line sit under every shout. */}
     <GameFeedComposer
       gameId={gameId}
       hasExtraEntries={entries.length > 0}
-      extraEntries={<>{entries.map(entry => <Entry key={entry.key} entry={entry} />)}</>}
+      timelineEntries={entries.map((entry): TimelineEntry => ({
+        key: entry.key,
+        createdAt: entry.createdAt,
+        node: <Entry entry={entry} />,
+      }))}
     />
   </div>
 )
