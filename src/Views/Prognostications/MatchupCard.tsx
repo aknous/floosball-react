@@ -37,6 +37,35 @@ export function pickWasCorrect(game: PickEmGame): boolean {
     && Number(game.userPick) === Number(game.result.winnerId)
 }
 
+/**
+ * The verdict marks in the gutter. Sized so the X reads from across the page — it is
+ * the whole answer on a missed pick, where a hit still has its points underneath it.
+ */
+const CheckMark: React.FC = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={ACCENT.live}
+       strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+       aria-label="Correct" role="img">
+    <path d="M4 12.5 9.5 18 20 6.5" />
+  </svg>
+)
+
+const CrossMark: React.FC = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={ACCENT.negative}
+       strokeWidth="3" strokeLinecap="round" aria-label="Missed" role="img">
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+)
+
+/** Picks are closed on this game — it has kicked off. */
+const LockMark: React.FC = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={TEXT.muted}
+       strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+       aria-label="Picks closed" role="img">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0110 0v4" />
+  </svg>
+)
+
 /** Oldest first, newest last — matching the standings board. */
 const FormPips: React.FC<{ last5?: ('W' | 'L' | 'T')[] }> = ({ last5 }) => {
   if (!last5?.length) return null
@@ -232,25 +261,31 @@ export const MatchupCard: React.FC<{
           alignItems: 'center', justifyContent: 'center', gap: '3px',
         }}>
           {settled ? (
-            <span style={{
-              ...font(700, 12, 1, '0.04em'), textAlign: 'center',
-              color: !hasPick ? TEXT.muted : correct ? ACCENT.live : ACCENT.negative,
-            }}>
-              {!hasPick ? '—' : correct ? `+${game.result?.pointsEarned ?? 0}` : 'MISS'}
-            </span>
+            /* ⚠️ The mark carries the verdict, the number carries the reward. "MISS"
+               spelled out sat in the same slot as "+18" and read as a value, so a
+               column of settled games took a beat to scan. A hit is a check over what
+               it paid; a miss is an X and nothing else, because a miss paid nothing. */
+            !hasPick ? (
+              <span style={{ ...font(700, 12, 1, '0.04em'), color: TEXT.muted }}>—</span>
+            ) : correct ? (
+              <>
+                <CheckMark />
+                <span style={{ ...font(700, 12, 1, '0.04em'), color: ACCENT.live, ...TABULAR }}>
+                  +{game.result?.pointsEarned ?? 0}
+                </span>
+              </>
+            ) : (
+              <CrossMark />
+            )
           ) : (
             <>
               <span style={{ ...font(600, 12), color: TEXT.muted }}>vs</span>
               {/* ⚠️ The TIMING multiplier used to live here. Picks close at kickoff
                   now, so it is 1.00x on every pickable game and told the reader
                   nothing — it was two multipliers on one card where only one varies.
-                  LOCKED still earns the slot: it is the difference between a game you
+                  The lock still earns the slot: it is the difference between a game you
                   can still call and one that has gone. */}
-              {!game.pickable && (
-                <span style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted }}>
-                  LOCKED
-                </span>
-              )}
+              {!game.pickable && <LockMark />}
             </>
           )}
         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import axios from 'axios'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
@@ -22,10 +22,38 @@ const WEEKLY_PRIZES: Record<number, number> = { 1: 30, 2: 20, 3: 15 }
  * ⚠️ A max-height, not a full-height column. This sits beside the scoring pane, and an
  * unbounded list of every player in the league would drag the page metres long for
  * anyone below the middle of the table.
+ *
+ * ⚠️ THE HEIGHT IS MEASURED, not fixed (owner: the board ran past the fold and cost a
+ * little scroll to see its own bottom). 520px was a guess about a viewport, and it is
+ * wrong on most of them. `useFoldHeight` reads where the list actually starts and gives
+ * it the rest of the window. Measured at MOUNT and on RESIZE only, deliberately NOT on
+ * scroll: growing the list as the reader scrolls down would push the page bottom away by
+ * exactly as much as they scrolled, and the page would never end.
  */
+const FOLD_GAP = 16
+const MIN_LIST_HEIGHT = 240
+
+const useFoldHeight = <T extends HTMLElement>(deps: unknown[] = []) => {
+  const ref = useRef<T>(null)
+  const [maxHeight, setMaxHeight] = useState<number | null>(null)
+  useEffect(() => {
+    const measure = () => {
+      const el = ref.current
+      if (!el) return
+      const avail = window.innerHeight - el.getBoundingClientRect().top - FOLD_GAP
+      setMaxHeight(Math.max(MIN_LIST_HEIGHT, Math.round(avail)))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps)
+  return { ref, maxHeight }
+}
+
 const listStyle: React.CSSProperties = {
   display: 'flex', flexDirection: 'column', gap: '4px',
-  maxHeight: '520px', overflowY: 'auto', overflowX: 'hidden',
+  overflowY: 'auto', overflowX: 'hidden',
 }
 
 const WEEKLY_TOP_PCT_PRIZE = 5
@@ -132,6 +160,13 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
   // Show rank badges in season view always, in weekly view only after week ends
   const showRankBadges = mode === 'season' || (mode === 'weekly' && !weeklyIsLive)
 
+  // ⚠️ Re-measured when the ROW COUNT changes, not just on mount. The list is rendered
+  // only once its data has landed, so a measurement taken at mount finds no element at
+  // all and the board would come back unbounded — the very thing this replaced. The mode
+  // is in here too: the two views carry different chrome above the list.
+  const { ref: listRef, maxHeight: listMaxHeight } = useFoldHeight<HTMLDivElement>(
+    [mode, snapshotEntries.length, currentWeekData?.entries.length ?? 0])
+
   const isLoading = mode === 'season' ? snapshotLoading : (snapshotLoading && weeklyLoading)
 
   const toggleStyle = (active: boolean): React.CSSProperties => ({
@@ -229,7 +264,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
             No locked rosters yet
           </div>
         ) : (
-          <div style={listStyle}>
+          <div ref={listRef} style={{ ...listStyle, maxHeight: listMaxHeight ?? undefined }}>
             {(() => {
               // ⚠️ EVERYONE, not the top five (owner: users asked for a real
               // leaderboard). A cut-off board answers "who is winning" and refuses the
@@ -239,14 +274,16 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
               const rows = snapshotEntries
               return <>
                 {rows.map(entry => {
-                  const isExpanded = expandedUserId === entry.userId
                   const isMe = currentUserId != null && entry.userId === currentUserId
                   return (
                     <div key={entry.userId}>
-                      <button
-                        onClick={() => setExpandedUserId(isExpanded ? null : entry.userId)}
-                        style={rowStyle(isExpanded, isMobile, isMe)}
-                      >
+                      {/* ⚠️ A SEASON ROW DOES NOT OPEN (owner). It used to expand into the
+                          lineup and card breakdown, but under the fusion the equipped cards
+                          ARE the roster and they are swapped week to week — so what it
+                          showed was TODAY's six cards under a total earned by twenty-eight
+                          weeks of other ones. The weekly board still opens, because a week
+                          has a banked lineup that genuinely produced its score. */}
+                      <div style={{ ...rowStyle(false, isMobile, isMe), cursor: 'default' }}>
                         <div style={rankStyleFn(entry.rank, isMobile)}>
                           {showRankBadges && RANK_STYLE[entry.rank]
                             ? <span style={{
@@ -278,21 +315,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
                             </div>
                           )}
                         </div>
-                        <div style={chevronStyle(isExpanded)}>▼</div>
-                      </button>
-                      {isExpanded && season != null && week != null && (
-                        <LeaderboardExpandedBody
-                          userId={entry.userId}
-                          season={season}
-                          week={week}
-                          players={entry.players.map(p => ({
-                            slot: p.slot, playerName: p.playerName, teamAbbr: p.teamAbbr, teamId: (p as any).teamId ?? null,
-                            points: p.earnedPoints, isPrev: p.slot === 'PREV',
-                          }))}
-                          breakdowns={entry.cardBreakdowns}
-                          isMobile={isMobile}
-                        />
-                      )}
+                      </div>
                     </div>
                   )
                 })}
@@ -303,7 +326,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
       ) : (
         /* Weekly view — current week only */
         currentWeekData && currentWeekData.entries.length > 0 ? (
-          <div style={listStyle}>
+          <div ref={listRef} style={{ ...listStyle, maxHeight: listMaxHeight ?? undefined }}>
             {(() => {
               // See the season branch: the whole board, scrolled, with your own row tinted.
               const rows = currentWeekData.entries
