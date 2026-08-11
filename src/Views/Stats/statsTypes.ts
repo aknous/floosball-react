@@ -22,7 +22,7 @@ export interface StatsPlayerRow {
   passing: {
     comp?: number; att?: number; compPerc?: number; yards?: number
     tds?: number; ints?: number; ypc?: number
-    sacked?: number; airYardsSum?: number; longest?: number
+    sacked?: number; airYardsSum?: number; throws?: number; longest?: number
   }
   rushing: {
     carries?: number; yards?: number; ypc?: number; tds?: number

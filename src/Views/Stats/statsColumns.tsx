@@ -92,6 +92,25 @@ const rating: Column<StatsPlayerRow> = {
   tint: r => (r.playerRating != null ? statRampColor(r.playerRating) : undefined),
 }
 
+/**
+ * aDOT — how far downfield this passer aims, on average.
+ *
+ * ⚠️ `airYardsSum` IS A SUM, and this column was printing it raw under a label that has
+ * always meant an average: a season read 1,788 where the answer is 6.25. Reported as
+ * "the numbers are in the thousands".
+ *
+ * Divided by THROWS, matching how the sim derives aDOT for cards
+ * (`cardEffects.ladderStatLine`). Throws and attempts differ by a handful a season — a
+ * scramble un-charges the attempt booked at the top of the branch — so `att` is the
+ * fallback for a row banked before the counter existed, not the preference.
+ */
+const aDot = (r: StatsPlayerRow): number | null => {
+  const air = r.passing.airYardsSum
+  const throws = r.passing.throws ?? r.passing.att
+  if (air == null || !throws) return null
+  return Number(air) / Number(throws)
+}
+
 const perf: Column<StatsPlayerRow> = {
   key: 'perf', label: 'PERF', help: 'Performance Rating', width: W.rate,
   cell: r => n(r.impact.performanceRating),
@@ -252,7 +271,7 @@ function _playerColumns(position: string, careerScope: boolean,
         count('ptd', 'TD', 'Passing touchdowns', W.count, r => r.passing.tds),
         count('pint', 'INT', 'Interceptions thrown', W.count, r => r.passing.ints),
         count('sacked', 'SACK', 'Times sacked', 48, r => r.passing.sacked),
-        { key: 'air', label: 'AIR', help: 'Average Air Yards Per Throw', width: W.rate, cell: r => n(r.passing.airYardsSum), sort: r => r.passing.airYardsSum ?? 0 },
+        { key: 'air', label: 'AIR', help: 'Average Air Yards Per Throw', width: W.rate, cell: r => n(aDot(r), 1), sort: r => aDot(r) ?? -1 },
         rating, perf, wpa, points,
       ]
     case 'RB':
