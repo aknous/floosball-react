@@ -4,6 +4,7 @@ import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, TABULAR, font } from '@/Components/Shell/tokens'
 import { getContrastTextColor } from '@/utils/colors'
 import { Crest } from '@/Views/GameBoard/boardPieces'
+import { formatScore } from '@/utils/formatScore'
 import { SectionHeader } from './frontPieces'
 import type { TeamStanding } from '@/Views/Standings/standingsTypes'
 
@@ -41,7 +42,20 @@ const YourTeamCard: React.FC<{
 }> = ({ team, leagueName, liveGame, nextFixture, recent, onOpenGame }) => {
   const wins = recent.filter(r => r.won).length
   const losses = recent.length - wins
-  const differential = recent.reduce((sum, r) => sum + (r.teamScore - r.opponentScore), 0)
+  /**
+   * Points for minus points against over the shown run.
+   *
+   * ⚠️ CLEANED, NOT RAW. Scores are floats now (a touchdown worth 6.4, and the per-game
+   * chaos rulesets during a Criticality), so summing them lands on binary-representation
+   * artifacts — this printed `-6.599999999999998` on the front page. `formatScore` exists
+   * for exactly that and was simply never applied here.
+   *
+   * The SIGN is taken from the cleaned figure too, so a differential that displays as
+   * zero is not handed a + or a - it does not deserve.
+   */
+  const differentialText = formatScore(
+    recent.reduce((sum, r) => sum + (r.teamScore - r.opponentScore), 0))
+  const differential = Number(differentialText)
 
   const opponent = liveGame
     ? (String(liveGame.homeTeam?.id) === String(team.id) ? liveGame.awayTeam : liveGame.homeTeam)
@@ -133,10 +147,15 @@ const YourTeamCard: React.FC<{
           <span style={{ ...font(700, 10, 1, '0.14em'), color: TEXT.muted }}>LAST {recent.length}</span>
           <span style={{ ...font(400, 10), color: TEXT.secondary, ...TABULAR }}>{wins}-{losses}</span>
           <span style={{ flex: 1 }} />
+          {/* ⚠️ Labelled, because it was not. A bare signed number at the end of a row
+              that already holds a record was being read as a guess — reported as "I'm
+              guessing it's score differential". It is: points for minus points against
+              over the games shown. */}
+          <span style={{ ...font(700, 10, 1, '0.14em'), color: TEXT.muted }}>DIFF</span>
           <span style={{
             ...font(700, 10), ...TABULAR,
             color: differential >= 0 ? ACCENT.live : ACCENT.negative,
-          }}>{differential > 0 ? `+${differential}` : differential}</span>
+          }}>{differential > 0 ? `+${differentialText}` : differentialText}</span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', columnGap: '14px' }}>
@@ -159,7 +178,7 @@ const YourTeamCard: React.FC<{
               <span style={{
                 ...font(700, 11), ...TABULAR, flexShrink: 0,
                 color: r.won ? ACCENT.live : ACCENT.negative,
-              }}>{r.won ? 'W' : 'L'} {r.teamScore}-{r.opponentScore}</span>
+              }}>{r.won ? 'W' : 'L'} {formatScore(r.teamScore)}-{formatScore(r.opponentScore)}</span>
             </div>
           ))}
         </div>

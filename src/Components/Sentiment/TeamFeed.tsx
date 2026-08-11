@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { relativeTime } from '@/utils/apiTime'
 import { FiChevronDown } from 'react-icons/fi'
 import { useAuth } from '@/contexts/AuthContext'
 import HoverTooltip from '@/Components/HoverTooltip'
@@ -35,14 +36,12 @@ interface FeedPost {
 
 const valenceColor = (v: number) => (v > 0 ? '#4ade80' : v < 0 ? '#f87171' : '#93c5fd')
 
-const timeAgo = (iso: string | null) => {
-  if (!iso) return ''
-  const mins = Math.floor((Date.now() - new Date(iso + 'Z').getTime()) / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m`
-  const hrs = Math.floor(mins / 60)
-  return hrs < 24 ? `${hrs}h` : `${Math.floor(hrs / 24)}d`
-}
+/**
+ * ⚠️ This appended a `Z` of its own, and the API now sends one — `new Date('…Z' + 'Z')`
+ * is Invalid Date, so every timestamp here rendered as `NaNd`. Reported exactly that way.
+ * `@/utils/apiTime` is that knowledge in ONE place; do not re-implement it.
+ */
+const timeAgo = relativeTime
 
 interface Props {
   teamId: number
