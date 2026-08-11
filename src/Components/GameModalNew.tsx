@@ -3201,22 +3201,6 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                           to={`/players/${p.id}`}
                           style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0, textDecoration: 'none' }}
                         >
-                          {/* ⚠️ YOUR OWN PLAYER, MARKED. Watching a game and working out
-                              which of these people you are actually invested in meant
-                              holding your lineup in your head or opening another page.
-                              A badge rather than a colour: the name already carries two
-                              colours (charged gold, awakened blue) and a third would be
-                              a third thing to learn. */}
-                          {myPlayerIds.has(Number(p.id)) && (
-                            <HoverTooltip content="In your fantasy lineup">
-                              <span style={{
-                                display: 'inline-flex', alignItems: 'center', flexShrink: 0,
-                                fontSize: '9px', fontWeight: 800, letterSpacing: '0.06em',
-                                color: '#0b1220', background: '#38bdf8',
-                                padding: '2px 5px', borderRadius: '3px',
-                              }}>MINE</span>
-                            </HoverTooltip>
-                          )}
                           <span title={isCharged ? 'Charged' : isAwakened ? 'Awakened' : undefined} style={{ fontSize: '14px', color: nameColor, fontWeight: isCharged ? 700 : isAwakened ? 600 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...(nameGlow ? { textShadow: nameGlow } : {}) }}>
                             {p.name}
                           </span>
@@ -3273,6 +3257,20 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                   awayRows: StatRow[],
                   template: string,
                 ) => {
+                  // ⚠️ THE ROW, NOT A BADGE (owner). A badge beside the name is one more
+                  // glyph on a line that already has a position chip, a name, stars and
+                  // sometimes a charged/awakened glow. Tinting the whole row says the
+                  // same thing without adding anything to read, and it survives a glance
+                  // down a column of thirty players — which is how this gets used.
+                  // `StatRow.pid` is already carried for the row key, so nothing has to
+                  // be threaded through the row builders to know whose row this is.
+                  const MINE_TINT = 'rgba(34,197,94,0.10)'
+                  const MINE_FP = '#4ade80'
+                  // FP is the last column wherever a section has one — defense does not.
+                  const fpIndex = headerCols[headerCols.length - 1] === 'FP'
+                    ? headerCols.length - 1
+                    : -1
+
                   const teamGroup = (abbr: string, color: string, rows: StatRow[]) => (
                     <>
                       <div style={{
@@ -3293,9 +3291,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                         // the row now just goes to their page.
                         const canExpand = false
                         const isExpanded = false
+                        const isMine = row.pid != null && myPlayerIds.has(Number(row.pid))
                         return (
                           <React.Fragment key={key}>
                             <div
+                              title={isMine ? 'In your fantasy lineup' : undefined}
                               style={{
                                 display: 'grid',
                                 gridTemplateColumns: template,
@@ -3306,7 +3306,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                                 color: '#e2e8f0',
                                 fontVariantNumeric: 'tabular-nums',
                                 alignItems: 'center',
-                                backgroundColor: 'transparent',
+                                // ⚠️ TINT ONLY — no left rail (owner). The section header
+                                // above already wears a 3px rail in the CLUB's colour, and
+                                // a second one underneath in green read as two competing
+                                // edges rather than as a highlighted row.
+                                backgroundColor: isMine ? MINE_TINT : 'transparent',
                               }}
                             >
                               {row.cells.map((c, i) => {
@@ -3320,10 +3324,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                                     </div>
                                   )
                                 }
+                                // The FP figure carries the highlight too (owner): on
+                                // one of your players it is the number the row is being
+                                // read FOR, and it sits at the far end from the name.
+                                const isFP = isMine && i === fpIndex
                                 return (
                                   <div key={i} style={{
                                     textAlign: 'center',
                                     minWidth: 0,
+                                    ...(isFP ? { color: MINE_FP, fontWeight: 800 } : {}),
                                   }}>{c}</div>
                                 )
                               })}
@@ -3502,13 +3511,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: '9px', flexWrap: 'wrap',
                         padding: '10px 14px', marginBottom: '10px',
-                        background: 'rgba(56,189,248,0.08)',
-                        border: '1px solid rgba(56,189,248,0.35)',
+                        background: 'rgba(34,197,94,0.10)',
+                        border: '1px solid rgba(34,197,94,0.35)',
                       }}>
+                        {/* Same green the rows wear, so the strip and the rows read as
+                            one idea rather than two markers for the same fact. */}
                         <span style={{
                           fontSize: '9px', fontWeight: 800, letterSpacing: '0.06em',
-                          color: '#0b1220', background: '#38bdf8', padding: '2px 5px', borderRadius: '3px',
-                        }}>MINE</span>
+                          color: '#0b1220', background: '#22c55e', padding: '2px 5px', borderRadius: '3px',
+                        }}>FANTASY</span>
                         <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
                           {mineHere.length === 1
                             ? '1 of your lineup is playing:'
