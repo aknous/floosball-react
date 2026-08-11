@@ -503,15 +503,25 @@ const TeamRecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
   useEffect(() => {
     setLoading(true)
+    // ⚠️ A RESPONSE THAT IS NOT THIS PAYLOAD MUST READ AS "no records", NOT CRASH. FastAPI
+    // answers a missing route with `{"detail": "Not Found"}`, which is valid JSON — so
+    // `j?.data || j` accepted it as data and `data.records[tab]` threw on undefined, taking
+    // the whole tab down. That is reachable whenever the frontend ships ahead of the
+    // endpoint, which is exactly what a separate frontend deploy does.
     fetch(`${API_BASE}/history/team-records`)
       .then(r => r.json())
-      .then(j => setData(j?.data || j))
+      .then(j => {
+        const payload = j?.data ?? j
+        setData(payload?.records ? payload : null)
+      })
+      .catch(() => setData(null))
       .finally(() => setLoading(false))
   }, [])
 
   const categories = useMemo(() => {
-    if (!data) return [] as string[]
-    return Object.keys(data.records[tab]).filter(k => (data.records[tab][k] ?? []).length > 0)
+    const byScope = data?.records?.[tab]
+    if (!byScope) return [] as string[]
+    return Object.keys(byScope).filter(k => (byScope[k] ?? []).length > 0)
   }, [data, tab])
 
   if (loading) return <div style={{ color: '#94a3b8', padding: '20px' }}>Loading…</div>
