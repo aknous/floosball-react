@@ -1203,12 +1203,16 @@ html[data-glitch="off"] .glitched-card *,
 html[data-glitch="off"] .glitched-card::before,
 html[data-glitch="off"] .glitched-card::after,
 html[data-glitch="off"] .glitched-card-surged::after,
-html[data-glitch="off"] .criticality-overlay,
-html[data-glitch="off"] .criticality-glitch,
-html[data-glitch="off"] .criticality-glitch * {
+html[data-glitch="off"] .criticality-overlay {
   animation: none !important;
   transform: none !important;
 }
+
+/* ⚠️ `.criticality-glitch` used to be listed here and MATCHES NOTHING — there is no such
+   class in the app. It read like Criticality was covered when the only thing this block
+   can reach is the overlay's breathe. The corruption and the element shifting are DOM and
+   inline-style writes from CriticalityGlitch.tsx, which no stylesheet can undo; the tiers
+   are enforced in that component. Don't re-add a selector here expecting it to help. */
 
 /* …and this is what says "something is different" once nothing moves. */
 html[data-glitch="off"] .glitch-text-l1,
