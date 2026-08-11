@@ -381,7 +381,7 @@ const GamePage: React.FC = () => {
    * One row of the scoreboard: crest, club, its period scores, its total.
    *
    * The band used to be two team blocks with a spacer shoving each score to the
-   * middle, and the period line as a separate centred table underneath. That is
+   * middle, and the period line as a separate centered table underneath. That is
    * a lot of empty band for four numbers. As rows against shared period columns
    * it is the shape a scoreboard actually has, and the width goes to the numbers
    * instead of the gap.
@@ -619,7 +619,7 @@ const GamePage: React.FC = () => {
                       }}>{label}</span>
                     ))}
                     {/* In frames the big number is frames WON and the small one beside
-                        it is points, so the pair is labelled. Everywhere else the biggest
+                        it is points, so the pair is labeled. Everywhere else the biggest
                         number on a scoreboard does not need a heading. */}
                     {chess && (
                       <span style={{ ...font(700, 10, 1, '0.1em'), color: TEXT.muted, textAlign: 'right' }}>
@@ -671,7 +671,7 @@ const GamePage: React.FC = () => {
               watching={watching}
               gameId={id}
               // No header on the cheer row. The buttons say "Cheer" and carry
-              // their club's crest and colour, so a RALLY label only repeated
+              // their club's crest and color, so a RALLY label only repeated
               // what they already show.
               rally={isLive ? (
                 <>

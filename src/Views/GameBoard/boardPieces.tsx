@@ -62,7 +62,7 @@ export const Crest: React.FC<{
 }
 
 /**
- * Momentum flame, coloured by magnitude.
+ * Momentum flame, colored by magnitude.
  *
  * ⚠️ THE path — the two-part flame with an inner cutout that the game card, the
  * game modal and the game page all draw. This component used to carry its own
@@ -78,7 +78,7 @@ export const MomentumFlame: React.FC<{ magnitude: number; size: number }> = ({ m
   )
 }
 
-/** Red is the one colour football already agrees on for this. */
+/** Red is the one color football already agrees on for this. */
 export const RED_ZONE = '#f87171'
 
 /**
@@ -120,7 +120,7 @@ export const CHIP_COLOR: Record<ChipKind, string> = {
   FEATURED: ACCENT.featured,
 }
 
-/** The one interest chip a card may carry. Its colour also sets the card's top border. */
+/** The one interest chip a card may carry. Its color also sets the card's top border. */
 export const InterestChip: React.FC<{ kind: ChipKind; size: 'large' | 'small' }> = ({ kind, size }) => {
   const color = CHIP_COLOR[kind]
   return (
@@ -181,8 +181,8 @@ export const SwingTrend: React.FC<{
 }
 
 /**
- * A two-team split bar. Both halves use RAW team colours — bars are fills, and the
- * lightening rule applies only to team colour used as text.
+ * A two-team split bar. Both halves use RAW team colors — bars are fills, and the
+ * lightening rule applies only to team color used as text.
  */
 export const SplitBar: React.FC<{
   awayPct: number

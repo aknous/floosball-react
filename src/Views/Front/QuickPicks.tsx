@@ -29,11 +29,11 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const ADVANCE_DELAY_MS = 900
 
 /** Kickoff order IS `gameIndex` — the slate is built in schedule order. */
-const orderGames = (games: PickEmGame[], favouriteTeamId: number | null): PickEmGame[] => {
+const orderGames = (games: PickEmGame[], favoriteTeamId: number | null): PickEmGame[] => {
   const inKickoffOrder = [...games].sort((a, b) => a.gameIndex - b.gameIndex)
-  if (favouriteTeamId == null) return inKickoffOrder
+  if (favoriteTeamId == null) return inKickoffOrder
   const isMine = (g: PickEmGame) =>
-    Number(g.homeTeam.id) === favouriteTeamId || Number(g.awayTeam.id) === favouriteTeamId
+    Number(g.homeTeam.id) === favoriteTeamId || Number(g.awayTeam.id) === favoriteTeamId
   const mine = inKickoffOrder.filter(isMine)
   return mine.length ? [...mine, ...inKickoffOrder.filter(g => !isMine(g))] : inKickoffOrder
 }
@@ -65,13 +65,13 @@ const Arrow: React.FC<{
 )
 
 const QuickPicks: React.FC<{
-  favouriteTeamId: number | null
+  favoriteTeamId: number | null
   /** Is any game in the league underway right now? */
   gamesActive: boolean
-}> = ({ favouriteTeamId, gamesActive }) => {
+}> = ({ favoriteTeamId, gamesActive }) => {
   const { slots, loading, setPick, saveState } = usePickEmDay()
 
-  // The card colours its rows with each club's form and standing. Same fetch the
+  // The card colors its rows with each club's form and standing. Same fetch the
   // Prognostications page makes, and the same shape — the board already computes it, so
   // nothing new is asked of the backend.
   const [standings, setStandings] = useState<Map<number, TeamStanding>>(new Map())
@@ -123,8 +123,8 @@ const QuickPicks: React.FC<{
   const shown = slots[shownIndex] ?? slot
 
   const games = useMemo(
-    () => (shown ? orderGames(shown.games, favouriteTeamId) : []),
-    [shown, favouriteTeamId])
+    () => (shown ? orderGames(shown.games, favoriteTeamId) : []),
+    [shown, favoriteTeamId])
 
   const [cursor, setCursor] = useState(0)
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -174,7 +174,7 @@ const QuickPicks: React.FC<{
     if (!game.pickable) return
     setPick(shown.week, game.gameIndex, teamId)
     // ⚠️ THE PICK IS SHOWN BEFORE THE PANEL MOVES ON (owner: it flipped too fast). The
-    // card lands the club's colour and dims the other side the moment you choose, and
+    // card lands the club's color and dims the other side the moment you choose, and
     // advancing on the same tick threw that away — you saw the next matchup and had to
     // take on trust that the last one registered. The pause is the confirmation.
     const from = game.gameIndex

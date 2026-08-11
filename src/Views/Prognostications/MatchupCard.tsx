@@ -145,10 +145,10 @@ const Side: React.FC<{
         padding: compact ? '12px 10px' : '13px 14px', fontFamily: FONT,
         textAlign: rtl ? 'right' : 'left',
         // ⚠️ EVERY SIDE CARRIES ITS CLUB'S COLOUR, not just the one you picked. A
-        // board of sixteen matchups was sixteen identical grey boxes, and readers said
+        // board of sixteen matchups was sixteen identical gray boxes, and readers said
         // they could not tell one game from another at a glance. The wash is faint
         // (0x0e) so it tints rather than shouts, and the edge rail is the club's own
-        // colour at full strength — the two together make a card identifiable before
+        // color at full strength — the two together make a card identifiable before
         // any text is read.
         background: picked ? `${team.color}22` : `${team.color}0e`,
         border: `1px solid ${picked ? accent : 'transparent'}`,
@@ -217,7 +217,7 @@ const Side: React.FC<{
           {/* ⚠️ The CREST and the NAME, both bigger. This showed a 22px crest and a
               three-letter code, which is the least distinctive way to render a club:
               the abbreviations are similar, and the crest was too small to read as a
-              mark. The name is the thing a reader recognises. */}
+              mark. The name is the thing a reader recognizes. */}
           <Crest teamId={team.id} size={compact ? 26 : 34} />
           <span style={{ minWidth: 0 }}>
             <span style={{
@@ -256,7 +256,7 @@ const Side: React.FC<{
               multiplier beside them, which is just the arithmetic that produced the
               number the reader already has. Two numbers where one is derived from the
               other is what made this confusing.
-              The colour keeps the intuition: a big payout reads live-green, a heavy
+              The color keeps the intuition: a big payout reads live-green, a heavy
               favorite recedes. Same information, no second number to reconcile.
               ⚠️ The unit stays glued to the value — this row REVERSES on the home
               side, and a bare number left "pts" stranded across the mirror. */}

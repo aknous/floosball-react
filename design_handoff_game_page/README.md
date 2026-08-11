@@ -15,7 +15,7 @@ modal never had:
 4. **One toggle** — Plays / Box Score / Player Stats — driving the lower panel, exactly as the
    modal's tab bar does today.
 
-The organising idea: nothing in the modal is lost, and the fan conversation finally has somewhere to
+The organizing idea: nothing in the modal is lost, and the fan conversation finally has somewhere to
 live. Play-by-play stays on the left so the game state is always in view; the right rail is the
 social column, and it carries **three kinds of voice** — fans, players reacting to plays they were
 part of, and sideline cutaways.
@@ -27,7 +27,7 @@ ships — that's a product call, not a design one.
 ## About the design files
 
 `prototype/Game Page.dc.html` is a **design reference created in HTML** — a prototype showing
-intended look and behaviour. It is **not production code to copy**: one static file, hard-coded
+intended look and behavior. It is **not production code to copy**: one static file, hard-coded
 fixture data, inline styles, no component structure worth lifting.
 
 Your job: **recreate this design inside floosball-react** — React 18 + TypeScript, inline style
@@ -44,7 +44,7 @@ this folder could be captured. Ignore them.
 
 ## Fidelity
 
-**High-fidelity.** Colours, type sizes, weights, spacing and interaction states below are final.
+**High-fidelity.** Colors, type sizes, weights, spacing and interaction states below are final.
 
 Two things are **ports, not new design** — match the source, not the prototype, if they ever
 disagree:
@@ -55,11 +55,11 @@ disagree:
 - The **play insights panel** is `PlayInsightsPanel.tsx` unchanged. The prototype shows one
   representative pass play; the real panel is conditional on which insight blocks the sim emitted.
 
-Team colours in the prototype (`#C51162` Broads / `#0071E3` Phones) are the API's `color` values and
-must come from the team record. Text set in a team colour uses the **corrected** variant
+Team colors in the prototype (`#C51162` Broads / `#0071E3` Phones) are the API's `color` values and
+must come from the team record. Text set in a team color uses the **corrected** variant
 (`#fe2f97` / `#0c92ff` in the mock) — that is `utils/colors.ts`'s existing on-dark correction, the
 same helper `GameModalNew` already uses for `awayDisplayColor`. Never set small text in the raw
-brand colour.
+brand color.
 
 ---
 
@@ -116,11 +116,11 @@ gap: 14px`:
 - Nickname: `24px/800/−0.025em/#f8fafc`, links to the team page, ellipsised.
 - Score: `46px/800/#f8fafc`, tabular, `flex-shrink: 0`.
 
-Centre column (`flex-shrink: 0; flex column; align-items: center; gap: 9px; padding: 0 8px`):
+Center column (`flex-shrink: 0; flex column; align-items: center; gap: 9px; padding: 0 8px`):
 `LIVE` with a pulsing `6px` dot (`11px/700/0.12em/#4ade80`; the dot animates
 `opacity 1 → 0.25 → 1` over `1.6s ease-in-out`, infinite — respect `prefers-reduced-motion`), then
 the clock `26px/800/#f8fafc` tabular, then down & distance + ball spot
-(`10px/600/0.1em/#94a3b8`). For non-clock formats this centre column carries whatever that format's
+(`10px/600/0.1em/#94a3b8`). For non-clock formats this center column carries whatever that format's
 headline state is (see *Game formats*).
 
 ### 3. Line score
@@ -131,7 +131,7 @@ how the table changes per format.
 
 Rows: `display: grid; grid-template-columns: minmax(0,1fr) repeat(4, 54px) 62px; gap: 10px;
 padding: 9px 16px (header) / 11px 16px (teams); border-bottom: 1px solid #1e293b`. Period headers
-`10px/600/0.1em/#94a3b8` centred; period scores `15px/600/#cbd5e1` tabular centred; total
+`10px/600/0.1em/#94a3b8` centered; period scores `15px/600/#cbd5e1` tabular centered; total
 `20px/800/#f8fafc` tabular right.
 
 ### 4. The field
@@ -146,24 +146,24 @@ Body `padding: 16px`. **The SVG is a straight port of `GameModalNew.tsx`** — d
 - `viewBox="0 0 600 220"`, `width: 100%`, `border-radius: 4px`. `EZW = 600/12 = 50`.
 - Coordinates are absolute yards-from-left, `0–120`: `toX(yfl) = yfl / 120 * 600`. **Home end zone
   is always LEFT**, away right — independent of who has the ball.
-- End-zone rects in each team's colour at `opacity 0.4`; playing field `#1e4620`.
+- End-zone rects in each team's color at `opacity 0.4`; playing field `#1e4620`.
 - Goal lines at `toX(10)` / `toX(110)`, `rgba(255,255,255,0.55)`, `1.5`.
 - 5-yard lines `[15,25,…105]` at `rgba(255,255,255,0.10)`, `0.6`; 10-yard lines `[10…110]` at
   `rgba(255,255,255,0.18)`, `0.75` (midfield `toX(60)` is `1.5`).
 - Hash marks at every 10, `x ± 5` at `y = 0.32·FH` and `0.68·FH`, `rgba(255,255,255,0.2)`.
 - Yard numbers at `y = 0.82·FH`, `font-size 17`, `rgba(255,255,255,0.3)`.
 - End-zone team names, rotated `−90` (home) / `+90` (away), `font-size 21`, `800`,
-  `letter-spacing 1.5`, team colour at `opacity 0.9`. `(team.name || team.abbr).toUpperCase()`.
+  `letter-spacing 1.5`, team color at `opacity 0.9`. `(team.name || team.abbr).toUpperCase()`.
 - Line to gain: `#FFD700`, `1.5`, `opacity 0.7`, `dasharray 3,2`.
 - Last play: runs are a straight line; **passes arc through the air by `insights.pass.airYards`,
   then run straight for YAC** (`#60a5fa`, `2.5`, air leg `dasharray 7,3`); arrowhead at the end
   spot. Turnovers `#f87171`, touchdowns `#fbbf24`, FG arc `#4ade80`/`#ef4444`.
-- Ball: `r 11` possession-colour halo at `opacity 0.3`, `rx 8 / ry 5` `#7B4F2E` ellipse with a
+- Ball: `r 11` possession-color halo at `opacity 0.3`, `rx 8 / ry 5` `#7B4F2E` ellipse with a
   `rgba(255,255,255,0.9)` stroke and a lace line; above it a `r 11` `#0f172a` disc ringed in the
-  possession colour holding the team avatar; a white arrow points toward the attacking end zone.
+  possession color holding the team avatar; a white arrow points toward the attacking end zone.
 - Sideline Goals hoops, big-play flashes and banners: keep as-is from the source.
 
-Under the field: the play description, centred, `12px/1.4/#94a3b8`, plus the source's result badge
+Under the field: the play description, centered, `12px/1.4/#94a3b8`, plus the source's result badge
 when `isFieldBadgeResult`. Then the **replay bar** — `REPLAY` label, three transport plates
 (`border: 1px solid #334155`, `padding: 5px 9px`, active one `#e2e8f0` on `#475569`), a `4px`
 scrub track (`#0f172a`, fill `#475569`), `42 / 96` position (`11px/600/#94a3b8` tabular) and a
@@ -171,12 +171,12 @@ speed control (`1×`).
 
 ### 5. Win probability
 
-Panel. Header right: leading team + probability (`15px/800`, in that team's corrected colour) and
+Panel. Header right: leading team + probability (`15px/800`, in that team's corrected color) and
 the change since the last play (`11px/600`, `#4ade80` up / `#f87171` down, with `▲`/`▼`).
 
 Chart `padding: 16px`: `viewBox="0 0 744 118"`, `preserveAspectRatio: none`, `background: #0f172a`,
 `border: 1px solid #1e293b`. 50% line `#334155` dashed `3 4`; section dividers `#1e293b`, the
-half-time divider at `2`; the line itself is the home team's raw colour at `2`, `vector-effect:
+half-time divider at `2`; the line itself is the home team's raw color at `2`, `vector-effect:
 non-scaling-stroke`, with a `r 3.5` dot on the live end. Section labels below,
 `10px/600/0.1em/#94a3b8`, one flex cell each. **The axis is section-based** — reuse the source's
 `wpAxis` (numSections / dividers / labels / bigDivider); it already handles every format.
@@ -204,30 +204,30 @@ Row: `display: flex; align-items: flex-start; gap: 12px; padding: 11px 16px`, wr
 `border-bottom: 1px solid #1e293b`.
 
 `align-items: flex-start` is deliberate — **descriptions wrap**, and every other cell must stay on
-the description's first line rather than floating to the row's vertical centre. Fixed cells carry a
+the description's first line rather than floating to the row's vertical center. Fixed cells carry a
 small `padding-top` to sit on that first line (`5px` for the 10–11px cells, `4px` for the 12px
 expander, `1px` for the avatar cell) and `white-space: nowrap` so only the description wraps.
 
 | Cell | Width | Style |
 | --- | --- | --- |
-| Team | 70px | avatar `20×20` round + abbr `11px/700/0.04em` in the team's corrected colour |
+| Team | 70px | avatar `20×20` round + abbr `11px/700/0.04em` in the team's corrected color |
 | Clock | 64px | `11px/500/#94a3b8`, tabular |
 | Down & distance | 74px | `11px/600/#cbd5e1`, tabular |
 | Ball spot | 58px | `11px/500/#94a3b8` |
 | Description | `flex: 1; min-width: 0` | `13px/500/1.45`, `text-wrap: pretty`; `#f8fafc` on accented rows, `#e2e8f0` otherwise |
-| Result badge | auto | `10px/700/0.08em`, coloured by `getResultColor` |
+| Result badge | auto | `10px/700/0.08em`, colored by `getResultColor` |
 | Expander | auto | `+` / `−`, `#94a3b8` collapsed, `#38bdf8` expanded — only on plays with insights |
 
 #### 6b. Play highlighting
 
 ![Play highlights](screenshots/04-play-highlights.png)
 
-**Carried over from the modal unchanged** — same flags, same colours. Accent is
-`box-shadow: inset 3px 0 0 {colour}` plus a tinted row background:
+**Carried over from the modal unchanged** — same flags, same colors. Accent is
+`box-shadow: inset 3px 0 0 {color}` plus a tinted row background:
 
 | Kind | Accent | Background | Marker |
 | --- | --- | --- | --- |
-| Big play | `#f59e0b` | `#1a1300` | bolt + `{ABBR} +{wpa}%` in `#d97706`, team abbr in the team colour |
+| Big play | `#f59e0b` | `#1a1300` | bolt + `{ABBR} +{wpa}%` in `#d97706`, team abbr in the team color |
 | Clutch | `#06b6d4` | `#001a1f` | second line: `◆ CLUTCH` + `clutchPerformers` |
 | Choke | `#ef4444` | `#1a0500` | second line: `▼ CHOKE` + `chokePerformers` |
 | Momentum shift | `#f97316` | `#1a0f00` | flame glyph + `MOMENTUM SHIFT`, `10px/700/0.06em` |
@@ -235,7 +235,7 @@ expander, `1px` for the avatar cell) and `white-space: nowrap` so only the descr
 Precedence for the accent is big → clutch → choke → momentum (the source's order). The
 `MOMENTUM SHIFT` marker only renders when none of the other three apply. The attribution line sits
 under the row at `padding: 0 16px 11px 82px` — flush with the description column — label `10px/700`
-in the accent colour, names `10px/500/#cbd5e1`.
+in the accent color, names `10px/500/#cbd5e1`.
 
 Anomaly (`glitchText`) and awakened-power rows keep their existing classes and treatment.
 
@@ -250,13 +250,13 @@ Right column: Composure, then Execution (Run / Pass / FG, whichever fired).
 
 Section label: `9px/700/0.12em/#cbd5e1`, `padding-bottom: 4px`, `border-bottom: 1px solid #1e293b`.
 Row: `flex; justify-content: space-between; padding: 2px 0`; label `10px/400/#94a3b8`, value
-`10px/600/#e2e8f0` (tabular where numeric). Gauges: a `56×6` `#334155` track with a coloured fill,
-plus a `66px` right-aligned word in the same colour. Differential bars (momentum, pass rush, line
-matchup) are `56×8`, filled from the centre — green right, red left. The outcome bar is the
+`10px/600/#e2e8f0` (tabular where numeric). Gauges: a `56×6` `#334155` track with a colored fill,
+plus a `66px` right-aligned word in the same color. Differential bars (momentum, pass rush, line
+matchup) are `56×8`, filled from the center — green right, red left. The outcome bar is the
 source's stacked INT / Catch / Drop / Incomplete zones with the white roll marker at `outcomeRoll`
 and the engine's resolved outcome named at the right.
 
-Thresholds and colour ramps (`qualityColor`, `attrColor`, `mentalStateDescriptor`, the coach and
+Thresholds and color ramps (`qualityColor`, `attrColor`, `mentalStateDescriptor`, the coach and
 posture descriptors) all live in `PlayInsightsPanel.tsx` already. **Do not re-derive them.**
 
 ### 7. Right rail — Rally, then The Bleachers
@@ -266,7 +266,7 @@ posture descriptors) all live in `PlayInsightsPanel.tsx` already. **Do not re-de
 **Rally** sits at the top of the rail, above the feed: panel with `padding: 14px`, header row
 `RALLY` + cost (`10px/400/#94a3b8`, "40 floobits, +1 confidence"), then two team plates side by side
 (`flex: 1`, `padding: 11px 0`, avatar `20×20` + abbr `11px/700/0.06em`), each tinted with its own
-team colour at `1f` background and `66` border. Existing rally behaviour and costs; this is a
+team color at `1f` background and `66` border. Existing rally behavior and costs; this is a
 restyle, not a new mechanic.
 
 **The Bleachers** is the rail's main panel. Header: `THE BLEACHERS` + a live watching count —
@@ -288,7 +288,7 @@ game nobody has posted in still shows how many people are here.
   `border-left: 2px solid transparent`. Text `12px/500/#cbd5e1`; count `11px/700/#94a3b8` tabular,
   right. Hover: `background: #152033`, `border-left-color: #38bdf8`.
 - Below: `Posting as {handle} · N posts left this hour`, `11px/400/#94a3b8`, handle in the user's
-  team colour at `700`.
+  team color at `700`.
 
 Option labels are **all caps and must match the feed exactly** — the string you pick is the string
 that gets posted.
@@ -299,9 +299,9 @@ that gets posted.
 ![Fan posts and a player reaction](screenshots/06-feed-player-reaction.png)
 
 1. **Fan post.** Optional **play quote** first — `padding: 7px 9px`, `background: #0f172a`,
-   `border-left: 2px solid {posting team colour}`, text `10px/400/1.4/#94a3b8`. This is how a
+   `border-left: 2px solid {posting team color}`, text `10px/400/1.4/#94a3b8`. This is how a
    right-column post stays legible about a left-column play; posts with no play attached omit it.
-   Then the byline (avatar `18×18`, handle `11px/600` in the team's corrected colour, `flex` spacer,
+   Then the byline (avatar `18×18`, handle `11px/600` in the team's corrected color, `flex` spacer,
    relative time `10px/400/#94a3b8`), then the shout — `14px/700/#f1f5f9`, `letter-spacing: −0.01em`
    — and a heart + count (`10px/600/#94a3b8`) on the right. **The user's own post** takes
    `background: rgba({teamColor}, 0.08)` and `box-shadow: inset 3px 0 0 {teamColor}`.
@@ -341,7 +341,7 @@ play-by-play column no longer renders `personalityEvent` lines or `isSidelineCut
 - **Live updates.** Everything on the page is driven by the existing WS game feed — scoreboard,
   possession ring, momentum flame, field, WP chart, play list, feed. New plays enter the play list
   at the top; new posts enter the feed at the top. Don't animate the whole list on every tick.
-- **Replay.** Same behaviour as the modal: entering replay forces the Plays view and drives the
+- **Replay.** Same behavior as the modal: entering replay forces the Plays view and drives the
   field, WP chart and play list from the cursor.
 - **Hover.** Play rows `background: rgba(255,255,255,0.04)`; plates take `border-color: #475569`,
   `background: #1b2739`; composer options as specced. Everything interactive needs a visible hover.
@@ -440,7 +440,7 @@ Semantic:
 | Line to gain | `#FFD700` | field marker |
 | Variant personality | `#a78bfa` | common-variant reactions |
 | Your team | `#f472b6` | the nav chip |
-| Team colours | `team.color` | end zones, scoreboard gradient, rally plates, quote rules |
+| Team colors | `team.color` | end zones, scoreboard gradient, rally plates, quote rules |
 | Team text | corrected via `utils/colors.ts` | abbrs, handles, WP figure |
 
 Type — one family, `font-pixel` (`pressStart` / Inconsolata, already global):
@@ -470,14 +470,14 @@ depth is the `#131e2f` / `#0b1220` surface step plus borders, and the one `inset
 
 1. `#64748b` and `#475569` are below the repo's readable-text floor (`CLAUDE.md`). They appear in
    this spec **only** as borders and bar tracks. Every readable string bottoms out at `#94a3b8`.
-2. Team brand colours are never used for small text — always the `utils/colors.ts` correction. The
+2. Team brand colors are never used for small text — always the `utils/colors.ts` correction. The
    prototype's `#fe2f97` / `#0c92ff` are that correction applied to `#C51162` / `#0071E3`.
 3. No emoji. The bolt, flame, chevrons, hearts and clutch/choke glyphs are inline SVG or the
    existing icon set.
 
 ## Files
 
-- `prototype/Game Page.dc.html` — the design. Ship the view labelled **`1a`**.
+- `prototype/Game Page.dc.html` — the design. Ship the view labeled **`1a`**.
 - `prototype/assets/`, `prototype/support.js` — what the prototype needs to open.
 - `screenshots/01-page-top.png` — chrome, nav bar, scoreboard, line score.
 - `screenshots/02-field.png` — the field graphic and replay bar.
@@ -496,7 +496,7 @@ In the target repo:
 - `src/Components/Sentiment/TeamFeed.tsx` — the composer and feed shell; extend for the two player
   entry kinds rather than forking.
 - `src/utils/personality.ts` — `personalityAccent` / `personalityTier` drive the entry accents.
-- `src/utils/colors.ts` — on-dark team-colour correction.
+- `src/utils/colors.ts` — on-dark team-color correction.
 - `src/Views/GameBoard/ranking.ts` — interest order for prev/next.
 - `src/Views/GameBoard/gameFormat.tsx` — format-aware line score, clock and axis.
 - `src/contexts/GamesContext.tsx` — game cache, reaction aggregates, cutaway injection.

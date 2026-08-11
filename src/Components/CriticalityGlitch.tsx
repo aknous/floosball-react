@@ -33,7 +33,7 @@ import { useGlitchIntensity } from '../hooks/useGlitchIntensity'
 //   full     — everything below.
 //   reduced  — "A slow pulse. No jitter or strobing": the overlay's 3.4s breathe IS that
 //              pulse; corruption and shifting are exactly the jitter it rules out.
-//   off      — "No animation. Anomalies stay marked in colour": the overlay still renders,
+//   off      — "No animation. Anomalies stay marked in color": the overlay still renders,
 //              CSS holds it static, and its violet wash is what says a Criticality is live.
 //
 // Neither lower tier starts the interval at all, so they cost nothing.

@@ -94,7 +94,7 @@ const FrontPage: React.FC = () => {
   } | null>(null)
 
   const gameList = useMemo(() => Array.from(games.values()), [games])
-  const favouriteTeamId = user?.favoriteTeamId ?? null
+  const favoriteTeamId = user?.favoriteTeamId ?? null
 
   /**
    * Refetch counters, one per feed.
@@ -225,35 +225,35 @@ const FrontPage: React.FC = () => {
 
   // ── The rail's team data ──────────────────────────────────────────────────
   const { myTeam, myLeagueName } = useMemo(() => {
-    if (favouriteTeamId == null) return { myTeam: null as TeamStanding | null, myLeagueName: '' }
+    if (favoriteTeamId == null) return { myTeam: null as TeamStanding | null, myLeagueName: '' }
     for (const league of leagues) {
-      const found = league.standings.find(t => t.id === favouriteTeamId)
+      const found = league.standings.find(t => t.id === favoriteTeamId)
       if (found) return { myTeam: found, myLeagueName: league.name }
     }
     return { myTeam: null as TeamStanding | null, myLeagueName: '' }
-  }, [leagues, favouriteTeamId])
+  }, [leagues, favoriteTeamId])
 
   // Any game underway anywhere in the league. The picker closes while the league is
   // playing — see QuickPicks.
   const gamesActive = useMemo(() => gameList.some(g => g.status === 'Active'), [gameList])
 
   const myLiveGame = useMemo(() => {
-    if (favouriteTeamId == null) return null
+    if (favoriteTeamId == null) return null
     return gameList.find(g =>
       g.status === 'Active'
-      && (String(g.homeTeam?.id) === String(favouriteTeamId) || String(g.awayTeam?.id) === String(favouriteTeamId)),
+      && (String(g.homeTeam?.id) === String(favoriteTeamId) || String(g.awayTeam?.id) === String(favoriteTeamId)),
     ) ?? null
-  }, [gameList, favouriteTeamId])
+  }, [gameList, favoriteTeamId])
 
   const [recent, setRecent] = useState<RecentResult[]>([])
   const [nextFixture, setNextFixture] = useState<{ opponentId: number; opponentAbbr: string; home: boolean } | null>(null)
   useEffect(() => {
-    if (favouriteTeamId == null) { setRecent([]); setNextFixture(null); return }
+    if (favoriteTeamId == null) { setRecent([]); setNextFixture(null); return }
     let cancelled = false
     // The team payload already carries a format-aware schedule (frames matches report
     // frames won, not points), so the form block reads `displayTeamScore` rather than
     // recomputing a result the team page would disagree with.
-    fetch(`${API_BASE}/teams/${favouriteTeamId}`)
+    fetch(`${API_BASE}/teams/${favoriteTeamId}`)
       .then(r => r.json())
       .then(json => {
         if (cancelled) return
@@ -279,7 +279,7 @@ const FrontPage: React.FC = () => {
       })
       .catch(() => { /* the form block just renders empty */ })
     return () => { cancelled = true }
-  }, [favouriteTeamId])
+  }, [favoriteTeamId])
 
   const fantasyPlayerIds = useMemo(
     () => new Set((myEntry?.players ?? []).map(p => p.playerId)),
@@ -440,7 +440,7 @@ const FrontPage: React.FC = () => {
             <YourNumbers cells={numbersCells} actions={numbersActions} />
             {/* Below the numbers: the slate, one game at a time. The rail is where a
                 reader's own business lives, and a pick is business. */}
-            <QuickPicks favouriteTeamId={favouriteTeamId} gamesActive={gamesActive} />
+            <QuickPicks favoriteTeamId={favoriteTeamId} gamesActive={gamesActive} />
           </div>
         )}
       </div>

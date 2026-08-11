@@ -9,7 +9,7 @@ import { BG, FONT, SHELL_MOBILE_MAX } from './tokens'
  * The frame every page sits in: header, nav, and a content column that owns its padding.
  *
  * ⚠️ The shell fills the VIEWPORT. The handoffs were drawn at 1440px and an earlier
- * version capped the shell there and centred it, which reproduced the prototype
+ * version capped the shell there and centered it, which reproduced the prototype
  * faithfully and looked wrong in a real browser: two dead gutters of page background on
  * a wide monitor. 1440px was the artboard, not a layout constraint.
  *

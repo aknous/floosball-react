@@ -67,8 +67,8 @@ const GameBoardPage: React.FC = () => {
     return () => { cancelled = true }
   }, [])
 
-  const favouriteTeamId = user?.favoriteTeamId ?? null
-  const favouriteLeague = favouriteTeamId != null ? leagueByTeam[String(favouriteTeamId)] ?? null : null
+  const favoriteTeamId = user?.favoriteTeamId ?? null
+  const favoriteLeague = favoriteTeamId != null ? leagueByTeam[String(favoriteTeamId)] ?? null : null
 
   /**
    * A PAST week, fetched on demand.
@@ -119,14 +119,14 @@ const GameBoardPage: React.FC = () => {
     orderKeyRef.current = slateKey
     orderRef.current = rankGames(
       gameList,
-      favouriteTeamId,
-      favouriteLeague,
+      favoriteTeamId,
+      favoriteLeague,
       teamId => leagueByTeam[String(teamId)] ?? null,
     ).map(r => r.game.id)
   } else if (slateKey && orderRef.current.length === 0) {
     // Standings have not arrived yet — rank without the league tiebreak so the board
     // renders immediately, and let the effect above re-rank once they do.
-    orderRef.current = rankGames(gameList, favouriteTeamId, null, () => null).map(r => r.game.id)
+    orderRef.current = rankGames(gameList, favoriteTeamId, null, () => null).map(r => r.game.id)
   }
 
   // A past week resolves against its own fetched list — `games` holds only the
@@ -144,9 +144,9 @@ const GameBoardPage: React.FC = () => {
     .map(game => ({
       game,
       chip: chipFor(game),
-      pinned: favouriteTeamId != null
-        && (String(game.homeTeam?.id) === String(favouriteTeamId)
-          || String(game.awayTeam?.id) === String(favouriteTeamId)),
+      pinned: favoriteTeamId != null
+        && (String(game.homeTeam?.id) === String(favoriteTeamId)
+          || String(game.awayTeam?.id) === String(favoriteTeamId)),
     }))
 
   const liveCount = gameList.filter(g => g.status === 'Active').length
@@ -167,11 +167,11 @@ const GameBoardPage: React.FC = () => {
   // case, not a failure.
   const { text: countdown } = useNextGameCountdown(seasonState.nextGameStartTime)
 
-  // The pinned card wears the user's own team colour as its top border. That is a FILL,
-  // so it uses the raw colour; only the PINNED label uses the corrected pink.
+  // The pinned card wears the user's own team color as its top border. That is a FILL,
+  // so it uses the raw color; only the PINNED label uses the corrected pink.
   const pinnedGame = ordered.find(o => o.pinned)?.game
   const pinnedTeam = pinnedGame
-    ? (String(pinnedGame.homeTeam?.id) === String(favouriteTeamId) ? pinnedGame.homeTeam : pinnedGame.awayTeam)
+    ? (String(pinnedGame.homeTeam?.id) === String(favoriteTeamId) ? pinnedGame.homeTeam : pinnedGame.awayTeam)
     : null
   const pinnedAccent = pinnedTeam?.color || ACCENT.ownTeam
 

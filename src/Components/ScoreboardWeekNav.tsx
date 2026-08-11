@@ -14,7 +14,7 @@ interface ScoreboardWeekNavProps {
   viewWeek: number | null
   onChange: (week: number | null) => void
   /**
-   * Which visual system to render in. The paging behaviour is identical either way —
+   * Which visual system to render in. The paging behavior is identical either way —
    * only the chrome differs, so the two boards can't drift on what "forward from the
    * last completed week" means.
    *

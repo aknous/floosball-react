@@ -1855,7 +1855,7 @@ const AdminContent: React.FC<{
               ))}
             </select>
           </div>
-          {/* A Core post already carries that Core's icon and colour, so the icon
+          {/* A Core post already carries that Core's icon and color, so the icon
               picker only applies to a league notice. */}
           {newsPostAs === 'league' && (
             <div>

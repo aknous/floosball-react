@@ -122,7 +122,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   const homeAhead = leader !== 'away'
   const awayAhead = leader !== 'home'
 
-  // Fills use the raw colour; only text gets corrected.
+  // Fills use the raw color; only text gets corrected.
   const awayFill = effectiveAwayColor(home?.color, away?.color, away?.secondaryColor)
   const homeFill = home?.color || '#64748b'
   const awayText = readableTeamColor(awayFill)
@@ -172,10 +172,10 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
         <div style={{ flexShrink: 1, minWidth: 0 }}>
           <div style={{ ...font(500, 13), color: TEXT.muted, whiteSpace: 'nowrap' }}>{team?.city}</div>
           {/* The record rides the NAME line (owner). On the city line it read as
-              part of the city — "Anaheim 5-0" as one phrase — and centred beside
+              part of the city — "Anaheim 5-0" as one phrase — and centered beside
               the whole block it floated with nothing to attach to. Against the
               name it reads as that club's season, which is what it is.
-              BASELINE, not centre: 13px next to 21px centred sits visibly high. */}
+              BASELINE, not center: 13px next to 21px centered sits visibly high. */}
           <div style={{
             display: 'flex', alignItems: 'baseline', gap: '9px',
             marginTop: '3px', minWidth: 0,
@@ -187,7 +187,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               minWidth: 0,
             }}>{team?.name}</span>
             {/* flexShrink 0 so a long club name truncates and the record survives —
-                the name is still recognisable clipped, a record is not. */}
+                the name is still recognizable clipped, a record is not. */}
             <span style={{
               ...font(600, 13, 1), color: TEXT.muted, ...TABULAR,
               whiteSpace: 'nowrap', flexShrink: 0,
@@ -317,7 +317,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       {!isFinal && (
         <div style={{ paddingTop: '14px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', flexDirection: 'column', gap: '11px' }}>
           {/* Just the gauge (owner): the swing trend line came out. Both sides carry
-              their own percentage, so the bar is read against two labelled numbers
+              their own percentage, so the bar is read against two labeled numbers
               rather than one favoured side and a sparkline. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ ...font(awayWp > homeWp ? 800 : 600, 14), color: awayText, ...TABULAR, whiteSpace: 'nowrap' }}>
@@ -333,7 +333,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
 
       {/* ⚠️ Two CONTAINERS, not one run of text (owner). The last play and the
           current situation are separate thoughts that happened to share a row,
-          and floating them either side of a flex spacer read as one disorganised
+          and floating them either side of a flex spacer read as one disorganized
           sentence. Each gets a panel; inside the right-hand one the fields are
           divided by rules rather than middots, which is the same idiom as the
           quarter cluster at the top of the card and makes it read as one
@@ -353,7 +353,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                  bordered tag whose baseline sits inside its own padding, so on a
                  baseline row the chip and the numbers never agreed. Every span
                  below also pins lineHeight to 1 — an unset line box is ~1.2x the
-                 font size and differs per span, which shifts the centre of each
+                 font size and differs per span, which shifts the center of each
                  item by a different amount. */
               <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
                 {lastPlay.teamAbbr && (
@@ -425,7 +425,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               {/* ⚠️ No RED ZONE cell (owner): the panel's own tint already says it,
                   and spelling it out beside a red container is the same fact
                   twice. The small card still needs its chip — it has no panel to
-                  tint and no spot to colour. */}
+                  tint and no spot to color. */}
             </div>
           )}
         </div>

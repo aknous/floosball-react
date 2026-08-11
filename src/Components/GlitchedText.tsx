@@ -24,7 +24,7 @@ export const GlitchedText: React.FC<Props> = ({ text, intensity = 'low' }) => {
   // rewriting the actual characters, which no stylesheet can undo.
   //
   // Unlike the card breakdown's glitch line, the real text EXISTS here, so below full we
-  // simply show it. The anomaly row keeps its colour, so the state is still marked; the
+  // simply show it. The anomaly row keeps its color, so the state is still marked; the
   // words just stay readable. (Named `glitch` because `intensity` is already this
   // component's own prop for how hard it corrupts.)
   const { intensity: glitch } = useGlitchIntensity()

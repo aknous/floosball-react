@@ -47,7 +47,7 @@ export interface PlaySummary {
   afterScore: boolean
 }
 
-/** playResult value → the short badge and its colour. */
+/** playResult value → the short badge and its color. */
 const RESULT_TAGS: Record<string, [string, string]> = {
   'Touchdown': ['TOUCHDOWN', ACCENT.live],
   'Touchdown, XP is Good': ['TOUCHDOWN', ACCENT.live],

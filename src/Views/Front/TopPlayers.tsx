@@ -26,7 +26,7 @@ export interface LeaderRow {
  *
  * The FANTASY tag is the reason this belongs on a personal landing page rather than only
  * on the stats page. A YOURS tag was here too and came out (owner): being on your
- * favourite club is true of a quarter of the league and says nothing about the player,
+ * favorite club is true of a quarter of the league and says nothing about the player,
  * where having drafted them is a choice you actually made.
  *
  * It is a board of LEADERS, not a single ranking: every row is the top of a different
@@ -35,7 +35,7 @@ export interface LeaderRow {
  * */
 const TopPlayers: React.FC<{
   rows: LeaderRow[]
-  /** The categories the board tracks, so empty rows can still be labelled. */
+  /** The categories the board tracks, so empty rows can still be labeled. */
   categoryLabels: string[]
   fantasyPlayerIds: Set<number>
 }> = ({ rows, categoryLabels, fantasyPlayerIds }) => {
@@ -45,7 +45,7 @@ const TopPlayers: React.FC<{
   const narrow = useIsMobile(SHELL_MOBILE_MAX)
   // A brand-new league has no leader in any category yet. The panel still renders, one
   // blank row per leaderboard, rather than vanishing (owner) — an absent module reads as
-  // broken, where a labelled empty row reads as "nobody has done this yet". The rows are
+  // broken, where a labeled empty row reads as "nobody has done this yet". The rows are
   // the same height either way, so the page does not jump when the first result lands.
   const placeholders = categoryLabels.slice(rows.length)
 
@@ -76,7 +76,7 @@ const TopPlayers: React.FC<{
                     ...font(800, 13), color: TEXT.strong, whiteSpace: 'nowrap',
                     textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis',
                     display: 'block', maxWidth: narrow ? '150px' : 'none',
-                    // Awakened last so it wins the colour, and applied to the NAME
+                    // Awakened last so it wins the color, and applied to the NAME
                     // rather than the row: it is a fact about the player, and lighting
                     // the whole row would compete with the stat beside it.
                     ...(row.awakened ? AWAKENED_NAME : {}),
@@ -84,8 +84,8 @@ const TopPlayers: React.FC<{
                 >{row.name}</Link>
               </PlayerHoverCard>
               {/* Stars sit BESIDE the name, not out at the far right — a rating belongs to
-                  the player, and the shared component colours it by band (gold/green/blue/
-                  grey/red) instead of the flat amber this used to draw. */}
+                  the player, and the shared component colors it by band (gold/green/blue/
+                  gray/red) instead of the flat amber this used to draw. */}
               {!narrow && <Stars stars={row.ratingStars} size={18} tracking={2} />}
               {!narrow && fantasy && <RelationTag label="FANTASY" color={ACCENT.success} />}
               {!narrow && (

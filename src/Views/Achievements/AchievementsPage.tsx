@@ -93,7 +93,7 @@ const ONBOARDING_HINTS: Record<string, OnboardingHint | ((user: any) => Onboardi
  * ⚠️ There is NO "proper" pack and there has not been for some time; the map carried
  * one anyway. It never showed, because nothing grants that slug — which is exactly why
  * it survived. Unknown slugs fall through to the raw slug, so a pack added later
- * renders readably rather than blank, and looks obviously unlabelled to whoever adds it.
+ * renders readably rather than blank, and looks obviously unlabeled to whoever adds it.
  */
 const packLabel = (slug: string) => {
   const map: Record<string, string> = {

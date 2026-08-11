@@ -60,18 +60,18 @@ function interestScore(game: CurrentGame): number {
  */
 export function rankGames(
   games: CurrentGame[],
-  favouriteTeamId: number | null,
-  favouriteLeague: string | null,
+  favoriteTeamId: number | null,
+  favoriteLeague: string | null,
   leagueOfTeam: (teamId: string | number) => string | null,
 ): Ranked[] {
-  const favouriteKey = favouriteTeamId != null ? String(favouriteTeamId) : null
+  const favoriteKey = favoriteTeamId != null ? String(favoriteTeamId) : null
   const isYours = (g: CurrentGame) =>
-    favouriteKey != null
-    && (String(g.homeTeam?.id) === favouriteKey || String(g.awayTeam?.id) === favouriteKey)
+    favoriteKey != null
+    && (String(g.homeTeam?.id) === favoriteKey || String(g.awayTeam?.id) === favoriteKey)
 
   const inYourLeague = (g: CurrentGame) => {
-    if (!favouriteLeague) return false
-    return leagueOfTeam(g.homeTeam?.id) === favouriteLeague
+    if (!favoriteLeague) return false
+    return leagueOfTeam(g.homeTeam?.id) === favoriteLeague
   }
 
   const decorated = games.map(game => ({

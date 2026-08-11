@@ -15,7 +15,7 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
  * rather than `/api/teams`. The teams endpoint carries no league or division at all —
  * it is a flat list, which is exactly what the old alphabetical two-column list had to
  * be. Standings already returns leagues, their divisions in the owner's config order,
- * and a row per team with the crest colour, so the shape the picker wants is a fetch
+ * and a row per team with the crest color, so the shape the picker wants is a fetch
  * that already exists.
  *
  * The grouping is not decoration: at 32 teams an alphabetical list asks a newcomer to

@@ -48,7 +48,7 @@ export const SeedBadge: React.FC<{ team: TeamStanding }> = ({ team }) => {
  * Crest + city over team name.
  *
  * The user's own club is marked by the ROW — tinted background, inset rail in the team's
- * colour, and the name in that colour too. A "YOURS" tag on top of all that was redundant
+ * color, and the name in that color too. A "YOURS" tag on top of all that was redundant
  * (owner).
  */
 export const TeamCell: React.FC<{

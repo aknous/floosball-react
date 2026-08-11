@@ -145,8 +145,8 @@ const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = ({ open
         position: 'fixed', inset: 0, zIndex: 10002,
         background: 'rgba(2,6,23,0.72)',
         display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
-        // Sits high, not centred: the reader's eye is already at the top of the
-        // page and a centred dialog makes them travel to reach it.
+        // Sits high, not centered: the reader's eye is already at the top of the
+        // page and a centered dialog makes them travel to reach it.
         paddingTop: '12vh', fontFamily: FONT,
       }}
     >

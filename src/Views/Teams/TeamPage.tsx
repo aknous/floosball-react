@@ -27,7 +27,7 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
  * TEAM PAGE — "season rail".
  *
  * The page answers three questions in the first screen, in order: who are they
- * (hero band in the team's own colours), are they any good (trophy case, then
+ * (hero band in the team's own colors), are they any good (trophy case, then
  * one scan-line of four facts — ratings, coach, locker room, next game), and
  * who's on the field (six roster plates, with The Bleachers alongside).
  * The record itself — every season and every week — runs full width below.
@@ -168,7 +168,7 @@ interface TeamData {
 
 // ── Shared helpers ──────────────────────────────────────────────────────────
 
-/** Team colours are DATA, so any overlay tinted with one has to be built at
+/** Team colors are DATA, so any overlay tinted with one has to be built at
  *  runtime rather than written as a literal rgba(). */
 function rgba(hex: string, alpha: number): string {
   const h = (hex || '').replace('#', '')
@@ -182,9 +182,9 @@ function rgba(hex: string, alpha: number): string {
 // ── The house gauge ─────────────────────────────────────────────────────────
 // Same bar the player page and the player hover card draw, so a rating reads
 // identically wherever you meet it: #334155 track, 2px radius, fill straight
-// off the 0-100 value, three colour bands at 85 and 72.
+// off the 0-100 value, three color bands at 85 and 72.
 //
-// The 0-100 mapping is deliberate. An earlier version of this page normalised
+// The 0-100 mapping is deliberate. An earlier version of this page normalized
 // to a 60-100 window on the grounds that ratings never go below 60 — the
 // player page tried exactly that and reverted it, because it drew an 80 as a
 // half-full bar and left anything under 60 (common for a non-primary
@@ -339,7 +339,7 @@ function seasonFinish(h: HistoryRow, inProgress = false): { label: string; color
 
 const FOCUS_RING = (secondary: string): React.CSSProperties => ({
   // Applied through a CSS custom property so the :focus-visible rule in
-  // index.css can use the team's own colour.
+  // index.css can use the team's own color.
   ['--tp-focus' as any]: secondary,
 })
 
@@ -404,7 +404,7 @@ const CellLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
  *  there would put every player's numbers at a different height.
  *
  *  Both draw the SAME bar: #334155 track, 2px radius, fill off the raw 0-100
- *  value, house colour bands. `animate` runs the fill out from zero on first
+ *  value, house color bands. `animate` runs the fill out from zero on first
  *  paint; nothing else on the page moves. */
 const Gauge: React.FC<{
   label: string
@@ -536,7 +536,7 @@ const RosterPlate: React.FC<{
     <span style={{
       width: '42px', flexShrink: 0, textAlign: 'center',
       fontSize: '15px', fontWeight: 800, padding: '5px 0',
-      // A quarter of the league's colours are light enough that white ink on
+      // A quarter of the league's colors are light enough that white ink on
       // them is unreadable — let the contrast helper pick.
       backgroundColor: player ? teamColor : '#334155',
       color: player ? getContrastTextColor(teamColor) : '#cbd5e1',
@@ -839,7 +839,7 @@ export default function TeamPage() {
       </div>
 
       {/* ── HERO BAND ──────────────────────────────────────────────────────
-          Full-bleed, in the team's own colours. The gradient runs dark on the
+          Full-bleed, in the team's own colors. The gradient runs dark on the
           left so the name always has something to sit on, and washes to the
           secondary on the right; the ghost abbreviation is the only decoration
           on the page. */}
@@ -1059,7 +1059,7 @@ export default function TeamPage() {
             <div style={{
               display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '6px',
             }}>
-              {/* The team's own colour, lifted until it actually reads on the
+              {/* The team's own color, lifted until it actually reads on the
                   near-black page. Several secondaries are navy or maroon and
                   sank straight into the background at their raw value. */}
               <span style={{
@@ -1091,7 +1091,7 @@ export default function TeamPage() {
             style={{
               ...FOCUS_RING(secondary),
               font: 'inherit', textAlign: 'left', width: '100%',
-              // A <button> centres its own content vertically, and `display:
+              // A <button> centers its own content vertically, and `display:
               // block` does not stop it — that is what floated this cell off
               // the headings beside it. An explicit flex container with
               // flex-start overrides the browser's anonymous centring.
@@ -1324,7 +1324,7 @@ export default function TeamPage() {
                         <img src={`/avatars/${g.opponent.id}.png`} alt=""
                              style={{
                                width: '20px', height: '20px',
-                               // Unplayed opponents go grey rather than the row
+                               // Unplayed opponents go gray rather than the row
                                // going translucent: dimming the whole row put
                                // the text under the legibility floor.
                                filter: played ? 'none' : 'grayscale(1)',
@@ -1390,7 +1390,7 @@ const TD: React.CSSProperties = {
   padding: '7px 10px', borderBottom: '1px solid #16202f', fontSize: '13px',
 }
 
-/** ELO in isolation means little; coloured against the 1500 baseline it reads
+/** ELO in isolation means little; colored against the 1500 baseline it reads
  *  as "were they actually good that year" next to the record. */
 function eloColor(elo: number): string {
   if (elo >= 1650) return '#4ade80'

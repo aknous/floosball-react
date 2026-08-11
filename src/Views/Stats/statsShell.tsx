@@ -49,7 +49,7 @@ export interface Column<Row> {
   sort?: (row: Row) => number
   /** Lower is better — sorts ascending first (yards allowed, points against). */
   lowerIsBetter?: boolean
-  /** Colour through a ramp instead of the flat body colour. */
+  /** Color through a ramp instead of the flat body color. */
   tint?: (row: Row) => string | undefined
   /** Grows to fill the row instead of taking a fixed width (the stat line). */
   flexible?: boolean
@@ -318,7 +318,7 @@ export function StatsTable<Row extends { id: number }>({
       <div style={{ minWidth: `${minWidth}px` }}>
 
         {/* ⚠️ STICKY, so the column labels survive the scroll. A stats table is read by
-            running down one column, and past the first screen every number was unlabelled
+            running down one column, and past the first screen every number was unlabeled
             — you had to scroll back up to remember which of six rate columns you were in.
             Sticks to the top of the app's scroller (`main`, which begins below the fixed
             header), so `top: 0` lands right under it.

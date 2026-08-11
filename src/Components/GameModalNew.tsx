@@ -865,7 +865,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
       // unwrapped so _type sits on the play itself — check both shapes.
       const isRally = play.event?._type === 'rally' || play._type === 'rally'
       // Chess-clock timeout: a team ran its offense budget to 0 — a notable turnover, so
-      // give it a red accent (matches the clock going red) instead of the neutral grey.
+      // give it a red accent (matches the clock going red) instead of the neutral gray.
       const isTimeout = play.event?._type === 'chess_timeout' || play._type === 'chess_timeout'
       // Innings change (new at-bat) or a frame change — a blue accent, like a period marker.
       const isInning = ['inning', 'frame'].includes(play.event?._type) || ['inning', 'frame'].includes(play._type)
@@ -948,8 +948,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
     return (
       <div key={playKey} style={{
         // ⚠️ The accent is the row's OWN DIVIDER, not a rail down its left edge.
-        // A 3px coloured bar on a tinted row is the house style of every AI-built
-        // dashboard; colouring the separator the row already has marks it just as
+        // A 3px colored bar on a tinted row is the house style of every AI-built
+        // dashboard; coloring the separator the row already has marks it just as
         // clearly without borrowing that look.
         borderBottom: accentColor ? `1px solid ${accentColor}` : '1px solid #334155',
       }}>
@@ -962,7 +962,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
             paddingLeft: '10px',
             paddingRight: '6px',
             // A wash that fades out across the row rather than a flat fill, so the
-            // colour is strongest where the marker is and the description still
+            // color is strongest where the marker is and the description still
             // sits on the page's own background.
             background: accentColor
               ? `linear-gradient(90deg, ${accentColor}26 0%, ${accentColor}0d 42%, transparent 78%)`
@@ -1173,10 +1173,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
             {play.personalityEvent && (() => {
               const accent = personalityAccent(play.personalityEvent.personality)
               return (
-                // A quote mark rather than a coloured left rail. The rail was the
+                // A quote mark rather than a colored left rail. The rail was the
                 // same device the big-play highlight used, so a reaction and a
                 // 60-yard run were flagged identically; a quote says "someone
-                // said this" on its own and the personality colour rides it.
+                // said this" on its own and the personality color rides it.
                 <div style={{
                   margin: '5px 0 0',
                   display: 'flex',
@@ -1184,7 +1184,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                   gap: '7px',
                   padding: '6px 9px',
                   // Tinted block, no rail: the background is what sets a quote
-                  // apart from the play above it, and the personality colour
+                  // apart from the play above it, and the personality color
                   // still rides it without borrowing the highlight's device.
                   background: `${accent}1a`,
                 }}>
@@ -1322,7 +1322,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
    * and the field is exactly the dead space it looks like.
    *
    * ⚠️ Declared HERE, not up with the other layout flags: it reads `gameData`
-   * and `replayActive`, both of which are initialised further down. Placing it
+   * and `replayActive`, both of which are initialized further down. Placing it
    * above them threw "Cannot access 'gameData' before initialization" on mount.
    */
   const hasStatusExtras = (() => {
@@ -1333,7 +1333,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
     if (gameFormat === 'play_limit' && gameData?.playLimit?.active) return true
     // ⚠️ NOT gated on `gameFormat`. The REST payload does not carry gameFormat, so on
     // first load it is undefined and only a later game_state tick fills it in — which
-    // is why the offence clock appeared some seconds after the page opened rather than
+    // is why the offense clock appeared some seconds after the page opened rather than
     // with it. `chessClock.active` is emitted by ChessClockFormat.stateExtra and by
     // nothing else, so it already implies the format and it DOES arrive over REST.
     if (gameData?.chessClock?.active && notScheduled) return true
@@ -1880,7 +1880,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               {/* ⚠️ MODAL ONLY, and not gated on `gameFormat` — see hasStatusExtras. The
                   page shows each club's budget as a column on its own row in the
                   scoreboard band, which is what "the clock for each team" means; this
-                  centre strip makes the reader match an abbreviation back to a row, so
+                  center strip makes the reader match an abbreviation back to a row, so
                   running both put the same number on screen twice. */}
               {!asPage && gameData.chessClock?.active && gameData.status !== 'Scheduled' && (() => {
                 const cc = gameData.chessClock!
@@ -2078,14 +2078,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
 
               if (isHoopShot && ballX != null) {
                 // Hoop shot — arc from the ball up to the target hoop (midfield or the
-                // attacking end-zone pair), on the top sideline. Green make / grey miss.
+                // attacking end-zone pair), on the top sideline. Green make / gray miss.
                 const pair = (lastPlay as any)?.hoopPair
                 const hoopX = pair === 'endzone' ? (lastPlayDir === 1 ? toX(110) : toX(10)) : toX(60)
                 const hoopY = 12
                 const midPX = (ballX + hoopX) / 2
                 const peakY = hoopY - 24
                 playPath = `M${ballX},${midY} Q${midPX},${peakY} ${hoopX},${hoopY}`
-                playStroke = hoopMade ? '#22c55e' : '#94a3b8'   // green make / grey incompletion
+                playStroke = hoopMade ? '#22c55e' : '#94a3b8'   // green make / gray incompletion
                 playDash = '6,3'
                 playEndX = hoopX
               } else if (playType === 'PUNT' && lastPlay) {
@@ -2256,7 +2256,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               const isBigGain = (playType === 'RUN' || playType === 'PASS') && yardsGained >= 20
               const isMadeFg = playType === 'FIELDGOAL' && lastPlay?.playResult === 'Field Goal is Good'
               // An awakened power firing takes precedence on the field — a brilliant gold wash + the
-              // power name, signalling "a power was used" (the score still updates regardless).
+              // power name, signaling "a power was used" (the score still updates regardless).
               const awakenedFire = (lastPlay as any)?.awakenedFire
               const bigReaction = awakenedFire
                 ? { label: awakenedFire.powerName || 'AWAKENED', color: '#fde68a', kind: 'awakened' }
@@ -3260,7 +3260,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                   // down a column of thirty players — which is how this gets used.
                   // `StatRow.pid` is already carried for the row key, so nothing has to
                   // be threaded through the row builders to know whose row this is.
-                  // ⚠️ 0.10 was too faint to survive the club-colour wash the section
+                  // ⚠️ 0.10 was too faint to survive the club-color wash the section
                   // headers put behind these rows (owner) — a highlight has to be visible
                   // in a glance down thirty players, which is the only way it gets used.
                   const MINE_TINT = 'rgba(34,197,94,0.22)'
@@ -3306,7 +3306,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                                 fontVariantNumeric: 'tabular-nums',
                                 alignItems: 'center',
                                 // ⚠️ TINT ONLY — no left rail (owner). The section header
-                                // above already wears a 3px rail in the CLUB's colour, and
+                                // above already wears a 3px rail in the CLUB's color, and
                                 // a second one underneath in green read as two competing
                                 // edges rather than as a highlighted row.
                                 backgroundColor: isMine ? MINE_TINT : 'transparent',

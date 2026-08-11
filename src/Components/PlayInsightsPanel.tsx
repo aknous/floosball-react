@@ -112,7 +112,7 @@ function qualityColor(v: number): string {
 }
 
 /** Color for player attributes (60-100 range). Shared with the profile and
- *  stats pages so one number reads the same colour wherever it appears. */
+ *  stats pages so one number reads the same color wherever it appears. */
 const attrColor = statRampColor
 
 /** Contextual label for quality ratings (0-100, thresholds 65/40). */

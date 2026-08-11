@@ -804,7 +804,7 @@
   background-color: rgba(255, 255, 255, 0.04);
 }
 
-/* Focus ring in the team's own secondary colour, fed by --tp-focus from the
+/* Focus ring in the team's own secondary color, fed by --tp-focus from the
    component. Never the browser default. */
 .tp-page :focus-visible {
   outline: 2px solid var(--tp-focus, #38bdf8);
@@ -851,7 +851,7 @@
    A card marked during a Criticality.
 
    ⚠️ Two earlier versions were wrong in opposite ways, both worth recording.
-   A tinted wash plus a breathing rim WASHED THE CARD OUT — a permanent colour cast
+   A tinted wash plus a breathing rim WASHED THE CARD OUT — a permanent color cast
    fights the edition gradient and the art, and reads as "this card is tinted" rather
    than "this card is unstable". Before that, an outer glow was invisible entirely,
    because TradingCard's container sets overflow:hidden and clips it.
@@ -993,7 +993,7 @@
 /* ---------------------------------------------------------------------------
    Redesigned shell (Components/Shell + the front page, game board, standings).
 
-   Three shared hover behaviours, kept in CSS because they are pure presentation
+   Three shared hover behaviors, kept in CSS because they are pure presentation
    and every one of them is applied to dozens of elements per page:
 
      .row   — a list row or a grid cell that is a link
@@ -1103,14 +1103,14 @@
    prefers-reduced-motion the first time.
 
    ⚠️ THE GLITCH CLASSES CARRY NOTHING BUT ANIMATION. `.glitch-text-l1` and its
-   siblings are a single `animation:` line — no colour, no weight, nothing that
+   siblings are a single `animation:` line — no color, no weight, nothing that
    survives switching the animation off. So turning them off does not calm the
    text down, it makes an anomalous player look exactly like everybody else, and
    the state stops existing on screen. Every rule below therefore REPLACES the
    animation with a static treatment lifted from that animation's own resting
    frame, rather than simply removing it.
 
-   The static marker is a colour AND a dotted underline: colour alone is not a
+   The static marker is a color AND a dotted underline: color alone is not a
    marker for a reader who cannot separate these hues, which is the same
    accessibility argument that started this. */
 

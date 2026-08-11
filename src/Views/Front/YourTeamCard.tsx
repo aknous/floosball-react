@@ -64,7 +64,7 @@ const YourTeamCard: React.FC<{
   const ourScore = liveGame ? (isHome ? liveGame.homeScore : liveGame.awayScore) ?? 0 : 0
   const theirScore = liveGame ? (isHome ? liveGame.awayScore : liveGame.homeScore) ?? 0 : 0
 
-  // Text sitting ON the club's colour. Black or white by luminance, with the
+  // Text sitting ON the club's color. Black or white by luminance, with the
   // secondary line at 80% of whichever was chosen.
   const onTeamColor = getContrastTextColor(team.color)
   const onTeamColorMuted = onTeamColor === '#000000' ? 'rgba(0,0,0,0.72)' : 'rgba(255,255,255,0.85)'
@@ -82,7 +82,7 @@ const YourTeamCard: React.FC<{
         }}>
           <Crest teamId={team.id} size={34} />
           <div style={{ minWidth: 0 }}>
-            {/* ⚠️ The plate is the club's own colour, so the text on it cannot be
+            {/* ⚠️ The plate is the club's own color, so the text on it cannot be
                 a constant. White washes out on a light primary — Cleveland,
                 Minnesota, Detroit — and this card is the one panel a fan sees
                 every visit. `getContrastTextColor` picks black or white off the

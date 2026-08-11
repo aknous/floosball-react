@@ -105,7 +105,7 @@ const RatingProgression: React.FC<{
         ) : null
       ))}
 
-      {/* Per-segment colour: a rising season reads green, a decline red. */}
+      {/* Per-segment color: a rising season reads green, a decline red. */}
       {history.map((pt, i) => {
         if (i === 0) return null
         const prev = history[i - 1]

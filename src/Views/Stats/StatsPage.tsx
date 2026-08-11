@@ -222,7 +222,7 @@ const StatsPage: React.FC = () => {
    * A side switch re-derives the sort DIRECTION even though the key survives.
    *
    * `YDS/G` exists on both sides but means opposite things — yards gained, then
-   * yards allowed — so carrying the direction over ranked the worst defence in
+   * yards allowed — so carrying the direction over ranked the worst defense in
    * the league first. Keeping the column is right; keeping the direction is not.
    */
   const switchSide = (next: Side) => {
@@ -272,8 +272,8 @@ const StatsPage: React.FC = () => {
     },
     {
       header: 'TEAM', width: 52,
-      // Neutral, not the club colour: the avatar carries identity, and thirty-two
-      // brand colours down a dense table is noise.
+      // Neutral, not the club color: the avatar carries identity, and thirty-two
+      // brand colors down a dense table is noise.
       render: row => (
         <span style={{ ...font(600, 11, 1, '0.04em'), color: TEXT.muted }}>
           {row.teamAbbr || (row.status === 'retired' ? '—' : 'FA')}

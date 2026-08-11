@@ -471,7 +471,7 @@ const CardEquipment: React.FC = () => {
     for (let i = 0; i < numSlots; i++) if (!displaySlots[i]) return i + 1
     return null
   })()
-  // Effects live in slots OTHER than the destination — used to grey out
+  // Effects live in slots OTHER than the destination — used to gray out
   // duplicate-effect picks in the grid.
   const deckDuplicateEffects = new Set(
     displaySlots
@@ -869,7 +869,7 @@ const CardEquipment: React.FC = () => {
               {availableDeck.map(card => {
                 const isMatch = fantasyPlayerIds.has(card.playerId)
                 const proj = browseCandidates.get(card.id)
-                // Only one of each effect can be equipped at once — grey out a
+                // Only one of each effect can be equipped at once — gray out a
                 // card whose effect already sits in another (non-destination) slot.
                 const isDuplicate = !!card.effectName && deckDuplicateEffects.has(card.effectName)
                 const canEquip = canEdit && destinationSlot != null && !isDuplicate
