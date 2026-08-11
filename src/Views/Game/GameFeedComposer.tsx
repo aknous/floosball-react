@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import { apiTimeMs, relativeTime } from '@/utils/apiTime'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
@@ -37,30 +38,11 @@ interface CatalogGroup {
   options: { key: string; text: string; valence: number }[]
 }
 
-/**
- * Milliseconds for a timestamp from the API.
- *
- * ⚠️ THE API'S NAIVE TIMESTAMPS ARE UTC, AND JAVASCRIPT ASSUMES LOCAL. A date-time
- * string with no offset is read as local time, so a post stamped 14:33 UTC parsed as
- * 14:33 wherever the reader is — hours into the future for anyone west of it. This was
- * ALREADY known here, but only for display: `relativeTime` appended the Z and the sort
- * did not, so the ages read correctly while every fan post outranked every sideline line
- * and the rail looked unsorted. One function now, used by both.
- */
-export const apiTimeMs = (iso: string | null | undefined): number => {
-  if (!iso) return NaN
-  const hasZone = iso.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(iso)
-  return new Date(hasZone ? iso : `${iso}Z`).getTime()
-}
-
-export const relativeTime = (iso: string | null): string => {
-  if (!iso) return ''
-  const then = apiTimeMs(iso)
-  const secs = Math.max(0, Math.round((Date.now() - then) / 1000))
-  if (secs < 60) return 'just now'
-  if (secs < 3600) return `${Math.floor(secs / 60)}m`
-  return `${Math.floor(secs / 3600)}h`
-}
+// Timestamps from the API are UTC while JavaScript assumes local, and each surface used
+// to work around that on its own — which is how the team feed ended up appending a second
+// Z and rendering NaN. @/utils/apiTime is the single implementation; re-exported here
+// because callers already import `relativeTime` from this module.
+export { apiTimeMs, relativeTime } from '@/utils/apiTime'
 
 const Chevron: React.FC<{ open: boolean }> = ({ open }) => (
   <svg
