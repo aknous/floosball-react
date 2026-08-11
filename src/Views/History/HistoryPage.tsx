@@ -7,6 +7,24 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 type ViewMode = 'seasons' | 'records' | 'team-records' | 'user-records' | 'hall-of-fame'
 
+/**
+ * The tabs on offer.
+ *
+ * ⚠️ 'team-records' IS BUILT AND DELIBERATELY UNLISTED. Its endpoint,
+ * `GET /api/history/team-records`, is on the backend's development branch and has not
+ * been deployed — and this repo deploys on its own, so the frontend can and does ship
+ * ahead of it. Everything else on this page runs against endpoints that are already live.
+ *
+ * PUT IT BACK the moment that endpoint is in production: add 'team-records' to this list.
+ * The view, its type and its fetch are all still here and wired, so that is the whole job.
+ *
+ * The view also tolerates the endpoint being absent (see its fetch), so this is belt and
+ * braces — the tab would show an empty state rather than break. It is hidden because an
+ * empty Team Records page is worse than no Team Records page.
+ */
+const TABS: ViewMode[] = ['seasons', 'records', 'user-records', 'hall-of-fame']
+
+
 interface SeasonSummary {
   seasonNumber: number
   championTeamId: number | null
@@ -82,7 +100,7 @@ const HistoryPage: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
-        {(['seasons', 'records', 'team-records', 'user-records', 'hall-of-fame'] as ViewMode[]).map(m => (
+        {(TABS).map(m => (
           <button key={m} onClick={() => setMode(m)} style={pillStyle(mode === m)}>
             {m === 'seasons' ? 'Seasons'
               : m === 'records' ? 'Record Book'
