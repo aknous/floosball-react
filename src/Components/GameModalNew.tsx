@@ -3522,8 +3522,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                         }}>FANTASY</span>
                         <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
                           {mineHere.length === 1
-                            ? '1 of your lineup is playing:'
-                            : `${mineHere.length} of your lineup are playing:`}
+                            ? '1 player in your fantasy lineup is playing:'
+                            : `${mineHere.length} players in your fantasy lineup are playing:`}
                           {' '}
                           <span style={{ color: '#e2e8f0', fontWeight: 700 }}>
                             {mineHere.map(pl => pl.name).join(', ')}
