@@ -75,7 +75,16 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <AppNav />
       )}
       {/* The one scroller on the page. No footer to reserve height for either: the
-          version badge lives at the foot of the nav. */}
+          version badge lives at the foot of the nav.
+
+          ⚠️ A PAGE INSIDE HERE MUST NOT ASK FOR `100vh`. This element starts BELOW the
+          header, so it is a viewport minus the header tall — a child claiming a full
+          viewport is exactly the header's height too tall, and every such page carried a
+          permanent ~63px of scroll that no amount of content explained. Measured on the
+          fantasy page: main clientHeight 919 against scrollHeight 982, unchanged when the
+          leaderboard inside it was shrunk, because the leaderboard was never the cause.
+          Use `minHeight: '100%'` — it resolves against this box, needs no header constant,
+          and stays right if the header ever changes height. */}
       <main style={{
         flex: 1, minWidth: 0, minHeight: 0, overflowY: 'auto',
         display: 'flex', flexDirection: 'column',
