@@ -307,12 +307,28 @@ export function StatsTable<Row extends { id: number }>({
   const minWidth = 24 + leadWidth + 120 + fixedWidth + 48
 
   return (
-    <div style={{ overflowX: 'auto' }}>
+    // ⚠️ NO `overflowX` HERE, and that is what makes the sticky header work. An element
+    // with an overflow other than visible owns a scrolling box, and a sticky descendant
+    // binds to THAT — so with the wrapper scrolling, the header sat still relative to a
+    // box that never moves and slid away with the rows (measured: top 234 -> -266 after
+    // a 500px scroll). The table is still as wide as it needs to be via `minWidth`; the
+    // horizontal scroll simply belongs to the page's own scroller now, which is also the
+    // one the header sticks to.
+    <div>
       <div style={{ minWidth: `${minWidth}px` }}>
 
+        {/* ⚠️ STICKY, so the column labels survive the scroll. A stats table is read by
+            running down one column, and past the first screen every number was unlabelled
+            — you had to scroll back up to remember which of six rate columns you were in.
+            Sticks to the top of the app's scroller (`main`, which begins below the fixed
+            header), so `top: 0` lands right under it.
+            ⚠️ `overflowX: auto` on the wrapper would trap it — a scroll container is a
+            containing block for sticky, and the header would scroll with the rows. The
+            wrapper is left visible and the horizontal scroll moved out to the page. */}
         <div style={{
           display: 'flex', alignItems: 'center', padding: '0 24px',
           background: BG.panel, borderBottom: `1px solid ${BORDER.raised}`,
+          position: 'sticky', top: 0, zIndex: 5,
         }}>
           <span style={{ width: '24px', flexShrink: 0 }} />
           {leads.map(lead => (
