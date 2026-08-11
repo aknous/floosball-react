@@ -114,6 +114,7 @@ Bar/badge FILLS use a team's raw primary. **Text does not.** `readableTeamColor(
 | `/teams` | `TeamsPage` | |
 | `/team/:id` | `TeamPage` | single scrolling page, no tabs: hero band → trophy case → 5-cell facts row (ratings / coach / locker room / stadium / next up) → roster + The Bleachers → season history + schedule → `FrontOfficeBand` (gated to your own team; `/front-office` redirects here). `SectionRail` gives right-edge section nav + proximity scroll-snap. |
 | `/players` `/players/:id` | `PlayersPage` / `PlayerPage` | |
+| `/stats` | `Views/Stats/StatsPage` | Players / Teams, with a **TOTALS ⇄ PER GAME** switch on each. ⚠️ Only COUNTING stats divide (`statsColumns.perGameOf`) — a rate is already per something (YPC, CMP%, YPR, AIR), a maximum is not a total (LNG), a rating is a percentile, and WPA is quoted in wins; dividing any of those makes a number that looks like a stat and means nothing. Players default to TOTALS and teams to PER GAME on purpose: a team plays a fixed schedule so its totals are comparable, players miss games so the leaderboard people arrive expecting is the total. `PTS` becomes `FP/G` in per-game, which is where the fantasy average lives |
 | `/cards` | `CardsPage` | |
 | `/fantasy` | `FantasyPage` | roster + card equipment; status bar shows `DayModifierBadge` (active modifier chip; click → dropdown of the day's full slate by week, `useModifierSchedule`) next to the lock countdown + swaps badge |
 | `/front-office` | `FrontOfficePage` | tabs: Overview / Markets / Votes |

@@ -66,6 +66,13 @@ const StatsPage: React.FC = () => {
   const [status, setStatus] = useState<Status>('active')
   const [side, setSide] = useState<Side>('offense')
   const [teamPer, setTeamPer] = useState<'game' | 'total'>('game')
+  // ⚠️ Players default to TOTALS, teams to PER GAME, and that asymmetry is deliberate.
+  // A team plays a fixed schedule so its totals are all the same length and per-game is
+  // the only fair read; players miss games, so the leaderboard people arrive expecting
+  // (most yards, most points) is the total. Per game is one click away and answers the
+  // other question: not how much, but how good.
+  const [playerPer, setPlayerPer] = useState<'game' | 'total'>('total')
+  const playerPerGame = playerPer === 'game'
   const [search, setSearch] = useState('')
 
   const [players, setPlayers] = useState<StatsPlayersResponse | null>(null)
@@ -135,7 +142,7 @@ const StatsPage: React.FC = () => {
   // ── Sorting ────────────────────────────────────────────────────────────────
 
   const columns = mode === 'players'
-    ? playerColumns(position, careerScope)
+    ? playerColumns(position, careerScope, playerPerGame)
     : teamColumns(side, teamPer === 'game')
 
   // A sort survives a filter change when the new column set still has that
@@ -143,7 +150,7 @@ const StatsPage: React.FC = () => {
   // made it feel like it was throwing your place away.
   useEffect(() => {
     const available = (mode === 'players'
-      ? playerColumns(position, careerScope)
+      ? playerColumns(position, careerScope, playerPerGame)
       : teamColumns(side, teamPer === 'game')) as { key: string; sort?: unknown; lowerIsBetter?: boolean }[]
     if (available.some(c => c.key === sortKey && c.sort)) return
     const fallback = mode === 'players'
@@ -152,7 +159,7 @@ const StatsPage: React.FC = () => {
     const col = available.find(c => c.key === fallback)
     setSortKey(fallback)
     setSortAsc(!!col?.lowerIsBetter)
-  }, [mode, position, side, teamPer, careerScope, sortKey])
+  }, [mode, position, side, teamPer, playerPerGame, careerScope, sortKey])
 
   const onSort = (key: string) => {
     if (key === sortKey) { setSortAsc(a => !a); return }
@@ -185,9 +192,9 @@ const StatsPage: React.FC = () => {
 
   const playerRows = useMemo(() => {
     const rows = (players?.rows ?? []).filter(r => !needle || r.name.toLowerCase().includes(needle))
-    return sortRows(rows, playerColumns(position, careerScope))
+    return sortRows(rows, playerColumns(position, careerScope, playerPerGame))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [players, needle, sortKey, sortAsc, position, careerScope])
+  }, [players, needle, sortKey, sortAsc, position, careerScope, playerPerGame])
 
   const teamRows = useMemo(() => {
     const rows = (teams ?? []).filter(r =>
@@ -230,6 +237,7 @@ const StatsPage: React.FC = () => {
     setPosition('ALL')
     setStatus('active')
     setSearch('')
+    setPlayerPer('total')
     setSelected(new Set())
   }
 
@@ -247,7 +255,7 @@ const StatsPage: React.FC = () => {
                 the team, and the same circle appears on every other surface. */}
             <Crest teamId={row.teamId} size={17} />
             <span style={{
-              ...font(600, 13), color: TEXT.primary,
+              ...font(600, 14), color: TEXT.primary,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               minWidth: 0,
               ...(row.awakened ? AWAKENED_NAME : {}),
@@ -267,7 +275,7 @@ const StatsPage: React.FC = () => {
       // Neutral, not the club colour: the avatar carries identity, and thirty-two
       // brand colours down a dense table is noise.
       render: row => (
-        <span style={{ ...font(600, 10, 1, '0.04em'), color: TEXT.muted }}>
+        <span style={{ ...font(600, 11, 1, '0.04em'), color: TEXT.muted }}>
           {row.teamAbbr || (row.status === 'retired' ? '—' : 'FA')}
         </span>
       ),
@@ -405,6 +413,13 @@ const StatsPage: React.FC = () => {
               ))}
             </span>
             <Rule />
+            <FilterLabel width={40}>SHOW</FilterLabel>
+            <Segmented
+              options={[{ key: 'total', label: 'TOTALS' }, { key: 'game', label: 'PER GAME' }]}
+              value={playerPer}
+              onChange={setPlayerPer}
+            />
+            <Rule />
             <SearchBox value={search} onChange={setSearch} placeholder="Find a player" />
             <span style={{ flex: 1 }} />
             <button
@@ -450,7 +465,7 @@ const StatsPage: React.FC = () => {
         mode === 'players' ? (
           <ComparePanel
             rows={playerRows.filter(r => selected.has(r.id))}
-            columns={playerColumns(position, careerScope)}
+            columns={playerColumns(position, careerScope, playerPerGame)}
             subject="players"
             onClose={() => setComparing(false)}
             title={row => (
@@ -497,7 +512,7 @@ const StatsPage: React.FC = () => {
       ) : mode === 'players' ? (
         <StatsTable
           rows={playerRows}
-          columns={playerColumns(position, careerScope)}
+          columns={playerColumns(position, careerScope, playerPerGame)}
           leads={playerLeads}
           sortKey={sortKey}
           sortAsc={sortAsc}

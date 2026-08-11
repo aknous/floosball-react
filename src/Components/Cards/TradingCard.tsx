@@ -279,6 +279,12 @@ export interface CardData {
     teamName?: string | null
     teamColor?: string | null
     fantasyPoints: number
+    // Per game, alongside the total. A season total says how MUCH a player produced;
+    // the average says how good they were, which is the comparison a card back invites.
+    // Null when the season recorded no games — an average there is a divide by zero
+    // dressed up as 0.0.
+    gamesPlayed?: number
+    fantasyPointsPerGame?: number | null
     lines: { label: string; value: number | string }[]
   } | null
   acquiredAt: string | null
@@ -728,6 +734,53 @@ const SPARKLE_POSITIONS = [
   { top: '35%', left: '50%', delay: '2.4s', size: 3 },
   { top: '15%', left: '55%', delay: '1.8s', size: 2 },
 ]
+
+/**
+ * The fantasy-points band at the top of a card back: the season total, and what that
+ * came to per game.
+ *
+ * ⚠️ ONE COMPONENT FOR BOTH BACKS. The vaulted keepsake back and the ordinary back drew
+ * this band separately, in two near-identical blocks — which is how one of them would
+ * have kept the total alone while the other gained the average.
+ *
+ * The average is omitted rather than shown as 0.0 when the season recorded no games: a
+ * card minted before its player has played is a real state (a rookie print in week 1),
+ * and 0.0 there reads as a player who turned up and did nothing.
+ */
+const FantasyPointsBand: React.FC<{
+  stats: NonNullable<CardData['playerStats']>
+  fontSize: number
+  borderColor: string
+  padding: string
+  margin: string
+  label: string
+}> = ({ stats, fontSize, borderColor, padding, margin, label }) => {
+  const perGame = stats.fantasyPointsPerGame
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'baseline', justifyContent: 'center',
+      gap: perGame != null ? '18px' : 0,
+      borderTop: `1px solid ${borderColor}40`,
+      borderBottom: `1px solid ${borderColor}40`,
+      padding, margin,
+    }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize, fontWeight: 700, color: TYPE_COLORS.fp }}>
+          {stats.fantasyPoints}
+        </div>
+        <div style={{ fontSize: fontSize - 5, color: '#94a3b8' }}>{label}</div>
+      </div>
+      {perGame != null && (
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize, fontWeight: 700, color: TYPE_COLORS.fp }}>
+            {perGame.toFixed(1)}
+          </div>
+          <div style={{ fontSize: fontSize - 5, color: '#94a3b8' }}>Per Game</div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const SparkleOverlay: React.FC = () => (
   <div style={{
@@ -1381,18 +1434,15 @@ const TradingCard: React.FC<TradingCardProps> = ({
 
           {card.playerStats ? (
             <>
-              {/* Season fantasy points */}
-              <div style={{
-                textAlign: 'center',
-                borderTop: `1px solid ${edStyle.borderColor}40`,
-                borderBottom: `1px solid ${edStyle.borderColor}40`,
-                padding: '6px 0', margin: '2px 0',
-              }}>
-                <div style={{ fontSize: d.font + 1, fontWeight: 700, color: TYPE_COLORS.fp }}>
-                  {card.playerStats.fantasyPoints}
-                </div>
-                <div style={{ fontSize: d.font - 4, color: '#94a3b8' }}>Season Fantasy Points</div>
-              </div>
+              {/* Season fantasy points, total and per game */}
+              <FantasyPointsBand
+                stats={card.playerStats}
+                fontSize={d.font + 1}
+                borderColor={edStyle.borderColor}
+                padding="6px 0"
+                margin="2px 0"
+                label="Season FP"
+              />
 
               {/* Stat lines */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '2px' }}>
@@ -1491,17 +1541,14 @@ const TradingCard: React.FC<TradingCardProps> = ({
             </div>
             {card.playerStats ? (
               <>
-                <div style={{
-                  textAlign: 'center',
-                  borderTop: `1px solid ${edStyle.borderColor}40`,
-                  borderBottom: `1px solid ${edStyle.borderColor}40`,
-                  padding: '5px 0', marginBottom: '5px',
-                }}>
-                  <div style={{ fontSize: d.font, fontWeight: 700, color: TYPE_COLORS.fp }}>
-                    {card.playerStats.fantasyPoints}
-                  </div>
-                  <div style={{ fontSize: d.font - 4, color: '#94a3b8' }}>Fantasy Points</div>
-                </div>
+                <FantasyPointsBand
+                  stats={card.playerStats}
+                  fontSize={d.font}
+                  borderColor={edStyle.borderColor}
+                  padding="5px 0"
+                  margin="0 0 5px"
+                  label="Fantasy Points"
+                />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                   {card.playerStats.lines.map((ln, i) => (
                     <div key={i} style={{

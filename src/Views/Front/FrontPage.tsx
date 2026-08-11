@@ -14,6 +14,7 @@ import LeagueNews, { type NewsItem } from './LeagueNews'
 import TopPlayers, { type LeaderRow } from './TopPlayers'
 import YourTeamCard, { type RecentResult } from './YourTeamCard'
 import YourNumbers, { type NumbersCell, type NumbersAction } from './YourNumbers'
+import QuickPicks from './QuickPicks'
 import type { LeagueStandings, TeamStanding } from '@/Views/Standings/standingsTypes'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -232,6 +233,10 @@ const FrontPage: React.FC = () => {
     return { myTeam: null as TeamStanding | null, myLeagueName: '' }
   }, [leagues, favouriteTeamId])
 
+  // Any game underway anywhere in the league. The picker closes while the league is
+  // playing — see QuickPicks.
+  const gamesActive = useMemo(() => gameList.some(g => g.status === 'Active'), [gameList])
+
   const myLiveGame = useMemo(() => {
     if (favouriteTeamId == null) return null
     return gameList.find(g =>
@@ -433,6 +438,9 @@ const FrontPage: React.FC = () => {
               </div>
             )}
             <YourNumbers cells={numbersCells} actions={numbersActions} />
+            {/* Below the numbers: the slate, one game at a time. The rail is where a
+                reader's own business lives, and a pick is business. */}
+            <QuickPicks favouriteTeamId={favouriteTeamId} gamesActive={gamesActive} />
           </div>
         )}
       </div>

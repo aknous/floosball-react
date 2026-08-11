@@ -110,8 +110,19 @@ const Detail: React.FC<{ standing?: TeamStanding; align: 'left' | 'right' }> = (
   )
 }
 
+/**
+ * ⚠️ COMPACT IS A NARROW MODE, NOT A SECOND CARD. The front page's rail is 330px against
+ * the ~480px this is laid out for, and at that width the club names truncate to single
+ * letters. The answer is not a rail-sized lookalike — two implementations of "what a
+ * matchup looks like" drift, and the pick treatment, the settled marks and the lock have
+ * to read the same wherever a reader meets them. So the card itself knows how to be
+ * narrow: the win percentage and the ELO go (both are context, and MORE carries the rest),
+ * the crest and type come down a size, and everything that says what this game IS and
+ * what a pick on it PAYS stays.
+ */
 const Side: React.FC<{
   team: PickEmGame['homeTeam']
+  compact?: boolean
   standing?: TeamStanding
   /** Away reads left-to-right, home reads right-to-left, so the two mirror the gutter. */
   align: 'left' | 'right'
@@ -121,7 +132,7 @@ const Side: React.FC<{
   dimmed: boolean
   disabled: boolean
   onPick: () => void
-}> = ({ team, standing, align, winPct, points, picked, dimmed, disabled, onPick }) => {
+}> = ({ team, standing, align, winPct, points, picked, dimmed, disabled, onPick, compact = false }) => {
   const accent = readableTeamColor(team.color || '#94a3b8')
   const rtl = align === 'right'
   return (
@@ -131,7 +142,7 @@ const Side: React.FC<{
       style={{
         flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
         alignItems: rtl ? 'flex-end' : 'flex-start', gap: '8px',
-        padding: '13px 14px', fontFamily: FONT,
+        padding: compact ? '12px 10px' : '13px 14px', fontFamily: FONT,
         textAlign: rtl ? 'right' : 'left',
         // ⚠️ EVERY SIDE CARRIES ITS CLUB'S COLOUR, not just the one you picked. A
         // board of sixteen matchups was sixteen identical grey boxes, and readers said
@@ -147,6 +158,48 @@ const Side: React.FC<{
         opacity: dimmed ? 0.45 : 1,
       }}
     >
+      {compact ? (
+        /* ⚠️ THE MARK, THE ODDS, THE PRICE (owner). Everything else the wide card carries
+           — city, club name, record, ELO — is identification and context a reader in the
+           rail already has from the crest, and it is what pushed the panel past its
+           330px. What survives is the three things a pick is actually made on. */
+        <span style={{
+          display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+          justifyContent: 'space-between',
+          flexDirection: rtl ? 'row-reverse' : 'row',
+        }}>
+          {/* The mark plus the code. The crest alone asks a reader to know thirty-two
+              badges; three letters name the club without spending the width a full name
+              costs, which is what pushed the wide layout over in the first place. */}
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0,
+            flexDirection: rtl ? 'row-reverse' : 'row',
+          }}>
+            <Crest teamId={team.id} size={24} />
+            <span style={{
+              ...font(700, 12, 1, '0.04em'), color: picked ? accent : TEXT.secondary,
+              whiteSpace: 'nowrap',
+            }}>{team.abbr}</span>
+          </span>
+          {/* ⚠️ STACKED, not side by side. Three things across a 150px half left the
+              points and the odds fighting for the same line, and the points — the thing
+              being decided on — read as just another figure in a row. The payout takes
+              the size, the probability sits under it as the qualifier it is. Numbers on
+              the INSIDE, mark on the outside, matching the wide card. */}
+          <span style={{ textAlign: rtl ? 'left' : 'right', flexShrink: 0 }}>
+            <span style={{
+              display: 'block', ...font(800, 18, 1), ...TABULAR, whiteSpace: 'nowrap',
+              color: points >= 15 ? ACCENT.live : points < 8 ? TEXT.muted : TEXT.body,
+            }}>
+              {points}<span style={{ ...font(500, 10), marginLeft: '2px' }}>pts</span>
+            </span>
+            <span style={{
+              display: 'block', ...font(600, 11, 1), ...TABULAR, marginTop: '4px',
+              color: winPct >= 50 ? TEXT.secondary : TEXT.muted,
+            }}>{winPct}%</span>
+          </span>
+        </span>
+      ) : (<>
       {/* ⚠️ Both rows run EDGE TO EDGE, club on the outside and the numbers on the
           inside. Grouped at one end they left a hole down the middle of every panel,
           and the points — the price of this side, and half the decision — ended up
@@ -165,23 +218,25 @@ const Side: React.FC<{
               three-letter code, which is the least distinctive way to render a club:
               the abbreviations are similar, and the crest was too small to read as a
               mark. The name is the thing a reader recognises. */}
-          <Crest teamId={team.id} size={34} />
+          <Crest teamId={team.id} size={compact ? 26 : 34} />
           <span style={{ minWidth: 0 }}>
             <span style={{
               display: 'block', ...font(500, 10, 1, '0.06em'), color: TEXT.muted,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{team.city ?? team.abbr}</span>
             <span style={{
-              display: 'block', ...font(picked ? 800 : 700, 16, 1.15, '-0.01em'),
+              display: 'block', ...font(picked ? 800 : 700, compact ? 13 : 16, 1.15, '-0.01em'),
               color: picked ? accent : TEXT.primary, marginTop: '2px',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{team.name}</span>
           </span>
         </span>
-        <span style={{
-          ...font(800, 19, 1), ...TABULAR, flexShrink: 0,
-          color: winPct >= 50 ? TEXT.primary : TEXT.muted,
-        }}>{winPct}%</span>
+        {!compact && (
+          <span style={{
+            ...font(800, 19, 1), ...TABULAR, flexShrink: 0,
+            color: winPct >= 50 ? TEXT.primary : TEXT.muted,
+          }}>{winPct}%</span>
+        )}
       </span>
 
       <span style={{
@@ -191,8 +246,7 @@ const Side: React.FC<{
       }}>
         <span style={{ ...font(400, 11), color: TEXT.muted, ...TABULAR, whiteSpace: 'nowrap' }}>
           {standing ? `${standing.wins}-${standing.losses}` : team.record}
-          {' · '}
-          {Math.round(standing?.elo ?? team.elo)}
+          {!compact && <>{' · '}{Math.round(standing?.elo ?? team.elo)}</>}
         </span>
         <span style={{
           display: 'flex', alignItems: 'baseline', gap: '5px', flexShrink: 0,
@@ -214,6 +268,7 @@ const Side: React.FC<{
           </span>
         </span>
       </span>
+      </>)}
     </button>
   )
 }
@@ -222,7 +277,9 @@ export const MatchupCard: React.FC<{
   game: PickEmGame
   standings: Map<number, TeamStanding>
   onPick: (teamId: number) => void
-}> = ({ game, standings, onPick }) => {
+  /** Narrow mode for the front page's rail — see the note above `Side`. */
+  compact?: boolean
+}> = ({ game, standings, onPick, compact = false }) => {
   const [open, setOpen] = useState(false)
   const home = game.homeTeam
   const away = game.awayTeam
@@ -247,7 +304,7 @@ export const MatchupCard: React.FC<{
     }}>
       <div style={{ display: 'flex', alignItems: 'stretch', gap: '4px', padding: '4px' }}>
         <Side
-          team={away} standing={awayStanding} align="left"
+          team={away} standing={awayStanding} align="left" compact={compact}
           winPct={wp.away}
           points={multiplierToPoints(timing, awayMult)}
           picked={awayPicked} dimmed={hasPick && !awayPicked}
@@ -257,7 +314,7 @@ export const MatchupCard: React.FC<{
 
         {/* The gutter: what the game is doing, and what it pays right now. */}
         <div style={{
-          width: '54px', flexShrink: 0, display: 'flex', flexDirection: 'column',
+          width: compact ? '34px' : '54px', flexShrink: 0, display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center', gap: '3px',
         }}>
           {settled ? (
@@ -291,7 +348,7 @@ export const MatchupCard: React.FC<{
         </div>
 
         <Side
-          team={home} standing={homeStanding} align="right"
+          team={home} standing={homeStanding} align="right" compact={compact}
           winPct={wp.home}
           points={multiplierToPoints(timing, homeMult)}
           picked={homePicked} dimmed={hasPick && !homePicked}
@@ -300,7 +357,7 @@ export const MatchupCard: React.FC<{
         />
       </div>
 
-      {open && (
+      {open && !compact && (
         <div style={{
           display: 'flex', gap: '10px', padding: '10px 12px 12px',
           borderTop: `1px solid ${BORDER.subtle}`,
@@ -312,14 +369,19 @@ export const MatchupCard: React.FC<{
         </div>
       )}
 
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          display: 'block', width: '100%', ...font(700, 9, 1, '0.1em'), color: TEXT.muted,
-          background: 'transparent', border: 'none', borderTop: `1px solid ${BORDER.subtle}`,
-          padding: '5px 0', cursor: 'pointer', fontFamily: FONT,
-        }}
-      >{open ? 'LESS' : 'MORE'}</button>
+      {/* ⚠️ No MORE in compact (owner). The detail panel is the reason to visit the
+          Prognostications page; a rail panel offering the same expansion is the page
+          reproduced badly in a third of the width. */}
+      {!compact && (
+        <button
+          onClick={() => setOpen(o => !o)}
+          style={{
+            display: 'block', width: '100%', ...font(700, 9, 1, '0.1em'), color: TEXT.muted,
+            background: 'transparent', border: 'none', borderTop: `1px solid ${BORDER.subtle}`,
+            padding: '5px 0', cursor: 'pointer', fontFamily: FONT,
+          }}
+        >{open ? 'LESS' : 'MORE'}</button>
+      )}
     </div>
   )
 }
