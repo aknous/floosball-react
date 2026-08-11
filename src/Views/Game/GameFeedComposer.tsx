@@ -53,7 +53,7 @@ export const apiTimeMs = (iso: string | null | undefined): number => {
   return new Date(hasZone ? iso : `${iso}Z`).getTime()
 }
 
-const relativeTime = (iso: string | null): string => {
+export const relativeTime = (iso: string | null): string => {
   if (!iso) return ''
   const then = apiTimeMs(iso)
   const secs = Math.max(0, Math.round((Date.now() - then) / 1000))

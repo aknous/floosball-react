@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { personalityAccent } from '@/utils/personality'
-import GameFeedComposer, { type TimelineEntry } from './GameFeedComposer'
+import GameFeedComposer, { relativeTime, type TimelineEntry } from './GameFeedComposer'
 
 /**
  * The Bleachers rail — the fan conversation, which the modal had nowhere to put.
@@ -75,8 +75,24 @@ const Tag: React.FC<{ label: string; accent: string }> = ({ label, accent }) => 
   }}>{label}</span>
 )
 
+/**
+ * Is this line SPOKEN, or is it something the player is doing?
+ *
+ * ⚠️ THE POOL HOLDS BOTH, and they want opposite treatment. A sideline pool mixes
+ * narration — "{name} is watching the cooler with quiet longing." — with speech —
+ * "Anyone seen my water bottle?". Rendered identically, every narration line came out
+ * as a quote with the player's name inside it, under a header carrying that same name
+ * again. Which is exactly how it was reported.
+ *
+ * The name is the tell: the templates interpolate `{name}` at the front of a narration
+ * line and never into a spoken one.
+ */
+const isNarration = (text: string, speaker: string): boolean =>
+  !!speaker && text.trimStart().toLowerCase().startsWith(speaker.toLowerCase())
+
 const Entry: React.FC<{ entry: RailEntry }> = ({ entry }) => {
   const accent = entry.personality ? personalityAccent(entry.personality) : ACCENT.info
+  const narration = isNarration(entry.text, entry.speaker)
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', gap: '8px',
@@ -91,6 +107,11 @@ const Entry: React.FC<{ entry: RailEntry }> = ({ entry }) => {
           <span style={{ ...font(400, 10, 1.4), color: TEXT.muted }}>{entry.playQuote}</span>
         </div>
       )}
+      {/* ⚠️ THE SAME HEADER SHAPE A FAN POST HAS (owner): mark, who, then the age on the
+          right. The two voices were laid out differently enough that the rail read as two
+          feeds stacked. What separates them now is what they ARE — a player line carries
+          the personality tint and its own tag, a fan post is plain — rather than a
+          different arrangement of the same parts. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         {entry.teamId != null && (
           <img
@@ -101,18 +122,34 @@ const Entry: React.FC<{ entry: RailEntry }> = ({ entry }) => {
             style={{ borderRadius: '50%', flexShrink: 0, display: 'block' }}
           />
         )}
-        <span style={{
-          ...font(700, 11), color: TEXT.strong, minWidth: 0,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{entry.speaker}</span>
-        <span style={{ flex: 1 }} />
+        {/* A narration line says the player's name in the sentence itself, so repeating
+            it here is the duplication that was reported. The tag still says who is
+            speaking in the sense that matters: this is the field, not the stands. */}
+        {!narration && (
+          <span style={{
+            ...font(700, 11), color: TEXT.strong, minWidth: 0,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{entry.speaker}</span>
+        )}
         <Tag label={entry.kind === 'sideline' ? 'SIDELINE' : 'ON THE FIELD'} accent={accent} />
+        <span style={{ flex: 1 }} />
+        {entry.createdAt && (
+          <span style={{ ...font(400, 10), color: TEXT.muted, ...TABULAR }}>
+            {relativeTime(entry.createdAt)}
+          </span>
+        )}
       </div>
       <div style={{
         borderLeft: `2px solid ${accent}`, background: `${accent}17`,
         padding: '8px 10px',
       }}>
-        <span style={{ ...font(400, 12, 1.55), color: TEXT.body, fontStyle: 'italic' }}>
+        {/* 14px, matching a fan post — these were 12 and read as the small print of a
+            feed whose other half was the size above it. Narration is not italicised:
+            it is the room being described, not something anybody said. */}
+        <span style={{
+          ...font(400, 14, 1.5), color: TEXT.body,
+          ...(narration ? {} : { fontStyle: 'italic' }),
+        }}>
           {entry.text}
         </span>
       </div>
