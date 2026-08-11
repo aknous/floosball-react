@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { formatScore } from '@/utils/formatScore'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { GameModalNew, PAGE_THREE_COLUMN_MIN } from '@/Components/GameModalNew'
 import RallyButton from '@/Components/GameModal/RallyPanel'
@@ -473,9 +474,10 @@ const GamePage: React.FC = () => {
               // A dash for an unplayed period is decoration, not content, so it may sit
               // below the floor; every real number stays at or above muted.
               color: value == null ? TEXT.faint : t ? TONE_COLOR[t] : TEXT.secondary,
-              textAlign: 'center', ...TABULAR,
+              // A fractional score must not break across two lines — see formatScore.
+              textAlign: 'center', whiteSpace: 'nowrap', ...TABULAR,
             }}>
-              {value == null ? '-' : value}
+              {value == null ? '-' : formatScore(value)}
             </div>
           )
         })}

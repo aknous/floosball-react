@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react'
 import TeamHoverCard from './TeamHoverCard'
 import { effectiveAwayColor } from '@/utils/colors'
 import { displayScore } from '@/utils/displayScore'
+import { fmtFramesWon } from '@/utils/framesWon'
 import { useScoringModel } from '@/contexts/ScoringModelContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -50,7 +51,7 @@ interface GameCardProps {
   onPick?: (teamId: number) => void
 }
 
-const fmtFramesWon = (v: number): string => { const w = Math.floor(v); return (v - w >= 0.5) ? `${w > 0 ? w : ''}½` : `${w}` }
+
 
 export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, innings, frames, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, clickable = true, userPick, pickable, pickCorrect, onPick }) => {
   const isComplete = status === 'Final'

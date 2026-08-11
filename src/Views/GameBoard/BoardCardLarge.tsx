@@ -76,8 +76,29 @@ const SCORE_PANEL = {
 const QUARTERS = { display: 'flex', gap: '12px', flex: 1, minWidth: 0 } as const
 // The period columns SHARE the panel's spare width equally; the total keeps a fixed
 // box so the right edge does not move as periods are added.
-const QUARTER_CELL = { flex: 1, minWidth: 0, textAlign: 'center' as const, ...TABULAR }
-const TOTAL_CELL = { width: '58px', flexShrink: 0, textAlign: 'right' as const, ...TABULAR }
+// `nowrap` is a guard, not the fix for anything observed: `minWidth: 0` lets these squeeze
+// below their content, and a fractional score is wider than a cell sized for two digits.
+// (Measured in Chrome, a clean "8.8" does NOT break at the point — browsers treat a number
+// as unbreakable — so this only matters if a value ever gains a real break opportunity.)
+const QUARTER_CELL = { flex: 1, minWidth: 0, textAlign: 'center' as const, whiteSpace: 'nowrap' as const, ...TABULAR }
+
+// ⚠️ THE TOTAL BOX HAS TO FIT WHAT THE FORMAT PUTS IN IT. 58px holds a two-digit score at
+// 34px and nothing more, and FRAMES puts a composite there — [frames won] | [points] — which
+// measured 91.7px with a halved total ("2½") and 63.9px even for a plain whole number. So
+// the cell overflowed on EVERY frames game and worst on a halved one, which is how it was
+// reported. Frames get their own width; every other format keeps the original box, so the
+// right edge still does not move as periods are added.
+//
+// 96px is sized for a SINGLE-DIGIT frames total, which is the only kind there is: the rule
+// patch sets framesPerGame to 6, and tabular-nums makes "6½" exactly as wide as "2½". If a
+// patch ever runs more than nine frames, this needs ~115px — measured, "12½" overflows 96
+// by 18.6px.
+const TOTAL_W = 58
+const TOTAL_W_FRAMES = 96
+const totalCell = (frames: boolean) => ({
+  width: `${frames ? TOTAL_W_FRAMES : TOTAL_W}px`,
+  flexShrink: 0, textAlign: 'right' as const, ...TABULAR,
+})
 
 type Props = {
   game: CurrentGame
@@ -201,7 +222,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             </div>
           )}
           {columns && <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />}
-          <span style={{ ...TOTAL_CELL, display: 'inline-flex', justifyContent: 'flex-end' }}>
+          <span style={{ ...totalCell(!!game.frames?.active), display: 'inline-flex', justifyContent: 'flex-end' }}>
             <FormatScore
               game={game}
               side={side}
@@ -275,7 +296,9 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             </div>
           )}
           {columns && <span style={{ width: '1px', height: '16px', background: BORDER.hairline }} />}
-          <span style={{ ...TOTAL_CELL, ...font(600, 11, 1, '0.08em'), color: TEXT.muted }}>
+          {/* Same width as the score cell below it, or the header label and the totals
+              column stop lining up the moment frames widen the box. */}
+          <span style={{ ...totalCell(!!game.frames?.active), ...font(600, 11, 1, '0.08em'), color: TEXT.muted }}>
             {columns ? columns.label : 'TOT'}
           </span>
         </div>

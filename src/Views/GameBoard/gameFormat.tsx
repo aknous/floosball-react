@@ -3,6 +3,7 @@ import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BORDER, TEXT, ACCENT, TABULAR, font } from '@/Components/Shell/tokens'
 import { displayScore, type ScoringModel } from '@/utils/displayScore'
 import { formatScore } from '@/utils/formatScore'
+import { fmtFramesWon } from '@/utils/framesWon'
 
 /**
  * Format-aware pieces for the board cards.
@@ -18,9 +19,8 @@ import { formatScore } from '@/utils/formatScore'
  * one module so the two boards cannot drift on what a frames score means.
  */
 
-/** Frames won can be a half (a drawn frame splits the point). */
-const framesWon = (n: number): string =>
-  Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, '')
+// Frames won can be a half (a drawn frame splits the point) — see @/utils/framesWon.
+const framesWon = fmtFramesWon
 
 export type Period = {
   label: string
@@ -86,8 +86,13 @@ export function periodColumns(game: CurrentGame): { label: string; periods: Peri
         const result = played[i]
         return {
           label: String(i + 1),
-          homeValue: result ? String(result.home) : '·',
-          awayValue: result ? String(result.away) : '·',
+          // ⚠️ formatScore, NOT String(). A score can be FRACTIONAL — float scoring-value
+          // rules, and the chaos rulesets during a Criticality — so `String()` prints a
+          // summing artifact in full (22.800000000000004) and even a clean 8.8 overflows
+          // a column sized for two digits. Cleaning to one decimal is exactly what
+          // formatScore exists for; every other score site already goes through it.
+          homeValue: result ? formatScore(result.home) : '·',
+          awayValue: result ? formatScore(result.away) : '·',
           played: !!result,
           // A drawn frame is HALVED rather than won, so neither side is emphasised.
           homeWon: result?.winner === 'home',
@@ -108,8 +113,10 @@ export function periodColumns(game: CurrentGame): { label: string; periods: Peri
       const played = isFinal || game.quarter > i + 1 || (game.quarter === i + 1 && live)
       return {
         label: `Q${i + 1}`,
-        homeValue: played && home != null ? String(home) : '·',
-        awayValue: played && away != null ? String(away) : '·',
+        // Same as the frames line above — a quarter score is fractional under the same
+        // rules, so it cannot be stringified raw either.
+        homeValue: played && home != null ? formatScore(home) : '·',
+        awayValue: played && away != null ? formatScore(away) : '·',
         played,
       }
     }),
