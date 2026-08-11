@@ -9,6 +9,7 @@ import TeamHoverCard from './TeamHoverCard'
 import HoverTooltip from './HoverTooltip'
 import { Stars } from './Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useLineup } from '@/hooks/useLineup'
 import { PlayInsightsPanel } from './PlayInsightsPanel'
 import { personalityAccent } from '@/utils/personality'
 import { pressureHandlingTier } from '@/utils/mentalProfile'
@@ -320,6 +321,23 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
   const pageNarrow = useIsMobile(PAGE_THREE_COLUMN_MIN)
   const stacked = isMobile || (asPage && pageNarrow)
 
+
+  /**
+   * The reader's own fantasy lineup, so a player of theirs in this game is marked.
+   *
+   * ⚠️ Equipped cards ARE the fantasy roster (the fusion), so the lineup hook is the
+   * whole answer — no second notion of "my players" to keep in step. It fetches nothing
+   * for a signed-out reader (`useLineup` bails without a token), which is why this can
+   * sit unconditionally at the top of a modal anyone can open.
+   */
+  const { bySlot: myLineupBySlot } = useLineup()
+  const myPlayerIds = useMemo(() => {
+    const ids = new Set<number>()
+    Object.values(myLineupBySlot || {}).forEach(entry => {
+      if (entry?.playerId != null) ids.add(Number(entry.playerId))
+    })
+    return ids
+  }, [myLineupBySlot])
 
   // Get game from central state and fetch plays
   const { games, fetchGamePlays } = useGames()
@@ -3239,6 +3257,23 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                   awayRows: StatRow[],
                   template: string,
                 ) => {
+                  // ⚠️ THE ROW, NOT A BADGE (owner). A badge beside the name is one more
+                  // glyph on a line that already has a position chip, a name, stars and
+                  // sometimes a charged/awakened glow. Tinting the whole row says the
+                  // same thing without adding anything to read, and it survives a glance
+                  // down a column of thirty players — which is how this gets used.
+                  // `StatRow.pid` is already carried for the row key, so nothing has to
+                  // be threaded through the row builders to know whose row this is.
+                  // ⚠️ 0.10 was too faint to survive the club-colour wash the section
+                  // headers put behind these rows (owner) — a highlight has to be visible
+                  // in a glance down thirty players, which is the only way it gets used.
+                  const MINE_TINT = 'rgba(34,197,94,0.22)'
+                  const MINE_FP = '#4ade80'
+                  // FP is the last column wherever a section has one — defense does not.
+                  const fpIndex = headerCols[headerCols.length - 1] === 'FP'
+                    ? headerCols.length - 1
+                    : -1
+
                   const teamGroup = (abbr: string, color: string, rows: StatRow[]) => (
                     <>
                       <div style={{
@@ -3259,9 +3294,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                         // the row now just goes to their page.
                         const canExpand = false
                         const isExpanded = false
+                        const isMine = row.pid != null && myPlayerIds.has(Number(row.pid))
                         return (
                           <React.Fragment key={key}>
                             <div
+                              title={isMine ? 'In your fantasy lineup' : undefined}
                               style={{
                                 display: 'grid',
                                 gridTemplateColumns: template,
@@ -3272,7 +3309,11 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                                 color: '#e2e8f0',
                                 fontVariantNumeric: 'tabular-nums',
                                 alignItems: 'center',
-                                backgroundColor: 'transparent',
+                                // ⚠️ TINT ONLY — no left rail (owner). The section header
+                                // above already wears a 3px rail in the CLUB's colour, and
+                                // a second one underneath in green read as two competing
+                                // edges rather than as a highlighted row.
+                                backgroundColor: isMine ? MINE_TINT : 'transparent',
                               }}
                             >
                               {row.cells.map((c, i) => {
@@ -3286,10 +3327,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                                     </div>
                                   )
                                 }
+                                // The FP figure carries the highlight too (owner): on
+                                // one of your players it is the number the row is being
+                                // read FOR, and it sits at the far end from the name.
+                                const isFP = isMine && i === fpIndex
                                 return (
                                   <div key={i} style={{
                                     textAlign: 'center',
                                     minWidth: 0,
+                                    ...(isFP ? { color: MINE_FP, fontWeight: 800 } : {}),
                                   }}>{c}</div>
                                 )
                               })}
@@ -3450,8 +3496,44 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 const homeDefRows = homeDefPlayers.map(defRow)
                 const awayDefRows = awayDefPlayers.map(defRow)
 
+                // Who of yours is actually out there. Counted off the two rosters in
+                // this game rather than off the lineup, so it says nothing at all when
+                // none of your players are involved — which is most games.
+                // ⚠️ `hp`/`ap` are slot-keyed (qb, rb, wr1…), not arrays — and a slot can
+                // be null where a roster spot is vacant.
+                const mineHere = [...Object.values(hp), ...Object.values(ap)]
+                  .filter((pl: any) => pl && myPlayerIds.has(Number(pl.id))) as { id: number; name: string }[]
+
                 return (
                   <div>
+                    {/* ⚠️ A COUNT AT THE TOP, because the badges are down inside whichever
+                        section a player happens to belong to. The question a reader has
+                        when they open a game is whether they have anyone in it at all,
+                        and that should not need scrolling five tables to answer. */}
+                    {mineHere.length > 0 && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: '9px', flexWrap: 'wrap',
+                        padding: '10px 14px', marginBottom: '10px',
+                        background: 'rgba(34,197,94,0.10)',
+                        border: '1px solid rgba(34,197,94,0.35)',
+                      }}>
+                        {/* Same green the rows wear, so the strip and the rows read as
+                            one idea rather than two markers for the same fact. */}
+                        <span style={{
+                          fontSize: '9px', fontWeight: 800, letterSpacing: '0.06em',
+                          color: '#0b1220', background: '#22c55e', padding: '2px 5px', borderRadius: '3px',
+                        }}>FANTASY</span>
+                        <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                          {mineHere.length === 1
+                            ? '1 player in your fantasy lineup is playing:'
+                            : `${mineHere.length} players in your fantasy lineup are playing:`}
+                          {' '}
+                          <span style={{ color: '#e2e8f0', fontWeight: 700 }}>
+                            {mineHere.map(pl => pl.name).join(', ')}
+                          </span>
+                        </span>
+                      </div>
+                    )}
                     {sectionCard('Passing', passingHeaders, homePassRows, awayPassRows, T_PASS)}
                     {sectionCard('Rushing', rushingHeaders, homeRushRows, awayRushRows, T_RUSH)}
                     {sectionCard('Receiving', receivingHeaders, homeRcvRows, awayRcvRows, T_RCV)}

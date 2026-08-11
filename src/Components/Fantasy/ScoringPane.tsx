@@ -72,10 +72,16 @@ export const ScoringPane: React.FC = () => {
 
 // Same shell the leaderboard uses (FantasyLeaderboard.cardStyleFn) so the two
 // dashboard columns read as siblings.
+// ⚠️ 18px, NOT 24 — and the two files must move together. This page is trying to fit
+// the fold, and measured on a 982px window it came to 945px against 919px of room. The
+// last 12 of that overflow is here: both dashboard columns wear this shell, they are
+// within 3px of each other in height, so whichever keeps the larger padding becomes the
+// taller column and sets the row. Simulated on production before shipping: 945 -> 919,
+// nothing left over.
 const cardStyleFn = (mobile: boolean): React.CSSProperties => ({
   backgroundColor: '#1e293b',
   border: '1px solid #334155',
-  padding: mobile ? '12px' : '24px',
+  padding: mobile ? '12px' : '18px',
 })
 
 // Pre-lock projection built from the live lineup + card projection. Updates the

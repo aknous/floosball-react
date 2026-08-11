@@ -37,9 +37,25 @@ interface CatalogGroup {
   options: { key: string; text: string; valence: number }[]
 }
 
-const relativeTime = (iso: string | null): string => {
+/**
+ * Milliseconds for a timestamp from the API.
+ *
+ * ⚠️ THE API'S NAIVE TIMESTAMPS ARE UTC, AND JAVASCRIPT ASSUMES LOCAL. A date-time
+ * string with no offset is read as local time, so a post stamped 14:33 UTC parsed as
+ * 14:33 wherever the reader is — hours into the future for anyone west of it. This was
+ * ALREADY known here, but only for display: `relativeTime` appended the Z and the sort
+ * did not, so the ages read correctly while every fan post outranked every sideline line
+ * and the rail looked unsorted. One function now, used by both.
+ */
+export const apiTimeMs = (iso: string | null | undefined): number => {
+  if (!iso) return NaN
+  const hasZone = iso.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(iso)
+  return new Date(hasZone ? iso : `${iso}Z`).getTime()
+}
+
+export const relativeTime = (iso: string | null): string => {
   if (!iso) return ''
-  const then = new Date(iso.endsWith('Z') ? iso : `${iso}Z`).getTime()
+  const then = apiTimeMs(iso)
   const secs = Math.max(0, Math.round((Date.now() - then) / 1000))
   if (secs < 60) return 'just now'
   if (secs < 3600) return `${Math.floor(secs / 60)}m`
@@ -55,20 +71,37 @@ const Chevron: React.FC<{ open: boolean }> = ({ open }) => (
   </svg>
 )
 
+export interface TimelineEntry {
+  key: string
+  /** ISO wall clock. Missing on a cutaway generated before the server stamped them —
+   *  those sink to the bottom rather than jumping the queue. */
+  createdAt?: string | null
+  node: React.ReactNode
+}
+
 const GameFeedComposer: React.FC<{
   gameId: number
   /** The player and sideline voices, appended below the fan posts in the same
    *  scroller — the rail is one feed, not two stacked ones. */
-  extraEntries?: React.ReactNode
   /**
-   * Whether `extraEntries` actually has anything in it.
+   * The OTHER voices in this rail — sideline cutaways — as DATA, not as a rendered
+   * block.
+   *
+   * ⚠️ THIS USED TO BE A ReactNode APPENDED AFTER THE POSTS, which is why every
+   * sideline line sat under every fan shout however long ago it was said. A feed that
+   * claims to be a timeline has to be sorted as one, and that can only happen where
+   * both halves are in scope — here.
+   */
+  timelineEntries?: TimelineEntry[]
+  /**
+   * Whether there is anything in the rail besides posts.
    *
    * ⚠️ A ReactNode is always truthy, even when it renders to nothing, so the feed
    * cannot work this out by looking. The caller knows and has to say. It is only
    * needed for the empty state below.
    */
   hasExtraEntries?: boolean
-}> = ({ gameId, extraEntries, hasExtraEntries = false }) => {
+}> = ({ gameId, timelineEntries = [], hasExtraEntries = false }) => {
   const { user, getToken } = useAuth()
   const { subscribe } = useSeasonWebSocket()
   const [groups, setGroups] = useState<CatalogGroup[]>([])
@@ -265,33 +298,52 @@ const GameFeedComposer: React.FC<{
       </div>
 
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-      {posts.map(p => {
-        const colour = p.teamColor ? readableTeamColor(p.teamColor) : TEXT.muted
-        return (
-          <div
-            key={p.id}
-            style={{
-              display: 'flex', flexDirection: 'column', gap: '6px',
-              padding: '12px 14px', borderBottom: `1px solid ${BORDER.hairline}`,
-              ...(p.isMine && p.teamColor
-                ? { background: `${p.teamColor}14`, boxShadow: `inset 3px 0 0 ${p.teamColor}` }
-                : {}),
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {p.teamId ? (
-                <img src={`/avatars/${p.teamId}.png`} alt="" width={18} height={18}
-                     style={{ borderRadius: '50%', flexShrink: 0, display: 'block' }} />
-              ) : null}
-              <span style={{ ...font(600, 11), color: colour }}>{p.username ?? 'someone'}</span>
-              <span style={{ flex: 1 }} />
-              <span style={{ ...font(400, 10), color: TEXT.muted, ...TABULAR }}>{relativeTime(p.createdAt)}</span>
-            </div>
-            <span style={{ ...font(700, 14, 1.2, '-0.01em'), color: TEXT.strong }}>{p.text}</span>
-          </div>
-        )
-      })}
-      {extraEntries}
+      {/* ⚠️ ONE TIMELINE. Posts and sideline lines are merged and sorted here rather
+          than concatenated, so the rail reads in the order things were actually said.
+          An entry with no timestamp keeps to the bottom: a cutaway generated before the
+          server stamped them has no place to claim, and guessing one would put an old
+          line above a shout from a second ago. */}
+      {(() => {
+        const postEntries: TimelineEntry[] = posts.map(p => {
+          const colour = p.teamColor ? readableTeamColor(p.teamColor) : TEXT.muted
+          return {
+            key: `post-${p.id}`,
+            createdAt: p.createdAt,
+            node: (
+              <div
+                key={`post-${p.id}`}
+                style={{
+                  display: 'flex', flexDirection: 'column', gap: '6px',
+                  padding: '12px 14px', borderBottom: `1px solid ${BORDER.hairline}`,
+                  ...(p.isMine && p.teamColor
+                    ? { background: `${p.teamColor}14`, boxShadow: `inset 3px 0 0 ${p.teamColor}` }
+                    : {}),
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {p.teamId ? (
+                    <img src={`/avatars/${p.teamId}.png`} alt="" width={18} height={18}
+                         style={{ borderRadius: '50%', flexShrink: 0, display: 'block' }} />
+                  ) : null}
+                  <span style={{ ...font(600, 11), color: colour }}>{p.username ?? 'someone'}</span>
+                  <span style={{ flex: 1 }} />
+                  <span style={{ ...font(400, 10), color: TEXT.muted, ...TABULAR }}>{relativeTime(p.createdAt)}</span>
+                </div>
+                <span style={{ ...font(700, 14, 1.2, '-0.01em'), color: TEXT.strong }}>{p.text}</span>
+              </div>
+            ),
+          }
+        })
+        const at = (e: TimelineEntry) => apiTimeMs(e.createdAt)
+        const merged = [...postEntries, ...timelineEntries].sort((a, b) => {
+          const ta = at(a), tb = at(b)
+          if (Number.isNaN(ta) && Number.isNaN(tb)) return 0
+          if (Number.isNaN(ta)) return 1          // undated sinks
+          if (Number.isNaN(tb)) return -1
+          return tb - ta                          // newest first, like the feed already was
+        })
+        return merged.map(e => <React.Fragment key={e.key}>{e.node}</React.Fragment>)
+      })()}
       {/* ⚠️ THE EMPTY STATE BELONGS HERE, not in the caller's extraEntries, because
           this is the only place that can see BOTH halves of the feed. It used to sit
           in gameBleachers gated on the rail entries alone, so posting a shout left
