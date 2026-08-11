@@ -361,10 +361,17 @@ const FantasyPage: React.FC = () => {
       <div style={{
         maxWidth: seasonOver ? '1100px' : '1280px',
         margin: '0 auto',
-        padding: isMobile ? '10px' : '14px 20px',
+        // ⚠️ TIGHT ON PURPOSE — this page is trying to fit the fold. Measured on a 982px
+        // window: the column came to 945px against 919px of room, overflowing by 26 and
+        // costing the small scroll it was reported for. That 26 was exactly this chrome:
+        // 14 top + 14 bottom + two 12px gaps is loose for a page whose whole content is
+        // three blocks. 8/8 and 8 gives it back. The lever is HERE and not on the
+        // leaderboard — shrinking that list changes nothing, because the Scoring pane
+        // beside it is the taller column and sets the row's height.
+        padding: isMobile ? '10px' : '8px 20px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: '8px',
       }}>
         {seasonOver ? (
           <>
