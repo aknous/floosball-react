@@ -51,7 +51,7 @@ const PrognosticationsPage: React.FC = () => {
   // nav is already a drawer while this page still thought it had desktop room.
   const isMobile = useIsMobile(SHELL_MOBILE_MAX)
   const {
-    slots, day, loading, submitting, dirtyCount,
+    slots, day, loading, submitting, dirtyCount, saveState,
     setPick, pickFavoritesForSlot, submitAll,
   } = usePickEmDay()
 
@@ -174,14 +174,13 @@ const PrognosticationsPage: React.FC = () => {
             {day != null ? `Day ${day + 1}` : 'Today'}
             {' · '}Picks lock at kickoff.
           </span>
-          {/* ⚠️ Stated in POINTS, not multipliers (owner). The card shows each team's
-              points, so quoting a multiplier here asked the reader to do the same sum
-              the card had already done for them. 10 base, 3.0x and 0.4x bounds, so the
-              real range is 4 to 30 — say that instead. */}
+          {/* ⚠️ Stated in POINTS, not multipliers (owner) — the card already shows each
+              team's points, so a multiplier here asks the reader to redo that sum. Cut
+              back to the two facts the cards cannot state for themselves: what the number
+              on a team means, and that only a correct pick pays. The worked range (4 to
+              30) went with the rest of the page's explanatory copy. */}
           <span style={{ display: 'block', ...font(400, 12, 1.5), color: TEXT.secondary, marginTop: '4px' }}>
-            Each team shows what a correct pick on them is worth: about
-            {' '}<strong style={{ color: TEXT.body }}>10 points</strong> on an even game, up to 30 for a
-            big underdog and as few as 4 for a heavy favorite. A wrong pick scores nothing.
+            Each team shows what a correct pick on them is worth. A wrong pick scores nothing.
           </span>
         </span>
         <span style={{ flex: 1 }} />
@@ -344,9 +343,6 @@ const PrognosticationsPage: React.FC = () => {
                   </span>
                 </div>
               )}
-              <div style={{ padding: '13px 15px', ...font(400, 11, 1.6), color: TEXT.muted }}>
-                Underdogs pay the most, big favorites the least. Picks close at kickoff.
-              </div>
             </div>
 
             {/* Auto-pick sits ABOVE the board (owner): it is a control the reader may
@@ -363,24 +359,34 @@ const PrognosticationsPage: React.FC = () => {
         )}
       </div>
 
-      {/* The submit bar only exists when there is something to submit, so it is never
-          a permanent strip of chrome across the bottom of the page. */}
-      {(dirtyCount > 0 || flash) && (
+      {/* ⚠️ Picking IS the submission (owner) — there is no submit button, and there was
+          one. A pick a reader had made was not a pick they had made until they found the
+          bar at the bottom and pressed it, which is a second act asked for no reason.
+          What is left is an ACKNOWLEDGEMENT: it says a save is in flight or has landed,
+          and it stays put only when one FAILED, which is the case where the reader has
+          something to do about it. */}
+      {saveState !== 'idle' && (
         <div style={{
           position: 'sticky', bottom: 0, zIndex: 20,
           display: 'flex', alignItems: 'center', gap: '14px',
           padding: '13px 28px', background: BG.shell,
           borderTop: `1px solid ${BORDER.raised}`,
         }}>
-          {flash ? (
-            <span style={{ ...font(600, 12), color: ACCENT.live }}>{flash}</span>
-          ) : (
-            <span style={{ ...font(600, 12), color: TEXT.secondary }}>
-              {dirtyCount} unsaved
-            </span>
-          )}
+          <span style={{
+            ...font(600, 12),
+            color: saveState === 'error' ? ACCENT.negative
+              : saveState === 'closed' ? ACCENT.warning
+              : saveState === 'saved' ? ACCENT.live : TEXT.secondary,
+          }}>
+            {saveState === 'saving' ? 'Saving picks'
+              : saveState === 'saved' ? (flash ?? 'Picks saved')
+              /* The game kicked off between the click and the save. Say so — the pick is
+                 about to disappear off the card and the reader is owed the reason. */
+              : saveState === 'closed' ? 'That game kicked off. Picks are closed on it.'
+              : `Could not save ${dirtyCount} pick${dirtyCount !== 1 ? 's' : ''}`}
+          </span>
           <span style={{ flex: 1 }} />
-          {dirtyCount > 0 && (
+          {saveState === 'error' && (
             <button
               onClick={handleSubmit}
               disabled={submitting}
@@ -389,7 +395,7 @@ const PrognosticationsPage: React.FC = () => {
                 border: 'none', padding: '10px 18px', fontFamily: FONT,
                 cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.6 : 1,
               }}
-            >{submitting ? 'SAVING' : 'SUBMIT PICKS'}</button>
+            >{submitting ? 'SAVING' : 'RETRY'}</button>
           )}
         </div>
       )}
