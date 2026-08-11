@@ -5,7 +5,7 @@ import HallOfFame from '@/Views/Players/HallOfFame'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type ViewMode = 'seasons' | 'records' | 'user-records' | 'hall-of-fame'
+type ViewMode = 'seasons' | 'records' | 'team-records' | 'user-records' | 'hall-of-fame'
 
 interface SeasonSummary {
   seasonNumber: number
@@ -82,10 +82,11 @@ const HistoryPage: React.FC = () => {
       </div>
 
       <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
-        {(['seasons', 'records', 'user-records', 'hall-of-fame'] as ViewMode[]).map(m => (
+        {(['seasons', 'records', 'team-records', 'user-records', 'hall-of-fame'] as ViewMode[]).map(m => (
           <button key={m} onClick={() => setMode(m)} style={pillStyle(mode === m)}>
             {m === 'seasons' ? 'Seasons'
               : m === 'records' ? 'Record Book'
+              : m === 'team-records' ? 'Team Records'
               : m === 'user-records' ? 'Fantasy Records'
               : 'Hall of Fame'}
           </button>
@@ -94,6 +95,7 @@ const HistoryPage: React.FC = () => {
 
       {mode === 'seasons' && <SeasonsView isMobile={isMobile} />}
       {mode === 'records' && <RecordsView isMobile={isMobile} />}
+      {mode === 'team-records' && <TeamRecordsView isMobile={isMobile} />}
       {mode === 'user-records' && <UserRecordsView isMobile={isMobile} />}
       {mode === 'hall-of-fame' && <HallOfFame />}
     </div>
@@ -454,6 +456,149 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                     )}
                   </div>
                   ))
+                })()}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Team record book ──────────────────────────────────────────────────────
+
+interface TeamRecordEntry {
+  teamId: number
+  teamName: string
+  teamAbbr?: string | null
+  value: number
+  season?: number
+  week?: number
+}
+
+interface TeamRecordsResponse {
+  records: {
+    game: Record<string, TeamRecordEntry[]>
+    season: Record<string, TeamRecordEntry[]>
+  }
+  labels: Record<string, string>
+}
+
+/**
+ * What CLUBS have done, as a top ten.
+ *
+ * The record book showed players only, so a reader who saw "X set the single-game team
+ * points record" in the news had nowhere to check it — the number in that headline came
+ * from a different system entirely (`recordManager`'s single-holder tree).
+ *
+ * ⚠️ No CAREER tab, unlike the player book. A club does not retire, so a career total is
+ * mostly "has existed longest"; the all-time counting records that do mean something for
+ * a franchise (wins, titles) belong with its history rather than in a stat leaderboard.
+ */
+const TeamRecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
+  const [data, setData] = useState<TeamRecordsResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [tab, setTab] = useState<'game' | 'season'>('game')
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`${API_BASE}/history/team-records`)
+      .then(r => r.json())
+      .then(j => setData(j?.data || j))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const categories = useMemo(() => {
+    if (!data) return [] as string[]
+    return Object.keys(data.records[tab]).filter(k => (data.records[tab][k] ?? []).length > 0)
+  }, [data, tab])
+
+  if (loading) return <div style={{ color: '#94a3b8', padding: '20px' }}>Loading…</div>
+  if (!data || categories.length === 0) {
+    return <div style={{ color: '#94a3b8', padding: '20px' }}>No team records yet.</div>
+  }
+
+  return (
+    <div>
+      <div style={{
+        display: 'flex', gap: '2px', marginBottom: '14px',
+        backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px',
+        width: 'fit-content',
+      }}>
+        {(['game', 'season'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            style={{
+              padding: '6px 12px', fontSize: '11px', fontWeight: 600,
+              borderRadius: '6px', border: 'none', cursor: 'pointer',
+              backgroundColor: tab === t ? '#1e293b' : 'transparent',
+              color: tab === t ? '#e2e8f0' : '#64748b',
+              fontFamily: 'inherit',
+            }}
+          >{t === 'game' ? 'Single Game' : 'Single Season'}</button>
+        ))}
+      </div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '14px',
+      }}>
+        {categories.map(cat => {
+          const entries = data.records[tab][cat] ?? []
+          const label = data.labels[cat] ?? cat
+          return (
+            <div key={cat} style={{
+              backgroundColor: '#1e293b', borderRadius: '8px',
+              border: '1px solid #334155', overflow: 'hidden',
+            }}>
+              <div style={{
+                padding: '8px 12px', fontSize: '11px', fontWeight: 700,
+                color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.06em',
+                borderBottom: '1px solid #334155',
+              }}>{label}</div>
+              <div>
+                {(() => {
+                  // Golf-style ranking, matching the player book: a tie shares a rank and
+                  // the next distinct value skips ahead.
+                  let prevValue: number | null = null
+                  let displayRank = 0
+                  return entries.slice(0, 10).map((e, idx) => {
+                    if (prevValue === null || e.value !== prevValue) displayRank = idx + 1
+                    prevValue = e.value
+                    return (
+                      <div key={`${e.teamId}-${e.season}-${e.week ?? 'x'}-${idx}`} style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '5px 12px', fontSize: '12px',
+                        borderTop: idx > 0 ? '1px solid #2a3a4e' : 'none',
+                      }}>
+                        <span style={{
+                          width: '18px', textAlign: 'right',
+                          fontWeight: 700, color: displayRank === 1 ? '#f59e0b' : '#64748b',
+                        }}>{displayRank}</span>
+                        <Link
+                          to={`/team/${e.teamId}`}
+                          style={{
+                            flex: 1, minWidth: 0, color: '#e2e8f0', textDecoration: 'none',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          }}
+                        >{e.teamName}</Link>
+                        <span style={{
+                          width: '60px', textAlign: 'right', fontWeight: 700,
+                          color: '#e2e8f0', fontVariantNumeric: 'tabular-nums',
+                        }}>{e.value.toLocaleString()}</span>
+                        <span style={{
+                          width: '54px', textAlign: 'right', fontSize: '10px',
+                          color: '#64748b', fontVariantNumeric: 'tabular-nums',
+                        }}>
+                          {tab === 'game' && e.season != null && e.week != null && `S${e.season} W${e.week}`}
+                          {tab === 'season' && e.season != null && `S${e.season}`}
+                        </span>
+                      </div>
+                    )
+                  })
                 })()}
               </div>
             </div>
