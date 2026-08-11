@@ -233,6 +233,10 @@ const FrontPage: React.FC = () => {
     return { myTeam: null as TeamStanding | null, myLeagueName: '' }
   }, [leagues, favouriteTeamId])
 
+  // Any game underway anywhere in the league. The picker closes while the league is
+  // playing — see QuickPicks.
+  const gamesActive = useMemo(() => gameList.some(g => g.status === 'Active'), [gameList])
+
   const myLiveGame = useMemo(() => {
     if (favouriteTeamId == null) return null
     return gameList.find(g =>
@@ -436,7 +440,7 @@ const FrontPage: React.FC = () => {
             <YourNumbers cells={numbersCells} actions={numbersActions} />
             {/* Below the numbers: the slate, one game at a time. The rail is where a
                 reader's own business lives, and a pick is business. */}
-            <QuickPicks favouriteTeamId={favouriteTeamId} />
+            <QuickPicks favouriteTeamId={favouriteTeamId} gamesActive={gamesActive} />
           </div>
         )}
       </div>

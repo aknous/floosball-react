@@ -142,7 +142,7 @@ const Side: React.FC<{
       style={{
         flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
         alignItems: rtl ? 'flex-end' : 'flex-start', gap: '8px',
-        padding: '13px 14px', fontFamily: FONT,
+        padding: compact ? '12px 10px' : '13px 14px', fontFamily: FONT,
         textAlign: rtl ? 'right' : 'left',
         // ⚠️ EVERY SIDE CARRIES ITS CLUB'S COLOUR, not just the one you picked. A
         // board of sixteen matchups was sixteen identical grey boxes, and readers said
@@ -168,7 +168,19 @@ const Side: React.FC<{
           justifyContent: 'space-between',
           flexDirection: rtl ? 'row-reverse' : 'row',
         }}>
-          <Crest teamId={team.id} size={28} />
+          {/* The mark plus the code. The crest alone asks a reader to know thirty-two
+              badges; three letters name the club without spending the width a full name
+              costs, which is what pushed the wide layout over in the first place. */}
+          <span style={{
+            display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0,
+            flexDirection: rtl ? 'row-reverse' : 'row',
+          }}>
+            <Crest teamId={team.id} size={24} />
+            <span style={{
+              ...font(700, 12, 1, '0.04em'), color: picked ? accent : TEXT.secondary,
+              whiteSpace: 'nowrap',
+            }}>{team.abbr}</span>
+          </span>
           {/* ⚠️ STACKED, not side by side. Three things across a 150px half left the
               points and the odds fighting for the same line, and the points — the thing
               being decided on — read as just another figure in a row. The payout takes

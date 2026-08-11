@@ -25,8 +25,6 @@ const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
  * one game a reader is certain to have an opinion about, so it is the one that opens.
  */
 
-const YOUR_GAME_LABEL = 'YOUR TEAM'
-
 /** How long the panel holds on a game after it is called, so the pick is seen landing. */
 const ADVANCE_DELAY_MS = 900
 
@@ -62,7 +60,11 @@ const Arrow: React.FC<{ dir: 'prev' | 'next'; onClick: () => void; disabled: boo
   </button>
 )
 
-const QuickPicks: React.FC<{ favouriteTeamId: number | null }> = ({ favouriteTeamId }) => {
+const QuickPicks: React.FC<{
+  favouriteTeamId: number | null
+  /** Is any game in the league underway right now? */
+  gamesActive: boolean
+}> = ({ favouriteTeamId, gamesActive }) => {
   const { slots, loading, setPick, saveState } = usePickEmDay()
 
   // The card colours its rows with each club's form and standing. Same fetch the
@@ -88,16 +90,50 @@ const QuickPicks: React.FC<{ favouriteTeamId: number | null }> = ({ favouriteTea
   // can actually do — and once the live week has kicked off, offering it is offering a
   // panel with both buttons disabled. Falls back to the live slot so the panel still
   // shows the week in progress when nothing anywhere is open.
-  const slot = useMemo(
-    () => slots.find(s => s.games.some(g => g.pickable))
-      ?? slots.find(s => s.isActive)
-      ?? slots.find(s => !s.isPast)
-      ?? null,
-    [slots])
+  const slot = useMemo(() => {
+    // ⚠️ WHILE THE LEAGUE IS PLAYING, THE PANEL WATCHES rather than looks ahead. Picks
+    // are locked anyway, and this is the window where the calls a reader already made
+    // are being answered — the card's own gutter turns each one into a check or a cross
+    // as its game finals. Skipping to next week's slate would step over exactly that.
+    if (gamesActive) {
+      const live = slots.find(sl => sl.isActive) ?? slots.find(sl => sl.games.some(g => g.result))
+      if (live) return live
+    }
+    return slots.find(sl => sl.games.some(g => g.pickable))
+      ?? slots.find(sl => sl.isActive)
+      ?? slots.find(sl => !sl.isPast)
+      ?? null
+  }, [slots, gamesActive])
 
-  const games = useMemo(
-    () => (slot ? orderGames(slot.games, favouriteTeamId) : []),
-    [slot, favouriteTeamId])
+  /**
+   * What the arrows walk: the slate in focus, and the one before it.
+   *
+   * ⚠️ THE PREVIOUS SLATE IS REACHABLE ON PURPOSE. The focus slate moves on the moment
+   * its last game finals — picks open on the next one — so a panel showing only the
+   * focus would step over the results a reader had been waiting for. One slate back is
+   * where their answered calls live, and the card marks each with the same check or
+   * cross the Prognostications page uses. Bounded at two slates: a whole day is seven,
+   * and 112 games is not a thing to arrow through.
+   */
+  const { games, focusStart } = useMemo(() => {
+    if (!slot) return { games: [] as PickEmGame[], focusStart: 0 }
+    const focus = orderGames(slot.games, favouriteTeamId)
+    const idx = slots.findIndex(sl => sl.week === slot.week)
+    const prev = idx > 0 ? slots[idx - 1] : null
+    // Only worth carrying back if it has resolved into something to show.
+    const previous = prev && prev.games.some(g => g.result)
+      ? [...prev.games].sort((a, b) => a.gameIndex - b.gameIndex)
+      : []
+    return { games: [...previous, ...focus], focusStart: previous.length }
+  }, [slot, slots, favouriteTeamId])
+
+  /** Which slate a given game belongs to — the two blocks are contiguous. */
+  const weekOf = (index: number) => {
+    if (!slot) return 0
+    if (index >= focusStart) return slot.week
+    const idx = slots.findIndex(sl => sl.week === slot.week)
+    return idx > 0 ? slots[idx - 1].week : slot.week
+  }
 
   const [cursor, setCursor] = useState(0)
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -105,22 +141,25 @@ const QuickPicks: React.FC<{ favouriteTeamId: number | null }> = ({ favouriteTea
   // ⚠️ Opens on the first game still to be called, not on game one. A reader coming back
   // mid-slate wants the next decision, not the one they already made. Re-homed only when
   // the SLATE changes — re-running it on every pick would fight the reader's own arrows.
-  const slateKey = slot ? `${slot.week}:${games.length}` : ''
+  const slateKey = slot ? `${slot.week}:${games.length}:${focusStart}` : ''
   const homedFor = useRef<string>('')
   useEffect(() => {
     if (!games.length || homedFor.current === slateKey) return
     homedFor.current = slateKey
-    const firstOpen = games.findIndex(g => g.pickable && g.userPick == null)
-    setCursor(firstOpen >= 0 ? firstOpen : 0)
-  }, [slateKey, games])
+    const firstOpen = games.findIndex((g, i) =>
+      i >= focusStart && g.pickable && g.userPick == null)
+    // Nothing left to call means the slate is being played or is done — sit on the first
+    // game of the focus block, which is the reader's own club's.
+    setCursor(firstOpen >= 0 ? firstOpen : focusStart)
+  }, [slateKey, games, focusStart])
 
   if (loading && !slot) return null
   if (!slot || !games.length) return null
 
-  const game = games[Math.min(cursor, games.length - 1)]
-  const picked = games.filter(g => g.userPick != null).length
-  const isMine = favouriteTeamId != null && (
-    Number(game.homeTeam.id) === favouriteTeamId || Number(game.awayTeam.id) === favouriteTeamId)
+  const at = Math.min(cursor, games.length - 1)
+  const game = games[at]
+  const focusGames = games.slice(focusStart)
+  const picked = focusGames.filter(g => g.userPick != null).length
 
   const step = (by: number) => {
     // Taking the arrows means taking control: a queued advance would yank the panel out
@@ -130,7 +169,11 @@ const QuickPicks: React.FC<{ favouriteTeamId: number | null }> = ({ favouriteTea
   }
 
   const choose = (teamId: number) => {
-    if (!game.pickable) return
+    // ⚠️ NOTHING IS PICKED WHILE THE LEAGUE IS PLAYING (owner). Per-game locking already
+    // stops a pick on a game that has kicked off, but it leaves the rest of the day open
+    // — so a reader could sit watching one result come in and keep calling the games
+    // behind it. The panel still browses; it just does not take a pick.
+    if (gamesActive || !game.pickable) return
     setPick(slot.week, game.gameIndex, teamId)
     // ⚠️ THE PICK IS SHOWN BEFORE THE PANEL MOVES ON (owner: it flipped too fast). The
     // card lands the club's colour and dims the other side the moment you choose, and
@@ -139,10 +182,10 @@ const QuickPicks: React.FC<{ favouriteTeamId: number | null }> = ({ favouriteTea
     const from = game.gameIndex
     advanceTimer.current = setTimeout(() => {
       const nextOpen = games.findIndex((g, i) =>
-        i > cursor && g.pickable && g.userPick == null && g.gameIndex !== from)
+        i > cursor && i >= focusStart && g.pickable && g.userPick == null && g.gameIndex !== from)
       if (nextOpen >= 0) { setCursor(nextOpen); return }
-      const anyOpen = games.findIndex(g =>
-        g.pickable && g.userPick == null && g.gameIndex !== from)
+      const anyOpen = games.findIndex((g, i) =>
+        i >= focusStart && g.pickable && g.userPick == null && g.gameIndex !== from)
       // Nothing left to call: stay put rather than jumping somewhere arbitrary.
       if (anyOpen >= 0) setCursor(anyOpen)
     }, ADVANCE_DELAY_MS)
@@ -153,7 +196,6 @@ const QuickPicks: React.FC<{ favouriteTeamId: number | null }> = ({ favouriteTea
       <SectionHeader
         title="PROGNOSTICATE"
         rail
-        badge={isMine ? { text: YOUR_GAME_LABEL, color: ACCENT.ownTeam } : undefined}
         link={{ to: '/prognostications', label: 'ALL' }}
       />
       <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}`, padding: '12px' }}>
@@ -162,7 +204,8 @@ const QuickPicks: React.FC<{ favouriteTeamId: number | null }> = ({ favouriteTea
         }}>
           <Arrow dir="prev" onClick={() => step(-1)} disabled={games.length < 2} />
           <span style={{ flex: 1, textAlign: 'center', ...font(700, 13, 1, '0.06em'), color: TEXT.secondary }}>
-            WEEK {slot.week} · {Math.min(cursor, games.length - 1) + 1} OF {games.length}
+            WEEK {weekOf(at)} · {(at >= focusStart ? at - focusStart : at) + 1} OF{' '}
+            {at >= focusStart ? games.length - focusStart : focusStart}
           </span>
           <Arrow dir="next" onClick={() => step(1)} disabled={games.length < 2} />
         </div>
@@ -172,17 +215,29 @@ const QuickPicks: React.FC<{ favouriteTeamId: number | null }> = ({ favouriteTea
             like once made, and what a settled game shows — and they only stay agreed if
             there is one component. It brings its own MORE expander and its own
             check / cross / lock gutter with it. */}
-        <MatchupCard game={game} standings={standings} onPick={choose} compact />
+        {/* ⚠️ Handed the game as NOT PICKABLE while the league plays, rather than given a
+            second "disabled" prop: picks genuinely are closed on it right now, and this
+            way the card shows what it already shows for a game that has kicked off — the
+            lock in the gutter, both sides inert — instead of a second visual language for
+            the same fact. */}
+        <MatchupCard
+          game={gamesActive ? { ...game, pickable: false } : game}
+          standings={standings}
+          onPick={choose}
+          compact
+        />
 
         <div style={{
           display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px',
           ...font(600, 12), color: TEXT.secondary,
         }}>
-          <span>{picked} of {games.length} picked</span>
+          <span>{picked} of {focusGames.length} picked</span>
           <span style={{ flex: 1 }} />
           {/* The one state worth saying out loud is a save that did not land; a pick that
               saved needs no receipt here, the highlight is the receipt. */}
-          {!game.pickable
+          {gamesActive
+            ? <span style={{ color: ACCENT.warning }}>Picks locked</span>
+            : !game.pickable
             ? <span style={{ color: TEXT.muted }}>Kicked off</span>
             : saveState === 'error'
               ? <span style={{ color: ACCENT.negative }}>Not saved</span>
