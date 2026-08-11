@@ -1147,6 +1147,24 @@ html[data-glitch="reduced"] .anomaly-label-l3 {
   transform: none;
 }
 
+/* ⚠️ The ROW families need the same treatment, and were missed the first time — the
+   off gate's incompleteness was reported, but reduced had it too. A glitched row
+   animates a shimmer on itself, a breathe, a label pulse, and every p / div / span
+   inside it; that is the bulk of the motion in the play feed. Reduced keeps the row's
+   own faint shimmer and stops everything inside it, so a glitched row is still
+   identifiable without the text moving. */
+html[data-glitch="reduced"] .anomaly-row-l1 p,
+html[data-glitch="reduced"] .anomaly-row-l1 div,
+html[data-glitch="reduced"] .anomaly-row-l1 span:not(.anomaly-label),
+html[data-glitch="reduced"] .anomaly-row-l2 p,
+html[data-glitch="reduced"] .anomaly-row-l2 div,
+html[data-glitch="reduced"] .anomaly-row-l2 span:not(.anomaly-label),
+html[data-glitch="reduced"] .anomaly-label,
+html[data-glitch="reduced"] .anomaly-row-l2 {
+  animation: none;
+  transform: none;
+}
+
 /* The row-wide L3 convergence moves every element in the row. Nothing of it
    survives reduced — it is the single most expensive effect on the page. */
 html[data-glitch="reduced"] .anomaly-row-l3 p,
@@ -1157,26 +1175,35 @@ html[data-glitch="reduced"] .anomaly-row-l3 div {
   transform: none;
 }
 
-/* OFF — no animation anywhere, and the state is carried entirely by the static
-   marker. `* ` rather than a list: an effect added later must not quietly come
-   back to life for the reader who switched these off. */
-html[data-glitch="off"] .glitch-text-l1,
-html[data-glitch="off"] .glitch-text-l1-a,
-html[data-glitch="off"] .glitch-text-l1-b,
-html[data-glitch="off"] .glitch-text-l1-c,
-html[data-glitch="off"] .glitch-text-l2,
-html[data-glitch="off"] .glitch-text-l2-a,
-html[data-glitch="off"] .glitch-text-l2-b,
-html[data-glitch="off"] .glitch-text-l2-c,
-html[data-glitch="off"] .glitch-text-l3,
+/* OFF — nothing in the anomaly family may move.
+
+   ⚠️ THIS WAS A LIST OF SELECTORS AND THE LIST WAS INCOMPLETE. It named the
+   .glitch-text-* classes and missed the .anomaly-row-l1 / -l2 families entirely —
+   the row shimmer, the row breathe, the label pulse, and the descendant rules that
+   animate every p / div / span inside a glitched row. So a reader who turned the
+   effects OFF still had the play feed moving, which is exactly where they see the
+   most of it. Reported that way.
+
+   The list is now written as CONTAINERS AND THEIR DESCENDANTS — `.anomaly-row-l1 *`
+   rather than each inner class — so an effect added inside a glitched row later is
+   covered without anyone remembering to come back here. Everything outside the anomaly
+   family (score flashes, cheer payouts, the board marquee, the awakened glow) is
+   deliberately untouched: turning the glitch off is not turning the app off. */
+html[data-glitch="off"] .anomaly-row-l1,
+html[data-glitch="off"] .anomaly-row-l2,
+html[data-glitch="off"] .anomaly-row-l3,
+html[data-glitch="off"] .anomaly-row-l1 *,
+html[data-glitch="off"] .anomaly-row-l2 *,
+html[data-glitch="off"] .anomaly-row-l3 *,
+html[data-glitch="off"] .anomaly-label,
 html[data-glitch="off"] .anomaly-label-l3,
-html[data-glitch="off"] .anomaly-row-l3 p,
-html[data-glitch="off"] .anomaly-row-l3 span,
-html[data-glitch="off"] .anomaly-row-l3 div,
+html[data-glitch="off"] [class*="glitch-text-"],
 html[data-glitch="off"] .glitched-card,
+html[data-glitch="off"] .glitched-card *,
 html[data-glitch="off"] .glitched-card::before,
 html[data-glitch="off"] .glitched-card::after,
 html[data-glitch="off"] .glitched-card-surged::after,
+html[data-glitch="off"] .criticality-overlay,
 html[data-glitch="off"] .criticality-glitch,
 html[data-glitch="off"] .criticality-glitch * {
   animation: none !important;
