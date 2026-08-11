@@ -167,11 +167,11 @@ const QuickPicks: React.FC<{
   }
 
   const choose = (teamId: number) => {
-    // ⚠️ NOTHING IS PICKED WHILE THE LEAGUE IS PLAYING (owner). Per-game locking already
-    // stops a pick on a game that has kicked off, but it leaves the rest of the day open
-    // — so a reader could sit watching one result come in and keep calling the games
-    // behind it. The panel still browses; it just does not take a pick.
-    if (gamesActive || !game.pickable) return
+    // ⚠️ PER GAME, NOT PER LEAGUE. This was a blanket "no picking while any game is
+    // running", which also refused NEXT week — games that have not kicked off and are
+    // perfectly pickable. A pick closes at its own kickoff and nowhere else, which is
+    // the rule the server enforces, and it already shuts the live week entirely.
+    if (!game.pickable) return
     setPick(shown.week, game.gameIndex, teamId)
     // ⚠️ THE PICK IS SHOWN BEFORE THE PANEL MOVES ON (owner: it flipped too fast). The
     // card lands the club's colour and dims the other side the moment you choose, and
@@ -232,17 +232,9 @@ const QuickPicks: React.FC<{
             like once made, and what a settled game shows — and they only stay agreed if
             there is one component. It brings its own MORE expander and its own
             check / cross / lock gutter with it. */}
-        {/* ⚠️ Handed the game as NOT PICKABLE while the league plays, rather than given a
-            second "disabled" prop: picks genuinely are closed on it right now, and this
-            way the card shows what it already shows for a game that has kicked off — the
-            lock in the gutter, both sides inert — instead of a second visual language for
-            the same fact. */}
-        <MatchupCard
-          game={gamesActive ? { ...game, pickable: false } : game}
-          standings={standings}
-          onPick={choose}
-          compact
-        />
+        {/* The card locks itself off `game.pickable` — the lock in the gutter and both
+            sides inert — so a kicked-off game reads the same here as on the page. */}
+        <MatchupCard game={game} standings={standings} onPick={choose} compact />
 
         <div style={{
           display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px',
@@ -252,10 +244,10 @@ const QuickPicks: React.FC<{
           <span style={{ flex: 1 }} />
           {/* The one state worth saying out loud is a save that did not land; a pick that
               saved needs no receipt here, the highlight is the receipt. */}
-          {gamesActive
+          {/* Said of THIS game, since the week it belongs to may be locked while the
+              next one is wide open. */}
+          {!game.pickable && !game.result
             ? <span style={{ color: ACCENT.warning }}>Picks locked</span>
-            : !game.pickable
-            ? <span style={{ color: TEXT.muted }}>Kicked off</span>
             : saveState === 'error'
               ? <span style={{ color: ACCENT.negative }}>Not saved</span>
               : saveState === 'closed'
