@@ -3264,7 +3264,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                   // down a column of thirty players — which is how this gets used.
                   // `StatRow.pid` is already carried for the row key, so nothing has to
                   // be threaded through the row builders to know whose row this is.
-                  const MINE_TINT = 'rgba(34,197,94,0.10)'
+                  // ⚠️ 0.10 was too faint to survive the club-colour wash the section
+                  // headers put behind these rows (owner) — a highlight has to be visible
+                  // in a glance down thirty players, which is the only way it gets used.
+                  const MINE_TINT = 'rgba(34,197,94,0.22)'
                   const MINE_FP = '#4ade80'
                   // FP is the last column wherever a section has one — defense does not.
                   const fpIndex = headerCols[headerCols.length - 1] === 'FP'
