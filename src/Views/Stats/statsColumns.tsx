@@ -122,43 +122,101 @@ const wpa: Column<StatsPlayerRow> = {
   tint: r => signedTint(r.impact.wpa),
 }
 
-const points: Column<StatsPlayerRow> = {
-  key: 'pts', label: 'PTS', help: 'Fantasy points', width: W.volume,
-  cell: r => n(r.fantasyPoints, 1), sort: r => r.fantasyPoints,
+/**
+ * Per-game division, and the rule for what may take it.
+ *
+ * ⚠️ ONLY COUNTING STATS DIVIDE. A rate is already per something (YPC, CMP%, YPR, and
+ * AIR — average air yards per throw); a maximum is not a total (LNG is the single
+ * longest, and a longest-per-game is not a quantity); a rating is a percentile.
+ * Dividing any of those yields a number that looks like a stat and means nothing. The
+ * distinction lives here because this file is the only place that knows which is which.
+ *
+ * WPA stays a season figure as well: that column already converts points of swing into
+ * WINS, and a per-game slice of it is hundredths of a win for everybody.
+ */
+const perGameOf = (perGame: boolean) => (value: any, row: StatsPlayerRow) => {
+  if (value == null) return null
+  if (!perGame) return Number(value)
+  const games = row.gamesPlayed || 0
+  // No games played is not an average of zero, it is no average — `n()` prints a dash.
+  return games > 0 ? Number(value) / games : null
+}
+
+/** A counting stat needs a decimal once it is an average. */
+const countDigits = (perGame: boolean) => (perGame ? 1 : 0)
+const perGameLabel = (label: string, perGame: boolean) => (perGame ? `${label}/G` : label)
+
+const pointsColumn = (perGame: boolean): Column<StatsPlayerRow> => {
+  const per = perGameOf(perGame)
+  return {
+    key: 'pts',
+    label: perGame ? 'FP/G' : 'PTS',
+    help: perGame
+      ? 'Fantasy points per game, the season total divided by games played'
+      : 'Fantasy points',
+    width: W.volume,
+    cell: r => n(per(r.fantasyPoints, r), 1),
+    sort: r => per(r.fantasyPoints, r) ?? 0,
+  }
 }
 
 /** A mixed-position table cannot share a box score, so ALL gets a stat line. */
-const statLine: Column<StatsPlayerRow> = {
-  key: 'line', label: 'STAT LINE', help: 'The headline numbers for this position', width: 0, flexible: true,
-  cell: r => {
-    const p = r.passing, ru = r.rushing, rc = r.receiving, k = r.kicking
-    if (r.position === 'QB') {
-      const base = `${n(p.comp)}/${n(p.att)} · ${n(p.yards)} yd · ${n(p.tds)} TD`
-      return p.ints ? `${base} · ${n(p.ints)} INT` : base
-    }
-    if (r.position === 'RB') return `${n(ru.carries)} car · ${n(ru.yards)} yd · ${n(ru.tds)} TD`
-    if (r.position === 'K') return `${n(k.fgs)}/${n(k.fgAtt)} FG · ${n(k.longest)} yd`
-    return `${n(rc.receptions)}/${n(rc.targets)} rec · ${n(rc.yards)} yd · ${n(rc.tds)} TD`
-  },
+const statLineColumn = (perGame: boolean): Column<StatsPlayerRow> => {
+  const per = perGameOf(perGame)
+  const d = countDigits(perGame)
+  return {
+    key: 'line',
+    label: perGame ? 'STAT LINE / G' : 'STAT LINE',
+    help: 'The headline numbers for this position',
+    width: 0,
+    flexible: true,
+    cell: r => {
+      const p = r.passing, ru = r.rushing, rc = r.receiving, k = r.kicking
+      const v = (x: any) => n(per(x, r), d)
+      if (r.position === 'QB') {
+        const base = `${v(p.comp)}/${v(p.att)} \u00b7 ${v(p.yards)} yd \u00b7 ${v(p.tds)} TD`
+        return p.ints ? `${base} \u00b7 ${v(p.ints)} INT` : base
+      }
+      if (r.position === 'RB') return `${v(ru.carries)} car \u00b7 ${v(ru.yards)} yd \u00b7 ${v(ru.tds)} TD`
+      // LNG is a maximum, so it stays whole in both modes.
+      if (r.position === 'K') return `${v(k.fgs)}/${v(k.fgAtt)} FG \u00b7 ${n(k.longest)} yd`
+      return `${v(rc.receptions)}/${v(rc.targets)} rec \u00b7 ${v(rc.yards)} yd \u00b7 ${v(rc.tds)} TD`
+    },
+  }
 }
 
 /** Filters out the null `games` column, which the season scope no longer has. */
-export function playerColumns(position: string, careerScope: boolean): Column<StatsPlayerRow>[] {
-  return _playerColumns(position, careerScope).filter(Boolean) as Column<StatsPlayerRow>[]
+export function playerColumns(position: string, careerScope: boolean,
+                              perGame = false): Column<StatsPlayerRow>[] {
+  return _playerColumns(position, careerScope, perGame)
+    .filter(Boolean) as Column<StatsPlayerRow>[]
 }
 
-function _playerColumns(position: string, careerScope: boolean): (Column<StatsPlayerRow> | null)[] {
+function _playerColumns(position: string, careerScope: boolean,
+                        perGame: boolean): (Column<StatsPlayerRow> | null)[] {
   const gp = games(careerScope)
+  const per = perGameOf(perGame)
+  const d = countDigits(perGame)
+  const L = (label: string) => perGameLabel(label, perGame)
+  const points = pointsColumn(perGame)
+
+  /** A counting stat: divides per game, and gains a decimal when it does. */
+  const count = (key: string, label: string, help: string, width: number,
+                 get: (r: StatsPlayerRow) => any): Column<StatsPlayerRow> => ({
+    key, label: L(label), help, width,
+    cell: r => n(per(get(r), r), d),
+    sort: r => per(get(r), r) ?? 0,
+  })
 
   if (['S', 'LB', 'CB', 'DE'].includes(position)) {
     return [
       gp,
-      { key: 'tkl', label: 'TKL', help: 'Tackles', width: 48, cell: r => n(r.defense.tackles), sort: r => r.defense.tackles ?? 0 },
-      { key: 'tfl', label: 'TFL', help: 'Tackles for loss, made behind the line of scrimmage', width: W.count, cell: r => n(r.defense.tfl), sort: r => r.defense.tfl ?? 0 },
-      { key: 'sack', label: 'SACK', help: 'Sacks', width: 48, cell: r => n(r.defense.sacks), sort: r => r.defense.sacks ?? 0 },
-      { key: 'int', label: 'INT', help: 'Interceptions', width: W.count, cell: r => n(r.defense.ints), sort: r => r.defense.ints ?? 0 },
-      { key: 'pd', label: 'PD', help: 'Passes defended, broken up without intercepting', width: W.count, cell: r => n(r.defense.passBreakups), sort: r => r.defense.passBreakups ?? 0 },
-      { key: 'ff', label: 'FF', help: 'Forced fumbles', width: W.count, cell: r => n(r.defense.forcedFumbles), sort: r => r.defense.forcedFumbles ?? 0 },
+      count('tkl', 'TKL', 'Tackles', 48, r => r.defense.tackles),
+      count('tfl', 'TFL', 'Tackles for loss, made behind the line of scrimmage', W.count, r => r.defense.tfl),
+      count('sack', 'SACK', 'Sacks', 48, r => r.defense.sacks),
+      count('int', 'INT', 'Interceptions', W.count, r => r.defense.ints),
+      count('pd', 'PD', 'Passes defended, broken up without intercepting', W.count, r => r.defense.passBreakups),
+      count('ff', 'FF', 'Forced fumbles', W.count, r => r.defense.forcedFumbles),
       defRating,
       wpa,
     ]
@@ -168,56 +226,56 @@ function _playerColumns(position: string, careerScope: boolean): (Column<StatsPl
     case 'QB':
       return [
         gp,
-        { key: 'cmp', label: 'CMP', help: 'Completions', width: 50, cell: r => n(r.passing.comp), sort: r => r.passing.comp ?? 0 },
-        { key: 'att', label: 'ATT', help: 'Pass attempts', width: 50, cell: r => n(r.passing.att), sort: r => r.passing.att ?? 0 },
+        count('cmp', 'CMP', 'Completions', 50, r => r.passing.comp),
+        count('att', 'ATT', 'Pass attempts', 50, r => r.passing.att),
         { key: 'cmppct', label: 'CMP%', help: 'Completion percentage', width: W.rate, cell: r => pct(r.passing.compPerc), sort: r => r.passing.compPerc ?? 0 },
-        { key: 'pyds', label: 'YDS', help: 'Passing yards', width: W.volume, cell: r => n(r.passing.yards), sort: r => r.passing.yards ?? 0 },
-        { key: 'ptd', label: 'TD', help: 'Passing touchdowns', width: W.count, cell: r => n(r.passing.tds), sort: r => r.passing.tds ?? 0 },
-        { key: 'pint', label: 'INT', help: 'Interceptions thrown', width: W.count, cell: r => n(r.passing.ints), sort: r => r.passing.ints ?? 0 },
-        { key: 'sacked', label: 'SACK', help: 'Times sacked', width: 48, cell: r => n(r.passing.sacked), sort: r => r.passing.sacked ?? 0 },
+        count('pyds', 'YDS', 'Passing yards', W.volume, r => r.passing.yards),
+        count('ptd', 'TD', 'Passing touchdowns', W.count, r => r.passing.tds),
+        count('pint', 'INT', 'Interceptions thrown', W.count, r => r.passing.ints),
+        count('sacked', 'SACK', 'Times sacked', 48, r => r.passing.sacked),
         { key: 'air', label: 'AIR', help: 'Average air yards per throw, measured where the ball was aimed rather than where it ended up. Counts incompletions', width: W.rate, cell: r => n(r.passing.airYardsSum), sort: r => r.passing.airYardsSum ?? 0 },
         perf, wpa, points,
       ]
     case 'RB':
       return [
         gp,
-        { key: 'car', label: 'CAR', help: 'Carries', width: 48, cell: r => n(r.rushing.carries), sort: r => r.rushing.carries ?? 0 },
-        { key: 'ryds', label: 'YDS', help: 'Yards', width: W.volume, cell: r => n(r.rushing.yards), sort: r => r.rushing.yards ?? 0 },
+        count('car', 'CAR', 'Carries', 48, r => r.rushing.carries),
+        count('ryds', 'YDS', 'Yards', W.volume, r => r.rushing.yards),
         { key: 'ypc', label: 'YPC', help: 'Yards per carry', width: W.rate, cell: r => n(r.rushing.ypc, 1), sort: r => r.rushing.ypc ?? 0 },
-        { key: 'rtd', label: 'TD', help: 'Touchdowns', width: W.count, cell: r => n(r.rushing.tds), sort: r => r.rushing.tds ?? 0 },
-        { key: 'fum', label: 'FUM', help: 'Fumbles', width: W.count, cell: r => n(r.rushing.fumblesLost), sort: r => r.rushing.fumblesLost ?? 0 },
-        { key: 'rec', label: 'REC', help: 'Receptions', width: W.count, cell: r => n(r.receiving.receptions), sort: r => r.receiving.receptions ?? 0 },
-        { key: 'recyds', label: 'RECYDS', help: 'Receiving yards', width: 62, cell: r => n(r.receiving.yards), sort: r => r.receiving.yards ?? 0 },
+        count('rtd', 'TD', 'Touchdowns', W.count, r => r.rushing.tds),
+        count('fum', 'FUM', 'Fumbles', W.count, r => r.rushing.fumblesLost),
+        count('rec', 'REC', 'Receptions', W.count, r => r.receiving.receptions),
+        count('recyds', 'RECYDS', 'Receiving yards', 62, r => r.receiving.yards),
         perf, wpa, points,
       ]
     case 'K':
       return [
         gp,
-        { key: 'fgm', label: 'FGM', help: 'Field goals made', width: 48, cell: r => n(r.kicking.fgs), sort: r => r.kicking.fgs ?? 0 },
-        { key: 'fga', label: 'FGA', help: 'Field goals attempted', width: 48, cell: r => n(r.kicking.fgAtt), sort: r => r.kicking.fgAtt ?? 0 },
+        count('fgm', 'FGM', 'Field goals made', 48, r => r.kicking.fgs),
+        count('fga', 'FGA', 'Field goals attempted', 48, r => r.kicking.fgAtt),
         { key: 'fgpct', label: 'FG%', help: 'Field goal percentage', width: W.rate, cell: r => pct(r.kicking.fgPerc), sort: r => r.kicking.fgPerc ?? 0 },
         { key: 'klng', label: 'LNG', help: 'Longest field goal made', width: W.count, cell: r => n(r.kicking.longest), sort: r => r.kicking.longest ?? 0 },
-        { key: 'xpm', label: 'XPM', help: 'Extra points made', width: W.count, cell: r => n(r.kicking.xps), sort: r => r.kicking.xps ?? 0 },
-        { key: 'xpa', label: 'XPA', help: 'Extra points attempted', width: W.count, cell: r => n(r.kicking.xpAtt), sort: r => r.kicking.xpAtt ?? 0 },
+        count('xpm', 'XPM', 'Extra points made', W.count, r => r.kicking.xps),
+        count('xpa', 'XPA', 'Extra points attempted', W.count, r => r.kicking.xpAtt),
         perf, points,
       ]
     case 'WR':
     case 'TE':
       return [
         gp,
-        { key: 'rec', label: 'REC', help: 'Receptions', width: W.count, cell: r => n(r.receiving.receptions), sort: r => r.receiving.receptions ?? 0 },
-        { key: 'tgt', label: 'TGT', help: 'Times targeted', width: W.count, cell: r => n(r.receiving.targets), sort: r => r.receiving.targets ?? 0 },
+        count('rec', 'REC', 'Receptions', W.count, r => r.receiving.receptions),
+        count('tgt', 'TGT', 'Times targeted', W.count, r => r.receiving.targets),
         { key: 'rcvpct', label: 'RCV%', help: 'Catch rate, receptions as a share of targets', width: W.rate, cell: r => pct(r.receiving.rcvPerc), sort: r => r.receiving.rcvPerc ?? 0 },
-        { key: 'ryds', label: 'YDS', help: 'Yards', width: W.volume, cell: r => n(r.receiving.yards), sort: r => r.receiving.yards ?? 0 },
+        count('ryds', 'YDS', 'Yards', W.volume, r => r.receiving.yards),
         { key: 'ypr', label: 'YPR', help: 'Yards per reception', width: W.rate, cell: r => n(r.receiving.ypr, 1), sort: r => r.receiving.ypr ?? 0 },
-        { key: 'yac', label: 'YAC', help: 'Yards after the catch', width: W.rate, cell: r => n(r.receiving.yac), sort: r => r.receiving.yac ?? 0 },
-        { key: 'drp', label: 'DRP', help: 'Drops', width: W.count, cell: r => n(r.receiving.drops), sort: r => r.receiving.drops ?? 0 },
+        count('yac', 'YAC', 'Yards after the catch', W.rate, r => r.receiving.yac),
+        count('drp', 'DRP', 'Drops', W.count, r => r.receiving.drops),
         { key: 'lng', label: 'LNG', help: 'Longest reception', width: W.count, cell: r => n(r.receiving.longest), sort: r => r.receiving.longest ?? 0 },
-        { key: 'rtd', label: 'TD', help: 'Touchdowns', width: W.count, cell: r => n(r.receiving.tds), sort: r => r.receiving.tds ?? 0 },
+        count('rtd', 'TD', 'Touchdowns', W.count, r => r.receiving.tds),
         perf, wpa, points,
       ]
     default:
-      return [gp, perf, wpa, points, statLine]
+      return [gp, perf, wpa, points, statLineColumn(perGame)]
   }
 }
 
