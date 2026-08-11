@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import { useCoresStatus } from '../contexts/CoresStatusContext'
+import { useGlitchIntensity } from '../hooks/useGlitchIntensity'
 
 // Site-wide Criticality glitch mode. When a Criticality is live (status.criticalityActive) the whole
 // app takes on an unstable cast: a violet wash + a breathing edge glow (the overlay), a
@@ -9,6 +10,33 @@ import { useCoresStatus } from '../contexts/CoresStatusContext'
 // constants below.
 //
 // Preview without a real event: append ?criticality=1 to the URL.
+//
+// ⚠️ THE GLITCH-INTENSITY SETTING HAD NO REACH IN HERE, AND CSS COULD NEVER HAVE GIVEN IT
+// ONE. The `data-glitch="off"` block in index.css lists `.criticality-overlay`, which kills
+// the overlay's breathing glow — and that is ALL it could ever kill. The two things that
+// actually make a Criticality glitchy are driven from JavaScript in this file:
+//
+//   - character corruption REWRITES `node.textContent`. No stylesheet can undo a DOM
+//     mutation, so a reader on "off" still had words turning into ███ every second.
+//   - the element shift/glow is written to INLINE `style.transform` / `style.filter` on
+//     whichever elements the walker happened to pick, which match none of the selectors in
+//     that block.
+//
+// It also ran regardless of the setting: a `setInterval` walking every text node in
+// `document.body` and calling `getBoundingClientRect()` on each one, once a second. That is
+// the single heaviest thing the app does, and the setting exists because a reader reported
+// the animations bogging their laptop down.
+//
+// So the tiers are enforced HERE, and they follow the wording the options already promise
+// (see GLITCH_OPTIONS in useGlitchIntensity):
+//
+//   full     — everything below.
+//   reduced  — "A slow pulse. No jitter or strobing": the overlay's 3.4s breathe IS that
+//              pulse; corruption and shifting are exactly the jitter it rules out.
+//   off      — "No animation. Anomalies stay marked in colour": the overlay still renders,
+//              CSS holds it static, and its violet wash is what says a Criticality is live.
+//
+// Neither lower tier starts the interval at all, so they cost nothing.
 const GLYPHS = '█▓▒░╳╱╲▇▆※╬#@&%§¥'
 const FLIP_INTERVAL_MS = 1000   // gap between glitch bursts
 const FLIP_HOLD_MS = 220        // how long a corrupted char / shifted element holds before restoring
@@ -19,9 +47,12 @@ const SHIFT_PX = 4              // max element shift distance (px) — small so 
 
 const CriticalityGlitch: React.FC = () => {
   const { status } = useCoresStatus()
+  const { intensity } = useGlitchIntensity()
   const override = typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('criticality') === '1'
   const active = !!status.criticalityActive || override
+  // Corruption and element shifting are the jitter both lower tiers rule out.
+  const bursting = active && intensity === 'full'
 
   // Theme-cast hook on <html> (CSS can target html.criticality-active for per-element restyling).
   useEffect(() => {
@@ -33,8 +64,22 @@ const CriticalityGlitch: React.FC = () => {
 
   // Character corruption on random visible text nodes.
   useEffect(() => {
-    if (!active) return
+    if (!bursting) return
     const timeouts: ReturnType<typeof setTimeout>[] = []
+    // ⚠️ A RESTORE HAS TO SURVIVE TEARDOWN. Each burst schedules a timeout to put the text
+    // or the element back, and the cleanup used to `clearTimeout` them all — which CANCELS
+    // the restore rather than completing it, freezing corrupted glyphs and displaced
+    // elements on the page permanently. It was survivable while only unmount could trigger
+    // it; now that changing the setting tears this down mid-Criticality it is the first
+    // thing a reader turning the effects OFF would hit. Restores are held here and run by
+    // hand on the way out. Each is idempotent via the Set, so a fired one never repeats.
+    const restores = new Set<() => void>()
+    const schedule = (restore: () => void) => {
+      restores.add(restore)
+      timeouts.push(setTimeout(() => {
+        if (restores.delete(restore)) restore()
+      }, FLIP_HOLD_MS))
+    }
     const collectNodes = (): Text[] => {
       const out: Text[] = []
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
@@ -77,11 +122,11 @@ const CriticalityGlitch: React.FC = () => {
         const glitched = chars.join('')
         if (glitched === orig) continue
         node.textContent = glitched
-        timeouts.push(setTimeout(() => {
+        schedule(() => {
           // Restore only if nothing else (a React re-render) changed it meanwhile —
           // avoids clobbering a live update with a stale value.
           if (node.textContent === glitched) node.textContent = orig
-        }, FLIP_HOLD_MS))
+        })
       }
       // Discrete element shifts — a few visible UI chunks jump a few px and glow, then restore, so
       // INDIVIDUAL objects glitch out of place (not the whole window moving together). Skip oversized
@@ -101,16 +146,23 @@ const CriticalityGlitch: React.FC = () => {
         el.dataset.critShift = '1'
         el.style.transform = `${prevTransform} translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`.trim()
         el.style.filter = `${prevFilter ? prevFilter + ' ' : ''}drop-shadow(0 0 7px rgba(202,104,232,0.85))`.trim()
-        timeouts.push(setTimeout(() => {
+        schedule(() => {
           el.style.transform = prevTransform
           el.style.filter = prevFilter
           delete el.dataset.critShift
-        }, FLIP_HOLD_MS))
+        })
       }
     }
     const id = setInterval(burst, FLIP_INTERVAL_MS)
-    return () => { clearInterval(id); timeouts.forEach(clearTimeout) }
-  }, [active])
+    return () => {
+      clearInterval(id)
+      timeouts.forEach(clearTimeout)
+      restores.forEach(restore => restore())
+      restores.clear()
+    }
+    // ⚠️ `bursting`, not `active` — changing the setting mid-Criticality has to tear the
+    // interval down, and the cleanup above is what puts the page back.
+  }, [bursting])
 
   if (!active) return null
   return <div className="criticality-overlay" aria-hidden="true" />

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import { useRuleVote, fmtRuleValue } from '@/contexts/RuleVoteContext'
 import { CoreIcon, coreColor } from '@/utils/coresVisual'
 import { useCoresStatus } from '@/contexts/CoresStatusContext'
+import { useGlitchIntensity } from '@/hooks/useGlitchIntensity'
 
 // During a Criticality the rulebook is UNREADABLE — every game is on its own secret
 // randomized ruleset, so the values here scramble into glitch glyphs (flickering).
@@ -200,12 +201,17 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
   const glitched = !!status.criticalityActive
     || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('criticality') === '1')
   // Flicker: re-render a few times a second so the scrambled values keep churning.
+  // ⚠️ Only at FULL. The values stay scrambled at every tier — during a Criticality the
+  // rulebook genuinely is unreadable, and showing the real numbers would be lying about the
+  // state — but below full they hold still instead of churning. Reading unreadable is the
+  // information; the flicker is decoration on top of it.
+  const { intensity } = useGlitchIntensity()
   const [, setGlitchTick] = useState(0)
   useEffect(() => {
-    if (!glitched) return
+    if (!glitched || intensity !== 'full') return
     const id = setInterval(() => setGlitchTick(t => t + 1), 350)
     return () => clearInterval(id)
-  }, [glitched])
+  }, [glitched, intensity])
 
   useEffect(() => {
     let cancelled = false

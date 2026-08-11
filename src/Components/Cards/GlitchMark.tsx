@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { GiProcessor, GiBiohazard } from 'react-icons/gi'
+import { useGlitchIntensity } from '@/hooks/useGlitchIntensity'
 
 /**
  * The at-a-glance marker on a glitched card (docs/GLITCH_CARDS.md).
@@ -49,12 +50,17 @@ interface Props {
 }
 
 const GlitchMark: React.FC<Props> = ({ size, top, right, awakened, title }) => {
+  // ⚠️ Gated at OFF only, not at reduced. This is a 260ms glyph flip every 2.6s — a slow,
+  // low-frequency change rather than jitter, which is exactly what "reduced" says it keeps
+  // ("A slow pulse. No jitter or strobing"). Off means no animation, so the mark holds its
+  // resting glyph; it keeps its violet colour either way, so the card is still marked.
+  const { intensity } = useGlitchIntensity()
   const [jolt, setJolt] = useState(false)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
     // An awakened card is deliberate rather than cracking, so it settles: no flicker.
-    if (awakened) return undefined
+    if (awakened || intensity === 'off') return undefined
     const id = setInterval(() => {
       setJolt(true)
       const t = setTimeout(() => setJolt(false), 260)
@@ -65,7 +71,7 @@ const GlitchMark: React.FC<Props> = ({ size, top, right, awakened, title }) => {
       timers.current.forEach(clearTimeout)
       timers.current = []
     }
-  }, [awakened])
+  }, [awakened, intensity])
 
   const accent = awakened ? '#fde68a' : '#e9d5ff'
   const border = awakened ? 'rgba(253,224,138,0.85)' : 'rgba(196,181,253,0.9)'

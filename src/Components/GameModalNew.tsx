@@ -21,6 +21,7 @@ import { effectiveAwayColor } from '@/utils/colors'
 import { formatScore } from '@/utils/formatScore'
 import { displayScore, ScoringModel } from '@/utils/displayScore'
 import { ordinal } from '@/utils/ordinal'
+import { fmtFramesWon } from '@/utils/framesWon'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -202,12 +203,7 @@ const ClockStateIcon: React.FC<{ stopped: boolean }> = ({ stopped }) => {
   )
 }
 
-/** Frames won can be fractional (½ for a halved frame) — render "2", "2½", "½". */
-function fmtFramesWon(v: number): string {
-  const whole = Math.floor(v)
-  const half = v - whole >= 0.5
-  return half ? `${whole > 0 ? whole : ''}½` : `${whole}`
-}
+
 
 /** Returns a consistent badge background color for any PlayResult string. */
 /** Returns true for play results that warrant a badge in the field graphic (scores + turnovers). */
@@ -1626,7 +1622,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                     {Array.from({ length: N }).map((_, k) => {
                       const d = frameData(k + 1)
                       if (!d) return <td key={k} style={{ textAlign: 'center', padding: '4px 8px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>-</td>
-                      return <td key={k} style={{ textAlign: 'center', padding: '4px 8px', color: cellColor(side, d.winner), fontWeight: d.winner === side ? 700 : 500, fontVariantNumeric: 'tabular-nums' }}>{side === 'home' ? d.home : d.away}</td>
+                      return <td key={k} style={{ textAlign: 'center', padding: '4px 8px', color: cellColor(side, d.winner), fontWeight: d.winner === side ? 700 : 500, fontVariantNumeric: 'tabular-nums' }}>{formatScore(side === 'home' ? d.home : d.away)}</td>
                     })}
                   </tr>
                 )

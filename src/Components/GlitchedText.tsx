@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { useGlitchIntensity } from '@/hooks/useGlitchIntensity'
 
 const GLITCH_CHARS = '░▒▓█▌▐│┃▪◦◊◆▲△◢◣⌬⌭⌮'
 
@@ -17,10 +18,20 @@ interface Props {
 export const GlitchedText: React.FC<Props> = ({ text, intensity = 'low' }) => {
   const [display, setDisplay] = useState(text)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // ⚠️ THIS IS THE HALF OF THE PLAY FEED THE CSS COULD NOT REACH. Turning the effects off
+  // was reported as still glitching text in the feed; the stylesheet fix covered the CSS
+  // animations on the anomaly rows, and this component was the rest of it — a timer
+  // rewriting the actual characters, which no stylesheet can undo.
+  //
+  // Unlike the card breakdown's glitch line, the real text EXISTS here, so below full we
+  // simply show it. The anomaly row keeps its colour, so the state is still marked; the
+  // words just stay readable. (Named `glitch` because `intensity` is already this
+  // component's own prop for how hard it corrupts.)
+  const { intensity: glitch } = useGlitchIntensity()
 
   useEffect(() => {
     setDisplay(text)
-    if (!text) return
+    if (!text || glitch !== 'full') return
 
     const high = intensity === 'high'
     const intervalMs = high ? 400 : 1800
@@ -50,7 +61,7 @@ export const GlitchedText: React.FC<Props> = ({ text, intensity = 'low' }) => {
       clearInterval(id)
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
-  }, [text, intensity])
+  }, [text, intensity, glitch])
 
   return <>{display}</>
 }

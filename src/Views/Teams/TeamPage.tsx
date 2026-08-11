@@ -19,6 +19,7 @@ import TeamFeed from '@/Components/Sentiment/TeamFeed'
 import FrontOfficeBand from './FrontOfficeBand'
 import SectionRail, { RailSection } from './SectionRail'
 import { quipAt } from '@/Views/FrontOffice/FacilitiesSection'
+import { fmtFramesWon } from '@/utils/framesWon'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -72,7 +73,7 @@ const ROSTER_SLOTS = ['qb', 'rb', 'wr1', 'wr2', 'te', 'k']
 const REGULAR_SEASON_WEEKS = 28
 
 // Frames won can be fractional (½ for a halved frame): render "2", "2½", "½".
-const fmtFramesWon = (v: number): string => { const w = Math.floor(v); return (v - w >= 0.5) ? `${w > 0 ? w : ''}½` : `${w}` }
+
 
 interface RosterPlayer {
   id: number

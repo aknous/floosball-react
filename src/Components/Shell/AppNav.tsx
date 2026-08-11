@@ -48,6 +48,11 @@ const LEAGUE_ITEMS: NavEntry[] = [
   { key: 'games', label: 'Games', path: '/games', icon: ICON('M3 2h2v1l11 4-11 4v7H3V2z') },
   { key: 'standings', label: 'Standings', path: '/standings', icon: ICON('M3 3h14v3H3V3zm0 5h14v3H3V8zm0 5h14v3H3v-3z') },
   { key: 'stats', label: 'Stats', path: '/stats', icon: ICON('M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z') },
+  // ⚠️ /history was ROUTED BUT UNREACHABLE — no nav entry anywhere, so the Record Book,
+  // past seasons, fantasy records and the Hall of Fame were all behind a URL you had to
+  // know. Reported as the record book having disappeared; it had not, it had no door.
+  // An open book, since the Record Book is what a reader comes here for.
+  { key: 'history', label: 'History', path: '/history', icon: ICON('M2 4h6a2 2 0 012 2v10a2 2 0 00-2-2H2V4zm16 0h-6a2 2 0 00-2 2v10a2 2 0 012-2h6V4z') },
 ]
 
 const YOURS_ITEMS: NavEntry[] = [
