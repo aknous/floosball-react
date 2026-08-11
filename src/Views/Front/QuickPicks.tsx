@@ -38,13 +38,17 @@ const orderGames = (games: PickEmGame[], favouriteTeamId: number | null): PickEm
   return mine.length ? [...mine, ...inKickoffOrder.filter(g => !isMine(g))] : inKickoffOrder
 }
 
-const Arrow: React.FC<{ dir: 'prev' | 'next'; onClick: () => void; disabled: boolean }> = ({
-  dir, onClick, disabled,
-}) => (
+const Arrow: React.FC<{
+  dir: 'prev' | 'next'
+  onClick: () => void
+  disabled: boolean
+  /** Two pairs of these on the panel now, so each says which journey it is. */
+  label: string
+}> = ({ dir, onClick, disabled, label }) => (
   <button
     onClick={onClick}
     disabled={disabled}
-    aria-label={dir === 'prev' ? 'Previous game' : 'Next game'}
+    aria-label={label}
     style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       width: '26px', height: '26px', flexShrink: 0,
@@ -106,66 +110,60 @@ const QuickPicks: React.FC<{
   }, [slots, gamesActive])
 
   /**
-   * What the arrows walk: the slate in focus, and the one before it.
-   *
-   * ⚠️ THE PREVIOUS SLATE IS REACHABLE ON PURPOSE. The focus slate moves on the moment
-   * its last game finals — picks open on the next one — so a panel showing only the
-   * focus would step over the results a reader had been waiting for. One slate back is
-   * where their answered calls live, and the card marks each with the same check or
-   * cross the Prognostications page uses. Bounded at two slates: a whole day is seven,
-   * and 112 games is not a thing to arrow through.
+   * ⚠️ TWO STEPPERS, WEEK AND GAME (owner). One list spanning slates could only ever be
+   * walked in one dimension, so reaching last week's results meant arrowing back through
+   * this week's sixteen. Weeks move on their own row; games move within the week on
+   * theirs. It also deletes the previous-slate-carried-into-the-same-list arrangement
+   * that came before, which was that same idea done in one dimension.
    */
-  const { games, focusStart } = useMemo(() => {
-    if (!slot) return { games: [] as PickEmGame[], focusStart: 0 }
-    const focus = orderGames(slot.games, favouriteTeamId)
-    const idx = slots.findIndex(sl => sl.week === slot.week)
-    const prev = idx > 0 ? slots[idx - 1] : null
-    // Only worth carrying back if it has resolved into something to show.
-    const previous = prev && prev.games.some(g => g.result)
-      ? [...prev.games].sort((a, b) => a.gameIndex - b.gameIndex)
-      : []
-    return { games: [...previous, ...focus], focusStart: previous.length }
-  }, [slot, slots, favouriteTeamId])
+  const [weekIndex, setWeekIndex] = useState<number | null>(null)
+  const focusIndex = slot ? slots.findIndex(sl => sl.week === slot.week) : -1
+  // The reader's chosen week wins; until they choose one, the panel's own focus does.
+  const shownIndex = weekIndex != null && weekIndex < slots.length ? weekIndex : Math.max(focusIndex, 0)
+  const shown = slots[shownIndex] ?? slot
 
-  /** Which slate a given game belongs to — the two blocks are contiguous. */
-  const weekOf = (index: number) => {
-    if (!slot) return 0
-    if (index >= focusStart) return slot.week
-    const idx = slots.findIndex(sl => sl.week === slot.week)
-    return idx > 0 ? slots[idx - 1].week : slot.week
-  }
+  const games = useMemo(
+    () => (shown ? orderGames(shown.games, favouriteTeamId) : []),
+    [shown, favouriteTeamId])
 
   const [cursor, setCursor] = useState(0)
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cancelAdvance = () => {
+    if (advanceTimer.current) { clearTimeout(advanceTimer.current); advanceTimer.current = null }
+  }
   useEffect(() => () => { if (advanceTimer.current) clearTimeout(advanceTimer.current) }, [])
+
   // ⚠️ Opens on the first game still to be called, not on game one. A reader coming back
-  // mid-slate wants the next decision, not the one they already made. Re-homed only when
-  // the SLATE changes — re-running it on every pick would fight the reader's own arrows.
-  const slateKey = slot ? `${slot.week}:${games.length}:${focusStart}` : ''
+  // mid-slate wants the next decision, not the one they already made. Re-homed when the
+  // WEEK changes — re-running it on every pick would fight the reader's own arrows.
+  const slateKey = shown ? `${shown.week}:${games.length}` : ''
   const homedFor = useRef<string>('')
   useEffect(() => {
     if (!games.length || homedFor.current === slateKey) return
     homedFor.current = slateKey
-    const firstOpen = games.findIndex((g, i) =>
-      i >= focusStart && g.pickable && g.userPick == null)
-    // Nothing left to call means the slate is being played or is done — sit on the first
-    // game of the focus block, which is the reader's own club's.
-    setCursor(firstOpen >= 0 ? firstOpen : focusStart)
-  }, [slateKey, games, focusStart])
+    const firstOpen = games.findIndex(g => g.pickable && g.userPick == null)
+    // A week with nothing left to call is one being played or already played, and game
+    // one is the reader's own club's — the one they care how it went.
+    setCursor(firstOpen >= 0 ? firstOpen : 0)
+  }, [slateKey, games])
 
   if (loading && !slot) return null
-  if (!slot || !games.length) return null
+  if (!slot || !shown || !games.length) return null
 
   const at = Math.min(cursor, games.length - 1)
   const game = games[at]
-  const focusGames = games.slice(focusStart)
-  const picked = focusGames.filter(g => g.userPick != null).length
+  const picked = games.filter(g => g.userPick != null).length
 
+  // Taking either stepper means taking control: a queued advance would yank the panel
+  // out from under the reader a moment later.
   const step = (by: number) => {
-    // Taking the arrows means taking control: a queued advance would yank the panel out
-    // from under them a moment later.
-    if (advanceTimer.current) { clearTimeout(advanceTimer.current); advanceTimer.current = null }
+    cancelAdvance()
     setCursor(c => (c + by + games.length) % games.length)
+  }
+
+  const stepWeek = (by: number) => {
+    cancelAdvance()
+    setWeekIndex((shownIndex + by + slots.length) % slots.length)
   }
 
   const choose = (teamId: number) => {
@@ -174,7 +172,7 @@ const QuickPicks: React.FC<{
     // — so a reader could sit watching one result come in and keep calling the games
     // behind it. The panel still browses; it just does not take a pick.
     if (gamesActive || !game.pickable) return
-    setPick(slot.week, game.gameIndex, teamId)
+    setPick(shown.week, game.gameIndex, teamId)
     // ⚠️ THE PICK IS SHOWN BEFORE THE PANEL MOVES ON (owner: it flipped too fast). The
     // card lands the club's colour and dims the other side the moment you choose, and
     // advancing on the same tick threw that away — you saw the next matchup and had to
@@ -182,10 +180,10 @@ const QuickPicks: React.FC<{
     const from = game.gameIndex
     advanceTimer.current = setTimeout(() => {
       const nextOpen = games.findIndex((g, i) =>
-        i > cursor && i >= focusStart && g.pickable && g.userPick == null && g.gameIndex !== from)
+        i > cursor && g.pickable && g.userPick == null && g.gameIndex !== from)
       if (nextOpen >= 0) { setCursor(nextOpen); return }
-      const anyOpen = games.findIndex((g, i) =>
-        i >= focusStart && g.pickable && g.userPick == null && g.gameIndex !== from)
+      const anyOpen = games.findIndex(g =>
+        g.pickable && g.userPick == null && g.gameIndex !== from)
       // Nothing left to call: stay put rather than jumping somewhere arbitrary.
       if (anyOpen >= 0) setCursor(anyOpen)
     }, ADVANCE_DELAY_MS)
@@ -199,15 +197,34 @@ const QuickPicks: React.FC<{
         link={{ to: '/prognostications', label: 'ALL' }}
       />
       <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}`, padding: '12px' }}>
+        {/* The week, and then the game within it. Two rows because they are two
+            different journeys — one steps across the day, the other along a slate. */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px',
+        }}>
+          <Arrow dir="prev" label="Previous week"
+                 onClick={() => stepWeek(-1)} disabled={slots.length < 2} />
+          <span style={{
+            flex: 1, textAlign: 'center', ...font(800, 13, 1, '0.06em'), color: TEXT.body,
+          }}>
+            WEEK {shown.week}
+          </span>
+          <Arrow dir="next" label="Next week"
+                 onClick={() => stepWeek(1)} disabled={slots.length < 2} />
+        </div>
+
         <div style={{
           display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px',
         }}>
-          <Arrow dir="prev" onClick={() => step(-1)} disabled={games.length < 2} />
-          <span style={{ flex: 1, textAlign: 'center', ...font(700, 13, 1, '0.06em'), color: TEXT.secondary }}>
-            WEEK {weekOf(at)} · {(at >= focusStart ? at - focusStart : at) + 1} OF{' '}
-            {at >= focusStart ? games.length - focusStart : focusStart}
+          <Arrow dir="prev" label="Previous game"
+                 onClick={() => step(-1)} disabled={games.length < 2} />
+          <span style={{
+            flex: 1, textAlign: 'center', ...font(600, 12, 1, '0.06em'), color: TEXT.muted,
+          }}>
+            GAME {at + 1} OF {games.length}
           </span>
-          <Arrow dir="next" onClick={() => step(1)} disabled={games.length < 2} />
+          <Arrow dir="next" label="Next game"
+                 onClick={() => step(1)} disabled={games.length < 2} />
         </div>
 
         {/* ⚠️ THE PROGNOSTICATIONS CARD ITSELF (owner), not a rail-sized lookalike. The
@@ -231,7 +248,7 @@ const QuickPicks: React.FC<{
           display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px',
           ...font(600, 12), color: TEXT.secondary,
         }}>
-          <span>{picked} of {focusGames.length} picked</span>
+          <span>{picked} of {games.length} picked</span>
           <span style={{ flex: 1 }} />
           {/* The one state worth saying out loud is a save that did not land; a pick that
               saved needs no receipt here, the highlight is the receipt. */}
