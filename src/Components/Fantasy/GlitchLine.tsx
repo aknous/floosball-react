@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useGlitchIntensity } from '@/hooks/useGlitchIntensity'
 
 /**
  * The glitch line item in a card's score breakdown (docs/GLITCH_CARDS.md).
@@ -57,6 +58,12 @@ const GlitchLine: React.FC<Props> = ({
 
   const [display, setDisplay] = useState(() => scramble(width, swaps))
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
+  // ⚠️ The corruption is the CONTENT here, not a corruption of real text — there is no
+  // payout to reveal yet, which is the whole point of the line. So turning the effects down
+  // cannot mean showing the number; it means the scramble stops CHURNING and holds still.
+  // The line still reads as unresolved, nothing moves. Same rule as everywhere else: the
+  // state stays marked once the motion is gone.
+  const { intensity } = useGlitchIntensity()
 
   // A RESOLVED but unreadable outcome is a fixed record of what happened, so its
   // corruption is computed once. Re-scrambling it on every render would make a settled
@@ -65,10 +72,10 @@ const GlitchLine: React.FC<Props> = ({
                                [outcome, fp, multDelta])
 
   useEffect(() => {
-    if (resolved) return undefined
+    if (resolved || intensity !== 'full') return undefined
     timer.current = setInterval(() => setDisplay(scramble(width, swaps)), intervalMs)
     return () => { if (timer.current) clearInterval(timer.current) }
-  }, [resolved, intervalMs, swaps])
+  }, [resolved, intervalMs, swaps, intensity])
 
   if (!resolved) {
     return (
