@@ -220,7 +220,7 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
   // height. ⚠️ Styled from the redesign's tokens and SQUARE, unlike the panel
   // variant below: the two headers it appears in (the modal's and the game
   // page's nav row) both belong to the new system, where the only radius is a
-  // circle. The currency colour is the shell header's own (`ACCENT.warning`),
+  // circle. The currency color is the shell header's own (`ACCENT.warning`),
   // so the number climbing here reads as the same Floobits as the one up top.
   if (compact) {
     return (

@@ -98,17 +98,17 @@ export function contrastRatio(a: string, b: string): number {
 }
 
 /**
- * Make a team colour legible AS TEXT on a dark background.
+ * Make a team color legible AS TEXT on a dark background.
  *
- * Team colours are DATA, and a good few of them are navy, maroon or forest
+ * Team colors are DATA, and a good few of them are navy, maroon or forest
  * green — perfectly good as a field or a border, but as small text on the
  * near-black page background they sink into it and the label disappears.
  * `getContrastTextColor` solves the opposite problem (what ink goes ON this
- * colour); this one keeps the colour's identity while lifting it far enough
+ * color); this one keeps the color's identity while lifting it far enough
  * off the background to read.
  *
- * Lightens in HSL, which holds the hue, so a navy team stays recognisably
- * navy — just a lighter navy. Falls back to the body grey only if even a
+ * Lightens in HSL, which holds the hue, so a navy team stays recognizably
+ * navy — just a lighter navy. Falls back to the body gray only if even a
  * near-white version of the hue can't clear the bar (a pure-black brand).
  */
 export function readableOnDark(
@@ -120,7 +120,7 @@ export function readableOnDark(
   if (!rgb) return '#cbd5e1'
   // eslint-disable-next-line prefer-const
   let [h, s, l] = rgbToHsl(...rgb)
-  // A very desaturated dark colour just becomes grey when lightened, which is
+  // A very desaturated dark color just becomes gray when lightened, which is
   // legible but loses the point — give it a little saturation to keep an
   // identity.
   if (s < 0.15) s = Math.min(0.35, s + 0.2)
@@ -182,7 +182,7 @@ export function effectiveAwayColor(homeColor?: string | null, awayColor?: string
 // measures 4.41:1 on the pinned card. `readableTeamColor` is what components should
 // actually call.
 
-/** Lift a dark colour toward 0.45 luminance. Returns the input if already light. */
+/** Lift a dark color toward 0.45 luminance. Returns the input if already light. */
 export function lightenColor(hex: string): string {
   const h = (hex || '').replace('#', '')
   if (h.length !== 6) return hex || '#cbd5e1'
@@ -197,17 +197,17 @@ export function lightenColor(hex: string): string {
 }
 
 /**
- * The card surfaces a team-coloured label is drawn on in the redesigned pages.
+ * The card surfaces a team-colored label is drawn on in the redesigned pages.
  * `#17222f` (the own-team card) is the LIGHTER of the two, so it is the binding
  * constraint for light text — clearing it clears `#131e2f` as well.
  */
 export const TEAM_TEXT_BACKGROUND = '#17222f'
 
 /**
- * A team's colour, made safe to use as TEXT on the redesigned card surfaces.
+ * A team's color, made safe to use as TEXT on the redesigned card surfaces.
  *
  * Delegates to `readableOnDark`, which lifts in HSL and therefore keeps the hue — a
- * navy team stays recognisably navy rather than drifting toward white, which is what
+ * navy team stays recognizably navy rather than drifting toward white, which is what
  * a blend-toward-#f8fafc correction does to it.
  *
  * Apply it to BOTH sides of a paired figure (the two halves of a win-probability

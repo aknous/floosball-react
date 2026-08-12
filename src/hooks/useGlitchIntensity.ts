@@ -23,7 +23,7 @@ const STORAGE_KEY = 'floosball:glitchIntensity'
 export const GLITCH_OPTIONS: { key: GlitchIntensity; label: string; note: string }[] = [
   { key: 'full', label: 'Full', note: 'Anomalies glitch, shift and strobe' },
   { key: 'reduced', label: 'Reduced', note: 'A slow pulse. No jitter or strobing' },
-  { key: 'off', label: 'Off', note: 'No animation. Anomalies stay marked in colour' },
+  { key: 'off', label: 'Off', note: 'No animation. Anomalies stay marked in color' },
 ]
 
 const prefersReducedMotion = (): boolean =>

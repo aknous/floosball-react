@@ -53,7 +53,7 @@ interface Props {
   pad: number
   pageMax: string
   stacked: boolean
-  /** The team's own colour, already lifted to be legible on the dark page. */
+  /** The team's own color, already lifted to be legible on the dark page. */
   accent: string
 }
 

@@ -15,7 +15,7 @@ export function attrBarColor(v: number): string {
 }
 
 /** Performance numbers — PERF, DEF RTG, coach and matchup readouts. These are
- *  percentile-of-production, so the bands sit lower and the colours run lighter
+ *  percentile-of-production, so the bands sit lower and the colors run lighter
  *  because they tint text rather than fill a bar. */
 export function statRampColor(v: number): string {
   if (v >= 80) return '#4ade80'

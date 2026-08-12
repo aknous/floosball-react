@@ -33,10 +33,10 @@ const GRID_COMPACT = '21px minmax(0,1fr) 58px 46px'
 
 const ByLeague: React.FC<{
   leagues: LeagueStandings[]
-  favouriteTeamId: number | null
+  favoriteTeamId: number | null
   /** Phone layout: four columns instead of thirteen. */
   compact?: boolean
-}> = ({ leagues, favouriteTeamId, compact = false }) => (
+}> = ({ leagues, favoriteTeamId, compact = false }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: '26px' }}>
     {leagues.map(league => {
       const cutIndex = league.standings.findIndex(t => t.seed != null && t.seed === league.standings.filter(x => x.seed != null).length)
@@ -104,7 +104,7 @@ const ByLeague: React.FC<{
             </div>
 
             {league.standings.map((team, i) => {
-              const isYours = favouriteTeamId != null && team.id === favouriteTeamId
+              const isYours = favoriteTeamId != null && team.id === favoriteTeamId
               const isCutRow = i === cutIndex
               const divisionWinner = team.seedKind === 'division'
               const wildcard = team.seedKind === 'wildcard'

@@ -815,7 +815,7 @@ const AboutPage: React.FC = () => {
               'Red: fumble, interception, turnover on downs, drive clock expired, safety, bust, contest lost',
               'Orange: sack',
               'Amber: stopped on the last down, missed extra point, failed conversion, provisional score',
-              'Grey: punt, missed field goal, missed sideline goal',
+              'Gray: punt, missed field goal, missed sideline goal',
             ])}
             <p style={{ ...textStyle, marginTop: '6px', marginBottom: '10px' }}>
               The amber down badge follows the ACTUAL last down rather than always the fourth. Downs per

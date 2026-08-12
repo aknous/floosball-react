@@ -85,7 +85,7 @@ const DORMANT_RULES: { name: string; field?: string }[] = [
   { name: 'Sideline Goals', field: 'sidelineGoalsEnabled' },
 ]
 
-// When the Drive Clock is on, summarise its live mode for the active row.
+// When the Drive Clock is on, summarize its live mode for the active row.
 function driveClockDetail(rules: any): string | undefined {
   if (!rules?.driveClockEnabled) return undefined
   const lim = rules.driveClockLimit

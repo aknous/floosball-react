@@ -26,9 +26,9 @@ const GRID_COMPACT = '21px minmax(0,1fr) 56px 44px'
 const DivisionBlock: React.FC<{
   name: string
   teams: TeamStanding[]
-  favouriteTeamId: number | null
+  favoriteTeamId: number | null
   compact?: boolean
-}> = ({ name, teams, favouriteTeamId, compact = false }) => {
+}> = ({ name, teams, favoriteTeamId, compact = false }) => {
   const leader = teams[0]
   return (
     <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}` }}>
@@ -77,7 +77,7 @@ const DivisionBlock: React.FC<{
       </div>
 
       {teams.map((team, i) => {
-        const isYours = favouriteTeamId != null && team.id === favouriteTeamId
+        const isYours = favoriteTeamId != null && team.id === favoriteTeamId
         return (
           <div
             key={team.id}
@@ -123,9 +123,9 @@ const DivisionBlock: React.FC<{
 
 const ByDivision: React.FC<{
   leagues: LeagueStandings[]
-  favouriteTeamId: number | null
+  favoriteTeamId: number | null
   compact?: boolean
-}> = ({ leagues, favouriteTeamId, compact = false }) => (
+}> = ({ leagues, favoriteTeamId, compact = false }) => (
   <div style={{
     display: 'grid',
     // ⚠️ One league per row on a phone. Two 195px columns cannot hold a club name.
@@ -147,7 +147,7 @@ const ByDivision: React.FC<{
               key={div.name}
               name={div.name}
               teams={div.teamIds.map(id => byId.get(id)).filter((t): t is TeamStanding => !!t)}
-              favouriteTeamId={favouriteTeamId}
+              favoriteTeamId={favoriteTeamId}
             />
           ))}
         </div>

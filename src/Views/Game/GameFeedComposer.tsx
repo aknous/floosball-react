@@ -287,7 +287,7 @@ const GameFeedComposer: React.FC<{
           line above a shout from a second ago. */}
       {(() => {
         const postEntries: TimelineEntry[] = posts.map(p => {
-          const colour = p.teamColor ? readableTeamColor(p.teamColor) : TEXT.muted
+          const color = p.teamColor ? readableTeamColor(p.teamColor) : TEXT.muted
           return {
             key: `post-${p.id}`,
             createdAt: p.createdAt,
@@ -307,7 +307,7 @@ const GameFeedComposer: React.FC<{
                     <img src={`/avatars/${p.teamId}.png`} alt="" width={18} height={18}
                          style={{ borderRadius: '50%', flexShrink: 0, display: 'block' }} />
                   ) : null}
-                  <span style={{ ...font(600, 11), color: colour }}>{p.username ?? 'someone'}</span>
+                  <span style={{ ...font(600, 11), color: color }}>{p.username ?? 'someone'}</span>
                   <span style={{ flex: 1 }} />
                   <span style={{ ...font(400, 10), color: TEXT.muted, ...TABULAR }}>{relativeTime(p.createdAt)}</span>
                 </div>

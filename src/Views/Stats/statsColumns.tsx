@@ -33,7 +33,7 @@ const n = (v: any, digits = 0): string => {
 
 const pct = (v: any): string => (v == null ? dash : `${Number(v).toFixed(1)}`)
 
-/** Signed, and the only place a raw stat takes a colour. */
+/** Signed, and the only place a raw stat takes a color. */
 /**
  * A signed figure, to `digits` decimal places.
  *
@@ -353,7 +353,7 @@ export function teamColumns(side: 'offense' | 'defense', perGame: boolean): Colu
     { key: 'td', label: perGame ? 'TD/G' : 'TD', width: W.rate, cell: r => n(r.offense.touchdowns, perGame ? 1 : 0), sort: r => r.offense.touchdowns },
     { key: 'fg', label: perGame ? 'FG/G' : 'FG', width: W.rate, cell: r => n(r.offense.fieldGoals, perGame ? 1 : 0), sort: r => r.offense.fieldGoals },
     { key: 'to', label: 'TO', help: 'Turnovers given away', width: W.count, cell: r => n(r.offense.turnovers), sort: r => r.offense.turnovers, lowerIsBetter: true },
-    { key: 'sk', label: 'SK ALW', help: 'Sacks allowed by this offence', width: 62, cell: r => n(r.offense.sacksAllowed), sort: r => r.offense.sacksAllowed, lowerIsBetter: true },
+    { key: 'sk', label: 'SK ALW', help: 'Sacks allowed by this offense', width: 62, cell: r => n(r.offense.sacksAllowed), sort: r => r.offense.sacksAllowed, lowerIsBetter: true },
     {
       key: 'diff', label: 'DIFF', help: 'Point differential, points scored minus points allowed', width: W.rate,
       cell: r => signed(r.differential), sort: r => r.differential,

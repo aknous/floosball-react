@@ -4,7 +4,7 @@
 
 A redesign of the Floosball front page — the view a signed-in user lands on. It answers four questions in one screen: *what's happening right now*, *what happened in the league*, *who's worth watching*, and *how am I doing*. It deliberately does **not** reproduce the game board or standings; the left nav owns that navigation.
 
-The design went through seven iterations in review. Earlier turns are preserved in the prototype file for context, but **only `7a` is the approved design.** Ignore sections labelled `1a`–`6a`.
+The design went through seven iterations in review. Earlier turns are preserved in the prototype file for context, but **only `7a` is the approved design.** Ignore sections labeled `1a`–`6a`.
 
 ## About the Design Files
 
@@ -58,7 +58,7 @@ User chip: `.plate`, background `#131e2f`, `1px solid #1e293b`, `padding: 5px 10
 
 ### Component: Left nav
 
-Two labelled groups. Group label: `700 10px`, `letter-spacing: 0.16em`, `#475569`, `padding: 0 18px 9px`.
+Two labeled groups. Group label: `700 10px`, `letter-spacing: 0.16em`, `#475569`, `padding: 0 18px 9px`.
 
 **THE LEAGUE** — Front page (active), Games, Standings, Teams, Players.
 **YOURS** — Broads (user's team), Prognostications, Fantasy, Cards, Achievements.

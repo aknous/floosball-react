@@ -5,7 +5,7 @@
 `PlayerPage.tsx` today is a three-column hero — jersey stack, a tabbed Attributes/Progression/Awards
 panel, and a moments+trophies column — sitting over a career table. Three columns compete at the
 same visual weight, attributes hide inside a tab, and the stats start well below the fold. This
-reorganises the same material into **two columns**: a fixed identity rail on the left, one content
+reorganizes the same material into **two columns**: a fixed identity rail on the left, one content
 column on the right.
 
 The reading order is deliberate: **who he is → how good he is → the numbers.**
@@ -31,7 +31,7 @@ the data contract needs two small additions, listed under **Data**.
 ## About the design files
 
 `prototype/Player Profile.dc.html` is a **design reference created in HTML** — intended look and
-behaviour, not production code. One static file, fixture data, inline styles.
+behavior, not production code. One static file, fixture data, inline styles.
 
 Open it in a browser (no server needed). It shows one turn with two options, `1a` and `1b`, side by
 side. Pick one; they are not meant to be merged.
@@ -44,7 +44,7 @@ including the both-ways position pair (WR→CB per `DEF_POSITION_FULL`).
 
 ## Fidelity
 
-**High-fidelity.** Colours, type sizes, weights and spacing below are final.
+**High-fidelity.** Colors, type sizes, weights and spacing below are final.
 
 Three things are **not** design decisions — they are existing sim logic and must stay in sync:
 
@@ -55,7 +55,7 @@ Three things are **not** design decisions — they are existing sim logic and mu
 | Quirk tier | `QUIRK_TIER_COLORS` | existing | n/a here — quirk chips are cut |
 
 The **jersey is a verbatim port** of `PlayerJersey` from `PlayerPage.tsx` — same 200×185 viewBox,
-same angled sleeve paths, secondary-colour sleeve stripes, body highlight, collar arc, nameplate and
+same angled sleeve paths, secondary-color sleeve stripes, body highlight, collar arc, nameplate and
 number. Reuse the component; do not redraw it. It appears at 182px in `1a`'s rail and 100px in
 `1b`'s banner.
 
@@ -80,12 +80,12 @@ the profile mentions rank; it is a navigational breadcrumb, not comparative cont
 
 **Rail, in order:**
 
-1. **Identity panel** — `background: #131e2f; border: 1px solid #1e293b; padding: 20px`, centred
+1. **Identity panel** — `background: #131e2f; border: 1px solid #1e293b; padding: 20px`, centered
    column: jersey at 182px, then position line (`Wide Receiver · Cornerback`, `11px/500/#94a3b8`),
    name (`26px/800/−0.03em/#f8fafc`), star row + rank label (`Superstar`, italic), and the team as an
-   avatar+name link in the **team's primary colour**.
-2. **Character panel** — mood (label + `15px/800` in the mood tier colour), the awakened badge, a
-   rule, then hometown and favourite as label/value rows, then the motto as an italic quote with a
+   avatar+name link in the **team's primary color**.
+2. **Character panel** — mood (label + `15px/800` in the mood tier color), the awakened badge, a
+   rule, then hometown and favorite as label/value rows, then the motto as an italic quote with a
    `2px #334155` left rule.
 3. **Trophy case** — three columns across the rail: championship, all-pro, records, each an icon,
    a caption and the seasons. A records note runs underneath.
@@ -310,7 +310,7 @@ and it comes with the ported component.
 ## Conformance notes
 
 1. Every readable string bottoms out at `#94a3b8`; `#475569` and below appear only as borders.
-2. Team colour is used for the team link, the banner gradient and the progression line — never for
+2. Team color is used for the team link, the banner gradient and the progression line — never for
    small text on a dark field.
 3. No emoji. Trophies, the bolt, chevrons and the back arrow are inline SVG.
 4. The career totals row above the seasons is intentional and applies to every table on the page —

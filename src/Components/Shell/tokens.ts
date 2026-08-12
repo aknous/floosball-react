@@ -60,7 +60,7 @@ export const ACCENT = {
   featured: '#a78bfa',
 } as const
 
-/** Muted, not neon — full-saturation playoff colours read as too loud in review. */
+/** Muted, not neon — full-saturation playoff colors read as too loud in review. */
 export const PLAYOFF = {
   topSeedRing: '#a87c33',
   topSeedText: '#e3b767',

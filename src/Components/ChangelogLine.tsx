@@ -2,9 +2,9 @@ import React from 'react'
 
 /**
  * ⚠️ Looked up CASE-INSENSITIVELY, and every tag the changelog actually uses needs an
- * entry. A tag with no entry falls back to grey, and the v1.00 notes introduced a dozen
+ * entry. A tag with no entry falls back to gray, and the v1.00 notes introduced a dozen
  * new ones (Everywhere, League, Standings, News, Fixes and so on) that all landed on the
- * fallback, so a release meant to be colour-coded read as one flat grey list. `Pick-Em`
+ * fallback, so a release meant to be color-coded read as one flat gray list. `Pick-Em`
  * also missed `Pick-em` on capitalisation alone.
  */
 const TAG_COLORS: Record<string, { fg: string; bg: string }> = {

@@ -17,13 +17,13 @@ Deliberately **not** here: leaders bands, MVP rankings, Hall of Fame, awards. Th
 `PlayerLeaders` and `MvpRankings` stay where they are.
 
 **Target:** rewrite `src/Views/Players/PlayersPage.tsx` in place and re-route it as the Stats page
-(the left-nav item is relabelled `Stats`). Keep its existing fetch, `PlayerListItem` and `ColDef`
+(the left-nav item is relabeled `Stats`). Keep its existing fetch, `PlayerListItem` and `ColDef`
 patterns; replace the presentation layer and extend the data contract per **Data** below.
 
 ## About the design files
 
 `prototype/Player Stats.dc.html` is a **design reference created in HTML** — intended look and
-behaviour, not production code. One static file, fixture data, inline styles.
+behavior, not production code. One static file, fixture data, inline styles.
 
 Open it in a browser (no server needed). Ship the **turn 2** screens: `2a` (players), `2b` (teams ·
 offense), `2c` (teams · defense). Turn 1 below them is earlier exploration — a `1a` toolbar variant
@@ -34,9 +34,9 @@ already exists** (`Navbar`, sidebar). Do not rebuild them — but do relabel the
 
 ## Fidelity
 
-**High-fidelity.** Colours, type sizes, weights, spacing and interaction states below are final.
+**High-fidelity.** Colors, type sizes, weights, spacing and interaction states below are final.
 
-The one thing that is *not* a design decision is the **stat colour ramps** — they are the ones the
+The one thing that is *not* a design decision is the **stat color ramps** — they are the ones the
 sim already uses in `PlayInsightsPanel.tsx`, and they must stay in sync with it:
 
 | Ramp | Thresholds | Applies to |
@@ -45,8 +45,8 @@ sim already uses in `PlayInsightsPanel.tsx`, and they must stay in sync with it:
 | `qualityColor` | `≥65 → #4ade80`, `≥40 → #eab308`, else `#f87171` | 0–100 quality metrics (SEP) |
 | delta | `+ → #4ade80`, `− → #f87171`, `0 → #94a3b8` | WPA, turnover margin |
 
-Every other number is `#cbd5e1`; the sorted column is `#f1f5f9` at weight 700. **Do not colour a
-stat that has no ramp** — the table is dense and colour has to mean one thing.
+Every other number is `#cbd5e1`; the sorted column is `#f1f5f9` at weight 700. **Do not color a
+stat that has no ramp** — the table is dense and color has to mean one thing.
 
 ---
 
@@ -120,7 +120,7 @@ border-bottom: 1px solid #16202f`. Hover `background: rgba(255,255,255,0.04)`. S
 | --- | --- | --- |
 | Checkbox | 24px | `12×12`; unchecked `border: 1px solid #475569`; checked `background: #38bdf8` + `#0b1220` tick |
 | Player | 214px | avatar `17×17` round + name link `12px/600/#f8fafc`, ellipsised, `padding: 7px 0` |
-| Team | 52px | abbr `10px/600/0.04em/#94a3b8` — **neutral, not the team colour**; the avatar carries team identity |
+| Team | 52px | abbr `10px/600/0.04em/#94a3b8` — **neutral, not the team color**; the avatar carries team identity |
 | (spacer) | `flex: 1` | absorbs slack so the stat block stays right-aligned |
 | Stat columns | see below | `12px/500/#cbd5e1`, right, `font-variant-numeric: tabular-nums` |
 
@@ -172,7 +172,7 @@ team name. Team name cell is `240px`.
 
 **Defense columns:** `GP`(44) `PA`(48) `PA/G`(52) `YDS/G`(58) `PASS/G`(58) `RUSH/G`(58) `SACK`(48)
 `INT`(44) `FF`(44) `TAKE`(52) `3RD%`(52) `MARGIN`(62). Default sort `YDS/G` **asc** (fewest allowed
-first) — note the `▲`. `MARGIN` is the only coloured cell: signed green/red.
+first) — note the `▲`. `MARGIN` is the only colored cell: signed green/red.
 
 **Special teams** is stubbed in the pill group and not yet designed. Proposed set:
 `GP FGM FGA FG% LNG XPM XP% PUNTS NET AVG TB IN20 KR AVG PR AVG`. Confirm which of these the sim
@@ -194,7 +194,7 @@ actually tracks before building.
   `border-color: #475569`, `background: #1b2739`.
 - **Focus.** `outline: 2px solid #38bdf8; outline-offset: 2px` on every control. Never the default.
 - **Empty / loading.** Skeleton 14 rows at final height; never collapse the layout. Empty filter
-  result keeps the header and shows one centred line at `#cbd5e1`.
+  result keeps the header and shows one centered line at `#cbd5e1`.
 - **Responsive.** Designed at 1440px. Below ~1180px the stat block scrolls horizontally with the
   player/team cell pinned (`position: sticky; left: 0`). Below ~760px drop to the position's four
   headline stats and put the rest behind a row expand.
@@ -297,7 +297,7 @@ interface StatsPlayerRow {
     longest: number
   }
 
-  // ── NEW: season-aggregated defence (per-game shape already exists) ──
+  // ── NEW: season-aggregated defense (per-game shape already exists) ──
   defense: {
     tackles: number
     tfl: number
@@ -386,7 +386,7 @@ interface StatsTeamRow {
 
 `offense` maps almost 1:1 onto a season sum of `TeamGameStats`, with three gaps:
 **`penalties` / `penaltyYards`** (on `api.ts`'s `TeamGameStats` but not the WS one — confirm the sim
-records them), **`sacksAllowed`** (the sim records `sacks` *by* a defence; the allowed side is the
+records them), **`sacksAllowed`** (the sim records `sacks` *by* a defense; the allowed side is the
 opponent's number and may just need the join), and **`timeOfPossession`** (present on `api.ts`'s
 shape as a string; confirm it's persisted per game).
 
@@ -446,9 +446,9 @@ Spacing: `5, 6, 7, 8, 10, 12, 13, 14, 17, 24` px. Row `padding: 7px 0` on the na
 
 1. `#64748b` and `#475569` are below the repo's readable-text floor (`CLAUDE.md`) and appear here
    only as borders. Every readable string bottoms out at `#94a3b8`.
-2. Team brand colours are never used for small text — the team abbr is `#94a3b8` and the avatar
+2. Team brand colors are never used for small text — the team abbr is `#94a3b8` and the avatar
    carries identity. (This is a change from the game page, where two teams need distinguishing; in a
-   24-team table, 24 brand colours is noise.)
+   24-team table, 24 brand colors is noise.)
 3. No emoji. Chevrons, magnifiers, ticks and the compare glyph are inline SVG.
 
 ## Files

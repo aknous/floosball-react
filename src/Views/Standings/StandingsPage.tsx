@@ -74,7 +74,7 @@ const StandingsPage: React.FC = () => {
     if (type === 'standings_update' || type === 'week_start' || type === 'game_end') load()
   }, [wsEvent, load])
 
-  const favouriteTeamId = user?.favoriteTeamId ?? null
+  const favoriteTeamId = user?.favoriteTeamId ?? null
 
   return (
     <>
@@ -108,7 +108,7 @@ const StandingsPage: React.FC = () => {
         </div>
 
         <span style={{ flex: 1 }} />
-        {/* ⚠️ No legend on a phone. It is a key to seed colours that the rows already
+        {/* ⚠️ No legend on a phone. It is a key to seed colors that the rows already
             carry, and at this width it was the thing pushing the header off screen. */}
         {!compact && <Legend />}
       </div>
@@ -124,9 +124,9 @@ const StandingsPage: React.FC = () => {
         ) : !leagues ? (
           <StandingsSkeleton />
         ) : view === 'division' ? (
-          <ByDivision leagues={leagues} favouriteTeamId={favouriteTeamId} compact={compact} />
+          <ByDivision leagues={leagues} favoriteTeamId={favoriteTeamId} compact={compact} />
         ) : (
-          <ByLeague leagues={leagues} favouriteTeamId={favouriteTeamId} compact={compact} />
+          <ByLeague leagues={leagues} favoriteTeamId={favoriteTeamId} compact={compact} />
         )}
       </div>
     </>

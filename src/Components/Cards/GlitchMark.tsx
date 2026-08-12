@@ -53,7 +53,7 @@ const GlitchMark: React.FC<Props> = ({ size, top, right, awakened, title }) => {
   // ⚠️ Gated at OFF only, not at reduced. This is a 260ms glyph flip every 2.6s — a slow,
   // low-frequency change rather than jitter, which is exactly what "reduced" says it keeps
   // ("A slow pulse. No jitter or strobing"). Off means no animation, so the mark holds its
-  // resting glyph; it keeps its violet colour either way, so the card is still marked.
+  // resting glyph; it keeps its violet color either way, so the card is still marked.
   const { intensity } = useGlitchIntensity()
   const [jolt, setJolt] = useState(false)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])

@@ -12,7 +12,7 @@ import { BG, BORDER, TEXT, ACCENT, FONT, NAV_WIDTH, font } from './tokens'
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 /**
- * The left rail: two labelled groups, THE LEAGUE and YOURS.
+ * The left rail: two labeled groups, THE LEAGUE and YOURS.
  *
  * The badge rules were settled explicitly in design review and are the reason this is a
  * bespoke component rather than a restyle of the old sidebar:
@@ -155,24 +155,24 @@ const AppNav: React.FC = () => {
 
   // Your team's tab shows a bare dot while that team is playing. It is a state ("there is
   // something happening to you right now"), not a queue, which is why it carries no count.
-  const favouriteTeamId = user?.favoriteTeamId ?? null
+  const favoriteTeamId = user?.favoriteTeamId ?? null
   const liveGames = Array.from(games.values()).filter(g => g.status === 'Active')
   // Team ids arrive as strings on the game payload and as a number on the user.
-  const favouriteKey = favouriteTeamId != null ? String(favouriteTeamId) : null
-  const yourTeamIsPlaying = favouriteKey != null && liveGames.some(
-    g => String(g.homeTeam?.id) === favouriteKey || String(g.awayTeam?.id) === favouriteKey,
+  const favoriteKey = favoriteTeamId != null ? String(favoriteTeamId) : null
+  const yourTeamIsPlaying = favoriteKey != null && liveGames.some(
+    g => String(g.homeTeam?.id) === favoriteKey || String(g.awayTeam?.id) === favoriteKey,
   )
 
   const [favTeamName, setFavTeamName] = useState<string | null>(null)
   useEffect(() => {
-    if (!favouriteTeamId) { setFavTeamName(null); return }
-    const cacheKey = `favTeamName:${favouriteTeamId}`
+    if (!favoriteTeamId) { setFavTeamName(null); return }
+    const cacheKey = `favTeamName:${favoriteTeamId}`
     try {
       const cached = localStorage.getItem(cacheKey)
       if (cached) setFavTeamName(cached)
     } catch { /* no cache, fetch below */ }
     let cancelled = false
-    fetch(`${API_BASE}/teams/${favouriteTeamId}`)
+    fetch(`${API_BASE}/teams/${favoriteTeamId}`)
       .then(r => r.json())
       .then(json => {
         const name = (json?.data ?? json)?.name
@@ -182,14 +182,14 @@ const AppNav: React.FC = () => {
       })
       .catch(() => { /* keep whatever we had */ })
     return () => { cancelled = true }
-  }, [favouriteTeamId])
+  }, [favoriteTeamId])
 
   // ⚠️ No team entry without a team (owner). It rendered as "Your team" with a
   // generic building icon and went to /front-office, which without a club is a page
   // about nobody. The offer to pick one lives on the front page's own team panel,
   // where there is a league on screen to pick from; the nav is for places you
   // already have.
-  const yoursItems = YOURS_ITEMS.filter(i => i.key !== 'team' || favouriteTeamId != null)
+  const yoursItems = YOURS_ITEMS.filter(i => i.key !== 'team' || favoriteTeamId != null)
   // ⚠️ Past the regular season, the bracket joins THE LEAGUE group — it is a view of
   // the competition, not one of the reader's own things. `currentWeek` climbs past 28
   // into the playoff weeks (29-32) and `seasonComplete` covers the gap between the
@@ -214,8 +214,8 @@ const AppNav: React.FC = () => {
 
     // The team entry wears its own crest — the page is that team's hub, so its badge is
     // more use than a generic building.
-    const icon = item.key === 'team' && favouriteTeamId
-      ? <img src={`/avatars/${favouriteTeamId}.png`} alt="" width={17} height={17} style={{ flexShrink: 0, borderRadius: '50%' }} />
+    const icon = item.key === 'team' && favoriteTeamId
+      ? <img src={`/avatars/${favoriteTeamId}.png`} alt="" width={17} height={17} style={{ flexShrink: 0, borderRadius: '50%' }} />
       : item.icon
 
     const label = item.key === 'team' && favTeamName ? favTeamName : item.label

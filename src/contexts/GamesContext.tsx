@@ -313,7 +313,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               // Per-game downs-per-series. Criticality chaos can set this to 3 or 5,
               // differing from the season-wide /api/rules value. This merge is an
               // explicit allowlist, so omitting it dropped the field on every update
-              // and the feed coloured 4th down as the do-or-die down in a 5-down game.
+              // and the feed colored 4th down as the do-or-die down in a 5-down game.
               downsPerSeries: (gsEvt as any).downsPerSeries ?? (curGame as any).downsPerSeries,
               yardsToFirstDown: gsEvt.distance ?? undefined,
               yardLine: gsEvt.yardLine ?? undefined,

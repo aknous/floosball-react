@@ -1044,7 +1044,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
 
                   {/* Packs — same slot the fantasy tab gives Card Packs.
                       Once today's has been bought the pack is GONE rather than
-                      shown greyed out: the buy button is the only thing on the
+                      shown grayed out: the buy button is the only thing on the
                       card, so a disabled one is just a card that lies about
                       being for sale. */}
                   {collectionPack && collectionPack.remainingToday === 0 && (

@@ -21,7 +21,7 @@ export interface NewsItem {
   teamId: number | null
   playerId: number | null
   stats: NewsStat[]
-  /** Which Core spoke, on `cores` rows. Drives the icon and the row's colour. */
+  /** Which Core spoke, on `cores` rows. Drives the icon and the row's color. */
   core?: string | null
   coreDisplayName?: string | null
   /** The text without the inline "Vera: " prefix the flat `text` field carries. */
@@ -40,7 +40,7 @@ export interface CoreTurn {
 }
 
 /**
- * Category colours, keyed on the backend's raw category. Anything unrecognised falls back
+ * Category colors, keyed on the backend's raw category. Anything unrecognized falls back
  * to muted rather than rendering an invisible dot — a new publisher shipping before this
  * map knows about it should still be readable.
  */
@@ -72,20 +72,20 @@ const CATEGORY_LABEL: Record<string, string> = {
   announcement: 'ANNOUNCEMENT',
 }
 
-// A Core speaks in their OWN colour, not the generic Cores colour — with the feed now
-// running several of their lines at a time, one flat colour made an exchange between two
+// A Core speaks in their OWN color, not the generic Cores color — with the feed now
+// running several of their lines at a time, one flat color made an exchange between two
 // of them read as one voice repeating itself.
 // A Cores row is the only one that speaks rather than reports, so it gets a name in the
 // label column where every other row gets a category.
 // ⚠️ No category label on a row (owner, 2026-08-08). A fixed 104px column reading CORES /
 // UPSET / SCHEDULE down the side said less than the line beside it did, and with the feed
-// now carrying Cores conversations it labelled four consecutive rows identically. The
-// icon and the colour still carry the kind; the line carries the story.
+// now carrying Cores conversations it labeled four consecutive rows identically. The
+// icon and the color still carry the kind; the line carries the story.
 const isCore = (item: NewsItem) =>
   item.rawCategory === 'cores' && !!item.core && !!item.coreDisplayName
 
 // Every Cores item renders as a conversation, a solo line being one of length 1. Uniform
-// treatment is what lets the speaker's name be coloured in both cases without a second
+// treatment is what lets the speaker's name be colored in both cases without a second
 // code path.
 //
 // ⚠️ The turns arrive already ordered. They must NOT be re-sorted here by anything the
@@ -102,7 +102,7 @@ const coreTurns = (item: NewsItem): CoreTurn[] | null => {
 
 // ⚠️ The flat `text` field carries the speaker inline ("Aris: ..."), because the older
 // highlight feed renders attribution that way. Here the name is drawn separately in the
-// Core's own colour, so a prefixed string renders it TWICE — "Aris Aris: Sodas just took
+// Core's own color, so a prefixed string renders it TWICE — "Aris Aris: Sodas just took
 // down Classics". Stripping rather than trusting `rawText` to be present also covers rows
 // written before that field existed.
 const stripSpeaker = (text: string, name?: string | null) => {
@@ -116,8 +116,8 @@ const colorFor = (item: NewsItem) =>
   || CATEGORY_COLOR[item.rawCategory] || TEXT.muted
 
 // The rail down the left of a row, which is what carries the KIND now that the category
-// label is gone. Deliberately the category colour even on a Cores row: an exchange has
-// several speakers, and tinting the whole row with the first one's colour would claim the
+// label is gone. Deliberately the category color even on a Cores row: an exchange has
+// several speakers, and tinting the whole row with the first one's color would claim the
 // conversation for whoever happened to open it.
 const railFor = (item: NewsItem) => CATEGORY_COLOR[item.rawCategory] || TEXT.muted
 
@@ -300,7 +300,7 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
               style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
                 padding: '7px 16px 7px 14px',
-                // A tint of the row's own colour, not a flat grey — it stays a schedule
+                // A tint of the row's own color, not a flat gray — it stays a schedule
                 // line, just one that separates rather than competes.
                 background: `${railFor(item)}${DIVIDER_TINT}`,
                 borderLeft: `2px solid ${railFor(item)}`,
