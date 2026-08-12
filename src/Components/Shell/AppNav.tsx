@@ -100,6 +100,22 @@ const BRACKET_ITEM: NavEntry = {
   icon: ICON('M2 3h6v3H5v3H3V6H2V3zm10 0h6v3h-1v3h-2V6h-3V3zM2 11h6v3H5v3H3v-3H2v-3zm10 0h6v3h-1v3h-2v-3h-3v-3z'),
 }
 
+/**
+ * The offseason home — the Season Recap and the live Draft Board.
+ *
+ * ⚠️ Both were unreachable before this: they lived in `DashboardNew`, which the
+ * restructure left at `/dashboard/legacy`. Same treatment as the Bracket above, for the
+ * same reason — a draft board in week 3 is an empty list, so the entry arrives with its
+ * moment. It sits with the LEAGUE items rather than the reader's own, because the draft
+ * is the league rebuilding itself, not anything the reader owns.
+ */
+const OFFSEASON_ITEM: NavEntry = {
+  key: 'offseason',
+  label: 'Offseason',
+  path: '/offseason',
+  icon: ICON('M10 1l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L2.2 6.7l5.4-.8L10 1z'),
+}
+
 const AWARDS_ITEM: NavEntry = {
   key: 'awards',
   label: 'Awards',
@@ -196,7 +212,13 @@ const AppNav: React.FC = () => {
   // Floos Bowl and the next season starting, so the entry survives the whole postseason
   // rather than vanishing the moment the last game ends.
   const inPlayoffs = seasonState.currentWeek > REGULAR_SEASON_WEEKS || seasonState.seasonComplete
-  const leagueItems = inPlayoffs ? [...LEAGUE_ITEMS, BRACKET_ITEM] : LEAGUE_ITEMS
+  // The offseason entry replaces the bracket rather than joining it: once the drafts are
+  // running the bracket is a settled result, and stacking two postseason entries pushes
+  // the standing pages down for a reader who still wants them.
+  const isOffseason = seasonState.currentWeekText === 'Offseason'
+  const leagueItems = isOffseason ? [...LEAGUE_ITEMS, OFFSEASON_ITEM]
+    : inPlayoffs ? [...LEAGUE_ITEMS, BRACKET_ITEM]
+      : LEAGUE_ITEMS
   // Awards voting is season's-end only, and it DOES notify — so it takes the dot
   // treatment, and it takes it at the end of the group.
   if (awardsOpen) yoursItems.push(AWARDS_ITEM)

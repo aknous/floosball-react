@@ -15,6 +15,9 @@ import TopPlayers, { type LeaderRow } from './TopPlayers'
 import YourTeamCard, { type RecentResult } from './YourTeamCard'
 import YourNumbers, { type NumbersCell, type NumbersAction } from './YourNumbers'
 import QuickPicks from './QuickPicks'
+import OffseasonHero from './OffseasonHero'
+import SeasonOverCard from './SeasonOverCard'
+import { useSeasonRecap } from '@/hooks/useSeasonRecap'
 import type { LeagueStandings, TeamStanding } from '@/Views/Standings/standingsTypes'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -80,6 +83,13 @@ const FrontPage: React.FC = () => {
   const { myEntry } = useFantasySnapshot(user?.id)
   const { event: wsEvent } = useSeasonWebSocket()
   const { seasonState } = useFloosball()
+  // ⚠️ The same string the legacy dashboard gated on, so the front page and the nav
+  // cannot disagree about whether it is the offseason.
+  const isOffseason = seasonState?.currentWeekText === 'Offseason'
+  // ⚠️ Gated, not merely unread. `/api/recap` is a consolidated payload and nothing on
+  // this page looks at it outside the offseason, so fetching it on every landing-page
+  // load for eleven months of the year would be pure waste.
+  const { recap: seasonRecap } = useSeasonRecap(isOffseason)
 
   // Desktop routes to the game's own page; mobile keeps the modal.
   const { openGame, modalGameId, closeGame } = useOpenGame()
@@ -379,11 +389,18 @@ const FrontPage: React.FC = () => {
           {/* The rail carries the SLATE now (owner). It was a static welcome message
               beside four nav links that duplicated the sidebar — nothing in it was
               live or unavailable elsewhere, which is exactly why it read as sparse. */}
-          <LiveTicker
-            games={gameList}
-            weekLabel={seasonState.currentWeekText || `Week ${seasonState.currentWeek}`}
-            onOpen={openGame}
-          />
+          {/* ⚠️ In the offseason there IS no slate, so the ticker renders an empty week
+              in the most prominent column on the landing page. The signpost to the
+              recap and the draft board goes here instead. */}
+          {isOffseason ? (
+            <OffseasonHero recap={seasonRecap} />
+          ) : (
+            <LiveTicker
+              games={gameList}
+              weekLabel={seasonState.currentWeekText || `Week ${seasonState.currentWeek}`}
+              onOpen={openGame}
+            />
+          )}
         </div>
 
         <div className="frontMain" style={{ minWidth: 0 }}>
@@ -440,7 +457,11 @@ const FrontPage: React.FC = () => {
             <YourNumbers cells={numbersCells} actions={numbersActions} />
             {/* Below the numbers: the slate, one game at a time. The rail is where a
                 reader's own business lives, and a pick is business. */}
-            <QuickPicks favoriteTeamId={favoriteTeamId} gamesActive={gamesActive} />
+            {/* Same trade in the rail: there are no fixtures to pick, so the slot
+                carries how the season finished instead. */}
+            {isOffseason
+              ? <SeasonOverCard recap={seasonRecap} userId={user?.id} />
+              : <QuickPicks favoriteTeamId={favoriteTeamId} gamesActive={gamesActive} />}
           </div>
         )}
       </div>
