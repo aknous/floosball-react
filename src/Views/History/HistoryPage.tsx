@@ -366,7 +366,20 @@ type RecordTab = 'game' | 'season' | 'career'
  * ⚠️ FANTASY IS IN THE BOOK TOO (owner). It was a fourth top-level tab, which put a
  * league record and a reader's own fantasy week at the same level as each other. They
  * are all records; the only question is whose.
+ *
+ * ⚠️ FANTASY IS TEMPORARILY HIDDEN (2026-08-13). `/api/history/user-records` returns a
+ * 500 on the DEPLOYED backend: it parses `weekly_card_bonuses.breakdowns_json` and
+ * iterates the result directly, which walks the KEYS of the current dict shape instead
+ * of the breakdown list. The backend fix is merged to main but NOT deployed — it landed
+ * too close to game start to risk a restart — so the subject is pulled rather than left
+ * pointing at an endpoint that errors.
+ *
+ * TO RESTORE: add 'fantasy' back to SUBJECTS. That is the whole revert. `UserRecordsView`
+ * and its rendering are deliberately left in place, so nothing has to be rebuilt.
  */
+// ⚠️ 'fantasy' is REMOVED here on purpose — see the note above before re-adding it.
+const SUBJECTS = ['players', 'teams'] as const
+
 const RecordBook: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const [subject, setSubject] = useState<'players' | 'teams' | 'fantasy'>('players')
 
@@ -377,7 +390,7 @@ const RecordBook: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
         backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px',
         width: 'fit-content',
       }}>
-        {(['players', 'teams', 'fantasy'] as const).map(sub => (
+        {SUBJECTS.map(sub => (
           <button
             key={sub}
             onClick={() => setSubject(sub)}
