@@ -127,9 +127,6 @@ const AWARDS_ITEM: NavEntry = {
 // either league group, because it is not a page — it is where you go to talk to people.
 const DISCORD_URL = 'https://discord.gg/b4DZn3mVfP'
 
-/** Matches the header's own idea of where the regular season ends. */
-const REGULAR_SEASON_WEEKS = 28
-
 const GROUP_LABEL: React.CSSProperties = {
   ...font(700, 10, 1, '0.16em'),
   color: TEXT.faint,
@@ -206,12 +203,21 @@ const AppNav: React.FC = () => {
   // where there is a league on screen to pick from; the nav is for places you
   // already have.
   const yoursItems = YOURS_ITEMS.filter(i => i.key !== 'team' || favoriteTeamId != null)
-  // ⚠️ Past the regular season, the bracket joins THE LEAGUE group — it is a view of
-  // the competition, not one of the reader's own things. `currentWeek` climbs past 28
-  // into the playoff weeks (29-32) and `seasonComplete` covers the gap between the
-  // Floos Bowl and the next season starting, so the entry survives the whole postseason
-  // rather than vanishing the moment the last game ends.
-  const inPlayoffs = seasonState.currentWeek > REGULAR_SEASON_WEEKS || seasonState.seasonComplete
+  // ⚠️ THE BACKEND ALREADY ANSWERS THIS — USE ITS FLAG, DO NOT RE-DERIVE IT.
+  // `/api/season` returns `bracket_available`, computed from whether the playoff seeds
+  // are FROZEN, and its own comment says it exists to drive this nav item. The old
+  // `Navbar.js` and `Sidebar.tsx` both read it.
+  //
+  // This nav re-derived the answer from week arithmetic instead — `currentWeek > 28 ||
+  // seasonComplete` — which is a DIFFERENT question and a later one. Seeds freeze when
+  // the playoff field is set; week 29 is when the first game kicks off. Between those
+  // two moments the bracket is open for entries and the only link to it was missing, so
+  // the challenge was unreachable during the window it exists for. Reported as the
+  // Bracket tab simply not appearing.
+  //
+  // `seasonComplete` is kept as a fallback so the entry survives the gap between the
+  // Floos Bowl and the next season, where the frozen seeds have been cleared.
+  const inPlayoffs = seasonState.bracketAvailable || seasonState.seasonComplete
   // The offseason entry replaces the bracket rather than joining it: once the drafts are
   // running the bracket is a settled result, and stacking two postseason entries pushes
   // the standing pages down for a reader who still wants them.
