@@ -131,9 +131,29 @@ const GameBoardPage: React.FC = () => {
     return map
   }, [user, isPast, pickGames, submitPick])
 
-  const pickFor = useCallback((g: { homeTeam: { id: string }; awayTeam: { id: string } }) =>
-    pickByFixture.get(`${g.homeTeam?.id}-${g.awayTeam?.id}`) ?? null,
-  [pickByFixture])
+  /**
+   * ⚠️ A LIVE GAME IS NEVER PICKABLE, AND THIS PAGE IS THE AUTHORITY ON LIVE.
+   *
+   * The API already closes picks at kickoff (`_pickemPickable` rejects Active and Final)
+   * and `usePickEm` refetches on `game_start`, so `pickable` is usually right on its own.
+   * But that leaves a window: between the kickoff and the refetch landing, or if the
+   * socket event is missed entirely, the cached flag still says open and the reader gets
+   * a button that submits into a rejection.
+   *
+   * The board holds the live status of every game already, updated continuously — so the
+   * gate is applied HERE against `game.status` rather than trusting a fetched flag. Cheap,
+   * and it makes a dropped event a non-event.
+   */
+  const pickFor = useCallback((g: {
+    status?: string
+    homeTeam: { id: string }
+    awayTeam: { id: string }
+  }) => {
+    const state = pickByFixture.get(`${g.homeTeam?.id}-${g.awayTeam?.id}`)
+    if (!state) return null
+    const started = g.status === 'Active' || g.status === 'Final'
+    return started ? { ...state, pickable: false } : state
+  }, [pickByFixture])
   const gameList = useMemo(
     () => (isPast ? pastGames : Array.from(games.values())),
     [isPast, pastGames, games],
