@@ -120,7 +120,7 @@ Bar/badge FILLS use a team's raw primary. **Text does not.** `readableTeamColor(
 | `/front-office` | `FrontOfficePage` | tabs: Overview / Markets / Votes |
 | `/achievements` | `AchievementsPage` | Rookie Goals + Season Goals |
 | `/offseason` | `Views/Offseason/OffseasonPage` | Season Recap + live Draft Board, one page with a toggle; the view rides the URL (`?view=draft`) so the front page can link straight at the board. Nav entry appears only while `currentWeekText === 'Offseason'`, and the page redirects to `/` outside it |
-| `/history` | `HistoryPage` | seasons / records / user-records |
+| `/history` | `HistoryPage` | Seasons / **Record Book** / Fantasy Records / Hall of Fame. ⚠️ **THE RECORD BOOK HOLDS BOTH PLAYERS AND TEAMS**, split by a SUBJECT switch inside it (`RecordBook`). They were two sibling tabs — "Record Book" next to "Team Records" — which promised a book that excluded half the league; the split that matters is whether a record belongs to a person or a club. ⚠️ The two sides do NOT offer the same scopes: a player has a career, a club does not (no career team-stat table, and a club's whole history is what the Seasons tab already is), so Teams shows Single Season and Single Game only. The switch sits ABOVE the scope pills rather than mixed into them, because one flat row of five would hide that asymmetry. |
 | `/about` | `AboutPage` | Guide (no auth required) |
 | `/admin` | `AdminPage` | separate layout, no auth gate component |
 

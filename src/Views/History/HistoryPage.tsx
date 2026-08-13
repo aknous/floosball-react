@@ -7,18 +7,20 @@ import HallOfFame from '@/Views/Players/HallOfFame'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type ViewMode = 'seasons' | 'records' | 'team-records' | 'user-records' | 'hall-of-fame'
+type ViewMode = 'seasons' | 'records' | 'user-records' | 'hall-of-fame'
 
 /**
  * The tabs on offer.
  *
- * ⚠️ 'team-records' was held back while its endpoint (`GET /api/history/team-records`)
- * was still undeployed — this repo ships on its own, so the frontend can and does get
- * ahead of the backend. Restored once it went live. `TeamRecordsView` still tolerates the
- * endpoint being absent (see its fetch), so a future ordering mistake shows an empty
- * state rather than breaking the page.
+ * ⚠️ THERE IS NO SEPARATE 'team-records' TAB. Team records ARE records, and a "Record
+ * Book" sitting beside a "Team Records" as equals promised a book that excluded half the
+ * league. They are one tab now, split by SUBJECT inside it (`RecordBook` below).
+ *
+ * `TeamRecordsView` still tolerates its endpoint being absent (see its fetch), so a
+ * frontend that ships ahead of the backend shows an empty state rather than breaking —
+ * which it did once, when this repo deployed first.
  */
-const TABS: ViewMode[] = ['seasons', 'records', 'team-records', 'user-records', 'hall-of-fame']
+const TABS: ViewMode[] = ['seasons', 'records', 'user-records', 'hall-of-fame']
 
 
 interface SeasonSummary {
@@ -103,7 +105,6 @@ const HistoryPage: React.FC = () => {
           <button key={m} onClick={() => setMode(m)} style={pillStyle(mode === m)}>
             {m === 'seasons' ? 'Seasons'
               : m === 'records' ? 'Record Book'
-              : m === 'team-records' ? 'Team Records'
               : m === 'user-records' ? 'Fantasy Records'
               : 'Hall of Fame'}
           </button>
@@ -111,8 +112,7 @@ const HistoryPage: React.FC = () => {
       </div>
 
       {mode === 'seasons' && <SeasonsView isMobile={isMobile} />}
-      {mode === 'records' && <RecordsView isMobile={isMobile} />}
-      {mode === 'team-records' && <TeamRecordsView isMobile={isMobile} />}
+      {mode === 'records' && <RecordBook isMobile={isMobile} />}
       {mode === 'user-records' && <UserRecordsView isMobile={isMobile} />}
       {mode === 'hall-of-fame' && <HallOfFame />}
     </div>
@@ -350,6 +350,53 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 // ─── Record book view ──────────────────────────────────────────────────────
 
 type RecordTab = 'game' | 'season' | 'career'
+
+/**
+ * The Record Book: players and teams, one tab.
+ *
+ * ⚠️ These used to be two sibling tabs, "Record Book" and "Team Records", which promised
+ * a book that excluded half the league. The split that actually matters is the SUBJECT —
+ * whether a record belongs to a person or a club — so that is what this switch carries,
+ * and each side keeps its own scope pills below it.
+ *
+ * ⚠️ The two sides do NOT offer the same scopes: a player has a career, a club does not
+ * (there is no career team-stat table, and a club's "career" is just its whole history,
+ * which the Seasons tab already tells). So Teams offers Single Season and Single Game
+ * only, and the switch is deliberately ABOVE the scope pills rather than mixed into them
+ * — one flat row of five would have hidden that asymmetry.
+ */
+const RecordBook: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
+  const [subject, setSubject] = useState<'players' | 'teams'>('players')
+
+  return (
+    <div>
+      <div style={{
+        display: 'flex', gap: '2px', marginBottom: '12px',
+        backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px',
+        width: 'fit-content',
+      }}>
+        {(['players', 'teams'] as const).map(sub => (
+          <button
+            key={sub}
+            onClick={() => setSubject(sub)}
+            style={{
+              padding: '6px 14px', fontSize: '11px', fontWeight: 700,
+              borderRadius: '6px', border: 'none', cursor: 'pointer',
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+              backgroundColor: subject === sub ? '#334155' : 'transparent',
+              color: subject === sub ? '#e2e8f0' : '#64748b',
+              fontFamily: 'inherit',
+            }}
+          >{sub === 'players' ? 'Players' : 'Teams'}</button>
+        ))}
+      </div>
+
+      {subject === 'players'
+        ? <RecordsView isMobile={isMobile} />
+        : <TeamRecordsView isMobile={isMobile} />}
+    </div>
+  )
+}
 
 const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const [data, setData] = useState<RecordsResponse | null>(null)
