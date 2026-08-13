@@ -281,7 +281,13 @@ const PrognosticationsPage: React.FC = () => {
                 {!collapsed && (
                   <div style={{
                     display: 'grid', rowGap: '10px', columnGap: '30px',
-                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(400px, 1fr))',
+                    // ⚠️ 480, NOT 400 — MEASURED. A Side is a 34px crest, the city/name block, and a
+                    // 19px win% sharing one row with space-between, so the name gets whatever is
+                    // left after all three. At a 400px card that is **62px against the 97px**
+                    // "Grillmeisters" needs, and most club names truncated. 480 is the first
+                    // width where the longest name in the league fits whole. Reported as the pick
+                    // buttons being too narrow.
+                    gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(480px, 1fr))',
                   }}>
                     {slot.games.map(g => (
                       <MatchupCard

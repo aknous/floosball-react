@@ -41,6 +41,21 @@ const ICON = (d: string) => (
   </svg>
 )
 
+/**
+ * Stroked sibling to `ICON`, on the 24-box the older `Sidebar` marks were drawn in.
+ *
+ * Some marks only read as line art. A tournament bracket is lines MERGING — fill the
+ * same shape and you get four disconnected corner ticks with no tree in them, which is
+ * what the filled version here became.
+ */
+const LINE_ICON = (paths: string[]) => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+       style={{ flexShrink: 0 }}>
+    {paths.map((d) => <path key={d} d={d} />)}
+  </svg>
+)
+
 // No Teams entry (owner) — every standings row links to its team page, so a separate
 // index was a second door to the same place.
 const LEAGUE_ITEMS: NavEntry[] = [
@@ -97,7 +112,14 @@ const BRACKET_ITEM: NavEntry = {
   key: 'bracket',
   label: 'Bracket',
   path: '/bracket',
-  icon: ICON('M2 3h6v3H5v3H3V6H2V3zm10 0h6v3h-1v3h-2V6h-3V3zM2 11h6v3H5v3H3v-3H2v-3zm10 0h6v3h-1v3h-2v-3h-3v-3z'),
+  // ⚠️ The ORIGINAL mark, back from `Sidebar` (owner). The filled version that replaced
+  // it read as four corner ticks rather than a bracket — a tournament tree is lines
+  // merging to a final, and there is no tree left once you fill it.
+  icon: LINE_ICON([
+    'M6 5h4M6 11h4M10 5v6M10 8h4',
+    'M6 13h4M6 19h4M10 13v6M10 16h4',
+    'M14 8v8M14 12h3',
+  ]),
 }
 
 /**
@@ -146,7 +168,7 @@ const AmbientCount: React.FC<{ value: number }> = ({ value }) => (
 
 const AppNav: React.FC = () => {
   const location = useLocation()
-  const { user } = useAuth()
+  const { user, getToken } = useAuth()
   const { unclaimedCount } = useAchievements()
   const { games } = useGames()
   const { seasonState } = useFloosball()
@@ -218,6 +240,46 @@ const AppNav: React.FC = () => {
   // `seasonComplete` is kept as a fallback so the entry survives the gap between the
   // Floos Bowl and the next season, where the frozen seeds have been cleared.
   const inPlayoffs = seasonState.bracketAvailable || seasonState.seasonComplete
+
+  /**
+   * A dot on Bracket until a ballot is in.
+   *
+   * The nav's own rule is that a dot goes only on a tab that genuinely notifies —
+   * Achievements earns one because it is a queue you can empty. An unfilled bracket is
+   * exactly that: it appears once, it wants an action, and the action ends it. Without
+   * the dot the entry just materialises mid-season and says nothing about being due.
+   *
+   * ⚠️ Only asked once the bracket is actually available, so this costs nothing for the
+   * ~28 weeks it does not apply, and only for a signed-in reader (the endpoint is
+   * per-user). Cleared by the `floosball:bracket-submitted` event rather than polling —
+   * the submit already knows.
+   */
+  const [hasBracket, setHasBracket] = useState(true)   // assume in, so no dot flashes on load
+  useEffect(() => {
+    if (!inPlayoffs || !user) { setHasBracket(true); return }
+    let cancelled = false
+    const load = async () => {
+      try {
+        const tok = await getToken()
+        if (!tok) return
+        const res = await fetch(`${API_BASE}/playoffs/bracket/me`, {
+          headers: { Authorization: `Bearer ${tok}` },
+        })
+        const json = await res.json()
+        if (!cancelled) setHasBracket(!!(json?.data?.hasBracket))
+      } catch {
+        // Leave it as-is; a failed check should not invent a notification.
+      }
+    }
+    load()
+    const onSubmitted = () => setHasBracket(true)
+    window.addEventListener('floosball:bracket-submitted', onSubmitted)
+    return () => {
+      cancelled = true
+      window.removeEventListener('floosball:bracket-submitted', onSubmitted)
+    }
+  }, [inPlayoffs, user, getToken])
+  const bracketDue = inPlayoffs && !!user && !hasBracket
   // The offseason entry replaces the bracket rather than joining it: once the drafts are
   // running the bracket is a settled result, and stacking two postseason entries pushes
   // the standing pages down for a reader who still wants them.
@@ -238,6 +300,8 @@ const AppNav: React.FC = () => {
     if (item.key === 'games' && liveGames.length > 0) trailing = <AmbientCount value={liveGames.length} />
     else if (item.key === 'achievements' && unclaimedCount > 0) trailing = <NotificationDot color={ACCENT.warning} count={unclaimedCount} />
     else if (item.key === 'team' && yourTeamIsPlaying) trailing = <NotificationDot color={ACCENT.ownTeam} />
+    // A bracket waiting to be filled in — a queue you can empty, so it earns the dot.
+    else if (item.key === 'bracket' && bracketDue) trailing = <NotificationDot color={ACCENT.warning} />
     else if (item.key === 'awards') trailing = <NotificationDot color={ACCENT.warning} />
 
     // The team entry wears its own crest — the page is that team's hub, so its badge is

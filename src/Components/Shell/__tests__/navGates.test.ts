@@ -46,6 +46,31 @@ describe('nav gates', () => {
     expect(NAV).toContain("currentWeekText === 'Offseason'")
   })
 
+  it('the Bracket carries a dot until a ballot is in', () => {
+    // The nav's own rule: a dot goes only on a tab that genuinely notifies, and an
+    // unfilled bracket is a queue you can empty — it appears once, wants an action, and
+    // the action ends it.
+    expect(NAV).toContain('bracketDue')
+    expect(NAV).toMatch(/item\.key === 'bracket' && bracketDue/)
+  })
+
+  it('the dot is cleared by the submit event, not by polling', () => {
+    // ⚠️ The submit already knows it happened; the nav should not ask repeatedly.
+    expect(NAV).toContain("'floosball:bracket-submitted'")
+  })
+
+  it('the bracket check is gated on availability and a signed-in reader', () => {
+    // ⚠️ It is a per-user endpoint, and for ~28 weeks a season there is nothing to ask
+    // about — so it must cost nothing outside the window.
+    expect(NAV).toMatch(/if \(!inPlayoffs \|\| !user\) \{ setHasBracket\(true\); return \}/)
+  })
+
+  it('a failed check does not invent a notification', () => {
+    // Assume the ballot is in until told otherwise, so a dot never flashes on load or
+    // after a network blip.
+    expect(NAV).toMatch(/useState\(true\)\s*\/\/ assume in/)
+  })
+
   it('Awards appears only while a voting window is open', () => {
     expect(NAV).toMatch(/if \(awardsOpen\) yoursItems\.push\(AWARDS_ITEM\)/)
   })
