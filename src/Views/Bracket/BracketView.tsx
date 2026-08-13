@@ -51,6 +51,28 @@ function normalize(conferences: Record<string, BracketSeedTeam[]>, picks: Bracke
 
 type ViewMode = 'picks' | 'results'
 
+/**
+ * The narrowest a bracket column may be, in px.
+ *
+ * MEASURED rather than chosen: the row's fixed chrome is 100px (seed 14 + crest 24 +
+ * score 16 + three 8px gaps + 20px padding + 2px border) and the longest club name in
+ * the league renders at 82.9px (700 weight, 13px). Seven of these plus the gaps is
+ * ~1389px, which is more than the content column offers on a 1440 screen once the
+ * sidebar is taken out — so the bracket scrolls horizontally there rather than
+ * truncating, which is the trade the old `minWidth: 0` had backwards.
+ */
+const BRACKET_COL_MIN = 184
+
+/**
+ * Extra width the Floos Bowl column needs over a league column.
+ *
+ * Its matchup is wrapped in a bordered, padded box that the league columns do not have,
+ * and that box eats into the same TeamPick rows: 7px of padding and 1px of border on
+ * each side. Without accounting for it the centre column collapses hardest of the seven,
+ * which is exactly how it was reported — rounds 1-3 fine, the final squashed.
+ */
+const FLOOSBOWL_BOX_CHROME = 16
+
 const BracketView: React.FC = () => {
   const { template, mine, leaderboard, loading, submitting, submit } = usePlayoffBracket()
   const [picks, setPicks] = useState<BracketPredictions>({})
@@ -232,9 +254,18 @@ const BracketView: React.FC = () => {
     const ms = ((displayTree as any)[round] as Record<string, Matchup[]>)[conf] || []
     return (
       <div style={{
-        // Desktop: shrink to share the container width so the whole bracket
-        // fits without horizontal scroll. Mobile: fixed width + scroll.
-        flex: isMobile ? '0 0 auto' : '1 1 0', minWidth: isMobile ? 150 : 0,
+        // ⚠️ A COLUMN HAS A FLOOR. This was `flex: '1 1 0'` with `minWidth: 0` on desktop,
+        // to "fit without horizontal scroll" — but a flex item with no floor shrinks to
+        // whatever is left, so the names truncated instead and the `overflowX: auto` on
+        // the container could never fire. Trading legibility for no-scroll is the wrong
+        // way round: a name you cannot read is worse than a scrollbar.
+        //
+        // MEASURED at 700 13px: the row's chrome (seed 14 + crest 24 + score 16 + gaps +
+        // padding + border) is 100px and the league's longest name, "Grillmeisters", is
+        // 82.9px — so 184 is the width at which nothing truncates. Columns still GROW to
+        // share any extra room; they just stop collapsing.
+        flex: isMobile ? '0 0 auto' : '1 1 auto',
+        minWidth: isMobile ? 150 : BRACKET_COL_MIN,
         display: 'flex', flexDirection: 'column',
       }}>
         <ColHeader round={round} side={side} />
@@ -256,7 +287,14 @@ const BracketView: React.FC = () => {
     const pr = mine?.perRound?.floosbowl
     return (
       <div style={{
-        flex: isMobile ? '0 0 auto' : '1 1 0', minWidth: isMobile ? 160 : 0,
+        // ⚠️ The centre column was missed when the others got their floor, and it is the
+        // one that needed it MOST: its matchup sits inside a bordered, padded box, so the
+        // same TeamPick rows have 16px LESS to work with than in a league column
+        // (7px padding + 1px border, both sides). Left at `minWidth: 0` it collapsed
+        // hardest of the seven — reported as the Floos Bowl buttons being squashed while
+        // rounds 1-3 looked fine.
+        flex: isMobile ? '0 0 auto' : '1 1 auto',
+        minWidth: isMobile ? 160 : BRACKET_COL_MIN + FLOOSBOWL_BOX_CHROME,
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 10 }}>
@@ -300,7 +338,7 @@ const BracketView: React.FC = () => {
   )
 
   return (
-    <div style={{ padding: isMobile ? '14px 10px' : 20, maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '14px 10px' : 20, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
         <h2 style={{ color: C.text, fontSize: isMobile ? 16 : 18, margin: 0 }}>Playoff Bracket Challenge</h2>
         {mine?.hasBracket && (

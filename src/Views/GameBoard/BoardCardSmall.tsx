@@ -8,6 +8,7 @@ import {
 } from './boardPieces'
 import { FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
+import GaugePick, { type PickState } from './pickControl'
 
 /**
  * SMALL density: four across, glanceable. ~286px wide and a uniform 179px tall, so 16
@@ -28,9 +29,11 @@ type Props = {
   pinnedAccent: string
   scoringModel: ScoringModel
   onOpen: (id: number) => void
+  /** See BoardCardLarge — null when picks do not apply. */
+  pick?: PickState | null
 }
 
-const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, scoringModel, onOpen }) => {
+const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, scoringModel, onOpen, pick }) => {
   const live = game.status === 'Active'
   const isFinal = game.status === 'Final'
   const home = game.homeTeam
@@ -137,15 +140,13 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           simply drop it rather than showing an empty strip. */}
       {!isFinal && (
         <div style={{ paddingTop: '12px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', alignItems: 'center', gap: '9px' }}>
-          <span style={{
-            ...font(awayWp > homeWp ? 800 : 600, 11), color: awayText,
-            ...TABULAR, whiteSpace: 'nowrap', flexShrink: 0,
-          }}>{away?.abbr} {awayWp}%</span>
+          {/* Same control as the large card, one size down — the two boards must not
+              drift on what a pick looks like or where it lives. */}
+          <GaugePick side="away" teamId={away?.id} abbr={away?.abbr} pct={awayWp}
+                     favored={awayWp > homeWp} color={awayText} size={11} pick={pick} />
           <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={3} />
-          <span style={{
-            ...font(homeWp > awayWp ? 800 : 600, 11), color: homeText,
-            ...TABULAR, whiteSpace: 'nowrap', flexShrink: 0,
-          }}>{homeWp}% {home?.abbr}</span>
+          <GaugePick side="home" teamId={home?.id} abbr={home?.abbr} pct={homeWp}
+                     favored={homeWp > awayWp} color={homeText} size={11} pick={pick} />
         </div>
       )}
     </div>

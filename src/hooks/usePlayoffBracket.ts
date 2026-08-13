@@ -62,6 +62,9 @@ export function usePlayoffBracket(): PlayoffBracketData {
         return false
       }
       await fetchAll()
+      // The nav shows a dot on Bracket until a ballot exists; it has no reason to poll
+      // for that, so a submit says so. Same convention as the other floosball:* events.
+      window.dispatchEvent(new Event('floosball:bracket-submitted'))
       return true
     } catch {
       alert('Submit failed')

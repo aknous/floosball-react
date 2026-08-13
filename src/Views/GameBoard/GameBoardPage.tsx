@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useGames } from '@/contexts/GamesContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
@@ -15,6 +15,8 @@ import { rankGames, chipFor, type Ranked } from './ranking'
 import { PulsingDot } from './boardPieces'
 import ActiveRulesStrip from './ActiveRulesStrip'
 import { useNextGameCountdown } from '@/hooks/useNextGameCountdown'
+import { usePickEm } from '@/hooks/usePickEm'
+import type { PickState } from './pickControl'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const DENSITY_KEY = 'floosball:boardDensity'
@@ -99,6 +101,59 @@ const GameBoardPage: React.FC = () => {
   }, [viewWeek])
 
   const isPast = viewWeek !== null
+
+  /**
+   * Prognostication picks, laid over the board.
+   *
+   * ⚠️ CURRENT WEEK ONLY. `usePickEm` returns this week's fixtures, and the board can be
+   * scrolled back to a past one — so a past-week view is handed `null` for every card
+   * rather than this week's picks against last week's games.
+   *
+   * ⚠️ KEYED BY THE TEAM PAIR, NEVER BY LIST POSITION. The two lists are not guaranteed
+   * parallel and never were: measured on production during a live week, index-matching
+   * put 11 of 16 pick-em cards against the wrong game, each carrying the previous card's
+   * home team. The API learned this the same way — see `_liveGameFor`.
+   */
+  const { games: pickGames, submitPick } = usePickEm()
+  const pickByFixture = useMemo(() => {
+    const map = new Map<string, PickState>()
+    if (!user || isPast) return map
+    for (const g of pickGames) {
+      const key = `${g.homeTeam?.id}-${g.awayTeam?.id}`
+      map.set(key, {
+        userPick: g.userPick ?? null,
+        pickable: !!g.pickable,
+        correct: g.result?.correct ?? null,
+        points: g.result?.pointsEarned ?? null,
+        onPick: (teamId: number) => { submitPick(g.gameIndex, teamId) },
+      })
+    }
+    return map
+  }, [user, isPast, pickGames, submitPick])
+
+  /**
+   * ⚠️ A LIVE GAME IS NEVER PICKABLE, AND THIS PAGE IS THE AUTHORITY ON LIVE.
+   *
+   * The API already closes picks at kickoff (`_pickemPickable` rejects Active and Final)
+   * and `usePickEm` refetches on `game_start`, so `pickable` is usually right on its own.
+   * But that leaves a window: between the kickoff and the refetch landing, or if the
+   * socket event is missed entirely, the cached flag still says open and the reader gets
+   * a button that submits into a rejection.
+   *
+   * The board holds the live status of every game already, updated continuously — so the
+   * gate is applied HERE against `game.status` rather than trusting a fetched flag. Cheap,
+   * and it makes a dropped event a non-event.
+   */
+  const pickFor = useCallback((g: {
+    status?: string
+    homeTeam: { id: string }
+    awayTeam: { id: string }
+  }) => {
+    const state = pickByFixture.get(`${g.homeTeam?.id}-${g.awayTeam?.id}`)
+    if (!state) return null
+    const started = g.status === 'Active' || g.status === 'Final'
+    return started ? { ...state, pickable: false } : state
+  }, [pickByFixture])
   const gameList = useMemo(
     () => (isPast ? pastGames : Array.from(games.values())),
     [isPast, pastGames, games],
@@ -204,6 +259,7 @@ const GameBoardPage: React.FC = () => {
             pinnedAccent={pinnedAccent}
             scoringModel={scoringModel}
             onOpen={openGame}
+            pick={pickFor(game)}
           />
         ) : (
           <BoardCardSmall
@@ -214,6 +270,7 @@ const GameBoardPage: React.FC = () => {
             pinnedAccent={pinnedAccent}
             scoringModel={scoringModel}
             onOpen={openGame}
+            pick={pickFor(game)}
           />
         )
       ))}

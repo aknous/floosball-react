@@ -5,6 +5,7 @@ import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
 import { lastPlaySummary, downAndDistance } from './lastPlaySummary'
 import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
+import GaugePick, { type PickState } from './pickControl'
 import {
   Crest, MomentumFlame, InterestChip, SectionLabel, SplitBar,
   CHIP_COLOR, inRedZone, RED_ZONE, type ChipKind,
@@ -107,9 +108,12 @@ type Props = {
   pinnedAccent: string
   scoringModel: ScoringModel
   onOpen: (id: number) => void
+  /** Prognostication state for THIS fixture, or null when picks do not apply
+      (signed out, or the board is showing a past week — see pickControl). */
+  pick?: PickState | null
 }
 
-const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, scoringModel, onOpen }) => {
+const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, scoringModel, onOpen, pick }) => {
   const live = game.status === 'Active'
   const isFinal = game.status === 'Final'
   const home = game.homeTeam
@@ -320,13 +324,13 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               their own percentage, so the bar is read against two labeled numbers
               rather than one favoured side and a sparkline. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ ...font(awayWp > homeWp ? 800 : 600, 14), color: awayText, ...TABULAR, whiteSpace: 'nowrap' }}>
-              {away?.abbr} {awayWp}%
-            </span>
+            {/* The gauge labels ARE the pick buttons — same place the old dashboard put
+                them, and the only spot on the card already flanking the bar. */}
+            <GaugePick side="away" teamId={away?.id} abbr={away?.abbr} pct={awayWp}
+                       favored={awayWp > homeWp} color={awayText} size={14} pick={pick} />
             <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={6} />
-            <span style={{ ...font(homeWp > awayWp ? 800 : 600, 14), color: homeText, ...TABULAR, whiteSpace: 'nowrap' }}>
-              {homeWp}% {home?.abbr}
-            </span>
+            <GaugePick side="home" teamId={home?.id} abbr={home?.abbr} pct={homeWp}
+                       favored={homeWp > awayWp} color={homeText} size={14} pick={pick} />
           </div>
         </div>
       )}
