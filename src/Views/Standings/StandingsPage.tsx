@@ -4,6 +4,7 @@ import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { BG, BORDER, TEXT, ACCENT, PLAYOFF, FONT, font } from '@/Components/Shell/tokens'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { SHELL_MOBILE_MAX } from '@/Components/Shell/tokens'
+import { TrophyIcon } from './standingsPieces'
 import ByDivision from './ByDivision'
 import ByLeague from './ByLeague'
 import type { LeagueStandings, StandingsView } from './standingsTypes'
@@ -153,10 +154,22 @@ const Legend: React.FC = () => {
       <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.muted }}>{label}</span>
     </span>
   )
+  // ⚠️ A HEAVIER RING is the whole clinched treatment, so the legend has to show the
+  // difference rather than describe it — the two swatches sit next to each other for
+  // exactly that reason.
+  const clinchedSwatch = (
+    <span style={{
+      boxSizing: 'border-box', width: '15px', height: '15px', borderRadius: '50%',
+      border: `2px solid ${PLAYOFF.wildcardRing}`, background: PLAYOFF.wildcardFill,
+      display: 'block',
+    }} />
+  )
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
       {item(swatch(PLAYOFF.topSeedRing, PLAYOFF.topSeedFill, PLAYOFF.topSeedText), 'TOP SEED')}
-      {item(swatch(PLAYOFF.divisionRing, PLAYOFF.divisionFill), 'DIVISION WINNER')}
+      {item(swatch(PLAYOFF.divisionRing, PLAYOFF.divisionFill), 'DIVISION SEED')}
+      {item(<TrophyIcon size={14} />, 'DIVISION WON')}
+      {item(clinchedSwatch, 'CLINCHED')}
       {item(<span style={{ ...font(800, 11), color: ACCENT.negative }}>×</span>, 'ELIMINATED')}
     </div>
   )
