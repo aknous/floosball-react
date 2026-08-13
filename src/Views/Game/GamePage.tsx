@@ -5,6 +5,7 @@ import { GameModalNew, PAGE_THREE_COLUMN_MIN } from '@/Components/GameModalNew'
 import RallyButton from '@/Components/GameModal/RallyPanel'
 import CheerBar from '@/Components/CheerBar'
 import TeamHoverCard from '@/Components/TeamHoverCard'
+import HoverTooltip from '@/Components/HoverTooltip'
 import { useGames } from '@/contexts/GamesContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
@@ -409,12 +410,58 @@ const GamePage: React.FC = () => {
     return [label, clock].filter(Boolean).join(' · ') || '—'
   })()
 
+  /**
+   * Timeouts left, as pips.
+   *
+   * Three marks rather than a number, because the reader's question is "can they
+   * still stop the clock?" and that is a glance, not an arithmetic. A spent
+   * timeout stays visible but hollow, so the row never changes width as they go
+   * and you can still see how many there WERE.
+   *
+   * ⚠️ Renders nothing when `remaining` is null, which is every non-live game.
+   * The band is shared by finals and previews, and a full set of pips on a
+   * finished game reads as though the clock is still running.
+   */
+  const TimeoutPips: React.FC<{ remaining: number | null | undefined }> = ({ remaining }) => {
+    if (remaining == null || !Number.isFinite(Number(remaining))) return null
+    const left = Math.max(0, Math.min(3, Number(remaining)))
+    return (
+      <HoverTooltip text={`${left} timeout${left === 1 ? '' : 's'} left`}>
+        <span
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}
+          aria-label={`${left} timeout${left === 1 ? '' : 's'} left`}
+        >
+          {[0, 1, 2].map(i => (
+            <span
+              key={i}
+              style={{
+                width: '9px', height: '3px', borderRadius: '2px', display: 'block',
+                // Spent pips recede but stay legible as an outline, so three-used
+                // and one-used are distinguishable at a glance.
+                backgroundColor: i < left ? TEXT.muted : 'transparent',
+                border: i < left ? 'none' : `1px solid ${BORDER.hairline}`,
+                boxSizing: 'border-box',
+              }}
+            />
+          ))}
+        </span>
+      </HoverTooltip>
+    )
+  }
+
   const teamRow = (side: 'home' | 'away') => {
     const team = side === 'home' ? gameData.homeTeam : gameData.awayTeam
     const score = side === 'home' ? gameData.homeScore : gameData.awayScore
     const hasBall = isLive && gameData.possession === team.abbr
     const hasMomentum = isLive && gameData.momentumTeam === team.abbr
     const record = side === 'home' ? gameData.homeRecord : gameData.awayRecord
+    // ⚠️ LIVE ONLY. Timeouts are a resource you are watching someone spend; on a
+    // finished game they are a trailing number with nothing left to decide. They
+    // also reset to three at halftime (floosball_game.py advanceQuarter), so the
+    // pips refilling mid-game is correct rather than a glitch.
+    const timeouts = isLive
+      ? (side === 'home' ? gameData.homeTimeouts : gameData.awayTimeouts)
+      : null
     const periods = periodLine?.rows.find(r => r.side === side)?.values ?? []
     const tone = periodLine?.tone
     // A won frame reads green, a halved one amber, a lost one recedes. Everything
@@ -451,6 +498,7 @@ const GamePage: React.FC = () => {
             <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
               <span style={{ ...font(500, 11, 1, '0.04em'), color: TEXT.muted, display: 'block' }}>{team.city}</span>
               {record && <span style={{ ...font(500, 10), color: TEXT.muted }}>{record}</span>}
+              <TimeoutPips remaining={timeouts} />
             </span>
             <Link to={`/team/${team.id}`} style={{ textDecoration: 'none' }}>
               <span style={{
