@@ -4,7 +4,7 @@ import { BG, BORDER, TEXT, PLAYOFF, font } from '@/Components/Shell/tokens'
 import { Crest } from '@/Views/GameBoard/boardPieces'
 import {
   SeedBadge, TeamCell, Last5, GamesBack, Differential, pct, record,
-  COLUMN_HEADER, ownRowStyle, TrophyIcon,
+  COLUMN_HEADER, ownRowStyle, clinchedRowStyle, TrophyIcon,
 } from './standingsPieces'
 import type { LeagueStandings, TeamStanding } from './standingsTypes'
 
@@ -103,7 +103,11 @@ const DivisionBlock: React.FC<{
               padding: '7px 14px', minHeight: '46px', alignItems: 'center',
               borderBottom: i < teams.length - 1 ? `1px solid ${BORDER.hairline}` : 'none',
               opacity: team.eliminated ? 0.62 : 1,
-              ...(isYours ? ownRowStyle(team) : {}),
+              // Clinched tint first so `ownRowStyle` wins on a row that is both:
+                    // your own club keeps its identity, and the seed badge
+                    // still carries the clinch.
+                    ...(clinchedRowStyle(team) || {}),
+                    ...(isYours ? ownRowStyle(team) : {}),
             }}
           >
             <SeedBadge team={team} />

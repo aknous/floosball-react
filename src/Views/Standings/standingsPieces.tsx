@@ -61,14 +61,27 @@ export const SeedBadge: React.FC<{ team: TeamStanding }> = ({ team }) => {
     )
   }
 
+  // `strong` is the same hue at roughly triple the alpha: the clinched state. Kept
+  // beside `fill` so the pair reads as one scale rather than two colors.
   const tone = team.seed === 1
-    ? { ring: PLAYOFF.topSeedRing, text: PLAYOFF.topSeedText, fill: PLAYOFF.topSeedFill }
+    ? { ring: PLAYOFF.topSeedRing, text: PLAYOFF.topSeedText,
+        fill: PLAYOFF.topSeedFill, strong: 'rgba(200,150,63,0.52)' }
     : team.seedKind === 'division'
-      ? { ring: PLAYOFF.divisionRing, text: PLAYOFF.divisionText, fill: PLAYOFF.divisionFill }
-      : { ring: PLAYOFF.wildcardRing, text: PLAYOFF.wildcardText, fill: PLAYOFF.wildcardFill }
+      ? { ring: PLAYOFF.divisionRing, text: PLAYOFF.divisionText,
+          fill: PLAYOFF.divisionFill, strong: 'rgba(92,158,111,0.48)' }
+      : { ring: PLAYOFF.wildcardRing, text: PLAYOFF.wildcardText,
+          fill: PLAYOFF.wildcardFill, strong: 'rgba(91,135,184,0.48)' }
 
-  // Secured, not merely projected. The top seed is the strongest claim on the board, so
-  // it gets the ring AND a halo; a clinched berth gets the ring alone.
+  // ⚠️ SECURED HAS TO READ WITHOUT A HOVER (owner). The first pass carried the
+  // difference in RING WEIGHT alone — 1px projected, 2px clinched — which is a
+  // distinction you can only see if you already know to look for it, so the
+  // tooltip became the only real indication.
+  //
+  // The FILL carries it now: a projected seed is a faint wash of its tone, a
+  // clinched one is saturated. That reads in peripheral vision and down a whole
+  // column at once, which is how this board is actually used. The digit stays in
+  // the bright accent tone rather than being knocked out, so the readability
+  // problem that killed the original solid badge does not come back.
   const clinched = team.clinchedTopSeed || team.clinchedPlayoffs
   // No em-dashes in copy a reader sees.
   const label = team.clinchedTopSeed
@@ -83,15 +96,31 @@ export const SeedBadge: React.FC<{ team: TeamStanding }> = ({ team }) => {
         style={{
           ...base,
           border: `${clinched ? 2 : 1}px solid ${tone.ring}`,
-          background: tone.fill,
+          background: clinched ? tone.strong : tone.fill,
           color: tone.text,
-          boxShadow: team.clinchedTopSeed ? `0 0 0 2px ${tone.fill}` : undefined,
+          // The top seed is the strongest claim on the board, so it takes a halo on
+          // top of the saturated fill and separates from the other clinched rows.
+          boxShadow: team.clinchedTopSeed ? `0 0 0 2px ${tone.ring}` : undefined,
         }}
       >
         {team.seed}
       </span>
     </HoverTooltip>
   )
+}
+
+/**
+ * The row tint for a club that has SECURED its place.
+ *
+ * ⚠️ Background ONLY, no inset rail: `ownRowStyle` uses an inset boxShadow for the
+ * reader's own club and two inset shadows on one row fight. Applied BEFORE
+ * `ownRowStyle` at every call site, so your own club keeps its identity when it is
+ * also clinched — the seed badge still carries the clinch in that case.
+ */
+export const clinchedRowStyle = (team: TeamStanding): React.CSSProperties | undefined => {
+  if (team.clinchedTopSeed) return { background: 'rgba(200,150,63,0.09)' }
+  if (team.clinchedPlayoffs) return { background: 'rgba(91,135,184,0.06)' }
+  return undefined
 }
 
 /**
