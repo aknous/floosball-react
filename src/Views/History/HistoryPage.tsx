@@ -1,28 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Crest } from '@/Views/GameBoard/boardPieces'
+import { readableTeamColor } from '@/utils/colors'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import HallOfFame from '@/Views/Players/HallOfFame'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type ViewMode = 'seasons' | 'records' | 'team-records' | 'user-records' | 'hall-of-fame'
+type ViewMode = 'seasons' | 'records' | 'hall-of-fame'
 
 /**
  * The tabs on offer.
  *
- * ⚠️ 'team-records' IS BUILT AND DELIBERATELY UNLISTED. Its endpoint,
- * `GET /api/history/team-records`, is on the backend's development branch and has not
- * been deployed — and this repo deploys on its own, so the frontend can and does ship
- * ahead of it. Everything else on this page runs against endpoints that are already live.
+ * ⚠️ THERE IS NO SEPARATE 'team-records' TAB. Team records ARE records, and a "Record
+ * Book" sitting beside a "Team Records" as equals promised a book that excluded half the
+ * league. They are one tab now, split by SUBJECT inside it (`RecordBook` below).
  *
- * PUT IT BACK the moment that endpoint is in production: add 'team-records' to this list.
- * The view, its type and its fetch are all still here and wired, so that is the whole job.
- *
- * The view also tolerates the endpoint being absent (see its fetch), so this is belt and
- * braces — the tab would show an empty state rather than break. It is hidden because an
- * empty Team Records page is worse than no Team Records page.
+ * `TeamRecordsView` still tolerates its endpoint being absent (see its fetch), so a
+ * frontend that ships ahead of the backend shows an empty state rather than breaking —
+ * which it did once, when this repo deployed first.
  */
-const TABS: ViewMode[] = ['seasons', 'records', 'user-records', 'hall-of-fame']
+const TABS: ViewMode[] = ['seasons', 'records', 'hall-of-fame']
 
 
 interface SeasonSummary {
@@ -56,7 +54,10 @@ interface StandingsTeam {
 interface RecordEntry {
   playerId: number
   playerName: string
+  teamId?: number | null
   teamAbbr?: string | null
+  /** Raw club color — correct it with `readableTeamColor` before using it as text. */
+  teamColor?: string | null
   value: number
   season?: number
   week?: number
@@ -104,17 +105,13 @@ const HistoryPage: React.FC = () => {
           <button key={m} onClick={() => setMode(m)} style={pillStyle(mode === m)}>
             {m === 'seasons' ? 'Seasons'
               : m === 'records' ? 'Record Book'
-              : m === 'team-records' ? 'Team Records'
-              : m === 'user-records' ? 'Fantasy Records'
               : 'Hall of Fame'}
           </button>
         ))}
       </div>
 
       {mode === 'seasons' && <SeasonsView isMobile={isMobile} />}
-      {mode === 'records' && <RecordsView isMobile={isMobile} />}
-      {mode === 'team-records' && <TeamRecordsView isMobile={isMobile} />}
-      {mode === 'user-records' && <UserRecordsView isMobile={isMobile} />}
+      {mode === 'records' && <RecordBook isMobile={isMobile} />}
       {mode === 'hall-of-fame' && <HallOfFame />}
     </div>
   )
@@ -352,6 +349,57 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
 type RecordTab = 'game' | 'season' | 'career'
 
+/**
+ * The Record Book: players and teams, one tab.
+ *
+ * ⚠️ These used to be two sibling tabs, "Record Book" and "Team Records", which promised
+ * a book that excluded half the league. The split that actually matters is the SUBJECT —
+ * whether a record belongs to a person or a club — so that is what this switch carries,
+ * and each side keeps its own scope pills below it.
+ *
+ * ⚠️ The three sides do NOT offer the same scopes: a player has a career, a club does
+ * not (there is no career team-stat table, and a club's "career" is just its whole
+ * history, which the Seasons tab already tells), and Fantasy is per-week and per-season
+ * only. So the switch is deliberately ABOVE the scope pills rather than mixed into them
+ * — one flat row would have hidden that asymmetry.
+ *
+ * ⚠️ FANTASY IS IN THE BOOK TOO (owner). It was a fourth top-level tab, which put a
+ * league record and a reader's own fantasy week at the same level as each other. They
+ * are all records; the only question is whose.
+ */
+const RecordBook: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
+  const [subject, setSubject] = useState<'players' | 'teams' | 'fantasy'>('players')
+
+  return (
+    <div>
+      <div style={{
+        display: 'flex', gap: '2px', marginBottom: '12px',
+        backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px',
+        width: 'fit-content',
+      }}>
+        {(['players', 'teams', 'fantasy'] as const).map(sub => (
+          <button
+            key={sub}
+            onClick={() => setSubject(sub)}
+            style={{
+              padding: '6px 14px', fontSize: '11px', fontWeight: 700,
+              borderRadius: '6px', border: 'none', cursor: 'pointer',
+              letterSpacing: '0.06em', textTransform: 'uppercase',
+              backgroundColor: subject === sub ? '#334155' : 'transparent',
+              color: subject === sub ? '#e2e8f0' : '#64748b',
+              fontFamily: 'inherit',
+            }}
+          >{sub === 'players' ? 'Players' : sub === 'teams' ? 'Teams' : 'Fantasy'}</button>
+        ))}
+      </div>
+
+      {subject === 'players' ? <RecordsView isMobile={isMobile} />
+        : subject === 'teams' ? <TeamRecordsView isMobile={isMobile} />
+          : <UserRecordsView isMobile={isMobile} />}
+    </div>
+  )
+}
+
 const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
   const [data, setData] = useState<RecordsResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -399,7 +447,13 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+        // ⚠️ 340, not 280. A row is rank(18) + name + club(30) + value(60) + season/week(54)
+        // plus four 8px gaps and 24px of card padding — 218px before the name gets a
+        // pixel. At 280 that left ~62px for names running to 20 characters ("Leakey
+        // Pennyfarthing", ~111px), so most of the book was ellipsis. Same basis as the
+        // bracket column floor: chrome measured, name width from the longest real entry.
+        // Raised 340 -> 370 when the crest landed: 18px plus its 8px gap.
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(370px, 1fr))',
         gap: '14px',
       }}>
         {categories.map(cat => {
@@ -450,12 +504,29 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                     }}>
                       {rank}
                     </span>
+                    {/* ⚠️ THE CLUB WAS BEING THROWN AWAY. `teamAbbr` is in the payload
+                        and was simply not rendered, so every row read as a bare name and
+                        a number — which is most of why the page felt threadbare. A record
+                        is who did it, for whom, and when. */}
                     <Link
                       to={`/players/${e.playerId}`}
                       style={{ flex: 1, minWidth: 0, color: '#e2e8f0', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >
                       {e.playerName}
                     </Link>
+                    {/* ⚠️ The crest carries the club and the ABBR carries it in words —
+                        both, because a crest at 18px is not always separable from another
+                        club's, and the three letters alone were what made the page read
+                        as a spreadsheet. The colour is corrected for this background;
+                        team colors are DATA and a good few are navy or maroon. */}
+                    {e.teamId != null && <Crest teamId={e.teamId} size={18} />}
+                    {e.teamAbbr && (
+                      <span style={{
+                        width: '30px', flexShrink: 0, textAlign: 'left',
+                        fontSize: '10px', fontWeight: 700, letterSpacing: '0.04em',
+                        color: e.teamColor ? readableTeamColor(e.teamColor, '#1e293b') : '#64748b',
+                      }}>{e.teamAbbr}</span>
+                    )}
                     <span style={{
                       width: '60px', textAlign: 'right',
                       fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums',
@@ -493,6 +564,8 @@ interface TeamRecordEntry {
   value: number
   season?: number
   week?: number
+  /** Raw club color — correct it with `readableTeamColor` before using it as text. */
+  teamColor?: string | null
 }
 
 interface TeamRecordsResponse {
@@ -571,7 +644,13 @@ const TeamRecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+        // ⚠️ 340, not 280. A row is rank(18) + name + club(30) + value(60) + season/week(54)
+        // plus four 8px gaps and 24px of card padding — 218px before the name gets a
+        // pixel. At 280 that left ~62px for names running to 20 characters ("Leakey
+        // Pennyfarthing", ~111px), so most of the book was ellipsis. Same basis as the
+        // bracket column floor: chrome measured, name width from the longest real entry.
+        // Raised 340 -> 370 when the crest landed: 18px plus its 8px gap.
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(370px, 1fr))',
         gap: '14px',
       }}>
         {categories.map(cat => {
@@ -606,10 +685,16 @@ const TeamRecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                           width: '18px', textAlign: 'right',
                           fontWeight: 700, color: displayRank === 1 ? '#f59e0b' : '#64748b',
                         }}>{displayRank}</span>
+                        {/* ⚠️ Crest then NAME — and no abbr, unlike the player rows. The
+                            full club name is already here, so three letters beside it
+                            would be the same thing twice. The name takes the club's own
+                            color, corrected for this background. */}
+                        <Crest teamId={e.teamId} size={18} />
                         <Link
                           to={`/team/${e.teamId}`}
                           style={{
-                            flex: 1, minWidth: 0, color: '#e2e8f0', textDecoration: 'none',
+                            flex: 1, minWidth: 0, textDecoration: 'none',
+                            color: e.teamColor ? readableTeamColor(e.teamColor, '#1e293b') : '#e2e8f0',
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           }}
                         >{e.teamName}</Link>
