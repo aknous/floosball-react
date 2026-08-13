@@ -3,7 +3,7 @@ import HoverTooltip from '@/Components/HoverTooltip'
 import { BG, BORDER, TEXT, PLAYOFF, TABULAR, font } from '@/Components/Shell/tokens'
 import {
   SeedBadge, TeamCell, Last5, Movement, GamesBack, Differential, Streak, pct, record,
-  COLUMN_HEADER, ownRowStyle, SectionNote,
+  COLUMN_HEADER, ownRowStyle, clinchedRowStyle, SectionNote,
 } from './standingsPieces'
 import type { LeagueStandings } from './standingsTypes'
 
@@ -122,6 +122,10 @@ const ByLeague: React.FC<{
                       ? `2px solid ${PLAYOFF.cutline}`
                       : i < league.standings.length - 1 ? `1px solid ${BORDER.hairline}` : 'none',
                     opacity: team.eliminated ? 0.62 : 1,
+                    // Clinched tint first so `ownRowStyle` wins on a row that is both:
+                    // your own club keeps its identity, and the seed badge
+                    // still carries the clinch.
+                    ...(clinchedRowStyle(team) || {}),
                     ...(isYours ? ownRowStyle(team) : {}),
                   }}
                 >

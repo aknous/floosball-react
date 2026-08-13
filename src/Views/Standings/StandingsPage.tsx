@@ -154,13 +154,14 @@ const Legend: React.FC = () => {
       <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.muted }}>{label}</span>
     </span>
   )
-  // ⚠️ A HEAVIER RING is the whole clinched treatment, so the legend has to show the
-  // difference rather than describe it — the two swatches sit next to each other for
-  // exactly that reason.
+  // ⚠️ A SATURATED FILL is the clinched treatment, so the legend shows the difference
+  // rather than naming it — this swatch sits beside the faint ones above it for exactly
+  // that reason. (It was a heavier RING first, which nobody could see without already
+  // knowing to look; the fill is what reads at a glance.)
   const clinchedSwatch = (
     <span style={{
       boxSizing: 'border-box', width: '15px', height: '15px', borderRadius: '50%',
-      border: `2px solid ${PLAYOFF.wildcardRing}`, background: PLAYOFF.wildcardFill,
+      border: `2px solid ${PLAYOFF.wildcardRing}`, background: 'rgba(91,135,184,0.48)',
       display: 'block',
     }} />
   )
