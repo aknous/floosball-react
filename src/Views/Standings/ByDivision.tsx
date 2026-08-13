@@ -1,10 +1,10 @@
 import React from 'react'
 import HoverTooltip from '@/Components/HoverTooltip'
-import { BG, BORDER, TEXT, font } from '@/Components/Shell/tokens'
+import { BG, BORDER, TEXT, PLAYOFF, font } from '@/Components/Shell/tokens'
 import { Crest } from '@/Views/GameBoard/boardPieces'
 import {
   SeedBadge, TeamCell, Last5, GamesBack, Differential, pct, record,
-  COLUMN_HEADER, ownRowStyle,
+  COLUMN_HEADER, ownRowStyle, TrophyIcon,
 } from './standingsPieces'
 import type { LeagueStandings, TeamStanding } from './standingsTypes'
 
@@ -30,6 +30,13 @@ const DivisionBlock: React.FC<{
   compact?: boolean
 }> = ({ name, teams, favoriteTeamId, compact = false }) => {
   const leader = teams[0]
+  // ⚠️ Once the division is WON the header stops reporting a race. The champion is a
+  // settled fact, so it is marked as one; until then the top row is merely leading and
+  // the header just points at it. `teams` is display-ordered, so a winner is teams[0] —
+  // but it is found rather than assumed, since a club can clinch a weak division without
+  // sitting top of any other ordering the board might grow later.
+  const champion = teams.find(t => t.clinchedDivision) || null
+  const shown = champion || leader
   return (
     <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}` }}>
       <div style={{
@@ -41,9 +48,16 @@ const DivisionBlock: React.FC<{
         <span style={{ flex: 1 }} />
         {/* No "LEADS" label (owner). The club on the top row IS the leader — saying so
             in words is the header restating the table underneath it. The crest stays
-            because it is a marker, not a sentence. */}
-        <Crest teamId={leader?.id} size={18} />
-        <span style={{ ...font(700, 11), color: TEXT.secondary }}>{leader?.abbr}</span>
+            because it is a marker, not a sentence.
+
+            A CHAMPION is different: that is not restating the table, it is a fact the
+            table cannot show on its own, so it takes the trophy and the brighter tone. */}
+        {champion && <TrophyIcon size={14} />}
+        <Crest teamId={shown?.id} size={18} />
+        <span style={{
+          ...font(champion ? 800 : 700, 11),
+          color: champion ? PLAYOFF.topSeedText : TEXT.secondary,
+        }}>{shown?.abbr}</span>
       </div>
 
       <div style={{
@@ -56,18 +70,18 @@ const DivisionBlock: React.FC<{
         <span style={COLUMN_HEADER}>TEAM</span>
         <span style={{ ...COLUMN_HEADER, textAlign: 'right' }}>W–L</span>
 {!compact && (
-        <HoverTooltip text="Record inside this division. It settles a division tie, because these four teams played the same slate.">
+        <HoverTooltip text="Record within the division">
           <span style={{ ...COLUMN_HEADER, textAlign: 'right', display: 'block' }}>DIV</span>
         </HoverTooltip>
         )}
 {!compact && (
         <span style={{ ...COLUMN_HEADER, textAlign: 'right' }}>PCT</span>
         )}
-        <HoverTooltip text="Games behind the last playoff spot in this league. A plus means ahead of the cut.">
+        <HoverTooltip text="Games behind the last playoff spot">
           <span style={{ ...COLUMN_HEADER, textAlign: 'right', display: 'block' }}>GB</span>
         </HoverTooltip>
 {!compact && (
-        <HoverTooltip text="Points scored minus points allowed.">
+        <HoverTooltip text="Points scored minus points allowed">
           <span style={{ ...COLUMN_HEADER, textAlign: 'right', display: 'block' }}>DIFF</span>
         </HoverTooltip>
         )}

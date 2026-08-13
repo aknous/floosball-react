@@ -58,11 +58,11 @@ const ByLeague: React.FC<{
               padding: compact ? '8px 12px' : '8px 18px',
               borderBottom: `1px solid ${BORDER.hairline}`, alignItems: 'center',
             }}>
-              <HoverTooltip text="Projected playoff seed if the season ended today. Seeds 1-4 are the division winners.">
+              <HoverTooltip text="Projected playoff seed">
                 <span style={{ ...COLUMN_HEADER, display: 'block' }}>#</span>
               </HoverTooltip>
 {!compact && (
-              <HoverTooltip text="Change in this team's league rank by record since last week.">
+              <HoverTooltip text="Rank change since last week">
                 <span style={{ ...COLUMN_HEADER, display: 'block', textAlign: 'center' }}>±</span>
               </HoverTooltip>
               )}
@@ -72,23 +72,23 @@ const ByLeague: React.FC<{
               )}
               <span style={{ ...COLUMN_HEADER, textAlign: 'right' }}>W–L</span>
 {!compact && (
-              <HoverTooltip text="Record inside this team's own division. It settles a division tie: those four teams played the same slate.">
+              <HoverTooltip text="Record within the division">
                 <span style={{ ...COLUMN_HEADER, display: 'block', textAlign: 'right' }}>DIV</span>
               </HoverTooltip>
               )}
 {!compact && (
-              <HoverTooltip text="Record against this league. It settles a wild card tie, where the teams come from different divisions and division record would compare different opponents.">
+              <HoverTooltip text="Record within the league">
                 <span style={{ ...COLUMN_HEADER, display: 'block', textAlign: 'right' }}>LGE</span>
               </HoverTooltip>
               )}
 {!compact && (
               <span style={{ ...COLUMN_HEADER, textAlign: 'right' }}>PCT</span>
               )}
-              <HoverTooltip text="Games behind the last playoff spot. A plus means ahead of the cut.">
+              <HoverTooltip text="Games behind the last playoff spot">
                 <span style={{ ...COLUMN_HEADER, display: 'block', textAlign: 'right' }}>GB</span>
               </HoverTooltip>
 {!compact && (
-              <HoverTooltip text="Points scored minus points allowed.">
+              <HoverTooltip text="Points scored minus points allowed">
                 <span style={{ ...COLUMN_HEADER, display: 'block', textAlign: 'right' }}>DIFF</span>
               </HoverTooltip>
               )}
