@@ -7,7 +7,7 @@ import HallOfFame from '@/Views/Players/HallOfFame'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
-type ViewMode = 'seasons' | 'records' | 'user-records' | 'hall-of-fame'
+type ViewMode = 'seasons' | 'records' | 'hall-of-fame'
 
 /**
  * The tabs on offer.
@@ -20,7 +20,7 @@ type ViewMode = 'seasons' | 'records' | 'user-records' | 'hall-of-fame'
  * frontend that ships ahead of the backend shows an empty state rather than breaking —
  * which it did once, when this repo deployed first.
  */
-const TABS: ViewMode[] = ['seasons', 'records', 'user-records', 'hall-of-fame']
+const TABS: ViewMode[] = ['seasons', 'records', 'hall-of-fame']
 
 
 interface SeasonSummary {
@@ -105,7 +105,6 @@ const HistoryPage: React.FC = () => {
           <button key={m} onClick={() => setMode(m)} style={pillStyle(mode === m)}>
             {m === 'seasons' ? 'Seasons'
               : m === 'records' ? 'Record Book'
-              : m === 'user-records' ? 'Fantasy Records'
               : 'Hall of Fame'}
           </button>
         ))}
@@ -113,7 +112,6 @@ const HistoryPage: React.FC = () => {
 
       {mode === 'seasons' && <SeasonsView isMobile={isMobile} />}
       {mode === 'records' && <RecordBook isMobile={isMobile} />}
-      {mode === 'user-records' && <UserRecordsView isMobile={isMobile} />}
       {mode === 'hall-of-fame' && <HallOfFame />}
     </div>
   )
@@ -359,14 +357,18 @@ type RecordTab = 'game' | 'season' | 'career'
  * whether a record belongs to a person or a club — so that is what this switch carries,
  * and each side keeps its own scope pills below it.
  *
- * ⚠️ The two sides do NOT offer the same scopes: a player has a career, a club does not
- * (there is no career team-stat table, and a club's "career" is just its whole history,
- * which the Seasons tab already tells). So Teams offers Single Season and Single Game
- * only, and the switch is deliberately ABOVE the scope pills rather than mixed into them
- * — one flat row of five would have hidden that asymmetry.
+ * ⚠️ The three sides do NOT offer the same scopes: a player has a career, a club does
+ * not (there is no career team-stat table, and a club's "career" is just its whole
+ * history, which the Seasons tab already tells), and Fantasy is per-week and per-season
+ * only. So the switch is deliberately ABOVE the scope pills rather than mixed into them
+ * — one flat row would have hidden that asymmetry.
+ *
+ * ⚠️ FANTASY IS IN THE BOOK TOO (owner). It was a fourth top-level tab, which put a
+ * league record and a reader's own fantasy week at the same level as each other. They
+ * are all records; the only question is whose.
  */
 const RecordBook: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
-  const [subject, setSubject] = useState<'players' | 'teams'>('players')
+  const [subject, setSubject] = useState<'players' | 'teams' | 'fantasy'>('players')
 
   return (
     <div>
@@ -375,7 +377,7 @@ const RecordBook: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
         backgroundColor: '#0f172a', borderRadius: '8px', padding: '3px',
         width: 'fit-content',
       }}>
-        {(['players', 'teams'] as const).map(sub => (
+        {(['players', 'teams', 'fantasy'] as const).map(sub => (
           <button
             key={sub}
             onClick={() => setSubject(sub)}
@@ -387,13 +389,13 @@ const RecordBook: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
               color: subject === sub ? '#e2e8f0' : '#64748b',
               fontFamily: 'inherit',
             }}
-          >{sub === 'players' ? 'Players' : 'Teams'}</button>
+          >{sub === 'players' ? 'Players' : sub === 'teams' ? 'Teams' : 'Fantasy'}</button>
         ))}
       </div>
 
-      {subject === 'players'
-        ? <RecordsView isMobile={isMobile} />
-        : <TeamRecordsView isMobile={isMobile} />}
+      {subject === 'players' ? <RecordsView isMobile={isMobile} />
+        : subject === 'teams' ? <TeamRecordsView isMobile={isMobile} />
+          : <UserRecordsView isMobile={isMobile} />}
     </div>
   )
 }
