@@ -10,19 +10,13 @@ type ViewMode = 'seasons' | 'records' | 'team-records' | 'user-records' | 'hall-
 /**
  * The tabs on offer.
  *
- * ⚠️ 'team-records' IS BUILT AND DELIBERATELY UNLISTED. Its endpoint,
- * `GET /api/history/team-records`, is on the backend's development branch and has not
- * been deployed — and this repo deploys on its own, so the frontend can and does ship
- * ahead of it. Everything else on this page runs against endpoints that are already live.
- *
- * PUT IT BACK the moment that endpoint is in production: add 'team-records' to this list.
- * The view, its type and its fetch are all still here and wired, so that is the whole job.
- *
- * The view also tolerates the endpoint being absent (see its fetch), so this is belt and
- * braces — the tab would show an empty state rather than break. It is hidden because an
- * empty Team Records page is worse than no Team Records page.
+ * ⚠️ 'team-records' was held back while its endpoint (`GET /api/history/team-records`)
+ * was still undeployed — this repo ships on its own, so the frontend can and does get
+ * ahead of the backend. Restored once it went live. `TeamRecordsView` still tolerates the
+ * endpoint being absent (see its fetch), so a future ordering mistake shows an empty
+ * state rather than breaking the page.
  */
-const TABS: ViewMode[] = ['seasons', 'records', 'user-records', 'hall-of-fame']
+const TABS: ViewMode[] = ['seasons', 'records', 'team-records', 'user-records', 'hall-of-fame']
 
 
 interface SeasonSummary {
@@ -399,7 +393,12 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+        // ⚠️ 340, not 280. A row is rank(18) + name + club(30) + value(60) + season/week(54)
+        // plus four 8px gaps and 24px of card padding — 218px before the name gets a
+        // pixel. At 280 that left ~62px for names running to 20 characters ("Leakey
+        // Pennyfarthing", ~111px), so most of the book was ellipsis. Same basis as the
+        // bracket column floor: chrome measured, name width from the longest real entry.
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))',
         gap: '14px',
       }}>
         {categories.map(cat => {
@@ -450,12 +449,23 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                     }}>
                       {rank}
                     </span>
+                    {/* ⚠️ THE CLUB WAS BEING THROWN AWAY. `teamAbbr` is in the payload
+                        and was simply not rendered, so every row read as a bare name and
+                        a number — which is most of why the page felt threadbare. A record
+                        is who did it, for whom, and when. */}
                     <Link
                       to={`/players/${e.playerId}`}
                       style={{ flex: 1, minWidth: 0, color: '#e2e8f0', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >
                       {e.playerName}
                     </Link>
+                    {e.teamAbbr && (
+                      <span style={{
+                        width: '30px', flexShrink: 0, textAlign: 'left',
+                        fontSize: '10px', fontWeight: 700, color: '#64748b',
+                        letterSpacing: '0.04em',
+                      }}>{e.teamAbbr}</span>
+                    )}
                     <span style={{
                       width: '60px', textAlign: 'right',
                       fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums',
@@ -571,7 +581,12 @@ const TeamRecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+        // ⚠️ 340, not 280. A row is rank(18) + name + club(30) + value(60) + season/week(54)
+        // plus four 8px gaps and 24px of card padding — 218px before the name gets a
+        // pixel. At 280 that left ~62px for names running to 20 characters ("Leakey
+        // Pennyfarthing", ~111px), so most of the book was ellipsis. Same basis as the
+        // bracket column floor: chrome measured, name width from the longest real entry.
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))',
         gap: '14px',
       }}>
         {categories.map(cat => {
