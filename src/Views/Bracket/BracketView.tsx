@@ -63,6 +63,16 @@ type ViewMode = 'picks' | 'results'
  */
 const BRACKET_COL_MIN = 184
 
+/**
+ * Extra width the Floos Bowl column needs over a league column.
+ *
+ * Its matchup is wrapped in a bordered, padded box that the league columns do not have,
+ * and that box eats into the same TeamPick rows: 7px of padding and 1px of border on
+ * each side. Without accounting for it the centre column collapses hardest of the seven,
+ * which is exactly how it was reported — rounds 1-3 fine, the final squashed.
+ */
+const FLOOSBOWL_BOX_CHROME = 16
+
 const BracketView: React.FC = () => {
   const { template, mine, leaderboard, loading, submitting, submit } = usePlayoffBracket()
   const [picks, setPicks] = useState<BracketPredictions>({})
@@ -277,7 +287,14 @@ const BracketView: React.FC = () => {
     const pr = mine?.perRound?.floosbowl
     return (
       <div style={{
-        flex: isMobile ? '0 0 auto' : '1 1 0', minWidth: isMobile ? 160 : 0,
+        // ⚠️ The centre column was missed when the others got their floor, and it is the
+        // one that needed it MOST: its matchup sits inside a bordered, padded box, so the
+        // same TeamPick rows have 16px LESS to work with than in a league column
+        // (7px padding + 1px border, both sides). Left at `minWidth: 0` it collapsed
+        // hardest of the seven — reported as the Floos Bowl buttons being squashed while
+        // rounds 1-3 looked fine.
+        flex: isMobile ? '0 0 auto' : '1 1 auto',
+        minWidth: isMobile ? 160 : BRACKET_COL_MIN + FLOOSBOWL_BOX_CHROME,
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 10 }}>
