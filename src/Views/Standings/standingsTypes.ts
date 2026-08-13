@@ -33,7 +33,13 @@ export interface TeamStanding {
   rankLastWeek: number | null
   rankChange: number
 
+  /**
+   * Mathematically SECURED, which is a different claim from `seed`. A seed is where
+   * the club would land if the season stopped now; these mean no remaining result can
+   * take it away. They disagree with the seed all season.
+   */
   clinchedPlayoffs: boolean
+  clinchedDivision: boolean
   clinchedTopSeed: boolean
   eliminated: boolean
 

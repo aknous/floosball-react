@@ -1,10 +1,34 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import TeamHoverCard from '@/Components/TeamHoverCard'
+import HoverTooltip from '@/Components/HoverTooltip'
 import { BG, BORDER, TEXT, ACCENT, PLAYOFF, TABULAR, font } from '@/Components/Shell/tokens'
 import { readableTeamColor } from '@/utils/colors'
 import { Crest } from '@/Views/GameBoard/boardPieces'
 import type { TeamStanding } from './standingsTypes'
+
+/**
+ * A trophy, for a club that has WON ITS DIVISION.
+ *
+ * A mark rather than a letter (owner). The traditional x/y/z notation needs a legend to
+ * mean anything, and the thing being announced here is a title — the one most of the
+ * league is actually playing for, since at eight divisions 24 of 32 clubs will never win
+ * a league title.
+ *
+ * Sized to sit on the club name's line without pushing it; `flexShrink: 0` so it survives
+ * the narrow columns rather than being squeezed to nothing.
+ */
+export const TrophyIcon: React.FC<{ size?: number; color?: string }> = ({
+  size = 13, color = PLAYOFF.topSeedText,
+}) => (
+  <svg
+    viewBox="0 0 24 24" width={size} height={size} fill={color}
+    style={{ flexShrink: 0, display: 'block' }}
+    aria-hidden="true"
+  >
+    <path d="M18 4h2a2 2 0 0 1 2 2v1a4 4 0 0 1-4 4h-.3a6 6 0 0 1-4.7 4.9V19h3a1 1 0 0 1 0 2H8a1 1 0 0 1 0-2h3v-3.1A6 6 0 0 1 6.3 11H6a4 4 0 0 1-4-4V6a2 2 0 0 1 2-2h2V3h12v1ZM6 6H4v1a2 2 0 0 0 2 2V6Zm12 3a2 2 0 0 0 2-2V6h-2v3Z" />
+  </svg>
+)
 
 /**
  * A seed badge: a tinted circle with a ring, number in the accent tone.
@@ -12,6 +36,12 @@ import type { TeamStanding } from './standingsTypes'
  * NOT a solid block with knocked-out text — that was built first and the digit was
  * unreadable at 21px. `box-sizing: border-box` so the ring does not push the badge out
  * of its column.
+ *
+ * ⚠️ CLINCHED reads as a HEAVIER RING, not a fill. A projected seed and a secured one are
+ * different claims and the board shows both all season, so the badge has to carry the
+ * difference — but filling it solid is exactly the treatment that made the digit
+ * unreadable, so the weight goes into the ring instead. The seed number stays legible in
+ * every state.
  */
 export const SeedBadge: React.FC<{ team: TeamStanding }> = ({ team }) => {
   const base: React.CSSProperties = {
@@ -37,10 +67,30 @@ export const SeedBadge: React.FC<{ team: TeamStanding }> = ({ team }) => {
       ? { ring: PLAYOFF.divisionRing, text: PLAYOFF.divisionText, fill: PLAYOFF.divisionFill }
       : { ring: PLAYOFF.wildcardRing, text: PLAYOFF.wildcardText, fill: PLAYOFF.wildcardFill }
 
+  // Secured, not merely projected. The top seed is the strongest claim on the board, so
+  // it gets the ring AND a halo; a clinched berth gets the ring alone.
+  const clinched = team.clinchedTopSeed || team.clinchedPlayoffs
+  // No em-dashes in copy a reader sees.
+  const label = team.clinchedTopSeed
+    ? `Top seed clinched (seed ${team.seed})`
+    : team.clinchedPlayoffs
+      ? `Playoff berth clinched (seed ${team.seed})`
+      : `Projected seed ${team.seed}`
+
   return (
-    <span style={{ ...base, border: `1px solid ${tone.ring}`, background: tone.fill, color: tone.text }}>
-      {team.seed}
-    </span>
+    <HoverTooltip text={label}>
+      <span
+        style={{
+          ...base,
+          border: `${clinched ? 2 : 1}px solid ${tone.ring}`,
+          background: tone.fill,
+          color: tone.text,
+          boxShadow: team.clinchedTopSeed ? `0 0 0 2px ${tone.fill}` : undefined,
+        }}
+      >
+        {team.seed}
+      </span>
+    </HoverTooltip>
   )
 }
 
@@ -66,12 +116,20 @@ export const TeamCell: React.FC<{
         <span style={{ display: 'block', ...font(500, 11), color: TEXT.muted, whiteSpace: 'nowrap' }}>
           {team.city}
         </span>
-        <span style={{
-          display: 'block',
-          ...font(700, 15, 1, '-0.015em'),
-          color: isYours ? readableTeamColor(team.color) : TEXT.strong,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{team.name}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+          <span style={{
+            ...font(700, 15, 1, '-0.015em'),
+            color: isYours ? readableTeamColor(team.color) : TEXT.strong,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{team.name}</span>
+          {/* ⚠️ AFTER the name, inside the same flex row, so the name keeps the
+              ellipsis and the trophy is never the thing that gets truncated. */}
+          {team.clinchedDivision && (
+            <HoverTooltip text={`${team.division || 'Division'} division champions`}>
+              <TrophyIcon />
+            </HoverTooltip>
+          )}
+        </span>
       </span>
     </Link>
   </TeamHoverCard>
