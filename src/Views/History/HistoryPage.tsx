@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Crest } from '@/Views/GameBoard/boardPieces'
+import { readableTeamColor } from '@/utils/colors'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import HallOfFame from '@/Views/Players/HallOfFame'
 
@@ -50,7 +52,10 @@ interface StandingsTeam {
 interface RecordEntry {
   playerId: number
   playerName: string
+  teamId?: number | null
   teamAbbr?: string | null
+  /** Raw club color — correct it with `readableTeamColor` before using it as text. */
+  teamColor?: string | null
   value: number
   season?: number
   week?: number
@@ -398,7 +403,8 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
         // pixel. At 280 that left ~62px for names running to 20 characters ("Leakey
         // Pennyfarthing", ~111px), so most of the book was ellipsis. Same basis as the
         // bracket column floor: chrome measured, name width from the longest real entry.
-        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))',
+        // Raised 340 -> 370 when the crest landed: 18px plus its 8px gap.
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(370px, 1fr))',
         gap: '14px',
       }}>
         {categories.map(cat => {
@@ -459,11 +465,17 @@ const RecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                     >
                       {e.playerName}
                     </Link>
+                    {/* ⚠️ The crest carries the club and the ABBR carries it in words —
+                        both, because a crest at 18px is not always separable from another
+                        club's, and the three letters alone were what made the page read
+                        as a spreadsheet. The colour is corrected for this background;
+                        team colors are DATA and a good few are navy or maroon. */}
+                    {e.teamId != null && <Crest teamId={e.teamId} size={18} />}
                     {e.teamAbbr && (
                       <span style={{
                         width: '30px', flexShrink: 0, textAlign: 'left',
-                        fontSize: '10px', fontWeight: 700, color: '#64748b',
-                        letterSpacing: '0.04em',
+                        fontSize: '10px', fontWeight: 700, letterSpacing: '0.04em',
+                        color: e.teamColor ? readableTeamColor(e.teamColor, '#1e293b') : '#64748b',
                       }}>{e.teamAbbr}</span>
                     )}
                     <span style={{
@@ -503,6 +515,8 @@ interface TeamRecordEntry {
   value: number
   season?: number
   week?: number
+  /** Raw club color — correct it with `readableTeamColor` before using it as text. */
+  teamColor?: string | null
 }
 
 interface TeamRecordsResponse {
@@ -586,7 +600,8 @@ const TeamRecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
         // pixel. At 280 that left ~62px for names running to 20 characters ("Leakey
         // Pennyfarthing", ~111px), so most of the book was ellipsis. Same basis as the
         // bracket column floor: chrome measured, name width from the longest real entry.
-        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))',
+        // Raised 340 -> 370 when the crest landed: 18px plus its 8px gap.
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(370px, 1fr))',
         gap: '14px',
       }}>
         {categories.map(cat => {
@@ -621,10 +636,16 @@ const TeamRecordsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                           width: '18px', textAlign: 'right',
                           fontWeight: 700, color: displayRank === 1 ? '#f59e0b' : '#64748b',
                         }}>{displayRank}</span>
+                        {/* ⚠️ Crest then NAME — and no abbr, unlike the player rows. The
+                            full club name is already here, so three letters beside it
+                            would be the same thing twice. The name takes the club's own
+                            color, corrected for this background. */}
+                        <Crest teamId={e.teamId} size={18} />
                         <Link
                           to={`/team/${e.teamId}`}
                           style={{
-                            flex: 1, minWidth: 0, color: '#e2e8f0', textDecoration: 'none',
+                            flex: 1, minWidth: 0, textDecoration: 'none',
+                            color: e.teamColor ? readableTeamColor(e.teamColor, '#1e293b') : '#e2e8f0',
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           }}
                         >{e.teamName}</Link>
