@@ -49,6 +49,29 @@ const NEWS_LENGTH = 10
  */
 const LEADER_POOL = 12
 
+/**
+ * One row per category: the best available player who is not already on the board,
+ * otherwise a two-way star occupies three of the ten rows.
+ *
+ * ⚠️ A REPEATED name beats an EMPTY row. If every candidate is already shown, the
+ * category still HAS a leader and the reader still came to see who it is; printing
+ * "No leader yet" against a category somebody is leading is simply wrong. Only a
+ * category nobody has scored in stays blank.
+ *
+ * Shared by the live `/api/stats/leaders` path and the offseason recap fallback so the
+ * board cannot follow two different rules depending on the time of year.
+ */
+function pickOnePerCategory(perCategory: (LeaderRow & { raw: number })[][]): LeaderRow[] {
+  const seen = new Set<number>()
+  const rows: LeaderRow[] = []
+  perCategory.forEach(list => {
+    const fresh = list.find(p => p.raw > 0 && !seen.has(p.id))
+    const pick = fresh ?? list.find(p => p.raw > 0)
+    if (pick) { seen.add(pick.id); rows.push(pick) }
+  })
+  return rows
+}
+
 const LEADER_CATEGORIES: { category: string; label: string; format?: (v: number) => string }[] = [
   { category: 'passing_yards', label: 'PASS YDS' },
   { category: 'passing_tds', label: 'PASS TDS' },
@@ -151,6 +174,46 @@ const FrontPage: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false
+
+    // ⚠️ ONCE THE SEASON ENDS, `/api/stats/leaders` HAS NOTHING TO SERVE. Every category
+    // it reads comes out of the player's live `seasonStatsDict`, and the sim archives
+    // that dict and resets it to blank the moment the Floos Bowl finishes — so from the
+    // final whistle until the next season's first game the whole panel read "No leader
+    // yet". The one row that survived is the tell rather than an exception: `fantasy_points`
+    // alone also adds the in-game total, so it showed the BOWL's own points (42) as if
+    // they were a season figure.
+    //
+    // `/api/recap` carries the archived leaders for the season just finished, and the
+    // offseason front page already fetches it for the hero and the personal rail, so this
+    // is a re-read of a payload that is on the page rather than a new request.
+    //
+    // ⚠️ It replaces the live categories rather than filling the empty ones. Falling back
+    // only where the list came back empty would have left that bogus 42 standing, since
+    // that row is not empty — it is wrong.
+    if (isOffseason && seasonRecap?.leaders?.length) {
+      const byCategory = new Map(seasonRecap.leaders.map(c => [c.category, c]))
+      setLeaders(pickOnePerCategory(LEADER_CATEGORIES.map(({ category, label, format }) => {
+        const entry = byCategory.get(category)
+        return (entry?.leaders ?? []).map(p => ({
+          id: p.id,
+          name: p.name,
+          position: p.position ?? '',
+          teamAbbr: p.teamAbbr ?? '',
+          teamId: p.teamId ?? null,
+          teamColor: p.teamColor ?? TEXT.secondary,
+          ratingStars: p.stars ?? 0,
+          // The recap does not carry anomaly state, and it should not: the panel is
+          // reporting a finished season, where "currently awakened" is not a fact about
+          // the year being described.
+          awakened: false,
+          statLabel: label,
+          statValue: format ? format(p.value ?? 0) : Number(p.value ?? 0).toLocaleString(),
+          raw: p.value ?? 0,
+        }))
+      })))
+      return () => { cancelled = true }
+    }
+
     Promise.all(LEADER_CATEGORIES.map(async ({ category, label, format }) => {
       try {
         const res = await fetch(`${API_BASE}/stats/leaders?category=${category}&limit=${LEADER_POOL}`)
@@ -174,25 +237,10 @@ const FrontPage: React.FC = () => {
       }
     })).then(perCategory => {
       if (cancelled) return
-      // One row per category, taking the best available player who is not already on the
-      // board — otherwise a two-way star occupies three of the eight rows.
-      const seen = new Set<number>()
-      const rows: LeaderRow[] = []
-      perCategory.forEach(list => {
-        // Prefer someone not already on the board, so one two-way star does not take
-        // three of the ten rows.
-        const fresh = list.find((p: any) => p.raw > 0 && !seen.has(p.id))
-        // ⚠️ But a REPEATED name beats an EMPTY row. If every candidate is already
-        // shown, the category still has a leader and the reader still came to see who
-        // it is; printing "No leader yet" against a category somebody is leading is
-        // simply wrong. Only a category nobody has scored in stays blank.
-        const pick = fresh ?? list.find((p: any) => p.raw > 0)
-        if (pick) { seen.add(pick.id); rows.push(pick) }
-      })
-      setLeaders(rows)
+      setLeaders(pickOnePerCategory(perCategory))
     })
     return () => { cancelled = true }
-  }, [leadersTick])
+  }, [leadersTick, isOffseason, seasonRecap])
 
   useEffect(() => {
     let cancelled = false
