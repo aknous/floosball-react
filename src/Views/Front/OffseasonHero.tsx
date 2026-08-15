@@ -6,24 +6,42 @@ import type { SeasonRecapResponse } from '@/types/recap'
 /**
  * What the hero rail carries once the season is over.
  *
- * ⚠️ THE RAIL IS THE SLATE, AND IN THE OFFSEASON THERE IS NO SLATE. `LiveTicker` renders
+ * ⚠️ THE HERO IS THE SLATE, AND IN THE OFFSEASON THERE IS NO SLATE. `LiveTicker` renders
  * the week's games; between the Floos Bowl and the next season there are none, so the
- * most prominent column on the landing page had nothing in it for the whole offseason —
+ * most prominent band on the landing page had nothing in it for the whole offseason —
  * at exactly the moment the league is at its most active. This is what goes there
  * instead: the state of the league in one line, and the way into the two pages that ARE
  * the offseason.
+ *
+ * ⚠️ It is a full-width BAND, not a column — `.frontGrid > .frontHero` is
+ * `grid-column: 1 / -1`. An earlier revision of this note called it a column, and the
+ * layout below was built to match that description rather than the CSS. See `CTA`.
  *
  * It is deliberately a signpost rather than a summary. The compact recap lives in the
  * personal rail (`SeasonOverCard`); duplicating it here would make the landing page two
  * recaps and no direction.
  */
 
+/**
+ * ⚠️ THE HERO IS FULL WIDTH, NOT A RAIL. `.frontGrid > .frontHero` is
+ * `grid-column: 1 / -1`, which is right for `LiveTicker` (a horizontal slate) and was
+ * never true of this panel's own layout: it was written as a narrow-column card —
+ * `display: block` CTAs stacked in a `flexDirection: column` — so at the real width the
+ * two buttons rendered as page-spanning bars. Reported as the offseason rail being "way
+ * too wide".
+ *
+ * So the CTAs size to their labels and sit side by side. `flex: 0 0 auto` and
+ * `fit-content` on the row are both needed — either alone still lets a stretching
+ * parent pull them out.
+ */
 const CTA: React.CSSProperties = {
   ...font(700, 12, 1, '0.06em'),
-  display: 'block',
+  display: 'inline-block',
+  flex: '0 0 auto',
   textAlign: 'center',
-  padding: '12px 14px',
+  padding: '12px 22px',
   textDecoration: 'none',
+  whiteSpace: 'nowrap',
   fontFamily: FONT,
 }
 
@@ -66,7 +84,10 @@ export const OffseasonHero: React.FC<Props> = ({ recap }) => {
         The draft runs pick by pick until the new season starts.
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {/* `wrap` is what keeps this honest on a phone, where the grid collapses to one
+          column and the hero genuinely IS narrow — the pair drops to stacked instead of
+          overflowing. */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', width: 'fit-content' }}>
         <Link
           to="/offseason?view=draft"
           style={{ ...CTA, background: ACCENT.info, color: BG.shell }}
