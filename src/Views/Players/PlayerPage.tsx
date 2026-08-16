@@ -270,6 +270,122 @@ const OFFENSE_COLUMNS: Record<string, StatColumn[]> = {
 }
 OFFENSE_COLUMNS.TE = OFFENSE_COLUMNS.WR
 
+/**
+ * What the cards actually score off.
+ *
+ * ⚠️ A CARD CAN PAY ON A STAT THE GAME NEVER SHOWS YOU. Roughly twenty effects key off
+ * numbers that appear on no table in the app: well-placed and bad throws, yards after
+ * contact, broken tackles, contested catches, bailouts, punt placement, return yards.
+ * The sim records every one of them and the API has always sent them inside the stat
+ * blobs, so this is not new data — it is data that was being thrown away at the last
+ * step. Without it a card reads "+0.03 FPx per 5 well-placed throws" and there is
+ * nowhere to go and find out how many your quarterback has.
+ *
+ * These are deliberately their own view rather than extra columns on the standard line:
+ * they are a different question (how is this player tracking against my cards) and the
+ * passing table is already at its width.
+ *
+ * ⚠️ Career totals sum the seasons rather than reading the career blob. Counting stats
+ * add up cleanly; the derived ones below do their own arithmetic from the summed parts,
+ * because an average of averages is not the career average.
+ */
+const perThrow = (row: any): number | null => {
+  const throws = Number(row?.passing?.throws) || 0
+  const air = Number(row?.passing?.airYardsSum) || 0
+  return throws > 0 ? air / throws : null
+}
+
+/** 40+ yard field goals. ⚠️ `fg40+` is written to the GAME blob only, never to a season
+ *  or career one, so a season line has to rebuild it from the distance buckets. Those
+ *  two are stored everywhere and sum to exactly "40 or more". */
+const fg40plus = (k: any): number =>
+  (Number(k?.fg40to50) || 0) + (Number(k?.fgOver50) || 0)
+
+const CARD_STAT_COLUMNS: Record<string, StatColumn[]> = {
+  QB: [
+    gamesColumn,
+    { key: 'good', label: 'GOOD', width: 54, strong: true,
+      cell: r => num(r.passing?.goodThrows),
+      total: (_c, rows) => num(sumOver(rows, r => r.passing?.goodThrows)) },
+    { key: 'bad', label: 'BAD', width: 46,
+      cell: r => num(r.passing?.badThrows),
+      total: (_c, rows) => num(sumOver(rows, r => r.passing?.badThrows)) },
+    { key: 'thrw', label: 'THRW', width: 52,
+      cell: r => num(r.passing?.throws),
+      total: (_c, rows) => num(sumOver(rows, r => r.passing?.throws)) },
+    { key: 'adot', label: 'ADOT', width: 52,
+      cell: r => num(perThrow(r), 1),
+      total: (_c, rows) => {
+        const throws = sumOver(rows, r => r.passing?.throws)
+        return throws > 0 ? num(sumOver(rows, r => r.passing?.airYardsSum) / throws, 1) : '—'
+      } },
+    { key: 'sk', label: 'SK', width: 44,
+      cell: r => num(r.passing?.sacked),
+      total: (_c, rows) => num(sumOver(rows, r => r.passing?.sacked)) },
+    { key: 'big', label: '20+', width: 46,
+      cell: r => num(r.passing?.['20+']),
+      total: (_c, rows) => num(sumOver(rows, r => r.passing?.['20+'])) },
+  ],
+  RB: [
+    gamesColumn,
+    { key: 'ycon', label: 'YDS/CON', width: 66, strong: true,
+      cell: r => num(r.rushing?.yardsAfterContact),
+      total: (_c, rows) => num(sumOver(rows, r => r.rushing?.yardsAfterContact)) },
+    { key: 'brk', label: 'BRK', width: 46,
+      cell: r => num(r.rushing?.brokenTackles),
+      total: (_c, rows) => num(sumOver(rows, r => r.rushing?.brokenTackles)) },
+    { key: 'stf', label: 'STUFF', width: 56,
+      cell: r => num(r.rushing?.stuffs),
+      total: (_c, rows) => num(sumOver(rows, r => r.rushing?.stuffs)) },
+    { key: 'big', label: '20+', width: 46,
+      cell: r => num(r.rushing?.['20+']),
+      total: (_c, rows) => num(sumOver(rows, r => r.rushing?.['20+'])) },
+    { key: 'pryd', label: 'PR YDS', width: 62,
+      cell: r => num(r.returning?.puntReturnYards),
+      total: (_c, rows) => num(sumOver(rows, r => r.returning?.puntReturnYards)) },
+  ],
+  WR: [
+    gamesColumn,
+    { key: 'yac', label: 'YAC', width: 52, strong: true,
+      cell: r => num(r.receiving?.yac),
+      total: (_c, rows) => num(sumOver(rows, r => r.receiving?.yac)) },
+    { key: 'ctc', label: 'CONT', width: 52,
+      cell: r => num(r.receiving?.contestedCatches),
+      total: (_c, rows) => num(sumOver(rows, r => r.receiving?.contestedCatches)) },
+    { key: 'ctgt', label: 'CONT TGT', width: 72,
+      cell: r => num(r.receiving?.contestedTargets),
+      total: (_c, rows) => num(sumOver(rows, r => r.receiving?.contestedTargets)) },
+    { key: 'bail', label: 'BAIL', width: 50,
+      cell: r => num(r.receiving?.bailouts),
+      total: (_c, rows) => num(sumOver(rows, r => r.receiving?.bailouts)) },
+    { key: 'drop', label: 'DROP', width: 52,
+      cell: r => num(r.receiving?.drops),
+      total: (_c, rows) => num(sumOver(rows, r => r.receiving?.drops)) },
+    { key: 'big', label: '20+', width: 46,
+      cell: r => num(r.receiving?.['20+']),
+      total: (_c, rows) => num(sumOver(rows, r => r.receiving?.['20+'])) },
+  ],
+  K: [
+    gamesColumn,
+    { key: 'fg40', label: 'FG 40+', width: 62, strong: true,
+      cell: r => num(fg40plus(r.kicking)),
+      total: (_c, rows) => num(sumOver(rows, r => fg40plus(r.kicking))) },
+    { key: 'punt', label: 'PUNTS', width: 58,
+      cell: r => num(r.kicking?.punts),
+      total: (_c, rows) => num(sumOver(rows, r => r.kicking?.punts)) },
+    { key: 'in20', label: 'IN 20', width: 54,
+      cell: r => num(r.kicking?.puntsInside20),
+      total: (_c, rows) => num(sumOver(rows, r => r.kicking?.puntsInside20)) },
+    { key: 'in10', label: 'IN 10', width: 54,
+      cell: r => num(r.kicking?.puntsInside10),
+      total: (_c, rows) => num(sumOver(rows, r => r.kicking?.puntsInside10)) },
+    { key: 'ptb', label: 'TB', width: 44,
+      cell: r => num(r.kicking?.puntTouchbacks),
+      total: (_c, rows) => num(sumOver(rows, r => r.kicking?.puntTouchbacks)) },
+  ],
+}
+CARD_STAT_COLUMNS.TE = CARD_STAT_COLUMNS.WR
+
 const DEFENSE_COLUMNS: StatColumn[] = [
   gamesColumn,
   { key: 'tkl', label: 'TKL', width: 48, strong: true, cell: r => num(r.defense?.tackles), total: c => num(c?.defense?.tackles) },
@@ -308,7 +424,7 @@ const PlayerPage: React.FC = () => {
   const [loading, setLoading] = useState(true)
 
   const [attrTab, setAttrTab] = useState<'attributes' | 'progression'>('attributes')
-  const [statsSide, setStatsSide] = useState<'offense' | 'defense'>('offense')
+  const [statsSide, setStatsSide] = useState<'offense' | 'defense' | 'cards'>('offense')
 
   const narrow = useIsMobile(1100)
   const veryNarrow = useIsMobile(760)
@@ -395,7 +511,10 @@ const PlayerPage: React.FC = () => {
   const seasonsLabel = `${player.seasonsPlayed} season${player.seasonsPlayed === 1 ? '' : 's'}`
 
   const hasDefenseSide = player.position !== 'K' && !!player.defensivePosition
-  const side = hasDefenseSide ? statsSide : 'offense'
+  // ⚠️ The card view exists for EVERY position, including a kicker with no defensive
+  // side — punt placement is exactly the kind of stat this view was added for. So the
+  // segmented control is no longer gated on `hasDefenseSide`; only the DEFENSE option is.
+  const side = (statsSide === 'defense' && !hasDefenseSide) ? 'offense' : statsSide
   const offenseLabel = (player.position === 'QB' ? 'PASSING'
     : player.position === 'RB' ? 'RUSHING'
     : player.position === 'K' ? 'KICKING'
@@ -688,16 +807,24 @@ const PlayerPage: React.FC = () => {
       ) : (
         <CareerTable
           title="CAREER STATS"
-          columns={side === 'offense' ? (OFFENSE_COLUMNS[player.position] ?? OFFENSE_COLUMNS.WR) : DEFENSE_COLUMNS}
+          columns={
+            side === 'cards' ? (CARD_STAT_COLUMNS[player.position] ?? CARD_STAT_COLUMNS.WR)
+              : side === 'defense' ? DEFENSE_COLUMNS
+              : (OFFENSE_COLUMNS[player.position] ?? OFFENSE_COLUMNS.WR)
+          }
           rows={player.stats ?? []}
           career={player.allTimeStats}
-          right={hasDefenseSide ? (
+          right={(
             <SegmentedControl
-              options={[{ key: 'offense', label: offenseLabel }, { key: 'defense', label: 'DEFENSE' }]}
+              options={[
+                { key: 'offense', label: offenseLabel },
+                ...(hasDefenseSide ? [{ key: 'defense', label: 'DEFENSE' }] : []),
+                { key: 'cards', label: 'CARD STATS' },
+              ]}
               value={side}
-              onChange={key => setStatsSide(key as 'offense' | 'defense')}
+              onChange={key => setStatsSide(key as 'offense' | 'defense' | 'cards')}
             />
-          ) : undefined}
+          )}
         />
       )}
     </div>
