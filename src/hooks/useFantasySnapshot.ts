@@ -16,6 +16,13 @@ export interface SnapshotPlayer {
   weekFP: number
 }
 
+export interface TrackedStat {
+  group: 'passing' | 'rushing' | 'receiving' | 'kicking' | 'returning'
+  key: string
+  dbKey: string
+  label: string
+}
+
 export interface CardBreakdownEntry {
   slotNumber: number
   playerId: number
@@ -25,6 +32,9 @@ export interface CardBreakdownEntry {
   effectName: string
   displayName: string
   detail: string
+  /** The stat(s) this card scores off. Empty for roster-wide effects, which have no
+   *  single figure to point at. Resolve against `playerGameStats` using `dbKey`. */
+  trackedStats?: TrackedStat[]
   category: string
   outputType: string
   primaryFP: number
@@ -135,6 +145,8 @@ export interface PlayerGameStats {
   rushing: Record<string, number>
   receiving: Record<string, number>
   kicking: Record<string, number>
+  /** Return production, credited to the returner. Two cards score off it. */
+  returning?: Record<string, number>
   fantasyPoints: number
 }
 

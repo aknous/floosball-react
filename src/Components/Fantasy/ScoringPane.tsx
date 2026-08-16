@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { PointsBreakdownPanel } from '@/Components/Fantasy/PointsBreakdownPanel'
-import { compactStatLine } from '@/Components/Fantasy/playerStatLine'
-import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
+import { compactStatLine, trackedStatLine } from '@/Components/Fantasy/playerStatLine'
+import { useFantasySnapshot, CardBreakdownEntry } from '@/hooks/useFantasySnapshot'
 import { useLineup, BASE_SLOTS, FLEX_SLOT, LineupSlot, EquippedEntry } from '@/hooks/useLineup'
 import { useCardProjection, CardProjection } from '@/hooks/useCardProjection'
 import { useAuth } from '@/contexts/AuthContext'
@@ -24,14 +24,31 @@ export const ScoringPane: React.FC = () => {
     || (myEntry?.weekTotal ?? 0) > 0
     || (myEntry?.cardBreakdowns?.length ?? 0) > 0
 
-  const playerSummaries = (myEntry?.players ?? []).map(p => ({
-    playerId: p.playerId,
-    playerName: p.playerName,
-    position: p.position || p.slot,
-    weekFP: p.weekFP,
-    // The player's this-week game line, shown under their name in Roster Week Total.
-    statLine: compactStatLine(myEntry?.playerGameStats?.[p.playerId], (p.position || '').toUpperCase()) ?? undefined,
-  }))
+  // ⚠️ THE STAT A CARD IS BEING PAID ON IS NOT ALWAYS ON THE BOX SCORE. Around twenty
+  // effects score off numbers no ordinary stat line carries — well-placed and bad throws,
+  // yards after contact, broken tackles, contested catches, bailouts, punt placement,
+  // return yards. The card breakdown is where that number belongs, so it is resolved
+  // here, where the week's stats and the equipped card's `trackedStats` are both in hand.
+  const breakdownByPlayer = new Map<number, CardBreakdownEntry>()
+  for (const b of myEntry?.cardBreakdowns ?? []) breakdownByPlayer.set(b.playerId, b)
+
+  const playerSummaries = (myEntry?.players ?? []).map(p => {
+    const pos = (p.position || '').toUpperCase()
+    const gameStats = myEntry?.playerGameStats?.[p.playerId]
+    return {
+      playerId: p.playerId,
+      playerName: p.playerName,
+      position: p.position || p.slot,
+      weekFP: p.weekFP,
+      // The player's this-week game line, shown under their name in Roster Week Total.
+      statLine: compactStatLine(gameStats, pos) ?? undefined,
+      // …and beneath it, the figure this player's card is actually scoring off. Null
+      // when the card watches the roster rather than one player, or when the stat is
+      // already in the line above.
+      trackedLine: trackedStatLine(
+        gameStats, breakdownByPlayer.get(p.playerId)?.trackedStats, pos) ?? undefined,
+    }
+  })
 
   // Depicted-player week FP by id — drives the per-card power-bar meter in the breakdown.
   const playerFPById: Record<number, number> = {}
