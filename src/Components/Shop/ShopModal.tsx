@@ -845,7 +845,11 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                           }}
                         >
                           <GiPerspectiveDiceSixFacesRandom size={16} />
-                          {rerolling ? 'Rerolling...' : `Reroll \u00b7 ${rerollCost}`}
+                          {/* The first reroll each day is free. Showing "Reroll \u00b7 0"
+                              reads as a bug rather than a gift, so name it. */}
+                          {rerolling ? 'Rerolling...'
+                            : rerollCost === 0 ? 'Reroll \u00b7 Free'
+                            : `Reroll \u00b7 ${rerollCost}`}
                         </button>
                       </div>
                     </>
