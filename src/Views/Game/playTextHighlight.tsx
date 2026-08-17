@@ -113,10 +113,25 @@ export function highlightPlayText(
 
   // 2. Yardage. Deliberately the phrase, not a bare number, so a jersey number or a
   //    down-and-distance elsewhere in the sentence is left alone.
-  const yardRe = /\b\d+ yards?\b/gi
+  //
+  // ⚠️ THE MINUS SIGN IS PART OF THE NUMBER. `\b\d+ yards?\b` matched "4 yards" inside
+  // "for -4 yards" and left the "-" in body text, so a four-yard LOSS on a sack rendered as
+  // a bolded "4 yards" — which reads at a glance as a gain. Emphasising it wrongly is worse
+  // than not emphasising it.
+  //
+  // A leading delimiter is matched instead of a lookbehind (`(?<![\w-])`), which Safari
+  // only gained in 16.4 — the group's own offset is used so the delimiter is not swallowed.
+  //
+  // ⚠️ A KICK WRITES ITS DISTANCE DIFFERENTLY: "27yd Field Goal by X is good", no space and
+  // abbreviated. Measured over 2,470 real lines, that is 75 of them (3%) — every one a
+  // field goal, and the only distance on the line. Requiring the full word left the kick
+  // that decided the game as the one play whose distance was not lifted.
+  const yardRe = /(^|[\s(])(-?\d+ ?(?:yards?|yds?))\b/gi
   for (let m = yardRe.exec(text); m; m = yardRe.exec(text)) {
-    if (!collides(taken, m.index, m.index + m[0].length)) {
-      taken.push({ start: m.index, end: m.index + m[0].length, kind: 'yards' })
+    const start = m.index + m[1].length
+    const end = start + m[2].length
+    if (!collides(taken, start, end)) {
+      taken.push({ start, end, kind: 'yards' })
     }
   }
 

@@ -61,6 +61,26 @@ describe('highlightPlayText', () => {
     expect(got).not.toContain('3')
   })
 
+  it('keeps the minus sign attached to a loss', () => {
+    // ⚠️ `\b\d+ yards?\b` matched "4 yards" inside "for -4 yards" and left the "-" in body
+    // text, so a four-yard LOSS rendered as a bolded "4 yards" and read at a glance as a
+    // gain. Measured at 117 of 2,470 real lines (5%) — every sack and stop behind the line.
+    const t = 'Jim Bob is crushed by Al Green for -4 yards'
+    const got = bolded(highlightPlayText(t, ['Jim Bob', 'Al Green']))
+    expect(got).toContain('-4 yards')
+    expect(got).not.toContain('4 yards')
+  })
+
+  it('lifts a field goal distance, which is written differently', () => {
+    // ⚠️ A kick abbreviates and drops the space: "27yd Field Goal by X is good". Measured
+    // at 75 of 2,470 lines, every one a field goal and the only distance on the line — so
+    // requiring the full word left the kick that decided the game as the one play whose
+    // distance was not lifted.
+    const got = bolded(highlightPlayText('27yd Field Goal by Al Green is good', ['Al Green']))
+    expect(got).toContain('27yd')
+    expect(got).toContain('is good')
+  })
+
   it('handles a name that contains another name', () => {
     const t = 'Al Green throws to Al Greenway for 12 yards.'
     const got = bolded(highlightPlayText(t, ['Al Green', 'Al Greenway']))
