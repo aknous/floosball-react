@@ -8,9 +8,80 @@ export interface ChangelogEntry {
   date: string
   changes: string[]
   sections?: ChangelogSection[]
+  /**
+   * Marks a release the Welcome modal should feature (it opens once per season
+   * and shows the last feature release, skipping patch bumps).
+   *
+   * Set it explicitly. It used to be INFERRED from the version string with
+   * /^v?\d+\.\d+\.0/, which silently stopped matching when numbering moved from
+   * three parts (v0.25.0) to two (v1.00) — so the modal resolved back to v0.25.0
+   * and would have shown two-releases-stale notes to everyone at the season 2
+   * rollover. A flag cannot drift with the numbering scheme.
+   */
+  feature?: boolean
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.01',
+    date: '2026-08-16',
+    feature: true,
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Simulation] No-huddle offense. A team in a hurry stays at the line instead of huddling, and the play feed calls it out. Staying at the line buys time and costs playbook, so the menu shrinks to short and medium throws.',
+          '[Simulation] Audibles. A quarterback reads the box before the snap and can change the call, and the play feed names it. Reading it wrong is its own risk, and the quarterbacks most willing to try are not always the ones who read it best.',
+          '[Simulation] Defenses disguise their look. What they show before the snap is not always what they run.',
+          '[Prognostications] Pick games from the front page one at a time, and from the win probability gauge on the game page.',
+          '[Record Book] Team Records, built from every game played.',
+          '[Standings] Clinched playoff berths, division titles and the top seed are marked on the board.',
+          '[Cards] Every card names the stat it is watching. On the card, in the scoring breakdown, and on the player page, so you can follow the number a card is paid on.',
+          '[Players] Punt return production on the season line, and per game averages next to season totals.',
+          '[Games] Timeouts remaining on the game page.',
+          '[Front Page] The Floos Bowl champion is published to league news and held at the top.',
+          '[Settings] Turn the glitch down, or off.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Shop] The card selection no longer changes on its own. It stays until you reroll it, so you can save toward a card without it disappearing overnight.',
+          '[Shop] The first reroll each day is free.',
+          '[Schedule] The next day of games opens the evening before, just after the last game ends, instead of early the following morning. Prognostications and the shop roll over with it.',
+          '[Simulation] Fewer runaway sack games. Pass rush quality still separates teams, but the extremes are gone.',
+          '[Simulation] A sack no longer stops the clock. The quarterback was tackled in the field of play.',
+          '[Simulation] Teams run a two minute drill at the end of the second quarter whatever the score. There is no lead to protect when the clock resets at the half.',
+          '[Simulation] A team in range takes the makeable field goal on the last snap of a half, whatever the down says.',
+          '[Simulation] The chess clock format mirrors the game clock instead of driving it. Teams punt rather than run their budget out deep in their own end.',
+          '[Front Office] A fired GM joins the pool and can be hired by another team instead of disappearing.',
+          '[Front Office] GMs allow for the fact that the best looking free agent in a deep pool is usually the one they have overrated.',
+          '[Front Office] A player can re-sign with the same team more than once, so a long career at one team is possible again.',
+          '[Cards] Streak bonuses pay only on a week the streak was continued, and settle when the week ends rather than at kickoff.',
+          '[Cards] Diversified pays less per output type. A real lineup was collecting it about two and a half times over.',
+          '[Cards] Spotlight Moment is a wide receiver card and reads only its own player.',
+          '[Economy] Very large fantasy weeks pay less at the top end. Typical weeks are unchanged.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Prognostications] Picks could appear against the wrong matchup during a live week.',
+          '[Standings] Clinched teams, division trophies and eliminations dissolved once the playoffs began, exactly when the table was most settled.',
+          '[Playoffs] The bracket challenge showed two teams on a bye in a field that has none, then reshaped itself once the first round finished.',
+          '[Stats] Season player stats and the front page top players read zero for the whole offseason.',
+          '[Records] Team records were saved and then lost on every restart.',
+          '[Records] The Fantasy Records page was empty.',
+          '[Achievements] Veteran credited nobody for a whole season.',
+          '[Cards] Receiving targets counted only catches, so catch rates read far too high.',
+          '[Cards] Cards in the shop and in pack reveals projected zero.',
+          '[Cards] Some cards printed a question mark where a number belonged, and Bet Big showed two different numbers on one card.',
+          '[Bleachers] Sideline cutaways always sorted below fan posts however long ago they were said.',
+        ],
+      },
+    ],
+  },
   {
     version: 'v1.00',
     date: '2026-08-10',
