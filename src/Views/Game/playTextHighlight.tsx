@@ -5,57 +5,34 @@ import React from 'react'
  *
  * A play is one long sentence — "Mario Trolleyproblem quick out to Rhodes Alltime for 10
  * yards, spins but gets dragged down anyway, and reaches the ball across the marker for the
- * first down!" — and the eye has to hunt through it for who did what, how far, and what
- * came of it. Those three are what a reader is actually after, so those three are lifted.
+ * first down!" — and the eye has to hunt through it for who did what and how far. Those two
+ * are what a reader is actually after, so those two are lifted.
  *
  * ⚠️ NAMES COME FROM THE ENGINE, NEVER FROM PATTERN MATCHING. `involvedPlayers` is the
  * exact set of strings the play named. A client cannot infer them: the name pool includes
  * "Firstname Lastname" (deliberately) and every other joke in config.json, so any rule for
  * "what a name looks like" would both miss real names and bold ordinary words.
  *
+ * ⚠️ OUTCOMES WERE HIGHLIGHTED IN BLUE AND ARE GONE (owner, 2026-08-17: "they seem
+ * arbitrary at times"). The problem is structural, not a matter of a better word list. A
+ * name and a distance are FACTS THE ENGINE HANDS OVER — one arrives as a string, the other
+ * is a number in an obvious frame — whereas "what came of it" was reconstructed on the
+ * client by scanning for phrases, and the engine writes the same event a dozen ways: a
+ * sack is "is buried by" or "brings him down" or "is crushed by", and a touchdown does not
+ * say the word at all (it reads "fires a short one to X for 12 yards", with the score
+ * carried by the `isTouchdown` flag). So any list is a sample, and a sample highlights one
+ * sack and not the next — which is exactly what arbitrary looks like from the outside.
+ *
+ * ⚠️ DO NOT REINSTATE IT BY LENGTHENING THE LIST. A longer list catches more and stays
+ * just as uneven. The only non-arbitrary version is the backend saying which span is the
+ * outcome, the way it already says which strings are the players.
+ *
  * ⚠️ SEGMENTS NEVER OVERLAP. Matches are collected, sorted by position, and any that starts
- * inside one already taken is dropped — otherwise a yardage inside a name, or two outcome
- * phrases sharing a word, would produce nested or duplicated spans.
+ * inside one already taken is dropped — otherwise a distance sitting inside a name would
+ * produce nested or duplicated spans.
  */
 
-/**
- * Terminal outcomes worth lifting, DERIVED FROM THE ACTUAL PLAY-TEXT CORPUS rather than
- * guessed. Ordered longest-first so "first down" wins over "down".
- *
- * ⚠️ THE FIRST LIST WAS INVENTED AND MOSTLY DID NOT MATCH. Measured over 1,201 real lines:
- * `touchdown` appeared ONCE, and `intercepted`, `picked off`, `recovered`, `safety` and
- * `turnover on downs` never appeared at all. The engine words these differently — a pick is
- * "undercuts it for the pick", a fumble is "forces the fumble, HOM recover" (present
- * tense), and most sacks read "is buried by" or "brings him down" rather than "sacked".
- *
- * ⚠️ A TOUCHDOWN CANNOT BE HIGHLIGHTED FROM THE TEXT, because the text does not say it:
- * a scoring play reads "fires a short one to X for 12 yards" and the score is carried by
- * the `isTouchdown` flag and the score line instead. Deliberate in the engine (see the
- * contested-scoring note, where reaching the end zone is explicitly NOT the word
- * "TOUCHDOWN"). Colouring one would need the backend to say which span to mark.
- *
- * ⚠️ Blue is SUPPOSED to be uncommon. Most plays are a routine gain and a tackle, with no
- * terminal event at all — that is not a miss.
- */
-const OUTCOMES = [
-  // scoring plays that DO name themselves
-  'first down', 'is good', 'no good', 'safety', 'touchback',
-  // turnovers, as the engine actually writes them
-  'for the pick', 'picked off', 'intercepts', 'interception', 'intercepted',
-  'forces the fumble', 'fumbles', 'fumbled', 'fumble', 'recover', 'recovered',
-  'turnover on downs',
-  // the quarterback going down
-  'sacked', 'is buried by', 'brings him down', 'nowhere to throw',
-  'is crushed by', 'is taken down by',
-  // stops behind or at the line
-  'is stuffed by', 'stuffed', 'tackled in the backfield', 'comes up short',
-  // the pass that never arrived
-  'incomplete', 'knocked loose', 'broken up',
-  // kicks and clock
-  'fair catch', 'downed', 'muffs', 'muffed', 'takes a knee',
-].sort((a, b) => b.length - a.length)
-
-type Kind = 'player' | 'yards' | 'outcome'
+type Kind = 'player' | 'yards'
 interface Match { start: number; end: number; kind: Kind }
 
 // ⚠️ WEIGHT ALONE DOES ALMOST NOTHING HERE, and colour was doing nothing at all. The font
@@ -71,8 +48,6 @@ const STYLES: Record<Kind, React.CSSProperties> = {
   player: { color: '#ffffff', fontWeight: 900 },
   // The number. As bright as a name; it is the other thing being looked up.
   yards: { color: '#ffffff', fontWeight: 900 },
-  // What came of it. The only hue, because it is the part that changes the game.
-  outcome: { color: '#38bdf8', fontWeight: 900 },
 }
 
 /** Case-insensitive index scan, returning every occurrence of `needle`. */
@@ -101,7 +76,7 @@ export function highlightPlayText(
   const lower = text.toLowerCase()
   const taken: Match[] = []
 
-  // 1. Players first — the engine's own strings, so they outrank every pattern below.
+  // 1. Players first — the engine's own strings, so they outrank the pattern below.
   //    Longest first so a surname inside a full name cannot claim the span alone.
   for (const name of [...players].filter(Boolean).sort((a, b) => b.length - a.length)) {
     for (const at of findAll(lower, name.toLowerCase())) {
@@ -132,19 +107,6 @@ export function highlightPlayText(
     const end = start + m[2].length
     if (!collides(taken, start, end)) {
       taken.push({ start, end, kind: 'yards' })
-    }
-  }
-
-  // 3. Outcomes.
-  for (const phrase of OUTCOMES) {
-    for (const at of findAll(lower, phrase)) {
-      // Word-boundary check by hand: `indexOf` would happily match inside another word.
-      const before = at === 0 ? ' ' : text[at - 1]
-      const after = at + phrase.length >= text.length ? ' ' : text[at + phrase.length]
-      if (/[a-z]/i.test(before) || /[a-z]/i.test(after)) continue
-      if (!collides(taken, at, at + phrase.length)) {
-        taken.push({ start: at, end: at + phrase.length, kind: 'outcome' })
-      }
     }
   }
 

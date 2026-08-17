@@ -34,23 +34,24 @@ const TEXT = 'Waffles goes no-huddle. Mario Trolleyproblem quick out to Rhodes A
 const PLAYERS = ['Mario Trolleyproblem', 'Rhodes Alltime']
 
 describe('highlightPlayText', () => {
-  it('lifts the players, the yards, and the outcome', () => {
+  it('lifts the players and the yards', () => {
     const got = bolded(highlightPlayText(TEXT, PLAYERS))
     expect(got).toContain('Mario Trolleyproblem')
     expect(got).toContain('Rhodes Alltime')
     expect(got).toContain('10 yards')
-    expect(got).toContain('first down')
   })
 
   it('never alters the text itself', () => {
     expect(plain(highlightPlayText(TEXT, PLAYERS))).toBe(TEXT)
   })
 
-  it('prefers the longer outcome over the shorter one inside it', () => {
-    // "first down" must win over "down"; "down" also appears in "dragged down".
-    const got = bolded(highlightPlayText(TEXT, PLAYERS))
-    expect(got).toContain('first down')
-    expect(got).not.toContain('down')
+  it('lifts nothing but the players and the distance', () => {
+    // ⚠️ OUTCOMES ARE DELIBERATELY GONE (owner: "they seem arbitrary at times").
+    // The engine writes one event a dozen ways, so any phrase list is a sample, and a
+    // sample lifts one sack and not the next. This pins the WHOLE emphasis set rather than
+    // spot-checking it, so re-adding a category fails here instead of shipping quietly.
+    expect(bolded(highlightPlayText(TEXT, PLAYERS)))
+      .toEqual(['Mario Trolleyproblem', 'Rhodes Alltime', '10 yards'])
   })
 
   it('does not bold a bare number that is not yardage', () => {
@@ -78,7 +79,6 @@ describe('highlightPlayText', () => {
     // distance was not lifted.
     const got = bolded(highlightPlayText('27yd Field Goal by Al Green is good', ['Al Green']))
     expect(got).toContain('27yd')
-    expect(got).toContain('is good')
   })
 
   it('handles a name that contains another name', () => {
@@ -88,11 +88,12 @@ describe('highlightPlayText', () => {
     expect(plain(highlightPlayText(t, ['Al Green', 'Al Greenway']))).toBe(t)
   })
 
-  it('does not match an outcome inside another word', () => {
-    const t = 'Sackett Jones gains 3 yards.'
+  it('does not claim a distance inside another token', () => {
+    const t = 'Sackett Jones gains 3 yards to the 30yard line.'
     const got = bolded(highlightPlayText(t, ['Sackett Jones']))
     expect(got).toContain('Sackett Jones')
-    expect(got.join('|')).not.toMatch(/^sack$/i)
+    expect(got).toContain('3 yards')
+    expect(plain(highlightPlayText(t, ['Sackett Jones']))).toBe(t)
   })
 
   it('passes through text with nothing to lift', () => {
@@ -124,7 +125,7 @@ describe('emphasis is actually distinct', () => {
     return found
   }
   const NODE = highlightPlayText(
-    'Jim Bob runs for 4 yards, tackled by Al Green for the first down', ['Jim Bob', 'Al Green'])
+    'Jim Bob runs for 4 yards, tackled by Al Green', ['Jim Bob', 'Al Green'])
 
   it('uses the heaviest face the font ships', () => {
     expect(styleOf(NODE, 'Jim Bob')?.fontWeight).toBe(900)
@@ -132,52 +133,16 @@ describe('emphasis is actually distinct', () => {
 
   it('does not colour a highlight the same as the body text', () => {
     const body = '#cbd5e1'
-    for (const t of ['Jim Bob', '4 yards', 'first down']) {
+    for (const t of ['Jim Bob', '4 yards']) {
       expect(styleOf(NODE, t)?.color).not.toBe(body)
       expect(styleOf(NODE, t)?.color).not.toBe('#e2e8f0')
     }
   })
 
-  it('gives the outcome the only hue', () => {
-    expect(styleOf(NODE, 'first down')?.color).not.toBe(styleOf(NODE, 'Jim Bob')?.color)
-  })
-})
-
-describe('the outcome vocabulary matches how the engine actually writes', () => {
-  // ⚠️ The first vocabulary was INVENTED and mostly missed. Measured over 1,201 real lines:
-  // `touchdown` appeared once, and `intercepted`/`picked off`/`recovered`/`safety`/
-  // `turnover on downs` never. These are the phrasings the engine really uses, taken from
-  // plays whose own flags say they were a turnover or a sack.
-  const bolded = (node: React.ReactNode): string[] => {
-    const out: string[] = []
-    const walk = (n: any) => {
-      if (Array.isArray(n)) return n.forEach(walk)
-      if (n && typeof n === 'object' && n.props) {
-        if (n.props.style?.fontWeight && n.props.style.fontWeight >= 700) out.push(String(n.props.children))
-        else walk(n.props.children)
-      }
-    }
-    walk(node); return out
-  }
-  it.each([
-    ['A qb hits the window, but B wr undercuts it for the pick', 'for the pick'],
-    ['A qb picked off by B rb, returned 2 yards', 'picked off'],
-    ['A rb runs for 2 yards, B rb forces the fumble, HOM recover', 'forces the fumble'],
-    ['A qb works the crossing routes and is buried by B te for 0 yards', 'is buried by'],
-    ['A qb is crushed by B te for -4 yards', 'is crushed by'],
-    ['A qb is taken down by B te behind the line for -1 yards', 'is taken down by'],
-    ['A qb has nowhere to throw, B rb brings him down for -2 yards', 'brings him down'],
-    ['A rb takes the counter and is stuffed by B te for 0 yards', 'is stuffed by'],
-    ['A qb takes a knee', 'takes a knee'],
-  ])('lifts the outcome in %s', (text, phrase) => {
-    expect(bolded(highlightPlayText(text, []))).toContain(phrase)
-  })
-
-  it('does not pretend a touchdown is in the text', () => {
-    // ⚠️ Scoring plays deliberately do NOT say the word — "fires a short one to X for 12
-    // yards" IS a touchdown. The row carries it via isTouchdown instead, and inventing a
-    // match here would colour an arbitrary phrase.
-    const got = bolded(highlightPlayText('A qb fires a short one to B wr for 12 yards', []))
-    expect(got).toEqual(['12 yards'])
+  it('gives every highlight the same treatment', () => {
+    // With outcomes gone there is ONE emphasis, not a palette. A second colour is a
+    // category the reader has to learn, and learning it is what made the blue read as
+    // arbitrary when it fired on some plays and not others.
+    expect(styleOf(NODE, '4 yards')?.color).toBe(styleOf(NODE, 'Jim Bob')?.color)
   })
 })
