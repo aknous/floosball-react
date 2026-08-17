@@ -18,12 +18,41 @@ import React from 'react'
  * phrases sharing a word, would produce nested or duplicated spans.
  */
 
-/** Terminal outcomes worth lifting. Ordered longest-first so "first down" wins over "down". */
+/**
+ * Terminal outcomes worth lifting, DERIVED FROM THE ACTUAL PLAY-TEXT CORPUS rather than
+ * guessed. Ordered longest-first so "first down" wins over "down".
+ *
+ * ⚠️ THE FIRST LIST WAS INVENTED AND MOSTLY DID NOT MATCH. Measured over 1,201 real lines:
+ * `touchdown` appeared ONCE, and `intercepted`, `picked off`, `recovered`, `safety` and
+ * `turnover on downs` never appeared at all. The engine words these differently — a pick is
+ * "undercuts it for the pick", a fumble is "forces the fumble, HOM recover" (present
+ * tense), and most sacks read "is buried by" or "brings him down" rather than "sacked".
+ *
+ * ⚠️ A TOUCHDOWN CANNOT BE HIGHLIGHTED FROM THE TEXT, because the text does not say it:
+ * a scoring play reads "fires a short one to X for 12 yards" and the score is carried by
+ * the `isTouchdown` flag and the score line instead. Deliberate in the engine (see the
+ * contested-scoring note, where reaching the end zone is explicitly NOT the word
+ * "TOUCHDOWN"). Colouring one would need the backend to say which span to mark.
+ *
+ * ⚠️ Blue is SUPPOSED to be uncommon. Most plays are a routine gain and a tackle, with no
+ * terminal event at all — that is not a miss.
+ */
 const OUTCOMES = [
-  'touchdown', 'first down', 'intercepted', 'interception', 'picked off',
-  'fumbles', 'fumbled', 'fumble', 'recovered', 'sacked', 'sack',
-  'incomplete', 'no good', 'is good', 'safety', 'touchback', 'fair catch',
-  'turnover on downs', 'muffs', 'muffed', 'downed',
+  // scoring plays that DO name themselves
+  'first down', 'is good', 'no good', 'safety', 'touchback',
+  // turnovers, as the engine actually writes them
+  'for the pick', 'picked off', 'intercepts', 'interception', 'intercepted',
+  'forces the fumble', 'fumbles', 'fumbled', 'fumble', 'recover', 'recovered',
+  'turnover on downs',
+  // the quarterback going down
+  'sacked', 'is buried by', 'brings him down', 'nowhere to throw',
+  'is crushed by', 'is taken down by',
+  // stops behind or at the line
+  'is stuffed by', 'stuffed', 'tackled in the backfield', 'comes up short',
+  // the pass that never arrived
+  'incomplete', 'knocked loose', 'broken up',
+  // kicks and clock
+  'fair catch', 'downed', 'muffs', 'muffed', 'takes a knee',
 ].sort((a, b) => b.length - a.length)
 
 type Kind = 'player' | 'yards' | 'outcome'

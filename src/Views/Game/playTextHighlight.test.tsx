@@ -122,3 +122,42 @@ describe('emphasis is actually distinct', () => {
     expect(styleOf(NODE, 'first down')?.color).not.toBe(styleOf(NODE, 'Jim Bob')?.color)
   })
 })
+
+describe('the outcome vocabulary matches how the engine actually writes', () => {
+  // ⚠️ The first vocabulary was INVENTED and mostly missed. Measured over 1,201 real lines:
+  // `touchdown` appeared once, and `intercepted`/`picked off`/`recovered`/`safety`/
+  // `turnover on downs` never. These are the phrasings the engine really uses, taken from
+  // plays whose own flags say they were a turnover or a sack.
+  const bolded = (node: React.ReactNode): string[] => {
+    const out: string[] = []
+    const walk = (n: any) => {
+      if (Array.isArray(n)) return n.forEach(walk)
+      if (n && typeof n === 'object' && n.props) {
+        if (n.props.style?.fontWeight && n.props.style.fontWeight >= 700) out.push(String(n.props.children))
+        else walk(n.props.children)
+      }
+    }
+    walk(node); return out
+  }
+  it.each([
+    ['A qb hits the window, but B wr undercuts it for the pick', 'for the pick'],
+    ['A qb picked off by B rb, returned 2 yards', 'picked off'],
+    ['A rb runs for 2 yards, B rb forces the fumble, HOM recover', 'forces the fumble'],
+    ['A qb works the crossing routes and is buried by B te for 0 yards', 'is buried by'],
+    ['A qb is crushed by B te for -4 yards', 'is crushed by'],
+    ['A qb is taken down by B te behind the line for -1 yards', 'is taken down by'],
+    ['A qb has nowhere to throw, B rb brings him down for -2 yards', 'brings him down'],
+    ['A rb takes the counter and is stuffed by B te for 0 yards', 'is stuffed by'],
+    ['A qb takes a knee', 'takes a knee'],
+  ])('lifts the outcome in %s', (text, phrase) => {
+    expect(bolded(highlightPlayText(text, []))).toContain(phrase)
+  })
+
+  it('does not pretend a touchdown is in the text', () => {
+    // ⚠️ Scoring plays deliberately do NOT say the word — "fires a short one to X for 12
+    // yards" IS a touchdown. The row carries it via isTouchdown instead, and inventing a
+    // match here would colour an arbitrary phrase.
+    const got = bolded(highlightPlayText('A qb fires a short one to B wr for 12 yards', []))
+    expect(got).toEqual(['12 yards'])
+  })
+})
