@@ -198,22 +198,44 @@ export function usePickEmDay(): UsePickEmDayResult {
   useEffect(() => { applyStagedRef.current = applyStaged }, [applyStaged])
 
   const pickFavoritesForSlot = useCallback((week: number) => {
-    setSlots(prev => prev.map(slot => {
-      if (slot.week !== week) return slot
+    // ⚠️ STAGE BEFORE `setSlots`, NEVER INSIDE ITS UPDATER. React runs the updater during
+    // the render phase, so a ref mutated in there is still empty on the very next line —
+    // `syncDirtyCount()` counted nothing and `scheduleSave()` reached a `flush()` that
+    // early-returns on an empty staged map. The fill was therefore never sent; it went out
+    // on the NEXT interaction that happened to schedule a save, which is why filling one
+    // week looked like it did nothing and filling a second week saved both.
+    //
+    // Reported as "fill favorites on week 1, navigate away, come back and it is unpicked."
+    // Visible in production as picks landing in PAIRS of weeks sharing one timestamp
+    // (weeks 1+2 at 12:26:41, 3+4 at 12:26:51, 5+6 at 12:27:38) — one save per two fills.
+    //
+    // `setPick` was always correct because it stages outside its updater; that is exactly
+    // why single picks saved and only this button lost them.
+    const slot = slots.find(s => s.week === week)
+    if (!slot) return
+    const chosen = new Map<string, number>()
+    for (const g of slot.games) {
+      if (!g.pickable || g.result?.correct != null) continue
+      if (g.userPick != null) continue  // never overwrite an existing pick
+      chosen.set(slotGameKey(week, g.gameIndex),
+                 g.homeTeam.elo >= g.awayTeam.elo ? g.homeTeam.id : g.awayTeam.id)
+    }
+    if (chosen.size === 0) return
+    for (const [key, teamId] of chosen) stagedRef.current.set(key, teamId)
+
+    setSlots(prev => prev.map(s => {
+      if (s.week !== week) return s
       return {
-        ...slot,
-        games: slot.games.map(g => {
-          if (!g.pickable || g.result?.correct != null) return g
-          if (g.userPick != null) return g  // never overwrite an existing pick
-          const favId = g.homeTeam.elo >= g.awayTeam.elo ? g.homeTeam.id : g.awayTeam.id
-          stagedRef.current.set(slotGameKey(week, g.gameIndex), favId)
-          return applyPick(g, favId)
+        ...s,
+        games: s.games.map(g => {
+          const teamId = chosen.get(slotGameKey(week, g.gameIndex))
+          return teamId == null ? g : applyPick(g, teamId)
         }),
       }
     }))
     syncDirtyCount()
     scheduleSave()
-  }, [applyPick, syncDirtyCount, scheduleSave])
+  }, [slots, applyPick, syncDirtyCount, scheduleSave])
 
   const submitAll = useCallback(async (): Promise<{ saved: number; skipped: number }> => {
     if (stagedRef.current.size === 0) return { saved: 0, skipped: 0 }
