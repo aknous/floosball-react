@@ -73,6 +73,9 @@ interface PlayerSummary {
   position: string
   weekFP: number
   statLine?: string   // the player's this-week game line (e.g. "9/9 rec · 47 yd · 0 TD")
+  // The stat the equipped card is scoring off, when it is not already in `statLine`
+  // (e.g. "19 well-placed · 2 bad throws"). Undefined for roster-wide effects.
+  trackedLine?: string
 }
 
 // Per-card value chips: each card shows its outputs inline. FPx cards surface the
@@ -97,11 +100,12 @@ const RosterCardRow: React.FC<{
   playerId?: number
   weekFP: number
   statLine?: string
+  trackedLine?: string
   b?: CardBreakdownEntry
   mod: string
   isGrounded: boolean
   playerFP?: number
-}> = ({ position, playerName, playerId, weekFP, statLine, b, mod, isGrounded, playerFP }) => {
+}> = ({ position, playerName, playerId, weekFP, statLine, trackedLine, b, mod, isGrounded, playerFP }) => {
   // A slot with no effect card (or a no-effect standard "none" print) renders just the
   // player identity + stat line.
   const hasEffect = !!b && b.effectName !== 'none' && !!b.effectName
@@ -179,7 +183,21 @@ const RosterCardRow: React.FC<{
     <div style={{ fontSize: '12px', color: '#a8b6cc', paddingLeft: '28px', lineHeight: 1.4 }}>{statLine}</div>
   ) : null
 
+  // ⚠️ THE STAT THE CARD IS BEING PAID ON. The game line above is position-shaped, so a
+  // card scoring off well-placed throws, yards after contact, contested catches,
+  // bailouts, punt placement or return yards showed a payout with none of the figures
+  // behind it on screen. Brighter than the game line because it is the number that
+  // matters to this row. Null for roster-wide effects and for a card whose stat the game
+  // line already prints.
+  const tracked = trackedLine ? (
+    <div style={{
+      fontSize: '12px', color: '#cbd5e1', paddingLeft: '28px', lineHeight: 1.4,
+      fontVariantNumeric: 'tabular-nums',
+    }}>{trackedLine}</div>
+  ) : null
+
   if (!hasEffect) {
+    // A no-effect floor print watches nothing, so there is no tracked line to show.
     return <>{idRow}{stat}</>
   }
 
@@ -288,6 +306,7 @@ const RosterCardRow: React.FC<{
     <>
       {idRow}
       {stat}
+      {tracked}
       {/* Streak status line */}
       {bd.streakActive != null && (
         <div style={{ paddingLeft: '28px', fontSize: '11px', padding: '2px 0 0 28px' }}>
@@ -435,6 +454,7 @@ export const PointsBreakdownPanel: React.FC<{
                   playerId={p.playerId}
                   weekFP={p.weekFP}
                   statLine={p.statLine}
+                  trackedLine={p.trackedLine}
                   b={b}
                   mod={mod}
                   isGrounded={isGrounded}

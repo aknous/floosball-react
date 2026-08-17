@@ -93,11 +93,18 @@ const WelcomeModal: React.FC = () => {
 
   if (!visible) return null
 
-  // Welcome modal highlights the last feature release (major/minor), not patch
-  // bumps. Patch versions (vX.Y.Z where Z > 0) are typically bug fixes — show
-  // the most recent vX.Y.0 entry instead so users see the broader release notes.
-  const isFeatureRelease = (version: string) => /^v?\d+\.\d+\.0(?:\D|$)/.test(version)
-  const latest = CHANGELOG.find(e => isFeatureRelease(e.version)) ?? CHANGELOG[0]
+  // Welcome modal highlights the last feature release, not patch bumps, so a
+  // reader opening it at a season rollover sees the broader notes.
+  //
+  // The `feature` flag is authoritative; the version-shaped test is only a
+  // fallback for older entries that predate it. Inferring this from the version
+  // string alone silently broke when numbering moved from three parts (v0.25.0)
+  // to two (v1.00): nothing matched any more, so this resolved back to v0.25.0
+  // and would have shown two-releases-stale notes to everyone at the season 2
+  // rollover. Mark new releases with `feature: true` rather than relying on shape.
+  const isFeatureRelease = (e: ChangelogEntry) =>
+    e.feature === true || /^v?\d+\.\d+\.0(?:\D|$)/.test(e.version)
+  const latest = CHANGELOG.find(isFeatureRelease) ?? CHANGELOG[0]
 
   return ReactDOM.createPortal(
     <div

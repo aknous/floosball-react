@@ -8,9 +8,68 @@ export interface ChangelogEntry {
   date: string
   changes: string[]
   sections?: ChangelogSection[]
+  /**
+   * Marks a release the Welcome modal should feature (it opens once per season
+   * and shows the last feature release, skipping patch bumps).
+   *
+   * Set it explicitly. It used to be INFERRED from the version string with
+   * /^v?\d+\.\d+\.0/, which silently stopped matching when numbering moved from
+   * three parts (v0.25.0) to two (v1.00) — so the modal resolved back to v0.25.0
+   * and would have shown two-releases-stale notes to everyone at the season 2
+   * rollover. A flag cannot drift with the numbering scheme.
+   */
+  feature?: boolean
 }
 
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    version: 'v1.01',
+    date: '2026-08-16',
+    feature: true,
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Simulation] Teams run no-huddle offense when trying to conserve time.',
+          '[Simulation] Quarterbacks can audible out of a bad play call at the line.',
+          '[Simulation] Defenses disguise their look before the snap.',
+          '[Record Book] Adds team records.',
+          '[Cards] Cards will now include the specific stat it scores on.',
+          '[Players] Punt return stats, and per game averages.',
+          '[Settings] Turn the glitch effects down or off.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Shop] The card selection stays until you reroll it.',
+          '[Shop] The first reroll each day is free.',
+          '[Simulation] Fewer games with extreme sack totals.',
+          '[Simulation] A sack no longer stops the clock.',
+          '[Simulation] Teams run a two minute drill at the end of the second quarter.',
+          '[Front Office] A fired GM can be hired by another team.',
+          '[Cards] Streak bonuses pay only when the streak continues.',
+          '[Cards] Diversified pays less per output type.',
+          '[Economy] Very large fantasy weeks pay fewer Floobits.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Prognostications] Picks could appear against the wrong matchup during a live week.',
+          '[Standings] Clinched teams, division trophies and eliminations vanished once the playoffs began.',
+          '[Playoffs] The bracket challenge showed byes that do not exist.',
+          '[Stats] Season player stats read zero for the whole offseason.',
+          '[Records] Team records were lost on every restart.',
+          '[Cards] Receiving targets counted only catches.',
+          '[Cards] Some cards printed a question mark where a number belonged.',
+          '[Cards] Bet Big showed two different numbers on one card.',
+          '[Bleachers] Sideline cutaways always sorted below fan posts.',
+        ],
+      },
+    ],
+  },
   {
     version: 'v1.00',
     date: '2026-08-10',
