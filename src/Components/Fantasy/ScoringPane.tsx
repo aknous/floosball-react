@@ -123,6 +123,18 @@ const LineupScoringPreview: React.FC = () => {
     if (entry.card.edition === 'base') return <span style={{ color: '#64748b' }}>No effect</span>
     const p = projBySlot.get(entry.slotNumber)
     if (p) {
+      // An amplifier produces nothing of its own — it changes what OTHER cards do — so
+      // the backend sends a description of what it is doing to the hand and `kind` says
+      // to show that instead of a number. This pane used to ignore both and fall through
+      // to the generic chips below, which printed Lemons (a x1.75 on your lowest card)
+      // as "+0.75 FPx", reading as a tiny lineup multiplier rather than what it is.
+      if (p.kind === 'amplifier' && p.amplifier?.description) {
+        return (
+          <span style={{ color: p.amplifier.active ? TYPE_COLORS.mult : '#64748b' }}>
+            {p.amplifier.description}
+          </span>
+        )
+      }
       if (p.projectedFloobits > 0) return <span style={{ color: TYPE_COLORS.floobits }}>+{p.projectedFloobits} Floobits</span>
       if (p.projectedMult > 1) return <span style={{ color: TYPE_COLORS.mult }}>+{(p.projectedMult - 1).toFixed(2)} FPx</span>
       if (p.projectedFP > 0) return <span style={{ color: TYPE_COLORS.fp }}>+{p.projectedFP.toFixed(1)} FP</span>
