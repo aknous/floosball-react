@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -186,8 +186,21 @@ const powerupLabel = (slug: string) =>
 const AchievementsPage: React.FC = () => {
   const {
     achievements, pendingRewards, currentSeason, currentWeek,
-    loading, claimReward, deferReward, convertReward,
+    loading, claimReward, deferReward, convertReward, refetch,
   } = useAchievements()
+
+  // ⚠️ Pull fresh progress on arrival. The context fetches once when the app mounts and
+  // then only on an `achievement_unlocked` event — but PROGRESS moving (Dedicated going
+  // 5 -> 6 as you make picks) completes nothing, so no event fires and the page showed
+  // whatever was true when the session started. Reported as having to refresh the browser
+  // to watch a counter move. Guarded with a ref so React's development double-mount does
+  // not fire two requests on every visit.
+  const refreshedOnMount = useRef(false)
+  useEffect(() => {
+    if (refreshedOnMount.current) return
+    refreshedOnMount.current = true
+    refetch()
+  }, [refetch])
   const { user, getToken } = useAuth()
   const navigate = useNavigate()
   // Achievement-claimed packs go through the same reveal+select flow as
