@@ -253,10 +253,56 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
                 <span style={{ ...font(400, 10), color: TEXT.muted }}>{timeAgo(lead.at)}</span>
               </div>
 
-              <h2 style={{
-                ...font(800, 20, 1.25, '-0.02em'), color: TEXT.primary,
-                margin: '11px 0 0', textWrap: 'balance' as any,
-              }}>{lead.text}</h2>
+              {/* ⚠️ A CORES EXCHANGE LEADS AS THE WHOLE CONVERSATION, NOT ITS FIRST LINE.
+                  The flat `text` is only the opening turn — it exists so anything reading
+                  the plain field gets something sensible — so rendering it alone silently
+                  dropped every reply. That is precisely what a pinned admin conversation
+                  is: the headline slot is where it is meant to land, and it was the one
+                  place the turns were not drawn. The rows below have always rendered them.
+
+                  The opening turn keeps the headline's weight and the replies step down,
+                  so it still reads as a lead rather than a wall of equal lines. */}
+              {(() => {
+                const leadTurns = coreTurns(lead)
+                if (!leadTurns) return (
+                  <h2 style={{
+                    ...font(800, 20, 1.25, '-0.02em'), color: TEXT.primary,
+                    margin: '11px 0 0', textWrap: 'balance' as any,
+                  }}>{lead.text}</h2>
+                )
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px',
+                                margin: '11px 0 0' }}>
+                    {leadTurns.map((turn, t) => (
+                      <div key={t} style={{ display: 'flex', gap: '10px',
+                                            alignItems: 'flex-start' }}>
+                        <span style={{
+                          width: '22px', display: 'flex', justifyContent: 'center',
+                          flexShrink: 0, paddingTop: t === 0 ? '5px' : '3px',
+                        }}>
+                          <CoreIcon core={turn.core ?? undefined}
+                                    color={coreColor(turn.core ?? undefined)}
+                                    size={t === 0 ? 17 : 15} />
+                        </span>
+                        <span style={{
+                          minWidth: 0,
+                          ...(t === 0
+                            ? font(800, 20, 1.25, '-0.02em')
+                            : font(400, 14, 1.5)),
+                          color: t === 0 ? TEXT.primary : TEXT.secondary,
+                          textWrap: (t === 0 ? 'balance' : 'pretty') as any,
+                        }}>
+                          <span style={{
+                            ...(t === 0 ? font(800, 20, 1.25, '-0.02em') : font(700, 14, 1.5)),
+                            color: coreColor(turn.core ?? undefined),
+                          }}>{turn.coreDisplayName}</span>
+                          {' '}{turn.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
 
               {/* Prose beneath the headline, on hand-written items only. */}
               {lead.body && (
