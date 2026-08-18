@@ -10,6 +10,19 @@ interface FloobitsReceivedEvent {
   balanceAfter: number
   season?: number
   week?: number
+  /**
+   * How much of `amount` came from an active Endowment, sent as its own number.
+   *
+   * ⚠️ IT IS ALSO IN `description` AS A TRAILING "(+N Endowment)", AND WAS UNREADABLE
+   * THERE. The description renders on one nowrap/ellipsis line about 19 characters wide
+   * (`font-pixel` is Press Start 2P, a full-em pixel font at 11px), and the tag is always
+   * appended last — so it was clipped in 100% of real grants. A user claimed a boosted
+   * supporter dividend, saw nothing crediting the boost, and reasonably concluded the
+   * powerup might not be firing. It was firing.
+   *
+   * Optional because a client can meet an older server; absent reads as no boost.
+   */
+  boostBonus?: number
 }
 
 const TX_LABELS: Record<string, string> = {
@@ -100,11 +113,30 @@ const FloobitsReceivedToast: React.FC = () => {
           <div style={{ fontSize: '15px', fontWeight: 700, color: '#fbbf24' }}>
             +{latest.amount} Floobits
           </div>
+          {/* The Endowment gets its own line, above the description and never truncated.
+              A boost the user paid 100F for is the most interesting thing in the toast,
+              so it should not have to survive an ellipsis to be seen. */}
+          {!!latest.boostBonus && latest.boostBonus > 0 && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '4px',
+              marginTop: '4px', padding: '2px 6px', borderRadius: '4px',
+              backgroundColor: 'rgba(234,179,8,0.14)',
+              border: '1px solid rgba(234,179,8,0.45)',
+              fontSize: '9px', color: '#fcd34d', letterSpacing: '0.04em',
+            }}>
+              +{latest.boostBonus} ENDOWMENT
+            </div>
+          )}
           {latest.description && (
+            // ⚠️ WRAPS, deliberately. This was one nowrap/ellipsis line, which at 11px in
+            // Press Start 2P shows about 19 characters — "Week 28: 64 pts (5/" — so every
+            // description was cut mid-phrase and the line carried almost nothing. Two
+            // lines is enough for the real ones; the clamp keeps a long one bounded.
             <div style={{
               fontSize: '11px', color: '#94a3b8', marginTop: '3px',
-              lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              lineHeight: 1.4, overflow: 'hidden',
+              display: '-webkit-box', WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 2, overflowWrap: 'anywhere',
             }}>
               {latest.description}
             </div>

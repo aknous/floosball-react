@@ -49,12 +49,20 @@ export interface InningsState {
   }
 }
 
-// Sideline Goals mechanic: the two hoop pairs' state THIS drive (for the field graphic)
+// Sideline Goals mechanic: each hoop pair's state THIS drive (for the field graphic)
 export interface SidelineGoalsState {
   active: boolean
   midfield: 'open' | 'made' | 'missed'   // yellow / green / red
   endzone: 'open' | 'made' | 'missed'
   attackingHome: boolean                 // offense is driving toward the home (right) end zone
+  // Optional THIRD pair, between the other two. Present only while it is switched on
+  // server-side, so an older payload simply draws the two-pair field.
+  pairs?: number
+  midrange?: 'open' | 'made' | 'missed' | null
+  // Yards from the attacking goal line. Sent rather than hardcoded here: the graphic draws
+  // hoops at fixed field positions, so moving the pair server-side would otherwise leave
+  // this drawing the old spot.
+  midrangeYard?: number | null
 }
 
 // frames game format: golf-style match play (win a frame = +1; most frames wins)

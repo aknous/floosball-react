@@ -311,10 +311,14 @@ const AdminContent: React.FC<{
   const [namesLoading, setNamesLoading] = useState(false)
 
   // ── League news announcements ─────────────────────────────────────────────
+  type ConversationTurn = { core: string; text: string; turnIndex: number | null }
   type Announcement = {
     id: number; headline: string; body: string | null; pinned: boolean
     teamId: number | null; core: string | null
     season: number; week: number; createdAt: string | null
+    // Present only on a Cores CONVERSATION. The list folds an exchange's turn rows into
+    // one entry, so `id` is its first turn and `turns` is the whole thing in spoken order.
+    exchangeId?: string; turns?: ConversationTurn[]
   }
   // Two different things, which is why they are two controls. "Post as" decides whether
   // the row is a written notice or a line in a Core's voice — a Core post threads with
@@ -342,6 +346,60 @@ const AdminContent: React.FC<{
   const [newsError, setNewsError] = useState<string | null>(null)
   const [newsLoading, setNewsLoading] = useState(false)
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
+
+  // ── Cores conversations ───────────────────────────────────────────────────
+  // A written notice and a conversation are different enough to be different composers:
+  // one has a headline plus optional prose, the other is N lines each belonging to a
+  // named Core. Sharing one form would mean a headline field that means nothing half the
+  // time.
+  const CONVO_MAX_TURNS = 6
+  const [newsMode, setNewsMode] = useState<'announcement' | 'conversation'>('announcement')
+  const [convoTurns, setConvoTurns] = useState<{ core: string; text: string }[]>([
+    { core: 'vera', text: '' }, { core: 'pyre', text: '' },
+  ])
+  // ⚠️ Defaults ON. A Cores row can never lead the feed on weight alone — the front page
+  // keeps that category out of the lead deliberately, since the Cores are voice rather
+  // than report — and pinning is the one thing that outranks the rule. So "make this the
+  // headline" IS this checkbox.
+  const [convoPinned, setConvoPinned] = useState(true)
+
+  const setTurn = (index: number, patch: Partial<{ core: string; text: string }>) =>
+    setConvoTurns(turns => turns.map((t, i) => (i === index ? { ...t, ...patch } : t)))
+  const addTurn = () => setConvoTurns(turns => turns.length >= CONVO_MAX_TURNS ? turns
+    : [...turns, { core: NEWS_CORES[turns.length % NEWS_CORES.length], text: '' }])
+  const removeTurn = (index: number) =>
+    setConvoTurns(turns => turns.length <= 1 ? turns : turns.filter((_, i) => i !== index))
+
+  const convoReady = convoTurns.some(t => t.text.trim()) &&
+    convoTurns.every(t => t.text.trim().length <= HEADLINE_MAX)
+
+  const handlePostConversation = async () => {
+    // Empty trailing turns are dropped rather than rejected — adding a row and not using
+    // it is a normal way to compose, not a mistake worth an error message.
+    const turns = convoTurns
+      .map(t => ({ core: t.core, text: t.text.trim() }))
+      .filter(t => t.text)
+    if (!turns.length) return
+    setNewsLoading(true); setNewsError(null); setNewsPosted(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/league-news/conversation`, {
+        method: 'POST', headers: await buildHeaders(),
+        body: JSON.stringify({ turns, pinned: convoPinned }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.detail || 'Request failed')
+      setNewsPosted(convoPinned
+        ? 'Posted. The conversation is the headline.'
+        : 'Posted to the league news.')
+      setConvoTurns([{ core: 'vera', text: '' }, { core: 'pyre', text: '' }])
+      setConvoPinned(true)
+      loadAnnouncements()
+    } catch (e: any) {
+      setNewsError(e.message)
+    } finally {
+      setNewsLoading(false)
+    }
+  }
 
   const loadAnnouncements = async () => {
     try {
@@ -1812,6 +1870,106 @@ const AdminContent: React.FC<{
           Posting as a Core writes a line in their voice, threaded with the sim's own.
         </div>
 
+        {/* A notice and a conversation are different shapes, so they get different
+            composers rather than one form with fields that mean nothing half the time.
+            Hidden while editing — the edit form belongs to the row being edited. */}
+        {!newsEditId && (
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
+            {([['announcement', 'Announcement'], ['conversation', 'Cores conversation']] as const)
+              .map(([mode, label]) => (
+                <button
+                  key={mode}
+                  onClick={() => { setNewsMode(mode); setNewsPosted(null); setNewsError(null) }}
+                  style={{
+                    ...btnStyle, padding: '6px 14px', fontSize: '12px',
+                    background: newsMode === mode ? '#2563eb' : '#334155',
+                  }}
+                >{label}</button>
+              ))}
+          </div>
+        )}
+
+        {newsMode === 'conversation' && !newsEditId ? (
+          <div>
+            <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '14px', lineHeight: 1.5 }}>
+              Several turns, published as one exchange. The feed folds it into a single
+              entry with the turns in order, each in its own Core's color, exactly like a
+              conversation the sim writes for itself.
+            </div>
+
+            {convoTurns.map((turn, index) => (
+              <div key={index} style={{
+                display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '10px',
+              }}>
+                <select
+                  value={turn.core}
+                  onChange={e => setTurn(index, { core: e.target.value })}
+                  style={{ ...inputStyle, width: '130px', flexShrink: 0 }}
+                >
+                  {NEWS_CORES.map(c => (
+                    <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                  ))}
+                </select>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <input
+                    value={turn.text}
+                    onChange={e => setTurn(index, { text: e.target.value.slice(0, HEADLINE_MAX) })}
+                    style={inputStyle}
+                    placeholder={index === 0 ? 'The opening line' : 'The reply'}
+                  />
+                  <div style={{
+                    fontSize: '11px', marginTop: '4px', textAlign: 'right',
+                    color: turn.text.length > HEADLINE_MAX - 20 ? '#f59e0b' : '#64748b',
+                  }}>{turn.text.length} / {HEADLINE_MAX}</div>
+                </div>
+                <button
+                  onClick={() => removeTurn(index)}
+                  disabled={convoTurns.length <= 1}
+                  aria-label="Remove turn"
+                  style={{
+                    ...btnStyle, padding: '8px 12px', fontSize: '12px', background: '#334155',
+                    opacity: convoTurns.length <= 1 ? 0.4 : 1, flexShrink: 0,
+                  }}
+                >Remove</button>
+              </div>
+            ))}
+
+            <button
+              onClick={addTurn}
+              disabled={convoTurns.length >= CONVO_MAX_TURNS}
+              style={{
+                ...btnStyle, padding: '6px 12px', fontSize: '12px', background: '#334155',
+                opacity: convoTurns.length >= CONVO_MAX_TURNS ? 0.4 : 1, marginBottom: '14px',
+              }}
+            >Add turn</button>
+
+            <label style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              fontSize: '13px', color: '#cbd5e1', cursor: 'pointer', padding: '8px 0 14px',
+            }}>
+              <input type="checkbox" checked={convoPinned}
+                     onChange={e => setConvoPinned(e.target.checked)} />
+              Make it the headline
+            </label>
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '-10px', marginBottom: '14px' }}>
+              Cores lines never lead the feed on their own — pinning is what puts one on
+              top. Leave this off and it sits in the feed as ordinary chatter.
+            </div>
+
+            <button
+              onClick={handlePostConversation}
+              disabled={newsLoading || !convoReady}
+              style={{ ...btnStyle, opacity: newsLoading || !convoReady ? 0.5 : 1 }}
+            >{newsLoading ? 'Posting…' : 'Post conversation'}</button>
+            {newsPosted && (
+              <div style={{ marginTop: '10px', fontSize: '13px', color: '#22c55e' }}>{newsPosted}</div>
+            )}
+            {newsError && (
+              <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{newsError}</div>
+            )}
+          </div>
+        ) : (
+        <>
         <div style={{ marginBottom: '12px' }}>
           <div style={labelStyle}>Headline</div>
           <input
@@ -1909,6 +2067,8 @@ const AdminContent: React.FC<{
         {newsError && (
           <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{newsError}</div>
         )}
+        </>
+        )}
 
         <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '28px 0 10px' }}>
           Posted announcements
@@ -1925,8 +2085,22 @@ const AdminContent: React.FC<{
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '13px', fontWeight: 600, color: '#e2e8f0' }}>
                 {a.pinned && <span style={{ color: '#f472b6', marginRight: '7px' }}>PINNED</span>}
+                {a.turns && <span style={{ color: '#38bdf8', marginRight: '7px' }}>CONVERSATION</span>}
                 {a.headline}
               </div>
+              {/* A conversation shows every turn, so the delete button is attached to
+                  something the admin can actually read. It removes the whole exchange. */}
+              {a.turns && a.turns.length > 1 && (
+                <div style={{ marginTop: '6px', paddingLeft: '10px', borderLeft: '2px solid #1e293b' }}>
+                  {a.turns.slice(1).map((t, i) => (
+                    <div key={i} style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
+                      <span style={{ color: '#cbd5e1' }}>
+                        {t.core ? t.core.charAt(0).toUpperCase() + t.core.slice(1) : '—'}:
+                      </span>{' '}{t.text}
+                    </div>
+                  ))}
+                </div>
+              )}
               {a.body && (
                 <div style={{
                   fontSize: '12px', color: '#94a3b8', marginTop: '4px',
@@ -1943,10 +2117,15 @@ const AdminContent: React.FC<{
                 onClick={() => setAnnouncementPinned(a.id, !a.pinned)}
                 style={{ ...btnStyle, padding: '5px 10px', fontSize: '12px', background: '#334155' }}
               >{a.pinned ? 'Unpin' : 'Pin'}</button>
-              <button
-                onClick={() => editAnnouncement(a)}
-                style={{ ...btnStyle, padding: '5px 10px', fontSize: '12px', background: '#334155' }}
-              >Edit</button>
+              {/* No Edit for a conversation: the edit form is single-row, and pointing it
+                  at one turn of an exchange would rewrite that line while presenting it as
+                  the whole thing. Delete and repost instead. */}
+              {!a.turns && (
+                <button
+                  onClick={() => editAnnouncement(a)}
+                  style={{ ...btnStyle, padding: '5px 10px', fontSize: '12px', background: '#334155' }}
+                >Edit</button>
+              )}
               <button
                 onClick={() => deleteAnnouncement(a.id)}
                 style={{ ...btnStyle, padding: '5px 10px', fontSize: '12px', background: '#7f1d1d' }}

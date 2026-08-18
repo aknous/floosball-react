@@ -17,6 +17,7 @@ import { PlayReactions } from './GameModal/PlayReactions'
 import RallyButton from './GameModal/RallyPanel'
 import CheerBar from './CheerBar'
 import { GlitchedText } from './GlitchedText'
+import { highlightPlayText } from '@/Views/Game/playTextHighlight'
 import { effectiveAwayColor } from '@/utils/colors'
 import { formatScore } from '@/utils/formatScore'
 import { displayScore, ScoringModel } from '@/utils/displayScore'
@@ -1115,7 +1116,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 )}
               </div>
             </div>
-            <p style={{ fontSize: '14px', color: '#e2e8f0', marginBottom: (play.scoreChange && play.homeTeamScore != null) || play.reaction || play.personalityEvent || (play as any).glitchText ? '4px' : '0' }}>
+            <p style={{ fontSize: '14px', color: '#cbd5e1', marginBottom: (play.scoreChange && play.homeTeamScore != null) || play.reaction || play.personalityEvent || (play as any).glitchText ? '4px' : '0' }}>
               {(() => {
                 const gt = (play as any).glitchText
                 const desc = play.description ?? ''
@@ -1138,7 +1139,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 if (hasGlitch && !isGlitchL3) {
                   return <GlitchedText text={cleaned} intensity={isGlitchL2 ? 'high' : 'low'} />
                 }
-                return cleaned
+                // ⚠️ Highlighting comes AFTER the glitch branch on purpose. A glitched
+                // line is deliberately corrupted, so emphasising names inside it would
+                // fight the effect — and the character swaps would break the matches.
+                return highlightPlayText(cleaned, (play as any).involvedPlayers ?? [])
               })()}
             </p>
             {/* Clutch / choke attribution. Replaces the old badge with a
@@ -2080,7 +2084,14 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 // Hoop shot — arc from the ball up to the target hoop (midfield or the
                 // attacking end-zone pair), on the top sideline. Green make / gray miss.
                 const pair = (lastPlay as any)?.hoopPair
-                const hoopX = pair === 'endzone' ? (lastPlayDir === 1 ? toX(110) : toX(10)) : toX(60)
+                // The third (midrange) pair sits `midrangeYard` out from the ATTACKING
+                // goal, so its x depends on which way the offense is driving.
+                const mrYard = (gameData as any)?.sidelineGoals?.midrangeYard
+                const hoopX = pair === 'endzone'
+                  ? (lastPlayDir === 1 ? toX(110) : toX(10))
+                  : pair === 'midrange' && mrYard != null
+                    ? (lastPlayDir === 1 ? toX(110 - mrYard) : toX(10 + mrYard))
+                    : toX(60)
                 const hoopY = 12
                 const midPX = (ballX + hoopX) / 2
                 const peakY = hoopY - 24
@@ -2362,16 +2373,26 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                       if (replayActive && lastPlay) {
                         let mid: 'open' | 'made' | 'missed' = 'open'
                         let ez: 'open' | 'made' | 'missed' = 'open'
+                        let mr: 'open' | 'made' | 'missed' = 'open'
                         for (const p of realPlays) {
                           if (p.offensiveTeam !== lastPlay.offensiveTeam) break   // reached the prior drive
                           const pr = String(p.playResult ?? '')
                           if (pr.includes('Sideline Goal')) {
                             const res: 'made' | 'missed' = pr === 'Sideline Goal Good' ? 'made' : 'missed'
-                            if ((p as any).hoopPair === 'endzone') { if (ez === 'open') ez = res }
+                            const hp = (p as any).hoopPair
+                            if (hp === 'endzone') { if (ez === 'open') ez = res }
+                            else if (hp === 'midrange') { if (mr === 'open') mr = res }
                             else if (mid === 'open') mid = res
                           }
                         }
-                        sg = { active: true, midfield: mid, endzone: ez, attackingHome: lastPlayDir === 1 }
+                        // ⚠️ Carry the LIVE payload's midrange fields through. Rebuilding
+                        // `sg` from scratch dropped them, so during replay the third pair
+                        // silently vanished from the field while the engine still had it.
+                        sg = {
+                          ...gameData.sidelineGoals!,
+                          active: true, midfield: mid, endzone: ez, midrange: mr,
+                          attackingHome: lastPlayDir === 1,
+                        }
                       }
                       const col = (s: string) => s === 'made' ? '#22c55e' : s === 'missed' ? '#ef4444' : '#FFD700'
                       const yTop = 12, yBot = FH - 12
@@ -2386,6 +2407,15 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                         { x: otherX, y: yTop, c: '#FFD700', o: 0.22 },
                         { x: otherX, y: yBot, c: '#FFD700', o: 0.22 },
                       ]
+                      // The optional third pair, drawn only when the server says it exists
+                      // — its absence is how an older payload keeps the two-pair field.
+                      const mrYard = (sg as any).midrangeYard
+                      if (mrYard != null) {
+                        const mrX = sg.attackingHome ? toX(110 - mrYard) : toX(10 + mrYard)
+                        const mrCol = col((sg as any).midrange ?? 'open')
+                        hoops.push({ x: mrX, y: yTop, c: mrCol, o: 0.95 })
+                        hoops.push({ x: mrX, y: yBot, c: mrCol, o: 0.95 })
+                      }
                       return (
                         <g>
                           {hoops.map((h, i) => (
