@@ -196,7 +196,7 @@ const mark = (item: NewsItem, size: number): React.ReactNode => {
 const NOTEWORTHY_CATEGORIES = new Set(['record', 'anomaly_transition', 'criticality', 'rules', 'announcement'])
 const isNoteworthy = (item: NewsItem) => NOTEWORTHY_CATEGORIES.has(item.rawCategory)
 
-const DIVIDER_TINT = '0d'      // ~5%
+const DIVIDER_TINT = '1a'      // ~10%
 const NOTEWORTHY_TINT = '1c'   // ~11%
 const labelFor = (item: NewsItem) => CATEGORY_LABEL[item.rawCategory] || item.category
 
@@ -353,10 +353,20 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
                 borderBottom: i < items.length - 1 ? `1px solid ${BORDER.hairline}` : 'none',
               }}
             >
+              {/* ⚠️ IT HAS TO READ AS A DIVIDER, NOT AS A SMALLER ROW. At 10px in the
+                  secondary color it was quieter than everything around it and simply got
+                  lost between the stories — reported exactly that way. The band's job is to
+                  separate, so it is now legible (11px, the minimum for readable text here)
+                  and carries a rule that runs to the edge: the eye reads a line across the
+                  feed rather than another entry competing for attention. Deliberately still
+                  not a story — no crest, no headline weight, uppercase and letter-spaced. */}
               <span style={{
-                flex: 1, minWidth: 0,
-                ...font(700, 10, 1.3, '0.12em'), color: TEXT.secondary,
+                flexShrink: 0, minWidth: 0,
+                ...font(800, 11, 1.3, '0.14em'), color: TEXT.body,
               }}>{item.text.toUpperCase()}</span>
+              <span aria-hidden style={{
+                flex: 1, height: '1px', background: BORDER.hairline, minWidth: '12px',
+              }} />
               <span style={{ ...font(400, 10), color: TEXT.muted, flexShrink: 0 }}>
                 {timeAgo(item.at)}
               </span>
