@@ -22,7 +22,7 @@ import type { StandingsHistory, HistoryTeam } from './standingsTypes'
 type Axis = 'gamesAbove500' | 'divisionGamesBack'
 
 const AXES: { key: Axis; label: string; hint: string }[] = [
-  { key: 'gamesAbove500', label: 'GAMES OVER .500', hint: 'Wins minus losses. Zero is a .500 club.' },
+  { key: 'gamesAbove500', label: 'GAMES OVER .500', hint: 'Wins minus losses.' },
   { key: 'divisionGamesBack', label: 'GAMES BEHIND', hint: 'Behind the division leader that week.' },
 ]
 

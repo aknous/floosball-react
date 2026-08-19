@@ -16,7 +16,7 @@ const VIEW_KEY = 'floosball:standingsView'
 const VIEWS: { key: StandingsView; label: string }[] = [
   { key: 'division', label: 'BY DIVISION' },
   { key: 'league', label: 'BY LEAGUE' },
-  { key: 'graph', label: 'OVER TIME' },
+  { key: 'graph', label: 'CHARTS' },
 ]
 
 // ⚠️ The wild card race view was REMOVED (owner): it was a nice object but a confusing
