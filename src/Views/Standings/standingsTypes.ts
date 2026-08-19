@@ -96,6 +96,9 @@ export interface HistoryLeague {
 
 export interface StandingsHistory {
   season: number
+  /** Weeks with results so far. */
   weeks: number[]
+  /** Regular-season weeks the season HAS, played or not — the x-axis span. */
+  totalWeeks: number
   leagues: HistoryLeague[]
 }
