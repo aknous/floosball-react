@@ -64,4 +64,38 @@ export interface LeagueStandings {
   standings: TeamStanding[]
 }
 
-export type StandingsView = 'division' | 'league'
+export type StandingsView = 'division' | 'league' | 'graph'
+
+/** One week of one club's season, from GET /api/standings/history. */
+export interface HistoryPoint {
+  week: number
+  wins: number
+  losses: number
+  ties: number
+  /** Wins minus losses. The readable y-axis: cumulative wins only ever climb. */
+  gamesAbove500: number
+  /** Behind that club's division leader AS OF THAT WEEK, recomputed server-side. */
+  divisionGamesBack: number
+}
+
+export interface HistoryTeam {
+  id: number
+  name: string
+  abbr: string
+  color: string | null
+  secondaryColor: string | null
+  division: string | null
+  series: HistoryPoint[]
+}
+
+export interface HistoryLeague {
+  name: string
+  divisions: { name: string; teamIds: number[] }[]
+  teams: HistoryTeam[]
+}
+
+export interface StandingsHistory {
+  season: number
+  weeks: number[]
+  leagues: HistoryLeague[]
+}
