@@ -3,7 +3,7 @@ import HoverTooltip from '@/Components/HoverTooltip'
 import { BG, BORDER, TEXT, PLAYOFF, font } from '@/Components/Shell/tokens'
 import { Crest } from '@/Views/GameBoard/boardPieces'
 import {
-  SeedBadge, TeamCell, Last5, GamesBack, Differential, pct, record,
+  SeedBadge, TeamCell, Last5, GamesBack, Differential, Streak, pct, record,
   COLUMN_HEADER, ownRowStyle, clinchedRowStyle, TrophyIcon,
 } from './standingsPieces'
 import type { LeagueStandings, TeamStanding } from './standingsTypes'
@@ -17,10 +17,11 @@ import type { LeagueStandings, TeamStanding } from './standingsTypes'
  * noise; it lives only in the league view where there are sixteen rows to move through.
  */
 
-const GRID = '21px minmax(0,1fr) 50px 44px 40px 34px 42px 52px'
+const GRID = '21px minmax(0,1fr) 50px 44px 40px 34px 42px 36px 52px'
 
 // ⚠️ A phone keeps seed, club, record and games back. The rest (division record, pct,
 // differential, streak, form) is detail for a table you are studying, not glancing at.
+// The compact grid is four columns and must stay in step with the four non-gated cells.
 const GRID_COMPACT = '21px minmax(0,1fr) 56px 44px'
 
 const DivisionBlock: React.FC<{
@@ -77,12 +78,20 @@ const DivisionBlock: React.FC<{
 {!compact && (
         <span style={{ ...COLUMN_HEADER, textAlign: 'right' }}>PCT</span>
         )}
-        <HoverTooltip text="Games behind the last playoff spot">
+        {/* ⚠️ Behind the DIVISION LEADER here, not the playoff cut. A club can lead
+            its division and still sit behind the cut, which made the league column read
+            as nonsense inside a division block. */}
+        <HoverTooltip text="Games behind the division leader">
           <span style={{ ...COLUMN_HEADER, textAlign: 'right', display: 'block' }}>GB</span>
         </HoverTooltip>
 {!compact && (
         <HoverTooltip text="Points scored minus points allowed">
           <span style={{ ...COLUMN_HEADER, textAlign: 'right', display: 'block' }}>DIFF</span>
+        </HoverTooltip>
+        )}
+{!compact && (
+        <HoverTooltip text="Current run of wins or losses">
+          <span style={{ ...COLUMN_HEADER, textAlign: 'right', display: 'block' }}>STRK</span>
         </HoverTooltip>
         )}
 {!compact && (
@@ -125,9 +134,12 @@ const DivisionBlock: React.FC<{
               {pct(team.winPerc)}
             </span>
             )}
-            <span style={{ textAlign: 'right' }}><GamesBack value={team.gamesBack} /></span>
+            <span style={{ textAlign: 'right' }}><GamesBack value={team.divisionGamesBack} /></span>
 {!compact && (
             <span style={{ textAlign: 'right' }}><Differential value={team.scoreDiff} /></span>
+            )}
+{!compact && (
+            <span style={{ textAlign: 'right' }}><Streak value={team.streak} /></span>
             )}
 {!compact && (
             <span style={{ display: 'flex', justifyContent: 'flex-end' }}><Last5 results={team.last5} /></span>

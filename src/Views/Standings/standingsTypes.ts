@@ -28,7 +28,10 @@ export interface TeamStanding {
   seed: number | null
   seedKind: SeedKind | null
   /** Signed from the club ON the cut: negative is ahead, 0 holds the last spot. */
+  /** Behind the last playoff spot. Signed: negative is ahead of the cut. */
   gamesBack: number
+  /** Behind this club's OWN division leader. Never negative; the leader is 0. */
+  divisionGamesBack: number
 
   rankLastWeek: number | null
   rankChange: number
