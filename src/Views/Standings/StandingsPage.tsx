@@ -6,8 +6,9 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { SHELL_MOBILE_MAX } from '@/Components/Shell/tokens'
 import { TrophyIcon } from './standingsPieces'
 import ByDivision from './ByDivision'
+import StandingsGraph from './StandingsGraph'
 import ByLeague from './ByLeague'
-import type { LeagueStandings, StandingsView } from './standingsTypes'
+import type { LeagueStandings, StandingsView, StandingsHistory } from './standingsTypes'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const VIEW_KEY = 'floosball:standingsView'
@@ -15,6 +16,7 @@ const VIEW_KEY = 'floosball:standingsView'
 const VIEWS: { key: StandingsView; label: string }[] = [
   { key: 'division', label: 'BY DIVISION' },
   { key: 'league', label: 'BY LEAGUE' },
+  { key: 'graph', label: 'CHARTS' },
 ]
 
 // ⚠️ The wild card race view was REMOVED (owner): it was a nice object but a confusing
@@ -40,11 +42,15 @@ const StandingsPage: React.FC = () => {
   const [view, setView] = useState<StandingsView>(() => {
     try {
       const saved = localStorage.getItem(VIEW_KEY) as StandingsView
-      return saved === 'division' || saved === 'league' ? saved : 'league'
+      return saved === 'division' || saved === 'league' || saved === 'graph' ? saved : 'league'
     } catch { return 'league' }
   })
   const [leagues, setLeagues] = useState<LeagueStandings[] | null>(null)
   const [error, setError] = useState(false)
+  // The trajectory payload is much larger than the table and only one view needs it, so
+  // it is fetched on first open of the graph rather than alongside the standings.
+  const [history, setHistory] = useState<StandingsHistory | null>(null)
+  const [historyError, setHistoryError] = useState(false)
 
   useEffect(() => {
     try { localStorage.setItem(VIEW_KEY, view) } catch { /* preference is best-effort */ }
@@ -63,6 +69,22 @@ const StandingsPage: React.FC = () => {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  const loadHistory = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/standings/history`)
+      const json = await res.json()
+      if (!json || !Array.isArray(json.leagues)) { setHistoryError(true); return }
+      setHistory(json)
+      setHistoryError(false)
+    } catch {
+      setHistoryError(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (view === 'graph' && history === null && !historyError) loadHistory()
+  }, [view, history, historyError, loadHistory])
 
   // `standings_update` replaces the payload live; `week_start` and a finished game both
   // move records, so they refetch too.
@@ -124,6 +146,19 @@ const StandingsPage: React.FC = () => {
           </div>
         ) : !leagues ? (
           <StandingsSkeleton />
+        ) : view === 'graph' ? (
+          historyError ? (
+            <div style={{
+              background: BG.card, border: `1px solid ${BORDER.hairline}`,
+              padding: '40px', textAlign: 'center', ...font(400, 13), color: TEXT.muted,
+            }}>
+              The season graph is unavailable right now.
+            </div>
+          ) : !history ? (
+            <StandingsSkeleton />
+          ) : (
+            <StandingsGraph history={history} favoriteTeamId={favoriteTeamId} compact={compact} />
+          )
         ) : view === 'division' ? (
           <ByDivision leagues={leagues} favoriteTeamId={favoriteTeamId} compact={compact} />
         ) : (
