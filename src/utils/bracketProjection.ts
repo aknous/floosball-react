@@ -7,10 +7,24 @@ import type { BracketSeedTeam, BracketPredictions, RoundKey } from '@/types/play
 
 export type Matchup = { higher: BracketSeedTeam; lower: BracketSeedTeam }
 
-/** Best record first: winPct, then scoreDiff, then lower teamId (stable). */
+/**
+ * By FROZEN SEED, lowest first.
+ *
+ * ⚠️ This sorted by RECORD (winPct, then scoreDiff) and that was the bug. The field is
+ * built division-first — four division winners take seeds 1-4 whatever their records,
+ * then the best four remaining take 5-8 — so sorting survivors on record every round put
+ * those winners straight back out of the top seeds.
+ *
+ * The seed already encodes the record: 1-4 are ordered by win% among the division
+ * winners and 5-8 among the wildcards, so sorting on it keeps every tiebreak that
+ * produced it and adds the division rule the record sort could not see.
+ *
+ * ⚠️ Mirrors playoff_bracket._seedSort and the engine's round loop. All three sort the
+ * same field and must move together, or the projection diverges from the sim.
+ */
 export function seedSort(teams: BracketSeedTeam[]): BracketSeedTeam[] {
   return [...teams].sort(
-    (a, b) => b.winPct - a.winPct || b.scoreDiff - a.scoreDiff || a.teamId - b.teamId,
+    (a, b) => (a.seed ?? 99) - (b.seed ?? 99) || a.teamId - b.teamId,
   )
 }
 
