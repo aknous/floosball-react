@@ -269,6 +269,42 @@ function gameDataStatusForPlays(game: any): boolean {
   return plays.some(p => !p.event && !p.isSidelineCutaway)
 }
 
+/**
+ * The marker on a play that mattered.
+ *
+ * ⚠️ ONE SHAPE FOR EVERY KIND, and it is the shape the rest of the site uses for a small
+ * label: 10px/700/0.1em, a 1px border in the accent, no fill, square corners. The big
+ * play used to be a `⚡` emoji (CLAUDE.md: no emojis in UI strings, SVG icons instead)
+ * and a momentum shift a differently-sized flame line, so the two read as unrelated
+ * features rather than as two grades of the same thing. Only the word and the colour
+ * change now; anything extra rides inside the tag.
+ */
+const PlayTag: React.FC<{
+  color: string
+  label: string
+  icon?: React.ReactNode
+  children?: React.ReactNode
+}> = ({ color, label, icon, children }) => (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', gap: '6px',
+    fontFamily: 'pressStart', fontWeight: 700, fontSize: '11px', letterSpacing: '0.1em',
+    color, border: `1px solid ${color}55`, padding: '3px 7px',
+    whiteSpace: 'nowrap', lineHeight: 1,
+  }}>
+    {icon}
+    {label}
+    {children}
+  </span>
+)
+
+/** The bolt that used to mark a big play, redrawn as SVG. It was a `⚡` emoji, which the
+ *  house rules do not allow in UI strings — the MARK was never the problem. */
+const BoltIcon: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="9" height="12" viewBox="0 0 10 14" fill={color} style={{ flexShrink: 0 }}>
+    <path d="M6.2 0 0 8h3.3L2.8 14 10 5.6H6L6.2 0z" />
+  </svg>
+)
+
 export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, layout = 'modal', railContent, scoreboard, fallbackGame }) => {
   const asPage = layout === 'page'
   const [activeTab, setActiveTab] = useState<'box' | 'plays' | 'stats'>('plays')
@@ -962,12 +998,13 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
             paddingTop: '6px',
             paddingLeft: '10px',
             paddingRight: '6px',
-            // A wash that fades out across the row rather than a flat fill, so the
-            // color is strongest where the marker is and the description still
-            // sits on the page's own background.
-            background: accentColor
-              ? `linear-gradient(90deg, ${accentColor}26 0%, ${accentColor}0d 42%, transparent 78%)`
-              : 'transparent',
+            // ⚠️ FLAT, NOT A FADE (owner, 2026-08-23). This was a horizontal gradient
+            // wash, and the redesign's whole depth model is background steps plus 1px
+            // borders — no gradients anywhere else on the site — so a play row bleeding
+            // colour across itself read as belonging to a different app. An even tint at
+            // the same weight as the panel steps says "this row is different" without
+            // introducing the one effect the system does not use.
+            background: accentColor ? `${accentColor}12` : 'transparent',
             borderRadius: 0,
             display: 'flex',
             gap: '12px',
@@ -1029,15 +1066,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                   </>
                 )}
                 {isBigPlay && (
-                  <span style={{ color: '#d97706', fontWeight: '600' }}>
-                    ⚡ <span style={{ color: bigPlayTeamColor }}>{bigPlayTeamAbbr}</span> +{wpaValue.toFixed(1)}%
-                  </span>
+                  <PlayTag color="#f59e0b" label="BIG PLAY" icon={<BoltIcon color="#f59e0b" />}>
+                    <span style={{ color: bigPlayTeamColor }}>{bigPlayTeamAbbr}</span>
+                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>+{wpaValue.toFixed(1)}%</span>
+                  </PlayTag>
                 )}
                 {isMomentumShift && !isBigPlay && !isClutchPlay && !isChokePlay && (
-                  <span style={{ color: '#f97316', fontWeight: '600', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                    <svg width="11" height="13" viewBox="0 0 12 16" fill="#f97316"><path d="M6 0C6 0 2 4 2 8c0 2.2 1.8 4 4 4s4-1.8 4-4C10 4 6 0 6 0zm0 10.5c-1.4 0-2.5-1.1-2.5-2.5 0-1.9 2.5-5.5 2.5-5.5s2.5 3.6 2.5 5.5c0 1.4-1.1 2.5-2.5 2.5z"/></svg>
-                    MOMENTUM SHIFT
-                  </span>
+                  <PlayTag
+                    color="#f97316"
+                    label="MOMENTUM"
+                    icon={<svg width="10" height="12" viewBox="0 0 12 16" fill="#f97316" style={{ flexShrink: 0 }}><path d="M6 0C6 0 2 4 2 8c0 2.2 1.8 4 4 4s4-1.8 4-4C10 4 6 0 6 0zm0 10.5c-1.4 0-2.5-1.1-2.5-2.5 0-1.9 2.5-5.5 2.5-5.5s2.5 3.6 2.5 5.5c0 1.4-1.1 2.5-2.5 2.5z"/></svg>}
+                  />
                 )}
                 {hasGlitch && (
                   <span className={isGlitchL3 ? 'anomaly-label-l3' : 'anomaly-label'} style={{
