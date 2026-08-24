@@ -23,6 +23,56 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.02',
+    date: '2026-08-23',
+    feature: true,
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Simulation] Darts, a new format you can vote in. Land exactly on the target score to win, and overshooting it voids the points.',
+          '[Standings] A charts view plotting how the season has unfolded.',
+          '[Standings] Division tables show games back from the leader, and a streak column.',
+          '[History] Achievements and History have been redesigned.',
+          '[Record Book] Switch between career, single season and single game, and filter by category.',
+          '[Record Book] Owner records for fantasy points and correct picks.',
+          '[Teams] Division titles hang in the trophy case, and season history says how each year ended.',
+          '[Front Page] Claim your supporter dividend without leaving the page.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Awards] Quarterbacks are back in the MVP race.',
+          '[Games] Featured games sort to the top of the board.',
+          '[Games] Timeouts show as pips again, and team records are back on the scoreboard.',
+          '[Bleachers] Player lines are coloured by their team.',
+          '[Simulation] A team ahead in a frame stops throwing deep.',
+          '[Simulation] Teams kneel out a win instead of kicking a needless field goal.',
+          '[Simulation] Punts can no longer land past the goal line.',
+          '[Simulation] Nothing the sim says assumes a player has a gender.',
+          '[Cards] Every player gets a floor of card effects each season.',
+          '[League] Divisions are set in configuration, so rivals stay the same year to year.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Shop] Collection cards could not be bought once the regular season ended.',
+          '[Records] The record book reset on every restart.',
+          '[Standings] Division and wildcard clinches were called before they were settled.',
+          '[League News] A publishing error could take the site down.',
+          '[Cores] A conversation only showed its first line.',
+          '[Economy] The Endowment boost was not shown on the grant it boosted.',
+          '[Prognostications] Fill Favorites did not send.',
+          '[Cards] The scoring pane showed a multiplier that amplifiers do not have.',
+          '[Games] A shanked punt did not say what the returner did with it.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v1.01',
     date: '2026-08-16',
     feature: true,
