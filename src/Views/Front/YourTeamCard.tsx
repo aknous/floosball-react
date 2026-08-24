@@ -1,7 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
-import { BG, BORDER, TEXT, ACCENT, TABULAR, font } from '@/Components/Shell/tokens'
+import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
+import { useSupporterDividend } from '@/hooks/useSupporterDividend'
 import { getContrastTextColor } from '@/utils/colors'
 import { Crest } from '@/Views/GameBoard/boardPieces'
 import { formatScore } from '@/utils/formatScore'
@@ -183,6 +184,53 @@ const YourTeamCard: React.FC<{
           ))}
         </div>
       </div>
+
+      <SupporterDividendRow />
+    </div>
+  )
+}
+
+/**
+ * The supporter dividend, claimable from the front page.
+ *
+ * ⚠️ It lives on the FRONT OFFICE page too (`SupporterCard`), which is the full status —
+ * tier, tenure, progress to the next tier. This is only the action: a figure and a
+ * button, in the same shape as an unclaimed achievement reward, so the one thing there
+ * is to DO does not require finding the page it belongs to. Both claim through the same
+ * hook and each clears the other's badge (see `useSupporterDividend`).
+ *
+ * Absent when there is nothing to collect — a row saying "0 F" is not a thing to do.
+ */
+const SupporterDividendRow: React.FC = () => {
+  const { unclaimed, claim, claiming } = useSupporterDividend()
+  if (unclaimed <= 0) return null
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '10px',
+      marginTop: '10px', padding: '10px 12px',
+      background: BG.card, border: '1px solid rgba(245,158,11,0.45)',
+    }}>
+      <span style={{ minWidth: 0, flex: 1 }}>
+        <span style={{ display: 'block', ...font(700, 10, 1, '0.1em'), color: '#fbbf24' }}>
+          SUPPORTER DIVIDEND
+        </span>
+        <span style={{ display: 'block', ...font(400, 11), color: TEXT.muted, marginTop: '4px' }}>
+          Earned for backing your team
+        </span>
+      </span>
+      <span style={{ ...font(800, 14), ...TABULAR, color: '#fbbf24', flexShrink: 0 }}>
+        {Math.round(unclaimed)} F
+      </span>
+      <button
+        onClick={claim}
+        disabled={claiming}
+        style={{
+          ...font(800, 10, 1, '0.1em'),
+          color: BG.shell, backgroundColor: '#fbbf24', border: 'none',
+          padding: '7px 12px', cursor: claiming ? 'default' : 'pointer',
+          opacity: claiming ? 0.5 : 1, flexShrink: 0, fontFamily: FONT,
+        }}
+      >{claiming ? 'CLAIMING…' : 'CLAIM'}</button>
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { SiDiscord } from 'react-icons/si'
 import { VersionPill } from '@/Components/Footer'
 import { FaTrophy } from 'react-icons/fa'
 import { BG, BORDER, TEXT, ACCENT, FONT, NAV_WIDTH, font } from './tokens'
+import { useSupporterDividend } from '@/hooks/useSupporterDividend'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -188,15 +189,19 @@ const AppNav: React.FC = () => {
     return () => { cancelled = true; clearInterval(id) }
   }, [location.pathname])
 
-  // Your team's tab shows a bare dot while that team is playing. It is a state ("there is
-  // something happening to you right now"), not a queue, which is why it carries no count.
+  // ⚠️ THE TEAM DOT MEANS "THERE IS SOMETHING TO DO", NOT "SOMETHING IS HAPPENING"
+  // (owner, 2026-08-23). It used to light while your team was PLAYING, which is a state
+  // you can neither act on nor clear — so it sat on for three hours a slate and taught
+  // the reader that the dot means nothing. The nav's own rule already said a dot belongs
+  // only on a tab that genuinely notifies; a live game is an ambient fact, and the Games
+  // tab already carries it as a count.
+  //
+  // It now lights on a claimable supporter dividend — a real action, on that page, that
+  // the dot goes away when you take.
   const favoriteTeamId = user?.favoriteTeamId ?? null
   const liveGames = Array.from(games.values()).filter(g => g.status === 'Active')
-  // Team ids arrive as strings on the game payload and as a number on the user.
-  const favoriteKey = favoriteTeamId != null ? String(favoriteTeamId) : null
-  const yourTeamIsPlaying = favoriteKey != null && liveGames.some(
-    g => String(g.homeTeam?.id) === favoriteKey || String(g.awayTeam?.id) === favoriteKey,
-  )
+  const { unclaimed: supporterUnclaimed } = useSupporterDividend()
+  const teamHasAction = favoriteTeamId != null && supporterUnclaimed > 0
 
   const [favTeamName, setFavTeamName] = useState<string | null>(null)
   useEffect(() => {
@@ -299,7 +304,9 @@ const AppNav: React.FC = () => {
     let trailing: React.ReactNode = null
     if (item.key === 'games' && liveGames.length > 0) trailing = <AmbientCount value={liveGames.length} />
     else if (item.key === 'achievements' && unclaimedCount > 0) trailing = <NotificationDot color={ACCENT.warning} count={unclaimedCount} />
-    else if (item.key === 'team' && yourTeamIsPlaying) trailing = <NotificationDot color={ACCENT.ownTeam} />
+    // Gold, matching Achievements: on this nav a gold dot means "something is waiting for
+    // you to collect it", whichever tab it is on.
+    else if (item.key === 'team' && teamHasAction) trailing = <NotificationDot color={ACCENT.warning} />
     // A bracket waiting to be filled in — a queue you can empty, so it earns the dot.
     else if (item.key === 'bracket' && bracketDue) trailing = <NotificationDot color={ACCENT.warning} />
     else if (item.key === 'awards') trailing = <NotificationDot color={ACCENT.warning} />
