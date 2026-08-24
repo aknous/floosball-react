@@ -42,16 +42,30 @@ export function chipFor(game: CurrentGame): ChipKind | null {
   return null
 }
 
+/**
+ * Lower is more interesting.
+ *
+ * ⚠️ THIS LADDER MUST MIRROR `chipFor`. A card gets its chip from one function and its
+ * ROW from this one, and they had drifted: `isFeatured` was missing here entirely, so a
+ * featured game was tagged FEATURED and then sorted on margin alone — a featured blowout
+ * landed at the bottom of the board wearing a chip that said it was worth watching.
+ * Reported exactly that way.
+ *
+ * Featured sits BELOW the live signals on purpose, same as in `chipFor`: it is decided
+ * pre-game, so a tie or an upset happening right now outranks a matchup that looked good
+ * on paper. It still beats an ordinary game at any margin.
+ *
+ * Closeness is gated exactly as the chips are — a slate that has just kicked off is not
+ * sixteen equally thrilling ties, and the ranking should not claim it is.
+ */
 function interestScore(game: CurrentGame): number {
-  // Lower is more interesting. Tied, then upsets, then one-score, then margin.
-  // Closeness is gated exactly as the chips are — a slate that has just kicked off is not
-  // sixteen equally thrilling ties, and the ranking should not claim it is.
   const margin = Math.abs((game.homeScore ?? 0) - (game.awayScore ?? 0))
   const close = closenessCounts(game)
   if (close && margin === 0) return 0
   if (game.isUpsetAlert) return 1
   if (close && margin <= ONE_SCORE) return 2
-  return 3 + margin
+  if (game.isFeatured) return 3
+  return 4 + margin
 }
 
 /**

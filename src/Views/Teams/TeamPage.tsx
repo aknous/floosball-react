@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { GiLaurelsTrophy, GiTrophy } from 'react-icons/gi'
+import { GiLaurelsTrophy, GiTrophy, GiFlyingFlag } from 'react-icons/gi'
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
@@ -134,6 +134,15 @@ interface HistoryRow {
   leagueChamp?: boolean
   floosbowlChamp?: boolean
   topSeed?: boolean
+  // Where they actually finished, derived server-side from the games (see
+  // season_finish.py). All optional: a season whose division cannot be
+  // recovered says nothing rather than guessing.
+  divisionRank?: number
+  divisionSize?: number
+  divisionName?: string | null
+  playoffOutcome?: string
+  playoffBadge?: string
+  deepestRound?: number
 }
 
 interface TeamData {
@@ -154,6 +163,9 @@ interface TeamData {
   lockerRoom?: LockerRoom
   leagueChampionships?: string[]
   floosbowlChampionships?: string[]
+  // A division title carries the division it was won in; rows recorded before
+  // the name was kept are bare 'Season N' strings.
+  divisionTitles?: Array<string | { season?: string; division?: string | null }>
   roster: Record<string, RosterPlayer | null>
   schedule: ScheduleGame[]
   history: HistoryRow[]
@@ -226,12 +238,16 @@ function titleCase(raw: string): string {
 }
 
 // ── Trophies ────────────────────────────────────────────────────────────────
-// Two honours, two tiers, and the case has to say which is which without a
+// Three honours, three tiers, and the case has to say which is which without a
 // hover. Gold and the laurel trophy for the Floos Bowl — the app's
 // championship mark everywhere else it appears (Hall of Fame, player pages,
 // awards), so a different one here would read as a different honour. Silver
 // and a plain cup for a league title: unmistakably a trophy, unmistakably the
-// lesser one.
+// lesser one. A division title is a BANNER rather than a trophy — bronze and a
+// pennant — which is both the real-world convention and the thing that stops a
+// row of them being counted as cups. With 8 divisions it is the honour most
+// teams actually have, so it has to be legible at a glance AND visibly the
+// smallest of the three.
 const TROPHY_TONE = {
   bowl: {
     Icon: GiLaurelsTrophy,
@@ -247,7 +263,39 @@ const TROPHY_TONE = {
     bg: 'rgba(148,163,184,0.12)',
     border: 'rgba(148,163,184,0.40)',
   },
+  division: {
+    Icon: GiFlyingFlag,
+    icon: '#d9a273',
+    text: '#e9cba9',
+    bg: 'rgba(180,120,70,0.12)',
+    border: 'rgba(180,120,70,0.38)',
+  },
 } as const
+
+type TrophyKind = keyof typeof TROPHY_TONE
+interface Trophy { season: string; label: string }
+interface TrophyTier { kind: TrophyKind; heading: string; items: Trophy[] }
+
+/** How many marks of ONE honour stay on the shelf before the tier collapses.
+ *  A club with eight divisions to win takes division titles often enough that
+ *  an uncapped case stops being countable and starts being wallpaper — but a
+ *  case that collapses at three hides the ordinary run of two or three titles
+ *  behind a hover for no gain. Above the cap the tier keeps MAX-1 marks and
+ *  spends the last slot on the count, so the count chip always stands for at
+ *  least two and you never trade a mark for a "+1". */
+const TROPHY_VISIBLE_MAX = 6
+
+/** 'Season 14' → 14. Sort key only; an unparseable season sorts last rather
+ *  than throwing the whole case out of order. */
+function seasonNumber(season: string): number {
+  const n = parseInt(String(season).replace(/[^0-9]/g, ''), 10)
+  return Number.isFinite(n) ? n : -1
+}
+
+/** 'Season 14' → 'S14', the form the marks are labelled with. */
+function seasonShort(season: string): string {
+  return season.replace(/^Season\s*/i, 'S')
+}
 
 // ── Stadium ─────────────────────────────────────────────────────────────────
 // OFF until stadiums are real on the backend. Everything below still works and
@@ -322,8 +370,25 @@ function weekTitle(week: number): string {
     : `Week ${week + 1}`
 }
 
-/** How a season ENDED. The payload carries flags rather than a result string,
- *  and they say more than a W-L line does.
+function ordinal(n: number): string {
+  const rem100 = n % 100
+  if (rem100 >= 11 && rem100 <= 13) return `${n}th`
+  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`
+}
+
+/** How a season ENDED, and it has to answer TWO different questions depending
+ *  on which side of the cutline the club landed.
+ *
+ *  A club that made it wants the EXIT — beaten in Round 1 and beaten in the
+ *  League Championship were the same word ("Playoffs") before, which is the
+ *  whole span of a postseason collapsed into one flag. A club that missed
+ *  wants the PLACING — 13-1 and edged out of a division read identically to
+ *  2-12 when both said "Missed playoffs".
+ *
+ *  ⚠️ "Top seed" no longer takes the cell. It outranked "Playoffs" in the old
+ *  chain, so a top seed beaten in Round 1 read as an honour with no hint of the
+ *  collapse — precisely the fact the exit is here to show. It moves to the
+ *  hover, which is where the rest of the season's detail lives.
  *
  *  `inProgress` is load-bearing: a season still being played has none of these
  *  flags set yet, so every team's current row fell through to "Missed
@@ -331,10 +396,46 @@ function weekTitle(week: number): string {
 function seasonFinish(h: HistoryRow, inProgress = false): { label: string; color: string; weight: number } {
   if (h.floosbowlChamp) return { label: 'Floos Bowl', color: '#f59e0b', weight: 700 }
   if (h.leagueChamp) return { label: 'League champions', color: '#a78bfa', weight: 700 }
-  if (h.topSeed) return { label: 'Top seed', color: '#38bdf8', weight: 500 }
-  if (h.madePlayoffs) return { label: 'Playoffs', color: '#4ade80', weight: 500 }
   if (inProgress) return { label: 'In progress', color: '#cbd5e1', weight: 500 }
+
+  // Reached the postseason: say how far. The round labels come from the server
+  // so the bracket's own names (League Championship, Floos Bowl) are not
+  // restated here and cannot drift from it.
+  if (h.playoffOutcome) {
+    const deep = h.deepestRound ?? 0
+    return {
+      label: h.playoffOutcome.replace(/^Lost the /, 'Lost ').replace(/^Lost in /, 'Lost in '),
+      color: deep >= 3 ? '#38bdf8' : '#4ade80',
+      weight: 500,
+    }
+  }
+  if (h.madePlayoffs) return { label: 'Playoffs', color: '#4ade80', weight: 500 }
+
+  // Missed it: say where they came. ⚠️ The division is NOT named — membership is
+  // recovered from that season's schedule and the name it went by is not
+  // recorded anywhere, so naming it would mean using today's division, which
+  // measurably is not the one they played in.
+  if (h.divisionRank) {
+    return {
+      label: `${ordinal(h.divisionRank)} in division`,
+      color: h.divisionRank === 1 ? '#cbd5e1' : '#94a3b8',
+      weight: 500,
+    }
+  }
   return { label: 'Missed playoffs', color: '#94a3b8', weight: 500 }
+}
+
+/** The fuller sentence, for the hover: placing, exit, and the regular-season
+ *  honour the cell gave up. Null when it would only repeat the cell. */
+function seasonFinishDetail(h: HistoryRow): string | null {
+  const parts: string[] = []
+  if (h.divisionRank && h.divisionSize) {
+    parts.push(`${ordinal(h.divisionRank)} of ${h.divisionSize} in their division`)
+  }
+  if (h.topSeed) parts.push('Top seed')
+  if (h.playoffOutcome) parts.push(h.playoffOutcome)
+  else if (!h.madePlayoffs && h.divisionRank) parts.push('Missed playoffs')
+  return parts.length > 1 ? parts.join(' · ') : null
 }
 
 const FOCUS_RING = (secondary: string): React.CSSProperties => ({
@@ -733,15 +834,39 @@ export default function TeamPage() {
     }
   }, [games])
 
-  const trophies = useMemo(() => {
+  /** Newest first within each honour. The order only shows once a tier
+   *  overflows and gets truncated, and hiding a club's most recent title to
+   *  keep its oldest would be exactly backwards. */
+  const trophyTiers = useMemo((): TrophyTier[] => {
     if (!team) return []
-    // Floos Bowl first — it outranks a league title, so it leads the case.
+    const bySeasonDesc = (a: Trophy, b: Trophy) => seasonNumber(b.season) - seasonNumber(a.season)
+
     const bowl = (team.floosbowlChampionships || [])
-      .map(s => ({ season: s, label: 'Floos Bowl Champions', kind: 'bowl' as const }))
+      .map(s => ({ season: s, label: 'Floos Bowl Champions' }))
     const league = (team.leagueChampionships || [])
-      .map(s => ({ season: s, label: `${team.league} Champions`, kind: 'league' as const }))
-    return [...bowl, ...league]
+      .map(s => ({ season: s, label: `${team.league} Champions` }))
+    // ⚠️ Two shapes: {season, division} for anything won since the division's
+    // name started being recorded, and a bare 'Season N' string before that.
+    // A nameless one stays nameless rather than borrowing today's division —
+    // the club may not have been in it, and the data does not say.
+    const division = (team.divisionTitles || []).map(entry => {
+      const season = typeof entry === 'string' ? entry : (entry?.season || '')
+      const name = typeof entry === 'string' ? null : (entry?.division || null)
+      return { season, label: name ? `${name} Champions` : 'Division Champions' }
+    }).filter(t => t.season)
+
+    // Floos Bowl first — it outranks a league title, so it leads the case, and
+    // division banners come last for the same reason.
+    return ([
+      { kind: 'bowl' as const, heading: 'Floos Bowl', items: bowl },
+      { kind: 'league' as const, heading: `${team.league} titles`, items: league },
+      { kind: 'division' as const, heading: 'Division titles', items: division },
+    ]).filter(t => t.items.length > 0)
+      .map(t => ({ ...t, items: [...t.items].sort(bySeasonDesc) }))
   }, [team])
+
+  const trophyCount = useMemo(
+    () => trophyTiers.reduce((n, t) => n + t.items.length, 0), [trophyTiers])
 
   /** Signed streak from the backend: +2 = won two straight. */
   const streakLine = useMemo(() => {
@@ -933,8 +1058,12 @@ export default function TeamPage() {
           Each title is a MARK, not a sentence: trophy plus the season it was
           won. A dynasty should read as a row of trophies you can count at a
           glance, which spelled-out labels made impossible — what the title was
-          lives on the hover. Nothing to show, no empty case. */}
-      {trophies.length > 0 && (
+          lives on the hover. Nothing to show, no empty case.
+
+          Each honour collapses on its OWN count rather than the case having one
+          shared budget: division banners are common and would otherwise crowd
+          out the two rarer marks the case exists to show off. */}
+      {trophyCount > 0 && (
         <div style={{
           backgroundColor: 'rgba(245,158,11,0.06)',
           borderBottom: '1px solid rgba(245,158,11,0.22)',
@@ -948,24 +1077,64 @@ export default function TeamPage() {
               color: '#0b1220', backgroundColor: '#f59e0b', padding: '3px 9px',
               marginRight: '6px',
             }}>Trophy case</span>
-            {trophies.map(t => {
-              const tone = TROPHY_TONE[t.kind]
+            {trophyTiers.map(tier => {
+              const tone = TROPHY_TONE[tier.kind]
               const Icon = tone.Icon
+              const collapses = tier.items.length > TROPHY_VISIBLE_MAX
+              const shown = collapses ? tier.items.slice(0, TROPHY_VISIBLE_MAX - 1) : tier.items
+              const hidden = tier.items.length - shown.length
               return (
-                <HoverTooltip key={`${t.season}-${t.label}`} text={`${t.season} · ${t.label}`} color={tone.icon}>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '5px',
-                    backgroundColor: tone.bg,
-                    border: `1px solid ${tone.border}`,
-                    padding: '3px 8px 3px 6px',
-                  }}>
-                    <Icon size={15} color={tone.icon} style={{ flexShrink: 0 }} />
-                    <span style={{
-                      fontSize: '13px', fontWeight: 700, color: tone.text,
-                      fontVariantNumeric: 'tabular-nums',
-                    }}>{t.season.replace(/^Season\s*/i, 'S')}</span>
-                  </span>
-                </HoverTooltip>
+                <React.Fragment key={tier.kind}>
+                  {shown.map(t => (
+                    <HoverTooltip key={`${t.season}-${t.label}`} text={`${t.season} · ${t.label}`} color={tone.icon}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '5px',
+                        backgroundColor: tone.bg,
+                        border: `1px solid ${tone.border}`,
+                        padding: '3px 8px 3px 6px',
+                      }}>
+                        <Icon size={15} color={tone.icon} style={{ flexShrink: 0 }} />
+                        <span style={{
+                          fontSize: '13px', fontWeight: 700, color: tone.text,
+                          fontVariantNumeric: 'tabular-nums',
+                        }}>{seasonShort(t.season)}</span>
+                      </span>
+                    </HoverTooltip>
+                  ))}
+                  {/* The count chip lists the WHOLE honour, not just what it
+                      swallowed — you hover it to read the run, and a list that
+                      silently began at the fourth title would misreport it. */}
+                  {hidden > 0 && (
+                    <HoverTooltip
+                      color={tone.icon}
+                      content={
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+                          <span style={{
+                            fontSize: '10px', fontWeight: 800, letterSpacing: '0.1em',
+                            color: tone.icon, textTransform: 'uppercase',
+                          }}>{tier.heading} · {tier.items.length}</span>
+                          {tier.items.map(t => (
+                            <span key={`${t.season}-${t.label}`} style={{ fontSize: '11px', color: '#e2e8f0' }}>
+                              <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
+                                {seasonShort(t.season)}
+                              </span>
+                              {' · '}{t.label}
+                            </span>
+                          ))}
+                        </div>
+                      }
+                    >
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center',
+                        backgroundColor: tone.bg,
+                        border: `1px dashed ${tone.border}`,
+                        padding: '3px 8px',
+                        fontSize: '13px', fontWeight: 700, color: tone.text,
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>+{hidden}</span>
+                    </HoverTooltip>
+                  )}
+                </React.Fragment>
               )
             })}
           </div>
@@ -1416,6 +1585,7 @@ const HistoryTable: React.FC<{
     <tbody>
       {rows.map(h => {
         const finish = seasonFinish(h, liveSeason != null && h.season === liveSeason)
+        const detail = seasonFinishDetail(h)
         return (
           <tr key={h.season}>
             <td style={{
@@ -1433,7 +1603,11 @@ const HistoryTable: React.FC<{
             <td style={{
               ...TD, paddingRight: 0, textAlign: 'right',
               color: finish.color, fontWeight: finish.weight,
-            }}>{finish.label}</td>
+            }}>
+              {detail
+                ? <HoverTooltip text={detail} color={finish.color}>{finish.label}</HoverTooltip>
+                : finish.label}
+            </td>
           </tr>
         )
       })}

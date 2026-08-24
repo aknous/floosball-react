@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-Regular.ttf');font-weight:400;font-style:normal}
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-Medium.ttf');font-weight:500;font-style:normal}
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-SemiBold.ttf');font-weight:600;font-style:normal}
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-Bold.ttf');font-weight:700;font-style:normal}
+@font-face{font-family:'pressStart';src:url('assets/fonts/Inconsolata-ExtraBold.ttf');font-weight:800;font-style:normal}
+html,body{margin:0;padding:0;background:#070c15;font-family:'pressStart',ui-monospace,monospace;color:#e2e8f0}
+a{color:#f1f5f9;text-decoration:none}
+a:hover{color:#ffffff}
+.hd:hover{color:#ffffff!important}
+.row:hover{background-color:rgba(255,255,255,0.04)!important}
+.plate{transition:border-color 140ms ease,background-color 140ms ease}
+.plate:hover{border-color:#475569!important;background:#1b2739!important}
+.chip:hover{border-color:#64748b!important;color:#f1f5f9!important}
+.sec{background:none;border:none;padding:0;margin:0;cursor:pointer;font-family:inherit;text-align:left;width:100%}
+.sec:hover .sect{color:#ffffff}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.62}}
+</style>
+</helmet>
+
+<section style="padding:56px 64px 40px;display:flex;flex-direction:column;gap:34px">
+
+  <div style="display:flex;align-items:baseline;gap:16px;max-width:1060px">
+    <span style="font:800 11px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.14em;background:#ec3013;padding:6px 9px">TURN 1</span>
+    <div>
+      <h2 style="font:800 26px/1 'pressStart',monospace;color:#f8fafc;line-height:1.1;margin:0;letter-spacing:-0.03em">Achievements and History, in the house style</h2>
+      <p style="font:400 13px/1 'pressStart',monospace;color:#94a3b8;line-height:1.6;margin:8px 0 0;text-wrap:pretty">Same material, same structure &mdash; restyled onto the system the profile and stats pages now use. Radius goes to zero, every card becomes a <strong style="color:#cbd5e1;font-weight:700">#131e2f panel on #0b1220</strong> with a <strong style="color:#cbd5e1;font-weight:700">#0f172a</strong> chrome header, rounded pills become square plates, and the two competing blues (<span style="color:#cbd5e1">#3b82f6</span> progress, <span style="color:#cbd5e1">#60a5fa</span> tabs) collapse into one accent: <strong style="color:#38bdf8;font-weight:700">#38bdf8</strong> for progress and selection, amber for earned, <strong style="color:#4ade80;font-weight:700">#4ade80</strong> for the page you are on. Type is the profile scale: 10/700/0.1em column and panel labels, 12px tabular numbers, 11px labels. Cards drop their hard-coded pixel heights and equalise off the grid row instead.</p>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:52px">
+
+    <div id="1a" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px;max-width:1440px">
+        <span style="font:800 12px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.1em;background:#f8fafc;padding:6px 9px">1a</span>
+        <span style="font:800 17px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.02em">Achievements</span>
+        <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5">Unclaimed queue on top, then four collapsible sections. Section headers carry the count plate.</span>
+      </div>
+
+      <div data-screen-label="1a Achievements" style="width:1440px;background:#0b1220;border:1px solid #1e293b;display:flex;flex-direction:column;overflow:hidden">
+
+        <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:22px;padding:14px 22px;background:#0f172a;border-bottom:1px solid #1e293b">
+          <div style="display:flex;align-items:center;gap:9px">
+            <img src="assets/avatars/league_logo.png" alt="" width="28" height="28" style="border-radius:50%">
+            <span style="font:800 20px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.02em">Floosball</span>
+            <span style="font:700 9px/1 'pressStart',monospace;color:#f59e0b;background:rgba(245,158,11,0.28);padding:3px 5px;letter-spacing:0.06em">BETA</span>
+          </div>
+          <span style="width:1px;height:22px;background:#1e293b"></span>
+          <span style="font:600 13px/1 'pressStart',monospace;color:#cbd5e1">Season 16</span>
+          <span style="font:400 13px/1 'pressStart',monospace;color:#94a3b8">Week 15 of 28</span>
+          <span style="flex:1"></span>
+          <label style="display:flex;align-items:center;gap:8px;background:#131e2f;border:1px solid #1e293b;padding:7px 11px;width:196px">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="#94a3b8"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+            <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8">Teams, players, cards</span>
+          </label>
+          <a href="#1a" class="hd" style="display:flex;align-items:center;gap:6px;font:700 13px/1 'pressStart',monospace;color:#f59e0b">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8"></circle></svg>1,240
+          </a>
+          <a href="#1a" class="plate" style="display:flex;align-items:center;gap:9px;background:#131e2f;border:1px solid #1e293b;padding:5px 10px 5px 6px">
+            <img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+            <span style="font:600 12px/1 'pressStart',monospace;color:#cbd5e1">quiet_oyster_41</span>
+          </a>
+        </div>
+        </sc-if>
+
+        <div style="display:flex;flex:1;min-height:0">
+          <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+          <div style="width:196px;flex-shrink:0;background:#0f172a;border-right:1px solid #1e293b;padding:18px 0 22px;display:flex;flex-direction:column">
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:0 18px 9px">THE LEAGUE</div>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2 2 8v10h6v-6h4v6h6V8l-8-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Front page</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 2h2v1l11 4-11 4v7H3V2z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Games</span><span style="flex:1"></span><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">16</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h14v3H3V3zm0 5h14v3H3V8zm0 5h14v3H3v-3z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Standings</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Stats</span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M2 4h6a2 2 0 012 2v10a2 2 0 00-2-2H2V4zm16 0h-6a2 2 0 00-2 2v10a2 2 0 012-2h6V4z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">History</span>
+            </a>
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:22px 18px 9px">YOURS</div>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <img src="assets/avatars/3.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%">
+              <span style="font:500 13px/1 'pressStart',monospace;color:inherit">Broads</span>
+              <span style="flex:1"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:#f472b6;flex-shrink:0"></span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M2 12l4-6 4 4 4-7 4 9v4H2v-4z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Prognostications</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L1.4 7.3l6-.8L10 1z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Fantasy</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M5 2h10a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1zm1 3v4h8V5H6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Cards</span>
+            </a>
+            <a href="#1a" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#f1f5f9;background:rgba(74,222,128,0.10);border-left:3px solid #4ade80">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M6 2h8v2h3v3a4 4 0 01-3.3 3.9A4 4 0 0111 13.8V16h3v2H6v-2h3v-2.2a4 4 0 01-2.7-2.9A4 4 0 013 7V4h3V2zm0 4H5v1a2 2 0 001 1.7V6zm8 0v2.7A2 2 0 0015 7V6h-1z"></path></svg>
+              <span style="font:700 13px/1 'pressStart',monospace">Achievements</span>
+              <span style="flex:1"></span>
+              <span style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+                <span style="width:5px;height:5px;border-radius:50%;background:#f59e0b"></span>
+                <span style="font:700 10px/1 'pressStart',monospace;color:#f59e0b">3</span>
+              </span>
+            </a>
+            <span style="flex:1"></span>
+            <div style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5;letter-spacing:0.12em;padding:18px 18px 0">INSTANCE 498b<br>SIM 2.4.1</div>
+          </div>
+          </sc-if>
+
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+            <div style="display:flex;align-items:center;gap:14px;padding:17px 24px 15px;border-bottom:1px solid #1e293b">
+              <h1 style="font:800 22px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.025em;margin:0">Achievements</h1>
+              <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8">Season 16 &middot; Week 15</span>
+              <span style="flex:1"></span>
+              <div style="display:flex;align-items:center;gap:11px;background:#131e2f;border:1px solid #1e293b;padding:8px 13px">
+                <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">COMPLETE</span>
+                <span style="font:800 13px/1 'pressStart',monospace;color:#e2e8f0;font-variant-numeric:tabular-nums">11 / 34</span>
+                <span style="width:64px;height:5px;background:#0b1220;display:block">
+                  <span style="display:block;height:100%;width:32%;background:#38bdf8"></span>
+                </span>
+              </div>
+            </div>
+
+            <div style="padding:22px 24px 34px;display:flex;flex-direction:column;gap:28px">
+
+              <sc-if value="{{ showUnclaimed }}" hint-placeholder-val="{{ true }}">
+              <div style="background:#131e2f;border:1px solid rgba(245,158,11,0.5)">
+                <div style="display:flex;align-items:center;gap:12px;padding:11px 16px;background:#0f172a;border-bottom:1px solid #1e293b">
+                  <svg width="13" height="13" viewBox="0 0 20 20" fill="#f59e0b" style="display:block"><path d="M10 1l2.5 5.6 6.1.8-4.5 4.2 1.1 6.1-5.2-3-5.2 3 1.1-6.1L1.4 7.4l6.1-.8L10 1z"></path></svg>
+                  <span style="font:800 11px/1 'pressStart',monospace;color:#fbbf24;letter-spacing:0.12em">UNCLAIMED REWARDS</span>
+                  <span style="flex:1"></span>
+                  <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em">3 WAITING</span>
+                </div>
+                <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ unclaimed }}" as="r" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:14px;padding:11px 13px;background:#0b1220;border:1px solid #1e293b">
+                    <div style="flex:1;min-width:0">
+                      <div style="font:700 13px/1 'pressStart',monospace;color:{{ r.color }}">{{ r.label }}</div>
+                      <div style="font:400 11px/1 'pressStart',monospace;color:#94a3b8;margin-top:5px">{{ r.source }}<span style="color:#f59e0b">{{ r.held }}</span></div>
+                    </div>
+                    <sc-if value="{{ r.canDefer }}" hint-placeholder-val="{{ true }}">
+                    <a href="#1a" class="chip" style="font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;border:1px solid #334155;padding:7px 11px;white-space:nowrap">SAVE FOR NEXT SEASON</a>
+                    </sc-if>
+                    <sc-if value="{{ r.canConvert }}" hint-placeholder-val="{{ false }}">
+                    <a href="#1a" class="chip" style="font:600 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;border:1px solid #334155;padding:7px 11px;white-space:nowrap">CONVERT TO 60 F</a>
+                    </sc-if>
+                    <a href="#1a" class="plate" style="font:800 10px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.12em;background:#fbbf24;border:1px solid #fbbf24;padding:7px 14px;white-space:nowrap">{{ r.action }}</a>
+                  </div>
+                  </sc-for>
+                </div>
+              </div>
+              </sc-if>
+
+              <div style="display:flex;flex-direction:column;gap:13px">
+                <button class="sec" onClick="{{ secRookie.toggle }}">
+                  <div style="display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid #1e293b">
+                    <span style="font:700 15px/1 'pressStart',monospace;color:#64748b;width:12px;text-align:center">{{ secRookie.glyph }}</span>
+                    <span class="sect" style="font:800 12px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.12em">ROOKIE GOALS</span>
+                    <span style="font:800 11px/1 'pressStart',monospace;color:#cbd5e1;background:#0f172a;border:1px solid #1e293b;padding:4px 9px;font-variant-numeric:tabular-nums">2 / 5</span>
+                    <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">One-time milestones</span>
+                  </div>
+                </button>
+                <sc-if value="{{ secRookie.open }}" hint-placeholder-val="{{ true }}">
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start">
+                  <sc-for list="{{ rookie }}" as="a" hint-placeholder-count="3">
+                  <div style="background:#131e2f;border:1px solid {{ a.border }};padding:15px 16px;display:flex;flex-direction:column;gap:9px">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+                      <div style="min-width:0">
+                        <div style="font:700 15px/1 'pressStart',monospace;color:{{ a.nameColor }}">{{ a.name }}</div>
+                        <div style="font:400 12px/1.5 'pressStart',monospace;color:#cbd5e1;margin-top:6px">{{ a.desc }}</div>
+                      </div>
+                      <sc-if value="{{ a.done }}" hint-placeholder-val="{{ false }}">
+                      <span style="flex-shrink:0;font:800 9px/1 'pressStart',monospace;color:#f59e0b;letter-spacing:0.14em;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);padding:4px 6px">DONE</span>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{ a.hasSteps }}" hint-placeholder-val="{{ true }}">
+                    <div style="margin-top:2px;padding-top:11px;border-top:1px solid #1e293b;display:flex;flex-direction:column;gap:9px">
+                      <div style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">HOW TO COMPLETE</div>
+                      <div style="display:flex;flex-direction:column;gap:7px">
+                        <sc-for list="{{ a.steps }}" as="s" hint-placeholder-count="3">
+                        <div style="display:flex;gap:9px;font:400 12px/1.5 'pressStart',monospace;color:#cbd5e1">
+                          <span style="color:#94a3b8;flex-shrink:0">{{ s.n }}</span>
+                          <span>{{ s.text }}</span>
+                        </div>
+                        </sc-for>
+                      </div>
+                      <a href="#1a" class="plate" style="align-self:flex-start;display:flex;align-items:center;gap:8px;font:800 10px/1 'pressStart',monospace;color:#7dd3fc;letter-spacing:0.1em;background:rgba(56,189,248,0.12);border:1px solid #38bdf8;padding:8px 12px">
+                        {{ a.actionLabel }}
+                        <svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="#7dd3fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4 10h11M11 6l4 4-4 4"></path></svg>
+                      </a>
+                    </div>
+                    </sc-if>
+                    <div style="margin-top:auto;padding-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:7px">
+                      <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">REWARDS</span>
+                      <sc-for list="{{ a.rewards }}" as="w" hint-placeholder-count="1">
+                      <span style="font:700 11px/1 'pressStart',monospace;color:{{ w.color }};background:{{ w.bg }};padding:5px 9px">{{ w.text }}</span>
+                      </sc-for>
+                    </div>
+                  </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:13px">
+                <button class="sec" onClick="{{ secSeason.toggle }}">
+                  <div style="display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid #1e293b">
+                    <span style="font:700 15px/1 'pressStart',monospace;color:#64748b;width:12px;text-align:center">{{ secSeason.glyph }}</span>
+                    <span class="sect" style="font:800 12px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.12em">SEASON GOALS</span>
+                    <span style="font:800 11px/1 'pressStart',monospace;color:#cbd5e1;background:#0f172a;border:1px solid #1e293b;padding:4px 9px;font-variant-numeric:tabular-nums">7 / 15</span>
+                    <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">Re-earned every season</span>
+                  </div>
+                </button>
+                <sc-if value="{{ secSeason.open }}" hint-placeholder-val="{{ true }}">
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch">
+                  <sc-for list="{{ seasonSingles }}" as="a" hint-placeholder-count="2">
+                  <div style="background:#131e2f;border:1px solid {{ a.border }};padding:15px 16px;display:flex;flex-direction:column;gap:9px">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+                      <div style="min-width:0">
+                        <div style="font:700 15px/1 'pressStart',monospace;color:{{ a.nameColor }}">{{ a.name }}</div>
+                        <div style="font:400 12px/1.5 'pressStart',monospace;color:#cbd5e1;margin-top:6px">{{ a.desc }}</div>
+                      </div>
+                      <sc-if value="{{ a.done }}" hint-placeholder-val="{{ false }}">
+                      <span style="flex-shrink:0;font:800 9px/1 'pressStart',monospace;color:#f59e0b;letter-spacing:0.14em;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);padding:4px 6px">DONE</span>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{ a.hasBar }}" hint-placeholder-val="{{ true }}">
+                    <div style="margin-top:2px">
+                      <div style="height:6px;background:#0b1220;border:1px solid #16202f">
+                        <div style="height:100%;width:{{ a.pct }}%;background:#38bdf8"></div>
+                      </div>
+                      <div style="font:700 11px/1 'pressStart',monospace;color:#cbd5e1;margin-top:7px;font-variant-numeric:tabular-nums">{{ a.progress }}</div>
+                    </div>
+                    </sc-if>
+                    <div style="margin-top:auto;padding-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:7px">
+                      <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">REWARDS</span>
+                      <sc-for list="{{ a.rewards }}" as="w" hint-placeholder-count="1">
+                      <span style="font:700 11px/1 'pressStart',monospace;color:{{ w.color }};background:{{ w.bg }};padding:5px 9px">{{ w.text }}</span>
+                      </sc-for>
+                    </div>
+                  </div>
+                  </sc-for>
+                  <sc-for list="{{ seasonFamilies }}" as="g" hint-placeholder-count="4">
+                  <div style="background:#131e2f;border:1px solid {{ g.border }};padding:15px 16px;display:flex;flex-direction:column;gap:10px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                      <div style="display:flex;align-items:baseline;gap:10px;min-width:0">
+                        <span style="font:700 15px/1 'pressStart',monospace;color:{{ g.nameColor }}">{{ g.label }}</span>
+                        <span style="font:700 11px/1 'pressStart',monospace;color:{{ g.countColor }};font-variant-numeric:tabular-nums">{{ g.count }}</span>
+                      </div>
+                      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+                        <sc-for list="{{ g.tiers }}" as="t" hint-placeholder-count="3">
+                        <span style="width:9px;height:9px;display:block;background:{{ t.bg }};border:1px solid {{ t.border }}"></span>
+                        </sc-for>
+                      </div>
+                    </div>
+                    <sc-if value="{{ g.allDone }}" hint-placeholder-val="{{ false }}">
+                    <div style="font:700 12px/1 'pressStart',monospace;color:#f59e0b">All tiers complete</div>
+                    </sc-if>
+                    <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;flex-direction:column;gap:10px">
+                      <div style="font:400 12px/1.5 'pressStart',monospace;color:#cbd5e1">{{ g.desc }}</div>
+                      <div>
+                        <div style="height:6px;background:#0b1220;border:1px solid #16202f">
+                          <div style="height:100%;width:{{ g.pct }}%;background:#38bdf8"></div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;margin-top:7px;font:500 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">
+                          <span style="color:#cbd5e1;font-weight:700">{{ g.value }}</span>
+                          <span>{{ g.next }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    </sc-if>
+                    <div style="margin-top:auto;padding-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:7px">
+                      <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">{{ g.rewardLabel }}</span>
+                      <sc-for list="{{ g.rewards }}" as="w" hint-placeholder-count="1">
+                      <span style="font:700 11px/1 'pressStart',monospace;color:{{ w.color }};background:{{ w.bg }};padding:5px 9px">{{ w.text }}</span>
+                      </sc-for>
+                    </div>
+                  </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:13px">
+                <button class="sec" onClick="{{ secColl.toggle }}">
+                  <div style="display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid #1e293b">
+                    <span style="font:700 15px/1 'pressStart',monospace;color:#64748b;width:12px;text-align:center">{{ secColl.glyph }}</span>
+                    <span class="sect" style="font:800 12px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.12em">COLLECTION</span>
+                    <span style="font:800 11px/1 'pressStart',monospace;color:#cbd5e1;background:#0f172a;border:1px solid #1e293b;padding:4px 9px;font-variant-numeric:tabular-nums">3 / 10</span>
+                    <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">Permanent Vault goals</span>
+                  </div>
+                </button>
+                <sc-if value="{{ secColl.open }}" hint-placeholder-val="{{ true }}">
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch">
+                  <sc-for list="{{ collection }}" as="g" hint-placeholder-count="3">
+                  <div style="background:#131e2f;border:1px solid {{ g.border }};padding:15px 16px;display:flex;flex-direction:column;gap:10px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                      <div style="display:flex;align-items:baseline;gap:10px;min-width:0">
+                        <span style="font:700 15px/1 'pressStart',monospace;color:{{ g.nameColor }}">{{ g.label }}</span>
+                        <span style="font:700 11px/1 'pressStart',monospace;color:{{ g.countColor }};font-variant-numeric:tabular-nums">{{ g.count }}</span>
+                      </div>
+                      <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+                        <sc-for list="{{ g.tiers }}" as="t" hint-placeholder-count="3">
+                        <span style="width:9px;height:9px;display:block;background:{{ t.bg }};border:1px solid {{ t.border }}"></span>
+                        </sc-for>
+                      </div>
+                    </div>
+                    <div style="font:400 12px/1.5 'pressStart',monospace;color:#cbd5e1">{{ g.desc }}</div>
+                    <div>
+                      <div style="height:6px;background:#0b1220;border:1px solid #16202f">
+                        <div style="height:100%;width:{{ g.pct }}%;background:#38bdf8"></div>
+                      </div>
+                      <div style="display:flex;justify-content:space-between;margin-top:7px;font:500 11px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">
+                        <span style="color:#cbd5e1;font-weight:700">{{ g.value }}</span>
+                        <span>{{ g.next }}</span>
+                      </div>
+                    </div>
+                    <div style="margin-top:auto;padding-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:7px">
+                      <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">NEXT TIER</span>
+                      <sc-for list="{{ g.rewards }}" as="w" hint-placeholder-count="1">
+                      <span style="font:700 11px/1 'pressStart',monospace;color:{{ w.color }};background:{{ w.bg }};padding:5px 9px">{{ w.text }}</span>
+                      </sc-for>
+                    </div>
+                  </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:13px">
+                <button class="sec" onClick="{{ secSecret.toggle }}">
+                  <div style="display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid #1e293b">
+                    <span style="font:700 15px/1 'pressStart',monospace;color:#64748b;width:12px;text-align:center">{{ secSecret.glyph }}</span>
+                    <span class="sect" style="font:800 12px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.12em">SECRETS</span>
+                    <span style="font:800 11px/1 'pressStart',monospace;color:#cbd5e1;background:#0f172a;border:1px solid #1e293b;padding:4px 9px;font-variant-numeric:tabular-nums">1 / 4</span>
+                    <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">Hidden until unlocked</span>
+                  </div>
+                </button>
+                <sc-if value="{{ secSecret.open }}" hint-placeholder-val="{{ true }}">
+                <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:stretch">
+                  <sc-for list="{{ secrets }}" as="s" hint-placeholder-count="4">
+                  <div style="background:{{ s.bg }};border:1px {{ s.borderStyle }} {{ s.border }};padding:15px 16px;display:flex;flex-direction:column;gap:9px;min-height:104px">
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+                      <div style="font:700 14px/1 'pressStart',monospace;color:{{ s.nameColor }};letter-spacing:{{ s.tracking }}">{{ s.name }}</div>
+                      <sc-if value="{{ s.unlocked }}" hint-placeholder-val="{{ false }}">
+                      <span style="flex-shrink:0;font:800 9px/1 'pressStart',monospace;color:#f59e0b;letter-spacing:0.14em;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);padding:4px 6px">DONE</span>
+                      </sc-if>
+                    </div>
+                    <div style="font:400 12px/1.5 'pressStart',monospace;color:{{ s.descColor }}">{{ s.desc }}</div>
+                    <sc-if value="{{ s.unlocked }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:auto;padding-top:10px;display:flex;flex-wrap:wrap;align-items:center;gap:7px">
+                      <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">REWARDS</span>
+                      <span style="font:700 11px/1 'pressStart',monospace;color:#fbbf24;background:rgba(251,191,36,0.14);padding:5px 9px">300 F</span>
+                    </div>
+                    </sc-if>
+                  </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="1b" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px;max-width:1440px">
+        <span style="font:800 12px/1 'pressStart',monospace;color:#0b1220;letter-spacing:0.1em;background:#f8fafc;padding:6px 9px">1b</span>
+        <span style="font:800 17px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.02em">History</span>
+        <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5;max-width:720px">Three tabs beside the title instead of a pill row &mdash; click them. The Record Book now runs CAREER / SINGLE SEASON / SINGLE GAME as sections down the page, with category as a filter and Fantasy back as the third subject.</span>
+      </div>
+
+      <div data-screen-label="1b History" style="width:1440px;background:#0b1220;border:1px solid #1e293b;display:flex;flex-direction:column;overflow:hidden">
+
+        <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:22px;padding:14px 22px;background:#0f172a;border-bottom:1px solid #1e293b">
+          <div style="display:flex;align-items:center;gap:9px">
+            <img src="assets/avatars/league_logo.png" alt="" width="28" height="28" style="border-radius:50%">
+            <span style="font:800 20px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:-0.02em">Floosball</span>
+            <span style="font:700 9px/1 'pressStart',monospace;color:#f59e0b;background:rgba(245,158,11,0.28);padding:3px 5px;letter-spacing:0.06em">BETA</span>
+          </div>
+          <span style="width:1px;height:22px;background:#1e293b"></span>
+          <span style="font:600 13px/1 'pressStart',monospace;color:#cbd5e1">Season 16</span>
+          <span style="font:400 13px/1 'pressStart',monospace;color:#94a3b8">Week 15 of 28</span>
+          <span style="flex:1"></span>
+          <label style="display:flex;align-items:center;gap:8px;background:#131e2f;border:1px solid #1e293b;padding:7px 11px;width:196px">
+            <svg width="13" height="13" viewBox="0 0 20 20" fill="#94a3b8"><path d="M8 3a5 5 0 013.9 8.1l4 4-1.4 1.4-4-4A5 5 0 118 3zm0 2a3 3 0 100 6 3 3 0 000-6z"></path></svg>
+            <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8">Teams, players, cards</span>
+          </label>
+          <a href="#1b" class="hd" style="display:flex;align-items:center;gap:6px;font:700 13px/1 'pressStart',monospace;color:#f59e0b">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8"></circle></svg>1,240
+          </a>
+          <a href="#1b" class="plate" style="display:flex;align-items:center;gap:9px;background:#131e2f;border:1px solid #1e293b;padding:5px 10px 5px 6px">
+            <img src="assets/avatars/3.png" alt="" width="22" height="22" style="flex-shrink:0;display:block;border-radius:50%">
+            <span style="font:600 12px/1 'pressStart',monospace;color:#cbd5e1">quiet_oyster_41</span>
+          </a>
+        </div>
+        </sc-if>
+
+        <div style="display:flex;flex:1;min-height:0">
+          <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+          <div style="width:196px;flex-shrink:0;background:#0f172a;border-right:1px solid #1e293b;padding:18px 0 22px;display:flex;flex-direction:column">
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:0 18px 9px">THE LEAGUE</div>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2 2 8v10h6v-6h4v6h6V8l-8-6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Front page</span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 2h2v1l11 4-11 4v7H3V2z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Games</span><span style="flex:1"></span><span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8">16</span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M3 3h14v3H3V3zm0 5h14v3H3V8zm0 5h14v3H3v-3z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Standings</span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Stats</span>
+            </a>
+            <a href="#1b" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#f1f5f9;background:rgba(74,222,128,0.10);border-left:3px solid #4ade80">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M2 4h6a2 2 0 012 2v10a2 2 0 00-2-2H2V4zm16 0h-6a2 2 0 00-2 2v10a2 2 0 012-2h6V4z"></path></svg>
+              <span style="font:700 13px/1 'pressStart',monospace">History</span>
+            </a>
+            <div style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.16em;padding:22px 18px 9px">YOURS</div>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <img src="assets/avatars/3.png" alt="" width="17" height="17" style="flex-shrink:0;display:block;border-radius:50%">
+              <span style="font:500 13px/1 'pressStart',monospace;color:inherit">Broads</span>
+              <span style="flex:1"></span>
+              <span style="width:5px;height:5px;border-radius:50%;background:#f472b6;flex-shrink:0"></span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M2 12l4-6 4 4 4-7 4 9v4H2v-4z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Prognostications</span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L1.4 7.3l6-.8L10 1z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Fantasy</span>
+            </a>
+            <a href="#1b" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M5 2h10a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V3a1 1 0 011-1zm1 3v4h8V5H6z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Cards</span>
+            </a>
+            <a href="#1a" class="hd" style="display:flex;align-items:center;gap:11px;padding:9px 18px;color:#94a3b8;border-left:3px solid transparent">
+              <svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor"><path d="M6 2h8v2h3v3a4 4 0 01-3.3 3.9A4 4 0 0111 13.8V16h3v2H6v-2h3v-2.2a4 4 0 01-2.7-2.9A4 4 0 013 7V4h3V2zm0 4H5v1a2 2 0 001 1.7V6zm8 0v2.7A2 2 0 0015 7V6h-1z"></path></svg>
+              <span style="font:500 13px/1 'pressStart',monospace">Achievements</span>
+              <span style="flex:1"></span>
+              <span style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+                <span style="width:5px;height:5px;border-radius:50%;background:#f59e0b"></span>
+                <span style="font:700 10px/1 'pressStart',monospace;color:#f59e0b">3</span>
+              </span>
+            </a>
+            <span style="flex:1"></span>
+            <div style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;line-height:1.5;letter-spacing:0.12em;padding:18px 18px 0">INSTANCE 498b<br>SIM 2.4.1</div>
+          </div>
+          </sc-if>
+
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+
+            <div style="display:flex;align-items:center;gap:14px;padding:17px 24px 15px;border-bottom:1px solid #1e293b">
+              <h1 style="font:800 22px/1 'pressStart',monospace;color:#f8fafc;letter-spacing:-0.025em;margin:0">History</h1>
+              <div style="display:flex;background:#0f172a;border:1px solid #1e293b">
+                <button onClick="{{ goSeasons }}" style="font:800 11px/1 'pressStart',monospace;letter-spacing:0.08em;padding:9px 14px;border:none;cursor:pointer;font-family:'pressStart',monospace;color:{{ tabSeasons.fg }};background:{{ tabSeasons.bg }};font-weight:{{ tabSeasons.w }}">SEASONS</button>
+                <button onClick="{{ goRecords }}" style="font:800 11px/1 'pressStart',monospace;letter-spacing:0.08em;padding:9px 14px;border:none;border-left:1px solid #1e293b;cursor:pointer;font-family:'pressStart',monospace;color:{{ tabRecords.fg }};background:{{ tabRecords.bg }};font-weight:{{ tabRecords.w }}">RECORD BOOK</button>
+                <button onClick="{{ goHall }}" style="font:800 11px/1 'pressStart',monospace;letter-spacing:0.08em;padding:9px 14px;border:none;border-left:1px solid #1e293b;cursor:pointer;font-family:'pressStart',monospace;color:{{ tabHall.fg }};background:{{ tabHall.bg }};font-weight:{{ tabHall.w }}">HALL OF FAME</button>
+              </div>
+              <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8">{{ tabNote }}</span>
+            </div>
+
+            <sc-if value="{{ isSeasons }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:22px 24px 34px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;align-items:start">
+
+              <div style="background:#131e2f;border:1px solid #1e293b">
+                <div style="padding:11px 14px;font:800 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em;background:#0f172a;border-bottom:1px solid #1e293b">COMPLETED SEASONS</div>
+                <sc-for list="{{ seasonList }}" as="s" hint-placeholder-count="8">
+                <button onClick="{{ s.pick }}" class="row" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px 14px;border:none;border-top:1px solid #16202f;cursor:pointer;font-family:'pressStart',monospace;text-align:left;background:{{ s.bg }};border-left:3px solid {{ s.rule }}">
+                  <span style="font:700 12px/1 'pressStart',monospace;color:{{ s.fg }};font-variant-numeric:tabular-nums">Season {{ s.n }}</span>
+                  <span style="display:flex;align-items:center;gap:7px">
+                    <img src="{{ s.champAvatar }}" alt="" width="16" height="16" style="border-radius:50%;display:block">
+                    <span style="font:700 10px/1 'pressStart',monospace;color:{{ s.champColor }};letter-spacing:0.06em">{{ s.champ }}</span>
+                  </span>
+                </button>
+                </sc-for>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="background:#131e2f;border:1px solid #1e293b;display:flex;align-items:stretch">
+                  <div style="padding:16px 22px;display:flex;flex-direction:column;gap:9px;flex:1">
+                    <span style="font:800 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">FLOOSBOWL {{ sel.n }} CHAMPION</span>
+                    <a href="#1b" style="display:flex;align-items:center;gap:11px">
+                      <img src="{{ sel.champAvatar }}" alt="" width="30" height="30" style="border-radius:50%;display:block">
+                      <span style="font:800 20px/1 'pressStart',monospace;color:{{ sel.champColor }};letter-spacing:-0.02em">{{ sel.champName }}</span>
+                      <span style="font:500 12px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums">{{ sel.champRecord }}</span>
+                    </a>
+                  </div>
+                  <span style="width:1px;background:#1e293b"></span>
+                  <div style="padding:16px 22px;display:flex;flex-direction:column;gap:9px;flex:1">
+                    <span style="font:800 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">MOST VALUABLE PLAYER</span>
+                    <a href="#1b" style="display:flex;align-items:center;gap:11px">
+                      <img src="{{ sel.mvpAvatar }}" alt="" width="26" height="26" style="border-radius:50%;display:block">
+                      <span style="font:700 17px/1 'pressStart',monospace;color:#f1f5f9">{{ sel.mvpName }}</span>
+                      <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;background:#0f172a;border:1px solid #1e293b;padding:4px 7px">{{ sel.mvpPos }}</span>
+                      <span style="font:500 12px/1 'pressStart',monospace;color:#94a3b8">{{ sel.mvpLine }}</span>
+                    </a>
+                  </div>
+                </div>
+
+                <div style="background:#131e2f;border:1px solid #1e293b">
+                  <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:#0f172a;border-bottom:1px solid #1e293b">
+                    <span style="font:800 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">FINAL STANDINGS &middot; SEASON {{ sel.n }}</span>
+                    <span style="flex:1"></span>
+                    <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em">32 CLUBS</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:34px minmax(0,1fr) 70px 70px 70px 70px 84px;align-items:center;padding:9px 14px;background:#0f172a;border-bottom:1px solid #1e293b">
+                    <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em">#</span>
+                    <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em">CLUB</span>
+                    <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;text-align:right">W</span>
+                    <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;text-align:right">L</span>
+                    <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;text-align:right">PCT</span>
+                    <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;text-align:right">ELO</span>
+                    <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;text-align:right">RESULT</span>
+                  </div>
+                  <sc-for list="{{ standings }}" as="t" hint-placeholder-count="10">
+                  <div class="row" style="display:grid;grid-template-columns:34px minmax(0,1fr) 70px 70px 70px 70px 84px;align-items:center;padding:8px 14px;border-top:1px solid #16202f">
+                    <span style="font:700 12px/1 'pressStart',monospace;color:{{ t.rankColor }};font-variant-numeric:tabular-nums">{{ t.rank }}</span>
+                    <a href="#1b" style="display:flex;align-items:center;gap:9px;min-width:0">
+                      <img src="{{ t.avatar }}" alt="" width="18" height="18" style="border-radius:50%;display:block;flex-shrink:0">
+                      <span style="font:400 12px/1 'pressStart',monospace;color:#94a3b8">{{ t.city }}</span>
+                      <span style="font:700 12px/1 'pressStart',monospace;color:{{ t.color }}">{{ t.name }}</span>
+                    </a>
+                    <span style="font:700 12px/1 'pressStart',monospace;color:#e2e8f0;text-align:right;font-variant-numeric:tabular-nums">{{ t.w }}</span>
+                    <span style="font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.l }}</span>
+                    <span style="font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.pct }}</span>
+                    <span style="font:500 12px/1 'pressStart',monospace;color:#cbd5e1;text-align:right;font-variant-numeric:tabular-nums">{{ t.elo }}</span>
+                    <span style="font:700 10px/1 'pressStart',monospace;color:{{ t.resultColor }};letter-spacing:0.1em;text-align:right">{{ t.result }}</span>
+                  </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ isRecords }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:22px 24px 34px;display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+                <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">SUBJECT</span>
+                <div style="display:flex;background:#0f172a;border:1px solid #1e293b">
+                  <button onClick="{{ goPlayers }}" style="font:800 11px/1 'pressStart',monospace;letter-spacing:0.08em;padding:8px 13px;border:none;cursor:pointer;font-family:'pressStart',monospace;color:{{ subPlayers.fg }};background:{{ subPlayers.bg }};font-weight:{{ subPlayers.w }}">PLAYERS</button>
+                  <button onClick="{{ goTeams }}" style="font:800 11px/1 'pressStart',monospace;letter-spacing:0.08em;padding:8px 13px;border:none;border-left:1px solid #1e293b;cursor:pointer;font-family:'pressStart',monospace;color:{{ subTeams.fg }};background:{{ subTeams.bg }};font-weight:{{ subTeams.w }}">TEAMS</button>
+                  <button onClick="{{ goFantasy }}" style="font:800 11px/1 'pressStart',monospace;letter-spacing:0.08em;padding:8px 13px;border:none;border-left:1px solid #1e293b;cursor:pointer;font-family:'pressStart',monospace;color:{{ subFantasy.fg }};background:{{ subFantasy.bg }};font-weight:{{ subFantasy.w }}">FANTASY</button>
+                </div>
+                <sc-if value="{{ hasCats }}" hint-placeholder-val="{{ true }}">
+                <span style="width:1px;height:24px;background:#334155"></span>
+                <span style="font:700 9px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.14em">CATEGORY</span>
+                <div style="display:flex;gap:5px">
+                  <sc-for list="{{ cats }}" as="s" hint-placeholder-count="7">
+                  <button onClick="{{ s.pick }}" class="chip" style="font:500 11px/1 'pressStart',monospace;padding:7px 11px;cursor:pointer;font-family:'pressStart',monospace;color:{{ s.fg }};background:{{ s.bg }};border:1px solid {{ s.border }};font-weight:{{ s.w }}">{{ s.label }}</button>
+                  </sc-for>
+                </div>
+                </sc-if>
+                <span style="flex:1"></span>
+                <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">Top ten, ties share a rank</span>
+              </div>
+
+              <sc-for list="{{ bookSections }}" as="sec" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <span style="font:800 11px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.14em;white-space:nowrap">{{ sec.label }}</span>
+                  <span style="flex:1;height:1px;background:#1e293b"></span>
+                  <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;white-space:nowrap">{{ sec.count }}</span>
+                </div>
+                <sc-if value="{{ sec.hasNote }}" hint-placeholder-val="{{ false }}">
+                <div style="font:400 11px/1.5 'pressStart',monospace;color:#94a3b8;border-left:2px solid #334155;padding-left:11px;max-width:720px">{{ sec.note }}</div>
+                </sc-if>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(370px,1fr));gap:14px;align-items:start">
+                  <sc-for list="{{ sec.cards }}" as="c" hint-placeholder-count="4">
+                  <div style="background:#131e2f;border:1px solid #1e293b">
+                    <div style="display:flex;align-items:center;gap:10px;padding:9px 13px;background:#0f172a;border-bottom:1px solid #1e293b">
+                      <span style="font:800 10px/1 'pressStart',monospace;color:#cbd5e1;letter-spacing:0.12em">{{ c.label }}</span>
+                      <span style="flex:1"></span>
+                      <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em">{{ c.unit }}</span>
+                    </div>
+                    <sc-for list="{{ c.rows }}" as="r" hint-placeholder-count="5">
+                    <div class="row" style="display:flex;align-items:center;gap:9px;padding:7px 13px;border-top:1px solid #16202f">
+                      <span style="width:16px;text-align:right;font:700 12px/1 'pressStart',monospace;color:{{ r.rankColor }};font-variant-numeric:tabular-nums;flex-shrink:0">{{ r.rank }}</span>
+                      <a href="#1b" style="flex:1;min-width:0;font:500 12px/1 'pressStart',monospace;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</a>
+                      <sc-if value="{{ r.hasTeam }}" hint-placeholder-val="{{ true }}">
+                      <img src="{{ r.avatar }}" alt="" width="18" height="18" style="border-radius:50%;display:block;flex-shrink:0">
+                      <span style="width:30px;flex-shrink:0;font:700 10px/1 'pressStart',monospace;color:{{ r.abbrColor }};letter-spacing:0.04em">{{ r.abbr }}</span>
+                      </sc-if>
+                      <span style="width:62px;text-align:right;font:700 12px/1 'pressStart',monospace;color:#f1f5f9;font-variant-numeric:tabular-nums;flex-shrink:0">{{ r.value }}</span>
+                      <span style="width:56px;text-align:right;font:400 10px/1 'pressStart',monospace;color:#94a3b8;font-variant-numeric:tabular-nums;flex-shrink:0">{{ r.when }}</span>
+                    </div>
+                    </sc-for>
+                  </div>
+                  </sc-for>
+                </div>
+              </div>
+              </sc-for>
+            </div>
+            </sc-if>
+
+            <sc-if value="{{ isHall }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:22px 24px 34px;display:flex;flex-direction:column;gap:24px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="#fbbf24" style="display:block"><path d="M10 1l2.5 5.6 6.1.8-4.5 4.2 1.1 6.1-5.2-3-5.2 3 1.1-6.1L1.4 7.4l6.1-.8L10 1z"></path></svg>
+                <span style="font:800 12px/1 'pressStart',monospace;color:#f1f5f9;letter-spacing:0.12em">HALL OF FAME</span>
+                <span style="font:800 11px/1 'pressStart',monospace;color:#cbd5e1;background:#0f172a;border:1px solid #1e293b;padding:4px 9px;font-variant-numeric:tabular-nums">41 ENSHRINED</span>
+                <span style="font:400 11px/1 'pressStart',monospace;color:#94a3b8">No star rating &mdash; late-career decline misreads a career</span>
+              </div>
+              <sc-for list="{{ hallClasses }}" as="k" hint-placeholder-count="2">
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <span style="font:800 11px/1 'pressStart',monospace;color:#fbbf24;letter-spacing:0.12em;white-space:nowrap">{{ k.label }}</span>
+                  <span style="flex:1;height:1px;background:#1e293b"></span>
+                  <span style="font:400 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.1em;white-space:nowrap">{{ k.count }}</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:12px;align-items:stretch">
+                  <sc-for list="{{ k.players }}" as="p" hint-placeholder-count="4">
+                  <div style="background:#131e2f;border:1px solid #1e293b;display:flex;flex-direction:column">
+                    <div style="height:3px;background:{{ p.bar }}"></div>
+                    <div style="padding:13px 14px;display:flex;flex-direction:column;gap:9px;flex:1">
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        <sc-for list="{{ p.teams }}" as="t" hint-placeholder-count="1">
+                        <span style="display:flex;align-items:center;gap:5px">
+                          <img src="{{ t.avatar }}" alt="" width="18" height="18" style="border-radius:50%;display:block">
+                          <span style="font:700 11px/1 'pressStart',monospace;color:{{ t.color }};letter-spacing:0.04em">{{ t.abbr }}</span>
+                        </span>
+                        </sc-for>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:8px;min-width:0">
+                        <span style="font:700 10px/1 'pressStart',monospace;color:#94a3b8;letter-spacing:0.08em;background:#0f172a;border:1px solid #1e293b;padding:4px 6px;flex-shrink:0">{{ p.pos }}</span>
+                        <a href="#1b" style="font:700 15px/1.2 'pressStart',monospace;color:#f1f5f9;min-width:0">{{ p.name }}</a>
+                      </div>
+                      <div style="display:flex;flex-wrap:wrap;gap:5px">
+                        <sc-for list="{{ p.awards }}" as="w" hint-placeholder-count="2">
+                        <span style="display:inline-flex;align-items:center;gap:5px;font:700 10px/1 'pressStart',monospace;color:{{ w.color }};background:{{ w.bg }};border:1px solid {{ w.border }};padding:4px 7px;white-space:nowrap">{{ w.text }}</span>
+                        </sc-for>
+                      </div>
+                      <sc-if value="{{ p.hasRecords }}" hint-placeholder-val="{{ true }}">
+                      <span style="align-self:flex-start;font:600 10px/1 'pressStart',monospace;color:#38bdf8;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.4);padding:4px 8px;white-space:nowrap">{{ p.records }}</span>
+                      </sc-if>
+                      <div style="margin-top:auto;padding-top:6px;font:400 11px/1 'pressStart',monospace;color:#94a3b8">
+                        <span style="color:#cbd5e1;font-weight:700;font-variant-numeric:tabular-nums">{{ p.seasons }}</span> seasons
+                      </div>
+                    </div>
+                  </div>
+                  </sc-for>
+                </div>
+              </div>
+              </sc-for>
+            </div>
+            </sc-if>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;chromeOn&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Frame&quot;},&quot;showUnclaimed&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Achievements&quot;},&quot;historyTab&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;seasons&quot;,&quot;records&quot;,&quot;hall-of-fame&quot;],&quot;default&quot;:&quot;seasons&quot;,&quot;tsType&quot;:&quot;'seasons' | 'records' | 'hall-of-fame'&quot;,&quot;section&quot;:&quot;History&quot;}}">
+class Component extends DCLogic {
+  state = { tab: null, subject: 'players', cat: 'all', season: 15, closed: {} };
+
+  sec(k) {
+    const closed = !!this.state.closed[k];
+    return {
+      open: !closed,
+      glyph: closed ? '+' : '\u2212',
+      toggle: () => this.setState(s => ({ closed: Object.assign({}, s.closed, { [k]: !s.closed[k] }) })),
+    };
+  }
+
+  renderVals() {
+    const av = (id) => 'assets/avatars/' + id + '.png';
+    const rw = (text, color) => ({ text, color, bg: color + '20' });
+    const seg = (on) => on
+      ? { fg: '#0b1220', bg: '#cbd5e1', w: '800' }
+      : { fg: '#94a3b8', bg: 'transparent', w: '500' };
+    const done = { border: 'rgba(245,158,11,0.45)', nameColor: '#f59e0b' };
+    const open = { border: '#1e293b', nameColor: '#f1f5f9' };
+
+    const T = {
+      PHI: { id: 3, city: 'Philadelphia', name: 'Broads', c: '#f472b6' },
+      ANC: { id: 1, city: 'Anchorage', name: 'Aurora', c: '#38bdf8' },
+      TUC: { id: 7, city: 'Tucson', name: 'Tumbleweeds', c: '#eab308' },
+      DUL: { id: 12, city: 'Duluth', name: 'Drifters', c: '#4ade80' },
+      MOB: { id: 5, city: 'Mobile', name: 'Mudcats', c: '#a78bfa' },
+      REN: { id: 9, city: 'Reno', name: 'Ramblers', c: '#f87171' },
+      CAM: { id: 15, city: 'Camden', name: 'Crowbars', c: '#cbd5e1' },
+      FRE: { id: 20, city: 'Fresno', name: 'Fault', c: '#22d3ee' },
+      WIC: { id: 22, city: 'Wichita', name: 'Wallop', c: '#fb923c' },
+      TUL: { id: 17, city: 'Tulsa', name: 'Tempo', c: '#34d399' },
+    };
+
+    // ── Achievements ──────────────────────────────────────────────
+    const step = (i, text) => ({ n: (i + 1) + '.', text });
+    const rookie = [
+      { name: 'Rookie', desc: 'Follow a club. You can switch freely until week 1.', d: true, rewards: [rw('100 F', '#fbbf24')] },
+      { name: 'Prognosticator', desc: 'Pick a winner for any game on the slate.', d: true, rewards: [rw('120 F', '#fbbf24')] },
+      {
+        name: 'Pack Popper', desc: 'Open your first pack of cards.', d: false,
+        actionLabel: 'OPEN THE SHOP', rewards: [rw('Humble Pack', '#94a3b8')],
+        steps: ['Click your Floobits balance in the header to open the Shop.', 'Pick a pack you can afford \u2014 the Humble Pack is 40F.', 'Open it, then keep the cards you want.'],
+      },
+      {
+        name: 'Deck Builder', desc: 'Fill every slot in your fantasy lineup.', d: false,
+        actionLabel: 'GO TO FANTASY', rewards: [rw('150 F', '#fbbf24'), rw('Random Powerup', '#06b6d4')],
+        steps: ['Open the Fantasy page and find your lineup at the top.', 'Click an empty slot to pick a card from your collection.', 'Six slots plus FLEX \u2014 they score for you every week.'],
+      },
+      {
+        name: 'Patron', desc: "Put Floobits into your club's facilities.", d: false,
+        actionLabel: 'GO TO MY TEAM', rewards: [rw('200 F', '#fbbf24')],
+        steps: ["Open your team's page.", 'Find the Front Office band and its Facilities.', 'Funding raises market tier, which feeds development and morale.'],
+      },
+    ].map(a => Object.assign({
+      name: a.name, desc: a.desc, done: a.d, rewards: a.rewards,
+      hasSteps: !a.d, actionLabel: a.actionLabel || '',
+      steps: (a.steps || []).map((t, i) => step(i, t)),
+    }, a.d ? done : open));
+
+    const fam = (label, tiersDone, tiersTotal, desc, cur, target, next, rewards, allDone) => {
+      const tiers = [];
+      for (let i = 0; i < tiersTotal; i++) {
+        tiers.push(i < tiersDone
+          ? { bg: '#f59e0b', border: '#f59e0b' }
+          : { bg: '#0b1220', border: '#334155' });
+      }
+      const pct = allDone ? 100 : Math.min(100, Math.round((cur / target) * 100));
+      return Object.assign({
+        label, tiers, count: tiersDone + '/' + tiersTotal,
+        countColor: allDone ? '#f59e0b' : '#94a3b8',
+        allDone: !!allDone, open: !allDone,
+        desc, pct, value: cur + ' / ' + target, next: 'NEXT: TIER ' + next,
+        rewards, rewardLabel: allDone ? 'EARNED' : 'NEXT TIER',
+      }, allDone ? done : open);
+    };
+
+    const seasonSingles = [
+      Object.assign({
+        name: 'Ice Cold', desc: 'Win a Prognostication as a 20% underdog.', done: false,
+        hasBar: false, pct: 0, progress: '', rewards: [rw('90 F', '#fbbf24')],
+      }, open),
+      Object.assign({
+        name: 'Archivist', desc: 'Read a season recap in the History pages.', done: true,
+        hasBar: false, pct: 100, progress: '', rewards: [rw('60 F', '#fbbf24')],
+      }, done),
+    ];
+
+    const seasonFamilies = [
+      fam('Dedicated', 2, 3, 'Make picks in twelve different weeks.', 8, 12, 'III', [rw('150 F', '#fbbf24')]),
+      fam('Banner Week', 1, 3, 'Score 140 fantasy points in a single week.', 118, 140, 'II', [rw('Grand Pack', '#f472b6')]),
+      fam('Oracle', 0, 4, 'Finish a week at 60% or better on your picks.', 47, 60, 'I', [rw('75 F', '#fbbf24'), rw('Random Powerup', '#06b6d4')]),
+      fam('Magnate', 3, 3, '', 0, 1, '', [rw('Exquisite Pack', '#67e8f9')], true),
+    ];
+
+    const collection = [
+      fam('Racket', 2, 4, 'Hold forty cards in your collection at once.', 31, 40, 'III', [rw('Exquisite Pack', '#67e8f9')]),
+      fam('Compound', 1, 3, 'Reach a 1.40x collection multiplier.', '1.22x', '1.40x', 'II', [rw('220 F', '#fbbf24')]),
+      fam('Artificer', 0, 3, 'Combine ten cards into higher tiers.', 3, 10, 'I', [rw('Grand Pack', '#f472b6')]),
+    ].map(g => {
+      if (typeof g.value === 'string' && g.value.indexOf('1.22x') === 0) g.pct = 87;
+      return g;
+    });
+
+    const secrets = [
+      {
+        unlocked: true, name: 'Ghost in the Frame', desc: 'Watched a Cores glitch resolve mid-play.',
+        bg: '#131e2f', border: 'rgba(245,158,11,0.45)', borderStyle: 'solid',
+        nameColor: '#f59e0b', descColor: '#cbd5e1', tracking: 'normal',
+      },
+    ].concat([0, 1, 2].map(() => ({
+      unlocked: false, name: '? ? ?', desc: 'Hidden until unlocked',
+      bg: '#101a29', border: '#26313f', borderStyle: 'dashed',
+      nameColor: '#94a3b8', descColor: '#94a3b8', tracking: '0.16em',
+    })));
+
+    const unclaimed = [
+      { label: 'Grand Pack', color: '#f472b6', source: 'Earned from Banner Week II', held: '', canDefer: true, canConvert: false, action: 'CLAIM' },
+      { label: 'Exquisite Pack', color: '#67e8f9', source: 'Earned from Racket II', held: '  \u00b7 Held for season 17', canDefer: false, canConvert: true, action: 'CLAIM' },
+      { label: 'Random Powerup', color: '#06b6d4', source: 'Earned from Dedicated II', held: '', canDefer: true, canConvert: false, action: 'CLAIM' },
+    ];
+
+    // ── History ───────────────────────────────────────────────────
+    const tab = this.state.tab || this.props.historyTab || 'seasons';
+    const champs = { 15: 'DUL', 14: 'PHI', 13: 'TUC', 12: 'DUL', 11: 'MOB', 10: 'CAM', 9: 'FRE', 8: 'ANC' };
+    const seasonList = [15, 14, 13, 12, 11, 10, 9, 8].map(n => {
+      const t = T[champs[n]];
+      const on = this.state.season === n;
+      return {
+        n, champ: champs[n], champId: t.id, champAvatar: av(t.id), champColor: t.c,
+        bg: on ? '#0b1220' : 'transparent',
+        rule: on ? '#f59e0b' : 'transparent',
+        fg: on ? '#f8fafc' : '#cbd5e1',
+        pick: () => this.setState({ season: n }),
+      };
+    });
+    const selT = T[champs[this.state.season]];
+    const mvps = {
+      15: ['Leakey Pennyfarthing', 'WR', 'PHI', '1,706 rcv yards \u00b7 19 TD'],
+      14: ['Hollis Trammel', 'QB', 'DUL', '4,912 pass yards \u00b7 41 TD'],
+      13: ['Odile Brackwater', 'LB', 'CAM', '188 tackles \u00b7 14 sacks'],
+      12: ['Coco Mattel', 'WR', 'PHI', '1,588 rcv yards \u00b7 16 TD'],
+      11: ['Bunny Vandermeer', 'WR', 'TUC', '1,499 rcv yards \u00b7 15 TD'],
+      10: ['Sonny Kesterby', 'QB', 'REN', '4,410 pass yards \u00b7 36 TD'],
+      9: ['Ozzie Krumholtz', 'RB', 'MOB', '1,822 rush yards \u00b7 21 TD'],
+      8: ['Dash Ferrenby', 'WR', 'ANC', '1,401 rcv yards \u00b7 13 TD'],
+    };
+    const m = mvps[this.state.season];
+    const recs = { 15: '21\u20137', 14: '20\u20138', 13: '22\u20136', 12: '19\u20139', 11: '18\u201310', 10: '21\u20137', 9: '20\u20138', 8: '19\u20139' };
+    const sel = {
+      n: this.state.season,
+      champId: selT.id, champAvatar: av(selT.id), champColor: selT.c,
+      champName: selT.city + ' ' + selT.name,
+      champRecord: recs[this.state.season] + ' regular season',
+      mvpName: m[0], mvpPos: m[1], mvpAvatar: av(T[m[2]].id), mvpLine: m[3],
+    };
+
+    const standRaw = [
+      ['DUL', 21, 7, 1712, 'CHAMPION'], ['PHI', 19, 9, 1668, 'RUNNER-UP'],
+      ['TUC', 18, 10, 1641, 'SEMIFINAL'], ['MOB', 17, 11, 1622, 'SEMIFINAL'],
+      ['FRE', 15, 13, 1584, 'WILD CARD'], ['TUL', 15, 13, 1571, 'WILD CARD'],
+      ['REN', 13, 15, 1533, ''], ['WIC', 12, 16, 1508, ''],
+      ['ANC', 10, 18, 1476, ''], ['CAM', 7, 21, 1428, ''],
+    ];
+    const resColor = { 'CHAMPION': '#f59e0b', 'RUNNER-UP': '#cbd5e1', 'SEMIFINAL': '#94a3b8', 'WILD CARD': '#64748b' };
+    const standings = standRaw.map((r, i) => {
+      const t = T[r[0]];
+      return {
+        rank: i + 1, rankColor: i === 0 ? '#f59e0b' : '#64748b',
+        id: t.id, avatar: av(t.id), city: t.city, name: t.name, color: t.c,
+        w: r[1], l: r[2], pct: (r[1] / (r[1] + r[2])).toFixed(3), elo: r[3],
+        result: r[4] || '\u2014', resultColor: resColor[r[4]] || '#475569',
+      };
+    });
+
+    // One list = one card. `cat` is the filter axis; the SCOPE is the section it sits in.
+    const mk = (cat, label, unit, pool, vals, whens) => ({
+      cat, label, unit,
+      rows: (() => {
+        let prev = null, rank = 0;
+        return vals.map((v, i) => {
+          if (prev === null || v !== prev) rank = i + 1;
+          prev = v;
+          const p = pool[i], t = p[1] ? T[p[1]] : null;
+          return {
+            rank, rankColor: rank === 1 ? '#f59e0b' : '#64748b',
+            name: p[0], hasTeam: !!t,
+            avatar: t ? av(t.id) : '', abbr: p[1] || '', abbrColor: t ? t.c : '#94a3b8',
+            value: v.toLocaleString(), when: whens ? whens[i] : '',
+          };
+        });
+      })(),
+    });
+    const tp = (abbrs) => abbrs.map(k => [T[k].city + ' ' + T[k].name, k]);
+
+    const QB = [['Hollis Trammel', 'DUL'], ['Sonny Kesterby', 'REN'], ['Milo Pastrana', 'CAM'], ['Wendell Croop', 'FRE'], ['Gus Halliwell', 'TUC']];
+    const RB = [['Ozzie Krumholtz', 'MOB'], ['Sunny Delacroix', 'DUL'], ['Tuck Marberry', 'WIC'], ['Rufus Pallant', 'ANC'], ['Birdie Vance', 'TUL']];
+    const WR = [['Leakey Pennyfarthing', 'PHI'], ['Coco Mattel', 'PHI'], ['Bunny Vandermeer', 'TUC'], ['Dash Ferrenby', 'ANC'], ['Wilbur Nockley', 'TUL']];
+    const KP = [['Marla Tunstead', 'TUL'], ['Pfeffer Kim', 'FRE'], ['Dot Ravensby', 'MOB'], ['Elmer Quist', 'CAM'], ['Nan Threlfall', 'REN']];
+    const DF = [['Odile Brackwater', 'CAM'], ['Bosco Wrenfield', 'WIC'], ['Pip Garrowby', 'FRE'], ['Hattie Loomis', 'ANC'], ['Cass Bindloss', 'DUL']];
+    const SC = [['Leakey Pennyfarthing', 'PHI'], ['Ozzie Krumholtz', 'MOB'], ['Coco Mattel', 'PHI'], ['Sunny Delacroix', 'DUL'], ['Bunny Vandermeer', 'TUC']];
+    const OW = [['quiet_oyster_41'], ['tin_flamingo_7'], ['brackish_hal'], ['penny_whistle'], ['cold_open_9']];
+    const S5 = ['S15', 'S14', 'S13', 'S12', 'S11'];
+
+    const books = {
+      players: [
+        {
+          key: 'career', label: 'CAREER', cards: [
+            mk('passing', 'CAREER PASSING YARDS', 'YDS', QB, [48331, 44127, 41880, 39002, 37455]),
+            mk('passing', 'CAREER PASSING TOUCHDOWNS', 'TD', QB, [402, 371, 344, 318, 299]),
+            mk('rushing', 'CAREER RUSHING YARDS', 'YDS', RB, [13440, 12208, 11655, 10902, 10344]),
+            mk('receiving', 'CAREER RECEIVING YARDS', 'YDS', WR, [14208, 12960, 12114, 11402, 10877]),
+            mk('receiving', 'CAREER RECEPTIONS', 'REC', WR, [1044, 968, 902, 861, 812]),
+            mk('kicking', 'CAREER FIELD GOALS MADE', 'FG', KP, [388, 351, 340, 312, 288]),
+            mk('defense', 'CAREER TACKLES', 'TKL', DF, [1442, 1388, 1301, 1264, 1197]),
+            mk('defense', 'CAREER SACKS', 'SK', DF, [188, 174, 166, 141, 133]),
+            mk('scoring', 'CAREER TOUCHDOWNS', 'TD', SC, [168, 151, 144, 132, 119]),
+          ],
+        },
+        {
+          key: 'season', label: 'SINGLE SEASON', cards: [
+            mk('passing', 'PASSING YARDS', 'YDS', QB, [4912, 4410, 4288, 4102, 4044], ['S14', 'S10', 'S13', 'S15', 'S12']),
+            mk('passing', 'PASSING TOUCHDOWNS', 'TD', QB, [46, 41, 39, 37, 35], ['S14', 'S13', 'S10', 'S15', 'S12']),
+            mk('rushing', 'RUSHING YARDS', 'YDS', RB, [1822, 1744, 1690, 1611, 1588], ['S9', 'S14', 'S13', 'S11', 'S15']),
+            mk('receiving', 'RECEIVING YARDS', 'YDS', WR, [1706, 1588, 1499, 1401, 1377], ['S15', 'S12', 'S11', 'S8', 'S14']),
+            mk('receiving', 'RECEPTIONS', 'REC', WR, [122, 118, 111, 104, 99], ['S15', 'S12', 'S14', 'S11', 'S8']),
+            mk('kicking', 'FIELD GOALS MADE', 'FG', KP, [42, 40, 38, 36, 35], S5),
+            mk('defense', 'SACKS', 'SK', DF, [24, 22, 21, 19, 18], ['S13', 'S13', 'S15', 'S11', 'S9']),
+            mk('defense', 'TACKLES', 'TKL', DF, [188, 181, 174, 168, 161], ['S13', 'S12', 'S15', 'S11', 'S14']),
+            mk('scoring', 'TOUCHDOWNS', 'TD', SC, [21, 19, 18, 17, 16], ['S15', 'S9', 'S12', 'S14', 'S11']),
+          ],
+        },
+        {
+          key: 'game', label: 'SINGLE GAME', cards: [
+            mk('passing', 'PASSING YARDS', 'YDS', QB, [566, 541, 522, 505, 498], ['S14 W11', 'S13 W20', 'S10 W4', 'S15 W8', 'S12 W25']),
+            mk('passing', 'PASSING TOUCHDOWNS', 'TD', QB, [7, 6, 6, 5, 5], ['S14 W11', 'S13 W20', 'S15 W8', 'S10 W4', 'S12 W25']),
+            mk('rushing', 'RUSHING YARDS', 'YDS', RB, [301, 288, 274, 266, 251], ['S9 W16', 'S14 W5', 'S13 W9', 'S11 W18', 'S15 W3']),
+            mk('receiving', 'RECEIVING YARDS', 'YDS', WR, [288, 271, 254, 240, 233], ['S12 W6', 'S15 W22', 'S11 W3', 'S14 W17', 'S8 W9']),
+            mk('kicking', 'FIELD GOALS MADE', 'FG', KP, [7, 6, 6, 5, 5], ['S13 W12', 'S15 W19', 'S11 W6', 'S14 W2', 'S10 W21']),
+            mk('defense', 'TACKLES', 'TKL', DF, [21, 20, 19, 19, 18], ['S13 W14', 'S11 W7', 'S13 W2', 'S15 W19', 'S9 W12']),
+            mk('defense', 'SACKS', 'SK', DF, [6, 5, 5, 4, 4], ['S13 W2', 'S15 W19', 'S12 W8', 'S11 W7', 'S9 W12']),
+            mk('scoring', 'TOUCHDOWNS', 'TD', SC, [5, 4, 4, 4, 3], ['S9 W16', 'S15 W22', 'S12 W6', 'S14 W5', 'S11 W3']),
+          ],
+        },
+      ],
+      teams: [
+        {
+          key: 'alltime', label: 'ALL-TIME',
+          note: 'No career book for clubs \u2014 a club does not retire, so a career total mostly says which one has existed longest. Titles are the exception, and they live here.',
+          cards: [
+            mk('season', 'CHAMPIONSHIPS', 'TITLES', tp(['DUL', 'TUC', 'PHI', 'MOB', 'CAM']), [5, 4, 3, 2, 2]),
+            mk('season', 'DIVISION TITLES', 'TITLES', tp(['DUL', 'PHI', 'TUC', 'FRE', 'MOB']), [11, 9, 8, 6, 5]),
+          ],
+        },
+        {
+          key: 'season', label: 'SINGLE SEASON', cards: [
+            mk('season', 'WINS', 'W', tp(['TUC', 'DUL', 'DUL', 'PHI', 'MOB']), [22, 21, 21, 20, 19], ['S13', 'S15', 'S12', 'S14', 'S11']),
+            mk('season', 'POINT DIFFERENTIAL', 'PTS', tp(['DUL', 'TUC', 'PHI', 'MOB', 'FRE']), [384, 351, 322, 288, 264], ['S15', 'S13', 'S14', 'S11', 'S12']),
+            mk('offense', 'POINTS SCORED', 'PTS', tp(['DUL', 'PHI', 'TUC', 'MOB', 'FRE']), [812, 788, 771, 744, 722], ['S15', 'S14', 'S13', 'S11', 'S12']),
+            mk('offense', 'TOTAL YARDS', 'YDS', tp(['DUL', 'CAM', 'REN', 'TUC', 'PHI']), [8244, 8102, 7988, 7901, 7844], ['S14', 'S13', 'S10', 'S15', 'S12']),
+            mk('defense', 'FEWEST POINTS ALLOWED', 'PTS', tp(['CAM', 'WIC', 'DUL', 'TUL', 'ANC']), [402, 419, 428, 441, 455], ['S10', 'S13', 'S15', 'S14', 'S8']),
+            mk('defense', 'TAKEAWAYS', 'TO', tp(['WIC', 'CAM', 'DUL', 'FRE', 'TUL']), [44, 41, 39, 36, 34], ['S13', 'S10', 'S15', 'S12', 'S14']),
+          ],
+        },
+        {
+          key: 'game', label: 'SINGLE GAME', cards: [
+            mk('offense', 'POINTS', 'PTS', tp(['DUL', 'PHI', 'TUC', 'MOB', 'FRE']), [71, 68, 66, 63, 61], ['S15 W22', 'S12 W6', 'S13 W14', 'S9 W16', 'S12 W25']),
+            mk('offense', 'TOTAL YARDS', 'YDS', tp(['DUL', 'CAM', 'REN', 'TUC', 'FRE']), [704, 688, 671, 659, 644], ['S14 W11', 'S13 W20', 'S10 W4', 'S15 W8', 'S12 W25']),
+            mk('offense', 'MARGIN OF VICTORY', 'PTS', tp(['TUC', 'DUL', 'PHI', 'MOB', 'TUL']), [52, 49, 45, 42, 40], ['S13 W2', 'S15 W7', 'S14 W17', 'S9 W12', 'S11 W21']),
+            mk('defense', 'SACKS', 'SK', tp(['WIC', 'CAM', 'DUL', 'FRE', 'ANC']), [11, 10, 9, 8, 8], ['S13 W2', 'S10 W15', 'S15 W19', 'S12 W8', 'S9 W23']),
+          ],
+        },
+      ],
+      fantasy: [
+        {
+          key: 'week', label: 'SINGLE WEEK', cards: [
+            mk('all', 'BEST WEEKLY FANTASY POINTS', 'FP', OW, [214, 208, 201, 196, 188], ['S15 W12', 'S14 W7', 'S15 W3', 'S13 W19', 'S14 W22']),
+            mk('all', 'MOST CORRECT PICKS, WEEK', 'PICKS', OW, [16, 15, 15, 14, 14], ['S15 W9', 'S14 W17', 'S13 W4', 'S15 W21', 'S12 W6']),
+          ],
+        },
+        {
+          key: 'season', label: 'SINGLE SEASON', cards: [
+            mk('all', 'BEST SEASON FANTASY POINTS', 'FP', OW, [4188, 4022, 3901, 3844, 3766], S5),
+            mk('all', 'MOST CORRECT PICKS, SEASON', 'PICKS', OW, [341, 328, 316, 302, 297], S5),
+          ],
+        },
+      ],
+    };
+
+    const subject = this.state.subject;
+    const isTeams = subject === 'teams';
+    const CAT_SETS = {
+      players: [['all', 'ALL'], ['passing', 'PASSING'], ['rushing', 'RUSHING'], ['receiving', 'RECEIVING'], ['kicking', 'KICKING'], ['defense', 'DEFENSE'], ['scoring', 'SCORING']],
+      teams: [['all', 'ALL'], ['offense', 'OFFENSE'], ['defense', 'DEFENSE'], ['season', 'SEASON & TITLES']],
+      fantasy: [],
+    };
+    const catSet = CAT_SETS[subject];
+    const activeCat = catSet.some(c => c[0] === this.state.cat) ? this.state.cat : 'all';
+    const cats = catSet.map(c => {
+      const on = c[0] === activeCat;
+      return {
+        label: c[1],
+        fg: on ? '#0b1220' : '#94a3b8',
+        bg: on ? '#cbd5e1' : '#0b1220',
+        border: on ? '#cbd5e1' : '#1e293b',
+        w: on ? '800' : '500',
+        pick: () => this.setState({ cat: c[0] }),
+      };
+    });
+    const bookSections = books[subject]
+      .map(s => {
+        const cards = activeCat === 'all' ? s.cards : s.cards.filter(c => c.cat === activeCat);
+        return {
+          label: s.label, cards,
+          count: cards.length + (cards.length === 1 ? ' LIST' : ' LISTS'),
+          hasNote: !!s.note && cards.length > 0, note: s.note || '',
+        };
+      })
+      .filter(s => s.cards.length > 0);
+
+    const aw = (n, label, color) => ({ text: n + '\u00d7 ' + label, color, bg: color + '1a', border: color + '44' });
+    const plaque = (pos, name, teams, awards, records, seasons) => ({
+      pos, name, seasons,
+      teams: teams.map(k => ({ avatar: av(T[k].id), abbr: k, color: T[k].c })),
+      bar: teams.length > 1
+        ? 'linear-gradient(90deg,' + teams.map((k, i) => T[k].c + ' ' + (i / teams.length * 100) + '%,' + T[k].c + ' ' + ((i + 1) / teams.length * 100) + '%').join(',') + ')'
+        : 'linear-gradient(90deg,' + T[teams[0]].c + ',' + T[teams[0]].c + '55)',
+      awards, hasRecords: !!records, records: records || '',
+    });
+    const hallClasses = [
+      {
+        label: 'CLASS OF SEASON 15', count: '3 INDUCTEES',
+        players: [
+          plaque('QB', 'Sonny Kesterby', ['REN', 'FRE'], [aw(2, 'MVP', '#fbbf24'), aw(1, 'Champ', '#f59e0b'), aw(6, 'All-Pro', '#cbd5e1')], '2 league records', 14),
+          plaque('LB', 'Odile Brackwater', ['CAM'], [aw(1, 'MVP', '#fbbf24'), aw(5, 'All-Pro', '#cbd5e1')], '3 league records', 13),
+          plaque('RB', 'Ozzie Krumholtz', ['MOB'], [aw(1, 'MVP', '#fbbf24'), aw(2, 'Champ', '#f59e0b'), aw(4, 'All-Pro', '#cbd5e1')], '', 11),
+        ],
+      },
+      {
+        label: 'CLASS OF SEASON 14', count: '2 INDUCTEES',
+        players: [
+          plaque('WR', 'Dash Ferrenby', ['ANC', 'TUC', 'DUL'], [aw(1, 'Champ', '#f59e0b'), aw(5, 'All-Pro', '#cbd5e1')], '1 league record', 15),
+          plaque('K', 'Marla Tunstead', ['TUL'], [aw(3, 'All-Pro', '#cbd5e1')], '', 12),
+        ],
+      },
+    ];
+
+    const notes = {
+      seasons: 'Champions, MVPs and final tables, season 8 onward',
+      records: 'Players, clubs and owners \u2014 top ten in every category',
+      'hall-of-fame': 'Enshrined at retirement, by induction class',
+    };
+
+    return {
+      chromeOn: this.props.chromeOn ?? true,
+      showUnclaimed: this.props.showUnclaimed ?? true,
+      secRookie: this.sec('rookie'), secSeason: this.sec('season'),
+      secColl: this.sec('coll'), secSecret: this.sec('secret'),
+      unclaimed, rookie, seasonSingles, seasonFamilies, collection, secrets,
+
+      isSeasons: tab === 'seasons', isRecords: tab === 'records', isHall: tab === 'hall-of-fame',
+      tabSeasons: seg(tab === 'seasons'), tabRecords: seg(tab === 'records'), tabHall: seg(tab === 'hall-of-fame'),
+      tabNote: notes[tab],
+      goSeasons: () => this.setState({ tab: 'seasons' }),
+      goRecords: () => this.setState({ tab: 'records' }),
+      goHall: () => this.setState({ tab: 'hall-of-fame' }),
+      seasonList, sel, standings,
+      subPlayers: seg(subject === 'players'), subTeams: seg(isTeams), subFantasy: seg(subject === 'fantasy'),
+      goPlayers: () => this.setState({ subject: 'players', cat: 'all' }),
+      goTeams: () => this.setState({ subject: 'teams', cat: 'all' }),
+      goFantasy: () => this.setState({ subject: 'fantasy', cat: 'all' }),
+      hasCats: catSet.length > 0, cats, bookSections, hallClasses,
+    };
+  }
+}
+</script>
+</body>
+</html>

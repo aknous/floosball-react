@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
-import { personalityAccent } from '@/utils/personality'
+import { readableTeamColor } from '@/utils/colors'
 import GameFeedComposer, { relativeTime, type TimelineEntry } from './GameFeedComposer'
 
 /**
@@ -10,8 +10,13 @@ import GameFeedComposer, { relativeTime, type TimelineEntry } from './GameFeedCo
  * REACTING to a play stays inline with that play — moved here it became a quote
  * with no snap attached.
  *
- * Accent is the personality tier (`personalityAccent`): a Stoic line reads as
- * background flavour, a Prophet line is meant to stand out.
+ * ⚠️ ACCENT IS THE SPEAKER'S TEAM (owner, 2026-08-23). It used to be the personality
+ * TIER, so the colour told you how rare that player's temperament is — a fact about the
+ * generator, not about the game you are watching. Two players on opposite sides could
+ * read as the same voice, and the same player could change colour between games. Team
+ * colour answers the question a reader of a live feed actually has: which side is this.
+ * Corrected through `readableTeamColor` because it is used as TEXT on the tag, and team
+ * colours are data — several are navy or maroon.
  */
 
 export interface RailEntry {
@@ -90,8 +95,8 @@ const Tag: React.FC<{ label: string; accent: string }> = ({ label, accent }) => 
 const isNarration = (text: string, speaker: string): boolean =>
   !!speaker && text.trimStart().toLowerCase().startsWith(speaker.toLowerCase())
 
-const Entry: React.FC<{ entry: RailEntry }> = ({ entry }) => {
-  const accent = entry.personality ? personalityAccent(entry.personality) : ACCENT.info
+const Entry: React.FC<{ entry: RailEntry; teamColor?: string }> = ({ entry, teamColor }) => {
+  const accent = teamColor ? readableTeamColor(teamColor, BG.card) : ACCENT.info
   const narration = isNarration(entry.text, entry.speaker)
   return (
     <div style={{
@@ -175,11 +180,15 @@ const GameBleachers: React.FC<{
   entries: RailEntry[]
   watching: number | null
   gameId: number
+  /** Speaker colour, by team id. The page holds these — and holds the away team's
+   *  DISPLAY colour, which is its secondary when the two primaries are too close to
+   *  tell apart, so the rail inherits that fix rather than repeating the comparison. */
+  teamColors?: Record<number, string>
   /** The two cheer buttons. Inside the panel rather than floating above it —
    *  rallying IS being in the stands, and as its own card it read as a
    *  separate feature that happened to sit nearby. */
   rally?: React.ReactNode
-}> = ({ entries, watching, gameId, rally }) => (
+}> = ({ entries, watching, gameId, rally, teamColors }) => (
   <div style={{
     background: BG.card, border: `1px solid ${BORDER.hairline}`,
     display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0,
@@ -218,7 +227,7 @@ const GameBleachers: React.FC<{
       timelineEntries={entries.map((entry): TimelineEntry => ({
         key: entry.key,
         createdAt: entry.createdAt,
-        node: <Entry entry={entry} />,
+        node: <Entry entry={entry} teamColor={entry.teamId != null ? teamColors?.[entry.teamId] : undefined} />,
       }))}
     />
   </div>

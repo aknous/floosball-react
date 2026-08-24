@@ -1,7 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import PlayerLink from '@/Components/PlayerLink'
 import HoverTooltip from '@/Components/HoverTooltip'
-import { GiStarMedal, GiLaurelsTrophy, GiStarsStack, GiLaurelCrown } from 'react-icons/gi'
+import { BG, BORDER, TEXT, ACCENT, font, TABULAR } from '@/Components/Shell/tokens'
+import { readableTeamColor } from '@/utils/colors'
+import { GiLaurelCrown } from 'react-icons/gi'
+
+/**
+ * ⚠️ THE LAUREL IS THE REAL ICON, NOT A HAND-DRAWN ONE (owner, 2026-08-23). The restyle's
+ * conformance note says react-icons comes off these pages, and it was first applied here
+ * by redrawing `GiLaurelCrown` as inline SVG — which produced a visibly worse wreath than
+ * the one it replaced, to satisfy a rule aimed at ICON FONTS rather than at per-icon ESM
+ * imports. The mark is part of what the Hall looks like; drawing a lesser copy of an icon
+ * the app already ships is not a saving.
+ */
+const LAUREL = (size: number) => <GiLaurelCrown style={{ fontSize: `${size}px` }} />
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -25,7 +37,7 @@ export interface Inductee {
   id: number
   name: string
   position: string
-  teams: InducteeTeam[]   // every club where they earned an accolade, most-decorated first
+  teams: InducteeTeam[]   // every team where they earned an accolade, most-decorated first
   teamId: number | null
   teamAbbr: string | null
   teamColor: string
@@ -39,21 +51,21 @@ export interface Inductee {
   recordsHeld: string[]   // league records currently held (e.g. "Career Pass Yards")
 }
 
-// Award badge metadata — reuses the player-profile trophy-case icons/colors.
-const AWARDS: { key: keyof Pick<HofAwards, 'mvps' | 'championships' | 'allPros'>; label: string; Icon: React.ComponentType<any>; color: string }[] = [
-  { key: 'mvps', label: 'MVP', Icon: GiStarMedal, color: '#fbbf24' },
-  { key: 'championships', label: 'Champ', Icon: GiLaurelsTrophy, color: '#f59e0b' },
-  { key: 'allPros', label: 'All-Pro', Icon: GiStarsStack, color: '#cbd5e1' },
+// Award badges. Three honours, three tiers of the same amber-to-silver ladder the rest
+// of the app uses for them — the count carries the weight, so the icons came off.
+const AWARDS: { key: keyof Pick<HofAwards, 'mvps' | 'championships' | 'allPros'>; label: string; color: string }[] = [
+  { key: 'mvps', label: 'MVP', color: '#fbbf24' },
+  { key: 'championships', label: 'Champ', color: '#f59e0b' },
+  { key: 'allPros', label: 'All-Pro', color: '#cbd5e1' },
 ]
 
-const AwardBadge: React.FC<{ count: number; label: string; Icon: React.ComponentType<any>; color: string }> = ({ count, label, Icon, color }) => (
+const AwardBadge: React.FC<{ count: number; label: string; color: string }> = ({ count, label, color }) => (
   <span style={{
-    display: 'inline-flex', alignItems: 'center', gap: '4px',
-    fontSize: '11px', fontWeight: 700, color,
-    backgroundColor: `${color}1a`, border: `1px solid ${color}33`,
-    borderRadius: '5px', padding: '2px 6px', whiteSpace: 'nowrap',
+    display: 'inline-flex', alignItems: 'center',
+    ...font(700, 11), ...TABULAR, color,
+    backgroundColor: `${color}1a`, border: `1px solid ${color}44`,
+    padding: '2px 6px', whiteSpace: 'nowrap',
   }}>
-    <Icon style={{ fontSize: '13px' }} />
     {count}&times; {label}
   </span>
 )
@@ -64,34 +76,44 @@ export const Plaque: React.FC<{ p: Inductee }> = ({ p }) => {
     : [{ abbr: p.teamAbbr, id: p.teamId, name: p.teamName, color: p.teamColor || '#475569' }]
   const colors = teams.map(t => t.color || '#475569')
   const primary = colors[0]
-  // Accent bar spans every team's color (hard-stop segments); single team fades.
+  // ⚠️ The top rule is the ONE gradient left on the page, and it is not decoration —
+  // it encodes multiple teams as hard-stop segments, so a journeyman's plaque shows
+  // every team they were decorated with. A single-team plaque is a flat bar.
   const accentBar = colors.length > 1
     ? `linear-gradient(90deg, ${colors.map((c, i) =>
         `${c} ${(i / colors.length) * 100}%, ${c} ${((i + 1) / colors.length) * 100}%`).join(', ')})`
-    : `linear-gradient(90deg, ${primary}, ${primary}55)`
+    : primary
   const hasAwards = p.awards.mvps > 0 || p.awards.championships > 0 || p.awards.allPros > 0
   const records = p.recordsHeld || []
   return (
     <div style={{
-      position: 'relative',
-      background: 'linear-gradient(160deg, #233149 0%, #18222f 78%)',
-      border: '1px solid rgba(251,191,36,0.28)', borderRadius: '10px',
-      overflow: 'hidden', display: 'flex', flexDirection: 'column',
-      boxShadow: '0 6px 18px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.04)',
+      position: 'relative', overflow: 'hidden',
+      backgroundColor: BG.card, border: `1px solid ${BORDER.hairline}`,
+      display: 'flex', flexDirection: 'column',
     }}>
-      {/* team-color accent bar (one segment per team) */}
-      <div style={{ height: '4px', background: accentBar }} />
-      {/* faint laurel seal — prestige watermark behind the content */}
-      <GiLaurelCrown style={{ position: 'absolute', right: '-12px', bottom: '-16px', fontSize: '104px', color: 'rgba(251,191,36,0.06)', pointerEvents: 'none' }} />
-      <div style={{ position: 'relative', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+      {/* team-color rule (one segment per team) */}
+      <div style={{ height: '3px', background: accentBar }} />
+      {/* ⚠️ THE LAUREL STAYS (owner, 2026-08-23). The restyle took it out with the rest
+          of the plaque's decoration — gradient field, radius, drop shadow, inset
+          highlight — and it was the one piece carrying what the Hall IS rather than just
+          how it was drawn. Reinstated as a watermark: inline SVG on the shell's icon
+          grid, not the old icon font, and low enough not to compete with the text. */}
+      <span style={{
+        position: 'absolute', right: '-10px', bottom: '-14px',
+        color: 'rgba(251,191,36,0.07)', pointerEvents: 'none', lineHeight: 0,
+      }}>{LAUREL(96)}</span>
+      <div style={{
+        position: 'relative',
+        padding: '13px 14px 14px', display: 'flex', flexDirection: 'column', gap: '10px', flex: 1,
+      }}>
         {/* team logos */}
         {teams.some(t => t.abbr || t.id != null) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0, flexWrap: 'wrap' }}>
             {teams.map((t, i) => (t.abbr || t.id != null) && (
               <span key={`${t.abbr}-${i}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                {i > 0 && <span style={{ color: '#475569', fontSize: '11px' }}>&middot;</span>}
-                {t.id != null && <img src={`/avatars/${t.id}.png`} alt={t.abbr || ''} style={{ width: '18px', height: '18px', flexShrink: 0 }} />}
-                {t.abbr && <span style={{ fontSize: '12px', fontWeight: 700, color: t.color || '#94a3b8', whiteSpace: 'nowrap' }}>{t.abbr}</span>}
+                {i > 0 && <span style={{ color: TEXT.faint, fontSize: '11px' }}>&middot;</span>}
+                {t.id != null && <img src={`/avatars/${t.id}.png`} alt={t.abbr || ''} style={{ width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0 }} />}
+                {t.abbr && <span style={{ ...font(700, 12, 1, '0.02em'), color: readableTeamColor(t.color || TEXT.muted, BG.card), whiteSpace: 'nowrap' }}>{t.abbr}</span>}
               </span>
             ))}
           </div>
@@ -102,11 +124,11 @@ export const Plaque: React.FC<{ p: Inductee }> = ({ p }) => {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
             <span style={{
-              fontSize: '11px', fontWeight: 700, color: '#94a3b8', backgroundColor: 'rgba(148,163,184,0.14)',
-              borderRadius: '4px', padding: '1px 6px', flexShrink: 0,
+              ...font(700, 11, 1, '0.1em'), color: TEXT.muted, backgroundColor: BG.panel,
+              border: `1px solid ${BORDER.hairline}`, padding: '2px 6px', flexShrink: 0,
             }}>{p.position}</span>
             <PlayerLink playerId={p.id} playerName={p.name}
-              style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0', lineHeight: 1.2 }} />
+              style={{ ...font(700, 16, 1.2), color: TEXT.strong }} />
           </div>
         </div>
 
@@ -114,7 +136,7 @@ export const Plaque: React.FC<{ p: Inductee }> = ({ p }) => {
         {hasAwards && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
             {AWARDS.map(a => p.awards[a.key] > 0 && (
-              <AwardBadge key={a.key} count={p.awards[a.key]} label={a.label} Icon={a.Icon} color={a.color} />
+              <AwardBadge key={a.key} count={p.awards[a.key]} label={a.label} color={a.color} />
             ))}
           </div>
         )}
@@ -127,19 +149,19 @@ export const Plaque: React.FC<{ p: Inductee }> = ({ p }) => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', textAlign: 'left' }}>
                 {records.map((r, i) => <span key={i}>{r}</span>)}
               </div>
-            } color="#38bdf8">
+            } color={ACCENT.info}>
               <span style={{
-                fontSize: '11px', fontWeight: 600, color: '#38bdf8',
-                backgroundColor: 'rgba(56,189,248,0.12)', border: '1px solid rgba(56,189,248,0.28)',
-                borderRadius: '5px', padding: '2px 8px', whiteSpace: 'nowrap', cursor: 'help',
+                ...font(700, 11, 1, '0.06em'), color: ACCENT.info,
+                backgroundColor: 'rgba(56,189,248,0.10)', border: '1px solid rgba(56,189,248,0.34)',
+                padding: '2px 7px', whiteSpace: 'nowrap', cursor: 'help',
               }}>{records.length} league record{records.length !== 1 ? 's' : ''}</span>
             </HoverTooltip>
           </div>
         )}
 
         {/* seasons */}
-        <div style={{ marginTop: 'auto', fontSize: '12px', color: '#94a3b8' }}>
-          <span style={{ color: '#cbd5e1', fontWeight: 600 }}>{p.seasonsPlayed}</span> seasons
+        <div style={{ marginTop: 'auto', ...font(400, 12), color: TEXT.muted }}>
+          <span style={{ ...font(700, 13), ...TABULAR, color: TEXT.secondary }}>{p.seasonsPlayed}</span> seasons
         </div>
       </div>
     </div>
@@ -182,15 +204,15 @@ export const HallOfFame: React.FC = () => {
   }, [inductees])
 
   if (loading) {
-    return <div style={{ padding: '40px', textAlign: 'center', color: '#64748b', fontSize: '14px' }}>Loading the hall&hellip;</div>
+    return <div style={{ padding: '40px', textAlign: 'center', color: TEXT.muted, ...font(400, 13) }}>Loading the hall&hellip;</div>
   }
 
   if (inductees.length === 0) {
     return (
       <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-        <GiLaurelCrown style={{ fontSize: '40px', color: '#334155' }} />
-        <div style={{ fontSize: '15px', color: '#94a3b8', fontWeight: 600, marginTop: '10px' }}>The hall is empty</div>
-        <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>The game's first legends will be enshrined here when they retire.</div>
+        <span style={{ color: BORDER.raised, display: 'inline-block' }}>{LAUREL(34)}</span>
+        <div style={{ ...font(700, 15), color: TEXT.secondary, marginTop: '10px' }}>The hall is empty</div>
+        <div style={{ ...font(400, 13, 1.5), color: TEXT.muted, marginTop: '6px' }}>The game's first legends will be enshrined here when they retire.</div>
       </div>
     )
   }
@@ -198,12 +220,12 @@ export const HallOfFame: React.FC = () => {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-        <GiLaurelCrown style={{ fontSize: '26px', color: '#fbbf24' }} />
-        <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', letterSpacing: '0.02em' }}>Hall of Fame</div>
-        <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', backgroundColor: 'rgba(148,163,184,0.12)', padding: '2px 9px', borderRadius: '10px' }}>
-          {inductees.length} enshrined
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '16px' }}>
+        <span style={{ color: '#fbbf24', display: 'inline-flex' }}>{LAUREL(18)}</span>
+        <span style={{
+          ...font(700, 11, 1, '0.1em'), ...TABULAR, color: TEXT.muted,
+          backgroundColor: BG.panel, border: `1px solid ${BORDER.hairline}`, padding: '3px 7px',
+        }}>{inductees.length} ENSHRINED</span>
       </div>
 
       {/* Classes */}
@@ -213,15 +235,15 @@ export const HallOfFame: React.FC = () => {
             <div style={{
               display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px',
             }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
+              <span style={{ ...font(800, 12, 1, '0.14em'), color: '#fbbf24', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                 {g.label}
               </span>
-              <span style={{ flex: 1, height: '1px', backgroundColor: '#2a3a4e' }} />
-              <span style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>
+              <span style={{ flex: 1, height: '1px', backgroundColor: BORDER.hairline }} />
+              <span style={{ ...font(700, 11, 1, '0.1em'), color: TEXT.muted, whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
                 {g.players.length} inductee{g.players.length !== 1 ? 's' : ''}
               </span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(236px, 1fr))', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
               {g.players.map(p => <Plaque key={p.id} p={p} />)}
             </div>
           </div>

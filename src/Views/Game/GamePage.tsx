@@ -428,19 +428,21 @@ const GamePage: React.FC = () => {
     return (
       <HoverTooltip text={`${left} timeout${left === 1 ? '' : 's'} left`}>
         <span
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}
           aria-label={`${left} timeout${left === 1 ? '' : 's'} left`}
         >
           {[0, 1, 2].map(i => (
             <span
               key={i}
               style={{
-                width: '9px', height: '3px', borderRadius: '2px', display: 'block',
-                // Spent pips recede but stay legible as an outline, so three-used
-                // and one-used are distinguishable at a glance.
-                backgroundColor: i < left ? TEXT.muted : 'transparent',
-                border: i < left ? 'none' : `1px solid ${BORDER.hairline}`,
-                boxSizing: 'border-box',
+                // ⚠️ ROUND pips, matching the game modal (owner, 2026-08-23). These were
+                // 9x3 bars, which read as dashes rather than as a count of three things
+                // you still hold. Amber for a timeout in hand is the modal's own
+                // vocabulary; a spent one recedes to the raised border rather than
+                // disappearing, so one-used and three-used stay distinguishable.
+                width: '8px', height: '8px', borderRadius: '50%', display: 'block',
+                backgroundColor: i < left ? ACCENT.warning : BORDER.raised,
+                transition: 'background-color 0.3s',
               }}
             />
           ))}
@@ -454,7 +456,14 @@ const GamePage: React.FC = () => {
     const score = side === 'home' ? gameData.homeScore : gameData.awayScore
     const hasBall = isLive && gameData.possession === team.abbr
     const hasMomentum = isLive && gameData.momentumTeam === team.abbr
-    const record = side === 'home' ? gameData.homeRecord : gameData.awayRecord
+    // ⚠️ `homeTeam.record`, not `homeRecord` (owner, 2026-08-23). The page read a pair of
+    // top-level fields that NOTHING sets — not the API, not the live socket payload — so
+    // the record the modal used to show simply never rendered. It rides on the team
+    // object, which every game serializer fills. The old path stays as a fallback rather
+    // than being deleted, in case a caller does supply it.
+    const record = side === 'home'
+      ? (gameData.homeTeam?.record ?? gameData.homeRecord)
+      : (gameData.awayTeam?.record ?? gameData.awayRecord)
     // ⚠️ LIVE ONLY. Timeouts are a resource you are watching someone spend; on a
     // finished game they are a trailing number with nothing left to decide. They
     // also reset to three at halftime (floosball_game.py advanceQuarter), so the
@@ -495,23 +504,49 @@ const GamePage: React.FC = () => {
             />
           </TeamHoverCard>
           <span style={{ minWidth: 0 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-              <span style={{ ...font(500, 11, 1, '0.04em'), color: TEXT.muted, display: 'block' }}>{team.city}</span>
-              {record && <span style={{ ...font(500, 10), color: TEXT.muted }}>{record}</span>}
+            {/* ⚠️ THE CITY IS THE ONLY PART THAT MAY SHRINK. Frames scores carry a
+                decimal (a halved frame) and the period columns widen to hold them, so
+                this row has to give ground rather than push them off. The record and the
+                pips are fixed-width facts; the city truncates. */}
+            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+              {/* `secondary`, not `muted`. Muted is the FLOOR for readable text, which is
+                  the right weight for a column header but leaves the city and the record
+                  receding into the band when they are the two facts sitting under the
+                  scoreboard's biggest type. */}
+              <span style={{
+                ...font(500, 13, 1, '0.02em'), color: TEXT.secondary, display: 'block',
+                minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>{team.city}</span>
+              {record && (
+                <span style={{ ...font(500, 12), color: TEXT.secondary, flexShrink: 0, ...TABULAR }}>
+                  {record}
+                </span>
+              )}
+            </span>
+            {/* ⚠️ THE FLAME BELONGS TO THE NAME, so it sits in the name's own row. It
+                used to be a sibling of this whole block, which puts it after the block's
+                WIDEST line — the city and record — leaving it stranded in the gap beside
+                a shorter team name. `flexShrink: 0` keeps it while the name ellipses. */}
+            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+              <Link to={`/team/${team.id}`} style={{ textDecoration: 'none', minWidth: 0 }}>
+                <span style={{
+                  // ⚠️ lineHeight 1, not 1.1. The rows share a pitch, so a taller
+                  // line box on the name eats the gap between the two clubs —
+                  // measured 23px between the names against 26px between the
+                  // period numbers, which is exactly the difference in box height.
+                  display: 'block', ...font(800, tight ? 15 : 17, 1, '-0.025em'), color: TEXT.primary,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>{team.name}</span>
+              </Link>
+              {hasMomentum && <FlameIcon color={flameColor} size={tight ? 15 : 17} glow={flameGlow} />}
+            </span>
+            {/* Under the NAME rather than beside the city. The meta line above is who the
+                team is; the pips are what they still hold in this game, which belongs
+                with the live half of the block. */}
+            <span style={{ display: 'block', marginTop: '2px', lineHeight: 0 }}>
               <TimeoutPips remaining={timeouts} />
             </span>
-            <Link to={`/team/${team.id}`} style={{ textDecoration: 'none' }}>
-              <span style={{
-                // ⚠️ lineHeight 1, not 1.1. The rows share a pitch, so a taller
-                // line box on the name eats the gap between the two clubs —
-                // measured 23px between the names against 26px between the
-                // period numbers, which is exactly the difference in box height.
-                display: 'block', ...font(800, tight ? 15 : 17, 1, '-0.025em'), color: TEXT.primary,
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>{team.name}</span>
-            </Link>
           </span>
-          {hasMomentum && <FlameIcon color={flameColor} size={20} glow={flameGlow} />}
         </div>
 
         {!narrow && periods.map((value, i) => {
@@ -718,6 +753,10 @@ const GamePage: React.FC = () => {
               entries={railEntries}
               watching={watching}
               gameId={id}
+              teamColors={{
+                [Number(gameData.homeTeam.id)]: homeColor,
+                [Number(gameData.awayTeam.id)]: awayDisplayColor,
+              }}
               // No header on the cheer row. The buttons say "Cheer" and carry
               // their club's crest and color, so a RALLY label only repeated
               // what they already show.
