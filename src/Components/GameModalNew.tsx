@@ -925,6 +925,16 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
     // for plays simulated before that field existed).
     const convPts = (play as any).conversionPoints
     const isTwoPtPlay = String(play.playResult ?? '').includes('2-Pt')
+    // ⚠️ A MADE SIDELINE GOAL IS THE ONE SCORE THE OFFENSE KEEPS THE BALL AFTER, which
+    // is why the clock icon is suppressed on scoring plays but must NOT be here. That
+    // rule reads "the score already conveys the clock will stop" — true of a touchdown
+    // or a field goal, which end the possession and are followed by a kickoff, and
+    // false of a hoop: it consumes the down and the drive plays straight on, so the
+    // reader has no way to infer the clock state from the fact that it scored.
+    // Reported as sideline goals appearing to make no clock determination at all —
+    // measured, 59% of hoop shots are makes, so the majority of them showed no icon.
+    const hoopScore = String(play.playResult ?? '').includes('Sideline Goal')
+    const hidesClockIcon = !!play.scoreChange && !hoopScore
     const downText = convPts != null ? `${convPts}pt Try`
       : isTwoPtPlay ? '2pt Try'
       : play.down && play.distance != null ?
@@ -1040,7 +1050,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                     // time remaining in it.
                     <>
                       Frame {play.frame} - {play.frameClock}
-                      {!play.scoreChange && <ClockStateIcon stopped={!!play.clockStopped} />}
+                      {!hidesClockIcon && <ClockStateIcon stopped={!!play.clockStopped} />}
                     </>
                   ) : (
                     <>
@@ -1049,7 +1059,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                           when running. Hidden on scoring plays since the score
                           already conveys the clock will stop, and adding an icon
                           there would just be noise. */}
-                      {!play.scoreChange && <ClockStateIcon stopped={!!play.clockStopped} />}
+                      {!hidesClockIcon && <ClockStateIcon stopped={!!play.clockStopped} />}
                     </>
                   )}
                 </span>
