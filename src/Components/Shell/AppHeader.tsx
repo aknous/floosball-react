@@ -11,6 +11,7 @@ import CommandPalette from './CommandPalette'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useActiveEndowment } from '@/hooks/useActiveEndowment'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, SHELL_MOBILE_MAX, font } from './tokens'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -53,6 +54,7 @@ const AppHeader: React.FC<{ onOpenNav?: () => void }> = ({ onOpenNav }) => {
   const { seasonState } = useFloosball()
   const { user, getToken } = useAuth()
   const { event: wsEvent } = useSeasonWebSocket()
+  const endowment = useActiveEndowment()
 
   const [champion, setChampion] = useState<any>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -265,23 +267,48 @@ const AppHeader: React.FC<{ onOpenNav?: () => void }> = ({ onOpenNav }) => {
         {user && <FantasyTicker userId={user.id} />}
 
         {user && (
-          <button
-            onClick={() => setShowShop(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              background: 'none', border: 'none', cursor: 'pointer',
-              ...font(700, 13), color: ACCENT.warning, ...TABULAR,
-              padding: 0, fontFamily: FONT,
-            }}
+          /* ⚠️ THE ENDOWMENT INDICATOR LIVES ON THIS COUNTER, and did not survive the
+             redesign: it was built inline on the original Navbar, this header did not
+             carry it across, and an active Endowment showed nothing anywhere. It reads
+             from a shared hook rather than a second copy of the fetch, for the same
+             reason the account menu is imported from Navbar instead of rebuilt. */
+          <HoverTooltip
+            text={endowment
+              ? `Endowment active - +${endowment.boostPercent ?? 25}% on all Floobit income${endowment.weeksRemaining ? ` - ${endowment.weeksRemaining}w left` : ''}`
+              : undefined}
+            color={ACCENT.warning}
           >
-            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8" /></svg>
-            {(user.floobits ?? 0).toLocaleString()}
-            {/* ⚠️ The unit, so the pair of chips reads the same way: glyph, number,
-                unit. The coin alone said "this is money" and left the number itself
-                unnamed, which was fine while it was the only figure up here and
-                stopped being fine the moment an FP ticker landed beside it. */}
-            <span style={{ ...font(600, 10, 1, '0.08em'), color: ACCENT.warning }}>F</span>
-          </button>
+            <button
+              onClick={() => setShowShop(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: 'none', cursor: 'pointer',
+                ...font(700, 13), color: ACCENT.warning, ...TABULAR,
+                fontFamily: FONT,
+                // Off by default so the counter keeps its flat, borderless look; the
+                // padding is always applied so the row does not shift when it lights up.
+                border: `1px solid ${endowment ? `${ACCENT.warning}8c` : 'transparent'}`,
+                padding: '3px 7px',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8" /></svg>
+              {(user.floobits ?? 0).toLocaleString()}
+              {/* ⚠️ The unit, so the pair of chips reads the same way: glyph, number,
+                  unit. The coin alone said "this is money" and left the number itself
+                  unnamed, which was fine while it was the only figure up here and
+                  stopped being fine the moment an FP ticker landed beside it. */}
+              <span style={{ ...font(600, 10, 1, '0.08em'), color: ACCENT.warning }}>F</span>
+              {endowment && (
+                <span style={{
+                  ...font(800, 9, 1.4, '0.03em'),
+                  color: BG.page, background: ACCENT.warning,
+                  padding: '1px 4px', flexShrink: 0,
+                }}>
+                  +{endowment.boostPercent ?? 25}%
+                </span>
+              )}
+            </button>
+          </HoverTooltip>
         )}
 
         {user ? (
