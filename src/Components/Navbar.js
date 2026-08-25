@@ -608,9 +608,18 @@ export default function Navbar() {
   }, [wsEvent, refetchLineup, refetchUser])
 
   // Active Endowment (income_boost) indicator on the Floobits counter.
+  // ⚠️ GATED ON `hasUser` AND RE-RUN WHEN IT FLIPS, like every other authenticated
+  // fetch in this file. Without that this never ran AT ALL: the effect fired once on
+  // mount, `getToken()` returned null because Clerk had not resolved the session yet,
+  // the function bailed, and nothing re-triggered it — `getToken` is stable, so the
+  // callback identity never changed and the effect never fired again. Reported as an
+  // active Endowment showing no indicator in production; confirmed from the API logs,
+  // which carried ZERO requests to this endpoint while every other authenticated
+  // navbar call (notifications, equipped cards, fantasy snapshot) was being served.
+  // Silent because the fetch swallows failures and simply leaves the badge off.
   const fetchEndowment = useCallback(async () => {
     try {
-      const tok = await getToken()
+      const tok = await getTokenRef.current()
       if (!tok) { setEndowment(null); return }
       const res = await fetch(`${API_BASE}/shop/powerups/active`, {
         headers: { Authorization: `Bearer ${tok}` },
@@ -620,8 +629,11 @@ export default function Navbar() {
         setEndowment((j.data?.active ?? []).find(p => p.slug === 'income_boost') || null)
       }
     } catch { /* silent */ }
-  }, [getToken])
-  useEffect(() => { fetchEndowment() }, [fetchEndowment])
+  }, [])
+  useEffect(() => {
+    if (!hasUser) { setEndowment(null); return }
+    fetchEndowment()
+  }, [hasUser, fetchEndowment])
   useEffect(() => {
     // Powerups can expire on week/season rollover; refresh the indicator then.
     if (wsEvent && ['week_start', 'week_end', 'season_end', 'season_start'].includes(wsEvent.event)) {
