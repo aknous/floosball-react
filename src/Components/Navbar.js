@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import axios from 'axios'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useActiveEndowment } from '@/hooks/useActiveEndowment'
 import { useGlitchIntensity, GLITCH_OPTIONS } from '@/hooks/useGlitchIntensity'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -432,7 +433,11 @@ export default function Navbar() {
   const [showTeamPicker, setShowTeamPicker] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showShop, setShowShop] = useState(false)
-  const [endowment, setEndowment] = useState(null)  // active income_boost powerup, or null
+  // ⚠️ SHARED WITH THE REDESIGNED SHELL HEADER, which is what actually renders on
+  // every page now. This indicator was built here and did NOT survive the redesign,
+  // so an active Endowment showed nothing; one hook means the two headers cannot
+  // disagree about it again.
+  const endowment = useActiveEndowment()
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const isMobile = useIsMobile()
@@ -606,46 +611,6 @@ export default function Navbar() {
       refetchUser()
     }
   }, [wsEvent, refetchLineup, refetchUser])
-
-  // Active Endowment (income_boost) indicator on the Floobits counter.
-  // ⚠️ GATED ON `hasUser` AND RE-RUN WHEN IT FLIPS, like every other authenticated
-  // fetch in this file. Without that this never ran AT ALL: the effect fired once on
-  // mount, `getToken()` returned null because Clerk had not resolved the session yet,
-  // the function bailed, and nothing re-triggered it — `getToken` is stable, so the
-  // callback identity never changed and the effect never fired again. Reported as an
-  // active Endowment showing no indicator in production; confirmed from the API logs,
-  // which carried ZERO requests to this endpoint while every other authenticated
-  // navbar call (notifications, equipped cards, fantasy snapshot) was being served.
-  // Silent because the fetch swallows failures and simply leaves the badge off.
-  const fetchEndowment = useCallback(async () => {
-    try {
-      const tok = await getTokenRef.current()
-      if (!tok) { setEndowment(null); return }
-      const res = await fetch(`${API_BASE}/shop/powerups/active`, {
-        headers: { Authorization: `Bearer ${tok}` },
-      })
-      if (res.ok) {
-        const j = await res.json()
-        setEndowment((j.data?.active ?? []).find(p => p.slug === 'income_boost') || null)
-      }
-    } catch { /* silent */ }
-  }, [])
-  useEffect(() => {
-    if (!hasUser) { setEndowment(null); return }
-    fetchEndowment()
-  }, [hasUser, fetchEndowment])
-  useEffect(() => {
-    // Powerups can expire on week/season rollover; refresh the indicator then.
-    if (wsEvent && ['week_start', 'week_end', 'season_end', 'season_start'].includes(wsEvent.event)) {
-      fetchEndowment()
-    }
-  }, [wsEvent, fetchEndowment])
-  useEffect(() => {
-    // Refresh immediately when a powerup is purchased.
-    const handler = () => fetchEndowment()
-    window.addEventListener('floosball:shop-purchase', handler)
-    return () => window.removeEventListener('floosball:shop-purchase', handler)
-  }, [fetchEndowment])
 
   useEffect(() => {
     if (!isMobile) setMenuOpen(false)
