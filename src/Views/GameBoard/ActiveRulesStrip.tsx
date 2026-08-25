@@ -134,6 +134,14 @@ const ActiveRulesStrip: React.FC = () => {
   // already arrives in `changed` and renders like any other.
   const changed = (data.changed || []).filter(key => data.rules?.[key] !== undefined)
   const changedSet = new Set(changed)
+  // ⚠️ THE CHIP COUNTS RULES; `changed` COUNTS FIELDS, and they are not the same
+  // number. A preset rule patches several fields at once — the Darts format sets both
+  // `gameFormat` and `targetScore`, a Drive Clock preset up to four — so every one of
+  // those rows correctly lights up as changed while the fans changed exactly one rule.
+  // Reported from the game board as the chip reading 3 CHANGED with two rules changed,
+  // which is Darts plus one other. `changedSet` stays field-based for the highlighting;
+  // only the headline number moves to the server's rule-level count.
+  const changedRuleCount = data.changeCount ?? changed.length
   const rules = data.rules || {}
 
   // `mutable` is the server's own list of what the Rulebook exposes as changeable.
@@ -159,7 +167,7 @@ const ActiveRulesStrip: React.FC = () => {
   const extras = Object.keys(rules).filter(k => !known.has(k) && inPlay(k))
   if (extras.length) grouped.push({ title: 'Other', keys: extras })
 
-  const accent = changed.length > 0 ? ACCENT.rules : TEXT.muted
+  const accent = changedRuleCount > 0 ? ACCENT.rules : TEXT.muted
   const show = open || pinned
 
   return (
@@ -182,7 +190,7 @@ const ActiveRulesStrip: React.FC = () => {
       >
         RULES
         <span style={{ ...font(700, 10, 1, '0.06em'), color: accent, ...TABULAR }}>
-          {changed.length === 0 ? 'STANDARD' : `${changed.length} CHANGED`}
+          {changedRuleCount === 0 ? 'STANDARD' : `${changedRuleCount} CHANGED`}
         </span>
         {/* An open ballot is the one thing urgent enough to show without opening
             the popover — a rule is about to change under these games. */}
