@@ -407,12 +407,42 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
   // differing from the season-wide /api/rules value) so the true last down is colored
   // urgent, not a hardcoded 4th. Falls back to the /api/rules value for older payloads.
   const effectiveLastDown = Number((gameData as any)?.downsPerSeries) || lastDown
+  /**
+   * THIS game's own format, or undefined when it never recorded one.
+   *
+   * ⚠️ `gameFormat` comes from /api/rules — the league's CURRENT ruleset — and rules are
+   * VOTABLE, so asking it about a finished game answers with whatever the league is doing
+   * today. Checked against production while the league was on Darts: season 1 was played
+   * under Chess Clock and season 2 under Frames, and every one of those finals rendered
+   * "Darts - land on 24". Same reasoning as `effectiveLastDown` right above — prefer the
+   * game's own record, fall back to the rules read.
+   *
+   * Every format emits exactly one block of its own and nothing else does, so a block IS
+   * the format. They are persisted into games.format_state at completion, which is what
+   * makes this survive the next vote.
+   */
+  const ownFormat: string | undefined =
+    gameData?.gameFormatInfo?.format
+    ?? (gameData?.frames?.active ? 'frames'
+      : gameData?.innings?.active ? 'innings'
+      : gameData?.playLimit?.active ? 'play_limit'
+      : gameData?.chessClock?.active ? 'chess_clock'
+      : undefined)
+  /**
+   * ⚠️ The live-rules read applies ONLY to an ACTIVE game, where the current rules are by
+   * definition the ones being played under. A final that recorded nothing resolves to
+   * undefined and renders as an ordinary game rather than as today's format — in a league
+   * built on changing its own rules, a wrong label is worse than none.
+   */
+  const effectiveFormat: string | undefined =
+    ownFormat ?? (gameData?.status === 'Active' ? gameFormat : undefined)
+  const isFormat = (want: 'target' | 'bust') => effectiveFormat === want
   // Formats with no standard quarter clock display (each renders its own clock).
-  const noClockFormat = gameFormat === 'innings' || gameFormat === 'play_limit' || gameFormat === 'chess_clock'
+  const noClockFormat = effectiveFormat === 'innings' || effectiveFormat === 'play_limit' || effectiveFormat === 'chess_clock'
   // Whether teams still have timeouts. Chess clock is time-based (game clock +
   // possession budget) so teams DO call timeouts there; only the truly clock-less
   // formats (innings / play_limit) have none.
-  const hasTimeouts = gameFormat !== 'innings' && gameFormat !== 'play_limit'
+  const hasTimeouts = effectiveFormat !== 'innings' && effectiveFormat !== 'play_limit'
 
   // Effective away-team display color: when the two primaries are basically the
   // same, swap the away team to its secondary so they're distinguishable — but
@@ -1381,8 +1411,8 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
   const hasStatusExtras = (() => {
     const notScheduled = gameData?.status !== 'Scheduled'
     if (gameData?.status === 'Active' && !replayActive && gameData?.driveClock) return true
-    if (gameFormat === 'target' && notScheduled) return true
-    if (gameFormat === 'bust' && notScheduled) return true
+    if (isFormat('target') && notScheduled) return true
+    if (isFormat('bust') && notScheduled) return true
     if (gameFormat === 'play_limit' && gameData?.playLimit?.active) return true
     // ⚠️ NOT gated on `gameFormat`. The REST payload does not carry gameFormat, so on
     // first load it is undefined and only a later game_state tick fills it in — which
@@ -1897,26 +1927,50 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 )
               })()}
               {/* Game format: first-to-X target (win condition) */}
-              {gameFormat === 'target' && gameData.status !== 'Scheduled' && (() => {
+              {isFormat('target') && gameData.status !== 'Scheduled' && (() => {
                 const leader = Math.max(gameData.homeScore ?? 0, gameData.awayScore ?? 0)
-                const toGo = Math.max(0, targetScore - leader)
+                const tgt = gameData.gameFormatInfo?.targetScore ?? targetScore
+                const toGo = Math.max(0, tgt - leader)
                 return (
                   <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
                                 letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                    First to {targetScore}{gameData.status === 'Active' && toGo > 0 ? ` · ${formatScore(toGo)} to go` : ''}
+                    First to {tgt}{gameData.status === 'Active' && toGo > 0 ? ` · ${formatScore(toGo)} to go` : ''}
                   </div>
                 )
               })()}
               {/* Game format: bust (darts — land EXACTLY on X; each team's "to go") */}
-              {gameFormat === 'bust' && gameData.status !== 'Scheduled' && (() => {
-                const hGo = Math.max(0, targetScore - (gameData.homeScore ?? 0))
-                const aGo = Math.max(0, targetScore - (gameData.awayScore ?? 0))
+              {/* ⚠️ PREFER THE GAME'S OWN RECORD OVER THE LEAGUE'S CURRENT RULES. The
+                  rules are votable, so reading `gameFormat`/`targetScore` from /api/rules
+                  re-renders a FINISHED game against whatever is live today: vote the
+                  format away and the darts row vanishes from the games played under it,
+                  vote the target from 24 to 18 and every past game claims it chased 18.
+                  `gameFormatInfo` is written into games.format_state at completion, so a
+                  final says what IT was played under. The rules read stays as the
+                  fallback for a live game and for finals played before that was
+                  persisted. */}
+              {isFormat('bust') && gameData.status !== 'Scheduled' && (() => {
+                const info = gameData.gameFormatInfo
+                const tgt = info?.targetScore ?? targetScore
+                const hGo = info?.homeToGo ?? Math.max(0, tgt - (gameData.homeScore ?? 0))
+                const aGo = info?.awayToGo ?? Math.max(0, tgt - (gameData.awayScore ?? 0))
+                const hoops = (info?.homeHoops ?? 0) + (info?.awayHoops ?? 0)
                 return (
                   <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
                                 letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                    Darts · land on {targetScore}
+                    Darts · land on {tgt}
                     {gameData.status === 'Active' && (
                       <span style={{ color: '#94a3b8' }}> ({gameData.homeTeam?.abbr} needs {hGo} · {gameData.awayTeam?.abbr} needs {aGo})</span>
+                    )}
+                    {/* On a final, how it was decided — landing on the number is winning
+                        the FORMAT; running out of clock is merely leading. The scores
+                        alone cannot tell those apart without knowing the target. */}
+                    {gameData.status === 'Final' && info && (
+                      <span style={{ color: '#94a3b8' }}>
+                        {info.overtime ? ' · decided in overtime'
+                          : info.landed ? ' · landed'
+                          : ' · decided on the clock'}
+                        {hoops > 0 ? ` · ${hoops} hoop${hoops === 1 ? '' : 's'}` : ''}
+                      </span>
                     )}
                   </div>
                 )
