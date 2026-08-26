@@ -223,8 +223,17 @@ export const FormatScore: React.FC<{
       <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
         <span style={{ ...font(800, size), color, ...TABULAR }}>{framesWon(won ?? 0)}</span>
         <span style={{ width: '1px', height: `${Math.round(size * 0.6)}px`, background: BORDER.hover, flexShrink: 0 }} />
+        {/* ⚠️ A FRACTIONAL TOTAL IS SET SMALLER, because the box holding this composite is
+            a FIXED width and a decimal runs past it — the overflow then collides with what
+            sits beside it, which is how it was reported on a frames game during Criticality
+            (chaos rulesets make the scoring values fractional). Shrinking the points is the
+            lever rather than widening the box: the box shares one panel with the period
+            columns, so widening it takes the room straight out of the frames row. The
+            fraction itself is never rounded away — it is the real score, and dropping the
+            decimal would misreport the game. */}
         <span style={{
-          ...font(decidedOnPoints ? 800 : 600, Math.max(12, Math.round(size * 0.45))),
+          ...font(decidedOnPoints ? 800 : 600,
+                  Math.max(11, Math.round(size * (Number.isInteger(Number(teamPoints)) ? 0.45 : 0.38)))),
           color: decidedOnPoints ? ACCENT.live : TEXT.muted, ...TABULAR,
           minWidth: '24px', textAlign: 'left',
         }}>{formatScore(teamPoints)}</span>
