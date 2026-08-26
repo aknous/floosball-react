@@ -1908,15 +1908,39 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 )
               })()}
               {/* Game format: bust (darts — land EXACTLY on X; each team's "to go") */}
-              {gameFormat === 'bust' && gameData.status !== 'Scheduled' && (() => {
-                const hGo = Math.max(0, targetScore - (gameData.homeScore ?? 0))
-                const aGo = Math.max(0, targetScore - (gameData.awayScore ?? 0))
+              {/* ⚠️ PREFER THE GAME'S OWN RECORD OVER THE LEAGUE'S CURRENT RULES. The
+                  rules are votable, so reading `gameFormat`/`targetScore` from /api/rules
+                  re-renders a FINISHED game against whatever is live today: vote the
+                  format away and the darts row vanishes from the games played under it,
+                  vote the target from 24 to 18 and every past game claims it chased 18.
+                  `gameFormatInfo` is written into games.format_state at completion, so a
+                  final says what IT was played under. The rules read stays as the
+                  fallback for a live game and for finals played before that was
+                  persisted. */}
+              {(gameData.gameFormatInfo?.format === 'bust' || gameFormat === 'bust')
+                && gameData.status !== 'Scheduled' && (() => {
+                const info = gameData.gameFormatInfo
+                const tgt = info?.targetScore ?? targetScore
+                const hGo = info?.homeToGo ?? Math.max(0, tgt - (gameData.homeScore ?? 0))
+                const aGo = info?.awayToGo ?? Math.max(0, tgt - (gameData.awayScore ?? 0))
+                const hoops = (info?.homeHoops ?? 0) + (info?.awayHoops ?? 0)
                 return (
                   <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
                                 letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                    Darts · land on {targetScore}
+                    Darts · land on {tgt}
                     {gameData.status === 'Active' && (
                       <span style={{ color: '#94a3b8' }}> ({gameData.homeTeam?.abbr} needs {hGo} · {gameData.awayTeam?.abbr} needs {aGo})</span>
+                    )}
+                    {/* On a final, how it was decided — landing on the number is winning
+                        the FORMAT; running out of clock is merely leading. The scores
+                        alone cannot tell those apart without knowing the target. */}
+                    {gameData.status === 'Final' && info && (
+                      <span style={{ color: '#94a3b8' }}>
+                        {info.overtime ? ' · decided in overtime'
+                          : info.landed ? ' · landed'
+                          : ' · decided on the clock'}
+                        {hoops > 0 ? ` · ${hoops} hoop${hoops === 1 ? '' : 's'}` : ''}
+                      </span>
                     )}
                   </div>
                 )

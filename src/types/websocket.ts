@@ -66,6 +66,26 @@ export interface SidelineGoalsState {
 }
 
 // frames game format: golf-style match play (win a frame = +1; most frames wins)
+/**
+ * The win condition a game was actually played under (target / darts).
+ *
+ * ⚠️ READ THIS BEFORE /api/rules FOR A FINAL. The rules are votable, so a finished game
+ * rendered against the league's CURRENT ruleset misreports itself — vote the format away
+ * and the darts row disappears from games played under it; vote the target from 24 to 18
+ * and every past game claims it chased 18. This block is persisted to games.format_state
+ * at completion, so a final carries its own target.
+ */
+export interface GameFormatInfo {
+  format: 'target' | 'bust'
+  targetScore: number
+  homeToGo: number
+  awayToGo: number
+  landed?: 'home' | 'away' | null   // darts: ended ON the number, vs merely leading at the clock
+  overtime?: boolean                // darts rules are OFF in overtime, so the target did not decide it
+  homeHoops?: number
+  awayHoops?: number
+}
+
 export interface FramesState {
   active: boolean
   overtime?: boolean   // level frames + level points -> standard points-decided OT (not a 7th frame)
@@ -570,6 +590,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   chessClock?: ChessClockState          // chess_clock format: per-team offense budgets
   innings?: InningsState                // innings format: out-driven inning state
   frames?: FramesState                  // frames format: match-play frame state
+  gameFormatInfo?: GameFormatInfo        // target / bust (darts): the game's OWN win condition
   isPossessionChange: boolean
   lastPlay: {
     playNumber: number
