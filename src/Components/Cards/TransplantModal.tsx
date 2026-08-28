@@ -26,6 +26,12 @@ const isEffectBearing = (c: CardData) =>
 const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onComplete }) => {
   const { getToken } = useAuth()
   const [cards, setCards] = useState<CardData[]>([])
+  // ⚠️ EVERY PLAYER IS A TARGET, and there is NO RATING GATE here. `EDITION_THRESHOLDS`
+  // exists to make a diamond card mean something as a collectible; a synthetic is not a
+  // collectible, so any player can carry any effect. The pool is what makes "any player"
+  // literal rather than "any player you happened to pull".
+  const [basePool, setBasePool] = useState<CardData[]>([])
+  const [components, setComponents] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [target, setTarget] = useState<CardData | null>(null)   // player to keep
   const [donor, setDonor] = useState<CardData | null>(null)     // effect to graft
@@ -56,6 +62,26 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
       })
       const json = await res.json()
       setCards(json.data?.cards ?? [])
+      const [poolRes, compRes] = await Promise.all([
+        fetch(`${API_BASE}/cards/base-pool`, { headers: { Authorization: `Bearer ${tok}` } }),
+        fetch(`${API_BASE}/shop/synth-components`, { headers: { Authorization: `Bearer ${tok}` } }),
+      ])
+      if (poolRes.ok) {
+        const pj = await poolRes.json()
+        const raw = (pj.data?.cards ?? pj.cards ?? []) as any[]
+        setBasePool(raw.map(c => ({
+          id: 0, templateId: c.templateId, playerId: c.playerId,
+          playerName: c.playerName, teamId: c.teamId ?? null, teamColor: null,
+          playerRating: c.playerRating, position: c.position, edition: 'base',
+          seasonCreated: pj.data?.season ?? pj.season ?? 0, isRookie: false,
+          effectConfig: {}, effectName: 'none', sellValue: 2, isActive: true,
+          fromPool: true,
+        }) as CardData))
+      }
+      if (compRes.ok) {
+        const cj = await compRes.json()
+        setComponents(cj.data?.held ?? cj.held ?? 0)
+      }
     } catch { setCards([]) }
     finally { setLoading(false) }
   }, [getToken])
@@ -70,15 +96,26 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
     (c.validPositions ?? [c.position]).includes(t.position)
   const donorPool = useMemo(() => {
     if (!target) return []
+    // ⚠️ SYNTHESIS LIFTS THE SAME-EDITION RULE. That rule stops an effect being laundered
+    // onto a card of a different tier — but a synthetic is minted at the DONOR EFFECT's
+    // own edition, so nothing moves downhill: the effect keeps its tier, its power scale
+    // and its gate, and the card keeps nothing at all. Position validity still applies.
+    const synthesizing = !!target.fromPool
     return cards.filter(c =>
       c.id !== target.id && isEffectBearing(c) &&
-      c.edition === target.edition && fitsTarget(c, target) &&
+      (synthesizing || c.edition === target.edition) && fitsTarget(c, target) &&
       (c.effectName || '') !== (target.effectName || ''))
   }, [cards, target])
 
-  const targetPool = useMemo(() =>
-    cards.filter(c => isEffectBearing(c) && c.id !== donor?.id),
-    [cards, donor])
+  const targetPool = useMemo(() => {
+    // ⚠️ A SYNTHETIC IS A DONOR, NEVER A TARGET. A base card takes an effect exactly
+    // once; after that the pairing is fixed, or one component would buy a permanently
+    // re-editable effect socket.
+    const owned = cards.filter(c => isEffectBearing(c) && !c.synthetic && c.id !== donor?.id)
+    // Pool players sit alongside owned cards as targets: this is the "any player" half.
+    // They accept ANY effect, so the donor's edition never restricts them.
+    return [...owned, ...basePool]
+  }, [cards, basePool, donor])
 
   // Fetch cost once both are chosen.
   useEffect(() => {
@@ -90,7 +127,12 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
         const res = await fetch(`${API_BASE}/cards/transplant/preview`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-          body: JSON.stringify({ donorCardId: donor.id, targetCardId: target.id }),
+          body: JSON.stringify({
+            donorCardId: donor.id,
+            ...(target.fromPool
+              ? { targetTemplateId: target.templateId }
+              : { targetCardId: target.id }),
+          }),
         })
         const json = await res.json()
         if (cancelled) return
@@ -120,7 +162,12 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
       const res = await fetch(`${API_BASE}/cards/transplant`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
-        body: JSON.stringify({ donorCardId: donor.id, targetCardId: target.id }),
+        body: JSON.stringify({
+          donorCardId: donor.id,
+          ...(target.fromPool
+            ? { targetTemplateId: target.templateId }
+            : { targetCardId: target.id }),
+        }),
       })
       const json = await res.json()
       if (res.ok) { setResult(json.data as CardData); onComplete() }
@@ -184,7 +231,12 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
                     onClick={() => setSelecting('target')} />
               <div style={{ alignSelf: 'center', color: accent, fontSize: 20, fontWeight: 800 }}>←</div>
               <Slot label="Effect to graft on" active={selecting === 'donor'} card={donor} accentEffect
-                    sub={donor ? effectLabel(donor) : (target ? 'Same edition' : 'Pick a keeper first')}
+                    sub={donor
+                      ? effectLabel(donor)
+                      : (target
+                        // Synthesis accepts any edition — the effect brings its own.
+                        ? (target.fromPool ? 'Any effect' : 'Same edition')
+                        : 'Pick a keeper first')}
                     onClick={() => target && setSelecting('donor')} disabled={!target} />
             </div>
 
@@ -195,8 +247,23 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
                   Graft <b style={{ color: accent }}>{effectLabel(donor)}</b> onto <b style={{ color: '#e2e8f0' }}>{target.playerName}</b>
                   <span style={{ color: '#94a3b8' }}> · keeps tier {target.tier ?? 1}</span>
                 </div>
-                <button onClick={confirm} disabled={busy} style={{ ...primaryBtn, opacity: busy ? 0.6 : 1 }}>
-                  {busy ? 'Working…' : `Transplant · ${cost} F`}
+                <button
+                  onClick={confirm}
+                  // ⚠️ Refuse at CHOOSE time, not at the till. A user holding no
+                  // components can otherwise pick a player, pick an effect, read a
+                  // payable price and be rejected on the click.
+                  disabled={busy || (target.fromPool && components === 0)}
+                  style={{
+                    ...primaryBtn,
+                    opacity: busy || (target.fromPool && components === 0) ? 0.6 : 1,
+                  }}>
+                  {busy
+                    ? 'Working…'
+                    : target.fromPool
+                      // ⚠️ Synthesis costs a component ON TOP of the Floobit fee, so the
+                      // button has to name both or it promises a price the till refuses.
+                      ? `Build · ${cost} F + 1 Component`
+                      : `Transplant · ${cost} F`}
                 </button>
               </div>
             )}

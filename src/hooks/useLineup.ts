@@ -11,6 +11,11 @@ export const BASE_SLOTS = ['QB', 'RB', 'WR1', 'WR2', 'TE', 'K'] as const
 export const FLEX_SLOT = 'FLEX' as const
 export type LineupSlot = typeof BASE_SLOTS[number] | typeof FLEX_SLOT
 
+/** What a slot is filled with. `userCardId` for a card the user owns; `templateId` for
+ *  a floor print taken from the universal base pool, which has no `UserCard` row until
+ *  it is fielded — the server materializes it at equip time. Exactly one is set. */
+export type LineupPick = { userCardId?: number; templateId?: number }
+
 // slot -> the 1-based CardTemplate.position it accepts (FLEX = any).
 export const SLOT_POSITION: Record<string, number | null> = {
   QB: 1, RB: 2, WR1: 3, WR2: 3, TE: 4, K: 5, FLEX: null,
@@ -39,8 +44,10 @@ export interface UseLineupResult {
   saving: boolean
   error: string | null
   refetch: () => void
-  /** Equip a card into a slot (replaces whatever is there); PUTs the full set. */
-  equip: (slot: LineupSlot, userCardId: number) => Promise<boolean>
+  /** Equip a card into a slot (replaces whatever is there); PUTs the full set.
+   *  Accepts a number for an owned card, or `{templateId}` for one taken from the
+   *  BASE POOL — those have no `UserCard` row until the server materializes one. */
+  equip: (slot: LineupSlot, pick: number | LineupPick) => Promise<boolean>
   /** Clear a slot; PUTs the full set. */
   unequip: (slot: LineupSlot) => Promise<boolean>
   /** Cards eligible for a slot: owned, un-equipped, matching position (FLEX = any). */
@@ -120,17 +127,22 @@ export function useLineup(): UseLineupResult {
 
   // Build the {slot,userCardId} set to PUT, applying one mutation.
   const put = useCallback(async (
-    mutate: (draft: Record<string, number>) => void,
+    mutate: (draft: Record<string, LineupPick>) => void,
   ): Promise<boolean> => {
     setSaving(true)
     setError(null)
     try {
-      const draft: Record<string, number> = {}
+      // ⚠️ THE DRAFT CARRIES A PICK, NOT A BARE ID. A pool card has no `UserCard` row
+      // yet, so the whole set has to be expressible as "either an owned card or a
+      // template" — and the PUT rewrites every slot, so an already-equipped pool card
+      // has to survive the round trip too. It does: once fielded it HAS a UserCard row
+      // and comes back from the server as an ordinary `card.id` like anything else.
+      const draft: Record<string, LineupPick> = {}
       for (const [slot, entry] of Object.entries(bySlot)) {
-        if (entry) draft[slot] = entry.card.id
+        if (entry) draft[slot] = { userCardId: entry.card.id }
       }
       mutate(draft)
-      const cards = Object.entries(draft).map(([slot, userCardId]) => ({ slot, userCardId }))
+      const cards = Object.entries(draft).map(([slot, pick]) => ({ slot, ...pick }))
       const tok = await getToken()
       if (!tok) return false
       const res = await fetch(`${API_BASE}/cards/equipped`, {
@@ -156,11 +168,19 @@ export function useLineup(): UseLineupResult {
     }
   }, [bySlot, getToken, fetchLineup])
 
-  const equip = useCallback((slot: LineupSlot, userCardId: number) =>
+  const equip = useCallback((slot: LineupSlot, pick: number | LineupPick) =>
     put(draft => {
-      // Drop this card from any other slot it might occupy (no dup card).
-      for (const s of Object.keys(draft)) if (draft[s] === userCardId) delete draft[s]
-      draft[slot] = userCardId
+      const p: LineupPick = typeof pick === 'number' ? { userCardId: pick } : pick
+      // Drop this card from any other slot it might occupy (no dup card). ⚠️ Compare on
+      // BOTH keys: two slots naming the same pool template resolve server-side to one
+      // `UserCard` through get-or-create, so leaving a duplicate `templateId` in the
+      // draft earns a 400 rather than silently working.
+      for (const s of Object.keys(draft)) {
+        const d = draft[s]
+        if ((p.userCardId != null && d.userCardId === p.userCardId)
+            || (p.templateId != null && d.templateId === p.templateId)) delete draft[s]
+      }
+      draft[slot] = p
     }), [put])
 
   const unequip = useCallback((slot: LineupSlot) =>

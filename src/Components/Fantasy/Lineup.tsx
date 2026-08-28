@@ -177,7 +177,12 @@ const Lineup: React.FC = () => {
         onClose={() => setPickerSlot(null)}
         onSelect={async (card) => {
           if (!pickerSlot) return
-          const ok = await lineup.equip(pickerSlot, card.id)
+          // A pool card has no `UserCard` row yet — send the template and let the
+          // server materialize it. `id` is 0 on those by construction.
+          const ok = await lineup.equip(
+            pickerSlot,
+            card.fromPool ? { templateId: card.templateId } : card.id,
+          )
           if (ok) setPickerSlot(null)
         }}
         excludeCardIds={equipped.map(e => e.card.id)}

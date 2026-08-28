@@ -181,6 +181,12 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
   const { candidatesByUserCardId } = useCardProjection(visible, visible ? (targetSlot ?? null) : null)
   const isMobile = useIsMobile()
   const [cards, setCards] = useState<CardData[]>([])
+  // ⚠️ THE POOL IS A SEPARATE SECTION, NOT MORE CARDS IN THE SAME LIST. Every player's
+  // floor print is available to everybody, so merging them in would bury the cards a
+  // user actually pulled under ~190 identical no-effect prints — which is the same
+  // reason the collection endpoint filters `edition == 'base'` out server-side.
+  const [pool, setPool] = useState<CardData[]>([])
+  const [showPool, setShowPool] = useState(false)
   const [loading, setLoading] = useState(false)
   const [filters, setFilters] = useState<CardFilterState>(defaultCardFilterState)
   const patchFilters = (patch: Partial<CardFilterState>) => setFilters(f => ({ ...f, ...patch }))
@@ -213,7 +219,45 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
         setLoading(false)
       }
     }
+    const fetchPool = async () => {
+      try {
+        const tok = await getToken()
+        if (!tok) return
+        const posQ = position != null ? `?position=${position}` : ''
+        const res = await fetch(`${API_BASE}/cards/base-pool${posQ}`, {
+          headers: { Authorization: `Bearer ${tok}` },
+        })
+        if (!res.ok) return
+        const json = await res.json()
+        // ⚠️ Shaped into a CardData so ONE card component renders both sections, but with
+        // `id: 0` — a pool card genuinely has no `UserCard` row, and giving it a fake id
+        // would let it be equipped as a card that does not exist. `fromPool` is what the
+        // equip path keys on to send `templateId` instead.
+        const raw = (json.data?.cards ?? json.cards ?? []) as any[]
+        setPool(raw.map(c => ({
+          id: 0,
+          templateId: c.templateId,
+          playerId: c.playerId,
+          playerName: c.playerName,
+          teamId: c.teamId ?? null,
+          teamColor: null,
+          playerRating: c.playerRating,
+          position: c.position,
+          edition: 'base',
+          seasonCreated: json.data?.season ?? json.season ?? 0,
+          isRookie: false,
+          effectConfig: {},
+          effectName: 'none',
+          sellValue: 2,
+          isActive: true,
+          fromPool: true,
+        }) as CardData))
+      } catch {
+        setPool([])
+      }
+    }
     fetchCards()
+    fetchPool()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, getToken, excludeCardIds.join(','), position])
 
@@ -227,12 +271,12 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
   // Apply search + filters, then sort (shared engine). useMemo so we only
   // recompute when the cards, filter state, or roster change.
   const displayed = useMemo(() => {
-    let list = applyCardFilters(cards, filters, rosterPlayerIds)
+    let list = applyCardFilters(showPool ? pool : cards, filters, rosterPlayerIds)
     if (myTeamsOnly && equippedTeamIds && equippedTeamIds.size) {
       list = list.filter(c => c.teamId != null && equippedTeamIds.has(c.teamId))
     }
     return list
-  }, [cards, filters, rosterPlayerIds, myTeamsOnly, equippedTeamIds])
+  }, [cards, pool, showPool, filters, rosterPlayerIds, myTeamsOnly, equippedTeamIds])
 
   if (!visible) return null
 
@@ -269,8 +313,10 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
                 {slotLabel ? `Fill ${slotLabel}` : 'Select Card'}
               </div>
               <div style={{ fontSize: '10px', color: '#94a3b8' }}>
-                {displayed.length} of {totalCount} cards
-                {matchingCount > 0 && ` · ${matchingCount} match roster`}
+                {showPool
+                  ? `${displayed.length} of ${pool.length} players`
+                  : `${displayed.length} of ${totalCount} cards`}
+                {!showPool && matchingCount > 0 && ` · ${matchingCount} match roster`}
               </div>
             </div>
             <button
@@ -278,6 +324,37 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
               style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '22px', padding: '2px 6px' }}
             >x</button>
           </div>
+
+          {/* Two sections: the cards you own, and every player in the league. The pool
+              is not inventory — a floor print is available to everybody and is only
+              turned into an owned card at the moment it is fielded — so it gets its own
+              tab rather than being mixed into a collection it would swamp. */}
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+            {([[false, 'My Cards'], [true, 'All Players']] as [boolean, string][]).map(
+              ([val, label]) => (
+                <button
+                  key={label}
+                  onClick={() => setShowPool(val)}
+                  style={{
+                    flex: 1,
+                    backgroundColor: showPool === val ? 'rgba(59,130,246,0.85)' : '#0f172a',
+                    border: `1px solid ${showPool === val ? 'rgba(96,165,250,0.5)' : '#334155'}`,
+                    color: showPool === val ? '#fff' : '#94a3b8',
+                    fontFamily: 'pressStart', fontSize: '10px', fontWeight: 700,
+                    padding: '7px 10px', cursor: 'pointer',
+                    transition: 'background-color 0.15s, color 0.15s',
+                  }}
+                >{label}</button>
+              ))}
+          </div>
+          {showPool && (
+            <div style={{
+              fontSize: '9px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '10px',
+            }}>
+              Every player is available to field for their points. No effect — build one
+              with a Synth Component.
+            </div>
+          )}
 
           {/* Shared equip-side filter bar (search + pills + sort/match toggle).
               Slot-scoped fusion pickers drop the position + match controls. */}

@@ -107,6 +107,31 @@ export const EDITION_STYLES: Record<string, {
   },
 }
 
+/** A synthetic card's treatment: the EDITION'S OWN COLORS, muted.
+ *
+ * ⚠️ A TREATMENT, NEVER A SEPARATE PALETTE. A synthetic diamond has to read as
+ * diamond-and-manufactured; give it colors of its own and it becomes a sixth edition,
+ * which is exactly the wrong story — the effect really IS diamond-strength, on a
+ * diamond bar. Only the provenance differs, so only the saturation does.
+ *
+ * ⚠️ The card is minted at the effect's edition, so `card.edition` alone cannot tell a
+ * built card from a pulled one. The `synthetic` flag is the only thing that can, which is
+ * why the backend serializes it beside the edition rather than expecting a derivation.
+ */
+export const syntheticStyle = (base: typeof EDITION_STYLES[string]) => ({
+  ...base,
+  // Drop the glow entirely — it is the loudest signal a real pull has.
+  glowColor: undefined,
+  borderColor: base.borderColor,
+  bgGradient: base.bgGradient,
+  label: `${base.label} · SNTH`,
+  rarity: 'Synthetic',
+})
+
+/** CSS filter that mutes the card art without repainting it — desaturated and dimmed,
+ *  so every edition mutes by the same amount and none of them needs its own value. */
+export const SYNTHETIC_FILTER = 'saturate(0.55) brightness(0.9)'
+
 const POSITION_LABELS: Record<number, string> = {
   1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K',
 }
@@ -262,6 +287,14 @@ export interface CardData {
   isActive: boolean
   isEquipped?: boolean
   vaulted?: boolean  // permanently in the Vault — can't equip/sell/combine
+  // ⚠️ Synthetic: a manufactured pairing — a real player, a real effect, built rather
+  // than pulled. It is minted at the EFFECT's edition, so `edition` alone cannot tell it
+  // from a genuine pull; this flag is the only thing that can. Renders in the edition's
+  // own color, MUTED, with a SNTH tag.
+  synthetic?: boolean
+  // A floor print taken from the universal base pool, not owned. Carries `templateId`
+  // and `id: 0` — the equip path sends the template and the server materializes the row.
+  fromPool?: boolean
   // Glitch (docs/GLITCH_CARDS.md): marked during a Criticality. Purely a visual flag
   // here — the extra payout is resolved server-side at week end.
   glitched?: boolean
@@ -880,7 +913,9 @@ const TradingCard: React.FC<TradingCardProps> = ({
   useEffect(() => {
     if (forceFlipped !== undefined) setFlipped(forceFlipped)
   }, [forceFlipped])
-  const edStyle = EDITION_STYLES[card.edition] || EDITION_STYLES.base
+  const rawEdStyle = EDITION_STYLES[card.edition] || EDITION_STYLES.base
+  // A synthetic wears its EFFECT's edition, muted — see `syntheticStyle`.
+  const edStyle = card.synthetic ? syntheticStyle(rawEdStyle) : rawEdStyle
   const d = SIZES[size]
   const posLabel = POSITION_LABELS[card.position] || '??'
   // Fixed footer height so EVERY card front has identical geometry regardless of how many
@@ -958,6 +993,10 @@ const TradingCard: React.FC<TradingCardProps> = ({
     flexDirection: 'column',
     transition: 'transform 0.15s, box-shadow 0.25s',
     transform: !noHoverLift && hovered ? 'translateY(-4px)' : 'none',
+    // ⚠️ Muted, not recolored. One filter over the whole face desaturates every edition
+    // by the same amount, so a synthetic diamond still reads as a diamond and no edition
+    // needs a value of its own. See `syntheticStyle`.
+    filter: card.synthetic ? SYNTHETIC_FILTER : undefined,
     boxShadow: depthInset + tier4Ring + (selected
       ? '0 0 0 2px #3b82f6, 0 4px 20px rgba(59,130,246,0.3)'
       : hasGlow && hovered
