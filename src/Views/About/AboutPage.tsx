@@ -1699,7 +1699,7 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>The Transplant</p>
             <p style={textStyle}>
-              Sometimes you pull a great effect on a player you do not want. The Transplant moves an effect
+              Sometimes a great effect turns up on a player you do not want. The Transplant moves an effect
               off one card and onto another: pick the card you want to keep, pick the card whose effect you
               want, and the second one is consumed.
             </p>
@@ -1731,7 +1731,7 @@ const AboutPage: React.FC = () => {
           <Section id="synthetic-cards" title="Synthetic Cards">
             <p style={textStyle}>
               Every player in the league has a Base card. It has no effect, it just fields that player for
-              their FP, and it is free to everyone all season. You never have to pull one. A Synthetic is what
+              their FP, and it is free to everyone all season. You never have to open a pack to get one. A Synthetic is what
               you get when you build an effect onto one of them, so a great effect is no longer stuck on a
               player you do not want.
             </p>
@@ -1746,20 +1746,20 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>What you end up with</p>
             {bulletList([
-              'The card is minted at the effect\'s edition, not at Base. A Diamond effect builds a Diamond-strength card, with the same power and the same unlock threshold as a real pull',
+              'The card is built at the effect\'s edition, not at Base. A Diamond effect builds a Diamond-strength card, with the same power and the same unlock threshold as one that came out of a pack',
               'It reads SYNTHETIC where the edition usually sits, and takes that edition\'s color',
               'The effect is re-scaled to the player receiving it, exactly as a normal Transplant is',
             ])}
 
             <p style={labelStyle}>What it gives up</p>
             <p style={textStyle}>
-              A Synthetic plays exactly like the pull it copies. What it does not do is count as one. It is a
+              A Synthetic plays exactly like the card it copies. What it does not do is count as one. It is a
               card you field, not a card you collect, and everything a collector would want from it is off.
             </p>
             {bulletList([
               'No accolade tags. A Synthetic never wears Rookie, Champion, MVP or All-Pro, whatever the player did or the donor carried. Those are earned by a card, not built onto one',
               'It cannot be vaulted, so it can never reach your Showcase or count toward Showcase points',
-              'It sells for 1, so there is nothing to be made by building and dumping',
+              'It sells for 1, so there is nothing to be made by building one and selling it',
               'It cannot be fed into The Combine',
               'Its effect is final. A Synthetic can donate its effect onward, but it can never receive a second one',
               'It lasts the season, like every other card',
@@ -1768,12 +1768,13 @@ const AboutPage: React.FC = () => {
             <p style={labelStyle}>Synthesis Components</p>
             <p style={textStyle}>
               The Component is what makes the build possible, and it is the real limit on how many Synthetics
-              you can field. Floobits pile up over a season, so the pacing comes from the Component instead.
+              you can field. Floobits stack up over a season, so what holds you back is the Component and not
+              the price.
             </p>
             {bulletList([
               'On sale in the Shop under Items, two per day',
               'You can hold three at once. The Shop stops selling until you spend one, so they cannot be banked into a whole lineup at the end of a season',
-              'Capstone achievements grant them as well, and a granted Component is never refused even when you are holding three',
+              'The biggest achievements, the ones that already pay out a pack, grant one as well. A Component you have earned is never refused, even while you are holding three',
               'Sitting on one costs you weeks. A Synthetic only scores while it is equipped, so a Component spent early buys far more football than one spent late',
             ])}
           </Section>

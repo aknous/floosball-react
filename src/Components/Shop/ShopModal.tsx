@@ -1196,7 +1196,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               </span>}
                         </div>
                         <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.6, marginTop: '3px' }}>
-                          Build a pulled effect onto any player.
+                          Build an effect you own onto any player.
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
