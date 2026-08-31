@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { Floobits } from '@/Components/Icons/Floobit'
 import TradingCard, { CardData } from '../Cards/TradingCard'
 import PackOpeningModal from '../Cards/PackOpeningModal'
 import { useAuth } from '@/contexts/AuthContext'
@@ -731,9 +732,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                 {component.held}
               </span>
             )}
-            <span style={{ fontSize: '13px', fontWeight: '700', color: '#eab308' }}>
-              {balance.toLocaleString()} Floobits
-            </span>
+            <Floobits amount={balance} size={13} />
             <button
               onClick={onClose}
               style={{
@@ -1189,9 +1188,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#eab308' }}>
-                          {component.price.toLocaleString()} F
-                        </span>
+                        <Floobits amount={component.price} size={14} />
                         {/* ⚠️ THE HOLD CAP STAYS CLICKABLE (owner). Every other blocker is
                             visible on the row — sold out is on the item, the price sits
                             beside the button — but the hold cap now lives in the HEADER, so
