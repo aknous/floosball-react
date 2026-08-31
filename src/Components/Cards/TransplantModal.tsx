@@ -46,11 +46,14 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
   const [edFilter, setEdFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [sortMode, setSortMode] = useState<'value_asc' | 'rating_desc' | 'rarest'>('value_asc')
+  // Which half of the target list is showing. Donors are always cards you own.
+  const [showPool, setShowPool] = useState(false)
 
   const reset = useCallback(() => {
     setTarget(null); setDonor(null); setSelecting('target')
     setCost(null); setError(''); setResult(null); setBusy(false)
     setQuery(''); setPosFilter('all'); setEdFilter('all'); setStatusFilter('all'); setSortMode('value_asc')
+    setShowPool(false)
   }, [])
 
   const loadCards = useCallback(async () => {
@@ -94,6 +97,20 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
   // that can validly land on the target's position (shared effects fit any position).
   const fitsTarget = (c: CardData, t: CardData) =>
     (c.validPositions ?? [c.position]).includes(t.position)
+  // ⚠️ POOL CARDS ARE ALL `id: 0` — deliberately, since a pool card has no UserCard row.
+  // So `id` cannot identify a card here, and using it did two visible things: every pool
+  // card shared one React key, which let the base players displace the owned cards in the
+  // list; and the selection test `target?.id === c.id` matched EVERY pool card at once, so
+  // picking one highlighted all of them. A pool card is identified by its TEMPLATE, an
+  // owned card by its id, and the prefixes stop the two id spaces colliding.
+  //
+  // ⚠️ DECLARED ABOVE THE MEMOS THAT USE IT. `useMemo` runs its factory immediately, so a
+  // helper declared further down is still in the temporal dead zone when the first render
+  // reaches it — a ReferenceError that `tsc` does not catch.
+  const cardKey = (c: CardData) => (c.fromPool ? `t${c.templateId}` : `c${c.id}`)
+  const sameCard = (a?: CardData | null, b?: CardData | null) =>
+    !!a && !!b && cardKey(a) === cardKey(b)
+
   const donorPool = useMemo(() => {
     if (!target) return []
     // ⚠️ SYNTHESIS LIFTS THE SAME-EDITION RULE. That rule stops an effect being laundered
@@ -102,7 +119,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
     // and its gate, and the card keeps nothing at all. Position validity still applies.
     const synthesizing = !!target.fromPool
     return cards.filter(c =>
-      c.id !== target.id && isEffectBearing(c) &&
+      !sameCard(c, target) && isEffectBearing(c) &&
       (synthesizing || c.edition === target.edition) && fitsTarget(c, target) &&
       (c.effectName || '') !== (target.effectName || ''))
   }, [cards, target])
@@ -111,11 +128,17 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
     // ⚠️ A SYNTHETIC IS A DONOR, NEVER A TARGET. A base card takes an effect exactly
     // once; after that the pairing is fixed, or one component would buy a permanently
     // re-editable effect socket.
-    const owned = cards.filter(c => isEffectBearing(c) && !c.synthetic && c.id !== donor?.id)
-    // Pool players sit alongside owned cards as targets: this is the "any player" half.
-    // They accept ANY effect, so the donor's edition never restricts them.
-    return [...owned, ...basePool]
-  }, [cards, basePool, donor])
+    // ⚠️ `sameCard`, not `id`, even though a donor is always an owned card today (a pool
+    // card carries no effect, so it can never BE a donor). The invariant is one rename
+    // away from being false, and this file has already been bitten by id identity twice.
+    const owned = cards.filter(c => isEffectBearing(c) && !c.synthetic && !sameCard(c, donor))
+    // ⚠️ TWO LISTS, NOT ONE MIXED ONE (owner). Concatenating them put 192 pool players in
+    // front of the handful of cards somebody actually pulled, which is the same thing the
+    // equip picker splits into tabs and for the same reason: a collection you cannot find
+    // your own cards in is not a collection. They accept ANY effect, so the donor's
+    // edition never restricts them either way.
+    return showPool ? basePool : owned
+  }, [cards, basePool, donor, showPool])
 
   // Fetch cost once both are chosen.
   useEffect(() => {
@@ -147,7 +170,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
     if (selecting === 'target') {
       setTarget(c)
       // If the current donor no longer fits the new target, clear it.
-      if (donor && (donor.edition !== c.edition || !fitsTarget(donor, c) || donor.id === c.id)) setDonor(null)
+      if (donor && (donor.edition !== c.edition || !fitsTarget(donor, c) || sameCard(donor, c))) setDonor(null)
       setSelecting('donor')
     } else {
       setDonor(c)
@@ -278,12 +301,42 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
 
             {/* Filter + sort toolbar (mirrors The Combine) */}
             <div style={{ padding: '0 18px 8px', flexShrink: 0 }}>
+              {/* ⚠️ TARGETS ONLY. A donor has to carry an effect, and every pool card is a
+                  floor print — so offering the tab while picking a donor would offer a
+                  list that is always empty. */}
+              {selecting === 'target' && (
+                <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                  {([[false, 'My Cards'], [true, 'All Players']] as [boolean, string][]).map(
+                    ([val, label]) => (
+                      <button
+                        key={label}
+                        onClick={() => setShowPool(val)}
+                        style={{
+                          flex: 1, padding: '7px 10px', fontSize: 11, fontWeight: 700,
+                          fontFamily: 'inherit',
+                          backgroundColor: showPool === val ? 'rgba(167,139,250,0.85)' : '#0f172a',
+                          border: `1px solid ${showPool === val ? 'rgba(196,181,253,0.5)' : '#334155'}`,
+                          color: showPool === val ? '#0f172a' : '#94a3b8',
+                          borderRadius: 6, cursor: 'pointer',
+                          transition: 'background-color 0.15s, color 0.15s',
+                        }}
+                      >{label}</button>
+                    ))}
+                </div>
+              )}
               <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search player or effect..."
                 style={{ width: '100%', padding: '7px 10px', fontSize: 12, fontFamily: 'inherit', backgroundColor: '#111a2b', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 6, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }} />
               <PillRow label="Position" value={posFilter} onChange={v => setPosFilter(v as number | 'all')}
                 options={[{ v: 'all', l: 'All' }, { v: 1, l: 'QB' }, { v: 2, l: 'RB' }, { v: 3, l: 'WR' }, { v: 4, l: 'TE' }, { v: 5, l: 'K' }]} />
               <PillRow label="Edition" value={edFilter} onChange={v => setEdFilter(String(v))}
-                options={[{ v: 'all', l: 'All' }, { v: 'base', l: 'Metallic' }, { v: 'holographic', l: 'Holo' }, { v: 'prismatic', l: 'Prism' }, { v: 'diamond', l: 'Diamond' }]} />
+                /* ⚠️ THESE VALUES WERE A RENAME BEHIND. The bottom two rungs became
+                   `base` (the no-effect floor print) and `metallic` (the first real
+                   effect tier), and this list still mapped the label "Metallic" onto the
+                   value `base` — so filtering to Metallic asked for floor prints, which a
+                   donor list cannot contain, and NOTHING mapped to the real metallic
+                   edition. Base is offered on its own because the target list is full of
+                   pool cards. */
+                options={[{ v: 'all', l: 'All' }, { v: 'base', l: 'Base' }, { v: 'metallic', l: 'Metallic' }, { v: 'holographic', l: 'Holo' }, { v: 'prismatic', l: 'Prism' }, { v: 'diamond', l: 'Diamond' }]} />
               <PillRow label="Status" value={statusFilter} onChange={v => setStatusFilter(v as 'all' | 'active' | 'inactive')}
                 options={[{ v: 'all', l: 'All' }, { v: 'active', l: 'Active' }, { v: 'inactive', l: 'Inactive' }]} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
@@ -303,17 +356,22 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
                 <div style={{ color: '#64748b', fontSize: 12, padding: 24 }}>Loading your collection…</div>
               ) : pool.length === 0 ? (
                 <div style={{ color: '#64748b', fontSize: 12, padding: 24, textAlign: 'center', width: '100%' }}>
+                  {/* ⚠️ The target list has two halves now, and they run dry for opposite
+                      reasons — one because you own nothing eligible, the other because the
+                      season's pool has not been minted. One message cannot say both. */}
                   {selecting === 'donor'
                     ? `No other ${target ? EDITION_LABEL[target.edition] || target.edition : ''} card with a different, compatible effect to donate.`
-                    : 'No effect cards available (vaulted and equipped cards are excluded).'}
+                    : showPool
+                      ? 'No players available in the base pool this season.'
+                      : 'No effect cards you own are eligible (vaulted and equipped cards are excluded).'}
                 </div>
               ) : shown.length === 0 ? (
                 <div style={{ color: '#64748b', fontSize: 12, padding: 24, textAlign: 'center', width: '100%' }}>No cards match those filters.</div>
               ) : (
                 shown.map(c => {
-                  const sel = (selecting === 'target' ? target?.id : donor?.id) === c.id
+                  const sel = sameCard(selecting === 'target' ? target : donor, c)
                   return (
-                    <div key={c.id} style={{ position: 'relative' }}>
+                    <div key={cardKey(c)} style={{ position: 'relative' }}>
                       <TradingCard card={c} size="sm" noHoverLift selected={sel} onClick={() => pick(c)} />
                     </div>
                   )
