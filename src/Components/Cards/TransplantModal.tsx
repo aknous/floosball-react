@@ -45,14 +45,17 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
   const [posFilter, setPosFilter] = useState<number | 'all'>('all')
   const [edFilter, setEdFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
-  const [sortMode, setSortMode] = useState<'value_asc' | 'rating_desc' | 'rarest'>('value_asc')
+  // ⚠️ Highest rated by default (owner). "Lowest value" is the Combine's default, where you
+  // are picking fuel to burn; here you are picking a player to build on, and the best one
+  // is what you are looking for.
+  const [sortMode, setSortMode] = useState<'value_asc' | 'rating_desc' | 'rarest'>('rating_desc')
   // Which half of the target list is showing. Donors are always cards you own.
   const [showPool, setShowPool] = useState(false)
 
   const reset = useCallback(() => {
     setTarget(null); setDonor(null); setSelecting('target')
     setCost(null); setError(''); setResult(null); setBusy(false)
-    setQuery(''); setPosFilter('all'); setEdFilter('all'); setStatusFilter('all'); setSortMode('value_asc')
+    setQuery(''); setPosFilter('all'); setEdFilter('all'); setStatusFilter('all'); setSortMode('rating_desc')
     setShowPool(false)
   }, [])
 
