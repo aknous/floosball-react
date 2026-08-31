@@ -214,7 +214,7 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
       position: 'absolute', left: '50%', bottom: '100%', marginBottom: 1,
       fontSize: 12, fontWeight: 800, color: C.gold, whiteSpace: 'nowrap', pointerEvents: 'none',
       textShadow: '0 1px 3px rgba(0,0,0,0.6)',
-    }}>+{payoutAmount} F</span>
+    }}>+<FloobitSymbol size={11} color="currentColor" />{payoutAmount}</span>
   ) : null
 
   // Compact single-line variant — sits in a header row, so it adds no vertical
@@ -259,7 +259,7 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
           Spectating{status?.cappedOut ? ' · maxed' : earning ? '' : ' · paused'}
         </span>
         <span style={{ fontSize: 10, color: C.gold, fontWeight: 600 }}>
-          {flash ? <span style={{ fontWeight: 700 }}>+{status?.segmentPayout} F!</span>
+          {flash ? <span style={{ fontWeight: 700 }}>+<FloobitSymbol size={10} color="currentColor" />{status?.segmentPayout}!</span>
             : <>next +<FloobitSymbol size={10} color="currentColor" />{status?.segmentPayout ?? 3}</>}
         </span>
       </div>

@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import TradingCard, { CardData } from './TradingCard'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 // The Transplant: graft one card's effect onto another player card you own. Both cards
 // must be the SAME edition and SAME position; the target keeps its identity + upgrade
@@ -311,8 +312,8 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
                     : target.fromPool
                       // ⚠️ Synthesis costs a component ON TOP of the Floobit fee, so the
                       // button has to name both or it promises a price the till refuses.
-                      ? `Build · ${cost} F + 1 Synthesis Component`
-                      : `Transplant · ${cost} F`}
+                      ? <>Build{'\u00a0·\u00a0'}<FloobitSymbol size={12} color="currentColor" />{cost} + 1 Synthesis Component</>
+                      : <>Transplant{'\u00a0·\u00a0'}<FloobitSymbol size={12} color="currentColor" />{cost}</>}
                 </button>
               </div>
             )}
