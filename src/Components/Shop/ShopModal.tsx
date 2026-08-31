@@ -730,7 +730,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
             {component && component.held > 0 && (
               <span style={{ display: 'flex', alignItems: 'center', gap: 5,
                              fontSize: '13px', fontWeight: 700, color: '#c4b5fd' }}
-                    title={`Synthesis Components you are holding (max ${component.holdCap})`}>
+                    title={`Synthesis Components you are holding. The Shop stops selling at ${component.holdCap}`}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                   <path d="M12 2l7 4v8l-7 4-7-4V6l7-4z" stroke="#c4b5fd" strokeWidth="2" strokeLinejoin="round" />
                   <path d="M12 10l4 2M12 10L8 12M12 10V6" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />

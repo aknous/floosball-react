@@ -1763,7 +1763,7 @@ const AboutPage: React.FC = () => {
             <p style={labelStyle}>Synthesis Components</p>
             {bulletList([
               'On sale in the Shop under Items, two per day',
-              'You can hold three at once. The Shop will not sell you a fourth until you spend one',
+              'The Shop stops selling once you are holding three. Achievement grants still arrive, so you can end up holding more',
               'The biggest achievements, the ones that pay out a pack, grant one as well',
             ])}
           </Section>
