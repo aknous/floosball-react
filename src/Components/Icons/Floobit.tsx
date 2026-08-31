@@ -58,7 +58,11 @@ export const Floobits: React.FC<{
     display: 'inline-flex', alignItems: 'center', gap: '0.3em',
     color, fontWeight: bold ? 700 : 500,
     ...(size ? { fontSize: size } : null),
-    fontVariantNumeric: 'tabular-nums',
+    // ⚠️ NO `tabular-nums`. Much of this app renders currency in `pressStart`, a PIXEL face
+    // that is already monospaced and has no tabular variant — asking for one lets the
+    // browser fall back to a different face for the digits, which at the same pixel size
+    // draws far smaller than Press Start 2P. Reported as pack prices looking tiny against
+    // their own buttons. The figures line up anyway, because the font is fixed-width.
   }}>
     <FloobitSymbol color={color} />
     {amount.toLocaleString()}

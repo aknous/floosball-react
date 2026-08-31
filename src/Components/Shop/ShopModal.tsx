@@ -799,8 +799,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                       style={{
                         font: 'inherit', cursor: 'pointer', background: 'none',
                         border: 'none', borderRadius: 0,
-                        padding: '8px 14px 9px',
-                        fontSize: '12px', fontWeight: 700,
+                        padding: '9px 16px 10px',
+                        fontSize: '14px', fontWeight: 700,
                         color: on ? '#e2e8f0' : '#94a3b8',
                         // The active tab is marked by its own accent, matching the
                         // palette each section already uses elsewhere in the shop.
