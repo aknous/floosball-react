@@ -5,6 +5,7 @@ import FacilitiesSection, { FrontOfficeSummary } from '@/Views/FrontOffice/Facil
 import SupporterCard from '@/Components/FrontOffice/SupporterCard'
 import { appealRank } from '@/utils/facilities'
 import { readableOnDark } from '@/utils/colors'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 /**
  * FRONT OFFICE — the fan-controls band on the team page.
@@ -104,7 +105,9 @@ const FrontOfficeBand: React.FC<Props> = ({ pad, pageMax, stacked, accent }) => 
               <StatLabel>Treasury</StatLabel>
             </HoverTooltip>
             <StatValue color="#fbbf24">
-              {summary ? `${summary.treasury.toLocaleString()} F` : '—'}
+              {summary
+                ? <><FloobitSymbol size={12} color="currentColor" />{summary.treasury.toLocaleString()}</>
+                : '—'}
             </StatValue>
             <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
               The project fund

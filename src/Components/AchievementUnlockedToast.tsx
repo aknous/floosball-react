@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import { useAchievements } from '@/contexts/AchievementsContext'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 const packLabel = (slug: string) => {
   const map: Record<string, string> = {
@@ -108,7 +109,10 @@ const AchievementUnlockedToast: React.FC = () => {
             <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
               {floobits > 0 && (
                 <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
-                  <span style={{ color: '#fbbf24', fontWeight: 600 }}>+{floobits}</span> Floobits
+                  <span style={{ color: '#fbbf24', fontWeight: 600,
+                                 display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                    +<FloobitSymbol size={12} color="#fbbf24" />{floobits}
+                  </span>
                 </span>
               )}
               {packs.map((p, i) => (

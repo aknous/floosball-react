@@ -6,6 +6,9 @@ import { SectionHeader } from './frontPieces'
 export interface NumbersCell {
   key: string
   value: string
+  /** A mark that LEADS the number, for cells whose figure is a currency. Rendered inside
+   *  the value's own span so it takes its colour and sits on the same baseline. */
+  prefix?: React.ReactNode
   suffix?: string
   valueColor?: string
   label: string
@@ -66,7 +69,9 @@ const YourNumbers: React.FC<{
           return (
           <Cell key={cell.key}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px' }}>
-              <span style={{ ...font(800, 24), color: cell.valueColor || TEXT.primary, ...TABULAR }}>
+              <span style={{ ...font(800, 24), color: cell.valueColor || TEXT.primary, ...TABULAR,
+                             display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                {cell.prefix}
                 {cell.value}
               </span>
               {cell.suffix && (

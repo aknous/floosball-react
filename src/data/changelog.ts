@@ -23,6 +23,38 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.03',
+    date: '2026-08-30',
+    feature: true,
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Cards] Every player has a base card you can field for their points, free, all season. You do not have to pull one.',
+          '[Cards] Synthetic cards. Use a Synthesis Component in The Transplant to build any effect you own onto any player you want.',
+          '[Shop] Synthesis Components are on sale in the new Items tab, two available a day.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Cards] A season rated 90 or better, or an All Pro or MVP nod, now opens every edition to that player. More of the league can appear on the rarest cards.',
+          '[Shop] The Power-Ups tab is now Items, and holds components as well as power-ups.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Front Office] The Free Agent count did not match the list underneath it.',
+          '[Simulation] Restarting between the Floos Bowl and the draft could skip the draft or delay it by a day.',
+          '[Fantasy] Your lineup could stay locked after the week finished.',
+          '[Games] Period cells on the Frames scoreboard could squash the numbers inside them.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v1.02',
     date: '2026-08-23',
     feature: true,

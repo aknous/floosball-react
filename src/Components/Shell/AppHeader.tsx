@@ -7,6 +7,7 @@ import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { UserDropdown } from '@/Components/Navbar'
 import { FavoriteTeamModal } from '@/Components/Auth/FavoriteTeamModal'
 import ShopModal from '@/Components/Shop/ShopModal'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 import CommandPalette from './CommandPalette'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
@@ -291,13 +292,16 @@ const AppHeader: React.FC<{ onOpenNav?: () => void }> = ({ onOpenNav }) => {
                 padding: '3px 7px',
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8" /></svg>
+              {/* ⚠️ THE MARK REPLACES BOTH THE COIN AND THE TRAILING "F". That unit label
+                  existed because a plain filled circle said "this is money" without saying
+                  WHICH money, which mattered once an FP ticker landed beside it. A currency
+                  symbol does that job by itself — keeping the F as well would name the
+                  currency twice in four characters.
+                  ⚠️ So this chip is now [mark][number] while the FP chip stays
+                  [glyph][number][unit], and that asymmetry is correct: FP has no symbol to
+                  carry its own name, and Floobits now do. */}
+              <FloobitSymbol size={14} />
               {(user.floobits ?? 0).toLocaleString()}
-              {/* ⚠️ The unit, so the pair of chips reads the same way: glyph, number,
-                  unit. The coin alone said "this is money" and left the number itself
-                  unnamed, which was fine while it was the only figure up here and
-                  stopped being fine the moment an FP ticker landed beside it. */}
-              <span style={{ ...font(600, 10, 1, '0.08em'), color: ACCENT.warning }}>F</span>
               {endowment && (
                 <span style={{
                   ...font(800, 9, 1.4, '0.03em'),

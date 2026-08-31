@@ -11,6 +11,7 @@ import type {
   RecapTransaction, RecapEventType, RecapPlayerStub, RecapAwards,
   RecapLeagueStandings, RecapLeaderCategory, RecapUserLeaderboards, RecapUserLbEntry, RecapShowcaseEntry,
 } from '@/types/recap'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const CARD: React.CSSProperties = { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '10px' }
@@ -349,7 +350,10 @@ const StatsTab: React.FC<{ leaders: RecapLeaderCategory[] }> = ({ leaders }) => 
 }
 
 // ── Fans (user leaderboards) ──
-const FanLbCol: React.FC<{ title: string; color: string; rows: RecapUserLbEntry[]; unit?: string }> = ({ title, color, rows, unit }) => (
+// ⚠️ `unit` follows the number ("12 FP", "8 pts") and that is right for a UNIT. Currency is
+// not a unit: the mark leads, so team funding passes `prefix` instead and leaves `unit` off.
+const FanLbCol: React.FC<{ title: string; color: string; rows: RecapUserLbEntry[]; unit?: string;
+                           prefix?: React.ReactNode }> = ({ title, color, rows, unit, prefix }) => (
   <div style={{ flex: '1 1 230px', minWidth: 0 }}>
     <div style={{ ...LABEL, color, marginBottom: '8px' }}>{title}</div>
     {rows.length === 0 ? <div style={{ fontSize: '13px', color: '#64748b' }}>No entries yet.</div> : (
@@ -362,7 +366,7 @@ const FanLbCol: React.FC<{ title: string; color: string; rows: RecapUserLbEntry[
             )}
             <span style={{ flex: 1, fontSize: '14px', color: '#cbd5e1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.username}</span>
             <span style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0', whiteSpace: 'nowrap' }}>
-              {r.totalPoints}{unit ? <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', marginLeft: '3px' }}>{unit}</span> : null}
+              {prefix}{r.totalPoints}{unit ? <span style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', marginLeft: '3px' }}>{unit}</span> : null}
             </span>
           </div>
         ))}
@@ -410,7 +414,8 @@ const FansTab: React.FC<{ userLeaderboards: RecapUserLeaderboards }> = ({ userLe
         <FanLbCol title="FANTASY" color="#4ade80" rows={fantasy ?? []} unit="FP" />
         <FanLbCol title="PROGNOSTICATIONS" color="#60a5fa" rows={pickem ?? []} unit="pts" />
         <FanLbCol title="BRACKET CHALLENGE" color="#f59e0b" rows={bracket ?? []} unit="pts" />
-        <FanLbCol title="TEAM FUNDING" color="#2dd4bf" rows={funding ?? []} unit="F" />
+        <FanLbCol title="TEAM FUNDING" color="#2dd4bf" rows={funding ?? []}
+                  prefix={<FloobitSymbol size={12} color="#2dd4bf" />} />
         <ShowcaseLbCol rows={showcase ?? []} />
       </div>
     </div>

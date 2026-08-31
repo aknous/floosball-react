@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import TradingCard, { CardData } from './TradingCard'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -229,7 +230,7 @@ export default function LevelUpModal({ card, onClose, onComplete }: LevelUpModal
                     }}>
                       <span style={{ fontSize: '12px', color: '#cbd5e1' }}>Cost</span>
                       <span style={{ fontSize: '13px', fontWeight: 700, color: canAfford ? GOLD : '#ef4444' }}>
-                        {cost} Floobits
+                        <FloobitSymbol size={13} color={canAfford ? GOLD : '#ef4444'} />{cost}
                       </span>
                     </div>
                     <div style={{ fontSize: '11px', color: canAfford ? '#94a3b8' : '#ef4444', marginBottom: '14px', textAlign: 'right' }}>

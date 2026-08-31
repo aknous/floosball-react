@@ -74,14 +74,46 @@ const SCORE_PANEL = {
   padding: '0 13px',
   alignSelf: 'stretch',
 } as const
-const QUARTERS = { display: 'flex', gap: '12px', flex: 1, minWidth: 0 } as const
 // The period columns SHARE the panel's spare width equally; the total keeps a fixed
 // box so the right edge does not move as periods are added.
-// `nowrap` is a guard, not the fix for anything observed: `minWidth: 0` lets these squeeze
-// below their content, and a fractional score is wider than a cell sized for two digits.
-// (Measured in Chrome, a clean "8.8" does NOT break at the point — browsers treat a number
-// as unbreakable — so this only matters if a value ever gains a real break opportunity.)
-const QUARTER_CELL = { flex: 1, minWidth: 0, textAlign: 'center' as const, whiteSpace: 'nowrap' as const, ...TABULAR }
+//
+// ⚠️ `minWidth: 0` WAS THE BUG, and the note that stood here predicted it without fixing
+// it: it lets a cell squeeze BELOW its own text, and the text then spills into the
+// neighbouring column. `nowrap` does not help — a browser never breaks a number anyway,
+// so the overflow is silent and the digits simply run together. Reported on a frames game
+// during Criticality, where chaos rulesets hand out FRACTIONAL scoring values and the
+// per-frame cells read "12.6" instead of "12".
+//
+// The arithmetic, at the shipped sizes: the score panel is 46% of the card, less 26px of
+// padding, 32px of cluster gaps, the 1px rule and the 96px frames total — so six frames
+// share roughly (0.46w - 155 - gaps). At 18px a plain "12" needs about 22px and "12.6"
+// about 37px, i.e. six fractional cells want ~90px MORE than six whole ones. A card wide
+// enough for integers is therefore not wide enough for decimals, which is exactly the band
+// this landed in.
+//
+// Two changes, and both are needed. `fit-content` is the correctness one: a cell can no
+// longer be narrower than what it holds, so nothing can overlap whatever else is true. The
+// tightening below is what keeps that from pushing the row out of the panel instead.
+const QUARTER_CELL = { flex: 1, minWidth: 'fit-content', textAlign: 'center' as const, whiteSpace: 'nowrap' as const, ...TABULAR }
+
+/**
+ * The period row, tightened for how much it actually has to hold.
+ *
+ * A fractional value is ~1.7x the width of a whole one, and frames run six columns to a
+ * quarter game's four, so the two compound. Rather than size everything for the worst case
+ * — which would leave a normal game's quarters oddly cramped — the row gives back gap and
+ * a little type size only when the values in it are genuinely wider.
+ */
+const quartersRow = (periods: number, fractional: boolean) => ({
+  display: 'flex',
+  gap: (periods > 4 || fractional) ? '6px' : '12px',
+  flex: 1,
+  minWidth: 0,
+})
+const periodFontSize = (fractional: boolean) => (fractional ? 15 : 18)
+/** Does any cell in this row carry a decimal? Chaos rulesets make scores fractional. */
+const hasFractional = (periods: { homeValue: string; awayValue: string }[]) =>
+  periods.some(p => p.homeValue.includes('.') || p.awayValue.includes('.'))
 
 // ⚠️ THE TOTAL BOX HAS TO FIT WHAT THE FORMAT PUTS IN IT. 58px holds a two-digit score at
 // 34px and nothing more, and FRAMES puts a composite there — [frames won] | [points] — which
@@ -94,6 +126,14 @@ const QUARTER_CELL = { flex: 1, minWidth: 0, textAlign: 'center' as const, white
 // patch sets framesPerGame to 6, and tabular-nums makes "6½" exactly as wide as "2½". If a
 // patch ever runs more than nine frames, this needs ~115px — measured, "12½" overflows 96
 // by 18.6px.
+//
+// ⚠️ AND IT IS A FIXED WIDTH, so anything wider than it was sized for OVERFLOWS rather than
+// wraps. A Criticality chaos ruleset makes the scoring values fractional, and "2½ | 12.6"
+// runs past a box cut for "2½ | 12". ⚠️ WIDENING THE BOX IS THE WRONG FIX and was tried:
+// the box and the period columns share one panel, so every pixel it gains comes straight
+// out of the frames row beside it — at a 820px card that put the row back over its budget
+// (206px available against 217px needed). `FormatScore` shrinks the POINTS instead, which
+// keeps the composite inside 96px and leaves the panel arithmetic untouched.
 const TOTAL_W = 58
 const TOTAL_W_FRAMES = 96
 const totalCell = (frames: boolean) => ({
@@ -206,7 +246,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           ...(side === 'home' ? { borderBottom: `1px solid ${BORDER.hairline}` } : {}),
         }}>
           {columns && (
-            <div style={QUARTERS}>
+            <div style={quartersRow(columns.periods.length, hasFractional(columns.periods))}>
               {columns.periods.map((period, i) => {
                 // In frames the side that TOOK the frame is what matters, not the points —
                 // so the winner is lit and the loser reads as background, which is the
@@ -216,7 +256,8 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                 return (
                   <span key={period.label} style={{
                     ...QUARTER_CELL,
-                    ...font(isFrames ? (tookIt ? 800 : 400) : period.played ? 600 : 400, 18),
+                    ...font(isFrames ? (tookIt ? 800 : 400) : period.played ? 600 : 400,
+                            periodFontSize(hasFractional(columns.periods))),
                     color: !period.played ? TEXT.dim
                       : isFrames ? (tookIt ? ACCENT.live : TEXT.dim)
                         : game.quarter === i + 1 && live ? TEXT.strong : TEXT.secondary,
@@ -291,7 +332,9 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           paddingTop: '6px', paddingBottom: '4px',
         }}>
           {columns && (
-            <div style={QUARTERS}>
+            /* The same gap as the score row below it, or the labels stop sitting over
+               the columns they name. */
+            <div style={quartersRow(columns.periods.length, hasFractional(columns.periods))}>
               {columns.periods.map(period => (
                 <span key={period.label} style={{ ...QUARTER_CELL, ...font(600, 12), color: TEXT.muted }}>
                   {period.label}

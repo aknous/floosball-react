@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 const GRADE_COLORS: Record<string, string> = {
   F: '#64748b', D: '#94a3b8', C: '#60a5fa', B: '#4ade80', A: '#a78bfa', S: '#fbbf24',
@@ -66,7 +67,7 @@ export default function ShowcaseResultModal({ result, onClose }: ShowcaseResultM
           Your collection finished <span style={{ color: gradeColor, fontWeight: 700 }}>{result.grade}</span>
         </div>
         <div style={{ fontSize: '16px', fontWeight: 800, color: GOLD, marginBottom: '6px' }}>
-          +{result.total} Floobits
+          +<FloobitSymbol size={15} color={GOLD} />{result.total}
         </div>
         <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '22px' }}>
           paid across {result.weeksPaid} {result.weeksPaid === 1 ? 'week' : 'weeks'}
