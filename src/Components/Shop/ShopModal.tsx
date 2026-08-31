@@ -717,6 +717,20 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
             Shop
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {/* ⚠️ WHAT YOU HOLD BELONGS IN THE HEADER, beside the currency, because it is
+                the same kind of fact: a resource you are spending in here. Down on the item
+                it competed with the item's STOCK and the two kept being read as one ratio. */}
+            {component && component.held > 0 && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5,
+                             fontSize: '13px', fontWeight: 700, color: '#c4b5fd' }}
+                    title={`Synthesis Components you are holding (max ${component.holdCap})`}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2l7 4v8l-7 4-7-4V6l7-4z" stroke="#c4b5fd" strokeWidth="2" strokeLinejoin="round" />
+                  <path d="M12 10l4 2M12 10L8 12M12 10V6" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                {component.held}
+              </span>
+            )}
             <span style={{ fontSize: '13px', fontWeight: '700', color: '#eab308' }}>
               {balance.toLocaleString()} Floobits
             </span>
@@ -1170,45 +1184,48 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                 SOLD OUT
                               </span>}
                         </div>
-                        {/* ⚠️ ONLY THE HOLD LIMIT LIVES HERE NOW — the daily one moved onto
-                            the name as stock. Keeping both down here is what made them
-                            compete and what made the ratio ambiguous. */}
                         <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.6, marginTop: '3px' }}>
-                          <div>Build a pulled effect onto any player.</div>
-                          <div>
-                            Holding <b style={{ color: '#e2e8f0' }}>{component.held}</b> of {component.holdCap}
-                            {component.blockedBy === 'hold_cap' && (
-                              <span style={{ color: '#fca5a5' }}>{'  ·  '}Build with one first</span>
-                            )}
-                          </div>
+                          Build a pulled effect onto any player.
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span style={{ fontSize: '14px', fontWeight: 700, color: '#eab308' }}>
                           {component.price.toLocaleString()} F
                         </span>
+                        {/* ⚠️ THE HOLD CAP STAYS CLICKABLE (owner). Every other blocker is
+                            visible on the row — sold out is on the item, the price sits
+                            beside the button — but the hold cap now lives in the HEADER, so
+                            a disabled button here would refuse for a reason that is not next
+                            to it. Clicking gets the endpoint's own sentence instead. */}
                         <button
                           onClick={handleBuyComponent}
-                          disabled={!component.canBuy || buying === 'synth_component'
-                                    || balance < component.price}
+                          disabled={buying === 'synth_component'
+                                    || balance < component.price
+                                    || component.blockedBy === 'offseason'
+                                    || component.remainingToday <= 0}
                           style={{
                             padding: '8px 16px',
-                            backgroundColor: (component.canBuy && balance >= component.price
+                            backgroundColor: (component.remainingToday > 0
+                                              && component.blockedBy !== 'offseason'
+                                              && balance >= component.price
                                               && buying !== 'synth_component')
                               ? 'rgba(167,139,250,0.9)' : '#334155',
                             border: 'none',
-                            color: (component.canBuy && balance >= component.price
+                            color: (component.remainingToday > 0
+                                    && component.blockedBy !== 'offseason'
+                                    && balance >= component.price
                                     && buying !== 'synth_component') ? '#0f172a' : '#94a3b8',
                             fontSize: '12px', fontWeight: 700,
-                            cursor: (component.canBuy && balance >= component.price
+                            cursor: (component.remainingToday > 0
+                                     && component.blockedBy !== 'offseason'
+                                     && balance >= component.price
                                      && buying !== 'synth_component') ? 'pointer' : 'not-allowed',
                             whiteSpace: 'nowrap',
                           }}
                         >
                           {buying === 'synth_component' ? 'Buying...'
                             : balance < component.price ? 'Not enough'
-                            : component.blockedBy === 'hold_cap' ? 'Build one first'
-                            : component.blockedBy === 'daily' ? 'Back tomorrow'
+                            : component.blockedBy === 'daily' ? 'Sold out'
                             : component.blockedBy === 'offseason' ? 'Out of season'
                             : 'Buy'}
                         </button>
