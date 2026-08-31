@@ -669,7 +669,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             ? 'Opening...'
                             : capBlocked
                               ? 'Cycle full'
-                              : `${pack.cost} Floobits`}
+                              : <Floobits amount={pack.cost} size={12} color="currentColor" />}
                         </button>
                       </div>
                     )
@@ -784,7 +784,11 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                 {([
                   { key: 'fantasy' as const,    label: 'Fantasy Cards', accent: '#eab308' },
                   { key: 'collection' as const, label: 'Collection',    accent: '#a855f7' },
-                  { key: 'powerups' as const,   label: 'Power-Ups',     accent: '#38bdf8' },
+                  // ⚠️ LABEL ONLY. The `powerups` key is the state value, the panel guard
+                  // and the shape the fetch returns — renaming it touches four places to
+                  // buy nothing. The tab now holds Synthesis Components as well as
+                  // powerups, so "Items" is what the reader needs it to say.
+                  { key: 'powerups' as const,   label: 'Items',         accent: '#38bdf8' },
                 ]).map(t => {
                   const on = tab === t.key
                   return (
@@ -886,7 +890,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                   transition: 'opacity 0.15s',
                                 }}
                               >
-                                {isBuying3 ? '...' : `${card.buyPrice}`}
+                                {isBuying3 ? '...'
+                                  : <Floobits amount={card.buyPrice} size={11} color="currentColor" />}
                               </button>
                             </div>
                           )
@@ -915,7 +920,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               reads as a bug rather than a gift, so name it. */}
                           {rerolling ? 'Rerolling...'
                             : rerollCost === 0 ? 'Reroll \u00b7 Free'
-                            : `Reroll \u00b7 ${rerollCost}`}
+                            : <>Reroll{'\u00a0\u00b7\u00a0'}<Floobits amount={rerollCost} size={11} color="currentColor" /></>}
                         </button>
                       </div>
                     </>
@@ -1103,7 +1108,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                   color: canAfford ? '#d8b4fe' : '#94a3b8',
                                 }}
                               >
-                                {busy ? 'Buying...' : `${card.buyPrice} Floobits`}
+                                {busy ? 'Buying...'
+                                  : <Floobits amount={card.buyPrice} size={11} color="currentColor" />}
                               </button>
                             </div>
                           )
@@ -1305,7 +1311,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                 transition: 'opacity 0.15s',
                               }}
                             >
-                              {isPurchased ? 'Owned' : isBuying ? '...' : `${pu.price}`}
+                              {isPurchased ? 'Owned' : isBuying ? '...'
+                                : <Floobits amount={pu.price} size={11} color="currentColor" />}
                             </button>
                           </div>
                         </div>
