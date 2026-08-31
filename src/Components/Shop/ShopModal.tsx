@@ -669,7 +669,13 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             ? 'Opening...'
                             : capBlocked
                               ? 'Cycle full'
-                              : <Floobits amount={pack.cost} color="currentColor" />}
+                              /* ⚠️ SIZED UP, not inherited. The button is 12px because
+                                 "Opening..." and "Cycle full" are words that have to fit;
+                                 the price is now three characters and inheriting that size
+                                 left it lost in a full-width button. The price is the thing
+                                 the button is FOR, so it gets to be the biggest thing in
+                                 it. */
+                              : <Floobits amount={pack.cost} size={16} color="currentColor" />}
                         </button>
                       </div>
                     )
@@ -891,7 +897,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                 }}
                               >
                                 {isBuying3 ? '...'
-                                  : <Floobits amount={card.buyPrice} color="currentColor" />}
+                                  : <Floobits amount={card.buyPrice} size={14} color="currentColor" />}
                               </button>
                             </div>
                           )
@@ -1109,7 +1115,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                 }}
                               >
                                 {busy ? 'Buying...'
-                                  : <Floobits amount={card.buyPrice} color="currentColor" />}
+                                  : <Floobits amount={card.buyPrice} size={14} color="currentColor" />}
                               </button>
                             </div>
                           )
@@ -1312,7 +1318,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               }}
                             >
                               {isPurchased ? 'Owned' : isBuying ? '...'
-                                : <Floobits amount={pu.price} color="currentColor" />}
+                                : <Floobits amount={pu.price} size={14} color="currentColor" />}
                             </button>
                           </div>
                         </div>
