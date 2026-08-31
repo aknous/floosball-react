@@ -185,6 +185,24 @@ const groupByFamily = (list: Achievement[]): GuidanceGroup[] => {
 const powerupLabel = (slug: string) =>
   slug === 'random' ? 'Random Powerup' : slug.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 
+// Components are granted straight to the ledger, so unlike a pack there is nothing
+// to claim. Chrome Components are coming, which is why the type is named, not assumed.
+const COMPONENT_LABEL: Record<string, string> = { synth: 'Synthesis Component', chrome: 'Chrome Component' }
+const componentLabel = (kind: string, count: number) => {
+  const name = COMPONENT_LABEL[kind] || 'Component'
+  return count > 1 ? `${count} ${name}s` : name
+}
+const COMPONENT_COLOR = '#7dd3fc'
+
+// Every reward row renders the same four kinds in the same order, so they share one
+// builder. Returning chips rather than JSX keeps each caller's own wrapper.
+const componentChips = (cfg: { components?: Record<string, number> }, keyPrefix: string) =>
+  Object.entries(cfg.components || {})
+    .filter(([, n]) => (n || 0) > 0)
+    .map(([kind, n]) => (
+      <RewardChip key={`${keyPrefix}${kind}`} text={componentLabel(kind, n)} color={COMPONENT_COLOR} />
+    ))
+
 /**
  * ⚠️ A FIXED COLUMN COUNT, not `auto-fill`. The cards carry their reward chips pinned to
  * the bottom, and equal-width columns are what line those rows up across the grid; an
@@ -620,6 +638,7 @@ const TieredFamilySummary: React.FC<{ group: GuidanceGroup }> = ({ group }) => {
     if (floobits > 0) chips.push(<RewardChip key="f" text={<><FloobitSymbol size={11} color="#fbbf24" />{floobits}</>} color="#fbbf24" />)
     packs.forEach((p, i) => chips.push(<RewardChip key={`p${i}`} text={packLabel(p)} color={packColor(p)} />))
     powerups.forEach((p, i) => chips.push(<RewardChip key={`u${i}`} text={powerupLabel(p)} color="#06b6d4" />))
+    componentChips(cfg, 'c').forEach(c => chips.push(c))
     // marginTop: auto pushes the reward chips to the bottom of the flex column
     // so short-content summary cards don't have a big empty zone below them.
     return chips.length
@@ -712,6 +731,7 @@ const AchievementRow: React.FC<{
   const floobits = a.rewardConfig.floobits ?? 0
   const packs = a.rewardConfig.packs ?? []
   const powerups = a.rewardConfig.powerups ?? []
+  const components = componentChips(a.rewardConfig, 'comp-')
 
   return (
     <div style={{
@@ -757,7 +777,7 @@ const AchievementRow: React.FC<{
       )}
 
       {/* Rewards — pushed to the bottom so short cards don't have a huge dead zone */}
-      {(floobits > 0 || packs.length > 0 || powerups.length > 0) && (
+      {(floobits > 0 || packs.length > 0 || powerups.length > 0 || components.length > 0) && (
         <div style={{ marginTop: 'auto', paddingTop: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
           <RewardLabel />
           {floobits > 0 && (
@@ -769,6 +789,7 @@ const AchievementRow: React.FC<{
           {powerups.map((p, i) => (
             <RewardChip key={`pu-${i}`} text={powerupLabel(p)} color="#06b6d4" />
           ))}
+          {components}
         </div>
       )}
 
@@ -820,6 +841,7 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
   const floobits = a.rewardConfig.floobits ?? 0
   const packs = a.rewardConfig.packs ?? []
   const powerups = a.rewardConfig.powerups ?? []
+  const components = componentChips(a.rewardConfig, 'comp-')
 
   return (
     <div style={{
@@ -853,7 +875,7 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
           </span>
         )}
       </div>
-      {unlocked && (floobits > 0 || packs.length > 0 || powerups.length > 0) && (
+      {unlocked && (floobits > 0 || packs.length > 0 || powerups.length > 0 || components.length > 0) && (
         <div style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
           <RewardLabel />
           {floobits > 0 && <RewardChip text={<><FloobitSymbol size={11} color="#fbbf24" />{floobits}</>} color="#fbbf24" />}
@@ -863,6 +885,7 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
           {powerups.map((p, i) => (
             <RewardChip key={`pu-${i}`} text={powerupLabel(p)} color="#06b6d4" />
           ))}
+          {components}
         </div>
       )}
     </div>

@@ -42,6 +42,10 @@ const AchievementUnlockedToast: React.FC = () => {
   const floobits = rewardConfig.floobits ?? 0
   const packs = rewardConfig.packs ?? []
   const powerups = rewardConfig.powerups ?? []
+  // Components land in the ledger immediately, so the toast is the only place a user
+  // is told they earned one. Chrome Components are coming, hence the named types.
+  const COMPONENT_NAMES: Record<string, string> = { synth: 'Synthesis Component', chrome: 'Chrome Component' }
+  const components = Object.entries(rewardConfig.components ?? {}).filter(([, n]) => (n || 0) > 0)
 
   return (
     <div
@@ -105,7 +109,7 @@ const AchievementUnlockedToast: React.FC = () => {
             {description}
           </div>
 
-          {(floobits > 0 || packs.length > 0 || powerups.length > 0) && (
+          {(floobits > 0 || packs.length > 0 || powerups.length > 0 || components.length > 0) && (
             <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
               {floobits > 0 && (
                 <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
@@ -125,6 +129,16 @@ const AchievementUnlockedToast: React.FC = () => {
                   <span style={{ color: '#06b6d4', fontWeight: 600 }}>{powerupLabel(p)}</span>
                 </span>
               ))}
+              {components.map(([kind, n]) => {
+                const name = COMPONENT_NAMES[kind] || 'Component'
+                return (
+                  <span key={`comp-${kind}`} style={{ fontSize: '12px', color: '#cbd5e1' }}>
+                    <span style={{ color: '#7dd3fc', fontWeight: 600 }}>
+                      {n > 1 ? `${n} ${name}s` : name}
+                    </span>
+                  </span>
+                )
+              })}
             </div>
           )}
         </div>

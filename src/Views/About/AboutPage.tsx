@@ -36,10 +36,11 @@ const SECTION_GROUPS: SectionCategory[] = [
       { id: 'card-packs', title: 'Card Packs' },
       { id: 'the-combine', title: 'The Combine' },
       { id: 'card-upgrades', title: 'Card Upgrades' },
+      { id: 'synthetic-cards', title: 'Synthetic Cards' },
       { id: 'the-vault', title: 'The Vault' },
       { id: 'the-showcase', title: 'The Showcase' },
       { id: 'floobits', title: 'Floobits' },
-      { id: 'power-ups', title: 'Power-Ups' },
+      { id: 'power-ups', title: 'Items' },
       { id: 'achievements', title: 'Achievements' },
     ],
   },
@@ -1704,10 +1705,11 @@ const AboutPage: React.FC = () => {
             </p>
             {bulletList([
               'Both cards must be the same edition. You cannot promote an effect up a rarity this way',
+              'The exception is a base card, which accepts any effect at any edition if you spend a Synthesis Component. See Synthetic Cards below',
               'The card you keep holds on to its player, its tier and its Vault status, and only the effect changes',
               'The effect is re-scaled to the player receiving it, so grafting off a star does not hand a weaker player the star\'s numbers',
               'Position-specific effects only move onto a player whose position they work for. Shared effects go anywhere at the same edition',
-              'No-effect cards cannot donate or receive',
+              'A base card cannot donate, having no effect to give, but it can receive with a Component',
               'Cost rises with edition: Metallic 40, Holographic 70, Prismatic 120, Diamond 180',
             ])}
 
@@ -1723,6 +1725,57 @@ const AboutPage: React.FC = () => {
               A card's tier lasts the season, just like the card. Vault the card to keep its tier for good and
               feed it into your Showcase.
             </p>
+          </Section>
+
+          {/* ── Synthetic Cards ── */}
+          <Section id="synthetic-cards" title="Synthetic Cards">
+            <p style={textStyle}>
+              Every player in the league has a Base card. It has no effect, it just fields that player for
+              their FP, and it is free to everyone all season. You never have to pull one. A Synthetic is what
+              you get when you build an effect onto one of them, so a great effect is no longer stuck on a
+              player you do not want.
+            </p>
+
+            <p style={labelStyle}>Building one</p>
+            {bulletList([
+              'Open The Transplant, then pick any player in the league as the card you are keeping',
+              'Pick one of your own cards as the donor. Its effect is what gets built, and the donor is consumed',
+              'Spend one Synthesis Component plus the usual Transplant cost for that edition',
+              'The donor has to be a card from the current season',
+            ])}
+
+            <p style={labelStyle}>What you end up with</p>
+            {bulletList([
+              'The card is minted at the effect\'s edition, not at Base. A Diamond effect builds a Diamond-strength card, with the same power and the same unlock threshold as a real pull',
+              'It reads SYNTHETIC where the edition usually sits, and takes that edition\'s color',
+              'The effect is re-scaled to the player receiving it, exactly as a normal Transplant is',
+            ])}
+
+            <p style={labelStyle}>What it gives up</p>
+            <p style={textStyle}>
+              A Synthetic plays exactly like the pull it copies. What it does not do is count as one. It is a
+              card you field, not a card you collect, and everything a collector would want from it is off.
+            </p>
+            {bulletList([
+              'No accolade tags. A Synthetic never wears Rookie, Champion, MVP or All-Pro, whatever the player did or the donor carried. Those are earned by a card, not built onto one',
+              'It cannot be vaulted, so it can never reach your Showcase or count toward Showcase points',
+              'It sells for 1, so there is nothing to be made by building and dumping',
+              'It cannot be fed into The Combine',
+              'Its effect is final. A Synthetic can donate its effect onward, but it can never receive a second one',
+              'It lasts the season, like every other card',
+            ])}
+
+            <p style={labelStyle}>Synthesis Components</p>
+            <p style={textStyle}>
+              The Component is what makes the build possible, and it is the real limit on how many Synthetics
+              you can field. Floobits pile up over a season, so the pacing comes from the Component instead.
+            </p>
+            {bulletList([
+              'On sale in the Shop under Items, two per day',
+              'You can hold three at once. The Shop stops selling until you spend one, so they cannot be banked into a whole lineup at the end of a season',
+              'Capstone achievements grant them as well, and a granted Component is never refused even when you are holding three',
+              'Sitting on one costs you weeks. A Synthetic only scores while it is equipped, so a Component spent early buys far more football than one spent late',
+            ])}
           </Section>
 
           {/* ── The Vault ── */}
@@ -1822,9 +1875,11 @@ const AboutPage: React.FC = () => {
           </Section>
 
           {/* ── Power-Ups ── */}
-          <Section id="power-ups" title="Power-Ups">
+          <Section id="power-ups" title="Items">
             <p style={{ ...textStyle, marginBottom: '12px' }}>
-              Power-ups are purchasable from the Shop. Each has a limited number of uses per season.
+              The Items tab of the Shop sells power-ups and Synthesis Components. Each power-up has a
+              limited number of uses per season. Components are covered
+              under <a href="#synthetic-cards" style={linkStyle}>Synthetic Cards</a> above.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {[
@@ -1862,8 +1917,8 @@ const AboutPage: React.FC = () => {
           {/* Achievements */}
           <Section id="achievements" title="Achievements">
             <p style={textStyle}>
-              Achievements reward you with Floobits, packs, or powerups for hitting milestones across
-              the site. They split into four buckets that all live on
+              Achievements reward you with Floobits, packs, powerups, or Synthesis Components for hitting
+              milestones across the site. They split into four buckets that all live on
               the <Link to="/achievements" style={linkStyle}>Achievements</Link> page.
             </p>
 
