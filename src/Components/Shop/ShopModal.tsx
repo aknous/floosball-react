@@ -72,6 +72,19 @@ interface ShopModalProps {
 
 // extra_swap (Dispensation) + temp_flex (Conscription) retired in the fantasy/cards
 // fusion — the backend no longer offers them, so no style/icon needed.
+interface SynthComponentOffer {
+  slug: string
+  name: string
+  price: number
+  held: number
+  boughtToday: number
+  dailyLimit: number
+  holdCap: number
+  remainingToday: number
+  canBuy: boolean
+  blockedBy: string | null
+}
+
 const POWERUP_DEFAULT_STYLE = { accent: '#94a3b8' }
 const POWERUP_STYLES: Record<string, { accent: string }> = {
   modifier_nullifier: { accent: '#eab308' },
@@ -192,6 +205,10 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
   const featuredTemplateIds = useMemo(() => featured.map(f => f.templateId), [featured])
   const { byTemplateId: featuredProjections } = useTemplateProjections(featuredTemplateIds)
   const [powerups, setPowerups] = useState<PowerupItem[]>([])
+  // ⚠️ Not a PowerupItem: a powerup is a timed effect read as "active now", a component is
+  // a CHARGE that is held and later spent, and it carries a HOLD cap a powerup has no
+  // concept of. Sharing the type would mean teaching the powerup renderer both.
+  const [component, setComponent] = useState<SynthComponentOffer | null>(null)
   const [balance, setBalance] = useState(user?.floobits ?? 0)
   const [loading, setLoading] = useState(true)
   const [buying, setBuying] = useState<string | null>(null)
@@ -224,7 +241,8 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
       const headers: Record<string, string> = {}
       if (tok) headers.Authorization = `Bearer ${tok}`
 
-      const [packsRes, featuredRes, balRes, powerupRes, rerollRes, themedRerollRes] = await Promise.all([
+      const [packsRes, featuredRes, balRes, powerupRes, rerollRes, themedRerollRes,
+             componentRes] = await Promise.all([
         // /packs/types is user-specific (starter.claimedThisSeason +
         // per-pack remainingToday counters) — must pass the token.
         fetch(`${API_BASE}/packs/types`, { headers }),
@@ -233,8 +251,18 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
         tok ? fetch(`${API_BASE}/shop/powerups`, { headers }) : Promise.resolve(null),
         tok ? fetch(`${API_BASE}/shop/reroll-cost`, { headers }) : Promise.resolve(null),
         tok ? fetch(`${API_BASE}/shop/themed-pack-reroll-cost`, { headers }) : Promise.resolve(null),
+        tok ? fetch(`${API_BASE}/shop/synth-components`, { headers }) : Promise.resolve(null),
       ])
 
+      if (componentRes?.ok) {
+        const j = await componentRes.json()
+        // ⚠️ THIS ENDPOINT RETURNS A RAW DICT, NOT THE `{success, data}` ENVELOPE — 11 of
+        // the 34 shop/card/pack routes do. Reading `j.data` alone yields undefined and the
+        // offer silently never renders. `TransplantModal` reads the same endpoint and
+        // already carries this fallback.
+        const offer = (j?.data ?? j) as SynthComponentOffer | null
+        setComponent(offer && typeof offer.price === 'number' ? offer : null)
+      }
       if (packsRes.ok) {
         const j = await packsRes.json()
         setPacks(j.data?.packs ?? [])
@@ -300,6 +328,31 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [isOpen, onClose])
+
+  const handleBuyComponent = async () => {
+    const tok = await getToken()
+    if (!tok) return
+    setBuying('synth_component')
+    try {
+      const res = await fetch(`${API_BASE}/shop/synth-components/buy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+      })
+      if (!res.ok) {
+        // ⚠️ The endpoint names WHICH limit bit — out of season, today's allowance taken,
+        // already holding the cap, not enough Floobits. That string is the only place a
+        // user learns whether to wait, spend, or earn, so it is surfaced verbatim.
+        const err = await res.json().catch(() => ({ detail: 'Purchase failed' }))
+        alert(err.detail || 'Purchase failed')
+        return
+      }
+      await fetchAll()
+    } catch {
+      alert('Purchase failed')
+    } finally {
+      setBuying(null)
+    }
+  }
 
   const handleBuyPowerup = async (slug: string) => {
     const tok = await getToken()
@@ -1082,6 +1135,68 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
               {/* ── Power-Ups ── */}
               {tab === 'powerups' && (
               <div>
+                {/* ⚠️ ABOVE the powerups, and in this tab rather than beside the packs. A
+                    component is a consumable like a powerup, not a chase like a pack — but
+                    it is also the only one that is COMPLEMENTARY to a pack, since the pack
+                    supplies the donor effect and the component places it. */}
+                {component && (
+                  <>
+                    <SectionHeader title="Components" />
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap',
+                      maxWidth: '700px', margin: '0 auto 20px auto',
+                      padding: '14px 16px',
+                      backgroundColor: '#1e293b',
+                      border: '1px solid rgba(167,139,250,0.35)',
+                    }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                        <path d="M12 2l7 4v8l-7 4-7-4V6l7-4z" stroke="#c4b5fd" strokeWidth="2" strokeLinejoin="round" />
+                        <path d="M12 10l4 2M12 10L8 12M12 10V6" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                      <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>
+                          {component.name}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.5, marginTop: '2px' }}>
+                          Build a pulled effect onto any player. Holding {component.held} of {component.holdCap}
+                          {component.remainingToday > 0
+                            ? ` · ${component.remainingToday} left today`
+                            : ' · none left today'}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#eab308' }}>
+                          {component.price.toLocaleString()} F
+                        </span>
+                        <button
+                          onClick={handleBuyComponent}
+                          disabled={!component.canBuy || buying === 'synth_component'
+                                    || balance < component.price}
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: (component.canBuy && balance >= component.price
+                                              && buying !== 'synth_component')
+                              ? 'rgba(167,139,250,0.9)' : '#334155',
+                            border: 'none',
+                            color: (component.canBuy && balance >= component.price
+                                    && buying !== 'synth_component') ? '#0f172a' : '#94a3b8',
+                            fontSize: '12px', fontWeight: 700,
+                            cursor: (component.canBuy && balance >= component.price
+                                     && buying !== 'synth_component') ? 'pointer' : 'not-allowed',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {buying === 'synth_component' ? 'Buying...'
+                            : balance < component.price ? 'Not enough'
+                            : component.blockedBy === 'hold_cap' ? 'Build one first'
+                            : component.blockedBy === 'daily' ? 'Back tomorrow'
+                            : component.blockedBy === 'offseason' ? 'Out of season'
+                            : 'Buy'}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
                 <SectionHeader
                   title="Power-Ups"
                 />
