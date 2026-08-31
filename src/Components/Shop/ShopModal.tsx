@@ -1157,29 +1157,25 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                         <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>
                           {component.name}
                         </div>
-                        {/* ⚠️ TWO LIMITS, AND THEY ARE NOT THE SAME LIMIT. The crowded
+                        {/* ⚠️ TWO LIMITS, AND THEY ARE NOT THE SAME LIMIT. A crowded
                             one-liner ("Holding 0 of 3 · 2 left today") left both ambiguous:
-                            3 of what, and 2 out of how many. They get a line each, and each
-                            names its own ceiling.
-                            ⚠️ AT THE HOLD CAP THE DAILY LINE IS A LIE. "2 of 2 left to buy
-                            today" beside a button reading "Build one first" contradicts
-                            itself, so the blocking limit does the talking.
-                            ⚠️ No em dashes: house voice. */}
+                            3 of what, and 2 out of how many. Each keeps its own label.
+                            ⚠️ AT THE HOLD CAP THE DAILY FIGURE IS A LIE. Checked against
+                            every state rather than the fresh one: "2 of 2 today" sat beside
+                            a button reading "Build one first". The BLOCKING limit talks. */}
                         <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.6, marginTop: '3px' }}>
                           <div>Build a pulled effect onto any player.</div>
                           <div>
-                            Holding <b style={{ color: '#e2e8f0' }}>{component.held}</b>
-                            {' '}of {component.holdCap} you can keep at once.
-                          </div>
-                          <div>
+                            Holding <b style={{ color: '#e2e8f0' }}>{component.held}</b> of {component.holdCap}
+                            {'  ·  '}
                             {component.blockedBy === 'hold_cap'
-                              ? <>Build with one before buying more.</>
+                              ? <span style={{ color: '#fca5a5' }}>Hold limit reached</span>
                               : component.remainingToday > 0
                                 ? <>
                                     <b style={{ color: '#e2e8f0' }}>{component.remainingToday}</b>
-                                    {' '}of {component.dailyLimit} still available to buy today.
+                                    {' '}of {component.dailyLimit} today
                                   </>
-                                : <>Today&rsquo;s {component.dailyLimit} are bought. More tomorrow.</>}
+                                : <span style={{ color: '#fca5a5' }}>Sold out today</span>}
                           </div>
                         </div>
                       </div>
