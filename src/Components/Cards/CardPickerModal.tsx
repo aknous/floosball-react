@@ -347,15 +347,6 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
                 >{label}</button>
               ))}
           </div>
-          {showPool && (
-            <div style={{
-              fontSize: '9px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '10px',
-            }}>
-              Every player is available to field for their points. No effect — build one
-              with a Synth Component.
-            </div>
-          )}
-
           {/* Shared equip-side filter bar (search + pills + sort/match toggle).
               Slot-scoped fusion pickers drop the position + match controls. */}
           <CardFilterControls
