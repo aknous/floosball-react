@@ -88,7 +88,14 @@ const CardShop: React.FC = () => {
       }
       if (componentRes?.ok) {
         const json = await componentRes.json()
-        setComponent(json.data ?? null)
+        // ⚠️ THIS ENDPOINT RETURNS A RAW DICT, NOT THE `{success, data}` ENVELOPE. Most of
+        // the API wraps through `build_success_response`; `GET /shop/synth-components`
+        // returns its fields at the top level, so reading `json.data` alone yields
+        // undefined and the whole section silently never renders. `TransplantModal` reads
+        // the same endpoint and already carries this fallback — matching it rather than
+        // changing the endpoint, since the modal would break the other way.
+        const offer = (json?.data ?? json) as SynthComponentOffer | null
+        setComponent(offer && typeof offer.price === 'number' ? offer : null)
       }
     } catch {
       // silent
