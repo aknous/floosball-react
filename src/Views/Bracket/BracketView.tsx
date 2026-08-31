@@ -6,6 +6,7 @@ import {
   ROUND_ORDER, ROUND_LABEL, ROUND_POINTS,
   type RoundKey, type BracketPredictions, type BracketSeedTeam,
 } from '@/types/playoffBracket'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const avatarUrl = (teamId: number, size = 22) => `${API_BASE}/teams/${teamId}/avatar?size=${size}`
@@ -409,10 +410,10 @@ const BracketStandings: React.FC<{ rows: import('@/types/playoffBracket').Bracke
     {/* Prize structure (awarded after the Floos Bowl). */}
     <div style={{ fontSize: 11, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>
       Prizes:{' '}
-      <span style={{ color: GOLD, fontWeight: 700 }}>1st {BRACKET_PRIZES[1]} F</span> ·{' '}
-      <span style={{ color: GOLD, fontWeight: 700 }}>2nd {BRACKET_PRIZES[2]} F</span> ·{' '}
-      <span style={{ color: GOLD, fontWeight: 700 }}>3rd {BRACKET_PRIZES[3]} F</span> ·{' '}
-      top 25% <span style={{ color: GOLD, fontWeight: 700 }}>{BRACKET_TOP_PCT_PRIZE} F</span>
+      <span style={{ color: GOLD, fontWeight: 700 }}>1st <FloobitSymbol size={11} color={GOLD} />{BRACKET_PRIZES[1]}</span> ·{' '}
+      <span style={{ color: GOLD, fontWeight: 700 }}>2nd <FloobitSymbol size={11} color={GOLD} />{BRACKET_PRIZES[2]}</span> ·{' '}
+      <span style={{ color: GOLD, fontWeight: 700 }}>3rd <FloobitSymbol size={11} color={GOLD} />{BRACKET_PRIZES[3]}</span> ·{' '}
+      top 25% <span style={{ color: GOLD, fontWeight: 700 }}><FloobitSymbol size={11} color={GOLD} />{BRACKET_TOP_PCT_PRIZE}</span>
     </div>
     {rows.length === 0 ? (
       <div style={{ fontSize: 12, color: C.muted, fontStyle: 'italic' }}>No brackets scored yet.</div>
@@ -435,7 +436,9 @@ const BracketStandings: React.FC<{ rows: import('@/types/playoffBracket').Bracke
             {/* Gold prize tag on the paying ranks (top 3 deterministic; the top-25%
                 tier is in the legend since its cutoff depends on entrant count). */}
             <span style={{ color: GOLD, fontWeight: 700, minWidth: 38, textAlign: 'right' }}>
-              {BRACKET_PRIZES[r.rank] ? `${BRACKET_PRIZES[r.rank]} F` : ''}
+              {BRACKET_PRIZES[r.rank]
+                ? <><FloobitSymbol size={11} color="currentColor" />{BRACKET_PRIZES[r.rank]}</>
+                : ''}
             </span>
           </div>
         ))}

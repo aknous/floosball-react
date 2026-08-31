@@ -24,6 +24,9 @@ export interface TrackedStat {
 }
 
 export interface CardBreakdownEntry {
+  // ⚠️ A synthetic is minted AT its effect's edition, so `edition` alone cannot tell a
+  // built card from a pulled one — any chip showing an edition must prefer this.
+  synthetic?: boolean
   slotNumber: number
   playerId: number
   playerName: string

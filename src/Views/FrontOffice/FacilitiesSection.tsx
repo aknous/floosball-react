@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { appealRank } from '@/utils/facilities'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -118,7 +119,10 @@ function FundChips({ onFund, balance, max, topGap = 8, allowCustom = false }: { 
         const amt = Math.min(a, max)
         const disabled = balance < amt || max <= 0
         return (
-          <button key={a} className="facChip" onClick={() => !disabled && onFund(amt)} disabled={disabled} style={chipStyle(disabled)}>+{a}</button>
+          <button key={a} className="facChip" onClick={() => !disabled && onFund(amt)} disabled={disabled}
+                  style={{ ...chipStyle(disabled), display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+            +<FloobitSymbol size={11} color="currentColor" />{a}
+          </button>
         )
       })}
       {allowCustom && (
@@ -274,9 +278,11 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
                 'How big your fanbase is compared to the rest of the league, from SMALL up to MEGA.'],
               ['Appeal', appealRank(data.appeal), '#34d399', 'Facility quality',
                 'How strong your facilities are overall, from your combined facility levels.'],
-              ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24', 'Project fund',
+              ['Treasury', <><FloobitSymbol size={19} color="#fbbf24" />{data.treasury.toLocaleString()}</>, '#fbbf24', 'Project fund',
                 'Floobits your fanbase has banked. At season end it covers any facility upkeep and projects that are not already funded, upkeep first, then projects.'],
-            ] as [string, string, string, string, string][]).map(([l, v, c, sub, tip]) => (
+            // ⚠️ The value slot is a NODE now — Treasury carries the currency mark, and the
+            // other two rows are plain strings, which a ReactNode accepts unchanged.
+            ] as [string, React.ReactNode, string, string, string][]).map(([l, v, c, sub, tip]) => (
               <HoverTooltip key={l} content={tip} color={c}>
                 <div style={{ background: '#1e293b', padding: '13px 15px', height: '100%', boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', fontWeight: 700 }}>{l}</div>
@@ -412,7 +418,7 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
       ) : covered ? (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '10px 0 5px' }}>
-            <span>Upkeep</span><span><b style={{ color: '#fbbf24' }}>{f.upkeepCost} F/season</b> · <span style={{ color: '#34d399', fontWeight: 700 }}>FUNDED</span></span>
+            <span>Upkeep</span><span><b style={{ color: '#fbbf24' }}><FloobitSymbol size={11} color="#fbbf24" />{f.upkeepCost}/season</b> · <span style={{ color: '#34d399', fontWeight: 700 }}>FUNDED</span></span>
           </div>
           <div style={{ height: '6px', background: '#334155', borderRadius: '4px', overflow: 'hidden' }}>
             <div style={{ width: '100%', height: '100%', background: '#22c55e' }} />
@@ -421,7 +427,7 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
       ) : (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '10px 0 5px' }}>
-            <span>Upkeep</span><b style={{ color: '#fbbf24' }}>{f.upkeepFunded}/{f.upkeepCost} F/season</b>
+            <span>Upkeep</span><b style={{ color: '#fbbf24' }}><FloobitSymbol size={11} color="#fbbf24" />{f.upkeepFunded}/{f.upkeepCost} per season</b>
           </div>
           <div style={{ height: '6px', background: '#334155', borderRadius: '4px', overflow: 'hidden' }}>
             <div style={{ width: `${f.upkeepCost ? (f.upkeepFunded / f.upkeepCost) * 100 : 100}%`, height: '100%', background: '#3b82f6' }} />
@@ -442,7 +448,7 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
       <div style={{ ...QUIP_STYLE, marginTop: '8px' }}>{quipAt(p.facilityKey, p.targetLevel)}</div>
       <div style={{ fontSize: '12.5px', marginTop: '4px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '11px 0 5px' }}>
-        <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Build progress</span><b style={{ color: '#fbbf24' }}>{p.funded.toLocaleString()} / {p.cost.toLocaleString()} F</b>
+        <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Build progress</span><b style={{ color: '#fbbf24' }}><FloobitSymbol size={11} color="#fbbf24" />{p.funded.toLocaleString()} / {p.cost.toLocaleString()}</b>
       </div>
       <div style={{ height: '10px', background: '#2e2552', borderRadius: '6px', overflow: 'hidden', border: '1px solid #3a2d5c' }}>
         <div className={full ? '' : 'facStripes'} style={{ width: `${pct}%`, height: '100%',
@@ -468,7 +474,7 @@ function BallotCard({ c, accent, selected, totalVotes, onVote }: { c: Candidate;
       <div style={{ ...QUIP_STYLE, marginTop: '8px' }}>{quipAt(c.key, c.targetLevel)}</div>
       <div style={{ fontSize: '12.5px', marginTop: '4px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '5px' }}>
-        Build <b style={{ color: '#fbbf24' }}>{c.cost.toLocaleString()} F</b>, then upkeep <b style={{ color: '#fbbf24' }}>{c.upkeep.toLocaleString()} F/season</b>
+        Build <b style={{ color: '#fbbf24' }}><FloobitSymbol size={11} color="#fbbf24" />{c.cost.toLocaleString()}</b>, then upkeep <b style={{ color: '#fbbf24' }}><FloobitSymbol size={11} color="#fbbf24" />{c.upkeep.toLocaleString()}/season</b>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '11px', color: '#7e93a8', marginTop: '8px' }}>
         <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Fan votes</span>

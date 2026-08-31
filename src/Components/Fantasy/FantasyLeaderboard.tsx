@@ -6,6 +6,7 @@ import { useFantasySnapshot } from '@/hooks/useFantasySnapshot'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { LeaderboardExpandedBody } from './LeaderboardExpandedBody'
 import type { SnapshotEntry } from '@/hooks/useFantasySnapshot'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -217,7 +218,9 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
         </span>
         {!showPrizes && (
           <span style={{ fontSize: '10px', color: '#94a3b8' }}>
-            {mode === 'season' ? '200 / 125 / 75 F' : '30 / 20 / 15 F'}
+            {/* One mark for the set — a prize LADDER, not three separate amounts. */}
+            <FloobitSymbol size={11} color="currentColor" />
+            {mode === 'season' ? '200 / 125 / 75' : '30 / 20 / 15'}
           </span>
         )}
       </div>

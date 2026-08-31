@@ -6,6 +6,7 @@ import type { Achievement, PendingReward } from '@/types/achievements'
 import PackOpeningModal from '@/Components/Cards/PackOpeningModal'
 import type { CardData } from '@/Components/Cards/TradingCard'
 import { BG, BORDER, TEXT, ACCENT, font, TABULAR } from '@/Components/Shell/tokens'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -616,7 +617,7 @@ const TieredFamilySummary: React.FC<{ group: GuidanceGroup }> = ({ group }) => {
     const packs = cfg.packs ?? []
     const powerups = cfg.powerups ?? []
     const chips: React.ReactNode[] = []
-    if (floobits > 0) chips.push(<RewardChip key="f" text={`${floobits} F`} color="#fbbf24" />)
+    if (floobits > 0) chips.push(<RewardChip key="f" text={<><FloobitSymbol size={11} color="#fbbf24" />{floobits}</>} color="#fbbf24" />)
     packs.forEach((p, i) => chips.push(<RewardChip key={`p${i}`} text={packLabel(p)} color={packColor(p)} />))
     powerups.forEach((p, i) => chips.push(<RewardChip key={`u${i}`} text={powerupLabel(p)} color="#06b6d4" />))
     // marginTop: auto pushes the reward chips to the bottom of the flex column
@@ -760,7 +761,7 @@ const AchievementRow: React.FC<{
         <div style={{ marginTop: 'auto', paddingTop: '12px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
           <RewardLabel />
           {floobits > 0 && (
-            <RewardChip text={`${floobits} F`} color="#fbbf24" />
+            <RewardChip text={<><FloobitSymbol size={11} color="#fbbf24" />{floobits}</>} color="#fbbf24" />
           )}
           {packs.map((p, i) => (
             <RewardChip key={`pack-${i}`} text={packLabel(p)} color={packColor(p)} />
@@ -855,7 +856,7 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
       {unlocked && (floobits > 0 || packs.length > 0 || powerups.length > 0) && (
         <div style={{ marginTop: 'auto', paddingTop: '10px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
           <RewardLabel />
-          {floobits > 0 && <RewardChip text={`${floobits} F`} color="#fbbf24" />}
+          {floobits > 0 && <RewardChip text={<><FloobitSymbol size={11} color="#fbbf24" />{floobits}</>} color="#fbbf24" />}
           {packs.map((p, i) => (
             <RewardChip key={`pack-${i}`} text={packLabel(p)} color={packColor(p)} />
           ))}
@@ -868,7 +869,7 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
   )
 }
 
-const RewardChip: React.FC<{ text: string; color: string }> = ({ text, color }) => (
+const RewardChip: React.FC<{ text: React.ReactNode; color: string }> = ({ text, color }) => (
   <span style={{
     ...font(700, 12), color,
     backgroundColor: `${color}20`,

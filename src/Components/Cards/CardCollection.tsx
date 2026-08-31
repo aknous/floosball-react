@@ -9,6 +9,7 @@ import ShowcaseView from './ShowcaseView'
 import HelpButton, { HelpSection } from './HelpButton'
 import { useAuth } from '@/contexts/AuthContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -474,7 +475,7 @@ const CardCollection: React.FC = () => {
                   opacity: selling ? 0.6 : 1,
                 }}
               >
-                Sell {selectedIds.size} for {totalSellValue} Floobits
+                Sell {selectedIds.size} for <FloobitSymbol size={12} color="currentColor" />{totalSellValue}
               </button>
             </>
           )}

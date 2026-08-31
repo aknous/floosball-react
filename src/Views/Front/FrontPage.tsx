@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 import { SignInButton } from '@clerk/react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useGames } from '@/contexts/GamesContext'
@@ -364,8 +365,10 @@ const FrontPage: React.FC = () => {
       {
         key: 'floobits',
         value: (user?.floobits ?? 0).toLocaleString(),
-        // The unit, matching the header chip and the "50F" the shop prices in.
-        suffix: 'F',
+        // ⚠️ THE MARK LEADS AND THE "F" SUFFIX GOES, same call as the header chip: a
+        // currency symbol names the currency, so keeping the letter too would name it
+        // twice. The suffix existed to say WHICH number this is, which the mark now does.
+        prefix: <FloobitSymbol size={20} color={ACCENT.warning} />,
         valueColor: ACCENT.warning,
         label: 'FLOOBITS',
         // The Shop is a modal, not a route — the header's floobits chip opens it the same

@@ -5,6 +5,7 @@ import HoverTooltip from '@/Components/HoverTooltip'
 import type { PickEmGame, PickEmLeaderboardEntry } from '@/types/pickem'
 import { PickEmDay } from './PickEmDay'
 import { PickRow, multiplierToPoints } from './PickRow'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -280,7 +281,8 @@ const ResultsView: React.FC<ResultsViewProps> = ({
                 {weekSummary.totalPoints} pts — {weekSummary.correct}/{weekSummary.total} correct
               </div>
               <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '2px' }}>
-                +{Math.round(weekSummary.totalPoints * 0.5)} Floobits earned
+                {/* "earned" survives: it is the verb, not the unit. */}
+                +<FloobitSymbol size={12} color="currentColor" />{Math.round(weekSummary.totalPoints * 0.5)} earned
               </div>
             </div>
           )}

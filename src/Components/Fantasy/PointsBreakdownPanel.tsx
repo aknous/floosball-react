@@ -43,6 +43,8 @@ function getBreakdownBehavior(b: CardBreakdownEntry): keyof typeof BEHAVIOR_TAGS
   return null
 }
 
+// ⚠️ A SYNTHETIC IS MINTED AT ITS EFFECT'S EDITION, so the edition alone cannot tell a
+// built card from a pulled one — see `SYNTHETIC_TAG` below, which every chip must prefer.
 const EDITION_SHORT: Record<string, string> = {
   base: 'BASE',
   metallic: 'MTLC',
@@ -50,6 +52,12 @@ const EDITION_SHORT: Record<string, string> = {
   prismatic: 'PRSM',
   diamond: 'DMND',
 }
+
+const SYNTHETIC_TAG = 'SNTH'
+// ⚠️ NO COLOUR OF ITS OWN — the tag takes the EDITION's colour, matching the card, whose
+// blueprint carries edition-coloured line work over a constant dark ground. A fixed cyan
+// was tried and is actively wrong: it is within a shade of diamond's own #67e8f9, so every
+// synthetic read as a diamond whatever effect it was built from.
 
 const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
 
@@ -110,7 +118,7 @@ const RosterCardRow: React.FC<{
   // player identity + stat line.
   const hasEffect = !!b && b.effectName !== 'none' && !!b.effectName
 
-  const edTag = b ? (EDITION_SHORT[b.edition] ?? b.edition) : ''
+  const edTag = b ? (b.synthetic ? SYNTHETIC_TAG : (EDITION_SHORT[b.edition] ?? b.edition)) : ''
   const edColor = b ? (EDITION_COLORS[b.edition] ?? '#94a3b8') : '#94a3b8'
   const effectLabel = b ? (b.displayName || b.effectName) : ''
   const behaviorKey = b ? getBreakdownBehavior(b) : null

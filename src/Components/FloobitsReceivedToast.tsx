@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { useSeasonWebSocket } from '@/contexts/SeasonWebSocketContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 interface FloobitsReceivedEvent {
   event: 'floobits_received'
@@ -111,7 +112,8 @@ const FloobitsReceivedToast: React.FC = () => {
             {txLabel(latest.transactionType)}
           </div>
           <div style={{ fontSize: '15px', fontWeight: 700, color: '#fbbf24' }}>
-            +{latest.amount} Floobits
+            {/* The mark names the currency, so the word would name it twice. */}
+            +<FloobitSymbol size={14} color="#fbbf24" />{latest.amount}
           </div>
           {/* The Endowment gets its own line, above the description and never truncated.
               A boost the user paid 100F for is the most interesting thing in the toast,

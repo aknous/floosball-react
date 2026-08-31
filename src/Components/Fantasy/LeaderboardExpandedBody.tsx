@@ -25,6 +25,7 @@ interface CardBreakdown {
   slotNumber?: number
   playerName?: string
   edition: string
+  synthetic?: boolean
   tier?: number
   effectName?: string
   displayName?: string
@@ -55,6 +56,8 @@ interface Props {
 
 const cardCache = new Map<string, EquippedCardEntry[]>()
 
+// ⚠️ A SYNTHETIC IS MINTED AT ITS EFFECT'S EDITION, so the edition alone cannot tell a
+// built card from a pulled one — see `SYNTHETIC_TAG` below, which every chip must prefer.
 const EDITION_SHORT: Record<string, string> = {
   base: 'BASE',
   metallic: 'MTLC',
@@ -65,6 +68,12 @@ const EDITION_SHORT: Record<string, string> = {
 
 // Signed FP: "+12", "0", "-1" (never "+-1").
 const fmtSignedFP = (n: number) => `${n > 0 ? '+' : ''}${n.toFixed(0)}`
+
+const SYNTHETIC_TAG = 'SNTH'
+// ⚠️ NO COLOUR OF ITS OWN — the tag takes the EDITION's colour, matching the card, whose
+// blueprint carries edition-coloured line work over a constant dark ground. A fixed cyan
+// was tried and is actively wrong: it is within a shade of diamond's own #67e8f9, so every
+// synthetic read as a diamond whatever effect it was built from.
 
 const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
 // Small gold tier chip — only shown for upgraded cards (tier 2+).
@@ -180,7 +189,7 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
     opts: {
       slot: string; teamId?: number | null; teamAbbr?: string;
       playerName: string; playerFP: number | null;
-      edition?: string; effectLabel?: string; tier?: number; detail?: string;
+      edition?: string; synthetic?: boolean; effectLabel?: string; tier?: number; detail?: string;
       outputType?: string; matched?: boolean; outputParts?: BreakdownOutputPart[];
       hasEffectSource: boolean; muted?: boolean;
     },
@@ -228,7 +237,7 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
             <>
               {opts.edition && (
                 <span style={{ color: EDITION_COLORS[opts.edition] ?? '#94a3b8', fontWeight: 700, fontSize: '10px', flexShrink: 0, minWidth: 32 }}>
-                  {EDITION_SHORT[opts.edition] ?? opts.edition}
+                  {opts.synthetic ? SYNTHETIC_TAG : (EDITION_SHORT[opts.edition] ?? opts.edition)}
                 </span>
               )}
               <span style={{
@@ -268,7 +277,8 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
       return renderRow(p.slot + i, {
         slot: p.slot, teamId: p.teamId, teamAbbr: p.teamAbbr,
         playerName: p.playerName, playerFP: p.points,
-        edition: b.edition, effectLabel: b.displayName || b.effectName || '',
+        edition: b.edition, synthetic: b.synthetic,
+        effectLabel: b.displayName || b.effectName || '',
         tier: b.tier, detail: b.detail, outputType: b.outputType, matched: b.matchMultiplied,
         outputParts: formatBreakdownOutput(b), hasEffectSource: true,
       })

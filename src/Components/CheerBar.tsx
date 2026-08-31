@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 // Spectator cheer bar — the active non-fantasy income path. While you watch a
 // LIVE game (modal open, tab visible), it fills locally from the play/score
@@ -213,7 +214,7 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
       position: 'absolute', left: '50%', bottom: '100%', marginBottom: 1,
       fontSize: 12, fontWeight: 800, color: C.gold, whiteSpace: 'nowrap', pointerEvents: 'none',
       textShadow: '0 1px 3px rgba(0,0,0,0.6)',
-    }}>+{payoutAmount} F</span>
+    }}>+<FloobitSymbol size={11} color="currentColor" />{payoutAmount}</span>
   ) : null
 
   // Compact single-line variant — sits in a header row, so it adds no vertical
@@ -239,7 +240,9 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
           display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap',
           ...font(flash ? 800 : 600, 11), color: ACCENT.warning, ...TABULAR,
         }}>
-          <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8" /></svg>
+          {/* Was a generic filled circle — the same "this is money, unspecified" glyph the
+              site header carried before the mark existed. */}
+          <FloobitSymbol size={10} />
           {flash ? `+${status?.segmentPayout}` : `${status?.weeklyFloobits ?? 0} / ${status?.weeklyCap ?? 60}`}
         </span>
       </div>
@@ -256,8 +259,8 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
           Spectating{status?.cappedOut ? ' · maxed' : earning ? '' : ' · paused'}
         </span>
         <span style={{ fontSize: 10, color: C.gold, fontWeight: 600 }}>
-          {flash ? <span style={{ fontWeight: 700 }}>+{status?.segmentPayout} F!</span>
-            : `next +${status?.segmentPayout ?? 3} F`}
+          {flash ? <span style={{ fontWeight: 700 }}>+<FloobitSymbol size={10} color="currentColor" />{status?.segmentPayout}!</span>
+            : <>next +<FloobitSymbol size={10} color="currentColor" />{status?.segmentPayout ?? 3}</>}
         </span>
       </div>
       {/* segment progress bar */}

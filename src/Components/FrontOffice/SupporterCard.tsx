@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import HoverTooltip from '@/Components/HoverTooltip'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 // Supporter income surface — the non-fantasy, idle Floobit path. Shows the fan's
 // loyalty tier + tenure, patron rank, total multiplier, and the dividends
@@ -69,7 +70,7 @@ const Header = () => (
 
 // One labeled term in the dividend equation: a small label + its value. Hover
 // tip (where given) explains what it is and how to grow it.
-const Term: React.FC<{ label: string; value: string; color?: string; tip?: string }> = ({ label, value, color, tip }) => {
+const Term: React.FC<{ label: string; value: React.ReactNode; color?: string; tip?: string }> = ({ label, value, color, tip }) => {
   const body = (
     <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5, whiteSpace: 'nowrap' }}>
       <span style={{ fontSize: 11, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
@@ -187,7 +188,7 @@ const SupporterInner: React.FC = () => {
             fontSize: 23, lineHeight: 1.15, fontWeight: 800,
             color: status.unclaimed > 0 ? C.gold : C.body,
             fontVariantNumeric: 'tabular-nums',
-          }}>{status.unclaimed} F</span>
+          }}><FloobitSymbol size={14} color="currentColor" />{status.unclaimed}</span>
           <span style={{ fontSize: 12, color: C.muted }}>to claim</span>
         </div>
         <button
@@ -212,7 +213,7 @@ const SupporterInner: React.FC = () => {
         marginTop: 9, paddingTop: 9, borderTop: '1px solid #1e293b',
       }}>
         <span style={{ fontSize: 13, fontWeight: 700, color: C.body, fontVariantNumeric: 'tabular-nums' }}>
-          {status.weeklyMin}–{status.weeklyMax} F
+          <FloobitSymbol size={12} color="currentColor" />{status.weeklyMin}–{status.weeklyMax}
         </span>
         <span style={{ fontSize: 12, color: C.muted }}>a week</span>
         <span style={{ flex: 1 }} />
@@ -257,9 +258,9 @@ const SupporterInner: React.FC = () => {
           {/* The equation, now with room to sit on its own lines. */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
             <Op>(</Op>
-            <Term label="Base" value={`${status.weeklyBase} F`} color={C.gold} />
+            <Term label="Base" value={<><FloobitSymbol size={13} color={C.gold} />{status.weeklyBase}</>} color={C.gold} />
             <Op>+</Op>
-            <Term label="Win" value={`${status.weeklyWinBonus}+ F`} color={C.gold} tip={winTip} />
+            <Term label="Win" value={<><FloobitSymbol size={13} color={C.gold} />{status.weeklyWinBonus}+</>} color={C.gold} tip={winTip} />
             <Op>)</Op>
             <Op>×</Op>
             <Term label="Tenure" value={`×${status.loyaltyMultiplier}`} tip={loyaltyTip} />
@@ -279,7 +280,9 @@ const SupporterInner: React.FC = () => {
                 }}>
                   <span style={{ color: C.muted, minWidth: 52 }}>Week {p.week}</span>
                   <span style={{ color: C.body, flex: 1, minWidth: 0 }}>{formatParts(p.breakdown)}</span>
-                  <span style={{ color: C.gold, fontWeight: 700 }}>+{p.amount} F</span>
+                  <span style={{ color: C.gold, fontWeight: 700 }}>
+                    +<FloobitSymbol size={12} color={C.gold} />{p.amount}
+                  </span>
                 </div>
               ))}
             </div>
