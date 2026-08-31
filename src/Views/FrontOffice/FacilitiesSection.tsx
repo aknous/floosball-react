@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { appealRank } from '@/utils/facilities'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -118,7 +119,10 @@ function FundChips({ onFund, balance, max, topGap = 8, allowCustom = false }: { 
         const amt = Math.min(a, max)
         const disabled = balance < amt || max <= 0
         return (
-          <button key={a} className="facChip" onClick={() => !disabled && onFund(amt)} disabled={disabled} style={chipStyle(disabled)}>+{a}</button>
+          <button key={a} className="facChip" onClick={() => !disabled && onFund(amt)} disabled={disabled}
+                  style={{ ...chipStyle(disabled), display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+            +<FloobitSymbol size={11} color="currentColor" />{a}
+          </button>
         )
       })}
       {allowCustom && (

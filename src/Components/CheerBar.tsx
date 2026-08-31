@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 // Spectator cheer bar — the active non-fantasy income path. While you watch a
 // LIVE game (modal open, tab visible), it fills locally from the play/score
@@ -239,7 +240,9 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
           display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap',
           ...font(flash ? 800 : 600, 11), color: ACCENT.warning, ...TABULAR,
         }}>
-          <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="8" /></svg>
+          {/* Was a generic filled circle — the same "this is money, unspecified" glyph the
+              site header carried before the mark existed. */}
+          <FloobitSymbol size={10} />
           {flash ? `+${status?.segmentPayout}` : `${status?.weeklyFloobits ?? 0} / ${status?.weeklyCap ?? 60}`}
         </span>
       </div>
