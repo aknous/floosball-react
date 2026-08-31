@@ -118,28 +118,46 @@ export const EDITION_STYLES: Record<string, {
  * built card from a pulled one. The `synthetic` flag is the only thing that can, which is
  * why the backend serializes it beside the edition rather than expecting a derivation.
  */
-export const syntheticStyle = (base: typeof EDITION_STYLES[string]) => ({
-  ...base,
-  // Drop the glow entirely — it is the loudest signal a real pull has.
-  glowColor: undefined,
-  borderColor: base.borderColor,
-  bgGradient: base.bgGradient,
-  label: `${base.label} · SNTH`,
-  rarity: 'Synthetic',
-})
+export const syntheticStyle = (_base: typeof EDITION_STYLES[string]) =>
+  // ⚠️ Ignores the edition entirely — see `SYNTHETIC_STYLE`. The parameter is kept so
+  // every call site stays unchanged and the edition remains available if the ruling is
+  // ever revisited.
+  SYNTHETIC_STYLE as typeof EDITION_STYLES[string]
 
-/** CSS filter that mutes the card art without repainting it, so every edition mutes by the
- *  same amount and none of them needs its own value.
+/** ⚠️ A SYNTHETIC IS NOT AN EDITION, AND THAT REVERSES WHAT THIS FILE USED TO SAY. The
+ *  original rule was "a treatment, never a separate palette — a synthetic diamond has to
+ *  read as diamond-and-manufactured". Owner ruling 2026-08-30 overturns it: all that
+ *  happened was an effect being taken, so wearing the donor edition's identity overstates
+ *  it. A synthetic is its own thing and looks like its own thing.
  *
- * ⚠️ DESATURATED, NEVER DIMMED. It was `saturate(0.55) brightness(0.9)`, and the brightness
- * term does the same visual job as the INACTIVE treatment one line below it
- * (`opacity: 0.7`) — so a perfectly good synthetic read as an expired card. Reported from
- * the app as the text looking inactive. The filter covers the whole face, text included,
- * which is why dimming here is not a small thing.
+ *  ⚠️ TWO SUBTRACTIVE ATTEMPTS FAILED FIRST, and the reason is worth keeping. It was
+ *  `saturate(0.55) brightness(0.9)` over the whole card face, text included — and the
+ *  brightness term does the same visual job as the INACTIVE treatment (`opacity: 0.7`), so
+ *  a good synthetic read as an expired card. Dropping the brightness and easing saturation
+ *  to 0.6 did not fix it either: DESATURATION IS ITSELF SUBTRACTIVE. Draining colour and
+ *  fading out are the same gesture to the eye, and no amount of "less" reads as
+ *  "manufactured" rather than "expired". The blueprint is ADDITIVE — it is a look, not a
+ *  reduction of one.
  *
- * Manufactured and expired have to look different: manufactured is drained of colour,
- * expired is faded out. Saturation says the first without borrowing the second. */
-export const SYNTHETIC_FILTER = 'saturate(0.6)'
+ *  ⚠️ ONE PALETTE FOR EVERY SYNTHETIC, whatever edition the effect came from. That is the
+ *  whole point of the ruling: the tier lives in the effect's power, its gate and its
+ *  tooltip, not in the card's colour. */
+export const SYNTHETIC_STYLE = {
+  borderColor: '#3f7d94',
+  // Near-black ground with a faint cyan wash — the drafting-table look.
+  bgGradient: 'linear-gradient(140deg, #0b1620 0%, #0e1d29 55%, #0a141d 100%)',
+  labelColor: '#7fd4ec',
+  label: 'SYNTHETIC',
+  rarity: 'Synthetic',
+  glowColor: undefined,
+}
+
+/** The schematic grid, drawn as a background layer over the ground. Faint enough to read
+ *  as paper rather than as an image, and it survives the small card sizes because it is
+ *  generated rather than an asset. */
+export const SYNTHETIC_GRID =
+  'repeating-linear-gradient(0deg, rgba(127,212,236,0.07) 0 1px, transparent 1px 12px), '
+  + 'repeating-linear-gradient(90deg, rgba(127,212,236,0.07) 0 1px, transparent 1px 12px)'
 
 const POSITION_LABELS: Record<number, string> = {
   1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K',
@@ -989,7 +1007,10 @@ const TradingCard: React.FC<TradingCardProps> = ({
     : ''
 
   const edition = card.edition
-  const glowConfig = GLOW_CONFIGS[edition]
+  // ⚠️ NO EDITION GLOW ON A SYNTHETIC, for the same reason as the foil below: `GLOW_CONFIGS`
+  // is keyed by edition, and a synthetic is minted AT its effect's edition — so a synthetic
+  // diamond kept the diamond halo and read as a real pull from across the collection.
+  const glowConfig = card.synthetic ? undefined : GLOW_CONFIGS[edition]
   const hasGlow = !!glowConfig
 
   // Depth: a top light-sheen over the edition gradient + inset highlight/vignette
@@ -1001,7 +1022,12 @@ const TradingCard: React.FC<TradingCardProps> = ({
     height: d.height,
     borderRadius: '12px',
     border: `2px solid ${selected ? '#3b82f6' : edStyle.borderColor}`,
-    background: `radial-gradient(120% 70% at 50% -10%, rgba(255,255,255,0.10), transparent 60%), ${edStyle.bgGradient}`,
+    // ⚠️ The schematic grid layers OVER the ground for a synthetic, and the usual
+    // top-light sheen is dropped — a blueprint is lit flat, and the sheen is the gloss a
+    // real pull has.
+    background: card.synthetic
+      ? `${SYNTHETIC_GRID}, ${edStyle.bgGradient}`
+      : `radial-gradient(120% 70% at 50% -10%, rgba(255,255,255,0.10), transparent 60%), ${edStyle.bgGradient}`,
     fontFamily: 'pressStart',
     cursor: 'pointer',
     position: 'relative',
@@ -1010,10 +1036,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
     flexDirection: 'column',
     transition: 'transform 0.15s, box-shadow 0.25s',
     transform: !noHoverLift && hovered ? 'translateY(-4px)' : 'none',
-    // ⚠️ Muted, not recolored. One filter over the whole face desaturates every edition
-    // by the same amount, so a synthetic diamond still reads as a diamond and no edition
-    // needs a value of its own. See `syntheticStyle`.
-    filter: card.synthetic ? SYNTHETIC_FILTER : undefined,
+
     boxShadow: depthInset + tier4Ring + (selected
       ? '0 0 0 2px #3b82f6, 0 4px 20px rgba(59,130,246,0.3)'
       : hasGlow && hovered
@@ -1100,10 +1123,15 @@ const TradingCard: React.FC<TradingCardProps> = ({
       )}
 
       {/* Edition FX overlays */}
-      {edition === 'metallic' && <ShimmerOverlay edition={edition} />}
-      {edition === 'holographic' && <ShimmerOverlay edition={edition} />}
-      {edition === 'prismatic' && <><HoloBackgroundOverlay /><HoloEdgeShimmer /></>}
-      {edition === 'diamond' && <><DiamondEdgeShimmer /><SparkleOverlay /></>}
+      {/* ⚠️ NONE OF THESE ON A SYNTHETIC. They key off `edition`, and a synthetic is minted
+          AT its effect's edition — so a synthetic diamond kept the diamond sparkle and the
+          edge shimmer on top of the blueprint, which is the exact identity the ruling
+          removes. The foil is the loudest thing a real pull has; a built card does not get
+          to wear it. */}
+      {!card.synthetic && edition === 'metallic' && <ShimmerOverlay edition={edition} />}
+      {!card.synthetic && edition === 'holographic' && <ShimmerOverlay edition={edition} />}
+      {!card.synthetic && edition === 'prismatic' && <><HoloBackgroundOverlay /><HoloEdgeShimmer /></>}
+      {!card.synthetic && edition === 'diamond' && <><DiamondEdgeShimmer /><SparkleOverlay /></>}
 
       {/* Upgrade-tier hexagon badge (tier 2+), pinned under the header divider.
           Brighter + glowing at max tier, which also gets a full gold ring
@@ -1144,7 +1172,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
             already appends " · SNTH" to the label, so the styled one reads
             "SYNTHETIC DIAMOND · SNTH". */}
         <EditionBadge
-          label={card.synthetic ? 'SYNTHETIC' : edStyle.label}
+          label={edStyle.label}
           rarity={edStyle.rarity}
           color={edStyle.labelColor}
           fontSize={d.font - 2}

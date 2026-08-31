@@ -312,7 +312,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
                         key={label}
                         onClick={() => setShowPool(val)}
                         style={{
-                          flex: 1, padding: '7px 10px', fontSize: 11, fontWeight: 700,
+                          flex: 1, padding: '9px 10px', fontSize: 13, fontWeight: 700,
                           fontFamily: 'inherit',
                           backgroundColor: showPool === val ? 'rgba(167,139,250,0.85)' : '#0f172a',
                           border: `1px solid ${showPool === val ? 'rgba(196,181,253,0.5)' : '#334155'}`,
