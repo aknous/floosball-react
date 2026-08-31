@@ -128,9 +128,18 @@ export const syntheticStyle = (base: typeof EDITION_STYLES[string]) => ({
   rarity: 'Synthetic',
 })
 
-/** CSS filter that mutes the card art without repainting it — desaturated and dimmed,
- *  so every edition mutes by the same amount and none of them needs its own value. */
-export const SYNTHETIC_FILTER = 'saturate(0.55) brightness(0.9)'
+/** CSS filter that mutes the card art without repainting it, so every edition mutes by the
+ *  same amount and none of them needs its own value.
+ *
+ * ⚠️ DESATURATED, NEVER DIMMED. It was `saturate(0.55) brightness(0.9)`, and the brightness
+ * term does the same visual job as the INACTIVE treatment one line below it
+ * (`opacity: 0.7`) — so a perfectly good synthetic read as an expired card. Reported from
+ * the app as the text looking inactive. The filter covers the whole face, text included,
+ * which is why dimming here is not a small thing.
+ *
+ * Manufactured and expired have to look different: manufactured is drained of colour,
+ * expired is faded out. Saturation says the first without borrowing the second. */
+export const SYNTHETIC_FILTER = 'saturate(0.6)'
 
 const POSITION_LABELS: Record<number, string> = {
   1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K',
@@ -1130,14 +1139,17 @@ const TradingCard: React.FC<TradingCardProps> = ({
             its effect's edition everywhere else — the muted palette, the power scale, the
             gate — but the label is the one place a built card has to announce itself,
             because that is the corner a collector reads first. The edition is still in the
-            tooltip. */}
+            tooltip.
+            ⚠️ The tooltip builds from `rawEdStyle`, NOT `edStyle` — `syntheticStyle`
+            already appends " · SNTH" to the label, so the styled one reads
+            "SYNTHETIC DIAMOND · SNTH". */}
         <EditionBadge
           label={card.synthetic ? 'SYNTHETIC' : edStyle.label}
           rarity={edStyle.rarity}
           color={edStyle.labelColor}
           fontSize={d.font - 2}
           tooltipOverride={card.synthetic
-            ? `Synthetic — a ${edStyle.label.toLowerCase()} effect you built onto this player`
+            ? `SYNTHETIC ${rawEdStyle.label.toUpperCase()}`
             : undefined}
         />
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
