@@ -70,7 +70,10 @@ const EDITION_SHORT: Record<string, string> = {
 const fmtSignedFP = (n: number) => `${n > 0 ? '+' : ''}${n.toFixed(0)}`
 
 const SYNTHETIC_TAG = 'SNTH'
-const SYNTHETIC_COLOR = '#7fd4ec'
+// ⚠️ NO COLOUR OF ITS OWN — the tag takes the EDITION's colour, matching the card, whose
+// blueprint carries edition-coloured line work over a constant dark ground. A fixed cyan
+// was tried and is actively wrong: it is within a shade of diamond's own #67e8f9, so every
+// synthetic read as a diamond whatever effect it was built from.
 
 const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
 // Small gold tier chip — only shown for upgraded cards (tier 2+).
@@ -233,7 +236,7 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
           {opts.hasEffectSource ? (
             <>
               {opts.edition && (
-                <span style={{ color: opts.synthetic ? SYNTHETIC_COLOR : (EDITION_COLORS[opts.edition] ?? '#94a3b8'), fontWeight: 700, fontSize: '10px', flexShrink: 0, minWidth: 32 }}>
+                <span style={{ color: EDITION_COLORS[opts.edition] ?? '#94a3b8', fontWeight: 700, fontSize: '10px', flexShrink: 0, minWidth: 32 }}>
                   {opts.synthetic ? SYNTHETIC_TAG : (EDITION_SHORT[opts.edition] ?? opts.edition)}
                 </span>
               )}

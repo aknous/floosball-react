@@ -54,7 +54,10 @@ const EDITION_SHORT: Record<string, string> = {
 }
 
 const SYNTHETIC_TAG = 'SNTH'
-const SYNTHETIC_COLOR = '#7fd4ec'
+// ⚠️ NO COLOUR OF ITS OWN — the tag takes the EDITION's colour, matching the card, whose
+// blueprint carries edition-coloured line work over a constant dark ground. A fixed cyan
+// was tried and is actively wrong: it is within a shade of diamond's own #67e8f9, so every
+// synthetic read as a diamond whatever effect it was built from.
 
 const TIER_ROMAN: Record<number, string> = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' }
 
@@ -116,9 +119,7 @@ const RosterCardRow: React.FC<{
   const hasEffect = !!b && b.effectName !== 'none' && !!b.effectName
 
   const edTag = b ? (b.synthetic ? SYNTHETIC_TAG : (EDITION_SHORT[b.edition] ?? b.edition)) : ''
-  const edColor = b
-    ? (b.synthetic ? SYNTHETIC_COLOR : (EDITION_COLORS[b.edition] ?? '#94a3b8'))
-    : '#94a3b8'
+  const edColor = b ? (EDITION_COLORS[b.edition] ?? '#94a3b8') : '#94a3b8'
   const effectLabel = b ? (b.displayName || b.effectName) : ''
   const behaviorKey = b ? getBreakdownBehavior(b) : null
   const bTag = behaviorKey ? BEHAVIOR_TAGS[behaviorKey] : null
