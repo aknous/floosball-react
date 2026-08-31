@@ -1154,28 +1154,32 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                         <path d="M12 10l4 2M12 10L8 12M12 10V6" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
                       </svg>
                       <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0' }}>
+                        {/* ⚠️ AVAILABILITY RIDES THE NAME, AS STOCK (owner). Written as a
+                            ratio it reads backwards: "2 of 2 today" says "2 already bought"
+                            to most people, when it means 2 still to be had. A quantity on
+                            the item cannot be read the wrong way round. */}
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#e2e8f0',
+                                      display: 'flex', alignItems: 'baseline', gap: 7 }}>
                           {component.name}
+                          {component.remainingToday > 0
+                            ? <span style={{ fontSize: '11px', fontWeight: 800, color: '#a78bfa' }}>
+                                x{component.remainingToday}
+                              </span>
+                            : <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.06em',
+                                             color: '#fca5a5' }}>
+                                SOLD OUT
+                              </span>}
                         </div>
-                        {/* ⚠️ TWO LIMITS, AND THEY ARE NOT THE SAME LIMIT. A crowded
-                            one-liner ("Holding 0 of 3 · 2 left today") left both ambiguous:
-                            3 of what, and 2 out of how many. Each keeps its own label.
-                            ⚠️ AT THE HOLD CAP THE DAILY FIGURE IS A LIE. Checked against
-                            every state rather than the fresh one: "2 of 2 today" sat beside
-                            a button reading "Build one first". The BLOCKING limit talks. */}
+                        {/* ⚠️ ONLY THE HOLD LIMIT LIVES HERE NOW — the daily one moved onto
+                            the name as stock. Keeping both down here is what made them
+                            compete and what made the ratio ambiguous. */}
                         <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.6, marginTop: '3px' }}>
                           <div>Build a pulled effect onto any player.</div>
                           <div>
                             Holding <b style={{ color: '#e2e8f0' }}>{component.held}</b> of {component.holdCap}
-                            {'  ·  '}
-                            {component.blockedBy === 'hold_cap'
-                              ? <span style={{ color: '#fca5a5' }}>Hold limit reached</span>
-                              : component.remainingToday > 0
-                                ? <>
-                                    <b style={{ color: '#e2e8f0' }}>{component.remainingToday}</b>
-                                    {' '}of {component.dailyLimit} today
-                                  </>
-                                : <span style={{ color: '#fca5a5' }}>Sold out today</span>}
+                            {component.blockedBy === 'hold_cap' && (
+                              <span style={{ color: '#fca5a5' }}>{'  ·  '}Build with one first</span>
+                            )}
                           </div>
                         </div>
                       </div>
