@@ -669,7 +669,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             ? 'Opening...'
                             : capBlocked
                               ? 'Cycle full'
-                              : <Floobits amount={pack.cost} size={12} color="currentColor" />}
+                              : <Floobits amount={pack.cost} color="currentColor" />}
                         </button>
                       </div>
                     )
@@ -732,7 +732,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                 {component.held}
               </span>
             )}
-            <Floobits amount={balance} size={13} />
+            <Floobits amount={balance} size={14} />
             <button
               onClick={onClose}
               style={{
@@ -891,7 +891,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                 }}
                               >
                                 {isBuying3 ? '...'
-                                  : <Floobits amount={card.buyPrice} size={11} color="currentColor" />}
+                                  : <Floobits amount={card.buyPrice} color="currentColor" />}
                               </button>
                             </div>
                           )
@@ -920,7 +920,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               reads as a bug rather than a gift, so name it. */}
                           {rerolling ? 'Rerolling...'
                             : rerollCost === 0 ? 'Reroll \u00b7 Free'
-                            : <>Reroll{'\u00a0\u00b7\u00a0'}<Floobits amount={rerollCost} size={11} color="currentColor" /></>}
+                            : <>Reroll{'\u00a0\u00b7\u00a0'}<Floobits amount={rerollCost} color="currentColor" /></>}
                         </button>
                       </div>
                     </>
@@ -1109,7 +1109,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                                 }}
                               >
                                 {busy ? 'Buying...'
-                                  : <Floobits amount={card.buyPrice} size={11} color="currentColor" />}
+                                  : <Floobits amount={card.buyPrice} color="currentColor" />}
                               </button>
                             </div>
                           )
@@ -1312,7 +1312,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                               }}
                             >
                               {isPurchased ? 'Owned' : isBuying ? '...'
-                                : <Floobits amount={pu.price} size={11} color="currentColor" />}
+                                : <Floobits amount={pu.price} color="currentColor" />}
                             </button>
                           </div>
                         </div>

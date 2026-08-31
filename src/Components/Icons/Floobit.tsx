@@ -14,10 +14,13 @@ import React from 'react'
  * drifted because nothing owned the rendering.
  */
 export const FloobitSymbol: React.FC<{
-  size?: number
+  size?: number | string
   color?: string
   title?: string
-}> = ({ size = 14, color = 'currentColor', title }) => (
+}> = ({ size = '1.05em', color = 'currentColor', title }) => (
+  // ⚠️ SIZED IN `em` BY DEFAULT so the mark scales with whatever text it sits in. A fixed
+  // pixel default made every call site pick a number, and picking one is how the mark ends
+  // up smaller than the label around it.
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
        role={title ? 'img' : 'presentation'} aria-label={title}
        style={{ flexShrink: 0, display: 'block' }}>
@@ -42,16 +45,22 @@ export const FloobitSymbol: React.FC<{
  */
 export const Floobits: React.FC<{
   amount: number
+  /** Omit to INHERIT the surrounding text size, which is almost always what you want. */
   size?: number
   color?: string
   bold?: boolean
-}> = ({ amount, size = 13, color = '#eab308', bold = true }) => (
+}> = ({ amount, size, color = '#eab308', bold = true }) => (
+  // ⚠️ INHERITS THE PARENT'S SIZE UNLESS TOLD OTHERWISE. The first version defaulted to
+  // 13px and every call site passed its own number, so the amount ended up smaller than the
+  // button label it replaced — reported as the figures reading too small in the shop. Text
+  // that used to inherit should keep inheriting.
   <span style={{
-    display: 'inline-flex', alignItems: 'center', gap: Math.round(size * 0.3),
-    color, fontWeight: bold ? 700 : 500, fontSize: size,
+    display: 'inline-flex', alignItems: 'center', gap: '0.3em',
+    color, fontWeight: bold ? 700 : 500,
+    ...(size ? { fontSize: size } : null),
     fontVariantNumeric: 'tabular-nums',
   }}>
-    <FloobitSymbol size={Math.round(size * 1.05)} color={color} />
+    <FloobitSymbol color={color} />
     {amount.toLocaleString()}
   </span>
 )
