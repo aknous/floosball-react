@@ -203,7 +203,14 @@ const CLASSIFICATION_CONFIG: Record<string, {
   },
 }
 
-function parseClassifications(classification?: string | null, isRookie?: boolean): string[] {
+function parseClassifications(classification?: string | null, isRookie?: boolean,
+                              synthetic?: boolean): string[] {
+  // ⚠️ A SYNTHETIC NEVER WEARS AN ACCOLADE IT DID NOT EARN (owner). The mint clears
+  // `classification`, but ROOKIE lives in its own column and was copied from the source
+  // template — so a transplant onto a base card came back wearing the R tag. Fixed at the
+  // mint too; this guard is what clears the synthetics ALREADY MINTED under the old rule,
+  // with no migration.
+  if (synthetic) return []
   if (classification) {
     return ['rookie', 'mvp', 'champion', 'all_pro'].filter(
       key => classification.includes(key)
@@ -500,7 +507,8 @@ const EditionBadge: React.FC<{
   rarity: string
   color: string
   fontSize: number
-}> = ({ label, rarity, color, fontSize }) => {
+  tooltipOverride?: string
+}> = ({ label, rarity, color, fontSize, tooltipOverride }) => {
   const [show, setShow] = useState(false)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const ref = useRef<HTMLSpanElement>(null)
@@ -545,7 +553,7 @@ const EditionBadge: React.FC<{
           fontFamily: 'pressStart',
           whiteSpace: 'nowrap',
         }}>
-          {rarity}
+          {tooltipOverride ?? rarity}
         </div>,
         document.body
       )}
@@ -1118,14 +1126,22 @@ const TradingCard: React.FC<TradingCardProps> = ({
         borderBottom: `1px solid ${edStyle.borderColor}40`,
         position: 'relative', zIndex: 3,
       }}>
+        {/* ⚠️ THE TOP-LEFT SAYS SYNTHETIC, NOT THE EDITION (owner). The card still WEARS
+            its effect's edition everywhere else — the muted palette, the power scale, the
+            gate — but the label is the one place a built card has to announce itself,
+            because that is the corner a collector reads first. The edition is still in the
+            tooltip. */}
         <EditionBadge
-          label={edStyle.label}
+          label={card.synthetic ? 'SYNTHETIC' : edStyle.label}
           rarity={edStyle.rarity}
           color={edStyle.labelColor}
           fontSize={d.font - 2}
+          tooltipOverride={card.synthetic
+            ? `Synthetic — a ${edStyle.label.toLowerCase()} effect you built onto this player`
+            : undefined}
         />
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-          {parseClassifications(card.classification, card.isRookie).map(key => {
+          {parseClassifications(card.classification, card.isRookie, card.synthetic).map(key => {
             const cfg = CLASSIFICATION_CONFIG[key]
             if (!cfg) return null
             return (
