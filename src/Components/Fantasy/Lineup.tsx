@@ -116,6 +116,27 @@ const Lineup: React.FC = () => {
         <div style={{ color: '#f87171', fontSize: 11, padding: '4px 4px 10px' }}>{lineup.error}</div>
       )}
 
+      {/* ⚠️ SAY WHY IT IS FROZEN. `canEdit` below silently disables every slot when the
+          lineup is locked, and NOTHING said so — reported as simply not being able to
+          unequip or change slots, with no error and no clue. A control that refuses
+          without explaining reads as broken, not as locked. */}
+      {!lineup.loading && (lineup.locked || lineup.gamesActive) && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 10px', marginBottom: 10,
+          backgroundColor: 'rgba(234,179,8,0.10)',
+          border: '1px solid rgba(234,179,8,0.30)',
+          color: '#fde68a', fontSize: 11, lineHeight: 1.5,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+            <rect x="5" y="11" width="14" height="10" rx="2" stroke="#fde68a" strokeWidth="2" />
+            <path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="#fde68a" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          Your lineup is locked while this week&rsquo;s games are being played. You can
+          change it again once the week finishes.
+        </div>
+      )}
+
       {lineup.loading ? (
         <div style={{ color: '#64748b', fontSize: 12, padding: 24, textAlign: 'center' }}>Loading your lineup…</div>
       ) : (
