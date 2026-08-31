@@ -260,7 +260,7 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
         </span>
         <span style={{ fontSize: 10, color: C.gold, fontWeight: 600 }}>
           {flash ? <span style={{ fontWeight: 700 }}>+{status?.segmentPayout} F!</span>
-            : `next +${status?.segmentPayout ?? 3} F`}
+            : <>next +<FloobitSymbol size={10} color="currentColor" />{status?.segmentPayout ?? 3}</>}
         </span>
       </div>
       {/* segment progress bar */}

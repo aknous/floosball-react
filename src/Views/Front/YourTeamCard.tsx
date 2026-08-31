@@ -8,6 +8,7 @@ import { Crest } from '@/Views/GameBoard/boardPieces'
 import { formatScore } from '@/utils/formatScore'
 import { SectionHeader } from './frontPieces'
 import type { TeamStanding } from '@/Views/Standings/standingsTypes'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 export interface RecentResult {
   opponentId: number
@@ -219,7 +220,7 @@ const SupporterDividendRow: React.FC = () => {
         </span>
       </span>
       <span style={{ ...font(800, 14), ...TABULAR, color: '#fbbf24', flexShrink: 0 }}>
-        {Math.round(unclaimed)} F
+        <FloobitSymbol size={13} color="currentColor" />{Math.round(unclaimed)}
       </span>
       <button
         onClick={claim}

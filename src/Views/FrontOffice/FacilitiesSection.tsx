@@ -278,9 +278,11 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
                 'How big your fanbase is compared to the rest of the league, from SMALL up to MEGA.'],
               ['Appeal', appealRank(data.appeal), '#34d399', 'Facility quality',
                 'How strong your facilities are overall, from your combined facility levels.'],
-              ['Treasury', `${data.treasury.toLocaleString()} F`, '#fbbf24', 'Project fund',
+              ['Treasury', <><FloobitSymbol size={19} color="#fbbf24" />{data.treasury.toLocaleString()}</>, '#fbbf24', 'Project fund',
                 'Floobits your fanbase has banked. At season end it covers any facility upkeep and projects that are not already funded, upkeep first, then projects.'],
-            ] as [string, string, string, string, string][]).map(([l, v, c, sub, tip]) => (
+            // ⚠️ The value slot is a NODE now — Treasury carries the currency mark, and the
+            // other two rows are plain strings, which a ReactNode accepts unchanged.
+            ] as [string, React.ReactNode, string, string, string][]).map(([l, v, c, sub, tip]) => (
               <HoverTooltip key={l} content={tip} color={c}>
                 <div style={{ background: '#1e293b', padding: '13px 15px', height: '100%', boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', fontWeight: 700 }}>{l}</div>

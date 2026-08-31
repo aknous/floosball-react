@@ -23,7 +23,15 @@ export const FloobitSymbol: React.FC<{
   // up smaller than the label around it.
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
        role={title ? 'img' : 'presentation'} aria-label={title}
-       style={{ flexShrink: 0, display: 'block' }}>
+       // ⚠️ INLINE, NOT BLOCK. `display: block` is invisible inside the `<Floobits>` flex
+       // wrapper and breaks the line everywhere the bare mark sits in running text — the
+       // received toast put the symbol and the amount on separate lines. `verticalAlign`
+       // drops it onto the text baseline; without it the mark rides high against digits.
+       // ⚠️ THE MARK OWNS ITS OWN TRAILING SPACE. Used bare in text it otherwise butts
+       // straight against the first digit; leaving that to each call site is ten chances to
+       // forget. `<Floobits>` therefore sets no gap of its own — one source of spacing.
+       style={{ flexShrink: 0, display: 'inline-block', verticalAlign: '-0.12em',
+                marginRight: '0.18em' }}>
     {title && <title>{title}</title>}
     {/* Stem */}
     <rect x="8" y="3" width="3.5" height="18" fill={color} />
@@ -55,7 +63,7 @@ export const Floobits: React.FC<{
   // button label it replaced — reported as the figures reading too small in the shop. Text
   // that used to inherit should keep inheriting.
   <span style={{
-    display: 'inline-flex', alignItems: 'center', gap: '0.3em',
+    display: 'inline-flex', alignItems: 'center',
     color, fontWeight: bold ? 700 : 500,
     ...(size ? { fontSize: size } : null),
     // ⚠️ NO `tabular-nums`. Much of this app renders currency in `pressStart`, a PIXEL face
