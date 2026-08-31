@@ -405,8 +405,16 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
                 const isDuplicateEffect = !!card.effectName && card.effectName !== 'none'
                   && excludedEffectSet.has(card.effectName)
                 return (
+                  /* ⚠️ POOL CARDS ARE ALL `id: 0` — deliberately, since a pool card has no
+                     UserCard row — so keying on `card.id` gave every one of them the SAME
+                     React key. React reconciles by key, so switching from All Players back
+                     to My Cards reused those mounted components and the base players stayed
+                     on screen inside the collection list. Reported from the app.
+                     A pool card is identified by its TEMPLATE, an owned card by its id, and
+                     the prefixes stop the two id spaces colliding. */
                   <PickerCard
-                    key={card.id} card={card} isMatch={isMatch}
+                    key={card.fromPool ? `t${card.templateId}` : `c${card.id}`}
+                    card={card} isMatch={isMatch}
                     isDuplicateEffect={isDuplicateEffect}
                     isDuplicatePlayer={isDuplicatePlayer}
                     onSelect={onSelect}
