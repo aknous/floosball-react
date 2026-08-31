@@ -1705,11 +1705,11 @@ const AboutPage: React.FC = () => {
             </p>
             {bulletList([
               'Both cards must be the same edition. You cannot promote an effect up a rarity this way',
-              'The exception is a base card, which accepts any effect at any edition if you spend a Synthesis Component. See Synthetic Cards below',
+              'A Base card is the exception: with a Synthesis Component it accepts any effect at any edition. See Synthetic Cards below',
               'The card you keep holds on to its player, its tier and its Vault status, and only the effect changes',
               'The effect is re-scaled to the player receiving it, so grafting off a star does not hand a weaker player the star\'s numbers',
               'Position-specific effects only move onto a player whose position they work for. Shared effects go anywhere at the same edition',
-              'A base card cannot donate, having no effect to give, but it can receive with a Component',
+              'A Base card can receive but not donate, having no effect to give',
               'Cost rises with edition: Metallic 40, Holographic 70, Prismatic 120, Diamond 180',
             ])}
 
@@ -1731,51 +1731,40 @@ const AboutPage: React.FC = () => {
           <Section id="synthetic-cards" title="Synthetic Cards">
             <p style={textStyle}>
               Every player in the league has a Base card. It has no effect, it just fields that player for
-              their FP, and it is free to everyone all season. You never have to open a pack to get one. A Synthetic is what
-              you get when you build an effect onto one of them, so a great effect is no longer stuck on a
-              player you do not want.
+              their FP, and it is free to everyone all season. A Synthetic is a Base card with an effect
+              built onto it.
             </p>
 
             <p style={labelStyle}>Building one</p>
             {bulletList([
-              'Open The Transplant, then pick any player in the league as the card you are keeping',
+              'Open The Transplant and pick any player in the league as the card you are keeping',
               'Pick one of your own cards as the donor. Its effect is what gets built, and the donor is consumed',
-              'Spend one Synthesis Component plus the usual Transplant cost for that edition',
               'The donor has to be a card from the current season',
+              'Costs one Synthesis Component plus the usual Transplant cost for that edition',
             ])}
 
-            <p style={labelStyle}>What you end up with</p>
+            <p style={labelStyle}>What you get</p>
             {bulletList([
-              'The card is built at the effect\'s edition, not at Base. A Diamond effect builds a Diamond-strength card, with the same power and the same unlock threshold as one that came out of a pack',
-              'It reads SYNTHETIC where the edition usually sits, and takes that edition\'s color',
-              'The effect is re-scaled to the player receiving it, exactly as a normal Transplant is',
+              'The card is built at the effect\'s edition, not at Base. A Diamond effect builds a Diamond card',
+              'It reads SYNTHETIC where the edition usually sits, in that edition\'s color',
+              'The effect is re-scaled to the player receiving it',
             ])}
 
-            <p style={labelStyle}>What it gives up</p>
-            <p style={textStyle}>
-              A Synthetic plays exactly like the card it copies. What it does not do is count as one. It is a
-              card you field, not a card you collect, and everything a collector would want from it is off.
-            </p>
+            <p style={labelStyle}>What it cannot do</p>
             {bulletList([
-              'No accolade tags. A Synthetic never wears Rookie, Champion, MVP or All-Pro, whatever the player did or the donor carried. Those are earned by a card, not built onto one',
-              'It cannot be vaulted, so it can never reach your Showcase or count toward Showcase points',
-              'It sells for 1, so there is nothing to be made by building one and selling it',
-              'It cannot be fed into The Combine',
-              'Its effect is final. A Synthetic can donate its effect onward, but it can never receive a second one',
-              'It lasts the season, like every other card',
+              'No Rookie, Champion, MVP or All-Pro tag',
+              'Cannot be vaulted, so it never reaches your Showcase',
+              'Cannot be used in The Combine',
+              'Sells for 1',
+              'Its effect is final. It can donate that effect onward, but never receive another',
+              'Lasts the season, like every other card',
             ])}
 
             <p style={labelStyle}>Synthesis Components</p>
-            <p style={textStyle}>
-              The Component is what makes the build possible, and it is the real limit on how many Synthetics
-              you can field. Floobits stack up over a season, so what holds you back is the Component and not
-              the price.
-            </p>
             {bulletList([
               'On sale in the Shop under Items, two per day',
-              'You can hold three at once. The Shop stops selling until you spend one, so they cannot be banked into a whole lineup at the end of a season',
-              'The biggest achievements, the ones that already pay out a pack, grant one as well. A Component you have earned is never refused, even while you are holding three',
-              'Sitting on one costs you weeks. A Synthetic only scores while it is equipped, so a Component spent early buys far more football than one spent late',
+              'You can hold three at once. The Shop will not sell you a fourth until you spend one',
+              'The biggest achievements, the ones that pay out a pack, grant one as well',
             ])}
           </Section>
 
