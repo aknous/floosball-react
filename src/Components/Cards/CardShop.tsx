@@ -22,6 +22,19 @@ interface FeaturedCard extends CardData {
   buyPrice: number
 }
 
+interface SynthComponentOffer {
+  slug: string
+  name: string
+  price: number
+  held: number
+  boughtToday: number
+  dailyLimit: number
+  holdCap: number
+  remainingToday: number
+  canBuy: boolean
+  blockedBy: string | null
+}
+
 const PACK_COLORS: Record<string, { border: string; bg: string; accent: string }> = {
   humble: { border: '#475569', bg: '#1e293b', accent: '#94a3b8' },
   proper: { border: '#a78bfa', bg: 'linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%)', accent: '#c4b5fd' },
@@ -40,6 +53,10 @@ const CardShop: React.FC = () => {
   const [openedCards, setOpenedCards] = useState<{ packName: string; cards: CardData[] } | null>(null)
   const [balance, setBalance] = useState(user?.floobits ?? 0)
   const [shopOpen, setShopOpen] = useState(true)
+  // ⚠️ Its own state rather than a row in `packs`: a component is not a pack — it is not
+  // opened, it has no cards, and it carries a HOLD cap as well as a daily one.
+  const [component, setComponent] = useState<SynthComponentOffer | null>(null)
+  const [buyingComponent, setBuyingComponent] = useState(false)
 
   const fetchShopData = useCallback(async () => {
     try {
@@ -47,10 +64,11 @@ const CardShop: React.FC = () => {
       const headers: Record<string, string> = {}
       if (tok) headers.Authorization = `Bearer ${tok}`
 
-      const [packsRes, featuredRes, balanceRes] = await Promise.all([
+      const [packsRes, featuredRes, balanceRes, componentRes] = await Promise.all([
         fetch(`${API_BASE}/packs/types`, { headers }),
         tok ? fetch(`${API_BASE}/shop/featured`, { headers }) : Promise.resolve(null),
         tok ? fetch(`${API_BASE}/currency/balance`, { headers }) : Promise.resolve(null),
+        tok ? fetch(`${API_BASE}/shop/synth-components`, { headers }) : Promise.resolve(null),
       ])
 
       if (packsRes.ok) {
@@ -67,6 +85,10 @@ const CardShop: React.FC = () => {
         const bal = json.data?.balance ?? 0
         setBalance(bal)
         updateFloobits(bal)
+      }
+      if (componentRes?.ok) {
+        const json = await componentRes.json()
+        setComponent(json.data ?? null)
       }
     } catch {
       // silent
@@ -142,6 +164,31 @@ const CardShop: React.FC = () => {
     }
   }
 
+  const handleBuyComponent = async () => {
+    const tok = await getToken()
+    if (!tok) return
+    setBuyingComponent(true)
+    try {
+      const res = await fetch(`${API_BASE}/shop/synth-components/buy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok}` },
+      })
+      if (!res.ok) {
+        // ⚠️ The endpoint refuses with a readable `detail` for each case — out of season,
+        // daily allowance taken, already holding the cap, not enough Floobits — so show
+        // that rather than a generic failure. It is the only place the user learns WHY.
+        const err = await res.json().catch(() => ({ detail: 'Could not buy a component' }))
+        alert(err.detail || 'Could not buy a component')
+        return
+      }
+      fetchShopData()
+    } catch {
+      alert('Could not buy a component')
+    } finally {
+      setBuyingComponent(false)
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ color: '#64748b', fontSize: '13px', padding: '40px 0', textAlign: 'center' }}>
@@ -178,6 +225,72 @@ const CardShop: React.FC = () => {
           {balance.toLocaleString()} Floobits
         </span>
       </div>
+
+      {/* Synth Components — the licence to place a pulled effect on any player.
+          ⚠️ ITS OWN SECTION ABOVE THE PACKS, deliberately: a pack is a chase and a
+          component is a tool, and the two answer different questions. It is also
+          COMPLEMENTARY to a pack rather than competing with it — the pack supplies the
+          donor effect, the component places it — so burying it under the packs would hide
+          the second half of one purchase. */}
+      {component && user && (
+        <>
+          <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', margin: '0 0 14px 0' }}>
+            Components
+          </h2>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap',
+            marginBottom: '32px', padding: '14px 16px',
+            backgroundColor: '#1e293b',
+            border: '1px solid rgba(167,139,250,0.35)',
+          }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+              <path d="M12 2l7 4v8l-7 4-7-4V6l7-4z" stroke="#c4b5fd" strokeWidth="2" strokeLinejoin="round" />
+              <path d="M12 10l4 2M12 10L8 12M12 10V6" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0' }}>
+                {component.name}
+              </div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.5, marginTop: '2px' }}>
+                Build a pulled effect onto any player. Holding {component.held} of {component.holdCap}
+                {component.remainingToday > 0
+                  ? ` · ${component.remainingToday} left today`
+                  : ' · none left today'}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '14px', fontWeight: '700', color: '#eab308' }}>
+                {component.price.toLocaleString()} F
+              </span>
+              <button
+                onClick={handleBuyComponent}
+                disabled={!component.canBuy || buyingComponent || !shopOpen
+                          || balance < component.price}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: (component.canBuy && shopOpen && balance >= component.price
+                                    && !buyingComponent)
+                    ? 'rgba(167,139,250,0.9)' : '#334155',
+                  border: 'none',
+                  color: (component.canBuy && shopOpen && balance >= component.price
+                          && !buyingComponent) ? '#0f172a' : '#94a3b8',
+                  fontSize: '12px', fontWeight: '700',
+                  cursor: (component.canBuy && shopOpen && balance >= component.price
+                           && !buyingComponent) ? 'pointer' : 'not-allowed',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {buyingComponent ? 'Buying...'
+                  : balance < component.price ? 'Not enough'
+                  : component.blockedBy === 'hold_cap' ? 'Build one first'
+                  : component.blockedBy === 'daily' ? 'Back tomorrow'
+                  : component.blockedBy ? 'Unavailable'
+                  : 'Buy'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Pack section */}
       <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#e2e8f0', margin: '0 0 14px 0' }}>
