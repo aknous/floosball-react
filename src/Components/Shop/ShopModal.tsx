@@ -1141,7 +1141,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                     supplies the donor effect and the component places it. */}
                 {component && (
                   <>
-                    <SectionHeader title="Components" />
+                    <SectionHeader title="Synthesis" />
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap',
                       maxWidth: '700px', margin: '0 auto 20px auto',

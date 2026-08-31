@@ -242,7 +242,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
                 the site header. */}
             {components != null && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-                   title="Synth Components — each one builds an effect onto a player">
+                   title="Synthesis Components — each one builds an effect onto a player">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                   <path d="M12 2l7 4v8l-7 4-7-4V6l7-4z" stroke={accent} strokeWidth="2" strokeLinejoin="round" />
                   <path d="M12 10l4 2M12 10L8 12M12 10V6" stroke={accent} strokeWidth="2" strokeLinecap="round" />
@@ -251,7 +251,9 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
                   {components}
                 </span>
                 <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: '#94a3b8' }}>
-                  {components === 1 ? 'COMPONENT' : 'COMPONENTS'}
+                  {/* ⚠️ "SYNTHESIS", not "Synth" (owner) — Chrome Components are coming,
+                      so the label has to name WHICH family member it is. */}
+                  {components === 1 ? 'SYNTHESIS COMPONENT' : 'SYNTHESIS COMPONENTS'}
                 </span>
               </div>
             )}
@@ -309,7 +311,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
                     : target.fromPool
                       // ⚠️ Synthesis costs a component ON TOP of the Floobit fee, so the
                       // button has to name both or it promises a price the till refuses.
-                      ? `Build · ${cost} F + 1 Component`
+                      ? `Build · ${cost} F + 1 Synthesis Component`
                       : `Transplant · ${cost} F`}
                 </button>
               </div>
