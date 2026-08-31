@@ -118,11 +118,8 @@ export const EDITION_STYLES: Record<string, {
  * built card from a pulled one. The `synthetic` flag is the only thing that can, which is
  * why the backend serializes it beside the edition rather than expecting a derivation.
  */
-export const syntheticStyle = (_base: typeof EDITION_STYLES[string]) =>
-  // ⚠️ Ignores the edition entirely — see `SYNTHETIC_STYLE`. The parameter is kept so
-  // every call site stays unchanged and the edition remains available if the ruling is
-  // ever revisited.
-  SYNTHETIC_STYLE as typeof EDITION_STYLES[string]
+export const syntheticStyle = (base: typeof EDITION_STYLES[string]) =>
+  syntheticStyleFor(base) as typeof EDITION_STYLES[string]
 
 /** ⚠️ A SYNTHETIC IS NOT AN EDITION, AND THAT REVERSES WHAT THIS FILE USED TO SAY. The
  *  original rule was "a treatment, never a separate palette — a synthetic diamond has to
@@ -142,22 +139,32 @@ export const syntheticStyle = (_base: typeof EDITION_STYLES[string]) =>
  *  ⚠️ ONE PALETTE FOR EVERY SYNTHETIC, whatever edition the effect came from. That is the
  *  whole point of the ruling: the tier lives in the effect's power, its gate and its
  *  tooltip, not in the card's colour. */
-export const SYNTHETIC_STYLE = {
-  borderColor: '#3f7d94',
-  // Near-black ground with a faint cyan wash — the drafting-table look.
-  bgGradient: 'linear-gradient(140deg, #0b1620 0%, #0e1d29 55%, #0a141d 100%)',
-  labelColor: '#7fd4ec',
+/** ⚠️ THE GROUND IS CONSTANT, THE LINE WORK IS THE EDITION'S (owner). The blueprint says
+ *  "this was built"; the colour of the lines says which tier the effect it took came from.
+ *  So a synthetic diamond is a diamond-blue schematic and a synthetic metallic a steel one
+ *  — same form, different ink — and neither can be mistaken for a real pull, because a real
+ *  pull has the edition's GROUND and its foil.
+ *
+ *  ⚠️ The dark ground is what must not vary. It is the only part carrying "synthetic", and
+ *  letting the edition tint it slides straight back to the treatment this replaced. */
+export const SYNTHETIC_GROUND =
+  'linear-gradient(140deg, #0b1620 0%, #0e1d29 55%, #0a141d 100%)'
+
+export const syntheticStyleFor = (base: typeof EDITION_STYLES[string]) => ({
+  borderColor: base.borderColor,
+  bgGradient: SYNTHETIC_GROUND,
+  labelColor: base.labelColor,
   label: 'SYNTHETIC',
   rarity: 'Synthetic',
   glowColor: undefined,
-}
+})
 
-/** The schematic grid, drawn as a background layer over the ground. Faint enough to read
- *  as paper rather than as an image, and it survives the small card sizes because it is
- *  generated rather than an asset. */
-export const SYNTHETIC_GRID =
-  'repeating-linear-gradient(0deg, rgba(127,212,236,0.07) 0 1px, transparent 1px 12px), '
-  + 'repeating-linear-gradient(90deg, rgba(127,212,236,0.07) 0 1px, transparent 1px 12px)'
+/** The schematic grid, in the edition's own colour. Generated rather than an asset, so it
+ *  survives the small card sizes. ⚠️ The alpha is a hex suffix on the edition colour, which
+ *  requires every `borderColor` to be a 6-digit hex — they all are. */
+export const syntheticGrid = (color: string) =>
+  `repeating-linear-gradient(0deg, ${color}1f 0 1px, transparent 1px 12px), `
+  + `repeating-linear-gradient(90deg, ${color}1f 0 1px, transparent 1px 12px)`
 
 const POSITION_LABELS: Record<number, string> = {
   1: 'QB', 2: 'RB', 3: 'WR', 4: 'TE', 5: 'K',
@@ -1026,7 +1033,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
     // top-light sheen is dropped — a blueprint is lit flat, and the sheen is the gloss a
     // real pull has.
     background: card.synthetic
-      ? `${SYNTHETIC_GRID}, ${edStyle.bgGradient}`
+      ? `${syntheticGrid(rawEdStyle.borderColor)}, ${edStyle.bgGradient}`
       : `radial-gradient(120% 70% at 50% -10%, rgba(255,255,255,0.10), transparent 60%), ${edStyle.bgGradient}`,
     fontFamily: 'pressStart',
     cursor: 'pointer',

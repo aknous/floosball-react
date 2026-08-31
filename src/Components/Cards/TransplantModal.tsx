@@ -235,7 +235,28 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
             <div style={{ fontSize: '15px', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.02em' }}>The Transplant</div>
             <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Move an effect onto the player card you want. Same edition; position-specific effects only fit their own position.</div>
           </div>
-          <button onClick={onClose} style={closeBtn}>×</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            {/* ⚠️ The held count was FETCHED and never shown — it only ever disabled the
+                build button, so a user at zero saw a dead button and no reason for it.
+                This is the one place it matters, which is why it lives here rather than in
+                the site header. */}
+            {components != null && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                   title="Synth Components — each one builds an effect onto a player">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2l7 4v8l-7 4-7-4V6l7-4z" stroke={accent} strokeWidth="2" strokeLinejoin="round" />
+                  <path d="M12 10l4 2M12 10L8 12M12 10V6" stroke={accent} strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                <span style={{ fontSize: 14, fontWeight: 800, color: components > 0 ? '#e2e8f0' : '#64748b' }}>
+                  {components}
+                </span>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: '#94a3b8' }}>
+                  {components === 1 ? 'COMPONENT' : 'COMPONENTS'}
+                </span>
+              </div>
+            )}
+            <button onClick={onClose} style={closeBtn}>×</button>
+          </div>
         </div>
 
         {result ? (
