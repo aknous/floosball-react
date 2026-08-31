@@ -31,7 +31,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         label: 'New Features',
         items: [
-          '[Cards] Every player has a base card you can field for their points, free, all season. You do not have to pull one.',
+          '[Cards] Every player has a base card you can field for their points, free, all season. You do not have to open a pack to get one.',
           '[Cards] Synthetic cards. Use a Synthesis Component in The Transplant to build any effect you own onto any player you want.',
           '[Shop] Synthesis Components are on sale in the new Items tab, two available a day.',
         ],

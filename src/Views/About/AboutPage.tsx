@@ -36,10 +36,11 @@ const SECTION_GROUPS: SectionCategory[] = [
       { id: 'card-packs', title: 'Card Packs' },
       { id: 'the-combine', title: 'The Combine' },
       { id: 'card-upgrades', title: 'Card Upgrades' },
+      { id: 'synthetic-cards', title: 'Synthetic Cards' },
       { id: 'the-vault', title: 'The Vault' },
       { id: 'the-showcase', title: 'The Showcase' },
       { id: 'floobits', title: 'Floobits' },
-      { id: 'power-ups', title: 'Power-Ups' },
+      { id: 'power-ups', title: 'Items' },
       { id: 'achievements', title: 'Achievements' },
     ],
   },
@@ -1698,16 +1699,17 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>The Transplant</p>
             <p style={textStyle}>
-              Sometimes you pull a great effect on a player you do not want. The Transplant moves an effect
+              Sometimes a great effect turns up on a player you do not want. The Transplant moves an effect
               off one card and onto another: pick the card you want to keep, pick the card whose effect you
               want, and the second one is consumed.
             </p>
             {bulletList([
               'Both cards must be the same edition. You cannot promote an effect up a rarity this way',
+              'A Base card is the exception: with a Synthesis Component it accepts any effect at any edition. See Synthetic Cards below',
               'The card you keep holds on to its player, its tier and its Vault status, and only the effect changes',
               'The effect is re-scaled to the player receiving it, so grafting off a star does not hand a weaker player the star\'s numbers',
               'Position-specific effects only move onto a player whose position they work for. Shared effects go anywhere at the same edition',
-              'No-effect cards cannot donate or receive',
+              'A Base card can receive but not donate, having no effect to give',
               'Cost rises with edition: Metallic 40, Holographic 70, Prismatic 120, Diamond 180',
             ])}
 
@@ -1723,6 +1725,47 @@ const AboutPage: React.FC = () => {
               A card's tier lasts the season, just like the card. Vault the card to keep its tier for good and
               feed it into your Showcase.
             </p>
+          </Section>
+
+          {/* ── Synthetic Cards ── */}
+          <Section id="synthetic-cards" title="Synthetic Cards">
+            <p style={textStyle}>
+              Every player in the league has a Base card. It has no effect, it just fields that player for
+              their FP, and it is free to everyone all season. A Synthetic is a Base card with an effect
+              built onto it.
+            </p>
+
+            <p style={labelStyle}>Building one</p>
+            {bulletList([
+              'Open The Transplant and pick any player in the league as the card you are keeping',
+              'Pick one of your own cards as the donor. Its effect is what gets built, and the donor is consumed',
+              'The donor has to be a card from the current season',
+              'Costs one Synthesis Component plus the usual Transplant cost for that edition',
+            ])}
+
+            <p style={labelStyle}>What you get</p>
+            {bulletList([
+              'The card is built at the effect\'s edition, not at Base. A Diamond effect builds a Diamond card',
+              'It reads SYNTHETIC where the edition usually sits, in that edition\'s color',
+              'The effect is re-scaled to the player receiving it',
+            ])}
+
+            <p style={labelStyle}>What it cannot do</p>
+            {bulletList([
+              'No Rookie, Champion, MVP or All-Pro tag',
+              'Cannot be vaulted, so it never reaches your Showcase',
+              'Cannot be used in The Combine',
+              'Sells for 1',
+              'Its effect is final. It can donate that effect onward, but never receive another',
+              'Lasts the season, like every other card',
+            ])}
+
+            <p style={labelStyle}>Synthesis Components</p>
+            {bulletList([
+              'On sale in the Shop under Items, two per day',
+              'The Shop stops selling once you are holding three. Achievement grants still arrive, so you can end up holding more',
+              'The biggest achievements, the ones that pay out a pack, grant one as well',
+            ])}
           </Section>
 
           {/* ── The Vault ── */}
@@ -1822,9 +1865,11 @@ const AboutPage: React.FC = () => {
           </Section>
 
           {/* ── Power-Ups ── */}
-          <Section id="power-ups" title="Power-Ups">
+          <Section id="power-ups" title="Items">
             <p style={{ ...textStyle, marginBottom: '12px' }}>
-              Power-ups are purchasable from the Shop. Each has a limited number of uses per season.
+              The Items tab of the Shop sells power-ups and Synthesis Components. Each power-up has a
+              limited number of uses per season. Components are covered
+              under <a href="#synthetic-cards" style={linkStyle}>Synthetic Cards</a> above.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {[
@@ -1862,8 +1907,8 @@ const AboutPage: React.FC = () => {
           {/* Achievements */}
           <Section id="achievements" title="Achievements">
             <p style={textStyle}>
-              Achievements reward you with Floobits, packs, or powerups for hitting milestones across
-              the site. They split into four buckets that all live on
+              Achievements reward you with Floobits, packs, powerups, or Synthesis Components for hitting
+              milestones across the site. They split into four buckets that all live on
               the <Link to="/achievements" style={linkStyle}>Achievements</Link> page.
             </p>
 

@@ -5,6 +5,9 @@ export interface RewardConfig {
   floobits?: number
   packs?: string[]     // pack slugs: "humble" | "proper" | "grand" | "exquisite"
   powerups?: string[]  // powerup slugs; "random" for a random one
+  // Component grants land in the ledger immediately, with no claim step, so they
+  // never appear in `PendingReward`. Keyed by component type: { synth: 1 }.
+  components?: Record<string, number>
   deferred?: boolean
 }
 
