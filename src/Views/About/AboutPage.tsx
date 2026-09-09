@@ -403,6 +403,16 @@ const MobileTOC: React.FC<{ activeId: string }> = ({ activeId }) => {
 
 // ── Equipment slot diagram ────────────────────────────────────────────────
 
+/**
+ * The equipped lineup: six position-locked slots plus FLEX.
+ *
+ * ⚠️ This drew FIVE numbered slots plus a sixth, against a lineup of SIX position-locked
+ * slots plus FLEX — the same hardcoded-5 that CLAUDE.md records the Gilded achievement
+ * being left on after the fantasy/cards fusion, arriving here as a picture. The prose beside
+ * it named all six positions correctly the whole time, so the diagram contradicted the
+ * paragraph it illustrates. Labelling by POSITION rather than by number is what stops it
+ * drifting again: a number is a count to keep in sync, a position is the rule itself.
+ */
 const EquipmentSlotDiagram: React.FC<{ isMobile: boolean }> = ({ isMobile }) => (
   <div style={{
     display: 'flex',
@@ -411,7 +421,7 @@ const EquipmentSlotDiagram: React.FC<{ isMobile: boolean }> = ({ isMobile }) => 
     flexWrap: 'wrap',
     margin: '14px 0',
   }}>
-    {[1, 2, 3, 4, 5].map(n => (
+    {['QB', 'RB', 'WR', 'WR', 'TE', 'K'].map((pos, n) => (
       <div key={n} style={{
         width: isMobile ? '52px' : '64px',
         height: isMobile ? '72px' : '88px',
@@ -428,7 +438,7 @@ const EquipmentSlotDiagram: React.FC<{ isMobile: boolean }> = ({ isMobile }) => 
           <rect x="3" y="3" width="18" height="18" rx="2" />
           <path d="M12 8v8M8 12h8" />
         </svg>
-        <span style={{ fontSize: '9px', color: '#64748b', fontWeight: '600' }}>SLOT {n}</span>
+        <span style={{ fontSize: '9px', color: '#64748b', fontWeight: '600' }}>{pos}</span>
       </div>
     ))}
     <div style={{
@@ -448,7 +458,7 @@ const EquipmentSlotDiagram: React.FC<{ isMobile: boolean }> = ({ isMobile }) => 
         <rect x="3" y="3" width="18" height="18" rx="2" />
         <path d="M12 8v8M8 12h8" />
       </svg>
-      <span style={{ fontSize: '9px', color: '#3b82f6', fontWeight: '600' }}>SLOT 6</span>
+      <span style={{ fontSize: '9px', color: '#3b82f6', fontWeight: '600' }}>FLEX</span>
     </div>
   </div>
 )
@@ -1554,8 +1564,10 @@ const AboutPage: React.FC = () => {
           <Section id="card-equipment" title="Card Equipment">
             <p style={textStyle}>
               Equip one card per position slot (QB, RB, WR, WR, TE, K) on the <Link to="/fantasy" style={linkStyle}>Fantasy</Link> page;
-              each card must match its slot's position. A 6th card slot unlocks when you equip a card with
-              the MVP classification, or by using the Accession power-up.
+              each card must match its slot's position. A seventh FLEX slot unlocks when you equip a card
+              with the MVP classification, or by using the Accession power-up. FLEX takes a card of any
+              position. The two sources do not stack: they unlock the same single slot, so Accession adds
+              nothing while an MVP card is equipped.
             </p>
             <EquipmentSlotDiagram isMobile={isMobile} />
             {bulletList([

@@ -62,6 +62,10 @@ interface PowerupItem {
   durationWeeks?: number
   activeUntilWeek?: number | null
   seasonLimit?: number
+  /** Set when the purchase is legal but would buy nothing (e.g. Accession while an MVP
+   *  card already holds the FLEX slot). A warning, never a block: the server still sells
+   *  it, because unequipping the MVP card is a real thing a user may be about to do. */
+  warning?: string | null
 }
 
 interface ShopModalProps {
@@ -1297,6 +1301,25 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                           <div style={{ fontSize: '12px', color: '#cbd5e1', lineHeight: 1.5 }}>
                             {pu.description}
                           </div>
+                          {pu.warning && !isPurchased && (
+                            <div style={{
+                              display: 'flex', gap: '6px', alignItems: 'flex-start',
+                              marginTop: '6px', padding: '6px 8px',
+                              backgroundColor: 'rgba(234,179,8,0.10)',
+                              borderLeft: '2px solid #eab308',
+                            }}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#eab308"
+                                   strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                                   style={{ flexShrink: 0, marginTop: '1px' }}>
+                                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                <line x1="12" y1="9" x2="12" y2="13" />
+                                <line x1="12" y1="17" x2="12.01" y2="17" />
+                              </svg>
+                              <span style={{ fontSize: '11px', color: '#fde68a', lineHeight: 1.45 }}>
+                                {pu.warning}
+                              </span>
+                            </div>
+                          )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                             <span style={{ fontSize: '12px', color: '#94a3b8' }}>
                               {pu.purchased}/{pu.limit} {pu.limitLabel}
