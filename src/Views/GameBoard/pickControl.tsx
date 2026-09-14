@@ -147,12 +147,16 @@ export const PickButtons: React.FC<{
   home?: { id?: string | number; abbr?: string; name?: string }
   awayColor: string
   homeColor: string
+  /** Pre-game win probability, which before kickoff is the ELO prior — the one number
+   *  that makes a pick a judgement rather than a coin flip. */
+  awayPct: number
+  homePct: number
   pick?: PickState | null
-}> = ({ away, home, awayColor, homeColor, pick }) => {
+}> = ({ away, home, awayColor, homeColor, awayPct, homePct, pick }) => {
   if (!pick) return null
   const settled = pick.correct != null
 
-  const button = (team: typeof away, color: string) => {
+  const button = (team: typeof away, color: string, pct: number) => {
     const id = team?.id == null ? null : Number(team.id)
     const picked = id != null && pick.userPick === id
     const canPick = pick.pickable && !settled && id != null
@@ -171,8 +175,8 @@ export const PickButtons: React.FC<{
         } : undefined}
         style={{
           flex: 1, minWidth: 0, boxSizing: 'border-box',
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-          minHeight: '30px', padding: '0 10px', borderRadius: '4px',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '8px', minHeight: '30px', padding: '0 11px', borderRadius: '4px',
           border: `1px solid ${picked ? color : canPick ? TEXT.faint : 'transparent'}`,
           borderStyle: picked || !canPick ? 'solid' : 'dashed',
           background: picked ? `${color}2e` : 'transparent',
@@ -184,18 +188,23 @@ export const PickButtons: React.FC<{
         }}
       >
         {picked && settled && <Mark ok={!!pick.correct} size={13} />}
-        {team?.abbr}
+        <span>{team?.abbr}</span>
+        {/* ⚠️ THE ODDS RIDE THE BUTTON (owner). Removing the win-probability row took the
+            number off the card entirely, and a pick with nothing to weigh is a coin flip —
+            this is the one fact that makes it a judgement. Muted against the abbr so the
+            button still reads as the team first. */}
+        <span style={{ ...font(600, 11, 1), ...TABULAR, opacity: 0.75 }}>{pct}%</span>
       </span>
     )
   }
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-      <span style={{ ...font(600, 11, 1, '0.1em'), color: TEXT.muted, flexShrink: 0 }}>
-        {pick.pickable && !settled ? 'YOUR CALL' : 'PICK'}
-      </span>
-      {button(away, awayColor)}
-      {button(home, homeColor)}
+      {/* ⚠️ NO SECTION LABEL (owner: remove "YOUR CALL"). Two team buttons sitting alone in
+          the block a live card fills with its field are self-evidently the thing to press,
+          and the label was taking width from the buttons to say so. */}
+      {button(away, awayColor, awayPct)}
+      {button(home, homeColor, homePct)}
     </div>
   )
 }

@@ -550,7 +550,8 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           </div>
           </>) : (
             <PickButtons away={away} home={home}
-                         awayColor={awayFill} homeColor={homeFill} pick={pick} />
+                         awayColor={awayFill} homeColor={homeFill}
+                         awayPct={awayWp} homePct={homeWp} pick={pick} />
           )}
         </div>
       )}
