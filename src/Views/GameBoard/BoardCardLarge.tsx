@@ -211,7 +211,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
     // SAME height as before and still looked bigger. Content is ~40px (a 36px
     // crest, or the city + name block), so this leaves 6px of breathing room.
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minHeight: '46px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minHeight: '46px' }}>
         {/* ⚠️ THE PICK AND THE WIN PROBABILITY LIVE HERE NOW, and the row that held them is
             gone (owner: the WP graph "isnt as necessary", then "put a checkbox to the left of
             the team logo and remove the row where the WP graph was ... we can even put a WP
@@ -222,17 +222,8 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
 
             ⚠️ The percentage renders with or without a pick; the box renders only with one,
             so a signed-out reader and a past week get no dead checkboxes. */}
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
-          <PickBox teamId={team?.id} abbr={team?.abbr}
-                   color={side === 'home' ? homeText : awayText} pick={pick} />
-          {live && (
-            <span style={{
-              ...font(wpFor(side) > 50 ? 800 : 600, 11), ...TABULAR,
-              color: wpFor(side) > 50 ? (side === 'home' ? homeText : awayText) : TEXT.muted,
-              minWidth: '25px', textAlign: 'right', whiteSpace: 'nowrap',
-            }}>{wpFor(side)}%</span>
-          )}
-        </span>
+        <PickBox teamId={team?.id} abbr={team?.abbr} pct={wpFor(side)} live={live}
+                 color={side === 'home' ? homeText : awayText} pick={pick} />
         <Crest teamId={team?.id} size={36} possession={live && possessionTeam === side} />
         {/* ⚠️ Shrink-to-fit, NOT flex: 1. Growing this block pushed everything after
             it across to the scoreboard; the spacer below takes the slack instead. */}
@@ -441,9 +432,10 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             </div>
           )}
           <div style={{
-            // ⚠️ -1px so this row's panels sit ON the field strip's bottom border. The
-            // separator from the team block above moved onto the strip with it.
-            marginTop: '-1px',
+            // ⚠️ 4px, not the -1px that collapsed the borders (owner wants "a bit more of
+            // a gap between the field viz and the situation bar"). The separator from the
+            // team block above moved onto the strip with it.
+            marginTop: '4px',
             display: 'flex', alignItems: 'stretch', gap: '10px', minWidth: 0,
           }}>
           <div style={{

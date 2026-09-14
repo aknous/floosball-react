@@ -133,53 +133,57 @@ export const GaugePick: React.FC<Props> = ({ side, teamId, abbr, pct, favored, c
 export const PickBox: React.FC<{
   teamId?: string | number
   abbr?: string
+  /** Win probability for this side. The control IS the number. */
+  pct: number
   color: string
+  live: boolean
   pick?: PickState | null
-}> = ({ teamId, abbr, color, pick }) => {
+}> = ({ teamId, abbr, pct, color, live, pick }) => {
   const id = teamId == null ? null : Number(teamId)
-  if (!pick || id == null) return null
-  const picked = pick.userPick === id
-  const settled = pick.correct != null
-  const canPick = pick.pickable && !settled
+  const picked = !!pick && id != null && pick.userPick === id
+  const settled = !!pick && pick.correct != null
+  const canPick = !!pick && pick.pickable && !settled && id != null
+
+  // ⚠️ ONE ITEM, NOT A CHECKBOX PLUS A NUMBER (owner: "the WP value and the checkbox need to
+  // be the same item"). Two elements with a gap between them cost roughly 63px beside every
+  // crest and pushed the whole row right; the percentage in a box that toggles is ~34px and
+  // says the same two things. The box IS the checkbox: filled means picked.
+  //
+  // ⚠️ ONCE SETTLED THE PERCENTAGE IS MEANINGLESS -- the game is over and it has resolved to
+  // 100 or 0 -- so the verdict takes its place rather than sitting beside it, which also
+  // keeps the control the same width in every state.
+  const body = settled && picked
+    ? <Mark ok={!!pick!.correct} size={13} />
+    : <span style={{ ...font(picked ? 800 : 600, 11), ...TABULAR }}>{pct}%</span>
 
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-      <span
-        role={canPick ? 'checkbox' : undefined}
-        aria-checked={picked}
-        tabIndex={canPick ? 0 : undefined}
-        aria-label={canPick ? `Pick ${abbr}` : undefined}
-        onClick={canPick ? (e: React.MouseEvent) => { e.stopPropagation(); pick.onPick(id) } : undefined}
-        onKeyDown={canPick ? (e: React.KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); pick.onPick(id) }
-        } : undefined}
-        style={{
-          width: '17px', height: '17px', borderRadius: '4px', boxSizing: 'border-box',
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          // ⚠️ The border is present in EVERY state so the row cannot shift by a pixel as a
-          // pick lands or resolves — sixteen cards of aligned rows, and a reflow on click
-          // reads as breakage. Same rule the gauge labels followed.
-          border: `1px solid ${picked ? color : canPick ? TEXT.faint : 'transparent'}`,
-          borderStyle: picked || !canPick ? 'solid' : 'dashed',
-          background: picked ? `${color}33` : 'transparent',
-          cursor: canPick ? 'pointer' : 'default',
-          transition: 'background 0.15s, border-color 0.15s',
-        }}
-      >
-        {picked && !settled && (
-          <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={3.5}
-               strokeLinecap="round" strokeLinejoin="round"
-               style={{ width: 11, height: 11 }} aria-hidden="true">
-            <path d="M4 12.5 9.5 18 20 6" />
-          </svg>
-        )}
-        {picked && settled && <Mark ok={!!pick.correct} size={13} />}
-      </span>
-      {/* ⚠️ NO POINTS FIGURE (owner: "leave out the +X values when the game ends"). A pick
-          only settles once the game is final, so a `+N` here could never appear anywhere BUT
-          on a finished card -- it was a permanent tail on every graded pick rather than a
-          live readout. The tick or cross still says whether the call was right, and the
-          points belong on the prognostications page where they are totalled. */}
+    <span
+      role={canPick ? 'checkbox' : undefined}
+      aria-checked={canPick ? picked : undefined}
+      tabIndex={canPick ? 0 : undefined}
+      aria-label={canPick ? `Pick ${abbr}` : undefined}
+      // ⚠️ `stopPropagation` ON BOTH HANDLERS. The whole card is a click target that opens
+      // the game modal, so without this a pick opens the modal on top of itself (owner:
+      // "they need to be clickable without opening the game modal").
+      onClick={canPick ? (e: React.MouseEvent) => { e.stopPropagation(); pick!.onPick(id!) } : undefined}
+      onKeyDown={canPick ? (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); pick!.onPick(id!) }
+      } : undefined}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, boxSizing: 'border-box',
+        minWidth: '34px', height: '19px', padding: '0 4px', borderRadius: '4px',
+        // Present in every state, transparent when unset, so the row cannot shift a pixel
+        // as a pick lands or resolves.
+        border: `1px solid ${picked ? color : canPick ? TEXT.faint : 'transparent'}`,
+        borderStyle: picked || !canPick ? 'solid' : 'dashed',
+        background: picked ? `${color}33` : 'transparent',
+        color: picked ? TEXT.primary : live ? TEXT.muted : 'transparent',
+        cursor: canPick ? 'pointer' : 'default',
+        transition: 'background 0.15s, border-color 0.15s',
+      }}
+    >
+      {body}
     </span>
   )
 }
