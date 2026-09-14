@@ -152,7 +152,9 @@ export const PickSideButton: React.FC<{
   pct: number
   points?: number | null
   pick?: PickState | null
-}> = ({ team, color, pct, points, pick }) => {
+  /** Shared with the header label above it, so the two cannot drift apart. */
+  width: number
+}> = ({ team, color, pct, points, pick, width }) => {
   if (!pick) return null
   const id = team?.id == null ? null : Number(team.id)
   const picked = id != null && pick.userPick === id
@@ -174,7 +176,7 @@ export const PickSideButton: React.FC<{
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
         boxSizing: 'border-box', flexShrink: 0,
-        width: '168px', minHeight: '38px', padding: '0 12px', borderRadius: '5px',
+        width: `${width}px`, minHeight: '38px', padding: '0 12px', borderRadius: '5px',
         // ⚠️ Every state has a visible outline: a solid team-coloured box when picked, a
         // DASHED muted one while it can still be changed, a solid faint one once locked.
         // The unpicked border used to be transparent when locked, which left two words

@@ -55,6 +55,9 @@ const RULE: React.CSSProperties = {
  * same share of the same row width and their columns stay aligned — which is the
  * property the whole file depends on.
  */
+/** ⚠️ ONE DEFINITION, shared by the pick button and the header label that sits over it —
+ *  two copies drift and the label stops lining up with what it names. */
+export const PICK_W = 168
 const CLUSTER = { display: 'flex', alignItems: 'center', gap: '16px', flex: '0 0 46%', minWidth: 0 } as const
 
 /**
@@ -263,6 +266,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             pct={wpFor(side)}
             points={side === 'home' ? pick.homePoints : pick.awayPoints}
             pick={pick}
+            width={PICK_W}
           />
         ) : (
         <div style={{
@@ -355,6 +359,18 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           ...CLUSTER, ...SCORE_PANEL,
           borderTop: `1px solid ${BORDER.hairline}`,
           paddingTop: '6px', paddingBottom: '4px',
+          // ⚠️ PRE-GAME THIS BOX IS THE WRONG SHAPE FOR WHAT IS IN IT (owner: the label
+          // "extends way out past where the buttons are"). `CLUSTER` is `flex: 0 0 46%` and
+          // `SCORE_PANEL` paints it, because it is built to sit over four quarter columns
+          // and a total — nearly half the card. The label belongs over two 168px buttons,
+          // so pre-game it takes the buttons' width and drops the panel, which has nothing
+          // left to join to: the team rows below render their pick in place of the score
+          // cluster, so the continuous panel `alignSelf: stretch` exists for is not there.
+          ...(preGame && pick ? {
+            flex: `0 0 ${PICK_W}px`, justifyContent: 'center',
+            background: 'transparent', borderLeft: 'none', borderRight: 'none',
+            padding: '0 0 4px',
+          } : {}),
         }}>
           {/* ⚠️ PRE-GAME THIS HEADER NAMES THE PICK, not the quarters. Q1-Q4 and TOT label
               columns that hold nothing until kickoff, and the buttons underneath want
