@@ -486,7 +486,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               worth more the wider it is, so it gets the whole width. */}
           {live && !game.isHalftime && situationLive && game.yardsToEndzone != null && (
             <div style={{
-              ...PANEL, marginTop: '10px',
+              ...PANEL, marginTop: '4px',
               display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0,
             }}>
               <SectionLabel>DRIVE</SectionLabel>
