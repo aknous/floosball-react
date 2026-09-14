@@ -2,6 +2,7 @@ import React from 'react'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
+import { DriveLine } from '@/Components/DriveLine'
 import { lastPlaySummary, downAndDistance } from './lastPlaySummary'
 import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
@@ -473,6 +474,26 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                   and spelling it out beside a red container is the same fact
                   twice. The small card still needs its chip — it has no panel to
                   tint and no spot to color. */}
+              {/* The drive on one line. The row above says WHERE in words; this
+                  says how far they have come to get there. ⚠️ `leftTeam` is
+                  "away" because this card stacks away above home — a field that
+                  disagreed with the names directly above it reads as a bug. */}
+              {situationLive && game.yardsToEndzone != null && (
+                <>
+                  <span style={RULE} />
+                  <span style={{ ...CELL, flex: 1, minWidth: '90px' }}>
+                    <DriveLine
+                      yardsToEndzone={game.yardsToEndzone}
+                      driveStartYardsToEndzone={game.driveStartYardsToEndzone}
+                      homeTeamPoss={game.homeTeamPoss}
+                      awayTeamPoss={game.awayTeamPoss}
+                      homeColor={homeFill}
+                      awayColor={awayFill}
+                      leftTeam="away"
+                    />
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>

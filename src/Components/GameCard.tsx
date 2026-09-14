@@ -553,6 +553,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
               awayTeamPoss={awayTeamPoss}
               homeColor={homeTeam.color}
               awayColor={awayColor}
+              leftTeam="home"
             />
           )}
           </div>
