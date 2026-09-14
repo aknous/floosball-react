@@ -209,26 +209,54 @@ export const PickButtons: React.FC<{
   )
 }
 
-/** Live: a small mark on the team the reader called. */
-export const PickedChip: React.FC<{
+/**
+ * Live: a small check on the crest of the team the reader called.
+ *
+ * ⚠️ IT OVERLAYS THE CREST RATHER THAN SITTING BESIDE ANYTHING (owner: "just make it a
+ * checkmark next to the team logo ... dont let it shift everything to the right too much,
+ * just a subtle indicator"). Anything in the row's flow — the `PICK` chip this replaces
+ * included — spends horizontal space and pushes the name across, which is the complaint that
+ * moved the pick control out of this row in the first place. Absolutely positioned on the
+ * crest it costs ZERO layout width, so the rows line up exactly as they do on a card with no
+ * picks on it at all.
+ *
+ * ⚠️ It keeps a dark ring so it reads against any crest underneath it — the marks are
+ * multi-coloured and a bare tick disappears into half of them.
+ */
+export const PickedMark: React.FC<{
   teamId?: string | number
   color: string
   pick?: PickState | null
 }> = ({ teamId, color, pick }) => {
   const id = teamId == null ? null : Number(teamId)
   if (!pick || id == null || pick.userPick !== id) return null
+  const settled = pick.correct != null
+  const ring = settled ? (pick.correct ? ACCENT.success : ACCENT.negative) : color
   return (
     <span
       title="Your prognostication"
+      aria-label="Your prognostication"
       style={{
-        display: 'inline-flex', alignItems: 'center', gap: '3px',
-        padding: '1px 5px', borderRadius: '3px', flexShrink: 0,
-        border: `1px solid ${color}80`, background: `${color}26`,
-        ...font(700, 9, 1, '0.08em'), color,
+        position: 'absolute', right: '-3px', bottom: '-3px',
+        width: '15px', height: '15px', borderRadius: '50%',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        background: '#0b1220', border: `1.5px solid ${ring}`,
+        boxShadow: '0 0 0 1px rgba(2,6,23,0.9)',
+        pointerEvents: 'none',
       }}
     >
-      {pick.correct != null ? <Mark ok={!!pick.correct} size={10} /> : null}
-      PICK
+      {settled && !pick.correct ? (
+        <svg viewBox="0 0 24 24" fill="none" stroke={ring} strokeWidth={4}
+             strokeLinecap="round" style={{ width: 8, height: 8 }} aria-hidden="true">
+          <path d="M5 5l14 14M19 5L5 19" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" fill="none" stroke={ring} strokeWidth={4}
+             strokeLinecap="round" strokeLinejoin="round"
+             style={{ width: 9, height: 9 }} aria-hidden="true">
+          <path d="M4 12.5 9.5 18 20 6" />
+        </svg>
+      )}
     </span>
   )
 }

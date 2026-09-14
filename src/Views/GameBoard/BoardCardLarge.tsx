@@ -6,7 +6,7 @@ import { DriveLine } from '@/Components/DriveLine'
 import { lastPlaySummary, downAndDistance } from './lastPlaySummary'
 import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
-import { PickButtons, PickedChip, type PickState } from './pickControl'
+import { PickButtons, PickedMark, type PickState } from './pickControl'
 import {
   Crest, MomentumFlame, InterestChip, SectionLabel,
   CHIP_COLOR, inRedZone, RED_ZONE, type ChipKind,
@@ -212,7 +212,14 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
     // crest, or the city + name block), so this leaves 6px of breathing room.
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minHeight: '46px' }}>
-        <Crest teamId={team?.id} size={36} possession={live && possessionTeam === side} />
+        {/* ⚠️ THE PICK MARK OVERLAYS THE CREST and takes no width — see `PickedMark`. The
+            wrapper exists only to be its positioning context; it is `inline-flex` so the
+            crest keeps the exact box it had. */}
+        <span style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
+          <Crest teamId={team?.id} size={36} possession={live && possessionTeam === side} />
+          {live && <PickedMark teamId={team?.id}
+                               color={side === 'home' ? homeText : awayText} pick={pick} />}
+        </span>
         {/* ⚠️ Shrink-to-fit, NOT flex: 1. Growing this block pushed everything after
             it across to the scoreboard; the spacer below takes the slack instead. */}
         <div style={{ flexShrink: 1, minWidth: 0 }}>
@@ -238,12 +245,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               ...font(600, 13, 1), color: TEXT.muted, ...TABULAR,
               whiteSpace: 'nowrap', flexShrink: 0,
             }}>{team?.record}</span>
-            {/* ⚠️ THE LIVE PICK MARKER RIDES THE NAME LINE, not the left edge. Once the game
-                starts there is nothing left to choose, so this is a readout rather than a
-                control — and putting a readout back in front of the crest would reintroduce
-                exactly the left-hand crowding the buttons were moved to avoid. */}
-            {live && <PickedChip teamId={team?.id}
-                                 color={side === 'home' ? homeText : awayText} pick={pick} />}
+
             {hasMomentum && <MomentumFlame magnitude={momentumMagnitude} size={14} />}
           </div>
         </div>
