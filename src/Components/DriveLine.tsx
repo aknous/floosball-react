@@ -60,24 +60,29 @@ export const DriveLine: React.FC<DriveLineProps> = ({
   const pct = (v: number) => `${v}%`
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
-      <div style={{ position: 'relative', flex: 1, height: '8px', borderRadius: '4px',
+      <div style={{ position: 'relative', flex: 1, height: '12px', borderRadius: '3px',
                     backgroundColor: '#1e293b', border: '1px solid #334155', overflow: 'hidden' }}>
         {/* the two end zones, each in its own team's colour and each staying put */}
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '8%',
                       backgroundColor: leftColor ? `${leftColor}40` : '#33415580' }} />
         <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '8%',
                       backgroundColor: rightColor ? `${rightColor}40` : '#33415580' }} />
-        <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px',
-                      backgroundColor: '#475569' }} />
+        {/* every 10 yards, with midfield brighter — the marks are what turn a bar
+            into a FIELD, and there was no room for them at 8px in a narrow cell */}
+        {[10, 20, 30, 40, 50, 60, 70, 80, 90].map(y => (
+          <div key={y} style={{ position: 'absolute', left: `${y}%`, top: 0, bottom: 0,
+                                width: '1px', backgroundColor: y === 50 ? '#64748b' : '#334155' }} />
+        ))}
         <div style={{ position: 'absolute', left: pct(lo), width: pct(Math.max(hi - lo, 0.8)),
                       top: 0, bottom: 0, backgroundColor: driveColor, opacity: 0.85 }} />
         <div style={{ position: 'absolute', left: pct(now), top: '-2px', bottom: '-2px',
-                      width: '2px', marginLeft: '-1px', backgroundColor: '#f8fafc',
-                      boxShadow: '0 0 3px rgba(248,250,252,0.8)' }} />
+                      width: '3px', marginLeft: '-1.5px', backgroundColor: '#f8fafc',
+                      boxShadow: '0 0 4px rgba(248,250,252,0.9)' }} />
       </div>
       {/* which way they are pushing, and how far they have come */}
-      <span style={{ fontSize: '10px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums',
-                     minWidth: '46px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: '11px', fontWeight: 600, color: '#cbd5e1',
+                     fontVariantNumeric: 'tabular-nums',
+                     minWidth: '52px', textAlign: 'right', whiteSpace: 'nowrap' }}>
         {leftHasBall ? '▸' : '◂'}{gained == null ? '' : ` ${gained > 0 ? '+' : ''}${gained} yd`}
       </span>
     </div>

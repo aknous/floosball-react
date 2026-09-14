@@ -387,10 +387,11 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           quarter cluster at the top of the card and makes it read as one
           instrument instead of three loose numbers. */}
       {!isFinal && (
-        <div style={{
-          paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
-          display: 'flex', alignItems: 'stretch', gap: '10px', minWidth: 0,
-        }}>
+        <>
+          <div style={{
+            paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
+            display: 'flex', alignItems: 'stretch', gap: '10px', minWidth: 0,
+          }}>
           <div style={{
             ...PANEL, flex: 1, minWidth: 0,
             display: 'flex', alignItems: 'center', gap: '10px',
@@ -474,29 +475,35 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                   and spelling it out beside a red container is the same fact
                   twice. The small card still needs its chip — it has no panel to
                   tint and no spot to color. */}
-              {/* The drive on one line. The row above says WHERE in words; this
-                  says how far they have come to get there. ⚠️ `leftTeam` is
-                  "away" because this card stacks away above home — a field that
-                  disagreed with the names directly above it reads as a bug. */}
-              {situationLive && game.yardsToEndzone != null && (
-                <>
-                  <span style={RULE} />
-                  <span style={{ ...CELL, flex: 1, minWidth: '90px' }}>
-                    <DriveLine
-                      yardsToEndzone={game.yardsToEndzone}
-                      driveStartYardsToEndzone={game.driveStartYardsToEndzone}
-                      homeTeamPoss={game.homeTeamPoss}
-                      awayTeamPoss={game.awayTeamPoss}
-                      homeColor={homeFill}
-                      awayColor={awayFill}
-                      leftTeam="away"
-                    />
-                  </span>
-                </>
-              )}
             </div>
           )}
-        </div>
+          </div>
+
+          {/* THE DRIVE, on its own full-width row under both panels (owner) — it
+              was squeezed into a cell of the situation row beside the clock and
+              the spot, where a hundred yards of field had about ninety pixels
+              and read as a smudge. A field is the one thing on this card that is
+              worth more the wider it is, so it gets the whole width. */}
+          {live && !game.isHalftime && situationLive && game.yardsToEndzone != null && (
+            <div style={{
+              ...PANEL, marginTop: '10px',
+              display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0,
+            }}>
+              <SectionLabel>DRIVE</SectionLabel>
+              <span style={{ flex: 1, minWidth: 0, display: 'flex' }}>
+                <DriveLine
+                  yardsToEndzone={game.yardsToEndzone}
+                  driveStartYardsToEndzone={game.driveStartYardsToEndzone}
+                  homeTeamPoss={game.homeTeamPoss}
+                  awayTeamPoss={game.awayTeamPoss}
+                  homeColor={homeFill}
+                  awayColor={awayFill}
+                  leftTeam="away"
+                />
+              </span>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
