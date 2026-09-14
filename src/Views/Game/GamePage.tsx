@@ -14,7 +14,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, SHELL_MOBILE_MAX, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
 import { rankGames } from '@/Views/GameBoard/ranking'
-import { FormatScore } from '@/Views/GameBoard/gameFormat'
+import { FormatScore, quarterLine } from '@/Views/GameBoard/gameFormat'
 import { useScoringModel } from '@/contexts/ScoringModelContext'
 import { ordinal } from '@/utils/ordinal'
 import GameBleachers, { useRailEntries } from './gameBleachers'
@@ -302,16 +302,20 @@ const GamePage: React.FC = () => {
 
     const qs = gameData.quarterScores
     if (!qs) return null
-    const hasOt = (qs.home?.ot ?? 0) > 0 || (qs.away?.ot ?? 0) > 0
-    const keys = hasOt ? ['q1', 'q2', 'q3', 'q4', 'ot'] : ['q1', 'q2', 'q3', 'q4']
     const q = Number(gameData.quarter) || 0
+    // ⚠️ A quarter the game has not REACHED is blank, not 0, and an overtime gets its own
+    // column. Both rules come from `quarterLine` rather than being restated here — this
+    // band, the board card and the game modal each had their own copy and all three were
+    // wrong the same way. `null` is the band's own "not played yet" and renders as a dash,
+    // exactly as innings and frames above already do.
+    const cols = quarterLine({ quarter: q, status: gameData.status, quarterScores: qs })
     return {
-      labels: keys.map(k => k.toUpperCase()),
-      activeIndex: isLive && q > 0 ? Math.min(q - 1, keys.length - 1) : null,
+      labels: cols.map(c => c.label),
+      activeIndex: isLive && q > 0 ? Math.min(q - 1, cols.length - 1) : null,
       tone: null,
       rows: (['away', 'home'] as const).map(side => ({
         side,
-        values: keys.map(k => (qs[side]?.[k] ?? 0) as number),
+        values: cols.map(c => (c.played ? ((qs[side]?.[c.key] ?? 0) as number) : null)),
       })),
     }
   })()

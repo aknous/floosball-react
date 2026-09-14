@@ -23,6 +23,7 @@ import { formatScore } from '@/utils/formatScore'
 import { displayScore, ScoringModel } from '@/utils/displayScore'
 import { ordinal } from '@/utils/ordinal'
 import { fmtFramesWon } from '@/utils/framesWon'
+import { quarterLine } from '@/Views/GameBoard/gameFormat'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -572,14 +573,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
     for (const p of seq) {
       if (p.homeTeamScore != null) runH = p.homeTeamScore
       if (p.awayTeamScore != null) runA = p.awayTeamScore
-      const qc = Math.min(4, Math.max(1, p.quarter || 1))
+      // ⚠️ Overtime is its own bucket (5), not the tail of Q4. Clamping at 4 folded
+      // every OT point back into the fourth quarter, so a replayed overtime read as a
+      // wild final quarter and the OT column the live payload carries went missing.
+      const qc = Math.min(5, Math.max(1, p.quarter || 1))
       lastInQuarter[qc] = { h: runH, a: runA }
     }
     const through: Record<number, { h: number; a: number }> = { 0: { h: 0, a: 0 } }
-    for (let q = 1; q <= 4; q++) through[q] = lastInQuarter[q] ?? through[q - 1]
+    for (let q = 1; q <= 5; q++) through[q] = lastInQuarter[q] ?? through[q - 1]
     return {
-      home: { q1: through[1].h - through[0].h, q2: through[2].h - through[1].h, q3: through[3].h - through[2].h, q4: through[4].h - through[3].h },
-      away: { q1: through[1].a - through[0].a, q2: through[2].a - through[1].a, q3: through[3].a - through[2].a, q4: through[4].a - through[3].a },
+      home: { q1: through[1].h - through[0].h, q2: through[2].h - through[1].h, q3: through[3].h - through[2].h, q4: through[4].h - through[3].h, ot: through[5].h - through[4].h },
+      away: { q1: through[1].a - through[0].a, q2: through[2].a - through[1].a, q3: through[3].a - through[2].a, q4: through[4].a - through[3].a, ot: through[5].a - through[4].a },
     }
   }, [replayActive, replayCursor, replaySequence, replayIndex, gameData?.quarterScores])
 
@@ -1780,35 +1784,48 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                    where a score and its breakdown belong together. The innings
                    and frames lines above stay here — they are a different shape
                    and too wide for the band. */
-                <div style={{ borderTop: '1px solid #334155', marginTop: '12px', paddingTop: '8px' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
-                    <thead>
-                      <tr>
-                        <th style={{ textAlign: 'left', padding: '3px 0', color: '#475569', fontWeight: '500', width: '48px' }}></th>
-                        <th style={{ textAlign: 'center', padding: '3px 10px', color: '#64748b', fontWeight: '500' }}>Q1</th>
-                        <th style={{ textAlign: 'center', padding: '3px 10px', color: '#64748b', fontWeight: '500' }}>Q2</th>
-                        <th style={{ textAlign: 'center', padding: '3px 10px', color: '#64748b', fontWeight: '500' }}>Q3</th>
-                        <th style={{ textAlign: 'center', padding: '3px 10px', color: '#64748b', fontWeight: '500' }}>Q4</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{gameData.homeTeam.abbr}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.home.q1)}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.home.q2)}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.home.q3)}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.home.q4)}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{gameData.awayTeam.abbr}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.away.q1)}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.away.q2)}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.away.q3)}</td>
-                        <td style={{ textAlign: 'center', padding: '4px 10px', color: '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{formatScore(dQuarterScores.away.q4)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                (() => {
+                  // ⚠️ An unreached quarter is blank, not 0, and an overtime gets its own
+                  // column. Both rules come from `quarterLine` — the board card and the
+                  // game page's band read the same one, so a fix lands on all three.
+                  // ⚠️ The quarter here is the REPLAY cursor's, not the live game's, so a
+                  // replay blanks the quarters the cursor has not reached yet.
+                  const cols = quarterLine({
+                    quarter: Number(dQuarter) || 0,
+                    status: gameData.status,
+                    quarterScores: dQuarterScores as any,
+                  })
+                  const cell = (side: 'home' | 'away', i: number) => {
+                    const v = (dQuarterScores as any)[side]?.[cols[i].key]
+                    return cols[i].played && v != null ? formatScore(v) : '-'
+                  }
+                  const teamRow = (side: 'home' | 'away', abbr: string) => (
+                    <tr>
+                      <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{abbr}</td>
+                      {cols.map((c, i) => (
+                        <td key={c.key} style={{ textAlign: 'center', padding: '4px 10px', color: c.played ? '#cbd5e1' : '#475569', fontVariantNumeric: 'tabular-nums' }}>{cell(side, i)}</td>
+                      ))}
+                    </tr>
+                  )
+                  return (
+                    <div style={{ borderTop: '1px solid #334155', marginTop: '12px', paddingTop: '8px' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: 'left', padding: '3px 0', color: '#475569', fontWeight: '500', width: '48px' }}></th>
+                            {cols.map(c => (
+                              <th key={c.key} style={{ textAlign: 'center', padding: '3px 10px', color: '#64748b', fontWeight: '500' }}>{c.label}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {teamRow('home', gameData.homeTeam.abbr)}
+                          {teamRow('away', gameData.awayTeam.abbr)}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                })()
               ) : null}
 
               {/* Rally buttons — one per team, side-by-side below the

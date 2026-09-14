@@ -31,12 +31,15 @@ export interface CurrentGame {
       q2: number
       q3: number
       q4: number
+      /** Overtime. Absent on a game that never reached it. */
+      ot?: number
     }
     away: {
       q1: number
       q2: number
       q3: number
       q4: number
+      ot?: number
     }
   }
   possession?: string  // Team ID that has possession
