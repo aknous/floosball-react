@@ -9,8 +9,6 @@ interface DriveLineProps {
   awayTeamPoss?: boolean
   homeColor?: string
   awayColor?: string
-  /** Which team's own end zone sits at the LEFT of the line. */
-  leftTeam: 'home' | 'away'
 }
 
 /**
@@ -24,18 +22,25 @@ interface DriveLineProps {
  * the ball changes hands: the very same spot on the grass jumps to the opposite side of
  * the card, so a turnover looked like a 60-yard gain and every drive marched the same way.
  *
- * So a position is converted to one absolute axis, x yards from the LEFT team's own goal:
- *   the left team has it  -> they attack rightward, so x = 100 - yardsToEndzone
- *   the right team has it -> they attack leftward, so x = yardsToEndzone
+ * ⚠️ HOME DEFENDS THE LEFT AND ATTACKS RIGHTWARD, WHICH IS THE GAME PAGE'S CONVENTION AND
+ * NOT A FREE CHOICE (owner, 2026-09-14: the card faced the teams the opposite way to the
+ * field graphic). `GameModalNew` draws its field with `fdDir = isHomePoss ? 1 : -1` and
+ * `losAbsYfl = isHomePoss ? 110 - ytg : 10 + ytg`, so home's own goal line is at the left
+ * and it attacks toward the right. Two views of the same drive that disagree about which
+ * way it is going are worse than one of them not existing.
  *
- * ⚠️ WHICH TEAM IS ON THE LEFT IS THE CALLER'S TO SAY, and it is not the same everywhere:
- * the dashboard card lists HOME first, the game board's large card lists AWAY first. A
- * field that disagreed with the names stacked directly above it would be worse than no
- * field at all, so `leftTeam` is required rather than defaulted.
+ * ⚠️ IT WAS A PROP AND THAT WAS THE MISTAKE. `leftTeam` was made required on the reasoning
+ * that each card should face the way it stacks its own teams -- the dashboard card lists
+ * home first, the board's large card lists away first -- which sounds careful and is exactly
+ * how the board card ended up mirrored against the game page. Team order in a list is not a
+ * direction of play. There is ONE convention, it lives here, and no caller can pick another.
+ *
+ * So a position is converted to one absolute axis, x yards from HOME's own goal line:
+ *   home has it -> attacking rightward, so x = 100 - yardsToEndzone
+ *   away has it -> attacking leftward,  so x = yardsToEndzone
  */
 export const DriveLine: React.FC<DriveLineProps> = ({
   yardsToEndzone, driveStartYardsToEndzone, homeTeamPoss, awayTeamPoss, homeColor, awayColor,
-  leftTeam,
 }) => {
   // ⚠️ NEVER RETURNS NULL WHILE A GAME IS LIVE. It used to, and a possession change or a
   // score briefly leaves nobody with the ball -- so the row vanished and the whole card
@@ -43,14 +48,13 @@ export const DriveLine: React.FC<DriveLineProps> = ({
   // the trail depend on knowing where the ball is.
   const known = yardsToEndzone != null && (!!homeTeamPoss || !!awayTeamPoss)
   const clamp = (v: number) => Math.max(0, Math.min(100, v))
-  const leftHasBall = leftTeam === 'home' ? !!homeTeamPoss : !!awayTeamPoss
+  const leftHasBall = !!homeTeamPoss          // home defends the left, so it attacks right
   // Absolute spot on the field, measured from the LEFT team's own goal line.
   const spot = (ytg: number) => clamp(leftHasBall ? 100 - ytg : ytg)
   const now = spot(yardsToEndzone ?? 50)
   const start = driveStartYardsToEndzone == null ? null : spot(driveStartYardsToEndzone)
 
-  const color = (leftHasBall ? (leftTeam === 'home' ? homeColor : awayColor)
-                             : (leftTeam === 'home' ? awayColor : homeColor)) || '#38bdf8'
+  const color = (leftHasBall ? homeColor : awayColor) || '#38bdf8'
   // Yards gained is along the direction of ATTACK, not along the axis, so a drive going
   // backwards reads negative whichever way the team happens to be facing.
   const gained = (start == null || !known) ? null
@@ -65,8 +69,8 @@ export const DriveLine: React.FC<DriveLineProps> = ({
   // they went backwards, and the figure beside it already carries the minus.
   const driveColor = color
 
-  const leftColor = leftTeam === 'home' ? homeColor : awayColor
-  const rightColor = leftTeam === 'home' ? awayColor : homeColor
+  const leftColor = homeColor            // the end zone home defends
+  const rightColor = awayColor           // ...and the one away defends
   const pct = (v: number) => `${v}%`
   const H = 12
 

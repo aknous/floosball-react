@@ -512,7 +512,6 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                   awayTeamPoss={game.awayTeamPoss}
                   homeColor={homeFill}
                   awayColor={awayFill}
-                  leftTeam="away"
                 />
               </span>
             </div>
