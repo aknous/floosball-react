@@ -31,12 +31,15 @@ export interface CurrentGame {
       q2: number
       q3: number
       q4: number
+      /** Overtime. Absent on a game that never reached it. */
+      ot?: number
     }
     away: {
       q1: number
       q2: number
       q3: number
       q4: number
+      ot?: number
     }
   }
   possession?: string  // Team ID that has possession
@@ -48,6 +51,8 @@ export interface CurrentGame {
   yardsToFirstDown?: number
   yardLine?: string  // e.g., "BAL 25"
   yardsToEndzone?: number
+  /** Where the current drive began, same units. Feeds the compact drive line. */
+  driveStartYardsToEndzone?: number | null
   driveClock?: DriveClockState | null
   sidelineGoals?: SidelineGoalsState | null
   playLimit?: PlayLimitState

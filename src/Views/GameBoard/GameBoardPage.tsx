@@ -16,6 +16,7 @@ import { PulsingDot } from './boardPieces'
 import ActiveRulesStrip from './ActiveRulesStrip'
 import { useNextGameCountdown } from '@/hooks/useNextGameCountdown'
 import { usePickEm } from '@/hooks/usePickEm'
+import { multiplierToPoints } from '@/Components/PickEm/PickRow'
 import type { PickState } from './pickControl'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -120,11 +121,20 @@ const GameBoardPage: React.FC = () => {
     if (!user || isPast) return map
     for (const g of pickGames) {
       const key = `${g.homeTeam?.id}-${g.awayTeam?.id}`
+      // ⚠️ WHAT EACH SIDE WOULD PAY IF PICKED NOW, so the card can show the trade rather
+      // than just the odds. `currentMultiplier` is the timing half (it decays as kickoff
+      // nears) and `underdogInfo` carries the per-team half. ⚠️ REUSES
+      // `multiplierToPoints` rather than restating the base: the 10 is a backend constant
+      // (`PICKEM_BASE_POINTS`) and a second copy of it here is a number that drifts.
+      const timing = g.currentMultiplier ?? 1
+      const canScore = !!g.pickable
       map.set(key, {
         userPick: g.userPick ?? null,
-        pickable: !!g.pickable,
+        pickable: canScore,
         correct: g.result?.correct ?? null,
         points: g.result?.pointsEarned ?? null,
+        awayPoints: canScore ? multiplierToPoints(timing, g.underdogInfo?.awayMultiplier ?? 1) : null,
+        homePoints: canScore ? multiplierToPoints(timing, g.underdogInfo?.homeMultiplier ?? 1) : null,
         onPick: (teamId: number) => { submitPick(g.gameIndex, teamId) },
       })
     }

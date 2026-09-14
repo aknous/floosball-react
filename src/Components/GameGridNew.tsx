@@ -123,6 +123,8 @@ export const GameGridNew: React.FC<GameGridNewProps> = ({ handleClick = () => {}
                 isFeatured={game.isFeatured}
                 momentum={game.momentum}
                 momentumTeam={game.momentumTeam}
+                yardsToEndzone={game.yardsToEndzone}
+                driveStartYardsToEndzone={game.driveStartYardsToEndzone}
                 startTime={game.startTime}
                 isFav={isFavGame}
                 favTeamColor={favTeamColor}

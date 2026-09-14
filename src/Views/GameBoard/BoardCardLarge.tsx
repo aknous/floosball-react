@@ -2,12 +2,13 @@ import React from 'react'
 import type { CurrentGame } from '@/hooks/useCurrentGames'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { effectiveAwayColor, readableTeamColor } from '@/utils/colors'
+import { DriveLine } from '@/Components/DriveLine'
 import { lastPlaySummary, downAndDistance } from './lastPlaySummary'
 import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
-import GaugePick, { type PickState } from './pickControl'
+import { PickSideButton, PickedMark, type PickState } from './pickControl'
 import {
-  Crest, MomentumFlame, InterestChip, SectionLabel, SplitBar,
+  Crest, MomentumFlame, InterestChip, SectionLabel,
   CHIP_COLOR, inRedZone, RED_ZONE, type ChipKind,
 } from './boardPieces'
 
@@ -54,6 +55,9 @@ const RULE: React.CSSProperties = {
  * same share of the same row width and their columns stay aligned — which is the
  * property the whole file depends on.
  */
+/** ⚠️ ONE DEFINITION, shared by the pick button and the header label that sits over it —
+ *  two copies drift and the label stops lining up with what it names. */
+export const PICK_W = 168
 const CLUSTER = { display: 'flex', alignItems: 'center', gap: '16px', flex: '0 0 46%', minWidth: 0 } as const
 
 /**
@@ -156,6 +160,18 @@ type Props = {
 const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, scoringModel, onOpen, pick }) => {
   const live = game.status === 'Active'
   const isFinal = game.status === 'Final'
+  // ⚠️ PRE-GAME THE SCOREBOARD IS DEAD SPACE (owner) — two rows of dashes and a pair of
+  // zeroes — so the pick takes its place rather than being added beneath it. That is what
+  // stops the prognostication panel costing the card an extra block of height, and it puts
+  // each team's button on that team's own row, which needs nothing to explain it.
+  //
+  // ⚠️ STATED POSITIVELY, NOT AS `!live && !isFinal` (owner: the buttons must not replace
+  // the scoreboard "when a game ends"). Those are the same thing across the three statuses
+  // that exist today — Scheduled, Active, Final — but the negation FAILS TOWARD HIDING A
+  // RESULT: a status this file has not heard of, or one missing from a payload, reads as
+  // "not live and not final" and would put pick buttons over a finished game's score. Asked
+  // this way an unknown status keeps the scoreboard, which is the safe direction.
+  const preGame = game.status === 'Scheduled'
   const home = game.homeTeam
   const away = game.awayTeam
 
@@ -167,13 +183,14 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   const awayAhead = leader !== 'home'
 
   // Fills use the raw color; only text gets corrected.
-  const awayFill = effectiveAwayColor(home?.color, away?.color, away?.secondaryColor)
+  const awayFill = effectiveAwayColor(home?.color, away?.color, away?.secondaryColor, away?.tertiaryColor)
   const homeFill = home?.color || '#64748b'
   const awayText = readableTeamColor(awayFill)
   const homeText = readableTeamColor(homeFill)
 
   const homeWp = Math.round(game.homeWinProbability ?? 50)
   const awayWp = 100 - homeWp
+  const wpFor = (side: 'home' | 'away') => (side === 'home' ? homeWp : awayWp)
 
   // The last play as structure, not prose — see lastPlaySummary for why.
   const lastPlay = lastPlaySummary(game)
@@ -210,7 +227,14 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
     // crest, or the city + name block), so this leaves 6px of breathing room.
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minHeight: '46px' }}>
-        <Crest teamId={team?.id} size={36} possession={live && possessionTeam === side} />
+        {/* ⚠️ THE PICK MARK OVERLAYS THE CREST and takes no width — see `PickedMark`. The
+            wrapper exists only to be its positioning context; it is `inline-flex` so the
+            crest keeps the exact box it had. */}
+        <span style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
+          <Crest teamId={team?.id} size={36} possession={live && possessionTeam === side} />
+          {live && <PickedMark teamId={team?.id}
+                               color={side === 'home' ? homeText : awayText} pick={pick} />}
+        </span>
         {/* ⚠️ Shrink-to-fit, NOT flex: 1. Growing this block pushed everything after
             it across to the scoreboard; the spacer below takes the slack instead. */}
         <div style={{ flexShrink: 1, minWidth: 0 }}>
@@ -236,11 +260,22 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               ...font(600, 13, 1), color: TEXT.muted, ...TABULAR,
               whiteSpace: 'nowrap', flexShrink: 0,
             }}>{team?.record}</span>
+
             {hasMomentum && <MomentumFlame magnitude={momentumMagnitude} size={14} />}
           </div>
         </div>
 
         <span style={{ flex: 1, minWidth: 0 }} />
+        {preGame && pick ? (
+          <PickSideButton
+            team={team}
+            color={side === 'home' ? homeText : awayText}
+            pct={wpFor(side)}
+            points={side === 'home' ? pick.homePoints : pick.awayPoints}
+            pick={pick}
+            width={PICK_W}
+          />
+        ) : (
         <div style={{
           ...CLUSTER, ...SCORE_PANEL,
           ...(side === 'home' ? { borderBottom: `1px solid ${BORDER.hairline}` } : {}),
@@ -277,6 +312,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             />
           </span>
         </div>
+        )}
       </div>
     )
   }
@@ -330,8 +366,27 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           ...CLUSTER, ...SCORE_PANEL,
           borderTop: `1px solid ${BORDER.hairline}`,
           paddingTop: '6px', paddingBottom: '4px',
+          // ⚠️ PRE-GAME THIS BOX IS THE WRONG SHAPE FOR WHAT IS IN IT (owner: the label
+          // "extends way out past where the buttons are"). `CLUSTER` is `flex: 0 0 46%` and
+          // `SCORE_PANEL` paints it, because it is built to sit over four quarter columns
+          // and a total — nearly half the card. The label belongs over two 168px buttons,
+          // so pre-game it takes the buttons' width and drops the panel, which has nothing
+          // left to join to: the team rows below render their pick in place of the score
+          // cluster, so the continuous panel `alignSelf: stretch` exists for is not there.
+          ...(preGame && pick ? {
+            flex: `0 0 ${PICK_W}px`, justifyContent: 'center',
+            background: 'transparent', borderLeft: 'none', borderRight: 'none',
+            padding: '0 0 4px',
+          } : {}),
         }}>
-          {columns && (
+          {/* ⚠️ PRE-GAME THIS HEADER NAMES THE PICK, not the quarters. Q1-Q4 and TOT label
+              columns that hold nothing until kickoff, and the buttons underneath want
+              saying what they are — which is the label the owner asked for, in the one
+              place that costs the card no height. */}
+          {preGame && pick && (
+            <span style={{ ...font(600, 10, 1, '0.14em'), color: TEXT.muted }}>PROGNOSTICATE</span>
+          )}
+          {!preGame && columns && (
             /* The same gap as the score row below it, or the labels stop sitting over
                the columns they name. */
             <div style={quartersRow(columns.periods.length, hasFractional(columns.periods))}>
@@ -342,12 +397,14 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               ))}
             </div>
           )}
-          {columns && <span style={{ width: '1px', height: '16px', background: BORDER.hairline }} />}
+          {!preGame && columns && <span style={{ width: '1px', height: '16px', background: BORDER.hairline }} />}
           {/* Same width as the score cell below it, or the header label and the totals
               column stop lining up the moment frames widen the box. */}
-          <span style={{ ...totalCell(!!game.frames?.active), ...font(600, 11, 1, '0.08em'), color: TEXT.muted }}>
-            {columns ? columns.label : 'TOT'}
-          </span>
+          {!preGame && (
+            <span style={{ ...totalCell(!!game.frames?.active), ...font(600, 11, 1, '0.08em'), color: TEXT.muted }}>
+              {columns ? columns.label : 'TOT'}
+            </span>
+          )}
         </div>
       </div>
 
@@ -355,28 +412,6 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       {teamRow('home', home, homeScore, homeAhead)}
       </div>
 
-      {/* ⚠️ A FINAL card stops at the score (owner). Everything below the team
-          rows is a LIVE readout — the win-probability gauge resolves to 100/0
-          the moment a game ends, and the leader line and team-stat table that
-          replaced it were reinstating a footer the reader did not ask for.
-          Finals live in their own section now, so they are uniformly compact
-          and read as a results list rather than sixteen half-empty cards. */}
-      {!isFinal && (
-        <div style={{ paddingTop: '14px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', flexDirection: 'column', gap: '11px' }}>
-          {/* Just the gauge (owner): the swing trend line came out. Both sides carry
-              their own percentage, so the bar is read against two labeled numbers
-              rather than one favoured side and a sparkline. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {/* The gauge labels ARE the pick buttons — same place the old dashboard put
-                them, and the only spot on the card already flanking the bar. */}
-            <GaugePick side="away" teamId={away?.id} abbr={away?.abbr} pct={awayWp}
-                       favored={awayWp > homeWp} color={awayText} size={14} pick={pick} />
-            <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={6} />
-            <GaugePick side="home" teamId={home?.id} abbr={home?.abbr} pct={homeWp}
-                       favored={homeWp > awayWp} color={homeText} size={14} pick={pick} />
-          </div>
-        </div>
-      )}
 
       {/* ⚠️ Two CONTAINERS, not one run of text (owner). The last play and the
           current situation are separate thoughts that happened to share a row,
@@ -385,13 +420,89 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           divided by rules rather than middots, which is the same idiom as the
           quarter cluster at the top of the card and makes it read as one
           instrument instead of three loose numbers. */}
-      {!isFinal && (
+      {/* ⚠️ PRE-GAME THIS BLOCK IS THE PROGNOSTICATION ZONE (owner). A scheduled game has no
+          field to draw and no last play to report, so the space that carries those while the
+          game is live sits empty before it -- which is where the pick buttons go. That is
+          what let the pick come off the left of the team rows, where any control at all
+          "pushes everything too far to the right". */}
+      {!isFinal && live && (
+        /* ⚠️ ONE FLEX CHILD, NOT TWO. The card root is `flex-direction: column` with
+           `gap: 16px`, so every direct child is pushed 16px off the one above it — measured
+           live, the drive strip sat 15px below the row despite `marginTop: -1px`, which is
+           the gap minus that margin. No amount of padding or `minHeight` on either box could
+           reach it, which is why four attempts at this changed nothing the owner could see.
+           Wrapping the pair makes the card's gap apply ONCE, above the pair, and lets the
+           two touch inside it. */
         <div style={{
+          display: 'flex', flexDirection: 'column', minWidth: 0,
           paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
-          display: 'flex', alignItems: 'stretch', gap: '10px', minWidth: 0,
         }}>
+
+          {/* ⚠️ THE FIELD SITS WHERE THE WIN-PROBABILITY GRAPH USED TO (owner), with the
+              last play and the situation under it. It is the widest thing on the card and
+              the one most worth the width, and putting it directly beneath the teams means
+              the drive reads against the clubs driving it rather than as a footnote.
+
+              ⚠️ LAST PLAY AND THE SITUATION STAY ON ONE ROW (owner) — that row is now
+              BELOW this one, and pulls up onto this strip's bottom border so the two still
+              read as one block.
+
+              ⚠️ GATED ONLY ON THE GAME BEING LIVE. It used to need `situationLive`
+              and a known spot as well, so a score or a possession change took the
+              row away and the whole card changed height mid-game (owner).
+              `DriveLine` draws the field regardless and leaves out only the
+              football, so the height is fixed for the whole game. */}
+          {/* ⚠️ NOT GATED ON HALFTIME (owner: a game at half was not showing the field).
+              The SITUATION row is suppressed at half for a good reason -- nobody is on the
+              clock and the down and spot belong to a drive that is over -- and the field
+              inherited that gate by sitting next to it. But the field is not a live readout
+              the way a down is: it is where the ball GOT TO, which is exactly the thing
+              worth looking at while a game is stopped. Dropping the row at half also
+              resized the card mid-game, which is the complaint this was already fixed for
+              once. */}
+          {live && (
+            <div style={{
+              ...PANEL,
+              // ⚠️ THE SPACE ABOVE THIS ROW WAS NEVER A MARGIN, which is why pulling the
+              // margin to -1px did not close it. `PANEL` has no vertical padding at all --
+              // it is `minHeight: 34px` with the contents centred, so a 12px field sat in a
+              // 34px box with eleven pixels of air on each side. The strip is sized to what
+              // is in it instead, so it reads as part of the panel above rather than as a
+              // second box of the same height (owner).
+              // ⚠️ 6px, and this padding IS the space between the two rows -- they share a
+              // collapsed border now, so there is no margin or gap left to put it in.
+              minHeight: 0, paddingTop: '6px', paddingBottom: '6px',
+              borderTopLeftRadius: 0, borderTopRightRadius: 0,
+              display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0,
+            }}>
+              <SectionLabel>DRIVE</SectionLabel>
+              <span style={{ flex: 1, minWidth: 0, display: 'flex' }}>
+                <DriveLine
+                  yardsToEndzone={game.yardsToEndzone}
+                  driveStartYardsToEndzone={game.driveStartYardsToEndzone}
+                  homeTeamPoss={game.homeTeamPoss}
+                  awayTeamPoss={game.awayTeamPoss}
+                  homeColor={homeFill}
+                  awayColor={awayFill}
+                />
+              </span>
+            </div>
+          )}
           <div style={{
-            ...PANEL, flex: 1, minWidth: 0,
+            // ⚠️ 4px, not the -1px that collapsed the borders (owner wants "a bit more of
+            // a gap between the field viz and the situation bar"). The separator from the
+            // team block above moved onto the strip with it.
+            marginTop: '4px',
+            display: 'flex', alignItems: 'stretch', gap: '10px', minWidth: 0,
+          }}>
+          <div style={{
+            // ⚠️ 28px, NOT `PANEL`'s 34. The air the owner kept seeing above the drive
+            // strip was never between the boxes -- it is INSIDE this one. `PANEL` has no
+            // vertical padding, it is `minHeight: 34px` with its contents centred, so a
+            // 13px line of text leaves about ten dead pixels underneath it, directly above
+            // the field. Shrinking the strip removed the space BELOW the field and left
+            // that untouched, which is why the gap "hasn't changed at all".
+            ...PANEL, minHeight: '28px', flex: 1, minWidth: 0,
             display: 'flex', alignItems: 'center', gap: '10px',
           }}>
             <SectionLabel>LAST PLAY</SectionLabel>
@@ -442,11 +553,21 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               on the clock and the down and spot belong to a drive that is over. */}
           {live && !game.isHalftime && (
             <div style={{
-              ...PANEL, flexShrink: 0,
+              // 28px to match LAST PLAY — see the note there.
+              ...PANEL, minHeight: '28px', flexShrink: 0,
               display: 'flex', alignItems: 'center', gap: 0,
-              ...(redZone && situationLive
-                ? { borderColor: `${RED_ZONE}4d`, background: 'rgba(248,113,113,0.06)' }
-                : {}),
+              // ⚠️ `borderColor` IS ALWAYS SET, NEVER CONDITIONALLY SPREAD, and that is what
+              // fixes the white border that appeared at random (owner). `PANEL` sets the
+              // `border` SHORTHAND; this used to add the `borderColor` LONGHAND only in the
+              // red zone. React writes style objects property by property, so when a card
+              // LEFT the red zone it removed the longhand — and removing a longhand that
+              // came after a shorthand takes the shorthand's colour with it. `border-color`
+              // then falls back to `currentColor`, which here is #e2e8f0. Measured live: 3
+              // of 16 cards had `border-width: 1px; border-style: solid;` and no colour at
+              // all. It looked random because it depends on where the ball has BEEN, not on
+              // where it is. Same reason the background is stated both ways.
+              borderColor: redZone && situationLive ? `${RED_ZONE}4d` : BORDER.hairline,
+              background: redZone && situationLive ? 'rgba(248,113,113,0.06)' : BG.panel,
             }}>
               {/* FormatClock, not a hand-rolled quarter + time: an innings game
                   or a chess-clock game does not have either. */}
@@ -475,6 +596,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                   tint and no spot to color. */}
             </div>
           )}
+          </div>
         </div>
       )}
     </div>

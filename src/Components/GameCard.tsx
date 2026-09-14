@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react'
+import { DriveLine } from './DriveLine'
 import TeamHoverCard from './TeamHoverCard'
 import { effectiveAwayColor } from '@/utils/colors'
 import { displayScore } from '@/utils/displayScore'
@@ -37,6 +38,9 @@ interface GameCardProps {
   isFeatured?: boolean
   momentum?: number
   momentumTeam?: string | null
+  /** Current drive, for the compact field line. Both in yards to the attacking end zone. */
+  yardsToEndzone?: number | null
+  driveStartYardsToEndzone?: number | null
   startTime?: number
   isFav?: boolean
   favTeamColor?: string
@@ -53,7 +57,7 @@ interface GameCardProps {
 
 
 
-export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, innings, frames, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, startTime, isFav, favTeamColor, favTeamId, onClick, clickable = true, userPick, pickable, pickCorrect, onPick }) => {
+export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, homeTeamPoss, awayTeamPoss, homeScore, awayScore, quarter, timeRemaining, innings, frames, status, homeWinProbability, awayWinProbability, isUpsetAlert, isFeatured, momentum, momentumTeam, yardsToEndzone, driveStartYardsToEndzone, startTime, isFav, favTeamColor, favTeamId, onClick, clickable = true, userPick, pickable, pickCorrect, onPick }) => {
   const isComplete = status === 'Final'
   const isLive = status === 'Active' && (quarter ?? 0) > 0
   const isFinal = isComplete
@@ -62,7 +66,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
   // Away team's effective color for the WP meter: falls back to its secondary
   // when its primary is basically the same as home's, so the two halves of the
   // bar stay distinguishable. Home is the reference and keeps its primary.
-  const awayColor = effectiveAwayColor(homeTeam.color, awayTeam.color, awayTeam.secondaryColor)
+  const awayColor = effectiveAwayColor(homeTeam.color, awayTeam.color, awayTeam.secondaryColor, awayTeam.tertiaryColor)
 
   const absMomentum = Math.abs(momentum ?? 0)
   const homeMomentum = isLive && momentumTeam === homeTeam.abbr
@@ -488,6 +492,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             )}
           </div>
         ) : isLive ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'stretch' }}>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             {innings?.active ? (
               // Innings: current inning + try pips (like baseball outs) instead of clock.
@@ -536,6 +541,20 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
                 FEATURED
               </div>
             )}
+          </div>
+          {/* The drive as one line. Only the formats that HAVE field position -- innings
+              and frames run their own clocks but still play on a field, so this is gated on
+              the data rather than on the format. */}
+          {yardsToEndzone != null && (
+            <DriveLine
+              yardsToEndzone={yardsToEndzone}
+              driveStartYardsToEndzone={driveStartYardsToEndzone}
+              homeTeamPoss={homeTeamPoss}
+              awayTeamPoss={awayTeamPoss}
+              homeColor={homeTeam.color}
+              awayColor={awayColor}
+            />
+          )}
           </div>
         ) : (
           <span>

@@ -103,16 +103,13 @@ export function periodColumns(game: CurrentGame): { label: string; periods: Peri
   }
 
   const quarters = game.quarterScores
-  const isFinal = game.status === 'Final'
-  const live = game.status === 'Active'
   return {
     label: 'TOT',
-    periods: (['q1', 'q2', 'q3', 'q4'] as const).map((q, i) => {
-      const home = quarters?.home?.[q]
-      const away = quarters?.away?.[q]
-      const played = isFinal || game.quarter > i + 1 || (game.quarter === i + 1 && live)
+    periods: quarterLine(game).map(({ key, label, played }) => {
+      const home = quarters?.home?.[key]
+      const away = quarters?.away?.[key]
       return {
-        label: `Q${i + 1}`,
+        label,
         // Same as the frames line above — a quarter score is fractional under the same
         // rules, so it cannot be stringified raw either.
         homeValue: played && home != null ? formatScore(home) : '·',
@@ -121,6 +118,48 @@ export function periodColumns(game: CurrentGame): { label: string; periods: Peri
       }
     }),
   }
+}
+
+export type QuarterKey = 'q1' | 'q2' | 'q3' | 'q4' | 'ot'
+
+/**
+ * WHICH PERIOD COLUMNS A STANDARD GAME HAS, AND WHICH OF THEM IT HAS ACTUALLY PLAYED.
+ *
+ * ⚠️ THE RULE LIVES HERE ONCE BECAUSE IT LIVED IN THREE PLACES AND WAS WRONG IN ALL OF
+ * THEM — the board card, the game page's scoreboard band and the game modal's line score
+ * each grew their own copy, and all three printed a 0 under every quarter from kickoff and
+ * had no OT column at all. Any fourth scoreboard calls this rather than writing a fourth.
+ *
+ * ⚠️ "PLAYED" MEANS THE GAME REACHED IT, not that the game is over. Marking every column
+ * played on a final draws a 0 under a quarter that never happened — and once OT exists that
+ * is actively wrong, since a regulation final would show an OT zero.
+ *
+ * ⚠️ OVERTIME IS TWO FACTS, NOT ONE. A LIVE overtime is `quarter > 4` and carries no OT
+ * points yet; a FINISHED one comes back on quarter 4 and is recognisable only by the
+ * points. Either test alone misses half the games that went there. And the OT column exists
+ * only BECAUSE overtime happened, so it is played by definition — re-testing `quarter > 4`
+ * for that made a finished overtime draw the column and then blank the points that decided
+ * the game.
+ */
+export function quarterLine(game: {
+  quarter: number
+  status: string
+  quarterScores?: { home?: Partial<Record<QuarterKey, number>>; away?: Partial<Record<QuarterKey, number>> } | null
+}): { key: QuarterKey; label: string; played: boolean }[] {
+  const q = Number(game.quarter) || 0
+  const isFinal = game.status === 'Final'
+  const live = game.status === 'Active'
+  const hasOt = q > 4
+    || (game.quarterScores?.home?.ot ?? 0) > 0
+    || (game.quarterScores?.away?.ot ?? 0) > 0
+  const keys: QuarterKey[] = hasOt
+    ? ['q1', 'q2', 'q3', 'q4', 'ot']
+    : ['q1', 'q2', 'q3', 'q4']
+  return keys.map((key, i) => ({
+    key,
+    label: key === 'ot' ? 'OT' : `Q${i + 1}`,
+    played: key === 'ot' ? hasOt : q > i + 1 || (q === i + 1 && (live || isFinal)),
+  }))
 }
 
 /**
