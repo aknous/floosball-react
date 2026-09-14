@@ -6,7 +6,7 @@ import { DriveLine } from '@/Components/DriveLine'
 import { lastPlaySummary, downAndDistance } from './lastPlaySummary'
 import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
-import { PickBox, type PickState } from './pickControl'
+import { PickButtons, PickedChip, type PickState } from './pickControl'
 import {
   Crest, MomentumFlame, InterestChip, SectionLabel,
   CHIP_COLOR, inRedZone, RED_ZONE, type ChipKind,
@@ -168,7 +168,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   const awayAhead = leader !== 'home'
 
   // Fills use the raw color; only text gets corrected.
-  const awayFill = effectiveAwayColor(home?.color, away?.color, away?.secondaryColor)
+  const awayFill = effectiveAwayColor(home?.color, away?.color, away?.secondaryColor, away?.tertiaryColor)
   const homeFill = home?.color || '#64748b'
   const awayText = readableTeamColor(awayFill)
   const homeText = readableTeamColor(homeFill)
@@ -211,19 +211,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
     // SAME height as before and still looked bigger. Content is ~40px (a 36px
     // crest, or the city + name block), so this leaves 6px of breathing room.
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minHeight: '46px' }}>
-        {/* ⚠️ THE PICK AND THE WIN PROBABILITY LIVE HERE NOW, and the row that held them is
-            gone (owner: the WP graph "isnt as necessary", then "put a checkbox to the left of
-            the team logo and remove the row where the WP graph was ... we can even put a WP
-            percentage there"). They were welded to the gauge only because they happened to
-            share its row: the split bar WAS the graph, its side labels WERE the buttons, and
-            each label already carried its own percentage. Moving the two facts onto the team
-            they describe costs the card a whole row and loses nothing.
-
-            ⚠️ The percentage renders with or without a pick; the box renders only with one,
-            so a signed-out reader and a past week get no dead checkboxes. */}
-        <PickBox teamId={team?.id} abbr={team?.abbr} pct={wpFor(side)} live={live}
-                 color={side === 'home' ? homeText : awayText} pick={pick} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minHeight: '46px' }}>
         <Crest teamId={team?.id} size={36} possession={live && possessionTeam === side} />
         {/* ⚠️ Shrink-to-fit, NOT flex: 1. Growing this block pushed everything after
             it across to the scoreboard; the spacer below takes the slack instead. */}
@@ -250,6 +238,12 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               ...font(600, 13, 1), color: TEXT.muted, ...TABULAR,
               whiteSpace: 'nowrap', flexShrink: 0,
             }}>{team?.record}</span>
+            {/* ⚠️ THE LIVE PICK MARKER RIDES THE NAME LINE, not the left edge. Once the game
+                starts there is nothing left to choose, so this is a readout rather than a
+                control — and putting a readout back in front of the crest would reintroduce
+                exactly the left-hand crowding the buttons were moved to avoid. */}
+            {live && <PickedChip teamId={team?.id}
+                                 color={side === 'home' ? homeText : awayText} pick={pick} />}
             {hasMomentum && <MomentumFlame magnitude={momentumMagnitude} size={14} />}
           </div>
         </div>
@@ -377,7 +371,12 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           divided by rules rather than middots, which is the same idiom as the
           quarter cluster at the top of the card and makes it read as one
           instrument instead of three loose numbers. */}
-      {!isFinal && (
+      {/* ⚠️ PRE-GAME THIS BLOCK IS THE PROGNOSTICATION ZONE (owner). A scheduled game has no
+          field to draw and no last play to report, so the space that carries those while the
+          game is live sits empty before it -- which is where the pick buttons go. That is
+          what let the pick come off the left of the team rows, where any control at all
+          "pushes everything too far to the right". */}
+      {!isFinal && (live || pick) && (
         /* ⚠️ ONE FLEX CHILD, NOT TWO. The card root is `flex-direction: column` with
            `gap: 16px`, so every direct child is pushed 16px off the one above it — measured
            live, the drive strip sat 15px below the row despite `marginTop: -1px`, which is
@@ -389,6 +388,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           display: 'flex', flexDirection: 'column', minWidth: 0,
           paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
         }}>
+          {live ? (<>
           {/* ⚠️ THE FIELD SITS WHERE THE WIN-PROBABILITY GRAPH USED TO (owner), with the
               last play and the situation under it. It is the widest thing on the card and
               the one most worth the width, and putting it directly beneath the teams means
@@ -403,7 +403,15 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               row away and the whole card changed height mid-game (owner).
               `DriveLine` draws the field regardless and leaves out only the
               football, so the height is fixed for the whole game. */}
-          {live && !game.isHalftime && (
+          {/* ⚠️ NOT GATED ON HALFTIME (owner: a game at half was not showing the field).
+              The SITUATION row is suppressed at half for a good reason -- nobody is on the
+              clock and the down and spot belong to a drive that is over -- and the field
+              inherited that gate by sitting next to it. But the field is not a live readout
+              the way a down is: it is where the ball GOT TO, which is exactly the thing
+              worth looking at while a game is stopped. Dropping the row at half also
+              resized the card mid-game, which is the complaint this was already fixed for
+              once. */}
+          {live && (
             <div style={{
               ...PANEL,
               // ⚠️ THE SPACE ABOVE THIS ROW WAS NEVER A MARGIN, which is why pulling the
@@ -540,7 +548,10 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             </div>
           )}
           </div>
-
+          </>) : (
+            <PickButtons away={away} home={home}
+                         awayColor={awayFill} homeColor={homeFill} pick={pick} />
+          )}
         </div>
       )}
     </div>

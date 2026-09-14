@@ -66,7 +66,7 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
   // Away team's effective color for the WP meter: falls back to its secondary
   // when its primary is basically the same as home's, so the two halves of the
   // bar stay distinguishable. Home is the reference and keeps its primary.
-  const awayColor = effectiveAwayColor(homeTeam.color, awayTeam.color, awayTeam.secondaryColor)
+  const awayColor = effectiveAwayColor(homeTeam.color, awayTeam.color, awayTeam.secondaryColor, awayTeam.tertiaryColor)
 
   const absMomentum = Math.abs(momentum ?? 0)
   const homeMomentum = isLive && momentumTeam === homeTeam.abbr

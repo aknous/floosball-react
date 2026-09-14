@@ -133,17 +133,23 @@ export function readableOnDark(
   return '#cbd5e1'
 }
 
-export function colorsTooClose(a?: string | null, b?: string | null): boolean {
+/** Redmean weighted euclidean distance. https://www.compuphase.com/cmetric.htm */
+export function colorDistance(a?: string | null, b?: string | null): number {
   const ra = hexToRgb(a), rb = hexToRgb(b)
-  if (!ra || !rb) return false
-  // 1) Redmean weighted euclidean distance. https://www.compuphase.com/cmetric.htm
+  if (!ra || !rb) return 0
   const dr = ra[0] - rb[0], dg = ra[1] - rb[1], db = ra[2] - rb[2]
   const rmean = (ra[0] + rb[0]) / 2
-  const dist = Math.sqrt(
+  return Math.sqrt(
     (2 + rmean / 256) * dr * dr +
     4 * dg * dg +
     (2 + (255 - rmean) / 256) * db * db,
   )
+}
+
+export function colorsTooClose(a?: string | null, b?: string | null): boolean {
+  const ra = hexToRgb(a), rb = hexToRgb(b)
+  if (!ra || !rb) return false
+  const dist = colorDistance(a, b)
   if (dist < COLOR_CLASH_THRESHOLD) return true
   // 2) Same hue-family clash (blue/purple, yellow/lime): close hue, both
   // saturated, similar lightness.
@@ -163,12 +169,37 @@ export function colorsTooClose(a?: string | null, b?: string | null): boolean {
  * as the home primary, fall back to its secondary (only if that actually
  * separates from home) so the two stay distinguishable. Home is the reference.
  */
-export function effectiveAwayColor(homeColor?: string | null, awayColor?: string | null, awaySecondary?: string | null): string {
+export function effectiveAwayColor(
+  homeColor?: string | null,
+  awayColor?: string | null,
+  awaySecondary?: string | null,
+  awayTertiary?: string | null,
+): string {
   const away = awayColor ?? '#888'
-  if (colorsTooClose(homeColor, away) && awaySecondary && !colorsTooClose(homeColor, awaySecondary)) {
-    return awaySecondary
+  if (!colorsTooClose(homeColor, away)) return away
+
+  // ⚠️ THE FALLBACK USED TO BE THE PRIMARY -- THE ONE OPTION ALREADY PROVED TO CLASH. This
+  // read `secondary if it is clean, else the primary`, so a club whose secondary ALSO trips
+  // `colorsTooClose` got back the colour we had just rejected. Reported on Minnesota Pops at
+  // Kansas City Slippers, where both end zones of the drive line came out red.
+  //
+  // ⚠️ AND THE SECOND CLASH WAS ITSELF WRONG. Pops' secondary is a cream, **406 redmean units**
+  // from the Slippers' crimson -- not remotely confusable -- but `colorsTooClose`'s hue-family
+  // rule flagged it anyway: hueDiff 50.4 within 60, and a lightness difference of exactly
+  // 0.35, right on its boundary. That rule exists for pairs that are close in DISTANCE too
+  // (blue vs purple); it is not fixed here because other callers depend on its thresholds.
+  //
+  // So: once the primary is out, take whichever alternative sits FURTHEST from the home
+  // colour rather than demanding a clean one. That is the right answer whether or not any
+  // candidate passes, and it degrades to the primary only when there is nothing else.
+  const candidates = [awaySecondary, awayTertiary].filter(Boolean) as string[]
+  if (!candidates.length) return away
+  let best = away, bestDist = colorDistance(homeColor, away)
+  for (const c of candidates) {
+    const d = colorDistance(homeColor, c)
+    if (d > bestDist) { best = c; bestDist = d }
   }
-  return away
+  return best
 }
 
 // ── Team colors used as TEXT ─────────────────────────────────────────────────

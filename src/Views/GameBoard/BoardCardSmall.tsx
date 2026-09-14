@@ -42,7 +42,7 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   const homeScore = game.homeScore ?? 0
   const awayScore = game.awayScore ?? 0
 
-  const awayFill = effectiveAwayColor(home?.color, away?.color, away?.secondaryColor)
+  const awayFill = effectiveAwayColor(home?.color, away?.color, away?.secondaryColor, away?.tertiaryColor)
   const homeFill = home?.color || '#64748b'
 
   const homeWp = Math.round(game.homeWinProbability ?? 50)
