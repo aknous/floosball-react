@@ -438,36 +438,17 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               </span>
             )}
           </div>
-          </div>
 
-          {/* ⚠️ THE SITUATION AND THE DRIVE ARE ONE PANEL (owner: the two rows should "look
-              like they are part of the same component"). The situation used to be a narrow
-              panel sharing a row with LAST PLAY and the field a third panel below it --
-              three borders, three lots of padding and two gaps, which is most of the empty
-              vertical space on this card. It is now one box under LAST PLAY: the numbers
-              across the top, a hairline, the field beneath. The field also gets the full
-              width of the card rather than whatever was left beside the clock.
-
-              Where the game stands NOW. The last play says what just happened; this says
-              what is about to. Suppressed at halftime, where nobody is on the clock and the
-              down and spot belong to a drive that is over.
-
-              ⚠️ GATED ONLY ON THE GAME BEING LIVE. The drive row used to need
-              `situationLive` and a known spot too, so a score or a possession change took it
-              away and the whole card changed height mid-game (owner). `DriveLine` draws the
-              field regardless and leaves out only the football, so the height is fixed for
-              the whole game. */}
+          {/* Where the game stands NOW. The last play says what just happened;
+              this says what is about to. Suppressed at halftime, where nobody is
+              on the clock and the down and spot belong to a drive that is over. */}
           {live && !game.isHalftime && (
             <div style={{
-              ...PANEL, marginTop: '8px', padding: 0, overflow: 'hidden',
-              display: 'flex', flexDirection: 'column', minWidth: 0,
+              ...PANEL, flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: 0,
               ...(redZone && situationLive
                 ? { borderColor: `${RED_ZONE}4d`, background: 'rgba(248,113,113,0.06)' }
                 : {}),
-            }}>
-            <div style={{
-              padding: '9px 11px', display: 'flex', alignItems: 'center', gap: 0,
-              minWidth: 0,
             }}>
               {/* FormatClock, not a hand-rolled quarter + time: an innings game
                   or a chess-clock game does not have either. */}
@@ -495,24 +476,45 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                   twice. The small card still needs its chip — it has no panel to
                   tint and no spot to color. */}
             </div>
-              <div style={{
-                borderTop: `1px solid ${BORDER.hairline}`,
-                padding: '8px 11px 9px',
-                display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0,
-              }}>
-                <SectionLabel>DRIVE</SectionLabel>
-                <span style={{ flex: 1, minWidth: 0, display: 'flex' }}>
-                  <DriveLine
-                    yardsToEndzone={game.yardsToEndzone}
-                    driveStartYardsToEndzone={game.driveStartYardsToEndzone}
-                    homeTeamPoss={game.homeTeamPoss}
-                    awayTeamPoss={game.awayTeamPoss}
-                    homeColor={homeFill}
-                    awayColor={awayFill}
-                    leftTeam="away"
-                  />
-                </span>
-              </div>
+          )}
+          </div>
+
+          {/* THE DRIVE, full width under both panels — it was squeezed into a cell
+              of the situation row beside the clock and the spot, where a hundred
+              yards of field had about ninety pixels and read as a smudge. A field
+              is the one thing on this card worth more the wider it is.
+
+              ⚠️ LAST PLAY AND THE SITUATION STAY ON ONE ROW (owner). A version of
+              this moved the situation panel down to sit full-width above the
+              field, on the theory that "part of the same component" meant merging
+              them; it does not. The row is the row. What joins the drive to it is
+              the -1px pull and the squared top corners, so its border sits ON the
+              bottom border of the panels above and the two read as one block
+              rather than as two boxes with air between them.
+
+              ⚠️ GATED ONLY ON THE GAME BEING LIVE. It used to need `situationLive`
+              and a known spot as well, so a score or a possession change took the
+              row away and the whole card changed height mid-game (owner).
+              `DriveLine` draws the field regardless and leaves out only the
+              football, so the height is fixed for the whole game. */}
+          {live && !game.isHalftime && (
+            <div style={{
+              ...PANEL, marginTop: '-1px',
+              borderTopLeftRadius: 0, borderTopRightRadius: 0,
+              display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0,
+            }}>
+              <SectionLabel>DRIVE</SectionLabel>
+              <span style={{ flex: 1, minWidth: 0, display: 'flex' }}>
+                <DriveLine
+                  yardsToEndzone={game.yardsToEndzone}
+                  driveStartYardsToEndzone={game.driveStartYardsToEndzone}
+                  homeTeamPoss={game.homeTeamPoss}
+                  awayTeamPoss={game.awayTeamPoss}
+                  homeColor={homeFill}
+                  awayColor={awayFill}
+                  leftTeam="away"
+                />
+              </span>
             </div>
           )}
         </>
