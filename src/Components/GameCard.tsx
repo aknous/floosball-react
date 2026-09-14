@@ -549,7 +549,10 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             <DriveLine
               yardsToEndzone={yardsToEndzone}
               driveStartYardsToEndzone={driveStartYardsToEndzone}
-              color={homeTeamPoss ? homeTeam.color : awayTeamPoss ? awayColor : undefined}
+              homeTeamPoss={homeTeamPoss}
+              awayTeamPoss={awayTeamPoss}
+              homeColor={homeTeam.color}
+              awayColor={awayColor}
             />
           )}
           </div>
