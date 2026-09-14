@@ -6,7 +6,7 @@ import { DriveLine } from '@/Components/DriveLine'
 import { lastPlaySummary, downAndDistance } from './lastPlaySummary'
 import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
-import { PickButtons, PickedMark, type PickState } from './pickControl'
+import { PickSideButton, PickedMark, type PickState } from './pickControl'
 import {
   Crest, MomentumFlame, InterestChip, SectionLabel,
   CHIP_COLOR, inRedZone, RED_ZONE, type ChipKind,
@@ -157,6 +157,11 @@ type Props = {
 const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, scoringModel, onOpen, pick }) => {
   const live = game.status === 'Active'
   const isFinal = game.status === 'Final'
+  // ⚠️ PRE-GAME THE SCOREBOARD IS DEAD SPACE (owner) — two rows of dashes and a pair of
+  // zeroes — so the pick takes its place rather than being added beneath it. That is what
+  // stops the prognostication panel costing the card an extra block of height, and it puts
+  // each team's button on that team's own row, which needs nothing to explain it.
+  const preGame = !live && !isFinal
   const home = game.homeTeam
   const away = game.awayTeam
 
@@ -251,6 +256,15 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
         </div>
 
         <span style={{ flex: 1, minWidth: 0 }} />
+        {preGame && pick ? (
+          <PickSideButton
+            team={team}
+            color={side === 'home' ? homeText : awayText}
+            pct={wpFor(side)}
+            points={side === 'home' ? pick.homePoints : pick.awayPoints}
+            pick={pick}
+          />
+        ) : (
         <div style={{
           ...CLUSTER, ...SCORE_PANEL,
           ...(side === 'home' ? { borderBottom: `1px solid ${BORDER.hairline}` } : {}),
@@ -287,6 +301,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             />
           </span>
         </div>
+        )}
       </div>
     )
   }
@@ -341,7 +356,14 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           borderTop: `1px solid ${BORDER.hairline}`,
           paddingTop: '6px', paddingBottom: '4px',
         }}>
-          {columns && (
+          {/* ⚠️ PRE-GAME THIS HEADER NAMES THE PICK, not the quarters. Q1-Q4 and TOT label
+              columns that hold nothing until kickoff, and the buttons underneath want
+              saying what they are — which is the label the owner asked for, in the one
+              place that costs the card no height. */}
+          {preGame && pick && (
+            <span style={{ ...font(600, 10, 1, '0.14em'), color: TEXT.muted }}>PROGNOSTICATE</span>
+          )}
+          {!preGame && columns && (
             /* The same gap as the score row below it, or the labels stop sitting over
                the columns they name. */
             <div style={quartersRow(columns.periods.length, hasFractional(columns.periods))}>
@@ -352,12 +374,14 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               ))}
             </div>
           )}
-          {columns && <span style={{ width: '1px', height: '16px', background: BORDER.hairline }} />}
+          {!preGame && columns && <span style={{ width: '1px', height: '16px', background: BORDER.hairline }} />}
           {/* Same width as the score cell below it, or the header label and the totals
               column stop lining up the moment frames widen the box. */}
-          <span style={{ ...totalCell(!!game.frames?.active), ...font(600, 11, 1, '0.08em'), color: TEXT.muted }}>
-            {columns ? columns.label : 'TOT'}
-          </span>
+          {!preGame && (
+            <span style={{ ...totalCell(!!game.frames?.active), ...font(600, 11, 1, '0.08em'), color: TEXT.muted }}>
+              {columns ? columns.label : 'TOT'}
+            </span>
+          )}
         </div>
       </div>
 
@@ -378,7 +402,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           game is live sits empty before it -- which is where the pick buttons go. That is
           what let the pick come off the left of the team rows, where any control at all
           "pushes everything too far to the right". */}
-      {!isFinal && (live || pick) && (
+      {!isFinal && live && (
         /* ⚠️ ONE FLEX CHILD, NOT TWO. The card root is `flex-direction: column` with
            `gap: 16px`, so every direct child is pushed 16px off the one above it — measured
            live, the drive strip sat 15px below the row despite `marginTop: -1px`, which is
@@ -390,7 +414,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           display: 'flex', flexDirection: 'column', minWidth: 0,
           paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
         }}>
-          {live ? (<>
+
           {/* ⚠️ THE FIELD SITS WHERE THE WIN-PROBABILITY GRAPH USED TO (owner), with the
               last play and the situation under it. It is the widest thing on the card and
               the one most worth the width, and putting it directly beneath the teams means
@@ -550,11 +574,6 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             </div>
           )}
           </div>
-          </>) : (
-            <PickButtons away={away} home={home}
-                         awayColor={awayFill} homeColor={homeFill}
-                         awayPct={awayWp} homePct={homeWp} pick={pick} />
-          )}
         </div>
       )}
     </div>

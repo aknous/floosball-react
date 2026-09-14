@@ -28,6 +28,10 @@ export interface PickState {
   correct: boolean | null
   /** Points banked, shown once settled and correct. */
   points: number | null
+  /** What a correct pick on each side would be worth if made NOW — base x timing x that
+   *  side's underdog multiplier. Null when the game can no longer be picked. */
+  awayPoints?: number | null
+  homePoints?: number | null
   onPick: (teamId: number) => void
 }
 
@@ -131,81 +135,68 @@ export const GaugePick: React.FC<Props> = ({ side, teamId, abbr, pct, favored, c
  * or a past week gets the card it had before rather than a column of dead boxes.
  */
 /**
- * Before kickoff the lower block of the card is where you make the call.
+ * One team's pick, sized to sit where that team's SCORE LINE goes before kickoff.
  *
- * ⚠️ THE PICK MOVED OUT FROM BESIDE THE TEAMS (owner, 2026-09-14): a control there "take[s]
- * up too much space next to the teams and pushes everything too far to the right", however
- * small it gets. A scheduled game has no field to draw and no last play to report, so the
- * block that carries those while the game is live is empty before it — that is the room, and
- * it costs the team rows nothing.
+ * ⚠️ THE SCOREBOARD IS DEAD SPACE PRE-GAME (owner) -- two rows of dashes and a pair of
+ * zeroes -- so the pick takes its place rather than being added underneath it. That is what
+ * stops the prognostication panel costing the card a whole extra block of height, and it
+ * puts each team's button on that team's own row, which needs no label to explain it.
  *
- * ⚠️ RENDERS NOTHING WITHOUT `pick`. Signed out, or a past week: the card simply ends at the
- * score rather than showing two dead buttons.
+ * ⚠️ RENDERS NOTHING WITHOUT `pick`. Signed out, or a past week: the card keeps its
+ * scoreboard and looks exactly as it always did.
  */
-export const PickButtons: React.FC<{
-  away?: { id?: string | number; abbr?: string; name?: string }
-  home?: { id?: string | number; abbr?: string; name?: string }
-  awayColor: string
-  homeColor: string
-  /** Pre-game win probability, which before kickoff is the ELO prior — the one number
-   *  that makes a pick a judgement rather than a coin flip. */
-  awayPct: number
-  homePct: number
+export const PickSideButton: React.FC<{
+  team?: { id?: string | number; abbr?: string }
+  color: string
+  /** Win probability for this side, and what a correct call on it pays right now. */
+  pct: number
+  points?: number | null
   pick?: PickState | null
-}> = ({ away, home, awayColor, homeColor, awayPct, homePct, pick }) => {
+}> = ({ team, color, pct, points, pick }) => {
   if (!pick) return null
+  const id = team?.id == null ? null : Number(team.id)
+  const picked = id != null && pick.userPick === id
   const settled = pick.correct != null
-
-  const button = (team: typeof away, color: string, pct: number) => {
-    const id = team?.id == null ? null : Number(team.id)
-    const picked = id != null && pick.userPick === id
-    const canPick = pick.pickable && !settled && id != null
-    return (
-      <span
-        key={String(team?.id)}
-        role={canPick ? 'button' : undefined}
-        tabIndex={canPick ? 0 : undefined}
-        aria-pressed={canPick ? picked : undefined}
-        aria-label={canPick ? `Pick ${team?.abbr}` : undefined}
-        // ⚠️ The whole card opens the game modal on click, so a pick must stop there or it
-        // opens the game on top of itself.
-        onClick={canPick ? (e: React.MouseEvent) => { e.stopPropagation(); pick.onPick(id!) } : undefined}
-        onKeyDown={canPick ? (e: React.KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); pick.onPick(id!) }
-        } : undefined}
-        style={{
-          flex: 1, minWidth: 0, boxSizing: 'border-box',
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: '8px', minHeight: '30px', padding: '0 11px', borderRadius: '4px',
-          border: `1px solid ${picked ? color : canPick ? TEXT.faint : 'transparent'}`,
-          borderStyle: picked || !canPick ? 'solid' : 'dashed',
-          background: picked ? `${color}2e` : 'transparent',
-          color: picked ? TEXT.primary : color,
-          ...font(picked ? 800 : 600, 12, 1, '0.04em'),
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          cursor: canPick ? 'pointer' : 'default',
-          transition: 'background 0.15s, border-color 0.15s',
-        }}
-      >
-        {picked && settled && <Mark ok={!!pick.correct} size={13} />}
-        <span>{team?.abbr}</span>
-        {/* ⚠️ THE ODDS RIDE THE BUTTON (owner). Removing the win-probability row took the
-            number off the card entirely, and a pick with nothing to weigh is a coin flip —
-            this is the one fact that makes it a judgement. Muted against the abbr so the
-            button still reads as the team first. */}
-        <span style={{ ...font(600, 11, 1), ...TABULAR, opacity: 0.75 }}>{pct}%</span>
-      </span>
-    )
-  }
+  const canPick = pick.pickable && !settled && id != null
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-      {/* ⚠️ NO SECTION LABEL (owner: remove "YOUR CALL"). Two team buttons sitting alone in
-          the block a live card fills with its field are self-evidently the thing to press,
-          and the label was taking width from the buttons to say so. */}
-      {button(away, awayColor, awayPct)}
-      {button(home, homeColor, homePct)}
-    </div>
+    <span
+      role={canPick ? 'button' : undefined}
+      tabIndex={canPick ? 0 : undefined}
+      aria-pressed={canPick ? picked : undefined}
+      aria-label={canPick ? `Pick ${team?.abbr}` : undefined}
+      // ⚠️ The whole card opens the game modal on click, so a pick must stop there or it
+      // opens the game on top of itself.
+      onClick={canPick ? (e: React.MouseEvent) => { e.stopPropagation(); pick.onPick(id!) } : undefined}
+      onKeyDown={canPick ? (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); pick.onPick(id!) }
+      } : undefined}
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+        boxSizing: 'border-box', flexShrink: 0,
+        width: '168px', minHeight: '38px', padding: '0 12px', borderRadius: '5px',
+        // ⚠️ Every state has a visible outline: a solid team-coloured box when picked, a
+        // DASHED muted one while it can still be changed, a solid faint one once locked.
+        // The unpicked border used to be transparent when locked, which left two words
+        // floating with nothing to say they had ever been a control.
+        border: `1px solid ${picked ? color : canPick ? TEXT.muted : TEXT.faint}`,
+        borderStyle: picked || !canPick ? 'solid' : 'dashed',
+        background: picked ? `${color}2e` : 'transparent',
+        color: picked ? TEXT.primary : color,
+        ...font(picked ? 800 : 600, 15, 1, '0.04em'),
+        whiteSpace: 'nowrap',
+        cursor: canPick ? 'pointer' : 'default',
+        transition: 'background 0.15s, border-color 0.15s',
+      }}
+    >
+      {picked && settled && <Mark ok={!!pick.correct} size={14} />}
+      <span style={{ ...font(700, 14, 1), ...TABULAR, opacity: 0.8 }}>{pct}%</span>
+      {/* ⚠️ AND WHAT IT PAYS. The whole point of the underdog multiplier is that the
+          unlikely call is worth more; without the figure a reader cannot see the trade. */}
+      {points != null && (
+        <span style={{ ...font(600, 12, 1, '0.04em'), ...TABULAR, opacity: 0.6 }}>{points} PTS</span>
+      )}
+    </span>
   )
 }
 
