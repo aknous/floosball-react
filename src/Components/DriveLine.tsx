@@ -37,22 +37,33 @@ export const DriveLine: React.FC<DriveLineProps> = ({
   yardsToEndzone, driveStartYardsToEndzone, homeTeamPoss, awayTeamPoss, homeColor, awayColor,
   leftTeam,
 }) => {
-  if (yardsToEndzone == null || (!homeTeamPoss && !awayTeamPoss)) return null
+  // ⚠️ NEVER RETURNS NULL WHILE A GAME IS LIVE. It used to, and a possession change or a
+  // score briefly leaves nobody with the ball -- so the row vanished and the whole card
+  // changed height mid-game (owner). The FIELD is always drawable; only the football and
+  // the trail depend on knowing where the ball is.
+  const known = yardsToEndzone != null && (!!homeTeamPoss || !!awayTeamPoss)
   const clamp = (v: number) => Math.max(0, Math.min(100, v))
   const leftHasBall = leftTeam === 'home' ? !!homeTeamPoss : !!awayTeamPoss
   // Absolute spot on the field, measured from the LEFT team's own goal line.
   const spot = (ytg: number) => clamp(leftHasBall ? 100 - ytg : ytg)
-  const now = spot(yardsToEndzone)
+  const now = spot(yardsToEndzone ?? 50)
   const start = driveStartYardsToEndzone == null ? null : spot(driveStartYardsToEndzone)
 
   const color = (leftHasBall ? (leftTeam === 'home' ? homeColor : awayColor)
                              : (leftTeam === 'home' ? awayColor : homeColor)) || '#38bdf8'
   // Yards gained is along the direction of ATTACK, not along the axis, so a drive going
   // backwards reads negative whichever way the team happens to be facing.
-  const gained = start == null ? null : Math.round(driveStartYardsToEndzone! - yardsToEndzone!)
+  const gained = (start == null || !known) ? null
+    : Math.round(driveStartYardsToEndzone! - yardsToEndzone!)
   const lo = start == null ? now : Math.min(start, now)
   const hi = start == null ? now : Math.max(start, now)
-  const driveColor = gained != null && gained < 0 ? '#94a3b8' : color
+  // ⚠️ ALWAYS THE TEAM'S COLOUR. A drive that has LOST ground was drawn slate grey, which
+  // reads as a white bar -- and because losing ground puts the start AHEAD of the ball, it
+  // appeared in FRONT of the football rather than trailing it (owner: "a white line in front
+  // of the direction where the ball is going, instead of a trailing line of the teams color").
+  // The bar is this team's ground either way; the ball sitting at its back edge is what says
+  // they went backwards, and the figure beside it already carries the minus.
+  const driveColor = color
 
   const leftColor = leftTeam === 'home' ? homeColor : awayColor
   const rightColor = leftTeam === 'home' ? awayColor : homeColor
@@ -78,8 +89,10 @@ export const DriveLine: React.FC<DriveLineProps> = ({
                                   width: '1px', backgroundColor: y === 50 ? '#64748b' : '#334155' }} />
           ))}
           {/* the drive so far */}
-          <div style={{ position: 'absolute', left: pct(lo), width: pct(Math.max(hi - lo, 0.6)),
-                        top: 0, bottom: 0, backgroundColor: driveColor, opacity: 0.8 }} />
+          {known && start != null && (
+            <div style={{ position: 'absolute', left: pct(lo), width: pct(Math.max(hi - lo, 0.6)),
+                          top: 0, bottom: 0, backgroundColor: driveColor, opacity: 0.8 }} />
+          )}
         </div>
 
         {/* ⚠️ THE SAME FOOTBALL THE GAME PAGE DRAWS (owner) -- team-colour halo, brown
@@ -87,7 +100,7 @@ export const DriveLine: React.FC<DriveLineProps> = ({
             are attacking. A plain white tick was hard to pick out against a pale team
             colour or inside a tinted end zone, and it said nothing about direction; the
             ball says both, and says them the way this app already says them elsewhere. */}
-        <svg
+        {known && <svg
           width="34" height="20" viewBox="0 0 34 20"
           style={{ position: 'absolute', top: '50%', left: pct(now),
                    transform: 'translate(-17px, -50%)', overflow: 'visible',
@@ -101,7 +114,7 @@ export const DriveLine: React.FC<DriveLineProps> = ({
           <polygon
             points={leftHasBall ? '30,10 23,5.5 23,14.5' : '4,10 11,5.5 11,14.5'}
             fill="#f8fafc" stroke="rgba(0,0,0,0.55)" strokeWidth={0.5} opacity={0.95} />
-        </svg>
+        </svg>}
       </div>
 
       <span style={{ fontSize: '11px', fontWeight: 600, color: '#cbd5e1',
