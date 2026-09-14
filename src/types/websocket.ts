@@ -195,6 +195,8 @@ export interface PlayInsightsFourthDown {
   inFgRange: boolean
   goForItThreshold: number
   yardsToEndzone: number
+  /** Where this drive began, same units. Null before the opening kickoff places anybody. */
+  driveStartYardsToEndzone?: number | null
   coachAggr: number | null
 }
 
@@ -583,6 +585,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
   distance: number | null  // Yards to first down
   yardLine: string | null  // e.g., 'BAL 25'
   yardsToEndzone: number | null
+  driveStartYardsToEndzone?: number | null
   yardsToSafety: number | null
   driveClock?: DriveClockState | null   // possession shot clock (Drive Clock rule); null when off
   sidelineGoals?: SidelineGoalsState | null  // Sideline Goals hoop state (this drive); null when off

@@ -159,6 +159,7 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             homeTeamPoss: existing?.homeTeamPoss ?? (game as any).homeTeamPoss,
             awayTeamPoss: existing?.awayTeamPoss ?? (game as any).awayTeamPoss,
             yardsToEndzone: existing?.yardsToEndzone ?? (game as any).yardsToEndzone,
+            driveStartYardsToEndzone: existing?.driveStartYardsToEndzone ?? (game as any).driveStartYardsToEndzone,
             momentum: existing?.momentum ?? (game as any).momentum,
             momentumTeam: existing?.momentumTeam ?? (game as any).momentumTeam,
           })
@@ -318,6 +319,10 @@ export const GamesProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               yardsToFirstDown: gsEvt.distance ?? undefined,
               yardLine: gsEvt.yardLine ?? undefined,
               yardsToEndzone: gsEvt.yardsToEndzone ?? undefined,
+              // ⚠️ Carried through the merge explicitly. This is an allowlist, so a field
+              // omitted here is DROPPED on every state update -- the same way
+              // `downsPerSeries` was, a few lines above.
+              driveStartYardsToEndzone: (gsEvt as any).driveStartYardsToEndzone ?? (curGame as any).driveStartYardsToEndzone,
               driveClock: gsEvt.driveClock ?? null,
               // Per-play format state (server-computed, doesn't derive from score/clock) —
               // thread it through live so chess-clock budgets, play/inning/frame counters,

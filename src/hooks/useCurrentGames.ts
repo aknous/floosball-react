@@ -48,6 +48,8 @@ export interface CurrentGame {
   yardsToFirstDown?: number
   yardLine?: string  // e.g., "BAL 25"
   yardsToEndzone?: number
+  /** Where the current drive began, same units. Feeds the compact drive line. */
+  driveStartYardsToEndzone?: number | null
   driveClock?: DriveClockState | null
   sidelineGoals?: SidelineGoalsState | null
   playLimit?: PlayLimitState
