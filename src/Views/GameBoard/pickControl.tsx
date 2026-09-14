@@ -110,10 +110,76 @@ export const GaugePick: React.FC<Props> = ({ side, teamId, abbr, pct, favored, c
     >
       {picked && settled && <Mark ok={!!pick.correct} size={size} />}
       {label}
-      {/* Points ride the picked side only, and only once they are banked. */}
-      {picked && settled && pick.correct && pick.points != null && (
-        <span style={{ ...font(700, size - 2), color: ACCENT.success }}>+{Math.round(pick.points)}</span>
-      )}
+      {/* ⚠️ NO POINTS FIGURE — see `PickBox`. A pick settles only when the game is final,
+          so this could never show on a live card; it was a permanent tail on every graded
+          pick. The tick or cross carries the verdict. */}
+    </span>
+  )
+}
+
+/**
+ * The prognostication pick as a checkbox beside a team's crest.
+ *
+ * ⚠️ THE PICK USED TO BE THE WIN-PROBABILITY GAUGE'S SIDE LABELS, and that row is gone
+ * (owner, 2026-09-14: the WP graph "isnt as necessary as the rest of the information, but
+ * users do want to be able to pick teams for prognostications here", then: "maybe we can put
+ * a checkbox to the left of the team logo and remove the row where the WP graph was"). The
+ * two jobs were welded together because they happened to share a row; separating them lets
+ * the graph go without taking the picking with it.
+ *
+ * ⚠️ IT RENDERS NOTHING WITHOUT `pick`, exactly as `GaugePick` does -- a signed-out reader
+ * or a past week gets the card it had before rather than a column of dead boxes.
+ */
+export const PickBox: React.FC<{
+  teamId?: string | number
+  abbr?: string
+  color: string
+  pick?: PickState | null
+}> = ({ teamId, abbr, color, pick }) => {
+  const id = teamId == null ? null : Number(teamId)
+  if (!pick || id == null) return null
+  const picked = pick.userPick === id
+  const settled = pick.correct != null
+  const canPick = pick.pickable && !settled
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
+      <span
+        role={canPick ? 'checkbox' : undefined}
+        aria-checked={picked}
+        tabIndex={canPick ? 0 : undefined}
+        aria-label={canPick ? `Pick ${abbr}` : undefined}
+        onClick={canPick ? (e: React.MouseEvent) => { e.stopPropagation(); pick.onPick(id) } : undefined}
+        onKeyDown={canPick ? (e: React.KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); pick.onPick(id) }
+        } : undefined}
+        style={{
+          width: '17px', height: '17px', borderRadius: '4px', boxSizing: 'border-box',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          // ⚠️ The border is present in EVERY state so the row cannot shift by a pixel as a
+          // pick lands or resolves — sixteen cards of aligned rows, and a reflow on click
+          // reads as breakage. Same rule the gauge labels followed.
+          border: `1px solid ${picked ? color : canPick ? TEXT.faint : 'transparent'}`,
+          borderStyle: picked || !canPick ? 'solid' : 'dashed',
+          background: picked ? `${color}33` : 'transparent',
+          cursor: canPick ? 'pointer' : 'default',
+          transition: 'background 0.15s, border-color 0.15s',
+        }}
+      >
+        {picked && !settled && (
+          <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={3.5}
+               strokeLinecap="round" strokeLinejoin="round"
+               style={{ width: 11, height: 11 }} aria-hidden="true">
+            <path d="M4 12.5 9.5 18 20 6" />
+          </svg>
+        )}
+        {picked && settled && <Mark ok={!!pick.correct} size={13} />}
+      </span>
+      {/* ⚠️ NO POINTS FIGURE (owner: "leave out the +X values when the game ends"). A pick
+          only settles once the game is final, so a `+N` here could never appear anywhere BUT
+          on a finished card -- it was a permanent tail on every graded pick rather than a
+          live readout. The tick or cross still says whether the call was right, and the
+          points belong on the prognostications page where they are totalled. */}
     </span>
   )
 }

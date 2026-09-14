@@ -67,11 +67,24 @@ describe('board pick control', () => {
     expect(src).toMatch(/Number\(teamId\)/)
   })
 
-  it('both densities use the one control', () => {
+  it('both densities use the one control MODULE', () => {
     // A second implementation is how the two boards drift on what a pick looks like.
+    // ⚠️ ASSERTS THE IMPORT, NOT AN EXPORT NAME. This named `GaugePick` and broke when the
+    // large card moved its pick to a checkbox beside the crest (`PickBox`) -- which is the
+    // same module and exactly the thing this test exists to protect. The two densities now
+    // render the pick DIFFERENTLY on purpose; what must not happen is a second file.
     for (const f of ['BoardCardLarge.tsx', 'BoardCardSmall.tsx']) {
-      expect(read(f)).toContain('GaugePick')
+      expect(read(f)).toMatch(/from '\.\/pickControl'/)
     }
+  })
+
+  it('the points figure is gone from both controls', () => {
+    // ⚠️ A pick settles only when the game is final, so a `+N` could never appear on a live
+    // card -- it was a permanent tail on every graded pick (owner: "leave out the +X values
+    // when the game ends"). The tick or cross carries the verdict; the totals live on the
+    // prognostications page.
+    const src = read('pickControl.tsx')
+    expect(src).not.toMatch(/\+\{Math\.round\(pick\.points\)\}/)
   })
 
   it('with no pick state it renders the plain label', () => {

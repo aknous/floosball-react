@@ -6,9 +6,9 @@ import { DriveLine } from '@/Components/DriveLine'
 import { lastPlaySummary, downAndDistance } from './lastPlaySummary'
 import { periodColumns, FormatClock, FormatScore, leadingSide } from './gameFormat'
 import type { ScoringModel } from '@/utils/displayScore'
-import GaugePick, { type PickState } from './pickControl'
+import { PickBox, type PickState } from './pickControl'
 import {
-  Crest, MomentumFlame, InterestChip, SectionLabel, SplitBar,
+  Crest, MomentumFlame, InterestChip, SectionLabel,
   CHIP_COLOR, inRedZone, RED_ZONE, type ChipKind,
 } from './boardPieces'
 
@@ -175,6 +175,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
 
   const homeWp = Math.round(game.homeWinProbability ?? 50)
   const awayWp = 100 - homeWp
+  const wpFor = (side: 'home' | 'away') => (side === 'home' ? homeWp : awayWp)
 
   // The last play as structure, not prose — see lastPlaySummary for why.
   const lastPlay = lastPlaySummary(game)
@@ -211,6 +212,27 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
     // crest, or the city + name block), so this leaves 6px of breathing room.
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minHeight: '46px' }}>
+        {/* ⚠️ THE PICK AND THE WIN PROBABILITY LIVE HERE NOW, and the row that held them is
+            gone (owner: the WP graph "isnt as necessary", then "put a checkbox to the left of
+            the team logo and remove the row where the WP graph was ... we can even put a WP
+            percentage there"). They were welded to the gauge only because they happened to
+            share its row: the split bar WAS the graph, its side labels WERE the buttons, and
+            each label already carried its own percentage. Moving the two facts onto the team
+            they describe costs the card a whole row and loses nothing.
+
+            ⚠️ The percentage renders with or without a pick; the box renders only with one,
+            so a signed-out reader and a past week get no dead checkboxes. */}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
+          <PickBox teamId={team?.id} abbr={team?.abbr}
+                   color={side === 'home' ? homeText : awayText} pick={pick} />
+          {live && (
+            <span style={{
+              ...font(wpFor(side) > 50 ? 800 : 600, 11), ...TABULAR,
+              color: wpFor(side) > 50 ? (side === 'home' ? homeText : awayText) : TEXT.muted,
+              minWidth: '25px', textAlign: 'right', whiteSpace: 'nowrap',
+            }}>{wpFor(side)}%</span>
+          )}
+        </span>
         <Crest teamId={team?.id} size={36} possession={live && possessionTeam === side} />
         {/* ⚠️ Shrink-to-fit, NOT flex: 1. Growing this block pushed everything after
             it across to the scoreboard; the spacer below takes the slack instead. */}
@@ -356,28 +378,6 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
       {teamRow('home', home, homeScore, homeAhead)}
       </div>
 
-      {/* ⚠️ A FINAL card stops at the score (owner). Everything below the team
-          rows is a LIVE readout — the win-probability gauge resolves to 100/0
-          the moment a game ends, and the leader line and team-stat table that
-          replaced it were reinstating a footer the reader did not ask for.
-          Finals live in their own section now, so they are uniformly compact
-          and read as a results list rather than sixteen half-empty cards. */}
-      {!isFinal && (
-        <div style={{ paddingTop: '14px', borderTop: `1px solid ${BORDER.hairline}`, display: 'flex', flexDirection: 'column', gap: '11px' }}>
-          {/* Just the gauge (owner): the swing trend line came out. Both sides carry
-              their own percentage, so the bar is read against two labeled numbers
-              rather than one favoured side and a sparkline. */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {/* The gauge labels ARE the pick buttons — same place the old dashboard put
-                them, and the only spot on the card already flanking the bar. */}
-            <GaugePick side="away" teamId={away?.id} abbr={away?.abbr} pct={awayWp}
-                       favored={awayWp > homeWp} color={awayText} size={14} pick={pick} />
-            <SplitBar awayPct={awayWp} awayColor={awayFill} homeColor={homeFill} height={6} />
-            <GaugePick side="home" teamId={home?.id} abbr={home?.abbr} pct={homeWp}
-                       favored={homeWp > awayWp} color={homeText} size={14} pick={pick} />
-          </div>
-        </div>
-      )}
 
       {/* ⚠️ Two CONTAINERS, not one run of text (owner). The last play and the
           current situation are separate thoughts that happened to share a row,
@@ -394,9 +394,56 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
            reach it, which is why four attempts at this changed nothing the owner could see.
            Wrapping the pair makes the card's gap apply ONCE, above the pair, and lets the
            two touch inside it. */
-        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div style={{
+          display: 'flex', flexDirection: 'column', minWidth: 0,
+          paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
+        }}>
+          {/* ⚠️ THE FIELD SITS WHERE THE WIN-PROBABILITY GRAPH USED TO (owner), with the
+              last play and the situation under it. It is the widest thing on the card and
+              the one most worth the width, and putting it directly beneath the teams means
+              the drive reads against the clubs driving it rather than as a footnote.
+
+              ⚠️ LAST PLAY AND THE SITUATION STAY ON ONE ROW (owner) — that row is now
+              BELOW this one, and pulls up onto this strip's bottom border so the two still
+              read as one block.
+
+              ⚠️ GATED ONLY ON THE GAME BEING LIVE. It used to need `situationLive`
+              and a known spot as well, so a score or a possession change took the
+              row away and the whole card changed height mid-game (owner).
+              `DriveLine` draws the field regardless and leaves out only the
+              football, so the height is fixed for the whole game. */}
+          {live && !game.isHalftime && (
+            <div style={{
+              ...PANEL,
+              // ⚠️ THE SPACE ABOVE THIS ROW WAS NEVER A MARGIN, which is why pulling the
+              // margin to -1px did not close it. `PANEL` has no vertical padding at all --
+              // it is `minHeight: 34px` with the contents centred, so a 12px field sat in a
+              // 34px box with eleven pixels of air on each side. The strip is sized to what
+              // is in it instead, so it reads as part of the panel above rather than as a
+              // second box of the same height (owner).
+              // ⚠️ 6px, and this padding IS the space between the two rows -- they share a
+              // collapsed border now, so there is no margin or gap left to put it in.
+              minHeight: 0, paddingTop: '6px', paddingBottom: '6px',
+              borderTopLeftRadius: 0, borderTopRightRadius: 0,
+              display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0,
+            }}>
+              <SectionLabel>DRIVE</SectionLabel>
+              <span style={{ flex: 1, minWidth: 0, display: 'flex' }}>
+                <DriveLine
+                  yardsToEndzone={game.yardsToEndzone}
+                  driveStartYardsToEndzone={game.driveStartYardsToEndzone}
+                  homeTeamPoss={game.homeTeamPoss}
+                  awayTeamPoss={game.awayTeamPoss}
+                  homeColor={homeFill}
+                  awayColor={awayFill}
+                />
+              </span>
+            </div>
+          )}
           <div style={{
-            paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
+            // ⚠️ -1px so this row's panels sit ON the field strip's bottom border. The
+            // separator from the team block above moved onto the strip with it.
+            marginTop: '-1px',
             display: 'flex', alignItems: 'stretch', gap: '10px', minWidth: 0,
           }}>
           <div style={{
@@ -502,50 +549,6 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           )}
           </div>
 
-          {/* THE DRIVE, full width under both panels — it was squeezed into a cell
-              of the situation row beside the clock and the spot, where a hundred
-              yards of field had about ninety pixels and read as a smudge. A field
-              is the one thing on this card worth more the wider it is.
-
-              ⚠️ LAST PLAY AND THE SITUATION STAY ON ONE ROW (owner). A version of
-              this moved the situation panel down to sit full-width above the
-              field, on the theory that "part of the same component" meant merging
-              them; it does not. The row is the row. What joins the drive to it is
-              the -1px pull and the squared top corners, so its border sits ON the
-              bottom border of the panels above and the two read as one block
-              rather than as two boxes with air between them.
-
-              ⚠️ GATED ONLY ON THE GAME BEING LIVE. It used to need `situationLive`
-              and a known spot as well, so a score or a possession change took the
-              row away and the whole card changed height mid-game (owner).
-              `DriveLine` draws the field regardless and leaves out only the
-              football, so the height is fixed for the whole game. */}
-          {live && !game.isHalftime && (
-            <div style={{
-              ...PANEL, marginTop: '-1px',
-              // ⚠️ THE SPACE ABOVE THIS ROW WAS NEVER A MARGIN, which is why pulling the
-              // margin to -1px did not close it. `PANEL` has no vertical padding at all --
-              // it is `minHeight: 34px` with the contents centred, so a 12px field sat in a
-              // 34px box with eleven pixels of air on each side. The strip is sized to what
-              // is in it instead, so it reads as part of the panel above rather than as a
-              // second box of the same height (owner).
-              minHeight: 0, paddingTop: '3px', paddingBottom: '5px',
-              borderTopLeftRadius: 0, borderTopRightRadius: 0,
-              display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0,
-            }}>
-              <SectionLabel>DRIVE</SectionLabel>
-              <span style={{ flex: 1, minWidth: 0, display: 'flex' }}>
-                <DriveLine
-                  yardsToEndzone={game.yardsToEndzone}
-                  driveStartYardsToEndzone={game.driveStartYardsToEndzone}
-                  homeTeamPoss={game.homeTeamPoss}
-                  awayTeamPoss={game.awayTeamPoss}
-                  homeColor={homeFill}
-                  awayColor={awayFill}
-                />
-              </span>
-            </div>
-          )}
         </div>
       )}
     </div>
