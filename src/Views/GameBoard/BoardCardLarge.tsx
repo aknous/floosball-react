@@ -393,7 +393,13 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             display: 'flex', alignItems: 'stretch', gap: '10px', minWidth: 0,
           }}>
           <div style={{
-            ...PANEL, flex: 1, minWidth: 0,
+            // ⚠️ 28px, NOT `PANEL`'s 34. The air the owner kept seeing above the drive
+            // strip was never between the boxes -- it is INSIDE this one. `PANEL` has no
+            // vertical padding, it is `minHeight: 34px` with its contents centred, so a
+            // 13px line of text leaves about ten dead pixels underneath it, directly above
+            // the field. Shrinking the strip removed the space BELOW the field and left
+            // that untouched, which is why the gap "hasn't changed at all".
+            ...PANEL, minHeight: '28px', flex: 1, minWidth: 0,
             display: 'flex', alignItems: 'center', gap: '10px',
           }}>
             <SectionLabel>LAST PLAY</SectionLabel>
@@ -444,7 +450,8 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               on the clock and the down and spot belong to a drive that is over. */}
           {live && !game.isHalftime && (
             <div style={{
-              ...PANEL, flexShrink: 0,
+              // 28px to match LAST PLAY — see the note there.
+              ...PANEL, minHeight: '28px', flexShrink: 0,
               display: 'flex', alignItems: 'center', gap: 0,
               ...(redZone && situationLive
                 ? { borderColor: `${RED_ZONE}4d`, background: 'rgba(248,113,113,0.06)' }
@@ -506,7 +513,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               // 34px box with eleven pixels of air on each side. The strip is sized to what
               // is in it instead, so it reads as part of the panel above rather than as a
               // second box of the same height (owner).
-              minHeight: 0, paddingTop: '5px', paddingBottom: '6px',
+              minHeight: 0, paddingTop: '3px', paddingBottom: '5px',
               borderTopLeftRadius: 0, borderTopRightRadius: 0,
               display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0,
             }}>
