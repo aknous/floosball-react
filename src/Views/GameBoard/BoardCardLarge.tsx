@@ -387,7 +387,14 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           quarter cluster at the top of the card and makes it read as one
           instrument instead of three loose numbers. */}
       {!isFinal && (
-        <>
+        /* ⚠️ ONE FLEX CHILD, NOT TWO. The card root is `flex-direction: column` with
+           `gap: 16px`, so every direct child is pushed 16px off the one above it — measured
+           live, the drive strip sat 15px below the row despite `marginTop: -1px`, which is
+           the gap minus that margin. No amount of padding or `minHeight` on either box could
+           reach it, which is why four attempts at this changed nothing the owner could see.
+           Wrapping the pair makes the card's gap apply ONCE, above the pair, and lets the
+           two touch inside it. */
+        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <div style={{
             paddingTop: '13px', borderTop: `1px solid ${BORDER.hairline}`,
             display: 'flex', alignItems: 'stretch', gap: '10px', minWidth: 0,
@@ -453,9 +460,18 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               // 28px to match LAST PLAY — see the note there.
               ...PANEL, minHeight: '28px', flexShrink: 0,
               display: 'flex', alignItems: 'center', gap: 0,
-              ...(redZone && situationLive
-                ? { borderColor: `${RED_ZONE}4d`, background: 'rgba(248,113,113,0.06)' }
-                : {}),
+              // ⚠️ `borderColor` IS ALWAYS SET, NEVER CONDITIONALLY SPREAD, and that is what
+              // fixes the white border that appeared at random (owner). `PANEL` sets the
+              // `border` SHORTHAND; this used to add the `borderColor` LONGHAND only in the
+              // red zone. React writes style objects property by property, so when a card
+              // LEFT the red zone it removed the longhand — and removing a longhand that
+              // came after a shorthand takes the shorthand's colour with it. `border-color`
+              // then falls back to `currentColor`, which here is #e2e8f0. Measured live: 3
+              // of 16 cards had `border-width: 1px; border-style: solid;` and no colour at
+              // all. It looked random because it depends on where the ball has BEEN, not on
+              // where it is. Same reason the background is stated both ways.
+              borderColor: redZone && situationLive ? `${RED_ZONE}4d` : BORDER.hairline,
+              background: redZone && situationLive ? 'rgba(248,113,113,0.06)' : BG.panel,
             }}>
               {/* FormatClock, not a hand-rolled quarter + time: an innings game
                   or a chess-clock game does not have either. */}
@@ -530,7 +546,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               </span>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   )
