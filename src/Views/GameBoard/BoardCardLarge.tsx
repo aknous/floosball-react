@@ -500,6 +500,13 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           {live && !game.isHalftime && (
             <div style={{
               ...PANEL, marginTop: '-1px',
+              // ⚠️ THE SPACE ABOVE THIS ROW WAS NEVER A MARGIN, which is why pulling the
+              // margin to -1px did not close it. `PANEL` has no vertical padding at all --
+              // it is `minHeight: 34px` with the contents centred, so a 12px field sat in a
+              // 34px box with eleven pixels of air on each side. The strip is sized to what
+              // is in it instead, so it reads as part of the panel above rather than as a
+              // second box of the same height (owner).
+              minHeight: 0, paddingTop: '5px', paddingBottom: '6px',
               borderTopLeftRadius: 0, borderTopRightRadius: 0,
               display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0,
             }}>
