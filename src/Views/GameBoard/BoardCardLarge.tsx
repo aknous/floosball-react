@@ -164,7 +164,14 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
   // zeroes — so the pick takes its place rather than being added beneath it. That is what
   // stops the prognostication panel costing the card an extra block of height, and it puts
   // each team's button on that team's own row, which needs nothing to explain it.
-  const preGame = !live && !isFinal
+  //
+  // ⚠️ STATED POSITIVELY, NOT AS `!live && !isFinal` (owner: the buttons must not replace
+  // the scoreboard "when a game ends"). Those are the same thing across the three statuses
+  // that exist today — Scheduled, Active, Final — but the negation FAILS TOWARD HIDING A
+  // RESULT: a status this file has not heard of, or one missing from a payload, reads as
+  // "not live and not final" and would put pick buttons over a finished game's score. Asked
+  // this way an unknown status keeps the scoreboard, which is the safe direction.
+  const preGame = game.status === 'Scheduled'
   const home = game.homeTeam
   const away = game.awayTeam
 

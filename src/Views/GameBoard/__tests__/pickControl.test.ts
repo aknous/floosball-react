@@ -87,6 +87,19 @@ describe('board pick control', () => {
     expect(src).not.toMatch(/\+\{Math\.round\(pick\.points\)\}/)
   })
 
+  it('the pick only replaces the scoreboard for a SCHEDULED game', () => {
+    // ⚠️ A FINISHED GAME MUST KEEP ITS SCORE (owner). The swap used to be gated on
+    // `!live && !isFinal`, which is the same thing across the three statuses that exist —
+    // and fails toward HIDING A RESULT: an unknown or missing status reads as "not live and
+    // not final" and would put pick buttons over a final score. Stated positively, an
+    // unrecognized status keeps the scoreboard.
+    const src = read('BoardCardLarge.tsx')
+    expect(src).toMatch(/const preGame = game\.status === 'Scheduled'/)
+    expect(src).not.toMatch(/const preGame = !live && !isFinal/)
+    // and the swap itself is gated on that flag plus an actual pick state
+    expect(src).toMatch(/\{preGame && pick \? \(/)
+  })
+
   it('with no pick state it renders the plain label', () => {
     // Signed out, or a past week: the board must look exactly as it did before.
     const src = read('pickControl.tsx')
