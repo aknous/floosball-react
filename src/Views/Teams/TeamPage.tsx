@@ -620,9 +620,13 @@ const MoodBar: React.FC<{ label: string; value: number; color: string }> = ({ la
  * different range on the draft-class tab. That is the feature, not a bug, and
  * the copy says so rather than leaving a reader to spot the discrepancy.
  *
- * ⚠️ A LAST WINDOW IS THE STORY. A prospect who is not promoted inside their
- * window walks for nothing, so the final year is called out rather than being
- * left as a number a reader has to do arithmetic on.
+ * ⚠️ THE LAST SEASON IS THE STORY. A prospect not promoted inside their
+ * development window becomes a free agent, so the final year is called out
+ * rather than left as a number a reader has to do arithmetic on.
+ *
+ * ⚠️ "WINDOW" IS THE CODE'S WORD, NOT A FAN'S (owner, 2026-09-17). The engine
+ * calls it a development window; a reader counting down to a decision is
+ * counting SEASONS. Keep the internal name out of the copy.
  */
 const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p }) => {
   const lastChance = p.seasonsRemaining <= 1
@@ -648,13 +652,13 @@ const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p }) => {
         </span>
       </HoverTooltip>
       <HoverTooltip text={lastChance
-        ? 'Last window. A prospect not promoted to the roster this offseason leaves for nothing.'
-        : `${p.seasonsRemaining} windows left to win a roster spot. A prospect who is never promoted walks for nothing.`}>
+        ? 'Last season to make the roster. Becomes a free agent if not promoted this offseason.'
+        : `${p.seasonsRemaining} seasons to make the roster. Becomes a free agent if not promoted.`}>
         <span style={{
           fontSize: '12px', width: '104px', textAlign: 'right', display: 'inline-block',
           color: lastChance ? '#f59e0b' : '#94a3b8', fontWeight: lastChance ? 700 : 400,
         }}>
-          {lastChance ? 'last window' : `${p.seasonsRemaining} windows left`}
+          {lastChance ? 'last season' : `${p.seasonsRemaining} seasons left`}
         </span>
       </HoverTooltip>
     </div>
@@ -1449,9 +1453,6 @@ export default function TeamPage() {
                 note={`${pipeline.prospects.length} prospect${pipeline.prospects.length === 1 ? '' : 's'}`}
                 style={{ marginBottom: '10px' }}
               />
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', maxWidth: '58ch' }}>
-                Rating is what they play at now. The bar is this team&rsquo;s scouted ceiling.
-              </div>
               {/* ⚠️ CAPPED. The roster plates earn the full column width because they
                   carry stat bars across it; a prospect row is a name and a number, so at
                   795px it reads as two things stranded at opposite edges. A narrow list
