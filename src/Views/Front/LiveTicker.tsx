@@ -98,7 +98,7 @@ const Tile: React.FC<{ game: CurrentGame; onOpen: (id: number) => void }> = ({ g
       <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         {live && !game.isHalftime && <PulsingDot size={5} />}
         <span style={{
-          ...font(700, 10, 1, '0.1em'), ...TABULAR,
+          ...font(700, 10, 1, '0.02em'), ...TABULAR,
           color: isFinal ? TEXT.muted : ACCENT.live,
         }}>{state}</span>
         <span style={{ flex: 1, minWidth: '8px' }} />
@@ -145,7 +145,7 @@ const LiveTicker: React.FC<{
         <span style={{ ...font(800, 13, 1, '-0.02em'), color: TEXT.primary }}>{weekLabel}</span>
         <span style={{ width: '1px', height: '13px', background: BORDER.raised }} />
         <span style={{
-          ...font(700, 10, 1, '0.1em'),
+          ...font(700, 10, 1, '0.02em'),
           color: liveCount > 0 ? ACCENT.live : TEXT.muted,
         }}>{summary}</span>
       </div>

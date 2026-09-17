@@ -268,7 +268,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({
         }}>
           {weekSummary.clairvoyant ? (
             <div>
-              <div style={{ fontSize: '15px', fontWeight: '700', color: '#22c55e', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '15px', fontWeight: '700', color: '#22c55e', letterSpacing: '0.02em' }}>
                 CLAIRVOYANT
               </div>
               <div style={{ fontSize: '13px', color: '#86efac', marginTop: '2px' }}>
@@ -385,7 +385,7 @@ const LeaderboardRow: React.FC<{
               fontSize: '10px', fontWeight: '700',
               color: '#94a3b8', backgroundColor: 'rgba(148,163,184,0.15)',
               padding: '2px 5px', borderRadius: '3px',
-              letterSpacing: '0.04em', flexShrink: 0,
+              letterSpacing: '0.02em', flexShrink: 0,
             }}
           >
             AUTO

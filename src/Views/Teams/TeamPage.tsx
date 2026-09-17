@@ -453,7 +453,7 @@ const SectionHead: React.FC<{
     marginBottom: '12px', ...style,
   }}>
     <span style={{
-      fontSize: '13px', letterSpacing: '0.08em', fontWeight: 800, color: '#f1f5f9',
+      fontSize: '13px', letterSpacing: '0.02em', fontWeight: 800, color: '#f1f5f9',
       whiteSpace: 'nowrap',
     }}>{label}</span>
     {note && <span style={{ fontSize: '12px', color: '#cbd5e1', whiteSpace: 'nowrap' }}>{note}</span>}
@@ -483,7 +483,7 @@ function factCell(index: number, cols: number, span = 1): React.CSSProperties {
 
 const CellLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div style={{
-    fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
+    fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em',
     color: '#cbd5e1', textTransform: 'uppercase',
   }}>{children}</div>
 )
@@ -537,7 +537,7 @@ const Gauge: React.FC<{
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span style={{
-          fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
+          fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em',
           color: '#cbd5e1', width: `${labelWidth}px`, flexShrink: 0,
         }}>{label}</span>
         {track}
@@ -632,7 +632,7 @@ const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p }) => {
       borderBottom: '1px solid #1e293b', minWidth: 0,
     }}>
       <span style={{
-        fontSize: '12px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em',
+        fontSize: '12px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.02em',
         width: '28px', flexShrink: 0,
       }}>{p.position}</span>
       <span style={{ flex: 1, minWidth: 0 }}>
@@ -759,7 +759,7 @@ const RosterPlate: React.FC<{
           : { borderLeft: '1px solid #1e293b', paddingLeft: '14px' }),
       }}>
         <div style={{
-          fontSize: '10px', letterSpacing: '0.08em', fontWeight: 700, color: '#cbd5e1',
+          fontSize: '10px', letterSpacing: '0.02em', fontWeight: 700, color: '#cbd5e1',
         }}>FAN RATING</div>
         <div style={{ marginTop: '4px' }}>
           {/* The same 1–5 control the fanbase uses. Signed out, or looking at
@@ -1049,7 +1049,7 @@ export default function TeamPage() {
                 reader actually needs to place it, and at four divisions per league
                 it is what most of them are playing for. */}
             <div style={{
-              fontSize: '13px', letterSpacing: '0.12em', fontWeight: 700,
+              fontSize: '13px', letterSpacing: '0.02em', fontWeight: 700,
               color: 'rgba(255,255,255,0.92)',
             }}>
               {team.city} &middot; {team.league}
@@ -1069,7 +1069,7 @@ export default function TeamPage() {
               backgroundColor: 'rgba(11,18,32,0.55)', padding: '10px 16px', textAlign: 'right',
             }}>
               <div style={{
-                fontSize: '11px', letterSpacing: '0.12em', fontWeight: 700,
+                fontSize: '11px', letterSpacing: '0.02em', fontWeight: 700,
                 color: 'rgba(255,255,255,0.85)',
               }}>RECORD</div>
               <div style={{
@@ -1086,7 +1086,7 @@ export default function TeamPage() {
               backgroundColor: 'rgba(11,18,32,0.55)', padding: '10px 16px', textAlign: 'right',
             }}>
               <div style={{
-                fontSize: '11px', letterSpacing: '0.12em', fontWeight: 700,
+                fontSize: '11px', letterSpacing: '0.02em', fontWeight: 700,
                 color: 'rgba(255,255,255,0.85)',
               }}>ELO</div>
               <div style={{
@@ -1118,7 +1118,7 @@ export default function TeamPage() {
             display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',
           }}>
             <span style={{
-              fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em',
+              fontSize: '11px', fontWeight: 800, letterSpacing: '0.02em',
               color: '#0b1220', backgroundColor: '#f59e0b', padding: '3px 9px',
               marginRight: '6px',
             }}>Trophy case</span>
@@ -1155,7 +1155,7 @@ export default function TeamPage() {
                       content={
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
                           <span style={{
-                            fontSize: '10px', fontWeight: 800, letterSpacing: '0.1em',
+                            fontSize: '10px', fontWeight: 800, letterSpacing: '0.02em',
                             color: tone.icon, textTransform: 'uppercase',
                           }}>{tier.heading} · {tier.items.length}</span>
                           {tier.items.map(t => (
@@ -1325,7 +1325,7 @@ export default function TeamPage() {
             {nextGame ? (
               <>
                 <div style={{
-                  fontSize: '11px', letterSpacing: '0.08em', fontWeight: 700,
+                  fontSize: '11px', letterSpacing: '0.02em', fontWeight: 700,
                   color: '#38bdf8', marginTop: '7px',
                 }}>
                   {weekTitle(nextGame.week)}
@@ -1363,7 +1363,7 @@ export default function TeamPage() {
                         display: 'flex', alignItems: 'baseline', gap: '6px',
                       }}>
                         <span style={{
-                          fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em',
+                          fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em',
                           color: '#94a3b8',
                         }}>{side.abbr}</span>
                         <span style={{
@@ -1635,7 +1635,7 @@ export default function TeamPage() {
 // ── Season history table ────────────────────────────────────────────────────
 
 const TH: React.CSSProperties = {
-  fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: '#cbd5e1',
+  fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em', color: '#cbd5e1',
   borderBottom: '1px solid #1e293b', whiteSpace: 'nowrap',
 }
 const TD: React.CSSProperties = {

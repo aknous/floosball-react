@@ -490,7 +490,7 @@ const FrontPage: React.FC = () => {
                 background: BG.card, border: `1px solid ${BORDER.hairline}`,
                 padding: '20px 18px',
               }}>
-                <div style={{ ...font(700, 11, 1, '0.12em'), color: TEXT.muted }}>YOUR TEAM</div>
+                <div style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted }}>YOUR TEAM</div>
                 <div style={{ ...font(400, 13, 1.5), color: TEXT.secondary, margin: '10px 0 16px' }}>
                   Pick a team and this panel follows them all season, with their live
                   score, next fixture and recent form.
@@ -498,7 +498,7 @@ const FrontPage: React.FC = () => {
                 <button
                   onClick={() => window.dispatchEvent(new Event('floosball:show-favorite-team-picker'))}
                   style={{
-                    ...font(700, 12, 1, '0.06em'), color: BG.shell, background: ACCENT.info,
+                    ...font(700, 12, 1, '0.02em'), color: BG.shell, background: ACCENT.info,
                     border: 'none', padding: '10px 16px', cursor: 'pointer',
                     fontFamily: FONT, width: '100%',
                   }}
@@ -538,7 +538,7 @@ const SignedOutPanel: React.FC = () => (
     padding: '26px 28px',
     marginBottom: '26px',
   }}>
-    <div style={{ ...font(700, 10, 1, '0.16em'), color: ACCENT.info }}>SIGN IN</div>
+    <div style={{ ...font(700, 10, 1, '0.02em'), color: ACCENT.info }}>SIGN IN</div>
     <h2 style={{
       ...font(800, 30, 1.1, '-0.035em'), color: TEXT.primary,
       margin: '12px 0 0', textWrap: 'balance' as any,

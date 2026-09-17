@@ -17,7 +17,7 @@ const PositionChip: React.FC<{ position: string }> = ({ position }) => {
       fontSize: '10px', fontWeight: 700,
       color: c.fg, backgroundColor: c.bg,
       padding: '2px 6px', borderRadius: '4px',
-      letterSpacing: '0.04em',
+      letterSpacing: '0.02em',
       minWidth: 28, textAlign: 'center' as const,
     }}>
       {position}

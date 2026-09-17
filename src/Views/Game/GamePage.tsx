@@ -618,20 +618,20 @@ const GamePage: React.FC = () => {
       }}>
         <NavPlate to="/games">
           <span style={{ ...font(800, 14), color: TEXT.body }}>←</span>
-          <span style={{ ...font(700, 11, 1, '0.08em'), color: TEXT.body }}>GAME BOARD</span>
+          <span style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.body }}>GAME BOARD</span>
         </NavPlate>
         <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />
         <NavPlate onClick={() => prevId != null && navigate(`/game/${prevId}`)} disabled={prevId == null}>
           <Chevron dir="left" />
-          <span style={{ ...font(600, 11, 1, '0.06em'), color: TEXT.muted }}>{nameOf(prevId)}</span>
+          <span style={{ ...font(600, 11, 1, '0.02em'), color: TEXT.muted }}>{nameOf(prevId)}</span>
         </NavPlate>
         {position >= 0 && (
-          <span style={{ ...font(600, 11, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>
+          <span style={{ ...font(600, 11, 1, '0.02em'), color: TEXT.muted, ...TABULAR }}>
             GAME {position + 1} OF {ranked.length}
           </span>
         )}
         <NavPlate onClick={() => nextId != null && navigate(`/game/${nextId}`)} disabled={nextId == null}>
-          <span style={{ ...font(600, 11, 1, '0.06em'), color: TEXT.muted }}>{nameOf(nextId)}</span>
+          <span style={{ ...font(600, 11, 1, '0.02em'), color: TEXT.muted }}>{nameOf(nextId)}</span>
           <Chevron dir="right" />
         </NavPlate>
         <span style={{ flex: 1 }} />
@@ -699,7 +699,7 @@ const GamePage: React.FC = () => {
                     <span />
                     {periodLine.labels.map((label, i) => (
                       <span key={label} style={{
-                        ...font(700, 11, 1, '0.1em'),
+                        ...font(700, 11, 1, '0.02em'),
                         // The live period is named louder than the ones behind it.
                         color: i === periodLine.activeIndex ? TEXT.body : TEXT.muted,
                         textAlign: 'center',
@@ -709,12 +709,12 @@ const GamePage: React.FC = () => {
                         it is points, so the pair is labeled. Everywhere else the biggest
                         number on a scoreboard does not need a heading. */}
                     {chess && (
-                      <span style={{ ...font(700, 10, 1, '0.1em'), color: TEXT.muted, textAlign: 'right' }}>
+                      <span style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.muted, textAlign: 'right' }}>
                         CLOCK
                       </span>
                     )}
                     <span style={framesWon
-                      ? { ...font(700, 10, 1, '0.1em'), color: TEXT.muted, textAlign: 'right' }
+                      ? { ...font(700, 10, 1, '0.02em'), color: TEXT.muted, textAlign: 'right' }
                       : undefined}>{framesWon ? 'FRAMES · PTS' : null}</span>
                   </>
                 )}
@@ -738,7 +738,7 @@ const GamePage: React.FC = () => {
                     : periodClock}
                 </span>
                 <span style={{ flex: 1 }} />
-                <span style={{ ...font(600, 13, 1.4, '0.06em'), color: TEXT.secondary }}>
+                <span style={{ ...font(600, 13, 1.4, '0.02em'), color: TEXT.secondary }}>
                   {/* ⚠️ Distance is `yardsToFirstDown`; `yardsToGo` does not exist
                       on the payload and rendered "4 & undefined". A scheduled game
                       carries down 0, hence `> 0` rather than a null check. */}

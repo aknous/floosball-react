@@ -35,7 +35,7 @@ import type { SeasonRecapResponse } from '@/types/recap'
  * parent pull them out.
  */
 const CTA: React.CSSProperties = {
-  ...font(700, 12, 1, '0.06em'),
+  ...font(700, 12, 1, '0.02em'),
   display: 'inline-block',
   flex: '0 0 auto',
   textAlign: 'center',
@@ -69,7 +69,7 @@ export const OffseasonHero: React.FC<Props> = ({ recap }) => {
       borderTop: `2px solid ${ACCENT.warning}`,
       padding: '18px 16px',
     }}>
-      <div style={{ ...font(700, 10, 1, '0.16em'), color: ACCENT.warning }}>
+      <div style={{ ...font(700, 10, 1, '0.02em'), color: ACCENT.warning }}>
         THE SEASON IS OVER
       </div>
 

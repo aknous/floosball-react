@@ -55,7 +55,7 @@ function TeamName({ team, mine }: { team: { id: number; name: string } | null; m
 }
 
 const Pos: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span style={{ ...font(700, 11, 1, '0.08em'), color: TEXT.muted, width: '28px', flexShrink: 0 }}>
+  <span style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted, width: '28px', flexShrink: 0 }}>
     {children}
   </span>
 )
@@ -109,7 +109,7 @@ const Pane: React.FC<{
         down to the rule that runs out to the right. Uppercasing them also made every
         pane shout at the same volume as the column heads inside it. */}
     <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '9px' }}>
-      <h2 style={{ ...font(800, 13, 1, '0.08em'), color: TEXT.strong, margin: 0, whiteSpace: 'nowrap' }}>
+      <h2 style={{ ...font(800, 13, 1, '0.02em'), color: TEXT.strong, margin: 0, whiteSpace: 'nowrap' }}>
         {title}
       </h2>
       {count != null && (
@@ -189,7 +189,7 @@ const TradeRowView: React.FC<{
     <li key={`${a.kind}-${a.id ?? i}`} style={{
       display: 'flex', alignItems: 'baseline', gap: '8px', padding: '3px 0',
     }}>
-      <span style={{ ...font(700, 10, 1, '0.06em'), color: TEXT.dim, width: '58px', flexShrink: 0 }}>
+      <span style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.dim, width: '58px', flexShrink: 0 }}>
         {(a.kind || 'asset').toUpperCase()}
       </span>
       <span style={{ ...font(600, 13), color: TEXT.body }}>{a.name}</span>
@@ -339,14 +339,14 @@ const TransactionsPage: React.FC = () => {
   }
   const headRow: React.CSSProperties = {
     ...row, padding: '8px 14px', background: BG.shell,
-    ...font(700, 10, 1, '0.08em'), color: TEXT.muted, textTransform: 'uppercase',
+    ...font(700, 10, 1, '0.02em'), color: TEXT.muted, textTransform: 'uppercase',
     position: 'sticky', top: 0, zIndex: 1,
   }
   const mine = (on: boolean): React.CSSProperties =>
     on ? { background: BG.cardOwn, boxShadow: `inset 2px 0 0 ${ACCENT.ownTeam}` } : {}
   const tag = (text: string, color: string) => (
     <span style={{
-      ...font(700, 11, 1, '0.04em'), color,
+      ...font(700, 11, 1, '0.01em'), color,
       border: `1px solid ${color}55`, padding: '2px 6px', whiteSpace: 'nowrap',
     }}>{text}</span>
   )

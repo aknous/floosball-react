@@ -299,7 +299,7 @@ const GameBoardPage: React.FC = () => {
 
         <span style={{
           display: 'flex', alignItems: 'center', gap: '6px',
-          ...font(700, 10, 1, '0.1em'), color: pillColor,
+          ...font(700, 10, 1, '0.02em'), color: pillColor,
           background: pillColor === ACCENT.live ? 'rgba(74,222,128,0.10)' : 'transparent',
           border: `1px solid ${pillColor === ACCENT.live ? 'rgba(74,222,128,0.30)' : BORDER.hairline}`,
           padding: '5px 8px', whiteSpace: 'nowrap',
@@ -314,7 +314,7 @@ const GameBoardPage: React.FC = () => {
         {!isPast && countdown && (
           <span style={{
             display: 'flex', alignItems: 'center', gap: '7px',
-            ...font(700, 10, 1, '0.1em'), color: ACCENT.info,
+            ...font(700, 10, 1, '0.02em'), color: ACCENT.info,
             border: `1px solid ${ACCENT.info}40`,
             padding: '5px 8px', whiteSpace: 'nowrap',
           }}>
@@ -343,7 +343,7 @@ const GameBoardPage: React.FC = () => {
 
         <span style={{ flex: 1 }} />
 
-        {!narrow && <span style={{ ...font(700, 10, 1, '0.12em'), color: TEXT.muted, flexShrink: 0 }}>DENSITY</span>}
+        {!narrow && <span style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.muted, flexShrink: 0 }}>DENSITY</span>}
         {!narrow && (
         <div style={{ display: 'flex', background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
           {(['large', 'small'] as Density[]).map((option, i) => {
@@ -401,7 +401,7 @@ const GameBoardPage: React.FC = () => {
                     separate FROM. A whole week of finals is just the board. */}
                 {ordered.some(o => o.game.status !== 'Final') && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '4px' }}>
-                    <span style={{ ...font(700, 11, 1, '0.12em'), color: TEXT.muted, flexShrink: 0 }}>
+                    <span style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted, flexShrink: 0 }}>
                       FINAL
                     </span>
                     <span style={{ flex: 1, height: '1px', background: BORDER.hairline }} />

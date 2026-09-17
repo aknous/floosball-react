@@ -70,7 +70,7 @@ export const OffseasonPage: React.FC = () => {
               key={key}
               onClick={() => setView(key)}
               style={{
-                ...font(700, 12, 1, '0.04em'),
+                ...font(700, 12, 1, '0.02em'),
                 padding: '8px 15px',
                 border: `1px solid ${on ? BORDER.raised : BORDER.hairline}`,
                 background: on ? BG.card : 'transparent',

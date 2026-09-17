@@ -89,13 +89,13 @@ const TopPlayers: React.FC<{
               {!narrow && <Stars stars={row.ratingStars} size={18} tracking={2} />}
               {!narrow && fantasy && <RelationTag label="FANTASY" color={ACCENT.success} />}
               {!narrow && (
-                <span style={{ ...font(500, 11, 1, '0.06em'), color: TEXT.muted, whiteSpace: 'nowrap' }}>
+                <span style={{ ...font(500, 11, 1, '0.02em'), color: TEXT.muted, whiteSpace: 'nowrap' }}>
                   {row.position} · {row.teamAbbr}
                 </span>
               )}
               <span style={{ flex: 1 }} />
               <span style={{
-                ...font(700, 12, 1, '0.08em'), color: TEXT.secondary,
+                ...font(700, 12, 1, '0.02em'), color: TEXT.secondary,
                 width: narrow ? '74px' : '104px', textAlign: 'right', flexShrink: 0,
               }}>{row.statLabel}</span>
               <span style={{
@@ -125,7 +125,7 @@ const TopPlayers: React.FC<{
             <span style={{ ...font(400, 12), color: TEXT.dim }}>No leader yet</span>
             <span style={{ flex: 1 }} />
             <span style={{
-              ...font(700, 12, 1, '0.08em'), color: TEXT.dim,
+              ...font(700, 12, 1, '0.02em'), color: TEXT.dim,
               width: '104px', textAlign: 'right', flexShrink: 0,
             }}>{label}</span>
             <span style={{

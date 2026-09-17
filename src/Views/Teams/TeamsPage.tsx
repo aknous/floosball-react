@@ -43,7 +43,7 @@ const LeagueColumn: React.FC<{ league: LeagueGroup; isMobile: boolean; favTeamId
         <h2 style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: 700, color: '#e2e8f0', margin: 0, letterSpacing: '0.02em' }}>
           {league.name}
         </h2>
-        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
           {league.standings.length} teams
         </span>
       </div>

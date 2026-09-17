@@ -93,7 +93,7 @@ const YourTeamCard: React.FC<{
             <div style={{ ...font(800, 18, 1, '-0.02em'), color: onTeamColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {team.city} {team.name}
             </div>
-            <div style={{ ...font(700, 10, 1, '0.1em'), color: onTeamColorMuted, marginTop: '6px' }}>
+            <div style={{ ...font(700, 10, 1, '0.02em'), color: onTeamColorMuted, marginTop: '6px' }}>
               {team.wins}-{team.losses} · {ordinal(team.rankLastWeek && team.seed == null ? team.rankLastWeek : team.seed ?? 0).toUpperCase()} IN THE {leagueName.split(' ')[0].toUpperCase()}
             </div>
           </div>
@@ -110,7 +110,7 @@ const YourTeamCard: React.FC<{
             padding: '13px 15px', marginTop: '2px', cursor: 'pointer', fontFamily: 'inherit',
           }}
         >
-          <div style={{ ...font(700, 10, 1, '0.14em'), color: ACCENT.info }}>
+          <div style={{ ...font(700, 10, 1, '0.02em'), color: ACCENT.info }}>
             LIVE · Q{liveGame.quarter} {liveGame.timeRemaining} · {isHome ? 'HOME' : 'AWAY'}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '11px', marginTop: '11px' }}>
@@ -128,7 +128,7 @@ const YourTeamCard: React.FC<{
           background: BG.panel, border: `1px solid ${BORDER.hairline}`, borderTop: 'none',
           padding: '13px 15px', marginTop: '2px',
         }}>
-          <div style={{ ...font(700, 10, 1, '0.14em'), color: TEXT.muted }}>NEXT UP</div>
+          <div style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.muted }}>NEXT UP</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '11px', marginTop: '11px' }}>
             <Crest teamId={nextFixture.opponentId} size={30} />
             <span style={{ ...font(700, 14), color: TEXT.strong }}>
@@ -146,14 +146,14 @@ const YourTeamCard: React.FC<{
           display: 'flex', alignItems: 'center', gap: '9px',
           paddingBottom: '9px', borderBottom: `1px solid ${BORDER.hairline}`,
         }}>
-          <span style={{ ...font(700, 10, 1, '0.14em'), color: TEXT.muted }}>LAST {recent.length}</span>
+          <span style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.muted }}>LAST {recent.length}</span>
           <span style={{ ...font(400, 10), color: TEXT.secondary, ...TABULAR }}>{wins}-{losses}</span>
           <span style={{ flex: 1 }} />
           {/* ⚠️ Labelled, because it was not. A bare signed number at the end of a row
               that already holds a record was being read as a guess — reported as "I'm
               guessing it's score differential". It is: points for minus points against
               over the games shown. */}
-          <span style={{ ...font(700, 10, 1, '0.14em'), color: TEXT.muted }}>DIFF</span>
+          <span style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.muted }}>DIFF</span>
           <span style={{
             ...font(700, 10), ...TABULAR,
             color: differential >= 0 ? ACCENT.live : ACCENT.negative,
@@ -173,7 +173,7 @@ const YourTeamCard: React.FC<{
                 {r.home ? 'vs' : '@'}
               </span>
               <Crest teamId={r.opponentId} size={15} />
-              <span style={{ ...font(400, 10, 1, '0.06em'), color: TEXT.secondary, flexShrink: 0 }}>
+              <span style={{ ...font(400, 10, 1, '0.02em'), color: TEXT.secondary, flexShrink: 0 }}>
                 {r.opponentAbbr}
               </span>
               <span style={{ flex: 1 }} />
@@ -212,7 +212,7 @@ const SupporterDividendRow: React.FC = () => {
       background: BG.card, border: '1px solid rgba(245,158,11,0.45)',
     }}>
       <span style={{ minWidth: 0, flex: 1 }}>
-        <span style={{ display: 'block', ...font(700, 10, 1, '0.1em'), color: '#fbbf24' }}>
+        <span style={{ display: 'block', ...font(700, 10, 1, '0.02em'), color: '#fbbf24' }}>
           SUPPORTER DIVIDEND
         </span>
         <span style={{ display: 'block', ...font(400, 11), color: TEXT.muted, marginTop: '4px' }}>
@@ -226,7 +226,7 @@ const SupporterDividendRow: React.FC = () => {
         onClick={claim}
         disabled={claiming}
         style={{
-          ...font(800, 10, 1, '0.1em'),
+          ...font(800, 10, 1, '0.02em'),
           color: BG.shell, backgroundColor: '#fbbf24', border: 'none',
           padding: '7px 12px', cursor: claiming ? 'default' : 'pointer',
           opacity: claiming ? 0.5 : 1, flexShrink: 0, fontFamily: FONT,

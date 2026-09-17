@@ -630,7 +630,7 @@ const CardEquipment: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '2px' }}>
                     <span style={{
                       fontSize: '10px', fontWeight: '700', color: edLabelColor,
-                      textTransform: 'uppercase', letterSpacing: '0.05em',
+                      textTransform: 'uppercase', letterSpacing: '0.02em',
                     }}>
                       {ed.label}
                     </span>

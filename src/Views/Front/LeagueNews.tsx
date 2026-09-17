@@ -237,7 +237,7 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '9px',
             }}>
               {mark(lead, 44)}
-              <span style={{ ...font(700, 9, 1, '0.12em'), color: TEXT.muted }}>
+              <span style={{ ...font(700, 9, 1, '0.02em'), color: TEXT.muted }}>
                 WEEK {lead.week}
               </span>
             </div>
@@ -245,7 +245,7 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
                 <span style={{
-                  ...font(700, 9, 1, '0.12em'),
+                  ...font(700, 9, 1, '0.02em'),
                   color: BG.shell, background: colorFor(lead), padding: '4px 7px',
                 }}>{labelFor(lead)}</span>
                 <span style={{ ...font(700, 9), color: TEXT.muted }}>SEASON {lead.season}</span>
@@ -328,7 +328,7 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
                       ...font(800, 19), ...TABULAR,
                       color: stat.positive ? ACCENT.live : TEXT.primary,
                     }}>{stat.value}</div>
-                    <div style={{ ...font(700, 9, 1, '0.12em'), color: TEXT.muted, marginTop: '7px' }}>
+                    <div style={{ ...font(700, 9, 1, '0.02em'), color: TEXT.muted, marginTop: '7px' }}>
                       {stat.label}
                     </div>
                   </div>
@@ -362,7 +362,7 @@ const LeagueNews: React.FC<{ lead: NewsItem | null; items: NewsItem[] }> = ({ le
                   not a story — no crest, no headline weight, uppercase and letter-spaced. */}
               <span style={{
                 flexShrink: 0, minWidth: 0,
-                ...font(800, 11, 1.3, '0.14em'), color: TEXT.body,
+                ...font(800, 11, 1.3, '0.02em'), color: TEXT.body,
               }}>{item.text.toUpperCase()}</span>
               <span aria-hidden style={{
                 flex: 1, height: '1px', background: BORDER.hairline, minWidth: '12px',

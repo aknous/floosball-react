@@ -61,7 +61,7 @@ const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const Header = () => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-    <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+    <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
       Supporter
     </span>
     <span style={{ fontSize: 11, color: C.muted }}>fan dividends</span>
@@ -73,7 +73,7 @@ const Header = () => (
 const Term: React.FC<{ label: string; value: React.ReactNode; color?: string; tip?: string }> = ({ label, value, color, tip }) => {
   const body = (
     <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 5, whiteSpace: 'nowrap' }}>
-      <span style={{ fontSize: 11, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+      <span style={{ fontSize: 11, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.02em' }}>{label}</span>
       <span style={{ fontSize: 14, fontWeight: 700, color: color ?? C.body }}>{value}</span>
     </span>
   )
@@ -175,7 +175,7 @@ const SupporterInner: React.FC = () => {
           real and worth keeping, but it's reference material, so it moved
           behind one disclosure along with the per-week pool. */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: C.gold, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
           Supporter dividend
         </span>
         <span style={{ fontSize: 12, color: C.muted }}>yours, for backing them</span>

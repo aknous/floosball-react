@@ -115,13 +115,13 @@ const BoardCardSmall: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '18px' }}>
         {isFinal ? (
-          <span style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>FINAL</span>
+          <span style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.muted, ...TABULAR }}>FINAL</span>
         ) : live ? (
           game.isHalftime
-            ? <span style={{ ...font(700, 10, 1, '0.08em'), color: ACCENT.live, ...TABULAR }}>HALFTIME</span>
+            ? <span style={{ ...font(700, 10, 1, '0.02em'), color: ACCENT.live, ...TABULAR }}>HALFTIME</span>
             : <FormatClock game={game} size="small" />
         ) : (
-          <span style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>SCHEDULED</span>
+          <span style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.muted, ...TABULAR }}>SCHEDULED</span>
         )}
         <span style={{ flex: 1 }} />
         {/* No format badge (owner) — the rules strip names the format once at the top. */}

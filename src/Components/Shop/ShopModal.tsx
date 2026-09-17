@@ -1194,7 +1194,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             ? <span style={{ fontSize: '11px', fontWeight: 800, color: '#a78bfa' }}>
                                 x{component.remainingToday}
                               </span>
-                            : <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.06em',
+                            : <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.02em',
                                              color: '#fca5a5' }}>
                                 SOLD OUT
                               </span>}

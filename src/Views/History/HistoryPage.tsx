@@ -173,7 +173,7 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
       {/* Season picker */}
       <div style={{ backgroundColor: BG.card, border: `1px solid ${BORDER.hairline}` }}>
         <div style={{
-          padding: '8px 11px', ...font(800, 11, 1, '0.12em'), color: TEXT.strong,
+          padding: '8px 11px', ...font(800, 11, 1, '0.02em'), color: TEXT.strong,
           backgroundColor: BG.panel, borderBottom: `1px solid ${BORDER.hairline}`,
         }}>
           COMPLETED SEASONS
@@ -204,7 +204,7 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                     // a highlight. The team's own colour is what an abbr wears everywhere
                     // else, and here it agrees with the crest beside it.
                     <span style={{
-                      ...font(700, 11, 1, '0.04em'),
+                      ...font(700, 11, 1, '0.02em'),
                       color: s.championTeamColor
                         ? readableTeamColor(s.championTeamColor, BG.card)
                         : TEXT.muted,
@@ -228,7 +228,7 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
             display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center',
           }}>
             <div>
-              <div style={{ ...font(700, 11, 1, '0.1em'), color: TEXT.muted }}>
+              <div style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted }}>
                 FLOOSBOWL {selected.seasonNumber} CHAMPION
               </div>
               {selected.championTeamId ? (
@@ -258,7 +258,7 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                 borderLeft: isMobile ? 'none' : `1px solid ${BORDER.hairline}`,
                 paddingLeft: isMobile ? 0 : '16px',
               }}>
-                <div style={{ ...font(700, 11, 1, '0.1em'), color: TEXT.muted }}>
+                <div style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted }}>
                   MOST VALUABLE PLAYER
                 </div>
                 <Link
@@ -273,7 +273,7 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                   <span style={{ ...font(700, 18) }}>{selected.mvpPlayerName}</span>
                   {selected.mvpPosition && (
                     <span style={{
-                      ...font(700, 11, 1, '0.1em'), color: TEXT.muted,
+                      ...font(700, 11, 1, '0.02em'), color: TEXT.muted,
                       backgroundColor: BG.panel, border: `1px solid ${BORDER.hairline}`,
                       padding: '2px 6px',
                     }}>
@@ -289,7 +289,7 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
         {/* Standings table */}
         <div style={{ backgroundColor: BG.card, border: `1px solid ${BORDER.hairline}` }}>
           <div style={{
-            padding: '8px 11px', ...font(800, 11, 1, '0.12em'), color: TEXT.strong,
+            padding: '8px 11px', ...font(800, 11, 1, '0.02em'), color: TEXT.strong,
             backgroundColor: BG.panel, borderBottom: `1px solid ${BORDER.hairline}`,
           }}>
             FINAL STANDINGS
@@ -304,7 +304,7 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? '420px' : 'auto' }}>
                 <thead>
-                  <tr style={{ ...font(700, 11, 1, '0.1em'), color: TEXT.muted }}>
+                  <tr style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted }}>
                     <th style={{ ...ST_TH, width: '34px', textAlign: 'right' }}>#</th>
                     <th style={{ ...ST_TH, textAlign: 'left' }}>TEAM</th>
                     <th style={{ ...ST_TH, textAlign: 'right' }}>W</th>
@@ -345,7 +345,7 @@ const SeasonsView: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
                           a blank cell reads as data the page failed to load. */}
                       <td style={{
                         ...ST_TD, textAlign: 'right',
-                        ...font(700, 11, 1, '0.08em'),
+                        ...font(700, 11, 1, '0.02em'),
                         color: t.result === 'CHAMPION' ? ACCENT.warning
                           : t.result ? TEXT.secondary : TEXT.muted,
                       }}>{t.result || '—'}</td>
@@ -575,7 +575,7 @@ const Segment: React.FC<{ active: boolean; onClick: () => void; children: React.
     <button
       onClick={onClick}
       style={{
-        ...font(700, 11, 1, '0.1em'),
+        ...font(700, 11, 1, '0.02em'),
         padding: '7px 13px', cursor: 'pointer',
         border: `1px solid ${active ? TEXT.secondary : BORDER.hairline}`,
         backgroundColor: active ? TEXT.secondary : 'transparent',
@@ -602,14 +602,14 @@ const RecordList: React.FC<{ list: BookList }> = ({ list }) => (
     }}>
       <span style={{
         flex: 1, minWidth: 0,
-        ...font(800, 11, 1, '0.12em'), color: TEXT.strong, textTransform: 'uppercase',
+        ...font(800, 11, 1, '0.02em'), color: TEXT.strong, textTransform: 'uppercase',
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
       }}>
         {list.label}
       </span>
       <span style={{
         width: '62px', textAlign: 'right',
-        ...font(700, 11, 1, '0.1em'), color: TEXT.muted,
+        ...font(700, 11, 1, '0.02em'), color: TEXT.muted,
       }}>{list.unit}</span>
       <span style={{ width: '56px' }} />
     </div>
@@ -635,7 +635,7 @@ const RecordList: React.FC<{ list: BookList }> = ({ list }) => (
           {row.teamId != null && <Crest teamId={row.teamId} size={20} />}
           {row.teamAbbr && (
             <span style={{
-              width: '32px', flexShrink: 0, ...font(700, 11, 1, '0.04em'),
+              width: '32px', flexShrink: 0, ...font(700, 11, 1, '0.02em'),
               color: row.teamColor ? readableTeamColor(row.teamColor, BG.card) : TEXT.muted,
             }}>{row.teamAbbr}</span>
           )}

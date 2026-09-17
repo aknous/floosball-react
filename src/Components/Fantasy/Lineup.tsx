@@ -223,7 +223,7 @@ const Lineup: React.FC = () => {
 const changeBtn: React.CSSProperties = {
   padding: '4px 14px', borderRadius: 6, border: '1px solid #3b4d68',
   background: 'rgba(59,130,246,0.12)', color: '#93c5fd', fontSize: 10, fontWeight: 700,
-  letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer', fontFamily: 'pressStart',
+  letterSpacing: '0.02em', textTransform: 'uppercase', cursor: 'pointer', fontFamily: 'pressStart',
 }
 const clearBtn: React.CSSProperties = {
   position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%',

@@ -245,7 +245,7 @@ const GameFeedComposer: React.FC<{
           }}>
             {groups.map(group => (
               <div key={group.label}>
-                <div style={{ ...font(700, 11, 1, '0.04em'), color: TEXT.muted, padding: '8px 12px 5px' }}>
+                <div style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted, padding: '8px 12px 5px' }}>
                   {group.label}
                 </div>
                 {group.options.map(option => (

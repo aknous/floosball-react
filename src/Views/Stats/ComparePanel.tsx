@@ -58,14 +58,14 @@ export function ComparePanel<Row extends { id: number }>({
         display: 'flex', alignItems: 'center', gap: '10px',
         padding: '12px 16px', borderBottom: `1px solid ${BORDER.hairline}`,
       }}>
-        <span style={{ ...font(700, 11, 1, '0.1em'), color: TEXT.secondary }}>
+        <span style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.secondary }}>
           COMPARING {rows.length} {subject.toUpperCase()}
         </span>
         <span style={{ flex: 1 }} />
         <button
           onClick={onClose}
           style={{
-            ...font(700, 10, 1, '0.08em'), color: TEXT.muted,
+            ...font(700, 10, 1, '0.02em'), color: TEXT.muted,
             background: 'transparent', border: `1px solid ${BORDER.raised}`,
             padding: '5px 9px', cursor: 'pointer', fontFamily: FONT,
           }}
@@ -95,7 +95,7 @@ export function ComparePanel<Row extends { id: number }>({
             }}>
               <span style={{
                 width: '170px', flexShrink: 0, padding: '8px 16px',
-                ...font(700, 10, 1, '0.1em'), color: TEXT.muted,
+                ...font(700, 10, 1, '0.02em'), color: TEXT.muted,
               }}>
                 {col.label}
                 {col.lowerIsBetter && (

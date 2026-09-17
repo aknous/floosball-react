@@ -131,7 +131,7 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
         <Crest teamId={team.id} size={30} />
         <span style={{ minWidth: 0 }}>
           <span style={{
-            display: 'block', ...font(500, 12, 1, '0.06em'), color: TEXT.muted,
+            display: 'block', ...font(500, 12, 1, '0.02em'), color: TEXT.muted,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{team.city}</span>
           <span style={{
@@ -203,7 +203,7 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
           ) : leagues.map(lg => (
             <div key={lg.name} style={{ marginTop: '14px' }}>
               <div style={{
-                ...font(800, 14, 1, '0.12em'), color: TEXT.strong,
+                ...font(800, 14, 1, '0.02em'), color: TEXT.strong,
                 paddingBottom: '7px', borderBottom: `1px solid ${BORDER.raised}`,
               }}>{lg.name.toUpperCase()}</div>
 
@@ -216,12 +216,12 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
                 }}>
                   {!isMobile && (
                     <div style={{
-                      ...font(700, 12, 1, '0.14em'), color: TEXT.muted,
+                      ...font(700, 12, 1, '0.02em'), color: TEXT.muted,
                       width: '104px', flexShrink: 0, textAlign: 'right',
                     }}>{div.name.toUpperCase()}</div>
                   )}
                   {isMobile && (
-                    <div style={{ ...font(700, 11, 1, '0.14em'), color: TEXT.muted }}>
+                    <div style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted }}>
                       {div.name.toUpperCase()}
                     </div>
                   )}
@@ -260,7 +260,7 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
             <button
               onClick={() => setConfirmTeam(null)}
               style={{
-                ...font(700, 12, 1, '0.06em'), color: TEXT.secondary, background: 'transparent',
+                ...font(700, 12, 1, '0.02em'), color: TEXT.secondary, background: 'transparent',
                 border: `1px solid ${BORDER.raised}`, padding: '9px 14px',
                 cursor: 'pointer', fontFamily: FONT,
               }}
@@ -269,7 +269,7 @@ export const FavoriteTeamModal: React.FC<{ visible: boolean; onClose: () => void
               onClick={handleConfirm}
               disabled={saving}
               style={{
-                ...font(700, 12, 1, '0.06em'), color: BG.shell, background: ACCENT.live,
+                ...font(700, 12, 1, '0.02em'), color: BG.shell, background: ACCENT.live,
                 border: 'none', padding: '9px 16px',
                 cursor: saving ? 'default' : 'pointer', fontFamily: FONT,
                 opacity: saving ? 0.6 : 1,

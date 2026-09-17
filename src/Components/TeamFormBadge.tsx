@@ -72,7 +72,7 @@ const TeamFormBadge: React.FC<Props> = ({ state, size = 'medium' }) => {
         borderRadius: '3px',
         fontSize,
         fontWeight: 700,
-        letterSpacing: '0.04em',
+        letterSpacing: '0.02em',
         textTransform: 'uppercase',
         color: config.color,
         backgroundColor: config.bg,

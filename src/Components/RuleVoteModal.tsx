@@ -117,7 +117,7 @@ const RuleVoteModal: React.FC = () => {
           </span>
           <span style={{ flex: 1 }}>
             <span style={{ display: 'block', fontSize: '14px', fontWeight: 700, color: accent }}>{coreDisplayName || 'The Cores'}</span>
-            <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{title}</span>
+            <span style={{ display: 'block', fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>{title}</span>
           </span>
           {votingOpen && countdown && countdown !== '0:00' && (
             <span style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>

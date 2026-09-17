@@ -124,7 +124,7 @@ export const Plaque: React.FC<{ p: Inductee }> = ({ p }) => {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
             <span style={{
-              ...font(700, 11, 1, '0.1em'), color: TEXT.muted, backgroundColor: BG.panel,
+              ...font(700, 11, 1, '0.02em'), color: TEXT.muted, backgroundColor: BG.panel,
               border: `1px solid ${BORDER.hairline}`, padding: '2px 6px', flexShrink: 0,
             }}>{p.position}</span>
             <PlayerLink playerId={p.id} playerName={p.name}
@@ -151,7 +151,7 @@ export const Plaque: React.FC<{ p: Inductee }> = ({ p }) => {
               </div>
             } color={ACCENT.info}>
               <span style={{
-                ...font(700, 11, 1, '0.06em'), color: ACCENT.info,
+                ...font(700, 11, 1, '0.02em'), color: ACCENT.info,
                 backgroundColor: 'rgba(56,189,248,0.10)', border: '1px solid rgba(56,189,248,0.34)',
                 padding: '2px 7px', whiteSpace: 'nowrap', cursor: 'help',
               }}>{records.length} league record{records.length !== 1 ? 's' : ''}</span>
@@ -223,7 +223,7 @@ export const HallOfFame: React.FC = () => {
       <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '16px' }}>
         <span style={{ color: '#fbbf24', display: 'inline-flex' }}>{LAUREL(18)}</span>
         <span style={{
-          ...font(700, 11, 1, '0.1em'), ...TABULAR, color: TEXT.muted,
+          ...font(700, 11, 1, '0.02em'), ...TABULAR, color: TEXT.muted,
           backgroundColor: BG.panel, border: `1px solid ${BORDER.hairline}`, padding: '3px 7px',
         }}>{inductees.length} ENSHRINED</span>
       </div>
@@ -235,11 +235,11 @@ export const HallOfFame: React.FC = () => {
             <div style={{
               display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px',
             }}>
-              <span style={{ ...font(800, 12, 1, '0.14em'), color: '#fbbf24', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+              <span style={{ ...font(800, 12, 1, '0.02em'), color: '#fbbf24', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                 {g.label}
               </span>
               <span style={{ flex: 1, height: '1px', backgroundColor: BORDER.hairline }} />
-              <span style={{ ...font(700, 11, 1, '0.1em'), color: TEXT.muted, whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
+              <span style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted, whiteSpace: 'nowrap', textTransform: 'uppercase' }}>
                 {g.players.length} inductee{g.players.length !== 1 ? 's' : ''}
               </span>
             </div>

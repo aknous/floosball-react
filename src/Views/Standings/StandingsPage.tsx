@@ -186,7 +186,7 @@ const Legend: React.FC = () => {
   const item = (node: React.ReactNode, label: string) => (
     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
       {node}
-      <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.muted }}>{label}</span>
+      <span style={{ ...font(600, 10, 1, '0.02em'), color: TEXT.muted }}>{label}</span>
     </span>
   )
   // ⚠️ A SATURATED FILL is the clinched treatment, so the legend shows the difference

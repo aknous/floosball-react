@@ -135,7 +135,7 @@ export const StatusChip: React.FC<{
 )
 
 export const FilterLabel: React.FC<{ children: React.ReactNode; width?: number }> = ({ children, width = 64 }) => (
-  <span style={{ ...font(700, 9, 1, '0.14em'), color: TEXT.muted, width: `${width}px`, flexShrink: 0 }}>
+  <span style={{ ...font(700, 9, 1, '0.02em'), color: TEXT.muted, width: `${width}px`, flexShrink: 0 }}>
     {children}
   </span>
 )
@@ -209,7 +209,7 @@ export const CompareButton: React.FC<{ count: number; onClick: () => void }> = (
       <svg width="12" height="12" viewBox="0 0 20 20" fill={armed ? ACCENT.info : TEXT.muted} style={{ flexShrink: 0 }}>
         <path d="M3 3h6v14H3V3zm8 0h6v9h-6V3z" />
       </svg>
-      <span style={{ ...font(800, 11, 1, '0.08em'), color: armed ? '#7dd3fc' : TEXT.muted }}>COMPARE</span>
+      <span style={{ ...font(800, 11, 1, '0.02em'), color: armed ? '#7dd3fc' : TEXT.muted }}>COMPARE</span>
     </button>
   )
 }
@@ -240,7 +240,7 @@ export const SeasonPicker: React.FC<{
           opacity: disabled ? 0.45 : 1, fontFamily: FONT,
         }}
       >
-        <span style={{ ...font(700, 11, 1, '0.08em'), color: TEXT.muted }}>SEASON</span>
+        <span style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted }}>SEASON</span>
         <span style={{ ...font(800, 13), color: TEXT.body, ...TABULAR }}>{season}</span>
         <Chevron />
       </button>
@@ -334,7 +334,7 @@ export function StatsTable<Row extends { id: number }>({
           {leads.map(lead => (
             <span key={lead.header} style={{
               width: `${lead.width}px`, flexShrink: 0,
-              ...font(700, 12, 1, '0.08em'), color: TEXT.muted, padding: '10px 0',
+              ...font(700, 12, 1, '0.02em'), color: TEXT.muted, padding: '10px 0',
             }}>{lead.header}</span>
           ))}
           <span style={{ flex: 1, minWidth: '60px' }} />

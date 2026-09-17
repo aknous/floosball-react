@@ -84,7 +84,7 @@ const StandingsGraph: React.FC<{
           onChange={e => setScope(e.target.value)}
           style={{
             background: BG.card, color: TEXT.body, border: `1px solid ${BORDER.hairline}`,
-            padding: '5px 8px', ...font(600, 11), letterSpacing: '0.06em',
+            padding: '5px 8px', ...font(600, 11), letterSpacing: '0.02em',
           }}
         >
           {scopes.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
@@ -122,7 +122,7 @@ const Toggle: React.FC<{ active: boolean; onClick: () => void; label: string }> 
       border: `1px solid ${active ? ACCENT.live : BORDER.hairline}`,
       color: active ? TEXT.strong : TEXT.muted,
       padding: '5px 10px', cursor: 'pointer',
-      ...font(700, 11), letterSpacing: '0.07em',
+      ...font(700, 11), letterSpacing: '0.02em',
     }}
   >{label}</button>
 )
@@ -227,7 +227,7 @@ const LeaguePlot: React.FC<{
 
   return (
     <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}`, padding: '12px 14px 6px' }}>
-      <p style={{ margin: '0 0 6px', ...font(700, 12), letterSpacing: '0.08em', color: TEXT.secondary }}>
+      <p style={{ margin: '0 0 6px', ...font(700, 12), letterSpacing: '0.02em', color: TEXT.secondary }}>
         {leagueName.toUpperCase()}
       </p>
       <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ width: '100%', height: 'auto', display: 'block' }}

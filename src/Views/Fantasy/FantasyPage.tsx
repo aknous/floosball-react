@@ -222,7 +222,7 @@ function DayModifierBadge() {
         }}>
           <div style={{
             fontSize: '11px', fontWeight: 700, color: '#94a3b8',
-            letterSpacing: '0.04em', padding: '2px 4px 6px',
+            letterSpacing: '0.02em', padding: '2px 4px 6px',
           }}>
             {day != null ? `DAY ${day + 1} MODIFIERS` : "TODAY'S MODIFIERS"}
           </div>
@@ -245,10 +245,10 @@ function DayModifierBadge() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ fontSize: '12px', fontWeight: 600, color: sc }}>{s.displayName}</span>
                       {s.isActive && (
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: sc, letterSpacing: '0.05em' }}>NOW</span>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: sc, letterSpacing: '0.02em' }}>NOW</span>
                       )}
                       {s.isNext && (
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em' }}>NEXT</span>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.02em' }}>NEXT</span>
                       )}
                     </div>
                     <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: 1.35 }}>{s.description}</div>

@@ -204,7 +204,7 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
         }}>
           <span style={{
             fontSize: '10px', color: '#94a3b8', fontWeight: 600,
-            textTransform: 'uppercase' as const, letterSpacing: '0.05em',
+            textTransform: 'uppercase' as const, letterSpacing: '0.02em',
           }}>Sort</span>
           <select
             value={sortMode}
@@ -329,7 +329,7 @@ function CombinePillRow<T extends string | number>({
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
       <span style={{
         fontSize: '10px', color: '#94a3b8', fontWeight: 600,
-        textTransform: 'uppercase' as const, letterSpacing: '0.05em',
+        textTransform: 'uppercase' as const, letterSpacing: '0.02em',
         minWidth: '52px',
       }}>{label}</span>
       <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>

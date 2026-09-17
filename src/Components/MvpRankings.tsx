@@ -158,7 +158,7 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
       {/* MVP Section */}
       <div style={{ ...(!embedded ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
         <div style={{ padding: embedded ? '4px 14px 8px' : '10px 14px', ...(!embedded && { backgroundColor: '#0f172a' }), borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '14px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <span style={{ fontSize: '14px', fontWeight: '600', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
             {crownedMvp ? 'Season MVP' : 'MVP Race'}
           </span>
           <HoverTooltip text="Combines a player's stats, the win probability they add, and their defense into one value.">
@@ -249,7 +249,7 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
       {allPro.length > 0 && (
         <div style={{ ...(!embedded ? { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '8px', overflow: 'hidden' } : {}) }}>
           <div style={{ padding: embedded ? '4px 14px 8px' : '10px 14px', ...(!embedded && { backgroundColor: '#0f172a' }), borderBottom: '1px solid #334155' }}>
-            <span style={{ fontSize: '14px', fontWeight: '600', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
               All-Pro Team
             </span>
           </div>
@@ -259,7 +259,7 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
             return (
             <React.Fragment key={`${player.side || 'o'}-${player.id}`}>
               {showDivider && (
-                <div style={{ padding: embedded ? '6px 14px 2px' : '6px 10px 2px', fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                <div style={{ padding: embedded ? '6px 14px 2px' : '6px 10px 2px', fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
                   {player.side === 'defense' ? 'Defense' : 'Offense'}
                 </div>
               )}

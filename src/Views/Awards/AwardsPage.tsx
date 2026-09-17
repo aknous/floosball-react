@@ -47,7 +47,7 @@ function StatPair({ label, value }: { label: string; value: number | string }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '3px' }}>
       <span style={{ fontSize: '16px', fontWeight: 700, color: '#e2e8f0', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
-      <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+      <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>{label}</span>
     </span>
   )
 }
@@ -85,7 +85,7 @@ function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPi
         onClick={onPick}
         style={{
           flexShrink: 0, cursor: 'pointer',
-          fontSize: '12px', fontWeight: 800, letterSpacing: '0.05em',
+          fontSize: '12px', fontWeight: 800, letterSpacing: '0.02em',
           color: picked ? '#0f172a' : GOLD,
           background: picked ? GOLD : 'rgba(251,191,36,0.12)',
           border: `1px solid ${GOLD}`, borderRadius: '6px', padding: '10px 18px',
@@ -119,7 +119,7 @@ function MvpResults({ winner, candidates, tally, voterCount }: {
                onError={e => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden' }} />
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', color: GOLD }}>SEASON MVP</div>
+          <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.02em', color: GOLD }}>SEASON MVP</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
             <PlayerLink playerId={winner.id} playerName={winner.name} style={{ fontSize: '20px', fontWeight: 800, color: '#e2e8f0' }} />
             <span style={{ fontSize: '13px', color: '#94a3b8' }}>{winner.position} · {winner.teamAbbr}</span>

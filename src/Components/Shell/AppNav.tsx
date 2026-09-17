@@ -161,7 +161,7 @@ const AWARDS_ITEM: NavEntry = {
 const DISCORD_URL = 'https://discord.gg/b4DZn3mVfP'
 
 const GROUP_LABEL: React.CSSProperties = {
-  ...font(700, 10, 1, '0.16em'),
+  ...font(700, 10, 1, '0.02em'),
   color: TEXT.faint,
   padding: '0 18px 9px',
 }

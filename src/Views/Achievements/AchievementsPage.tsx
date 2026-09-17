@@ -280,9 +280,9 @@ const SplitGrid: React.FC<{
               display: 'flex', alignItems: 'center', gap: '10px',
               margin: '18px 0 12px',
             }}>
-              <span style={{ ...font(700, 11, 1, '0.1em'), color: TEXT.muted }}>{doneLabel}</span>
+              <span style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted }}>{doneLabel}</span>
               <span style={{ flex: 1, height: '1px', backgroundColor: BORDER.hairline }} />
-              <span style={{ ...font(700, 11, 1, '0.1em'), ...TABULAR, color: TEXT.muted }}>
+              <span style={{ ...font(700, 11, 1, '0.02em'), ...TABULAR, color: TEXT.muted }}>
                 {completed.length}
               </span>
             </div>
@@ -394,7 +394,7 @@ const AchievementsPage: React.FC = () => {
             display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0,
             backgroundColor: BG.card, border: `1px solid ${BORDER.hairline}`, padding: '7px 11px',
           }}>
-            <span style={{ ...font(700, 11, 1, '0.1em'), color: TEXT.muted }}>COMPLETE</span>
+            <span style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted }}>COMPLETE</span>
             <span style={{ ...font(800, 13), ...TABULAR, color: TEXT.strong }}>
               {doneAll} / {achievements.length}
             </span>
@@ -565,9 +565,9 @@ const Section: React.FC<{
         }}>
           {collapsed ? '+' : '−'}
         </span>
-        <h2 style={{ ...font(800, 13, 1, '0.12em'), color: TEXT.strong, margin: 0, textTransform: 'uppercase' }}>{title}</h2>
+        <h2 style={{ ...font(800, 13, 1, '0.02em'), color: TEXT.strong, margin: 0, textTransform: 'uppercase' }}>{title}</h2>
         <span style={{
-          ...font(700, 11, 1, '0.1em'), ...TABULAR,
+          ...font(700, 11, 1, '0.02em'), ...TABULAR,
           color: allDone ? ACCENT.warning : TEXT.muted,
           backgroundColor: BG.panel,
           border: `1px solid ${allDone ? 'rgba(245,158,11,0.4)' : BORDER.hairline}`,
@@ -707,7 +707,7 @@ const TieredFamilySummary: React.FC<{ group: GuidanceGroup }> = ({ group }) => {
               <div style={{ height: '100%', width: `${pct}%`, backgroundColor: ACCENT.info, transition: 'width 0.3s' }} />
             </div>
             <div style={{
-              ...font(700, 11, 1, '0.05em'), color: TEXT.muted, marginTop: '6px',
+              ...font(700, 11, 1, '0.02em'), color: TEXT.muted, marginTop: '6px',
               ...TABULAR, display: 'flex', justifyContent: 'space-between', gap: '10px',
             }}>
               <span>{formatFamilyValue(group.family, currentValue)} / {formatFamilyValue(group.family, nextTarget)}</span>
@@ -755,7 +755,7 @@ const AchievementRow: React.FC<{
         </div>
         {complete && (
           <span style={{
-            flexShrink: 0, ...font(700, 11, 1, '0.1em'),
+            flexShrink: 0, ...font(700, 11, 1, '0.02em'),
             color: ACCENT.warning, backgroundColor: 'rgba(245,158,11,0.12)',
             border: '1px solid rgba(245,158,11,0.4)', padding: '2px 6px',
           }}>
@@ -770,7 +770,7 @@ const AchievementRow: React.FC<{
           <div style={{ height: '6px', backgroundColor: BG.shell, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${pct}%`, backgroundColor: ACCENT.info, transition: 'width 0.3s' }} />
           </div>
-          <div style={{ ...font(700, 11, 1, '0.05em'), color: TEXT.muted, marginTop: '6px', ...TABULAR }}>
+          <div style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted, marginTop: '6px', ...TABULAR }}>
             {a.progress} / {a.target}
           </div>
         </div>
@@ -800,7 +800,7 @@ const AchievementRow: React.FC<{
           borderTop: `1px solid ${BORDER.hairline}`,
           display: 'flex', flexDirection: 'column', gap: '9px',
         }}>
-          <div style={{ ...font(700, 11, 1, '0.1em'), color: TEXT.muted }}>
+          <div style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted }}>
             HOW TO COMPLETE
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -821,7 +821,7 @@ const AchievementRow: React.FC<{
             onClick={() => onAction(hint.action)}
             style={{
               alignSelf: 'flex-start',
-              ...font(700, 11, 1, '0.1em'),
+              ...font(700, 11, 1, '0.02em'),
               color: ACCENT.info, backgroundColor: 'rgba(56,189,248,0.10)',
               border: '1px solid rgba(56,189,248,0.34)',
               padding: '7px 11px', cursor: 'pointer',
@@ -867,7 +867,7 @@ const SecretRow: React.FC<{ achievement: Achievement }> = ({ achievement: a }) =
         </div>
         {unlocked && (
           <span style={{
-            flexShrink: 0, ...font(700, 11, 1, '0.1em'),
+            flexShrink: 0, ...font(700, 11, 1, '0.02em'),
             color: ACCENT.warning, backgroundColor: 'rgba(245,158,11,0.12)',
             border: '1px solid rgba(245,158,11,0.4)', padding: '2px 6px',
           }}>
@@ -906,7 +906,7 @@ const RewardChip: React.FC<{ text: React.ReactNode; color: string }> = ({ text, 
  *  chips are for ("NEXT TIER") without a second component saying the same thing. */
 const RewardLabel: React.FC<{ text?: string }> = ({ text = 'REWARDS' }) => (
   <span style={{
-    ...font(700, 11, 1, '0.1em'), color: TEXT.muted, marginRight: '2px',
+    ...font(700, 11, 1, '0.02em'), color: TEXT.muted, marginRight: '2px',
   }}>
     {text}
   </span>
@@ -1020,8 +1020,8 @@ const PendingRewardsSection: React.FC<{
         backgroundColor: BG.panel, borderBottom: `1px solid ${BORDER.hairline}`,
         padding: '9px 12px',
       }}>
-        <h2 style={{ ...font(800, 11, 1, '0.12em'), color: '#fbbf24', margin: 0 }}>UNCLAIMED REWARDS</h2>
-        <span style={{ ...font(700, 11, 1, '0.1em'), ...TABULAR, color: TEXT.muted }}>
+        <h2 style={{ ...font(800, 11, 1, '0.02em'), color: '#fbbf24', margin: 0 }}>UNCLAIMED REWARDS</h2>
+        <span style={{ ...font(700, 11, 1, '0.02em'), ...TABULAR, color: TEXT.muted }}>
           {rewards.length} WAITING
         </span>
       </div>
@@ -1074,7 +1074,7 @@ const PendingRewardsSection: React.FC<{
                     onClick={() => handleDefer(r)}
                     disabled={busy}
                     style={{
-                      ...font(700, 11, 1, '0.1em'),
+                      ...font(700, 11, 1, '0.02em'),
                       color: TEXT.secondary, backgroundColor: 'transparent',
                       border: `1px solid ${BORDER.raised}`,
                       padding: '6px 10px', cursor: busy ? 'default' : 'pointer',
@@ -1090,7 +1090,7 @@ const PendingRewardsSection: React.FC<{
                     disabled={busy || lockedByDefer}
                     title="Convert this pack to Floobits instead of opening it"
                     style={{
-                      ...font(700, 11, 1, '0.1em'),
+                      ...font(700, 11, 1, '0.02em'),
                       color: TEXT.secondary, backgroundColor: 'transparent',
                       border: `1px solid ${BORDER.raised}`,
                       padding: '6px 10px',
@@ -1108,7 +1108,7 @@ const PendingRewardsSection: React.FC<{
                   style={{
                     // The one FILLED plate on the page. Everything else is a ghost, so
                     // the thing you came here to do is the thing that reads first.
-                    ...font(800, 11, 1, '0.1em'),
+                    ...font(800, 11, 1, '0.02em'),
                     color: BG.shell, backgroundColor: '#fbbf24',
                     border: 'none',
                     padding: '7px 12px',

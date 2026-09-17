@@ -91,7 +91,7 @@ const Detail: React.FC<{ standing?: TeamStanding; align: 'left' | 'right' }> = (
       flexDirection: align === 'right' ? 'row-reverse' : 'row',
     }}>
       <span style={{
-        ...font(700, 9, 1, '0.1em'), color: TEXT.muted, width: '52px',
+        ...font(700, 9, 1, '0.02em'), color: TEXT.muted, width: '52px',
         textAlign: align === 'right' ? 'right' : 'left',
       }}>{label}</span>
       <span style={{ ...font(600, 11), color: color ?? TEXT.body, ...TABULAR }}>{value}</span>
@@ -177,7 +177,7 @@ const Side: React.FC<{
           }}>
             <Crest teamId={team.id} size={24} />
             <span style={{
-              ...font(700, 12, 1, '0.04em'), color: picked ? accent : TEXT.secondary,
+              ...font(700, 12, 1, '0.02em'), color: picked ? accent : TEXT.secondary,
               whiteSpace: 'nowrap',
             }}>{team.abbr}</span>
           </span>
@@ -221,7 +221,7 @@ const Side: React.FC<{
           <Crest teamId={team.id} size={compact ? 26 : 34} />
           <span style={{ minWidth: 0 }}>
             <span style={{
-              display: 'block', ...font(500, 10, 1, '0.06em'), color: TEXT.muted,
+              display: 'block', ...font(500, 10, 1, '0.02em'), color: TEXT.muted,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{team.city ?? team.abbr}</span>
             <span style={{
@@ -323,11 +323,11 @@ export const MatchupCard: React.FC<{
                column of settled games took a beat to scan. A hit is a check over what
                it paid; a miss is an X and nothing else, because a miss paid nothing. */
             !hasPick ? (
-              <span style={{ ...font(700, 12, 1, '0.04em'), color: TEXT.muted }}>—</span>
+              <span style={{ ...font(700, 12, 1, '0.02em'), color: TEXT.muted }}>—</span>
             ) : correct ? (
               <>
                 <CheckMark />
-                <span style={{ ...font(700, 12, 1, '0.04em'), color: ACCENT.live, ...TABULAR }}>
+                <span style={{ ...font(700, 12, 1, '0.02em'), color: ACCENT.live, ...TABULAR }}>
                   +{game.result?.pointsEarned ?? 0}
                 </span>
               </>
@@ -376,7 +376,7 @@ export const MatchupCard: React.FC<{
         <button
           onClick={() => setOpen(o => !o)}
           style={{
-            display: 'block', width: '100%', ...font(700, 9, 1, '0.1em'), color: TEXT.muted,
+            display: 'block', width: '100%', ...font(700, 9, 1, '0.02em'), color: TEXT.muted,
             background: 'transparent', border: 'none', borderTop: `1px solid ${BORDER.subtle}`,
             padding: '5px 0', cursor: 'pointer', fontFamily: FONT,
           }}

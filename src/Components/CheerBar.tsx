@@ -226,7 +226,7 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
   if (compact) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontFamily: FONT }}>
-        <span style={{ ...font(700, 11, 1, '0.08em'), color: accent, whiteSpace: 'nowrap' }}>
+        <span style={{ ...font(700, 11, 1, '0.02em'), color: accent, whiteSpace: 'nowrap' }}>
           SPECTATING{status?.cappedOut ? ' · MAXED' : earning ? '' : ' · PAUSED'}
         </span>
         <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -255,7 +255,7 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
       borderRadius: 8, padding: '8px 12px', transition: 'border-color 0.4s',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: accent, textTransform: 'uppercase' }}>
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.02em', color: accent, textTransform: 'uppercase' }}>
           Spectating{status?.cappedOut ? ' · maxed' : earning ? '' : ' · paused'}
         </span>
         <span style={{ fontSize: 10, color: C.gold, fontWeight: 600 }}>

@@ -116,7 +116,7 @@ const ReplayControlBar: React.FC<ReplayControlBarProps> = ({
   if (!active) {
     return (
       <>
-        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
           Field Position
         </span>
         <span style={{ flex: 1 }} />
@@ -288,7 +288,7 @@ const PlayTag: React.FC<{
 }> = ({ color, label, icon, children }) => (
   <span style={{
     display: 'inline-flex', alignItems: 'center', gap: '6px',
-    fontFamily: 'pressStart', fontWeight: 700, fontSize: '11px', letterSpacing: '0.1em',
+    fontFamily: 'pressStart', fontWeight: 700, fontSize: '11px', letterSpacing: '0.02em',
     color, border: `1px solid ${color}55`, padding: '3px 7px',
     whiteSpace: 'nowrap', lineHeight: 1,
   }}>
@@ -831,7 +831,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
       return (
         <div key={play._key} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '2px 0' }}>
           <div style={{ flex: 1, height: '1px', backgroundColor: '#1e3a5f' }} />
-          <span style={{ fontSize: '10px', color: '#475569', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', flexShrink: 0 }}>
+          <span style={{ fontSize: '10px', color: '#475569', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.02em', flexShrink: 0 }}>
             Drive
           </span>
           <div style={{ flex: 1, height: '1px', backgroundColor: '#1e3a5f' }} />
@@ -906,7 +906,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                   // here and show the OT/quarter clock like any clock format.
                   <><span>{`${play.quarter > 4 ? 'OT' : `Q${play.quarter}`} - ${play.timeRemaining}`}</span><span>•</span></>
                 ) : null}
-                <span style={{ color: '#cbd5e1', fontWeight: '500', letterSpacing: '0.04em' }}>SIDELINE</span>
+                <span style={{ color: '#cbd5e1', fontWeight: '500', letterSpacing: '0.02em' }}>SIDELINE</span>
               </div>
               <p style={{
                 fontSize: '13px',
@@ -1176,7 +1176,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                       whiteSpace: 'nowrap',
                       marginLeft: '8px',
                       flexShrink: 0,
-                      letterSpacing: '0.04em',
+                      letterSpacing: '0.02em',
                       textTransform: 'uppercase',
                     }}>
                       {badgeLabel}
@@ -1705,7 +1705,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 }
                 const rowFor = (side: 'home' | 'away', abbr: string) => (
                   <tr>
-                    <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{abbr}</td>
+                    <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.02em' }}>{abbr}</td>
                     {Array.from({ length: N }).map((_, k) => {
                       const d = frameData(k + 1)
                       if (!d) return <td key={k} style={{ textAlign: 'center', padding: '4px 8px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>-</td>
@@ -1749,7 +1749,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 )
                 const row = (side: 'home' | 'away', abbr: string) => (
                   <tr>
-                    <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{abbr}</td>
+                    <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.02em' }}>{abbr}</td>
                     {ls.innings.map((innNum, i) => {
                       // A team's inning cell is blank until it has batted: away bats the
                       // top first (reached once we're at/after that inning), home bats the
@@ -1801,7 +1801,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                   }
                   const teamRow = (side: 'home' | 'away', abbr: string) => (
                     <tr>
-                      <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.04em' }}>{abbr}</td>
+                      <td style={{ padding: '4px 0', color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '0.02em' }}>{abbr}</td>
                       {cols.map((c, i) => (
                         <td key={c.key} style={{ textAlign: 'center', padding: '4px 10px', color: c.played ? '#cbd5e1' : '#475569', fontVariantNumeric: 'tabular-nums' }}>{cell(side, i)}</td>
                       ))}
@@ -1938,7 +1938,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 const color = dc.low ? '#f59e0b' : '#94a3b8'
                 return (
                   <div style={{ fontSize: '11px', color, fontWeight: 700, marginTop: '3px',
-                                letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                                letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                     Drive Clock {val}
                   </div>
                 )
@@ -1950,7 +1950,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 const toGo = Math.max(0, tgt - leader)
                 return (
                   <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
-                                letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                                letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                     First to {tgt}{gameData.status === 'Active' && toGo > 0 ? ` · ${formatScore(toGo)} to go` : ''}
                   </div>
                 )
@@ -1973,7 +1973,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 const hoops = (info?.homeHoops ?? 0) + (info?.awayHoops ?? 0)
                 return (
                   <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
-                                letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                                letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                     Darts · land on {tgt}
                     {gameData.status === 'Active' && (
                       <span style={{ color: '#94a3b8' }}> ({gameData.homeTeam?.abbr} needs {hGo} · {gameData.awayTeam?.abbr} needs {aGo})</span>
@@ -1995,7 +1995,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               {/* Game format: play_limit (fixed plays per quarter, no clock) */}
               {gameFormat === 'play_limit' && gameData.playLimit?.active && (
                 <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
-                              letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                              letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                   {gameData.playLimit.playsPerQuarter} plays a quarter
                 </div>
               )}
@@ -2024,7 +2024,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                   )
                 }
                 return (
-                  <div style={{ fontSize: '11px', marginTop: '3px', letterSpacing: '0.04em',
+                  <div style={{ fontSize: '11px', marginTop: '3px', letterSpacing: '0.02em',
                                 textTransform: 'uppercase', display: 'flex', gap: '8px',
                                 alignItems: 'baseline', justifyContent: 'center' }}>
                     <span style={{ color: '#94a3b8' }}>Offense clock</span>
@@ -2686,7 +2686,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                                 padding: '1px 7px',
                                 borderRadius: '3px',
                                 fontWeight: '700',
-                                letterSpacing: '0.04em',
+                                letterSpacing: '0.02em',
                                 textTransform: 'uppercase',
                                 fontFamily: 'pressStart, monospace',
                               }}>
@@ -2719,7 +2719,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               const bigDivider = wpAxis.bigDivider
               return (
                 <div style={{ padding: '12px 16px' }}>
-                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '8px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', marginBottom: '8px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
                     Win Probability
                   </div>
                   <div style={{ position: 'relative', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#0f172a' }}>
@@ -2804,7 +2804,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                           borderLeft: i > 0 ? '1px solid #1e293b' : 'none',
                           cursor: 'pointer',
                           fontFamily: "'pressStart', ui-monospace, monospace",
-                          fontSize: '11px', lineHeight: 1, letterSpacing: '0.08em',
+                          fontSize: '11px', lineHeight: 1, letterSpacing: '0.02em',
                           fontWeight: activeTab === tab ? 800 : 500,
                           backgroundColor: activeTab === tab ? '#cbd5e1' : 'transparent',
                           color: activeTab === tab ? '#0b1220' : '#94a3b8',
@@ -2909,7 +2909,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                         fontWeight: 700,
                         color: '#94a3b8',
                         textTransform: 'uppercase',
-                        letterSpacing: '0.06em',
+                        letterSpacing: '0.02em',
                         whiteSpace: 'nowrap',
                         padding: '12px 18px',
                         alignSelf: 'center',
@@ -2947,12 +2947,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                             and always fits; the full name is on the scoreboard above. */}
                         <div style={{ textAlign: 'right', minWidth: 0 }}>
                           {narrowBox ? (
-                            <div style={{ fontSize: '17px', fontWeight: 800, color: homeColor, letterSpacing: '0.06em' }}>{homeAbbr}</div>
+                            <div style={{ fontSize: '17px', fontWeight: 800, color: homeColor, letterSpacing: '0.02em' }}>{homeAbbr}</div>
                           ) : (
                             <>
-                              <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeCity}</div>
+                              <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeCity}</div>
                               <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeName}</div>
-                              <div style={{ fontSize: '11px', fontWeight: 700, color: homeColor, letterSpacing: '0.08em', marginTop: '2px' }}>{homeAbbr}</div>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: homeColor, letterSpacing: '0.02em', marginTop: '2px' }}>{homeAbbr}</div>
                             </>
                           )}
                         </div>
@@ -2960,19 +2960,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                       </div>
                       <div style={{
                         fontSize: '11px', fontWeight: 700, color: '#475569',
-                        textTransform: 'uppercase', letterSpacing: '0.15em',
+                        textTransform: 'uppercase', letterSpacing: '0.02em',
                         padding: '0 4px',
                       }}>vs</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: narrowBox ? '7px' : '12px', justifyContent: 'flex-start', minWidth: 0 }}>
                         <img src={`/avatars/${awayId}.png`} alt={awayName} style={{ width: narrowBox ? '38px' : '52px', height: narrowBox ? '38px' : '52px', flexShrink: 0 }} />
                         <div style={{ textAlign: 'left', minWidth: 0 }}>
                           {narrowBox ? (
-                            <div style={{ fontSize: '17px', fontWeight: 800, color: awayColor, letterSpacing: '0.06em' }}>{awayAbbr}</div>
+                            <div style={{ fontSize: '17px', fontWeight: 800, color: awayColor, letterSpacing: '0.02em' }}>{awayAbbr}</div>
                           ) : (
                             <>
-                              <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayCity}</div>
+                              <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayCity}</div>
                               <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayName}</div>
-                              <div style={{ fontSize: '11px', fontWeight: 700, color: awayColor, letterSpacing: '0.08em', marginTop: '2px' }}>{awayAbbr}</div>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: awayColor, letterSpacing: '0.02em', marginTop: '2px' }}>{awayAbbr}</div>
                             </>
                           )}
                         </div>
@@ -2984,7 +2984,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                       fontSize: '11px',
                       fontWeight: 700,
                       color: '#64748b',
-                      letterSpacing: '0.12em',
+                      letterSpacing: '0.02em',
                       textTransform: 'uppercase',
                       textAlign: 'center',
                       padding: '6px 0 14px',
@@ -3003,7 +3003,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                           fontSize: '12px',
                           fontWeight: 700,
                           color: '#cbd5e1',
-                          letterSpacing: '0.1em',
+                          letterSpacing: '0.02em',
                           textTransform: 'uppercase',
                           backgroundColor: '#1e293b',
                           borderBottom: '1px solid #334155',
@@ -3180,7 +3180,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                         fontWeight: 700,
                         color: '#94a3b8',
                         textTransform: 'uppercase',
-                        letterSpacing: '0.06em',
+                        letterSpacing: '0.02em',
                         whiteSpace: 'nowrap',
                         padding: '12px 18px',
                         alignSelf: 'center',
@@ -3223,12 +3223,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                       <div style={{ display: 'flex', alignItems: 'center', gap: narrowBox ? '7px' : '12px', justifyContent: 'flex-end', minWidth: 0 }}>
                         <div style={{ textAlign: 'right', minWidth: 0 }}>
                           {narrowBox ? (
-                            <div style={{ fontSize: '17px', fontWeight: 800, color: homeColor, letterSpacing: '0.06em' }}>{homeAbbr}</div>
+                            <div style={{ fontSize: '17px', fontWeight: 800, color: homeColor, letterSpacing: '0.02em' }}>{homeAbbr}</div>
                           ) : (
                             <>
-                              <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeCity}</div>
+                              <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeCity}</div>
                               <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{homeName}</div>
-                              <div style={{ fontSize: '11px', fontWeight: 700, color: homeColor, letterSpacing: '0.08em', marginTop: '2px' }}>{homeAbbr}</div>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: homeColor, letterSpacing: '0.02em', marginTop: '2px' }}>{homeAbbr}</div>
                             </>
                           )}
                         </div>
@@ -3241,7 +3241,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                       {/* Center divider */}
                       <div style={{
                         fontSize: '11px', fontWeight: 700, color: '#475569',
-                        textTransform: 'uppercase', letterSpacing: '0.15em',
+                        textTransform: 'uppercase', letterSpacing: '0.02em',
                         padding: '0 4px',
                       }}>vs</div>
                       {/* Away side */}
@@ -3253,12 +3253,12 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                         />
                         <div style={{ textAlign: 'left', minWidth: 0 }}>
                           {narrowBox ? (
-                            <div style={{ fontSize: '17px', fontWeight: 800, color: awayColor, letterSpacing: '0.06em' }}>{awayAbbr}</div>
+                            <div style={{ fontSize: '17px', fontWeight: 800, color: awayColor, letterSpacing: '0.02em' }}>{awayAbbr}</div>
                           ) : (
                             <>
-                          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayCity}</div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', letterSpacing: '0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayCity}</div>
                           <div style={{ fontSize: '18px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{awayName}</div>
-                          <div style={{ fontSize: '11px', fontWeight: 700, color: awayColor, letterSpacing: '0.08em', marginTop: '2px' }}>{awayAbbr}</div>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: awayColor, letterSpacing: '0.02em', marginTop: '2px' }}>{awayAbbr}</div>
                             </>
                           )}
                         </div>
@@ -3278,7 +3278,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                           fontSize: '12px',
                           fontWeight: 700,
                           color: '#cbd5e1',
-                          letterSpacing: '0.1em',
+                          letterSpacing: '0.02em',
                           textTransform: 'uppercase',
                           backgroundColor: '#1e293b',
                           borderBottom: '1px solid #334155',
@@ -3429,7 +3429,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                         borderTop: '1px solid #1e293b',
                         borderLeft: `3px solid ${color}`,
                       }}>
-                        <span style={{ fontSize: '11px', fontWeight: 700, color, letterSpacing: '0.06em' }}>{abbr}</span>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color, letterSpacing: '0.02em' }}>{abbr}</span>
                       </div>
                       {rows.length === 0 ? (
                         <div style={{ padding: '10px 14px', fontSize: '12px', color: '#475569', borderTop: '1px solid #1e293b' }}>—</div>
@@ -3504,7 +3504,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                         fontSize: '12px',
                         fontWeight: 700,
                         color: '#cbd5e1',
-                        letterSpacing: '0.1em',
+                        letterSpacing: '0.02em',
                         textTransform: 'uppercase',
                         backgroundColor: '#1e293b',
                         borderBottom: '1px solid #334155',
@@ -3518,7 +3518,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                         fontWeight: 700,
                         color: '#94a3b8',
                         textTransform: 'uppercase',
-                        letterSpacing: '0.06em',
+                        letterSpacing: '0.02em',
                         borderTop: '1px solid #1e293b',
                       }}>
                         {headerCols.map((c, i) => (
@@ -3666,7 +3666,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                         {/* Same green the rows wear, so the strip and the rows read as
                             one idea rather than two markers for the same fact. */}
                         <span style={{
-                          fontSize: '9px', fontWeight: 800, letterSpacing: '0.06em',
+                          fontSize: '9px', fontWeight: 800, letterSpacing: '0.02em',
                           color: '#0b1220', background: '#22c55e', padding: '2px 5px', borderRadius: '3px',
                         }}>FANTASY</span>
                         <span style={{ fontSize: '12px', color: '#cbd5e1' }}>

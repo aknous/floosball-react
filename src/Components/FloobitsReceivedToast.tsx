@@ -106,7 +106,7 @@ const FloobitsReceivedToast: React.FC = () => {
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            fontSize: '10px', fontWeight: 700, letterSpacing: '0.08em',
+            fontSize: '10px', fontWeight: 700, letterSpacing: '0.02em',
             color: '#fbbf24', textTransform: 'uppercase', marginBottom: '2px',
           }}>
             {txLabel(latest.transactionType)}
@@ -124,7 +124,7 @@ const FloobitsReceivedToast: React.FC = () => {
               marginTop: '4px', padding: '2px 6px', borderRadius: '4px',
               backgroundColor: 'rgba(234,179,8,0.14)',
               border: '1px solid rgba(234,179,8,0.45)',
-              fontSize: '9px', color: '#fcd34d', letterSpacing: '0.04em',
+              fontSize: '9px', color: '#fcd34d', letterSpacing: '0.02em',
             }}>
               +{latest.boostBonus} ENDOWMENT
             </div>
