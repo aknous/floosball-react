@@ -5,7 +5,7 @@ import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing } fr
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
-import Potential, { ceilingLabel } from '@/Components/Potential'
+import Potential, { potentialTooltip } from '@/Components/Potential'
 import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -349,7 +349,7 @@ const TransactionsPage: React.FC = () => {
                           <PlayerLink playerId={p.playerId} playerName={p.name}
                             style={{ ...font(600, 14), color: TEXT.body }} />
                         </span>
-                        <HoverTooltip text={`Plays at ${Math.round(p.rating)} today. Your team scouts him to ${ceilingLabel(p.ceilingRange) || 'no clear ceiling'}. Another team sees a different range.`}>
+                        <HoverTooltip content={potentialTooltip(p.rating, p.ceilingRange)}>
                           <span style={{ width: '150px', display: 'inline-block' }}>
                             <Potential rating={p.rating} range={p.ceilingRange} />
                           </span>

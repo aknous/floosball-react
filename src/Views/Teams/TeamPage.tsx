@@ -19,7 +19,7 @@ import PlayerRating from '@/Components/Sentiment/PlayerRating'
 import TeamFeed from '@/Components/Sentiment/TeamFeed'
 import FrontOfficeBand from './FrontOfficeBand'
 import SectionRail, { RailSection } from './SectionRail'
-import Potential, { ceilingLabel } from '@/Components/Potential'
+import Potential, { potentialTooltip } from '@/Components/Potential'
 import { GAUGE_TRACK, barWidth, gaugeColor } from '@/Components/Gauge'
 import { useTeamProspects, TeamProspect } from '@/hooks/useTeamProspects'
 import { quipAt } from '@/Views/FrontOffice/FacilitiesSection'
@@ -642,7 +642,7 @@ const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p }) => {
       {/* ⚠️ BESIDE THE NAME, and POTENTIAL as hollow stars rather than a bar chart of the
           scouted band. Solid is what he plays at today; hollow is what this team's scouts
           think he could still add. The exact range stays on hover. */}
-      <HoverTooltip text={`Plays at ${Math.round(p.rating)} today. This team scouts him to ${ceilingLabel(p.ceilingRange) || 'no clear ceiling'}.`}>
+      <HoverTooltip content={potentialTooltip(p.rating, p.ceilingRange)}>
         <span style={{ width: '150px', display: 'inline-block', flexShrink: 0 }}>
           <Potential rating={p.rating} range={p.ceilingRange} />
         </span>
