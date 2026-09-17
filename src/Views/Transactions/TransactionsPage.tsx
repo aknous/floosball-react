@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useMemo, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing } from '@/hooks/useTransactions'
@@ -27,12 +27,16 @@ const REASON_TEXT: Record<string, string> = {
   inquiry: 'Nobody listed him. Another team called to ask.',
 }
 
-/** 1st, 2nd, 3rd, 4th. A pick is a position in a queue, so it reads as one. */
-function ordinal(n: number): string {
-  const rem100 = n % 100
-  if (rem100 >= 11 && rem100 <= 13) return `${n}th`
-  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`
-}
+/**
+ * The six roster positions, in roster order rather than alphabetical, because that is
+ * the order every other surface in the app lists them in.
+ *
+ * ⚠️ A FIXED LIST, NOT ONE DERIVED FROM THE DATA. Deriving it means the filter loses a
+ * position the moment nobody in the class plays it, so the control changes shape between
+ * visits and "no tight ends in this class" becomes invisible instead of being an answer.
+ */
+const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K'] as const
+type PositionFilter = 'ALL' | typeof POSITIONS[number]
 
 function Crest({ team, size = 18 }: { team: { id: number; name: string } | null; size?: number }) {
   if (!team) return null
@@ -81,6 +85,75 @@ const NameGrade: React.FC<{
 
 
 /**
+ * ⚠️ DEFINED AT MODULE SCOPE, NOT INSIDE THE PAGE. A component declared in a render body
+ * is a NEW component type on every render, so React unmounts and remounts it rather than
+ * updating it: refs are dropped and re-attached, and any scroll position inside it is
+ * reset to the top. That is what stopped the draft pane opening at the reader's own team
+ * — the effect set scrollTop and the very next render threw the node away.
+ */
+/** A dashboard pane: titled, counted, and bounded so the page stays scannable. */
+const Pane: React.FC<{
+  title: string
+  count?: number
+  note?: string
+  height?: number
+  scrollRef?: React.Ref<HTMLDivElement>
+  /** Sits between the title and the rule, so a pane's controls stay with its name. */
+  control?: React.ReactNode
+  children: React.ReactNode
+}> = ({ title, count, note, height = 360, scrollRef, control, children }) => (
+  <section style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+    {/* ⚠️ SENTENCE CASE, NOT UPPERCASE. This app reserves uppercase for FIELD LABELS —
+        table heads and the facts-grid cells — and a section title is not one; the team
+        page's `SectionHead` sets the pattern ("Roster", "The Bleachers", "Pipeline"),
+        down to the rule that runs out to the right. Uppercasing them also made every
+        pane shout at the same volume as the column heads inside it. */}
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '9px' }}>
+      <h2 style={{ ...font(800, 13, 1, '0.08em'), color: TEXT.strong, margin: 0, whiteSpace: 'nowrap' }}>
+        {title}
+      </h2>
+      {count != null && (
+        <span style={{ ...font(600, 12), ...TABULAR, color: TEXT.muted }}>{count}</span>
+      )}
+      {note && <span style={{ ...font(400, 12), color: TEXT.muted, whiteSpace: 'nowrap' }}>{note}</span>}
+      <span style={{ flex: 1, height: '2px', background: BORDER.hairline }} />
+      {control}
+    </div>
+    {/* ⚠️ A FLOOR AS WELL AS A CEILING. Paired panes sit on `alignItems: start`, so an
+        empty one collapsed to a single line of text beside a full one and the row read
+        as broken rather than as quiet. It does not STRETCH to match either: forcing both
+        to the tallest makes two sparse panes into two tall empty boxes. */}
+    <div ref={scrollRef} data-pane style={{
+      background: BG.panel, border: `1px solid ${BORDER.hairline}`, position: 'relative',
+      minHeight: '150px', maxHeight: `${height}px`, overflowY: 'auto',
+    }}>
+      {children}
+    </div>
+  </section>
+)
+
+const PosFilter: React.FC<{ value: PositionFilter; onChange: (p: PositionFilter) => void }> =
+  ({ value, onChange }) => (
+    <div style={{ display: 'flex', border: `1px solid ${BORDER.hairline}`, background: BG.panel }}>
+      {(['ALL', ...POSITIONS] as PositionFilter[]).map((p, i) => {
+        const active = value === p
+        return (
+          <button key={p} onClick={() => onChange(p)}
+            aria-pressed={active}
+            title={p === 'ALL' ? 'Every position' : p}
+            style={{
+              ...font(active ? 800 : 500, 10),
+              color: active ? BG.shell : TEXT.muted,
+              background: active ? TEXT.secondary : 'transparent',
+              border: 'none', borderLeft: i > 0 ? `1px solid ${BORDER.hairline}` : 'none',
+              padding: '4px 7px', cursor: 'pointer', fontFamily: FONT,
+            }}>{p}</button>
+        )
+      })}
+    </div>
+  )
+
+/**
  * TRANSACTIONS — the front office, as a dashboard rather than a set of tabs.
  *
  * ⚠️ TABS WERE THE WRONG SHAPE FOR THIS PAGE. Standings is deliberately a view switcher
@@ -109,11 +182,41 @@ const TransactionsPage: React.FC = () => {
     draftOrder, prospects, expiring, block, trades, moves,
   } = useTransactions()
 
+  const [classPos, setClassPos] = useState<PositionFilter>('ALL')
+  const [contractPos, setContractPos] = useState<PositionFilter>('ALL')
+  const shownProspects = useMemo(
+    () => (classPos === 'ALL' ? prospects : prospects.filter(p => p.position === classPos)),
+    [prospects, classPos])
+  const shownExpiring = useMemo(
+    () => (contractPos === 'ALL' ? expiring : expiring.filter(e => e.position === contractPos)),
+    [expiring, contractPos])
+
   const tradedCount = useMemo(() => draftOrder.filter(d => d.traded).length, [draftOrder])
   const leaving = useMemo(() => expiring.filter(e => e.cannotKeep), [expiring])
-  const myPick = useMemo(
-    () => (myTeamId ? draftOrder.find(d => d.owner?.id === myTeamId) : null),
-    [draftOrder, myTeamId])
+  /**
+   * ⚠️ A HIGHLIGHT BELOW THE FOLD IS NOT A HIGHLIGHT. The pane shows about seven of
+   * thirty-two rows, so a team picking 16th was marked in its own colour and invisible
+   * until you went looking — which is the one job the marking has. The pane opens
+   * already scrolled to it.
+   *
+   * Scrolls the CONTAINER rather than calling scrollIntoView, which walks up the tree and
+   * would drag the whole page down to meet it. Jumps rather than animates: this is the
+   * pane's resting position, not a transition the reader should watch.
+   *
+   * ⚠️ A REF CALLBACK, NOT AN EFFECT. An effect reading two refs fired before the row had
+   * attached and returned early, leaving the pane at the top with no sign anything had
+   * been attempted. A ref callback runs exactly when the node arrives, so there is no
+   * ordering to get wrong.
+   */
+  const revealOwnRow = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return
+    const pane = node.closest('[data-pane]') as HTMLElement | null
+    if (!pane) return
+    // ⚠️ `offsetTop` IS MEASURED FROM THE NEAREST POSITIONED ANCESTOR, so the pane sets
+    // `position: relative` — against a static pane this reads the distance from somewhere
+    // further up the page and scrolls to a meaningless offset.
+    pane.scrollTop = Math.max(0, node.offsetTop - pane.clientHeight / 2 + node.clientHeight / 2)
+  }, [])
 
   const row: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: '10px',
@@ -133,43 +236,6 @@ const TransactionsPage: React.FC = () => {
     }}>{text}</span>
   )
 
-  /** A dashboard pane: titled, counted, and bounded so the page stays scannable. */
-  const Pane: React.FC<{
-    title: string
-    count?: number
-    note?: string
-    height?: number
-    children: React.ReactNode
-  }> = ({ title, count, note, height = 360, children }) => (
-    <section style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-      {/* ⚠️ SENTENCE CASE, NOT UPPERCASE. This app reserves uppercase for FIELD LABELS —
-          table heads and the facts-grid cells — and a section title is not one; the team
-          page's `SectionHead` sets the pattern ("Roster", "The Bleachers", "Pipeline"),
-          down to the rule that runs out to the right. Uppercasing them also made every
-          pane shout at the same volume as the column heads inside it. */}
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '9px' }}>
-        <h2 style={{ ...font(800, 13, 1, '0.08em'), color: TEXT.strong, margin: 0, whiteSpace: 'nowrap' }}>
-          {title}
-        </h2>
-        {count != null && (
-          <span style={{ ...font(600, 12), ...TABULAR, color: TEXT.muted }}>{count}</span>
-        )}
-        {note && <span style={{ ...font(400, 12), color: TEXT.muted, whiteSpace: 'nowrap' }}>{note}</span>}
-        <span style={{ flex: 1, height: '2px', background: BORDER.hairline }} />
-      </div>
-      {/* ⚠️ A FLOOR AS WELL AS A CEILING. Paired panes sit on `alignItems: start`, so an
-          empty one collapsed to a single line of text beside a full one and the row read
-          as broken rather than as quiet. It does not STRETCH to match either: forcing both
-          to the tallest makes two sparse panes into two tall empty boxes. */}
-      <div style={{
-        background: BG.panel, border: `1px solid ${BORDER.hairline}`,
-        minHeight: '150px', maxHeight: `${height}px`, overflowY: 'auto',
-      }}>
-        {children}
-      </div>
-    </section>
-  )
-
   const emptyPane = (text: string) => (
     <div style={{
       padding: '34px 16px', textAlign: 'center', ...font(400, 13), color: TEXT.muted,
@@ -178,26 +244,6 @@ const TransactionsPage: React.FC = () => {
       {text}
     </div>
   )
-
-  /**
-   * A supporting figure. Deliberately quiet.
-   *
-   * ⚠️ SIX STATS AT ONE VOLUME IS NOT A SUMMARY, IT IS A ROW OF NUMBERS. The strip was
-   * six identical big-number/small-label cells, so nothing led and the eye had to read
-   * all six to find the one that mattered — and in the opening weeks four of them are
-   * zero, which made the whole page look empty. The lead is the reader's OWN pick,
-   * stated as a sentence; everything else sits underneath it at a smaller size.
-   */
-  const Stat: React.FC<{ value: React.ReactNode; label: string; color?: string; hint?: string }> =
-    ({ value, label, color = TEXT.secondary, hint }) => {
-      const cell = (
-        <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px', minWidth: 0 }}>
-          <span style={{ ...font(700, 14), ...TABULAR, color }}>{value}</span>
-          <span style={{ ...font(400, 12), color: TEXT.muted, whiteSpace: 'nowrap' }}>{label}</span>
-        </span>
-      )
-      return hint ? <HoverTooltip text={hint}>{cell}</HoverTooltip> : cell
-    }
 
   const pair: React.CSSProperties = {
     display: 'grid', gap: isMobile ? '18px' : '22px', alignItems: 'start',
@@ -234,38 +280,11 @@ const TransactionsPage: React.FC = () => {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '22px' : '28px' }}>
 
-            {/* SUMMARY. The numbers that decide whether anything below is worth reading. */}
-            <div style={{
-              background: BG.panel, border: `1px solid ${BORDER.hairline}`,
-              padding: isMobile ? '16px' : '18px 22px',
-              display: 'flex', flexDirection: 'column', gap: '10px',
-            }}>
-              {/* The one thing a reader came for, said as a sentence rather than a tile. */}
-              <div style={{ ...font(700, isMobile ? 17 : 21, 1.25), color: TEXT.primary }}>
-                {myPick
-                  ? <>You pick <span style={{ color: ACCENT.ownTeam }}>{ordinal(myPick.slot)}</span> of {draftOrder.length}</>
-                  : <>{draftOrder.length} teams in the draft order</>}
-              </div>
-              <div style={{ display: 'flex', gap: isMobile ? '14px' : '26px', flexWrap: 'wrap' }}>
-                <Stat value={prospects.length} label="in the class"
-                  hint="Prospects entering the league this offseason." />
-                <Stat value={tradedCount} label="picks traded"
-                  color={tradedCount ? ACCENT.warning : TEXT.secondary}
-                  hint="Slots whose pick now belongs to another team." />
-                <Stat value={block.length} label="on the block"
-                  color={block.length ? ACCENT.info : TEXT.secondary}
-                  hint="Players their team would move right now." />
-                <Stat value={leaving.length} label="walking"
-                  color={leaving.length ? ACCENT.warning : TEXT.secondary}
-                  hint="Past their team's re-sign limit. They leave for nothing unless traded." />
-                <Stat value={trades.length} label="trades" hint="Completed this season." />
-              </div>
-            </div>
-
             {/* THE BOARD */}
             <div style={pair}>
               <Pane title="Draft order" count={draftOrder.length}
-                note={tradedCount ? `${tradedCount} traded` : undefined}>
+                note={tradedCount ? `${tradedCount} traded` : undefined}
+>
                 {draftOrder.length === 0 ? emptyPane('No order yet.') : (
                   <>
                     <div style={headRow}>
@@ -276,8 +295,10 @@ const TransactionsPage: React.FC = () => {
                     </div>
                     {draftOrder.map((d: DraftSlot) => {
                       const isMine = !!myTeamId && (d.owner?.id === myTeamId || d.originalTeam?.id === myTeamId)
+                      const isMyPick = !!myTeamId && d.owner?.id === myTeamId
                       return (
-                        <div key={d.slot} style={{ ...row, ...mine(isMine) }}>
+                        <div key={d.slot} ref={isMyPick ? revealOwnRow : undefined}
+                          style={{ ...row, ...mine(isMine) }}>
                           <span style={{
                             ...font(700, 13), ...TABULAR, width: '22px',
                             color: d.slot <= 3 ? ACCENT.info : TEXT.dim,
@@ -305,9 +326,11 @@ const TransactionsPage: React.FC = () => {
                 )}
               </Pane>
 
-              <Pane title="Incoming class" count={prospects.length}
-                note="solid = now, hollow = scouted">
-                {prospects.length === 0 ? emptyPane('No class generated yet.') : (
+              <Pane title="Incoming class" count={shownProspects.length}
+                note={classPos === 'ALL' ? 'solid = now, hollow = scouted' : `of ${prospects.length}`}
+                control={<PosFilter value={classPos} onChange={setClassPos} />}>
+                {prospects.length === 0 ? emptyPane('No class generated yet.')
+                  : shownProspects.length === 0 ? emptyPane(`No ${classPos} in this class.`) : (
                   <>
                     <div style={headRow}>
                       <span style={{ width: '22px' }}>#</span>
@@ -315,7 +338,7 @@ const TransactionsPage: React.FC = () => {
                     </div>
                     {/* ⚠️ RANKED, NOT PAIRED TO A SLOT. Lining prospect N up against pick N
                         would read as a prediction, and every team drafts off its own board. */}
-                    {prospects.map((p: Prospect, i) => (
+                    {shownProspects.map((p: Prospect, i) => (
                       <div key={p.playerId} style={row}>
                         <span style={{ ...font(700, 12), ...TABULAR, width: '22px', color: TEXT.faint }}>
                           {i + 1}
@@ -364,10 +387,14 @@ const TransactionsPage: React.FC = () => {
                   })}
               </Pane>
 
-              <Pane title="Contract year" count={expiring.length}
-                note={leaving.length ? `${leaving.length} leaving for nothing` : undefined}>
-                {expiring.length === 0 ? emptyPane('Nobody is in the last year of a contract.') : (
-                  [...expiring].sort((a, b) => b.rating - a.rating).map((e: ExpiringPlayer, i) => {
+              <Pane title="Contract year" count={shownExpiring.length}
+                note={contractPos === 'ALL'
+                  ? (leaving.length ? `${leaving.length} leaving for nothing` : undefined)
+                  : `of ${expiring.length}`}
+                control={<PosFilter value={contractPos} onChange={setContractPos} />}>
+                {expiring.length === 0 ? emptyPane('Nobody is in the last year of a contract.')
+                  : shownExpiring.length === 0 ? emptyPane(`No ${contractPos} is in a contract year.`) : (
+                  [...shownExpiring].sort((a, b) => b.rating - a.rating).map((e: ExpiringPlayer, i) => {
                     const isMine = !!myTeamId && e.team?.id === myTeamId
                     return (
                       <div key={`${e.playerId}-${i}`} style={{ ...row, ...mine(isMine) }}>
