@@ -3,6 +3,14 @@ import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
+export type TradeWindowState = 'open' | 'disabled' | 'early' | 'deadline'
+
+export interface TradeWindow {
+  open: boolean
+  state: TradeWindowState
+  deadlineWeek: number
+}
+
 export interface TeamBlob {
   id: number
   name: string
@@ -114,6 +122,8 @@ interface UseTransactionsResult {
   season: number
   week: number
   tradingEnabled: boolean
+  /** Why the market is open or shut. The sim owns the rule; this page owns the wording. */
+  tradeWindow: TradeWindow
   draftOrder: DraftSlot[]
   prospects: Prospect[]
   expiring: ExpiringPlayer[]
@@ -138,6 +148,7 @@ export function useTransactions(): UseTransactionsResult {
   const [season, setSeason] = useState(0)
   const [week, setWeek] = useState(0)
   const [tradingEnabled, setTradingEnabled] = useState(false)
+  const [tradeWindow, setTradeWindow] = useState<TradeWindow>({ open: false, state: 'disabled', deadlineWeek: 22 })
   const [draftOrder, setDraftOrder] = useState<DraftSlot[]>([])
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [expiring, setExpiring] = useState<ExpiringPlayer[]>([])
@@ -162,6 +173,11 @@ export function useTransactions(): UseTransactionsResult {
         setSeason(d.season ?? 0)
         setWeek(d.week ?? 0)
         setTradingEnabled(!!d.tradingEnabled)
+        // An older backend sends no window. Fall back to the flag rather than
+        // rendering a closed market, which is what this whole field exists to stop.
+        setTradeWindow(d.tradeWindow || {
+          open: !!d.tradingEnabled, state: d.tradingEnabled ? 'open' : 'disabled', deadlineWeek: 22,
+        })
         setDraftOrder(d.draftOrder ?? [])
         setExpiring(d.expiring ?? [])
         setBlock(d.block ?? [])
@@ -185,7 +201,7 @@ export function useTransactions(): UseTransactionsResult {
   useEffect(() => { fetchAll() }, [fetchAll])
 
   return {
-    loading, error, season, week, tradingEnabled,
+    loading, error, season, week, tradingEnabled, tradeWindow,
     draftOrder, prospects, expiring, block, trades, moves,
     refetch: fetchAll,
   }

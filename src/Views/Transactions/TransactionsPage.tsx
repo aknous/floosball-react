@@ -35,6 +35,29 @@ const REASON_TEXT: Record<string, string> = {
  * position the moment nobody in the class plays it, so the control changes shape between
  * visits and "no tight ends in this class" becomes invisible instead of being an answer.
  */
+/**
+ * What an empty trading block means. The sim decides whether the market is open and
+ * sends the STATE; the wording lives here, so the rule is in one place and the voice
+ * in another.
+ *
+ * ⚠️ "Nothing is being shopped" is only true while the market is OPEN. Past the
+ * deadline the table is empty because trades cannot happen at all, and saying nobody
+ * is available reads as a quiet league rather than a shut one.
+ */
+const WINDOW_CHIP: Record<string, string> = {
+  disabled: 'Trading closed',
+  early: 'Market opens week 15',
+  deadline: 'Deadline passed',
+}
+const WINDOW_EMPTY = (w: { open: boolean; state: string; deadlineWeek: number }): string => {
+  if (w.state === 'deadline') {
+    return `The trade deadline passed in week ${w.deadlineWeek}. Rosters are frozen until the offseason.`
+  }
+  if (w.state === 'early') return 'Teams start listing in week 15, once they know their season.'
+  if (w.state === 'disabled') return 'Trading is closed.'
+  return 'Nothing is being shopped right now.'
+}
+
 const POSITIONS = ['QB', 'RB', 'WR', 'TE', 'K'] as const
 type PositionFilter = 'ALL' | typeof POSITIONS[number]
 
@@ -283,7 +306,7 @@ const TransactionsPage: React.FC = () => {
   const isMobile = useIsMobile()
   const myTeamId = (user as any)?.favoriteTeamId ?? null
   const {
-    loading, error, season, week, tradingEnabled,
+    loading, error, season, week, tradeWindow,
     draftOrder, prospects, expiring, block, trades, moves,
   } = useTransactions()
 
@@ -297,7 +320,6 @@ const TransactionsPage: React.FC = () => {
     [expiring, contractPos])
 
   const tradedCount = useMemo(() => draftOrder.filter(d => d.traded).length, [draftOrder])
-  const leaving = useMemo(() => expiring.filter(e => e.cannotKeep), [expiring])
   /**
    * ⚠️ A HIGHLIGHT BELOW THE FOLD IS NOT A HIGHLIGHT. The pane shows about seven of
    * thirty-two rows, so a team picking 16th was marked in its own colour and invisible
@@ -326,6 +348,18 @@ const TransactionsPage: React.FC = () => {
   const row: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: '10px',
     padding: '10px 14px', borderBottom: `1px solid ${BORDER.subtle}`,
+  }
+  /**
+   * The team name and the trailing badge are COLUMNS, so they need `flexShrink: 0`.
+   * A bare `width` in a flex row is only a basis: a wide badge ("Locker room") shrinks
+   * the team span below its 112px and the column goes ragged row to row. Mobile keeps
+   * the default shrink, where auto widths have to give way rather than overflow.
+   */
+  const teamCol: React.CSSProperties = {
+    width: isMobile ? 'auto' : '112px', flexShrink: isMobile ? 1 : 0,
+  }
+  const tagCol: React.CSSProperties = {
+    width: isMobile ? 'auto' : '92px', flexShrink: isMobile ? 1 : 0, textAlign: 'right',
   }
   const headRow: React.CSSProperties = {
     ...row, padding: '8px 14px', background: BG.shell,
@@ -368,7 +402,7 @@ const TransactionsPage: React.FC = () => {
         {!isMobile && <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />}
         <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted }}>Season {season} &middot; Week {week}</span>
         <span style={{ flex: 1 }} />
-        {!tradingEnabled && tag('Trading closed', TEXT.muted)}
+        {!tradeWindow.open && tag(WINDOW_CHIP[tradeWindow.state] || 'Trading closed', TEXT.muted)}
       </div>
 
       <div style={{ padding: isMobile ? '14px 10px 30px' : '18px 28px 40px', fontFamily: FONT }}>
@@ -474,9 +508,7 @@ const TransactionsPage: React.FC = () => {
             <div style={pair}>
               <Pane title="Trading block" count={block.length}>
                 {block.length === 0
-                  ? emptyPane(tradingEnabled
-                      ? 'Nothing is being shopped. Teams start listing in week 15.'
-                      : 'Trading is closed.')
+                  ? emptyPane(WINDOW_EMPTY(tradeWindow))
                   : [...block].sort((a, b) => b.rating - a.rating).map((b: BlockListing, i) => {
                     const isMine = !!myTeamId && b.team?.id === myTeamId
                     return (
@@ -486,21 +518,21 @@ const TransactionsPage: React.FC = () => {
                           <NameGrade playerId={b.playerId} name={b.name} rating={b.rating} />
                         </span>
                         <Crest team={b.team} />
-                        <span style={{ width: isMobile ? 'auto' : '112px' }}>
+                        <span style={teamCol}>
                           <TeamName team={b.team} mine={isMine} />
                         </span>
-                        <HoverTooltip text={REASON_TEXT[b.reason] || b.reason}>
-                          {tag(REASON_LABEL[b.reason] || b.reason, TEXT.muted)}
-                        </HoverTooltip>
+                        <span style={tagCol}>
+                          <HoverTooltip text={REASON_TEXT[b.reason] || b.reason}>
+                            {tag(REASON_LABEL[b.reason] || b.reason, TEXT.muted)}
+                          </HoverTooltip>
+                        </span>
                       </div>
                     )
                   })}
               </Pane>
 
               <Pane title="Potential free agents" count={shownExpiring.length}
-                note={contractPos === 'ALL'
-                  ? (leaving.length ? `${leaving.length} leaving for nothing` : undefined)
-                  : `of ${expiring.length}`}
+                note={contractPos === 'ALL' ? undefined : `of ${expiring.length}`}
                 control={<PosFilter value={contractPos} onChange={setContractPos} />}>
                 {expiring.length === 0 ? emptyPane('Nobody is in the last year of a contract.')
                   : shownExpiring.length === 0 ? emptyPane(`No ${contractPos} is out of contract.`) : (
@@ -513,10 +545,10 @@ const TransactionsPage: React.FC = () => {
                           <NameGrade playerId={e.playerId} name={e.name} rating={e.rating} />
                         </span>
                         <Crest team={e.team} />
-                        <span style={{ width: isMobile ? 'auto' : '112px' }}>
+                        <span style={teamCol}>
                           <TeamName team={e.team} mine={isMine} />
                         </span>
-                        <span style={{ width: '70px', textAlign: 'right' }}>
+                        <span style={tagCol}>
                           {e.cannotKeep && (
                             <HoverTooltip text="This team is over its re-sign limit. They leave for nothing unless somebody trades for them.">
                               {tag('Walking', ACCENT.warning)}
