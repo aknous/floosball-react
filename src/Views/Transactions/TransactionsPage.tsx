@@ -9,9 +9,15 @@ import Potential, { potentialTooltip } from '@/Components/Potential'
 import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-/** Why a team put this player on the trading block. Short: the row is scanned, not read. */
+/**
+ * Why a team put this player on the trading block. Short: the row is scanned, not read.
+ *
+ * ⚠️ PLAIN WORDS, NOT THE SPORT'S OWN (owner, 2026-09-17). "Walking" and "leaves for
+ * nothing" are how the front office talks about an expiring contract; a fan reading a
+ * table wants the outcome, which is that the player becomes a free agent.
+ */
 const REASON_LABEL: Record<string, string> = {
-  expiring_surplus: 'Walking',
+  expiring_surplus: 'Leaving',
   expiring_keeper: 'Costly',
   horizon_mismatch: 'Timeline',
   locker_room: 'Locker room',
@@ -19,7 +25,7 @@ const REASON_LABEL: Record<string, string> = {
   inquiry: 'Asked about',
 }
 const REASON_TEXT: Record<string, string> = {
-  expiring_surplus: 'Out of contract and past the re-sign limit. They leave for nothing unless someone moves.',
+  expiring_surplus: 'Out of contract and past the re-sign limit. Becomes a free agent unless traded.',
   expiring_keeper: 'Out of contract but the team could keep them, so it will take a real return.',
   horizon_mismatch: 'Under contract for longer than this team can use, or a rental it cannot keep.',
   locker_room: 'Their attitude drags the room down every week they stay.',
@@ -550,8 +556,8 @@ const TransactionsPage: React.FC = () => {
                         </span>
                         <span style={tagCol}>
                           {e.cannotKeep && (
-                            <HoverTooltip text="This team is over its re-sign limit. They leave for nothing unless somebody trades for them.">
-                              {tag('Walking', ACCENT.warning)}
+                            <HoverTooltip text="This team is over its re-sign limit. Becomes a free agent unless traded.">
+                              {tag('Leaving', ACCENT.warning)}
                             </HoverTooltip>
                           )}
                         </span>
