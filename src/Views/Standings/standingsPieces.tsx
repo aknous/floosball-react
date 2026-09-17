@@ -229,7 +229,7 @@ export const pct = (winPerc: string | number): string => {
 export const record = (wins: number, losses: number): string => `${wins}-${losses}`
 
 export const COLUMN_HEADER: React.CSSProperties = {
-  ...font(600, 10, 1, '0.12em'),
+  ...font(600, 10, 1, '0.02em'),
   color: TEXT.muted,
 }
 
@@ -248,7 +248,7 @@ export const SectionNote: React.FC<{ label: string; children: React.ReactNode }>
     display: 'flex', gap: '14px', alignItems: 'baseline',
     background: BG.panel, border: `1px solid ${BORDER.hairline}`, padding: '10px 16px',
   }}>
-    <span style={{ ...font(600, 10, 1, '0.12em'), color: TEXT.muted, flexShrink: 0 }}>{label}</span>
+    <span style={{ ...font(600, 10, 1, '0.02em'), color: TEXT.muted, flexShrink: 0 }}>{label}</span>
     <span style={{ ...font(400, 12, 1.5), color: TEXT.muted }}>{children}</span>
   </div>
 )

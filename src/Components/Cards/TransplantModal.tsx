@@ -251,7 +251,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
                 <span style={{ fontSize: 14, fontWeight: 800, color: components > 0 ? '#e2e8f0' : '#64748b' }}>
                   {components}
                 </span>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', color: '#94a3b8' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.02em', color: '#94a3b8' }}>
                   {/* ⚠️ "SYNTHESIS", not "Synth" (owner) — Chrome Components are coming,
                       so the label has to name WHICH family member it is. */}
                   {components === 1 ? 'SYNTHESIS COMPONENT' : 'SYNTHESIS COMPONENTS'}
@@ -320,7 +320,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
             {error && <div style={{ color: '#f87171', fontSize: 12, padding: '8px 18px', flexShrink: 0 }}>{error}</div>}
 
             {/* Picker header */}
-            <div style={{ padding: '10px 18px 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: selecting === 'donor' ? accent : '#94a3b8', flexShrink: 0 }}>
+            <div style={{ padding: '10px 18px 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.02em', textTransform: 'uppercase', color: selecting === 'donor' ? accent : '#94a3b8', flexShrink: 0 }}>
               {selecting === 'target'
                 ? 'Choose the card to keep'
                 : `Choose an effect · ${target ? EDITION_LABEL[target.edition] || target.edition : ''}`}
@@ -367,7 +367,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
               <PillRow label="Status" value={statusFilter} onChange={v => setStatusFilter(v as 'all' | 'active' | 'inactive')}
                 options={[{ v: 'all', l: 'All' }, { v: 'active', l: 'Active' }, { v: 'inactive', l: 'Inactive' }]} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
-                <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sort</span>
+                <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Sort</span>
                 <select value={sortMode} onChange={e => setSortMode(e.target.value as typeof sortMode)}
                   style={{ padding: '4px 8px', fontSize: 11, fontFamily: 'inherit', backgroundColor: '#111a2b', color: '#e2e8f0', border: '1px solid #334155', borderRadius: 4, cursor: 'pointer', outline: 'none' }}>
                   <option value="value_asc">Lowest value</option>
@@ -424,7 +424,7 @@ const Slot: React.FC<{
       borderRadius: 8, padding: '8px 10px', opacity: disabled ? 0.5 : 1,
       display: 'flex', flexDirection: 'column', gap: 2,
     }}>
-    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: active ? '#a78bfa' : '#94a3b8' }}>{label}</span>
+    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.02em', textTransform: 'uppercase', color: active ? '#a78bfa' : '#94a3b8' }}>{label}</span>
     <span style={{ fontSize: 13, fontWeight: 700, color: card ? '#e2e8f0' : '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
       {card ? card.playerName : 'Not chosen'}
     </span>
@@ -439,7 +439,7 @@ const PillRow: React.FC<{
   options: { v: string | number; l: string }[]
 }> = ({ label, value, onChange, options }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 5, flexWrap: 'wrap' }}>
-    <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', width: 56, flexShrink: 0 }}>{label}</span>
+    <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em', width: 56, flexShrink: 0 }}>{label}</span>
     {options.map(o => {
       const on = value === o.v
       return (

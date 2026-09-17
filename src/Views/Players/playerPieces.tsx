@@ -16,7 +16,7 @@ export const PanelHeader: React.FC<{ title: string; right?: React.ReactNode }> =
     borderBottom: `1px solid ${BORDER.raised}`,
     display: 'flex', alignItems: 'center', gap: '10px',
   }}>
-    <span style={{ ...font(800, 11, 1, '0.12em'), color: TEXT.strong }}>{title}</span>
+    <span style={{ ...font(800, 11, 1, '0.02em'), color: TEXT.strong }}>{title}</span>
     {right != null && <><span style={{ flex: 1 }} />{right}</>}
   </div>
 )
@@ -111,7 +111,7 @@ export const TrophyCase: React.FC<{ entries: TrophyEntry[]; seasonsLabel: string
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px',
           }}>
             <Glyph color={art.icon} />
-            <span style={{ ...font(700, 9, 1, '0.06em'), color: art.caption }}>{entry.caption}</span>
+            <span style={{ ...font(700, 9, 1, '0.02em'), color: art.caption }}>{entry.caption}</span>
             <span style={{
               ...font(700, 10, 1.4), color: art.seasons, textAlign: 'center',
               overflowWrap: 'anywhere',
@@ -199,7 +199,7 @@ export const CareerTable: React.FC<{
       borderBottom: `1px solid ${BORDER.raised}`,
       display: 'flex', alignItems: 'center', gap: '11px',
     }}>
-      <span style={{ ...font(800, 12, 1, '0.1em'), color: TEXT.strong }}>{title}</span>
+      <span style={{ ...font(800, 12, 1, '0.02em'), color: TEXT.strong }}>{title}</span>
       <span style={{ flex: 1 }} />
       {right}
     </div>
@@ -214,13 +214,13 @@ export const CareerTable: React.FC<{
           display: 'flex', alignItems: 'center', padding: '0 16px',
           background: BG.panel, borderBottom: `1px solid ${BORDER.raised}`,
         }}>
-          <span style={{ width: '56px', flexShrink: 0, ...font(700, 10, 1, '0.1em'), color: TEXT.muted, padding: '10px 0' }}>SEASON</span>
-          <span style={{ width: '86px', flexShrink: 0, ...font(700, 10, 1, '0.1em'), color: TEXT.muted, padding: '10px 0' }}>TEAM</span>
+          <span style={{ width: '56px', flexShrink: 0, ...font(700, 10, 1, '0.02em'), color: TEXT.muted, padding: '10px 0' }}>SEASON</span>
+          <span style={{ width: '86px', flexShrink: 0, ...font(700, 10, 1, '0.02em'), color: TEXT.muted, padding: '10px 0' }}>TEAM</span>
           <span style={{ flex: 1, minWidth: 0 }} />
           {columns.map(col => (
             <span key={col.key} style={{
               width: `${col.width}px`, ...CELL_BASE,
-              ...font(700, 10, 1, '0.1em'), color: TEXT.muted, padding: '10px 0',
+              ...font(700, 10, 1, '0.02em'), color: TEXT.muted, padding: '10px 0',
             }}>{col.label}</span>
           ))}
         </div>
@@ -230,7 +230,7 @@ export const CareerTable: React.FC<{
           display: 'flex', alignItems: 'center', padding: '0 16px',
           background: BG.panel, borderBottom: `1px solid ${BORDER.raised}`,
         }}>
-          <span style={{ width: '56px', flexShrink: 0, ...font(800, 12, 1, '0.06em'), color: TEXT.strong, padding: '10px 0' }}>CAREER</span>
+          <span style={{ width: '56px', flexShrink: 0, ...font(800, 12, 1, '0.02em'), color: TEXT.strong, padding: '10px 0' }}>CAREER</span>
           {/* Counts the ROWS, not the player's completed seasons — the two differ
               mid-season and the label sits directly above the rows it describes. */}
           <span style={{ width: '86px', flexShrink: 0, ...font(500, 10), color: TEXT.muted }}>
@@ -262,7 +262,7 @@ export const CareerTable: React.FC<{
             <span style={{ width: '86px', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
               {row.teamId ? <Crest teamId={row.teamId} size={16} /> : null}
               <span style={{
-                ...font(600, 10, 1, '0.04em'), color: TEXT.muted,
+                ...font(600, 10, 1, '0.02em'), color: TEXT.muted,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>{row.teamAbbr || row.team || 'FA'}</span>
             </span>

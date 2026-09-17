@@ -196,7 +196,7 @@ export const PickSideButton: React.FC<{
       {/* ⚠️ AND WHAT IT PAYS. The whole point of the underdog multiplier is that the
           unlikely call is worth more; without the figure a reader cannot see the trade. */}
       {points != null && (
-        <span style={{ ...font(600, 12, 1, '0.04em'), ...TABULAR, opacity: 0.6 }}>{points} PTS</span>
+        <span style={{ ...font(600, 12, 1, '0.02em'), ...TABULAR, opacity: 0.6 }}>{points} PTS</span>
       )}
     </span>
   )

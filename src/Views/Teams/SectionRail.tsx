@@ -166,7 +166,7 @@ const SectionRail: React.FC<{
             }}
           >
             <span style={{
-              fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em',
+              fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em',
               whiteSpace: 'nowrap',
               color: on ? '#f1f5f9' : '#cbd5e1',
               // Labels stay out of the way until they're wanted, so the rail

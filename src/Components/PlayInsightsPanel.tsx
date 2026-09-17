@@ -36,7 +36,7 @@ const SectionLabel: React.FC<{ label: string }> = ({ label }) => (
     fontSize: '12px',
     fontWeight: '700',
     color: '#cbd5e1',
-    letterSpacing: '0.08em',
+    letterSpacing: '0.02em',
     textTransform: 'uppercase',
     marginBottom: '6px',
     paddingBottom: '3px',
@@ -295,7 +295,7 @@ const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCal
         const emphasis = gapEmphasis(gp.gapDistribution)
         return (
           <div style={{ borderLeft: '2px solid #3b82f6', paddingLeft: '8px', marginTop: '6px' }}>
-            <div style={{ fontSize: '11px', fontWeight: '700', color: '#3b82f6', letterSpacing: '0.06em', marginBottom: '4px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '700', color: '#3b82f6', letterSpacing: '0.02em', marginBottom: '4px' }}>
               {offLabel} OFFENSE
             </div>
             <Row label="Gameplan" value={
@@ -316,7 +316,7 @@ const CoachSection: React.FC<{ data: NonNullable<PlayInsights['coach']>; playCal
         const posture = defensePostureDescriptor(def.runStopFocus, def.blitzFrequency)
         return (
           <div style={{ borderLeft: '2px solid #ef4444', paddingLeft: '8px', marginTop: '6px' }}>
-            <div style={{ fontSize: '11px', fontWeight: '700', color: '#ef4444', letterSpacing: '0.06em', marginBottom: '4px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '700', color: '#ef4444', letterSpacing: '0.02em', marginBottom: '4px' }}>
               {defLabel} DEFENSE
             </div>
             <Row label="Posture" value={

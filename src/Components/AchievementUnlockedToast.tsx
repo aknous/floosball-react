@@ -96,7 +96,7 @@ const AchievementUnlockedToast: React.FC = () => {
             style={{
               fontSize: '10px',
               fontWeight: 700,
-              letterSpacing: '0.08em',
+              letterSpacing: '0.02em',
               color: '#f59e0b',
               textTransform: 'uppercase',
               marginBottom: '2px',

@@ -7,6 +7,7 @@ import { useFloosball } from '@/contexts/FloosballContext'
 import { useGames } from '@/contexts/GamesContext'
 import { Stars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
+import PlayerLink from '@/Components/PlayerLink'
 import TeamNavStrip from '@/Components/TeamNavStrip'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { useOpenGame } from '@/hooks/useOpenGame'
@@ -18,6 +19,9 @@ import PlayerRating from '@/Components/Sentiment/PlayerRating'
 import TeamFeed from '@/Components/Sentiment/TeamFeed'
 import FrontOfficeBand from './FrontOfficeBand'
 import SectionRail, { RailSection } from './SectionRail'
+import Potential, { potentialTooltip } from '@/Components/Potential'
+import { GAUGE_TRACK, barWidth, gaugeColor } from '@/Components/Gauge'
+import { useTeamProspects, TeamProspect } from '@/hooks/useTeamProspects'
 import { quipAt } from '@/Views/FrontOffice/FacilitiesSection'
 import { fmtFramesWon } from '@/utils/framesWon'
 
@@ -202,17 +206,7 @@ function rgba(hex: string, alpha: number): string {
 // half-full bar and left anything under 60 (common for a non-primary
 // defender) completely empty. The bar has to agree with the number printed
 // next to it.
-const GAUGE_TRACK = '#334155'
 
-function barWidth(rating: number): number {
-  return Math.max(0, Math.min(100, rating))
-}
-
-function gaugeColor(rating: number): string {
-  if (rating >= 85) return '#22c55e'
-  if (rating >= 72) return '#f59e0b'
-  return '#ef4444'
-}
 
 /** Career status in one word — what a fan actually reads. Detail lives on the
  *  player page. */
@@ -459,7 +453,7 @@ const SectionHead: React.FC<{
     marginBottom: '12px', ...style,
   }}>
     <span style={{
-      fontSize: '13px', letterSpacing: '0.08em', fontWeight: 800, color: '#f1f5f9',
+      fontSize: '13px', letterSpacing: '0.02em', fontWeight: 800, color: '#f1f5f9',
       whiteSpace: 'nowrap',
     }}>{label}</span>
     {note && <span style={{ fontSize: '12px', color: '#cbd5e1', whiteSpace: 'nowrap' }}>{note}</span>}
@@ -489,7 +483,7 @@ function factCell(index: number, cols: number, span = 1): React.CSSProperties {
 
 const CellLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div style={{
-    fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
+    fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em',
     color: '#cbd5e1', textTransform: 'uppercase',
   }}>{children}</div>
 )
@@ -543,7 +537,7 @@ const Gauge: React.FC<{
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span style={{
-          fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
+          fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em',
           color: '#cbd5e1', width: `${labelWidth}px`, flexShrink: 0,
         }}>{label}</span>
         {track}
@@ -617,6 +611,55 @@ const MoodBar: React.FC<{ label: string; value: number; color: string }> = ({ la
 }
 
 // ── Roster plate ────────────────────────────────────────────────────────────
+
+/**
+ * THE PIPELINE — the prospects stashed behind the roster.
+ *
+ * ⚠️ POTENTIAL IS SCOUTED AND THIS IS THIS TEAM'S OWN READ. The endpoint resolves
+ * the band through the team whose page this is, so the same player shows a
+ * different range on the draft-class tab. That is the feature, not a bug, and
+ * the copy says so rather than leaving a reader to spot the discrepancy.
+ *
+ * ⚠️ A LAST WINDOW IS THE STORY. A prospect who is not promoted inside their
+ * window walks for nothing, so the final year is called out rather than being
+ * left as a number a reader has to do arithmetic on.
+ */
+const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p }) => {
+  const lastChance = p.seasonsRemaining <= 1
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 12px',
+      borderBottom: '1px solid #1e293b', minWidth: 0,
+    }}>
+      <span style={{
+        fontSize: '12px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.02em',
+        width: '28px', flexShrink: 0,
+      }}>{p.position}</span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <PlayerLink playerId={p.playerId} playerName={p.name}
+          style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '15px' }} />
+      </span>
+      {/* ⚠️ BESIDE THE NAME, and POTENTIAL as hollow stars rather than a bar chart of the
+          scouted band. Solid is what they play at today; hollow is what this team's scouts
+          think they could still add. The exact range stays on hover. */}
+      <HoverTooltip content={potentialTooltip(p.rating, p.ceilingRange)}>
+        <span style={{ width: '150px', display: 'inline-block', flexShrink: 0 }}>
+          <Potential rating={p.rating} range={p.ceilingRange} />
+        </span>
+      </HoverTooltip>
+      <HoverTooltip text={lastChance
+        ? 'Last window. A prospect not promoted to the roster this offseason leaves for nothing.'
+        : `${p.seasonsRemaining} windows left to win a roster spot. A prospect who is never promoted walks for nothing.`}>
+        <span style={{
+          fontSize: '12px', width: '104px', textAlign: 'right', display: 'inline-block',
+          color: lastChance ? '#f59e0b' : '#94a3b8', fontWeight: lastChance ? 700 : 400,
+        }}>
+          {lastChance ? 'last window' : `${p.seasonsRemaining} windows left`}
+        </span>
+      </HoverTooltip>
+    </div>
+  )
+}
 
 const RosterPlate: React.FC<{
   slot: string
@@ -716,7 +759,7 @@ const RosterPlate: React.FC<{
           : { borderLeft: '1px solid #1e293b', paddingLeft: '14px' }),
       }}>
         <div style={{
-          fontSize: '10px', letterSpacing: '0.08em', fontWeight: 700, color: '#cbd5e1',
+          fontSize: '10px', letterSpacing: '0.02em', fontWeight: 700, color: '#cbd5e1',
         }}>FAN RATING</div>
         <div style={{ marginTop: '4px' }}>
           {/* The same 1–5 control the fanbase uses. Signed out, or looking at
@@ -892,6 +935,8 @@ export default function TeamPage() {
     return [schedule.slice(0, half), schedule.slice(half)]
   }, [schedule])
 
+  const pipeline = useTeamProspects(team?.id ?? null)
+
   // Memoised: the rail keys effects off this array, so a fresh one each render
   // would tear down and rebuild the observer continuously.
   const railSections: RailSection[] = useMemo(() => [
@@ -1004,7 +1049,7 @@ export default function TeamPage() {
                 reader actually needs to place it, and at four divisions per league
                 it is what most of them are playing for. */}
             <div style={{
-              fontSize: '13px', letterSpacing: '0.12em', fontWeight: 700,
+              fontSize: '13px', letterSpacing: '0.02em', fontWeight: 700,
               color: 'rgba(255,255,255,0.92)',
             }}>
               {team.city} &middot; {team.league}
@@ -1024,7 +1069,7 @@ export default function TeamPage() {
               backgroundColor: 'rgba(11,18,32,0.55)', padding: '10px 16px', textAlign: 'right',
             }}>
               <div style={{
-                fontSize: '11px', letterSpacing: '0.12em', fontWeight: 700,
+                fontSize: '11px', letterSpacing: '0.02em', fontWeight: 700,
                 color: 'rgba(255,255,255,0.85)',
               }}>RECORD</div>
               <div style={{
@@ -1041,7 +1086,7 @@ export default function TeamPage() {
               backgroundColor: 'rgba(11,18,32,0.55)', padding: '10px 16px', textAlign: 'right',
             }}>
               <div style={{
-                fontSize: '11px', letterSpacing: '0.12em', fontWeight: 700,
+                fontSize: '11px', letterSpacing: '0.02em', fontWeight: 700,
                 color: 'rgba(255,255,255,0.85)',
               }}>ELO</div>
               <div style={{
@@ -1073,7 +1118,7 @@ export default function TeamPage() {
             display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap',
           }}>
             <span style={{
-              fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em',
+              fontSize: '11px', fontWeight: 800, letterSpacing: '0.02em',
               color: '#0b1220', backgroundColor: '#f59e0b', padding: '3px 9px',
               marginRight: '6px',
             }}>Trophy case</span>
@@ -1110,7 +1155,7 @@ export default function TeamPage() {
                       content={
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
                           <span style={{
-                            fontSize: '10px', fontWeight: 800, letterSpacing: '0.1em',
+                            fontSize: '10px', fontWeight: 800, letterSpacing: '0.02em',
                             color: tone.icon, textTransform: 'uppercase',
                           }}>{tier.heading} · {tier.items.length}</span>
                           {tier.items.map(t => (
@@ -1280,7 +1325,7 @@ export default function TeamPage() {
             {nextGame ? (
               <>
                 <div style={{
-                  fontSize: '11px', letterSpacing: '0.08em', fontWeight: 700,
+                  fontSize: '11px', letterSpacing: '0.02em', fontWeight: 700,
                   color: '#38bdf8', marginTop: '7px',
                 }}>
                   {weekTitle(nextGame.week)}
@@ -1318,7 +1363,7 @@ export default function TeamPage() {
                         display: 'flex', alignItems: 'baseline', gap: '6px',
                       }}>
                         <span style={{
-                          fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em',
+                          fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em',
                           color: '#94a3b8',
                         }}>{side.abbr}</span>
                         <span style={{
@@ -1391,6 +1436,44 @@ export default function TeamPage() {
               )
             })}
           </div>
+
+          {/* ── THE PIPELINE ────────────────────────────────────────────────
+              Under the roster because that is the question it answers: having
+              seen who plays, who is behind them. Shown for every team, not just
+              your own — the band is THIS team's scouting either way, so a rival
+              page is a rival's read rather than a leak of yours. */}
+          {!pipeline.loading && pipeline.prospects.length > 0 && (
+            <div style={{ marginTop: '22px' }}>
+              <SectionHead
+                label="Pipeline"
+                note={`${pipeline.prospects.length} prospect${pipeline.prospects.length === 1 ? '' : 's'}`}
+                style={{ marginBottom: '10px' }}
+              />
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', maxWidth: '58ch' }}>
+                Rating is what they play at now. The bar is this team&rsquo;s scouted ceiling.
+              </div>
+              {/* ⚠️ CAPPED. The roster plates earn the full column width because they
+                  carry stat bars across it; a prospect row is a name and a number, so at
+                  795px it reads as two things stranded at opposite edges. A narrow list
+                  looks deliberate whether the pipeline holds one player or ten. */}
+              <div style={{
+                background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px',
+                overflow: 'hidden', maxWidth: '520px',
+              }}>
+                {pipeline.prospects.map(p => (
+                  <ProspectRow key={p.playerId} p={p} accent={readableOnDark(accent)} />
+                ))}
+              </div>
+            </div>
+          )}
+          {!pipeline.loading && pipeline.prospects.length === 0 && (
+            <div style={{ marginTop: '22px' }}>
+              <SectionHead label="Pipeline" style={{ marginBottom: '10px' }} />
+              <div style={{ fontSize: '13px', color: '#94a3b8' }}>
+                Nobody in the pipeline.
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ minWidth: 0 }}>
@@ -1552,7 +1635,7 @@ export default function TeamPage() {
 // ── Season history table ────────────────────────────────────────────────────
 
 const TH: React.CSSProperties = {
-  fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', color: '#cbd5e1',
+  fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em', color: '#cbd5e1',
   borderBottom: '1px solid #1e293b', whiteSpace: 'nowrap',
 }
 const TD: React.CSSProperties = {

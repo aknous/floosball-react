@@ -163,7 +163,7 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({
           <StatusOrb color={v.color} pulseMs={v.pulseMs} />
           <span style={{
             fontSize: '14px', fontWeight: 800, color: v.color,
-            textTransform: 'uppercase', letterSpacing: '0.06em', flex: 1,
+            textTransform: 'uppercase', letterSpacing: '0.02em', flex: 1,
           }}>
             {status.label || v.label}
           </span>
@@ -192,7 +192,7 @@ const CoresPopover: React.FC<CoresPopoverProps> = ({
               display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
               marginBottom: '4px',
             }}>
-              <span style={{ fontSize: '9px', letterSpacing: '0.1em', color: '#94a3b8', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '9px', letterSpacing: '0.02em', color: '#94a3b8', textTransform: 'uppercase' }}>
                 {criticalityLabel(status.progressPct ?? 0)}
               </span>
               <span style={{ fontSize: '11px', fontWeight: 700, color: v.color }}>
@@ -250,7 +250,7 @@ const SectionLabel: React.FC<{ text: string; color: string }> = ({ text, color }
     display: 'flex', alignItems: 'center', gap: '8px', margin: '2px 0',
   }}>
     <span style={{
-      fontSize: '9px', fontWeight: 700, letterSpacing: '0.16em', color,
+      fontSize: '9px', fontWeight: 700, letterSpacing: '0.02em', color,
       textTransform: 'uppercase', flexShrink: 0,
     }}>{text}</span>
     <span style={{ flex: 1, height: '1px', background: `${color}33` }} />
@@ -285,7 +285,7 @@ const ExchangeBlock: React.FC<{ block: Block; now: number }> = ({ block, now }) 
         gap: '8px', marginBottom: '7px',
       }}>
         {tag ? (
-          <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.1em', color: tag.color, textTransform: 'uppercase' }}>
+          <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.02em', color: tag.color, textTransform: 'uppercase' }}>
             {tag.label}
           </span>
         ) : <span />}

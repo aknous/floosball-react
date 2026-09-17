@@ -64,7 +64,7 @@ export const CoresBand: React.FC = () => {
               animationDuration: band.pulseMs ? `${band.pulseMs}ms` : undefined,
             }}
           />
-          <span style={{ ...font(800, 11, 1, '0.1em'), color: band.color }}>
+          <span style={{ ...font(800, 11, 1, '0.02em'), color: band.color }}>
             {label.toUpperCase()}
           </span>
         </span>
@@ -75,7 +75,7 @@ export const CoresBand: React.FC = () => {
         }}>{description}</span>
 
         {status.inSuppression && (
-          <span style={{ ...font(700, 9, 1, '0.1em'), color: TEXT.muted, flexShrink: 0 }}>
+          <span style={{ ...font(700, 9, 1, '0.02em'), color: TEXT.muted, flexShrink: 0 }}>
             CONTAINED
           </span>
         )}
@@ -97,10 +97,10 @@ export const CoresBand: React.FC = () => {
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: '9px', flexShrink: 0 }}>
             <CoreIcon core={ballotCore} color={ballotColor} size={14} />
-            <span style={{ ...font(700, 10, 1, '0.1em'), color: ballotColor }}>
+            <span style={{ ...font(700, 10, 1, '0.02em'), color: ballotColor }}>
               {(rv.coreDisplayName || 'CORE').toUpperCase()}
             </span>
-            <span style={{ ...font(700, 10, 1, '0.1em'), color: TEXT.muted }}>
+            <span style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.muted }}>
               {rv.kind === 'revert' ? 'RULE REVERT VOTE' : 'RULE CHANGE VOTE'}
             </span>
           </span>
@@ -113,12 +113,12 @@ export const CoresBand: React.FC = () => {
           )}
 
           {countdown && countdown !== '0:00' && (
-            <span style={{ ...font(700, 10, 1, '0.1em'), color: TEXT.muted, flexShrink: 0 }}>
+            <span style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.muted, flexShrink: 0 }}>
               CLOSES {countdown}
             </span>
           )}
           <span style={{
-            ...font(800, 10, 1, '0.1em'),
+            ...font(800, 10, 1, '0.02em'),
             color: hasVoted ? TEXT.muted : ACCENT.warning, flexShrink: 0,
           }}>{hasVoted ? 'VOTE IN' : 'VOTE \u2192'}</span>
         </button>

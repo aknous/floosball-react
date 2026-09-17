@@ -102,7 +102,7 @@ export const RAIL_WIDTH = 330
 
 /**
  * Shorthand for the `font:` values the handoffs are written in, so a component can say
- * `font(800, 13, 1, '0.1em')` instead of repeating the family five times.
+ * `font(800, 13, 1, '0.02em')` instead of repeating the family five times.
  */
 export const font = (
   weight: number,

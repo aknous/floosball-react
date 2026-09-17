@@ -562,7 +562,7 @@ const EditionBadge: React.FC<{
         onMouseLeave={() => setShow(false)}
         style={{
           fontSize, fontWeight: '700', color,
-          textTransform: 'uppercase', letterSpacing: '0.06em',
+          textTransform: 'uppercase', letterSpacing: '0.02em',
           cursor: 'default',
         }}
       >
@@ -1269,7 +1269,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
               return (
                 <span style={{
                   fontSize: d.font, fontWeight: 800, color: '#f8fafc',
-                  letterSpacing: '0.08em',
+                  letterSpacing: '0.02em',
                   background: `linear-gradient(135deg, ${hexToRgba(posColor, 0.9)}, ${hexToRgba(posColor, 0.6)})`,
                   border: `1px solid ${hexToRgba(posColor, 0.9)}`,
                   borderRadius: '5px', padding: '1px 10px',
@@ -1528,7 +1528,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
             </div>
             <div style={{
               fontSize: d.font - 3, fontWeight: 700, color: '#94a3b8',
-              textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '4px',
+              textTransform: 'uppercase', letterSpacing: '0.02em', marginTop: '4px',
             }}>
               Season {card.playerStats?.season ?? card.seasonCreated} Stats
             </div>
@@ -1636,7 +1636,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           <div style={{ marginTop: 'auto', paddingTop: '6px' }}>
             <div style={{
               fontSize: d.font - 4, fontWeight: 700, color: '#94a3b8',
-              textTransform: 'uppercase', letterSpacing: '0.06em',
+              textTransform: 'uppercase', letterSpacing: '0.02em',
               textAlign: 'center', marginBottom: '5px',
             }}>
               Season {card.playerStats?.season ?? card.seasonCreated} Stats

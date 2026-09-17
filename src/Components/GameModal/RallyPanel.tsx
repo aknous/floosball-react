@@ -171,7 +171,7 @@ const RallyButton: React.FC<RallyButtonProps> = ({ game, teamId, teamColor }) =>
           fontFamily: 'inherit',
           fontSize: '15px',
           fontWeight: 700,
-          letterSpacing: '0.08em',
+          letterSpacing: '0.02em',
           textTransform: 'uppercase',
           whiteSpace: 'nowrap',
           opacity: disabled && !flashing ? 0.55 : 1,

@@ -114,7 +114,7 @@ const labelStyle: React.CSSProperties = {
   fontSize: '12px',
   fontWeight: '600',
   color: '#94a3b8',
-  letterSpacing: '0.06em',
+  letterSpacing: '0.02em',
   marginBottom: '6px',
   textTransform: 'uppercase',
 }
@@ -1080,7 +1080,7 @@ const AdminContent: React.FC<{
           }
           const statLabel: React.CSSProperties = {
             fontSize: '10px', fontWeight: '700', color: '#64748b',
-            letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '4px',
+            letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: '4px',
           }
           const statValue: React.CSSProperties = {
             fontSize: '20px', fontWeight: '700', color: '#e2e8f0',
@@ -1284,7 +1284,7 @@ const AdminContent: React.FC<{
           }
           const statLabel: React.CSSProperties = {
             fontSize: '10px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase',
-            letterSpacing: '0.05em', marginBottom: '4px',
+            letterSpacing: '0.02em', marginBottom: '4px',
           }
           const statValue: React.CSSProperties = {
             fontSize: '20px', fontWeight: '700', color: '#e2e8f0',
@@ -2182,7 +2182,7 @@ const AdminContent: React.FC<{
                   padding: '6px 10px', fontSize: '13px',
                 }}>
                   <span style={{ fontSize: '10px', fontWeight: '700',
-                    color: TIER_COLORS[p.tier] ?? '#94a3b8', letterSpacing: '0.06em', minWidth: '14px' }}>
+                    color: TIER_COLORS[p.tier] ?? '#94a3b8', letterSpacing: '0.02em', minWidth: '14px' }}>
                     {p.tier.replace('Tier', '')}
                   </span>
                   <span style={{ color: '#e2e8f0', flex: 1 }}>{p.name}</span>
@@ -2520,7 +2520,7 @@ const AdminContent: React.FC<{
                     </td>
                     <td style={{ padding: '8px 10px' }}>
                       <span style={{
-                        fontSize: '11px', fontWeight: '600', letterSpacing: '0.04em',
+                        fontSize: '11px', fontWeight: '600', letterSpacing: '0.02em',
                         color: !u.isActive ? '#ef4444' : u.onboarded ? '#22c55e' : '#f59e0b',
                       }}>
                         {!u.isActive ? 'Inactive' : u.onboarded ? 'Active' : 'Pending'}

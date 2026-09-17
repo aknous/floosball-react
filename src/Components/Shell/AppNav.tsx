@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { useGames } from '@/contexts/GamesContext'
+import { useRecentTrades } from '@/hooks/useRecentTrades'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { SiDiscord } from 'react-icons/si'
 import { VersionPill } from '@/Components/Footer'
@@ -69,6 +70,15 @@ const LEAGUE_ITEMS: NavEntry[] = [
   // know. Reported as the record book having disappeared; it had not, it had no door.
   // An open book, since the Record Book is what a reader comes here for.
   { key: 'history', label: 'History', path: '/history', icon: ICON('M2 4h6a2 2 0 012 2v10a2 2 0 00-2-2H2V4zm16 0h-6a2 2 0 00-2 2v10a2 2 0 012-2h6V4z') },
+  // The front-office desk: draft order, the incoming class, who is out of contract, who is
+  // on the trading block. A league view rather than a personal one, so it sits here and not under
+  // Yours — your own team is highlighted inside it. Two arrows passing: assets changing hands.
+  {
+    key: 'transactions', label: 'Transactions', path: '/transactions',
+    // ⚠️ LINE_ICON, not ICON — `ICON` fills its path with currentColor and no stroke, so a
+    // line drawing handed to it renders as a solid blob.
+    icon: LINE_ICON(['M3 7h14M14 4l3 3-3 3', 'M21 17H7M10 14l-3 3 3 3']),
+  },
 ]
 
 const YOURS_ITEMS: NavEntry[] = [
@@ -151,7 +161,7 @@ const AWARDS_ITEM: NavEntry = {
 const DISCORD_URL = 'https://discord.gg/b4DZn3mVfP'
 
 const GROUP_LABEL: React.CSSProperties = {
-  ...font(700, 10, 1, '0.16em'),
+  ...font(700, 10, 1, '0.02em'),
   color: TEXT.faint,
   padding: '0 18px 9px',
 }
@@ -201,6 +211,7 @@ const AppNav: React.FC = () => {
   const favoriteTeamId = user?.favoriteTeamId ?? null
   const liveGames = Array.from(games.values()).filter(g => g.status === 'Active')
   const { unclaimed: supporterUnclaimed } = useSupporterDividend()
+  const recentTrades = useRecentTrades()
   const teamHasAction = favoriteTeamId != null && supporterUnclaimed > 0
 
   const [favTeamName, setFavTeamName] = useState<string | null>(null)
@@ -303,6 +314,11 @@ const AppNav: React.FC = () => {
 
     let trailing: React.ReactNode = null
     if (item.key === 'games' && liveGames.length > 0) trailing = <AmbientCount value={liveGames.length} />
+    // ⚠️ AN AMBIENT COUNT, NOT A DOT, and the rule above is why. A gold dot on this nav
+    // means "something is waiting for you to collect it"; a trade between two other teams
+    // is league activity the reader owes nothing on, which is exactly what Games carries a
+    // plain number for.
+    else if (item.key === 'transactions' && recentTrades > 0) trailing = <AmbientCount value={recentTrades} />
     else if (item.key === 'achievements' && unclaimedCount > 0) trailing = <NotificationDot color={ACCENT.warning} count={unclaimedCount} />
     // Gold, matching Achievements: on this nav a gold dot means "something is waiting for
     // you to collect it", whichever tab it is on.

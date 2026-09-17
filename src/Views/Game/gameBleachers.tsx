@@ -73,7 +73,7 @@ export function railEntriesFromPlays(plays: any[] | undefined): RailEntry[] {
 
 const Tag: React.FC<{ label: string; accent: string }> = ({ label, accent }) => (
   <span style={{
-    ...font(700, 8, 1, '0.12em'),
+    ...font(700, 8, 1, '0.02em'),
     color: accent,
     border: `1px solid ${accent}99`,
     padding: '4px 5px', flexShrink: 0,
@@ -198,7 +198,7 @@ const GameBleachers: React.FC<{
       borderBottom: `1px solid ${BORDER.raised}`,
       display: 'flex', alignItems: 'center', gap: '11px', flexShrink: 0,
     }}>
-      <span style={{ ...font(800, 12, 1, '0.1em'), color: TEXT.strong }}>THE BLEACHERS</span>
+      <span style={{ ...font(800, 12, 1, '0.02em'), color: TEXT.strong }}>THE BLEACHERS</span>
       <span style={{ flex: 1 }} />
       {watching != null && watching > 0 && (
         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

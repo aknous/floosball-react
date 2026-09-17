@@ -236,7 +236,7 @@ const BracketView: React.FC = () => {
     return (
       <div style={{
         fontSize: 11, fontWeight: 700, color: C.text,
-        textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10,
+        textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: 10,
         display: 'flex', justifyContent: 'space-between', gap: 6,
         flexDirection: side === 'right' ? 'row-reverse' : 'row',
       }}>
@@ -299,7 +299,7 @@ const BracketView: React.FC = () => {
         display: 'flex', flexDirection: 'column', justifyContent: 'center',
       }}>
         <div style={{ textAlign: 'center', marginBottom: 10 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
             {ROUND_LABEL.floosbowl}
           </div>
           <div style={{ fontSize: 10, color: C.muted, fontWeight: 600, marginTop: 2 }}>
@@ -404,7 +404,7 @@ const BracketView: React.FC = () => {
 
 const BracketStandings: React.FC<{ rows: import('@/types/playoffBracket').BracketLeaderRow[]; isMobile?: boolean }> = ({ rows, isMobile }) => (
   <div style={{ backgroundColor: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, padding: 14 }}>
-    <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+    <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: 6 }}>
       Standings
     </div>
     {/* Prize structure (awarded after the Floos Bowl). */}

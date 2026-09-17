@@ -349,13 +349,13 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
             status, and they have no situation row to live in (a final replaces
             that row with team stats, and halftime suppresses it). */}
         {isFinal ? (
-          <span style={{ ...font(700, 12, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>FINAL</span>
+          <span style={{ ...font(700, 12, 1, '0.02em'), color: TEXT.muted, ...TABULAR }}>FINAL</span>
         ) : live ? (
           game.isHalftime
-            ? <span style={{ ...font(700, 12, 1, '0.08em'), color: ACCENT.live, ...TABULAR }}>HALFTIME</span>
+            ? <span style={{ ...font(700, 12, 1, '0.02em'), color: ACCENT.live, ...TABULAR }}>HALFTIME</span>
             : null
         ) : (
-          <span style={{ ...font(700, 12, 1, '0.08em'), color: TEXT.muted, ...TABULAR }}>SCHEDULED</span>
+          <span style={{ ...font(700, 12, 1, '0.02em'), color: TEXT.muted, ...TABULAR }}>SCHEDULED</span>
         )}
         {chip && <InterestChip kind={chip} size="large" />}
         {/* No format badge here (owner). The board's rules strip already names the active
@@ -384,7 +384,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               saying what they are — which is the label the owner asked for, in the one
               place that costs the card no height. */}
           {preGame && pick && (
-            <span style={{ ...font(600, 10, 1, '0.14em'), color: TEXT.muted }}>PROGNOSTICATE</span>
+            <span style={{ ...font(600, 10, 1, '0.02em'), color: TEXT.muted }}>PROGNOSTICATE</span>
           )}
           {!preGame && columns && (
             /* The same gap as the score row below it, or the labels stop sitting over
@@ -401,7 +401,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
           {/* Same width as the score cell below it, or the header label and the totals
               column stop lining up the moment frames widen the box. */}
           {!preGame && (
-            <span style={{ ...totalCell(!!game.frames?.active), ...font(600, 11, 1, '0.08em'), color: TEXT.muted }}>
+            <span style={{ ...totalCell(!!game.frames?.active), ...font(600, 11, 1, '0.02em'), color: TEXT.muted }}>
               {columns ? columns.label : 'TOT'}
             </span>
           )}
@@ -516,7 +516,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
               <div style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
                 {lastPlay.teamAbbr && (
                   <span style={{
-                    ...font(700, 12, 1, '0.04em'),
+                    ...font(700, 12, 1, '0.02em'),
                     color: lastPlay.teamAbbr === away?.abbr ? awayText : homeText,
                     ...TABULAR,
                   }}>{lastPlay.teamAbbr}</span>
@@ -535,7 +535,7 @@ const BoardCardLarge: React.FC<Props> = ({ game, chip, pinned, pinnedAccent, sco
                 )}
                 {lastPlay.tag && (
                   <span style={{
-                    ...font(700, 10, 1, '0.08em'), color: lastPlay.tagColor,
+                    ...font(700, 10, 1, '0.02em'), color: lastPlay.tagColor,
                     border: `1px solid ${lastPlay.tagColor}59`, padding: '3px 6px',
                     whiteSpace: 'nowrap',
                   }}>{lastPlay.tag}</span>

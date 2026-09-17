@@ -37,7 +37,7 @@ const BAND_RULE = 'rgba(56,189,248,0.22)'
 
 const StatLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div style={{
-    fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
+    fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em',
     color: '#cbd5e1', textTransform: 'uppercase',
   }}>{children}</div>
 )
@@ -80,7 +80,7 @@ const FrontOfficeBand: React.FC<Props> = ({ pad, pageMax, stacked, accent }) => 
           display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '16px',
         }}>
           <span style={{
-            fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em',
+            fontSize: '11px', fontWeight: 800, letterSpacing: '0.02em',
             color: '#0b1220', backgroundColor: '#38bdf8', padding: '3px 9px',
           }}>Front office</span>
           <span style={{ flex: 1, height: '2px', backgroundColor: 'rgba(56,189,248,0.18)' }} />

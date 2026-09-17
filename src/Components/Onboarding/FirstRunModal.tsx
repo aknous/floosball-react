@@ -48,7 +48,7 @@ const Btn: React.FC<{
     onClick={onClick}
     disabled={disabled}
     style={{
-      ...font(700, 12, 1, '0.06em'),
+      ...font(700, 12, 1, '0.02em'),
       color: kind === 'primary' ? BG.shell : TEXT.secondary,
       background: kind === 'primary' ? ACCENT.info : 'transparent',
       border: kind === 'primary' ? 'none' : `1px solid ${BORDER.raised}`,
@@ -153,7 +153,7 @@ export const FirstRunModal: React.FC = () => {
       }}>
         {step === 'name' ? (
           <>
-            <div style={{ ...font(700, 10, 1, '0.14em'), color: ACCENT.info }}>WELCOME</div>
+            <div style={{ ...font(700, 10, 1, '0.02em'), color: ACCENT.info }}>WELCOME</div>
             <h2 style={{ ...font(800, 21, 1.2, '-0.02em'), color: TEXT.primary, margin: '10px 0 8px' }}>
               {assigned ? 'We picked a name for you' : 'What should we call you?'}
             </h2>
@@ -172,7 +172,7 @@ export const FirstRunModal: React.FC = () => {
                 background: BG.panel, border: `1px solid ${BORDER.hairline}`,
                 padding: '11px 13px', marginBottom: '16px',
               }}>
-                <div style={{ ...font(700, 9, 1, '0.14em'), color: TEXT.muted }}>
+                <div style={{ ...font(700, 9, 1, '0.02em'), color: TEXT.muted }}>
                   {assigned ? 'ASSIGNED AT SIGNUP' : 'YOUR NAME'}
                 </div>
                 <div style={{
@@ -262,7 +262,7 @@ export const FirstRunModal: React.FC = () => {
           </>
         ) : (
           <>
-            <div style={{ ...font(700, 10, 1, '0.14em'), color: ACCENT.info }}>ONE MORE THING</div>
+            <div style={{ ...font(700, 10, 1, '0.02em'), color: ACCENT.info }}>ONE MORE THING</div>
             <h2 style={{ ...font(800, 21, 1.2, '-0.02em'), color: TEXT.primary, margin: '10px 0 8px' }}>
               Pick a team to follow?
             </h2>

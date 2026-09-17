@@ -45,7 +45,7 @@ const DivisionBlock: React.FC<{
         padding: '10px 14px', background: BG.panel,
         borderBottom: `1px solid ${BORDER.raised}`,
       }}>
-        <span style={{ ...font(800, 13, 1, '0.06em'), color: TEXT.strong }}>{name}</span>
+        <span style={{ ...font(800, 13, 1, '0.02em'), color: TEXT.strong }}>{name}</span>
         <span style={{ flex: 1 }} />
         {/* No "LEADS" label (owner). The club on the top row IS the leader — saying so
             in words is the header restating the table underneath it. The crest stays
@@ -169,7 +169,7 @@ const ByDivision: React.FC<{
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '14px' }}>
             <h2 style={{ ...font(800, 17, 1, '-0.025em'), color: TEXT.primary, margin: 0 }}>{league.name}</h2>
             <span style={{ flex: 1, height: '1px', background: BORDER.hairline }} />
-            <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.muted }}>DIV RECORD BREAKS TIES</span>
+            <span style={{ ...font(600, 10, 1, '0.02em'), color: TEXT.muted }}>DIV RECORD BREAKS TIES</span>
           </div>
           {league.divisions.map(div => (
             <DivisionBlock

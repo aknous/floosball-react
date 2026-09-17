@@ -114,13 +114,13 @@ const Card: React.FC<{ data: TeamDetail; mouseX: number; mouseY: number }> = ({ 
         {(data.leagueChampion || data.clinchedTopSeed || data.clinchedPlayoffs) && (
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '10px' }}>
             {data.leagueChampion && (
-              <span style={{ fontSize: '9px', fontWeight: '700', padding: '2px 5px', borderRadius: '3px', backgroundColor: '#f59e0b18', border: '1px solid #f59e0b55', color: '#f59e0b', letterSpacing: '0.05em' }}>CHAMP</span>
+              <span style={{ fontSize: '9px', fontWeight: '700', padding: '2px 5px', borderRadius: '3px', backgroundColor: '#f59e0b18', border: '1px solid #f59e0b55', color: '#f59e0b', letterSpacing: '0.02em' }}>CHAMP</span>
             )}
             {!data.leagueChampion && data.clinchedTopSeed && (
-              <span style={{ fontSize: '9px', fontWeight: '700', padding: '2px 5px', borderRadius: '3px', backgroundColor: '#a78bfa18', border: '1px solid #a78bfa55', color: '#a78bfa', letterSpacing: '0.05em' }}>TOP SEED</span>
+              <span style={{ fontSize: '9px', fontWeight: '700', padding: '2px 5px', borderRadius: '3px', backgroundColor: '#a78bfa18', border: '1px solid #a78bfa55', color: '#a78bfa', letterSpacing: '0.02em' }}>TOP SEED</span>
             )}
             {!data.leagueChampion && !data.clinchedTopSeed && data.clinchedPlayoffs && (
-              <span style={{ fontSize: '9px', fontWeight: '700', padding: '2px 5px', borderRadius: '3px', backgroundColor: '#22c55e18', border: '1px solid #22c55e55', color: '#22c55e', letterSpacing: '0.05em' }}>CLINCHED</span>
+              <span style={{ fontSize: '9px', fontWeight: '700', padding: '2px 5px', borderRadius: '3px', backgroundColor: '#22c55e18', border: '1px solid #22c55e55', color: '#22c55e', letterSpacing: '0.02em' }}>CLINCHED</span>
             )}
           </div>
         )}
@@ -137,7 +137,7 @@ const Card: React.FC<{ data: TeamDetail; mouseX: number; mouseY: number }> = ({ 
             <div style={{ borderTop: '1px solid #334155', margin: '10px 0 8px' }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>HC</span>
+                <span style={{ fontSize: '9px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.02em' }}>HC</span>
                 <span style={{ fontSize: '13px', fontWeight: '600', color: '#cbd5e1' }}>{data.coach.name}</span>
               </div>
               <span style={{ fontSize: '11px', color: '#94a3b8' }}>{data.coach.seasonsCoached}s</span>

@@ -313,7 +313,7 @@ export const PlayerPicker: React.FC<PlayerPickerProps> = ({ visible, onClose, on
                       padding: '4px 12px',
                       fontSize: '11px',
                       fontWeight: 700,
-                      letterSpacing: '0.04em',
+                      letterSpacing: '0.02em',
                       border: `1px solid ${active ? '#a78bfa' : '#334155'}`,
                       backgroundColor: active ? 'rgba(167,139,250,0.18)' : 'transparent',
                       color: active ? '#c4b5fd' : '#94a3b8',

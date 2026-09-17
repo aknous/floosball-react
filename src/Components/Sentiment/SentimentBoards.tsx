@@ -30,7 +30,7 @@ const Column: React.FC<{
   <div style={{ flex: 1, minWidth: '220px' }}>
     <div style={{
       fontSize: '11px', fontWeight: 700, color: accent,
-      letterSpacing: '0.04em', marginBottom: '8px',
+      letterSpacing: '0.02em', marginBottom: '8px',
     }}>
       {title}
     </div>

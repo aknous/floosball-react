@@ -106,7 +106,7 @@ const RuleRow: React.FC<{ meta: RuleMeta; value: any; def: any; changed: boolean
     </span>
     <span style={{ display: 'flex', alignItems: 'center', gap: '7px', flexShrink: 0 }}>
       {glitched ? (
-        <span style={{ fontSize: '15px', fontWeight: 700, color: GLITCH_COLOR, letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '15px', fontWeight: 700, color: GLITCH_COLOR, letterSpacing: '0.02em' }}>
           {scramble()}
         </span>
       ) : (
@@ -135,7 +135,7 @@ const ScoringModelRow: React.FC<{ name: string; glitched?: boolean; changed?: bo
       {glitched ? scramble(6) : name}
     </span>
     <span style={{
-      fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', flexShrink: 0,
+      fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em', flexShrink: 0,
       textTransform: 'uppercase', color: LABEL_COLOR,
     }}>
       Live
@@ -173,7 +173,7 @@ const DormantRuleRow: React.FC<{ name: string; active?: boolean; detail?: string
       )}
     </span>
     <span style={{
-      fontSize: '12px', fontWeight: 700, letterSpacing: '0.1em', flexShrink: 0,
+      fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em', flexShrink: 0,
       textTransform: 'uppercase', color: active ? CHANGED_COLOR : '#94a3b8',
     }}>
       {active ? 'Active' : 'Sealed'}
@@ -283,7 +283,7 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
       {/* Header */}
       <div style={{ padding: '12px 14px', backgroundColor: 'rgba(148,163,184,0.04)', borderBottom: '1px solid #1e293b' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '17px', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.04em', flex: 1 }}>
+          <span style={{ fontSize: '17px', fontWeight: 800, color: '#e2e8f0', letterSpacing: '0.02em', flex: 1 }}>
             Current Ruleset
           </span>
           {pinned && (
@@ -350,7 +350,7 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
           <div style={{ marginBottom: 18 }}>
             <div style={{
               fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
-              textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
+              textTransform: 'uppercase', letterSpacing: '0.02em', opacity: 0.85,
             }}>Game Format</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               {(() => {
@@ -373,7 +373,7 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
           <div style={{ marginBottom: 18, paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
             <div style={{
               fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
-              textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
+              textTransform: 'uppercase', letterSpacing: '0.02em', opacity: 0.85,
             }}>Scoring Model</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               {(() => {
@@ -392,7 +392,7 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
               <div key={group.title} style={{ marginBottom: 18 }}>
                 <div style={{
                   fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
-                  textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
+                  textTransform: 'uppercase', letterSpacing: '0.02em', opacity: 0.85,
                 }}>{group.title}</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                   {group.rules.map(meta => (
@@ -420,7 +420,7 @@ const RulebookPopover: React.FC<RulebookPopoverProps> = ({
             <div style={{ paddingTop: 14, borderTop: '1px dashed #1e293b' }}>
               <div style={{
                 fontSize: 13, fontWeight: 700, color: LABEL_COLOR, marginBottom: 8,
-                textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85,
+                textTransform: 'uppercase', letterSpacing: '0.02em', opacity: 0.85,
               }}>Active Mechanics</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {activeMechanics.map(r => {

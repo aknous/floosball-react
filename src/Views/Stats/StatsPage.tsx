@@ -275,7 +275,7 @@ const StatsPage: React.FC = () => {
       // Neutral, not the club color: the avatar carries identity, and thirty-two
       // brand colors down a dense table is noise.
       render: row => (
-        <span style={{ ...font(600, 11, 1, '0.04em'), color: TEXT.muted }}>
+        <span style={{ ...font(600, 11, 1, '0.02em'), color: TEXT.muted }}>
           {row.teamAbbr || (row.status === 'retired' ? '—' : 'FA')}
         </span>
       ),
@@ -385,7 +385,7 @@ const StatsPage: React.FC = () => {
             </span>
             <span style={{ flex: 1 }} />
             {selected.size > 0 && (
-              <span style={{ ...font(600, 11, 1, '0.06em'), color: ACCENT.info }}>
+              <span style={{ ...font(600, 11, 1, '0.02em'), color: ACCENT.info }}>
                 {selected.size} SELECTED
               </span>
             )}
@@ -453,7 +453,7 @@ const StatsPage: React.FC = () => {
           <SearchBox value={search} onChange={setSearch} placeholder="Find a team" />
           <span style={{ flex: 1 }} />
           {selected.size > 0 && (
-            <span style={{ ...font(600, 11, 1, '0.06em'), color: ACCENT.info }}>
+            <span style={{ ...font(600, 11, 1, '0.02em'), color: ACCENT.info }}>
               {selected.size} SELECTED
             </span>
           )}

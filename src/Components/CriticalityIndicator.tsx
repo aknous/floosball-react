@@ -130,7 +130,7 @@ const CriticalityIndicator: React.FC<{ compact?: boolean }> = ({ compact = false
         </span>
         {showLabel && (
           <span style={{
-            fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em',
+            fontSize: '11px', fontWeight: 700, letterSpacing: '0.02em',
             color: labelColor, textTransform: 'uppercase',
           }}>
             {labelText}

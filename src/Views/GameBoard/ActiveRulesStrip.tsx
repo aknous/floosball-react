@@ -185,11 +185,11 @@ const ActiveRulesStrip: React.FC = () => {
           background: show ? BG.panel : 'transparent',
           border: `1px solid ${show ? BORDER.raised : `${accent}40`}`,
           padding: '5px 9px', cursor: 'pointer', fontFamily: FONT,
-          ...font(700, 10, 1, '0.1em'), color: accent, whiteSpace: 'nowrap',
+          ...font(700, 10, 1, '0.02em'), color: accent, whiteSpace: 'nowrap',
         }}
       >
         RULES
-        <span style={{ ...font(700, 10, 1, '0.06em'), color: accent, ...TABULAR }}>
+        <span style={{ ...font(700, 10, 1, '0.02em'), color: accent, ...TABULAR }}>
           {changedRuleCount === 0 ? 'STANDARD' : `${changedRuleCount} CHANGED`}
         </span>
         {/* An open ballot is the one thing urgent enough to show without opening
@@ -218,7 +218,7 @@ const ActiveRulesStrip: React.FC = () => {
                 width: '5px', height: '5px', borderRadius: '50%',
                 background: coreColor(ruleVote.core || undefined),
               }} />
-              <span style={{ ...font(700, 10, 1, '0.08em'), color: coreColor(ruleVote.core || undefined) }}>
+              <span style={{ ...font(700, 10, 1, '0.02em'), color: coreColor(ruleVote.core || undefined) }}>
                 A BALLOT IS OPEN
               </span>
             </div>
@@ -227,7 +227,7 @@ const ActiveRulesStrip: React.FC = () => {
           {grouped.map(group => (
             <div key={group.title}>
               <div style={{
-                ...font(700, 10, 1, '0.1em'), color: TEXT.muted,
+                ...font(700, 10, 1, '0.02em'), color: TEXT.muted,
                 padding: '10px 14px 5px',
               }}>{group.title}</div>
               {group.keys.map(key => {

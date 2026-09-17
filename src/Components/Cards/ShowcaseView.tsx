@@ -408,7 +408,7 @@ const ShowcaseView: React.FC = () => {
                     <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                   </svg>
                 </div>
-                <span style={{ fontSize: '12px', letterSpacing: '0.14em' }}>FEATURE</span>
+                <span style={{ fontSize: '12px', letterSpacing: '0.02em' }}>FEATURE</span>
               </button>
             )
           ))}
@@ -591,7 +591,7 @@ const SetsGuide: React.FC<{ data: ShowcaseData }> = ({ data }) => {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px' }}>
-        <span style={{ fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#cbd5e1', fontWeight: 700, fontFamily: 'pressStart' }}>Set bonuses</span>
+        <span style={{ fontSize: '12px', letterSpacing: '0.02em', textTransform: 'uppercase', color: '#cbd5e1', fontWeight: 700, fontFamily: 'pressStart' }}>Set bonuses</span>
         <span style={{ flex: 1 }} />
         <span style={{ fontSize: '14px', fontWeight: 800, fontFamily: 'pressStart', color: data.setBonus > 0 ? GOLD : '#94a3b8' }}>{data.setBonus > 0 ? `+${Math.round(data.setBonus * 100)}%` : 'none'}</span>
       </div>

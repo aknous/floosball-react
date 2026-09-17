@@ -155,7 +155,7 @@ const DaySlot: React.FC<DaySlotProps> = ({ slot, canBatch, onPick, onPickFavorit
         </span>
         {tag && (
           <span style={{
-            fontSize: '9px', fontWeight: 700, letterSpacing: '0.05em',
+            fontSize: '9px', fontWeight: 700, letterSpacing: '0.02em',
             color: tag.color, backgroundColor: `${tag.color}1f`,
             padding: '1px 5px', borderRadius: '3px', flexShrink: 0,
           }}>

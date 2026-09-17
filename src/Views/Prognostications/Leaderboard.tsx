@@ -54,7 +54,7 @@ const Row: React.FC<{ entry: BoardEntry; isMe: boolean; showPicks: boolean }> = 
         overwrite a manual pick, so a board topped by someone who set a mode and walked
         away should say so rather than read as a week of good calls. */}
     {entry.allAuto && (
-      <span style={{ ...font(700, 8, 1, '0.1em'), color: TEXT.muted, flexShrink: 0 }}>AUTO</span>
+      <span style={{ ...font(700, 8, 1, '0.02em'), color: TEXT.muted, flexShrink: 0 }}>AUTO</span>
     )}
     {showPicks && (
       <span style={{ ...font(400, 10), color: TEXT.muted, ...TABULAR, flexShrink: 0 }}>
@@ -107,7 +107,7 @@ export const Leaderboard: React.FC<{
         display: 'flex', alignItems: 'center', gap: '8px',
         padding: '10px 15px', borderBottom: `1px solid ${BORDER.hairline}`,
       }}>
-        <span style={{ ...font(700, 11, 1, '0.1em'), color: TEXT.secondary }}>LEADERBOARD</span>
+        <span style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.secondary }}>LEADERBOARD</span>
         <span style={{ flex: 1 }} />
         {tab('season', 'SEASON')}
         {tab('week', weekNumber ? `WK ${weekNumber}` : 'WEEK')}

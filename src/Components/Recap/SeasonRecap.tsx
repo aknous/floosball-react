@@ -16,8 +16,8 @@ import { FloobitSymbol } from '@/Components/Icons/Floobit'
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const CARD: React.CSSProperties = { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '10px' }
 const SECTION_H: React.CSSProperties = { fontSize: '16px', fontWeight: 700, color: '#e2e8f0', margin: '0 0 12px' }
-const LABEL: React.CSSProperties = { fontSize: '12px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.04em' }
-const STAT_HEAD: React.CSSProperties = { fontSize: '10px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.04em', textTransform: 'uppercase', textAlign: 'right' }
+const LABEL: React.CSSProperties = { fontSize: '12px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.02em' }
+const STAT_HEAD: React.CSSProperties = { fontSize: '10px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.02em', textTransform: 'uppercase', textAlign: 'right' }
 const STAT_CELL: React.CSSProperties = { fontSize: '13px', fontVariantNumeric: 'tabular-nums', textAlign: 'right', flexShrink: 0 }
 
 const POS_ORDER: Record<string, number> = { QB: 0, RB: 1, WR: 2, TE: 3, K: 4, S: 5, LB: 6, CB: 7, DE: 8 }
@@ -208,7 +208,7 @@ const ResultsTab: React.FC<{ awards: RecapAwards; standings: RecapLeagueStanding
         <div style={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '10px', padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
             <span style={{ fontSize: '16px', fontWeight: 800, color: '#fbbf24', letterSpacing: '0.02em' }}>Hall of Fame</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
               Class of Season {season}
             </span>
           </div>

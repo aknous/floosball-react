@@ -481,12 +481,12 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
             {/* A frames tie decided on points is shown by highlighting the winning team's
                 point total in the box score above — no footer note needed. */}
             {isUpsetAlert && (
-              <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
+              <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
                 UPSET
               </div>
             )}
             {isFeatured && !isUpsetAlert && (
-              <div style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
+              <div style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
                 FEATURED
               </div>
             )}
@@ -532,12 +532,12 @@ export const GameCard: React.FC<GameCardProps> = ({ gameId, homeTeam, awayTeam, 
               </>
             )}
             {isUpsetAlert && (
-              <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
+              <div style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
                 UPSET ALERT
               </div>
             )}
             {isFeatured && !isUpsetAlert && (
-              <div style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.05em' }}>
+              <div style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '11px', fontWeight: '700', padding: '2px 6px', borderRadius: '4px', letterSpacing: '0.02em' }}>
                 FEATURED
               </div>
             )}

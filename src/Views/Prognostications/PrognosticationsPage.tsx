@@ -39,7 +39,7 @@ const HeaderStat: React.FC<{ value: React.ReactNode; label: string; color?: stri
     <span style={{ display: 'block', ...font(800, 19, 1), color: color ?? TEXT.primary, ...TABULAR }}>
       {value}
     </span>
-    <span style={{ display: 'block', ...font(700, 9, 1, '0.12em'), color: TEXT.muted, marginTop: '5px' }}>
+    <span style={{ display: 'block', ...font(700, 9, 1, '0.02em'), color: TEXT.muted, marginTop: '5px' }}>
       {label}
     </span>
   </span>
@@ -234,10 +234,10 @@ const PrognosticationsPage: React.FC = () => {
                     color: collapsed ? TEXT.muted : TEXT.strong,
                   }}>{slot.label}</span>
                   {slot.isActive && (
-                    <span style={{ ...font(700, 9, 1, '0.1em'), color: ACCENT.live }}>LIVE</span>
+                    <span style={{ ...font(700, 9, 1, '0.02em'), color: ACCENT.live }}>LIVE</span>
                   )}
                   {slot.isNext && !slot.isActive && (
-                    <span style={{ ...font(700, 9, 1, '0.1em'), color: ACCENT.info }}>UP NEXT</span>
+                    <span style={{ ...font(700, 9, 1, '0.02em'), color: ACCENT.info }}>UP NEXT</span>
                   )}
                   <span style={{ ...font(400, 11), color: TEXT.muted }}>
                     {slot.isPast
@@ -252,7 +252,7 @@ const PrognosticationsPage: React.FC = () => {
                     <button
                       onClick={() => pickFavoritesForSlot(slot.week)}
                       style={{
-                        ...font(700, 10, 1, '0.08em'), color: TEXT.secondary,
+                        ...font(700, 10, 1, '0.02em'), color: TEXT.secondary,
                         background: 'transparent', border: `1px solid ${BORDER.raised}`,
                         padding: '6px 10px', cursor: 'pointer', fontFamily: FONT,
                       }}
@@ -266,7 +266,7 @@ const PrognosticationsPage: React.FC = () => {
                         return next
                       })}
                       style={{
-                        ...font(700, 9, 1, '0.1em'), color: TEXT.muted,
+                        ...font(700, 9, 1, '0.02em'), color: TEXT.muted,
                         background: 'transparent', border: 'none', padding: '2px 0',
                         cursor: 'pointer', fontFamily: FONT,
                       }}
@@ -308,7 +308,7 @@ const PrognosticationsPage: React.FC = () => {
           <div style={{ width: `${RAIL_WIDTH}px`, flexShrink: 0 }}>
             <div style={{ background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
               <div style={{
-                ...font(700, 11, 1, '0.1em'), color: TEXT.secondary,
+                ...font(700, 11, 1, '0.02em'), color: TEXT.secondary,
                 padding: '12px 15px', borderBottom: `1px solid ${BORDER.hairline}`,
               }}>YOUR SEASON</div>
               {season ? (
@@ -339,7 +339,7 @@ const PrognosticationsPage: React.FC = () => {
                   display: 'flex', alignItems: 'baseline', gap: '8px',
                   padding: '11px 15px', borderBottom: `1px solid ${BORDER.hairline}`,
                 }}>
-                  <span style={{ ...font(700, 10, 1, '0.1em'), color: TEXT.muted }}>THIS WEEK</span>
+                  <span style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.muted }}>THIS WEEK</span>
                   <span style={{ flex: 1 }} />
                   <span style={{ ...font(700, 13), color: TEXT.body, ...TABULAR }}>
                     {thisWeek.correct}/{thisWeek.total}
@@ -397,7 +397,7 @@ const PrognosticationsPage: React.FC = () => {
               onClick={handleSubmit}
               disabled={submitting}
               style={{
-                ...font(700, 12, 1, '0.06em'), color: BG.shell, background: ACCENT.live,
+                ...font(700, 12, 1, '0.02em'), color: BG.shell, background: ACCENT.live,
                 border: 'none', padding: '10px 18px', fontFamily: FONT,
                 cursor: submitting ? 'default' : 'pointer', opacity: submitting ? 0.6 : 1,
               }}

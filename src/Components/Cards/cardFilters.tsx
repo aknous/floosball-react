@@ -272,7 +272,7 @@ export const CardFilterControls: React.FC<{
           </label>
         )}
         <span style={{ flex: 1, minWidth: '12px' }} />
-        <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
           Sort
         </span>
         <select

@@ -277,7 +277,7 @@ export const TeamFeed: React.FC<Props> = ({
                 <div key={group}>
                   <div style={{
                     padding: '7px 12px 4px',
-                    fontSize: '12px', fontWeight: 700, letterSpacing: '0.04em',
+                    fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em',
                     color: accent,
                   }}>
                     {group === 'support' ? 'Rally behind them' : 'Let them hear it'}

@@ -146,7 +146,7 @@ export const PulsingDot: React.FC<{ size: number; color?: string }> = ({ size, c
 )
 
 export const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span style={{ ...font(600, 11, 1, '0.1em'), color: TEXT.muted, flexShrink: 0 }}>{children}</span>
+  <span style={{ ...font(600, 11, 1, '0.02em'), color: TEXT.muted, flexShrink: 0 }}>{children}</span>
 )
 
 /**

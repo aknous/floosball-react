@@ -47,7 +47,7 @@ const ByLeague: React.FC<{
             <span style={{ flex: 1, height: '1px', background: BORDER.hairline }} />
             <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ width: '14px', height: '2px', background: PLAYOFF.cutline }} />
-              <span style={{ ...font(600, 10, 1, '0.08em'), color: PLAYOFF.cutlineText }}>PLAYOFF LINE</span>
+              <span style={{ ...font(600, 10, 1, '0.02em'), color: PLAYOFF.cutlineText }}>PLAYOFF LINE</span>
             </span>
           </div>
 

@@ -26,7 +26,7 @@ const ROW: React.CSSProperties = {
   display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
   gap: '10px', padding: '7px 0',
 }
-const LABEL: React.CSSProperties = { ...font(700, 10, 1, '0.12em'), color: TEXT.muted, flexShrink: 0 }
+const LABEL: React.CSSProperties = { ...font(700, 10, 1, '0.02em'), color: TEXT.muted, flexShrink: 0 }
 const VALUE: React.CSSProperties = { ...font(700, 13, 1.2), color: TEXT.body, textAlign: 'right', minWidth: 0 }
 
 /** One reader's finish in a board, or null when they did not appear in it. */
@@ -71,10 +71,10 @@ export const SeasonOverCard: React.FC<Props> = ({ recap, userId }) => {
   return (
     <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}`, padding: '16px 15px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px' }}>
-        <div style={{ ...font(700, 11, 1, '0.12em'), color: TEXT.muted }}>
+        <div style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted }}>
           SEASON {recap.season}
         </div>
-        <Link to="/offseason" style={{ ...font(700, 10, 1, '0.06em'), color: ACCENT.info, textDecoration: 'none', fontFamily: FONT }}>
+        <Link to="/offseason" style={{ ...font(700, 10, 1, '0.02em'), color: ACCENT.info, textDecoration: 'none', fontFamily: FONT }}>
           FULL RECAP
         </Link>
       </div>
@@ -105,7 +105,7 @@ export const SeasonOverCard: React.FC<Props> = ({ recap, userId }) => {
 
       {mine.length > 0 && (
         <>
-          <div style={{ ...font(700, 10, 1, '0.12em'), color: TEXT.muted, margin: '16px 0 2px' }}>
+          <div style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.muted, margin: '16px 0 2px' }}>
             YOUR FINISH
           </div>
           <div style={{ borderTop: `1px solid ${BORDER.subtle}` }}>

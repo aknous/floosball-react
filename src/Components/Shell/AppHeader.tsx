@@ -201,7 +201,7 @@ const AppHeader: React.FC<{ onOpenNav?: () => void }> = ({ onOpenNav }) => {
             <>
               <span style={{ ...font(800, 20, 1, '-0.02em'), color: TEXT.strong }}>Floosball</span>
               <span style={{
-                ...font(700, 9, 1, '0.06em'),
+                ...font(700, 9, 1, '0.02em'),
                 color: ACCENT.warning,
                 background: 'rgba(245,158,11,0.28)',
                 padding: '3px 5px',
@@ -394,7 +394,7 @@ const FantasyTicker: React.FC<{ userId?: number }> = ({ userId }) => {
           <path d="M10 1l2.6 5.5 6 .8-4.4 4.2 1.1 6L10 14.6 4.7 17.5l1.1-6L1.4 7.3l6-.8L10 1z" />
         </svg>
         {week.toFixed(1)}
-        <span style={{ ...font(600, 10, 1, '0.08em'), color: ACCENT.success }}>FP</span>
+        <span style={{ ...font(600, 10, 1, '0.02em'), color: ACCENT.success }}>FP</span>
       </NavLink>
     </HoverTooltip>
   )

@@ -175,7 +175,7 @@ const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = ({ open
               border: 'none', outline: 'none', width: '100%', minWidth: 0, fontFamily: FONT,
             }}
           />
-          <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.faint, flexShrink: 0 }}>ESC</span>
+          <span style={{ ...font(600, 10, 1, '0.02em'), color: TEXT.faint, flexShrink: 0 }}>ESC</span>
         </div>
 
         <div ref={listRef} style={{ overflowY: 'auto', padding: '4px 0' }}>
@@ -190,7 +190,7 @@ const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = ({ open
             return (
               <React.Fragment key={item.key}>
                 {header && (
-                  <div style={{ ...font(700, 10, 1, '0.14em'), color: TEXT.faint, padding: '10px 16px 6px' }}>
+                  <div style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.faint, padding: '10px 16px 6px' }}>
                     {header}
                   </div>
                 )}

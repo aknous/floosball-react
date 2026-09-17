@@ -210,7 +210,7 @@ const QuickPicks: React.FC<{
             <Arrow dir="prev" label="Previous week"
                    onClick={() => stepWeek(-1)} disabled={slots.length < 2} />
             <span style={{
-              ...font(800, 12, 1, '0.05em'), color: TEXT.body,
+              ...font(800, 12, 1, '0.02em'), color: TEXT.body,
               minWidth: '52px', textAlign: 'center',
             }}>WK {shown.week}</span>
             <Arrow dir="next" label="Next week"

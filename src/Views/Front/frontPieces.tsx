@@ -17,7 +17,7 @@ export const SectionHeader: React.FC<{
       {title}
     </span>
     {badge && (
-      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', ...font(700, 9, 1, '0.1em'), color: badge.color }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', ...font(700, 9, 1, '0.02em'), color: badge.color }}>
         {badge.dot && <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: badge.color }} />}
         {badge.text}
       </span>
@@ -27,7 +27,7 @@ export const SectionHeader: React.FC<{
       <Link
         to={link.to}
         className="hd"
-        style={{ ...font(700, 10, 1, '0.08em'), color: ACCENT.info, textDecoration: 'none', whiteSpace: 'nowrap' }}
+        style={{ ...font(700, 10, 1, '0.02em'), color: ACCENT.info, textDecoration: 'none', whiteSpace: 'nowrap' }}
       >{link.label}</Link>
     )}
   </div>
@@ -40,7 +40,7 @@ export const SectionHeader: React.FC<{
  */
 export const RelationTag: React.FC<{ label: string; color: string }> = ({ label, color }) => (
   <span style={{
-    ...font(700, 9, 1, '0.08em'),
+    ...font(700, 9, 1, '0.02em'),
     color,
     border: `1px solid ${color}66`,
     padding: '3px 5px',

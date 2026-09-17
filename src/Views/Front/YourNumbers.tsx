@@ -78,7 +78,7 @@ const YourNumbers: React.FC<{
                 <span style={{ ...font(700, 12), color: TEXT.muted, ...TABULAR }}>{cell.suffix}</span>
               )}
             </div>
-            <div style={{ ...font(700, 9, 1, '0.12em'), color: TEXT.muted, marginTop: '7px' }}>
+            <div style={{ ...font(700, 9, 1, '0.02em'), color: TEXT.muted, marginTop: '7px' }}>
               {cell.label}
             </div>
             {/* ⚠️ Rendered only when there IS a note. An always-on empty div still
@@ -106,7 +106,7 @@ const YourNumbers: React.FC<{
               to={action.to}
               style={{
                 flex: 1, textAlign: 'center', padding: '9px 0',
-                ...font(700, 10, 1, '0.08em'),
+                ...font(700, 10, 1, '0.02em'),
                 color: BG.shell, background: action.color, textDecoration: 'none',
               }}
             >{action.label}</Link>

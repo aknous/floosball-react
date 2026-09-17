@@ -29,7 +29,7 @@ const CareerStageBadge: React.FC<{ stage?: string; full?: boolean }> = ({ stage,
     <span style={{
       fontSize: '9px',
       fontWeight: 800,
-      letterSpacing: '0.06em',
+      letterSpacing: '0.02em',
       color: style.color,
       backgroundColor: style.bg,
       padding: '2px 6px',

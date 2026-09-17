@@ -65,7 +65,7 @@ const AutoPickPanel: React.FC = () => {
       marginTop: '14px', fontFamily: FONT,
     }}>
       <div style={{
-        ...font(700, 11, 1, '0.1em'), color: TEXT.secondary,
+        ...font(700, 11, 1, '0.02em'), color: TEXT.secondary,
         padding: '12px 15px', borderBottom: `1px solid ${BORDER.hairline}`,
       }}>AUTO-PICK</div>
 

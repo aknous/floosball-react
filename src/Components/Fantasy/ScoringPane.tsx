@@ -189,7 +189,7 @@ const LineupScoringPreview: React.FC = () => {
             </span>
           </div>
           <div style={{ ...totalRow, borderTop: '1px solid #253145', marginTop: 4, paddingTop: 6 }}>
-            <span style={{ color: '#cbd5e1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: 11 }}>
+            <span style={{ color: '#cbd5e1', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em', fontSize: 11 }}>
               Projected Total
             </span>
             <span style={{ color: '#60a5fa', fontWeight: 800, fontSize: 15, fontVariantNumeric: 'tabular-nums' }}>
@@ -218,7 +218,7 @@ const rowStyle: React.CSSProperties = {
   borderBottom: '1px solid rgba(51,65,85,0.4)',
 }
 const posTag: React.CSSProperties = {
-  color: '#94a3b8', fontSize: 10, fontWeight: 800, letterSpacing: '0.08em',
+  color: '#94a3b8', fontSize: 10, fontWeight: 800, letterSpacing: '0.02em',
   width: 44, flexShrink: 0, textTransform: 'uppercase',
 }
 const totalRow: React.CSSProperties = {

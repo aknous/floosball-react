@@ -227,7 +227,7 @@ const DocSidebar: React.FC<{ activeId: string; headerHeight: number }> = ({ acti
           fontSize: '11px',
           fontWeight: '700',
           color: '#94a3b8',
-          letterSpacing: '0.08em',
+          letterSpacing: '0.02em',
           textTransform: 'uppercase',
           padding: '4px 12px 6px',
         }}>
@@ -358,7 +358,7 @@ const MobileTOC: React.FC<{ activeId: string }> = ({ activeId }) => {
                   fontSize: '10px',
                   fontWeight: '700',
                   color: '#64748b',
-                  letterSpacing: '0.08em',
+                  letterSpacing: '0.02em',
                   textTransform: 'uppercase',
                   padding: '6px 14px 4px',
                 }}>
@@ -524,7 +524,7 @@ const PowerBarVisual: React.FC<{ isMobile: boolean }> = ({ isMobile }) => {
 
           <span style={{
             flexShrink: 0, fontSize: isMobile ? '9px' : '10px', fontWeight: 800,
-            letterSpacing: '0.08em', color: r.state === 'OFF' ? OFF : r.color,
+            letterSpacing: '0.02em', color: r.state === 'OFF' ? OFF : r.color,
             border: `1px solid ${r.state === 'OFF' ? OFF : r.color}`,
             borderRadius: '4px', padding: '2px 6px',
           }}>{r.state}</span>
@@ -890,7 +890,7 @@ const AboutPage: React.FC = () => {
                         {!play.accent && (
                           <span style={{
                             fontSize: '10px', color: play.badgeColor, backgroundColor: `${play.badgeColor}30`,
-                            padding: '1px 7px', borderRadius: '3px', fontWeight: '700', letterSpacing: '0.04em',
+                            padding: '1px 7px', borderRadius: '3px', fontWeight: '700', letterSpacing: '0.02em',
                             marginLeft: 'auto', whiteSpace: 'nowrap',
                           }}>
                             {play.badge}
@@ -907,7 +907,7 @@ const AboutPage: React.FC = () => {
                     {play.accent && (
                       <span style={{
                         fontSize: '10px', color: play.badgeColor, backgroundColor: `${play.badgeColor}30`,
-                        padding: '1px 7px', borderRadius: '3px', fontWeight: '700', letterSpacing: '0.04em',
+                        padding: '1px 7px', borderRadius: '3px', fontWeight: '700', letterSpacing: '0.02em',
                         whiteSpace: 'nowrap', alignSelf: 'flex-start', marginTop: '2px',
                       }}>
                         {play.badge}
@@ -994,7 +994,7 @@ const AboutPage: React.FC = () => {
               <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {/* Situation */}
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#cbd5e1', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '5px', paddingBottom: '3px', borderBottom: '1px solid #1e293b' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#cbd5e1', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: '5px', paddingBottom: '3px', borderBottom: '1px solid #1e293b' }}>
                     Situation
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '1px 0' }}>
@@ -1015,7 +1015,7 @@ const AboutPage: React.FC = () => {
 
                 {/* Stratagem */}
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#cbd5e1', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '5px', paddingBottom: '3px', borderBottom: '1px solid #1e293b' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#cbd5e1', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: '5px', paddingBottom: '3px', borderBottom: '1px solid #1e293b' }}>
                     Stratagem
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '1px 0', marginBottom: '4px' }}>
@@ -1023,14 +1023,14 @@ const AboutPage: React.FC = () => {
                     <span style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600' }}>Medium Pass</span>
                   </div>
                   <div style={{ borderLeft: '2px solid #3b82f6', paddingLeft: '8px', marginBottom: '4px' }}>
-                    <div style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', letterSpacing: '0.06em', marginBottom: '2px' }}>OFFENSE</div>
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: '#3b82f6', letterSpacing: '0.02em', marginBottom: '2px' }}>OFFENSE</div>
                     <div style={{ display: 'flex', gap: '6px', fontSize: '11px' }}>
                       <span style={{ color: '#94a3b8' }}>Gameplan</span>
                       <span style={{ color: '#e2e8f0', fontWeight: '500' }}>Pass First (62% pass)</span>
                     </div>
                   </div>
                   <div style={{ borderLeft: '2px solid #ef4444', paddingLeft: '8px' }}>
-                    <div style={{ fontSize: '10px', fontWeight: '700', color: '#ef4444', letterSpacing: '0.06em', marginBottom: '2px' }}>DEFENSE</div>
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: '#ef4444', letterSpacing: '0.02em', marginBottom: '2px' }}>DEFENSE</div>
                     <div style={{ display: 'flex', gap: '6px', fontSize: '11px' }}>
                       <span style={{ color: '#94a3b8' }}>Posture</span>
                       <span style={{ color: '#e2e8f0', fontWeight: '500' }}>Pass Coverage</span>
@@ -1043,7 +1043,7 @@ const AboutPage: React.FC = () => {
               <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {/* Composure */}
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#cbd5e1', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '5px', paddingBottom: '3px', borderBottom: '1px solid #1e293b' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#cbd5e1', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: '5px', paddingBottom: '3px', borderBottom: '1px solid #1e293b' }}>
                     Composure
                   </div>
                   {[
@@ -1061,7 +1061,7 @@ const AboutPage: React.FC = () => {
 
                 {/* Pass execution */}
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#cbd5e1', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '5px', paddingBottom: '3px', borderBottom: '1px solid #1e293b' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#cbd5e1', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: '5px', paddingBottom: '3px', borderBottom: '1px solid #1e293b' }}>
                     Pass
                   </div>
                   {[
@@ -1165,7 +1165,7 @@ const AboutPage: React.FC = () => {
               Some games on the board carry a badge:
             </p>
             <div style={indicatorRow}>
-              <span style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.05em', flexShrink: 0 }}>
+              <span style={{ backgroundColor: '#7c3aed', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.02em', flexShrink: 0 }}>
                 FEATURED
               </span>
               <span style={textStyle}>
@@ -1174,7 +1174,7 @@ const AboutPage: React.FC = () => {
               </span>
             </div>
             <div style={indicatorRow}>
-              <span style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.05em', flexShrink: 0 }}>
+              <span style={{ backgroundColor: '#f97316', color: '#fff', fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.02em', flexShrink: 0 }}>
                 UPSET ALERT
               </span>
               <span style={textStyle}>

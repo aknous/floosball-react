@@ -686,7 +686,7 @@ export const OffseasonPanel: React.FC = () => {
             <span style={{
               fontSize: '12px', fontWeight: '700',
               color: currentPhase === 'predraft' ? '#38bdf8' : '#f59e0b',
-              letterSpacing: '0.06em', textTransform: 'uppercase' as const,
+              letterSpacing: '0.02em', textTransform: 'uppercase' as const,
             }}>
               · {currentPhase === 'predraft' ? 'Team Setup' : 'Free Agency'}
             </span>
@@ -694,7 +694,7 @@ export const OffseasonPanel: React.FC = () => {
           {!currentPhase && phaseLabel && (
             <span style={{
               fontSize: '12px', fontWeight: '700', color: '#f59e0b',
-              letterSpacing: '0.06em', textTransform: 'uppercase' as const,
+              letterSpacing: '0.02em', textTransform: 'uppercase' as const,
             }}>
               · {phaseLabel}
             </span>
@@ -706,7 +706,7 @@ export const OffseasonPanel: React.FC = () => {
           )}
         </div>
         {isComplete && (
-          <span style={{ fontSize: '11px', fontWeight: '700', color: '#22c55e', letterSpacing: '0.06em' }}>
+          <span style={{ fontSize: '11px', fontWeight: '700', color: '#22c55e', letterSpacing: '0.02em' }}>
             FREE AGENCY COMPLETE
           </span>
         )}
@@ -787,7 +787,7 @@ export const OffseasonPanel: React.FC = () => {
           maxHeight: '720px', display: 'flex', flexDirection: 'column' as const,
         }}>
           <div style={{ padding: '10px 14px', borderBottom: '1px solid #0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-            <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
               Teams
             </span>
             {!isComplete && completedTeams.size > 0 && (
@@ -887,7 +887,7 @@ export const OffseasonPanel: React.FC = () => {
                     {isCurrent && (
                       <span style={{
                         fontSize: '10px', fontWeight: '700', color: '#22c55e',
-                        letterSpacing: '0.08em', backgroundColor: 'rgba(34,197,94,0.12)',
+                        letterSpacing: '0.02em', backgroundColor: 'rgba(34,197,94,0.12)',
                         border: '1px solid rgba(34,197,94,0.35)', padding: '3px 7px', borderRadius: '3px',
                       }}>
                         ON THE CLOCK
@@ -896,7 +896,7 @@ export const OffseasonPanel: React.FC = () => {
                     {isDone && !isCurrent && (
                       <span style={{
                         fontSize: '11px', fontWeight: '700', color: '#94a3b8',
-                        letterSpacing: '0.06em', backgroundColor: 'rgba(148,163,184,0.1)',
+                        letterSpacing: '0.02em', backgroundColor: 'rgba(148,163,184,0.1)',
                         border: '1px solid rgba(148,163,184,0.2)', padding: '3px 7px', borderRadius: '3px',
                       }}>
                         DONE
@@ -920,7 +920,7 @@ export const OffseasonPanel: React.FC = () => {
 
                       {/* Roster */}
                       <div>
-                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '8px' }}>
                           Roster
                         </div>
                         {loading ? (
@@ -962,7 +962,7 @@ export const OffseasonPanel: React.FC = () => {
                                   {slotBadge && (
                                     <span style={{
                                       fontSize: '10px', fontWeight: '700', color: slotBadge.color,
-                                      backgroundColor: slotBadge.bg, padding: '2px 6px', borderRadius: '3px', letterSpacing: '0.04em',
+                                      backgroundColor: slotBadge.bg, padding: '2px 6px', borderRadius: '3px', letterSpacing: '0.02em',
                                     }}>{slotBadge.label}</span>
                                   )}
                                 </div>
@@ -977,7 +977,7 @@ export const OffseasonPanel: React.FC = () => {
                       {/* Per-team moves */}
                       {teamTxs.length > 0 && (
                         <div>
-                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '7px' }}>
+                          <div style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: '7px' }}>
                             Moves this offseason
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -1164,7 +1164,7 @@ export const OffseasonPanel: React.FC = () => {
               {faDirectives.length > 0 && (
                 <div>
                   <div style={{ padding: '8px 14px', borderBottom: '1px solid #0f172a' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '600', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '600', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
                       Board Directives
                     </span>
                     <span style={{ fontSize: '10px', color: '#94a3b8', marginLeft: '8px' }}>
@@ -1202,12 +1202,12 @@ export const OffseasonPanel: React.FC = () => {
                               style={{ fontSize: '13px', color: isPicked ? '#94a3b8' : '#e2e8f0' }}
                             />
                             {signedByUs && (
-                              <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: '700', letterSpacing: '0.04em' }}>
+                              <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: '700', letterSpacing: '0.02em' }}>
                                 SIGNED
                               </span>
                             )}
                             {takenByOther && (
-                              <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: '700', letterSpacing: '0.04em' }}>
+                              <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: '700', letterSpacing: '0.02em' }}>
                                 TAKEN
                               </span>
                             )}
@@ -1226,7 +1226,7 @@ export const OffseasonPanel: React.FC = () => {
               {gmResolvedEvents.length > 0 && (
                 <div>
                   <div style={{ padding: '8px 14px', borderBottom: '1px solid #0f172a', borderTop: faDirectives.length > 0 ? '1px solid #0f172a' : 'none' }}>
-                    <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
                       Board Resolutions
                     </span>
                   </div>
@@ -1247,7 +1247,7 @@ export const OffseasonPanel: React.FC = () => {
                             fontWeight: '800',
                             color: isSuccess ? '#22c55e' : ev.outcome === 'below_threshold' ? '#64748b' : '#f59e0b',
                             minWidth: '100px',
-                            letterSpacing: '0.04em',
+                            letterSpacing: '0.02em',
                           }}>
                             {isSuccess ? 'RATIFIED' : ev.outcome === 'below_threshold' ? 'NO QUORUM' : 'DENIED'}
                           </span>
@@ -1309,7 +1309,7 @@ export const OffseasonPanel: React.FC = () => {
                           }}
                         >
                           <span style={{
-                            fontSize: '10px', fontWeight: '700', letterSpacing: '0.06em', minWidth: '62px',
+                            fontSize: '10px', fontWeight: '700', letterSpacing: '0.02em', minWidth: '62px',
                             color: badge.color,
                           }}>
                             {badge.label}

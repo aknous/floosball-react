@@ -553,7 +553,7 @@ const PlayerPage: React.FC = () => {
         />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', textAlign: 'center' }}>
-        <span style={{ ...font(500, 11, 1, '0.06em'), color: TEXT.muted }}>
+        <span style={{ ...font(500, 11, 1, '0.02em'), color: TEXT.muted }}>
           {POSITION_FULL[player.position] ?? player.position}
           {player.defensivePosition && ` · ${DEF_POSITION_FULL[player.defensivePosition] ?? player.defensivePosition}`}
         </span>
@@ -570,7 +570,7 @@ const PlayerPage: React.FC = () => {
             background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(251,191,36,0.45)',
             padding: '4px 9px',
           }}>
-            <span style={{ ...font(700, 10, 1, '0.06em'), color: '#fde68a' }}>
+            <span style={{ ...font(700, 10, 1, '0.02em'), color: '#fde68a' }}>
               HALL OF FAME{player.hofSeason ? ` · CLASS OF S${player.hofSeason}` : ''}
             </span>
           </span>
@@ -688,7 +688,7 @@ const PlayerPage: React.FC = () => {
     icon?: React.ReactNode,
   ) => (
     <div style={{ ...PANEL, padding: '15px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', ...font(700, 9, 1, '0.14em'), color: TEXT.muted }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: '6px', ...font(700, 9, 1, '0.02em'), color: TEXT.muted }}>
         {icon}{label}
       </span>
       <span style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
@@ -728,14 +728,14 @@ const PlayerPage: React.FC = () => {
             borderRight: defAttrs.length > 0 && !veryNarrow ? `1px solid ${BORDER.hairline}` : undefined,
             display: 'flex', flexDirection: 'column', gap: '12px',
           }}>
-            <span style={{ ...font(700, 9, 1, '0.14em'), color: '#5b9bd5' }}>
+            <span style={{ ...font(700, 9, 1, '0.02em'), color: '#5b9bd5' }}>
               {(POSITION_FULL[player.position] ?? player.position).toUpperCase()}
             </span>
             {offAttrs.map(a => <AttrBar key={a.label} label={a.label} value={a.value} />)}
           </div>
           {defAttrs.length > 0 && (
             <div style={{ padding: '15px 18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <span style={{ ...font(700, 9, 1, '0.14em'), color: ACCENT.negative }}>
+              <span style={{ ...font(700, 9, 1, '0.02em'), color: ACCENT.negative }}>
                 {(DEF_POSITION_FULL[player.defensivePosition!] ?? player.defensivePosition!).toUpperCase()}
               </span>
               {defAttrs.map(a => <AttrBar key={a.label} label={a.label} value={a.value} />)}
@@ -841,7 +841,7 @@ const PlayerPage: React.FC = () => {
       }}>
         <Plate to="/players">
           <BackArrow />
-          <span style={{ ...font(700, 11, 1, '0.06em'), color: TEXT.secondary }}>STATS</span>
+          <span style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.secondary }}>STATS</span>
         </Plate>
         <span style={{ width: '1px', height: '22px', background: BORDER.hairline }} />
         <span style={{ ...font(500, 12, 1.4), color: TEXT.muted }}>
@@ -851,7 +851,7 @@ const PlayerPage: React.FC = () => {
         <span style={{ flex: 1 }} />
         {user && playerId != null && (
           <Plate onClick={() => (isFollowing ? unfollowPlayer(playerId) : followPlayer(playerId))} active={isFollowing}>
-            <span style={{ ...font(700, 11, 1, '0.06em'), color: isFollowing ? ACCENT.info : TEXT.secondary }}>
+            <span style={{ ...font(700, 11, 1, '0.02em'), color: isFollowing ? ACCENT.info : TEXT.secondary }}>
               {isFollowing ? 'FOLLOWING' : 'FOLLOW'}
             </span>
           </Plate>
