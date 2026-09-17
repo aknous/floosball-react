@@ -9,8 +9,6 @@ import Potential, { ceilingLabel } from '@/Components/Potential'
 import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-type TabKey = 'draft' | 'expiring' | 'block' | 'activity'
-
 /** Why a team put this player on the block. Short: the row is scanned, not read. */
 const REASON_LABEL: Record<string, string> = {
   expiring_surplus: 'Walking',
@@ -74,6 +72,27 @@ const NameGrade: React.FC<{
   </span>
 )
 
+
+/**
+ * TRANSACTIONS — the front office, as a dashboard rather than a set of tabs.
+ *
+ * ⚠️ TABS WERE THE WRONG SHAPE FOR THIS PAGE. Standings is deliberately a view switcher
+ * because its three views answer three different questions and you arrive knowing which
+ * one you want. Nobody arrives here knowing that: the questions are "where do we pick",
+ * "who is available", "what just happened", and the interesting answer is usually the
+ * RELATIONSHIP between two of them — a team holding pick 1 while its best player is on
+ * the block is a story that a tab hides by construction.
+ *
+ * Four panes in two pairs, plus the ledger:
+ *   THE BOARD      draft order beside the class. Where we pick, and who is there.
+ *   THE MARKET     the block beside contract-year players. Who we could get.
+ *   ACTIVITY       what has already moved.
+ *
+ * ⚠️ EACH PANE SCROLLS INSIDE ITSELF rather than growing the page. Contract year alone
+ * runs to 150 rows on a mature league; laid out flat, the dashboard becomes a document
+ * you scroll for a minute, which is the thing it exists not to be. Bounded panes keep
+ * every region on screen at once, which is the whole argument for dropping the tabs.
+ */
 const TransactionsPage: React.FC = () => {
   const { user } = useAuth()
   const isMobile = useIsMobile()
@@ -82,59 +101,89 @@ const TransactionsPage: React.FC = () => {
     loading, error, season, week, tradingEnabled,
     draftOrder, prospects, expiring, block, trades, moves,
   } = useTransactions()
-  const [tab, setTab] = useState<TabKey>('draft')
 
   const tradedCount = useMemo(() => draftOrder.filter(d => d.traded).length, [draftOrder])
-  const leavingCount = useMemo(() => expiring.filter(e => e.cannotKeep).length, [expiring])
+  const leaving = useMemo(() => expiring.filter(e => e.cannotKeep), [expiring])
+  const myPick = useMemo(
+    () => (myTeamId ? draftOrder.find(d => d.owner?.id === myTeamId) : null),
+    [draftOrder, myTeamId])
 
-  const TABS: { key: TabKey; label: string; count: number }[] = [
-    // ⚠️ ONE DRAFT VIEW. The order and the class were two tabs, and reading either one
-    // alone answers half a question: who picks where means nothing without who is there
-    // to be picked. Side by side they are the draft board.
-    { key: 'draft', label: 'Draft', count: draftOrder.length },
-    // ⚠️ NOT "Expiring", and not "Free agents" either. They are not free agents yet, and
-    // "Expiring" describes the contract rather than the players. "Contract year" is what
-    // the batch actually is: everyone in the last year of a deal, whether or not his team
-    // intends to keep him.
-    { key: 'expiring', label: 'Contract year', count: expiring.length },
-    { key: 'block', label: 'Block', count: block.length },
-    { key: 'activity', label: 'Activity', count: trades.length + moves.length },
-  ]
-
-  // No radii, no shadows: depth is the background step plus a 1px border.
-  //
-  // ⚠️ CAPPED, unlike Standings. That table earns the full bleed with ten columns of
-  // numbers; these lists carry four or five, and stretched to 1300px the team name and
-  // its record end up at opposite ends of an empty row. Left-aligned under the header
-  // rather than centred, so it still reads as part of the same page.
-  const panel: React.CSSProperties = {
-    // ⚠️ SIZED TO ITS CONTENT, not to the viewport. Standings earns a full bleed with ten
-    // columns of numbers; these lists carry four, and stretched wide the player and his
-    // team end up at opposite ends of an empty row.
-    background: BG.panel, border: `1px solid ${BORDER.hairline}`, maxWidth: '720px',
-  }
   const row: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: '10px',
-    padding: '11px 14px', borderBottom: `1px solid ${BORDER.subtle}`,
+    padding: '10px 14px', borderBottom: `1px solid ${BORDER.subtle}`,
   }
   const headRow: React.CSSProperties = {
-    ...row, background: BG.shell, ...font(700, 11, 1, '0.08em'), color: TEXT.muted,
-    padding: '9px 14px',
-    textTransform: 'uppercase',
+    ...row, padding: '8px 14px', background: BG.shell,
+    ...font(700, 10, 1, '0.08em'), color: TEXT.muted, textTransform: 'uppercase',
+    position: 'sticky', top: 0, zIndex: 1,
   }
   const mine = (on: boolean): React.CSSProperties =>
     on ? { background: BG.cardOwn, boxShadow: `inset 2px 0 0 ${ACCENT.ownTeam}` } : {}
-  const empty = (text: string) => (
-    <div style={{ ...panel, padding: '40px', textAlign: 'center', ...font(400, 13), color: TEXT.muted }}>
-      {text}
-    </div>
-  )
   const tag = (text: string, color: string) => (
     <span style={{
       ...font(700, 11, 1, '0.04em'), color,
-      border: `1px solid ${color}55`, padding: '2px 5px', whiteSpace: 'nowrap',
+      border: `1px solid ${color}55`, padding: '2px 6px', whiteSpace: 'nowrap',
     }}>{text}</span>
   )
+
+  /** A dashboard pane: titled, counted, and bounded so the page stays scannable. */
+  const Pane: React.FC<{
+    title: string
+    count?: number
+    note?: string
+    height?: number
+    children: React.ReactNode
+  }> = ({ title, count, note, height = 360, children }) => (
+    <section style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '9px', marginBottom: '7px' }}>
+        <h2 style={{ ...font(800, 12, 1, '0.08em'), color: TEXT.secondary, margin: 0, textTransform: 'uppercase' }}>
+          {title}
+        </h2>
+        {count != null && (
+          <span style={{ ...font(600, 12), ...TABULAR, color: TEXT.dim }}>{count}</span>
+        )}
+        {note && <span style={{ ...font(400, 11), color: TEXT.muted, marginLeft: 'auto' }}>{note}</span>}
+      </div>
+      {/* ⚠️ A FLOOR AS WELL AS A CEILING. Paired panes sit on `alignItems: start`, so an
+          empty one collapsed to a single line of text beside a full one and the row read
+          as broken rather than as quiet. It does not STRETCH to match either: forcing both
+          to the tallest makes two sparse panes into two tall empty boxes. */}
+      <div style={{
+        background: BG.panel, border: `1px solid ${BORDER.hairline}`,
+        minHeight: '150px', maxHeight: `${height}px`, overflowY: 'auto',
+      }}>
+        {children}
+      </div>
+    </section>
+  )
+
+  const emptyPane = (text: string) => (
+    <div style={{
+      padding: '34px 16px', textAlign: 'center', ...font(400, 13), color: TEXT.muted,
+      minHeight: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      {text}
+    </div>
+  )
+
+  /** One number and what it counts. The dashboard's summary, read before any detail. */
+  const Stat: React.FC<{ value: React.ReactNode; label: string; color?: string; hint?: string }> =
+    ({ value, label, color = TEXT.primary, hint }) => {
+      const cell = (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
+          <span style={{ ...font(800, 20), ...TABULAR, color }}>{value}</span>
+          <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.muted, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+            {label}
+          </span>
+        </div>
+      )
+      return hint ? <HoverTooltip text={hint}>{cell}</HoverTooltip> : cell
+    }
+
+  const pair: React.CSSProperties = {
+    display: 'grid', gap: isMobile ? '18px' : '22px', alignItems: 'start',
+    gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) minmax(0,1fr)',
+  }
 
   return (
     <>
@@ -147,216 +196,209 @@ const TransactionsPage: React.FC = () => {
           Transactions
         </h1>
         {!isMobile && <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />}
-
-        <div style={{ display: 'flex', background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
-          {TABS.map((t, i) => {
-            const active = tab === t.key
-            return (
-              <button key={t.key} onClick={() => setTab(t.key)} style={{
-                ...font(active ? 800 : 500, 11),
-                color: active ? BG.shell : TEXT.muted,
-                background: active ? TEXT.secondary : 'transparent',
-                border: 'none', borderLeft: i > 0 ? `1px solid ${BORDER.hairline}` : 'none',
-                padding: '8px 11px', cursor: 'pointer', fontFamily: FONT,
-              }}>{t.label}{t.count > 0 ? ` ${t.count}` : ''}</button>
-            )
-          })}
-        </div>
-
+        <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted }}>Season {season} &middot; Week {week}</span>
         <span style={{ flex: 1 }} />
-        {!isMobile && (
-          <div style={{ display: 'flex', gap: '12px', ...font(500, 11), color: TEXT.muted }}>
-            <span style={TABULAR}>S{season} W{week}</span>
-            {tradedCount > 0 && <span style={{ color: ACCENT.warning }}>{tradedCount} picks traded</span>}
-            {leavingCount > 0 && <span style={{ color: ACCENT.warning }}>{leavingCount} walking</span>}
-            {!tradingEnabled && <span>Trading closed</span>}
-          </div>
-        )}
+        {!tradingEnabled && tag('Trading closed', TEXT.muted)}
       </div>
 
-      <div style={{ padding: isMobile ? '14px 10px 22px' : '18px 28px 28px', fontFamily: FONT }}>
-        {loading && empty('Loading.')}
-        {error && !loading && empty(error)}
-
-        {!loading && !error && tab === 'draft' && (
+      <div style={{ padding: isMobile ? '14px 10px 30px' : '18px 28px 40px', fontFamily: FONT }}>
+        {loading ? (
           <div style={{
-            display: 'grid', gap: isMobile ? '18px' : '20px', alignItems: 'start',
-            gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) minmax(0,1fr)',
-            maxWidth: '1100px',
-          }}>
-            {/* WHO PICKS */}
-            <div>
-              <div style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted, marginBottom: '7px' }}>
-                ORDER
-              </div>
-              <div style={{ background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
-                <div style={headRow}>
-                  <span style={{ width: '22px' }}>#</span>
-                  <span style={{ flex: 1 }}>Team</span>
-                  <span style={{ width: '42px', textAlign: 'right' }}>Rec</span>
-                  <span style={{ width: '46px', textAlign: 'right' }}>Via</span>
-                </div>
-                {draftOrder.map((d: DraftSlot) => {
-                  const isMine = !!myTeamId && (d.owner?.id === myTeamId || d.originalTeam?.id === myTeamId)
-                  return (
-                    <div key={d.slot} style={{ ...row, ...mine(isMine) }}>
-                      <span style={{
-                        ...font(700, 12), ...TABULAR, width: '22px',
-                        color: d.slot <= 3 ? ACCENT.info : TEXT.dim,
-                      }}>{d.slot}</span>
-                      <Crest team={d.owner} size={16} />
-                      <span style={{ flex: 1, minWidth: 0 }}>
-                        <TeamName team={d.owner} mine={!!myTeamId && d.owner?.id === myTeamId} />
-                      </span>
-                      <HoverTooltip text={`${d.originalTeam?.name ?? ''} finished here. The slot follows that record, whoever holds the pick.`}>
-                        <span style={{ ...font(500, 11), ...TABULAR, color: TEXT.muted, width: '42px', textAlign: 'right', display: 'inline-block' }}>
-                          {d.record ? `${d.record.wins}-${d.record.losses}` : '\u2013'}
-                        </span>
-                      </HoverTooltip>
-                      <span style={{ width: '46px', textAlign: 'right' }}>
-                        {d.traded && d.originalTeam
-                          ? <HoverTooltip text={`Traded. ${d.owner?.name} picks on ${d.originalTeam.name}'s finish.`}>
-                              {tag(d.originalTeam.abbr, ACCENT.warning)}
-                            </HoverTooltip>
-                          : <span style={{ color: TEXT.faint, ...font(400, 11) }}>&ndash;</span>}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            background: BG.panel, border: `1px solid ${BORDER.hairline}`,
+            padding: '40px', textAlign: 'center', ...font(400, 13), color: TEXT.muted,
+          }}>Loading.</div>
+        ) : error ? (
+          <div style={{
+            background: BG.panel, border: `1px solid ${BORDER.hairline}`,
+            padding: '40px', textAlign: 'center', ...font(400, 13), color: ACCENT.warning,
+          }}>{error}</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '22px' : '28px' }}>
 
-            {/* WHO IS THERE TO BE PICKED */}
-            <div>
-              <div style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted, marginBottom: '7px' }}>
-                CLASS
-              </div>
-              {prospects.length === 0 ? empty('No class generated yet.') : (
-                <div style={{ background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
-                  <div style={headRow}>
-                    <span style={{ width: '22px' }}>&nbsp;</span>
-                    <span style={{ flex: 1 }}>Prospect &amp; potential</span>
-                  </div>
-                  {/* ⚠️ RANKED, NOT PAIRED TO A SLOT. Lining prospect N up against pick N
-                      would read as a prediction, and every team drafts off its own board —
-                      the sim makes no such claim and neither should this. */}
-                  {prospects.map((p: Prospect, i) => (
-                    <div key={p.playerId} style={row}>
-                      <span style={{ ...font(700, 12), ...TABULAR, width: '24px', color: TEXT.faint }}>
-                        {i + 1}
-                      </span>
-                      <Pos>{p.position}</Pos>
-                      {/* ⚠️ THE STARS SIT WITH THE NAME. In a column of their own on the
-                          far side of the row they were a second fact to be joined to the
-                          player by eye. */}
-                      <span style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
-                        <PlayerLink playerId={p.playerId} playerName={p.name}
-                          style={{ ...font(600, 14), color: TEXT.body }} />
-                        <HoverTooltip text={`Plays at ${Math.round(p.rating)} today. Your team scouts him to ${ceilingLabel(p.ceilingRange) || 'no clear ceiling'}. Another team sees a different range.`}>
-                          <span style={{ display: 'inline-block' }}>
-                            <Potential rating={p.rating} range={p.ceilingRange} size={16} />
-                          </span>
-                        </HoverTooltip>
-                      </span>
-                    </div>
-                  ))}
-                </div>
+            {/* SUMMARY. The numbers that decide whether anything below is worth reading. */}
+            <div style={{
+              display: 'flex', gap: isMobile ? '22px' : '40px', flexWrap: 'wrap',
+              background: BG.panel, border: `1px solid ${BORDER.hairline}`,
+              padding: isMobile ? '14px' : '15px 22px',
+            }}>
+              {myPick && (
+                <Stat value={`#${myPick.slot}`} label="Your pick" color={ACCENT.ownTeam}
+                  hint={`${myPick.owner?.name} picks ${myPick.slot} of ${draftOrder.length}.`} />
               )}
+              <Stat value={prospects.length} label="In the class"
+                hint="Prospects entering the league this offseason." />
+              <Stat value={tradedCount} label="Picks traded"
+                color={tradedCount ? ACCENT.warning : TEXT.primary}
+                hint="Slots whose pick now belongs to another team." />
+              <Stat value={block.length} label="On the block"
+                color={block.length ? ACCENT.info : TEXT.primary}
+                hint="Players their team would move right now." />
+              <Stat value={leaving.length} label="Walking"
+                color={leaving.length ? ACCENT.warning : TEXT.primary}
+                hint="Past their team's re-sign limit. They leave for nothing unless traded." />
+              <Stat value={trades.length} label="Trades" hint="Completed this season." />
             </div>
-          </div>
-        )}
 
-        {!loading && !error && tab === 'expiring' && (
-          expiring.length === 0 ? empty('Nobody is in the last year of a contract.') : (
-            <>
-              <div style={{ ...font(400, 11, 1.5), color: TEXT.muted, marginBottom: '10px', maxWidth: '720px' }}>
-                Everyone in the last year of a contract. A team may re-sign two each offseason, so anyone marked WALKING leaves for nothing unless somebody trades for him.
-              </div>
-              <div style={panel}>
-                {[...expiring].sort((a, b) => b.rating - a.rating).map((e: ExpiringPlayer, i) => {
-                  const isMine = !!myTeamId && e.team?.id === myTeamId
-                  return (
-                    <div key={`${e.playerId}-${i}`} style={{ ...row, ...mine(isMine) }}>
-                      <Pos>{e.position}</Pos>
-                      <span style={{ flex: 1, minWidth: 0 }}>
-                        <NameGrade playerId={e.playerId} name={e.name} rating={e.rating} />
-                      </span>
-                      <Crest team={e.team} />
-                      <span style={{ width: isMobile ? 'auto' : '130px' }}>
-                        <TeamName team={e.team} mine={isMine} />
-                      </span>
-                      <span style={{ width: '68px', textAlign: 'right' }}>
-                        {e.cannotKeep && (
-                          <HoverTooltip text="His team is over its re-sign limit. He leaves for nothing unless somebody trades for him.">
-                            {tag('Walking', ACCENT.warning)}
-                          </HoverTooltip>
-                        )}
-                      </span>
+            {/* THE BOARD */}
+            <div style={pair}>
+              <Pane title="Draft order" count={draftOrder.length}
+                note={tradedCount ? `${tradedCount} traded` : undefined}>
+                {draftOrder.length === 0 ? emptyPane('No order yet.') : (
+                  <>
+                    <div style={headRow}>
+                      <span style={{ width: '22px' }}>#</span>
+                      <span style={{ flex: 1 }}>Team</span>
+                      <span style={{ width: '42px', textAlign: 'right' }}>Rec</span>
+                      <span style={{ width: '46px', textAlign: 'right' }}>Via</span>
                     </div>
-                  )
-                })}
-              </div>
-            </>
-          )
-        )}
+                    {draftOrder.map((d: DraftSlot) => {
+                      const isMine = !!myTeamId && (d.owner?.id === myTeamId || d.originalTeam?.id === myTeamId)
+                      return (
+                        <div key={d.slot} style={{ ...row, ...mine(isMine) }}>
+                          <span style={{
+                            ...font(700, 13), ...TABULAR, width: '22px',
+                            color: d.slot <= 3 ? ACCENT.info : TEXT.dim,
+                          }}>{d.slot}</span>
+                          <Crest team={d.owner} size={17} />
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <TeamName team={d.owner} mine={!!myTeamId && d.owner?.id === myTeamId} />
+                          </span>
+                          <HoverTooltip text={`${d.originalTeam?.name ?? ''} finished here. The slot follows that record, whoever holds the pick.`}>
+                            <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted, width: '42px', textAlign: 'right', display: 'inline-block' }}>
+                              {d.record ? `${d.record.wins}-${d.record.losses}` : '\u2013'}
+                            </span>
+                          </HoverTooltip>
+                          <span style={{ width: '46px', textAlign: 'right' }}>
+                            {d.traded && d.originalTeam
+                              ? <HoverTooltip text={`Traded. ${d.owner?.name} picks on ${d.originalTeam.name}'s finish.`}>
+                                  {tag(d.originalTeam.abbr, ACCENT.warning)}
+                                </HoverTooltip>
+                              : <span style={{ color: TEXT.faint, ...font(400, 12) }}>&ndash;</span>}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </>
+                )}
+              </Pane>
 
-        {!loading && !error && tab === 'block' && (
-          block.length === 0
-            ? empty(tradingEnabled ? 'Nobody is on the block. Teams start listing in week 15.' : 'Trading is closed.')
-            : (
-              <div style={panel}>
-                {[...block].sort((a, b) => b.rating - a.rating).map((b: BlockListing, i) => {
-                  const isMine = !!myTeamId && b.team?.id === myTeamId
-                  return (
-                    <div key={`${b.playerId}-${i}`} style={{ ...row, ...mine(isMine) }}>
-                      <Pos>{b.position}</Pos>
-                      <span style={{ flex: 1, minWidth: 0 }}>
-                        <NameGrade playerId={b.playerId} name={b.name} rating={b.rating} />
-                      </span>
-                      <Crest team={b.team} />
-                      <span style={{ width: isMobile ? 'auto' : '130px' }}>
-                        <TeamName team={b.team} mine={isMine} />
-                      </span>
-                      <span style={{ width: '92px', textAlign: 'right' }}>
+              <Pane title="Incoming class" count={prospects.length}
+                note="solid = now, hollow = scouted">
+                {prospects.length === 0 ? emptyPane('No class generated yet.') : (
+                  <>
+                    <div style={headRow}>
+                      <span style={{ width: '22px' }}>#</span>
+                      <span style={{ flex: 1 }}>Prospect &amp; potential</span>
+                    </div>
+                    {/* ⚠️ RANKED, NOT PAIRED TO A SLOT. Lining prospect N up against pick N
+                        would read as a prediction, and every team drafts off its own board. */}
+                    {prospects.map((p: Prospect, i) => (
+                      <div key={p.playerId} style={row}>
+                        <span style={{ ...font(700, 12), ...TABULAR, width: '22px', color: TEXT.faint }}>
+                          {i + 1}
+                        </span>
+                        <Pos>{p.position}</Pos>
+                        <span style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+                          <PlayerLink playerId={p.playerId} playerName={p.name}
+                            style={{ ...font(600, 14), color: TEXT.body }} />
+                          <HoverTooltip text={`Plays at ${Math.round(p.rating)} today. Your team scouts him to ${ceilingLabel(p.ceilingRange) || 'no clear ceiling'}. Another team sees a different range.`}>
+                            <span style={{ display: 'inline-block' }}>
+                              <Potential rating={p.rating} range={p.ceilingRange} size={16} />
+                            </span>
+                          </HoverTooltip>
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </Pane>
+            </div>
+
+            {/* THE MARKET */}
+            <div style={pair}>
+              <Pane title="On the block" count={block.length}>
+                {block.length === 0
+                  ? emptyPane(tradingEnabled
+                      ? 'Nobody is on the block. Teams start listing in week 15.'
+                      : 'Trading is closed.')
+                  : [...block].sort((a, b) => b.rating - a.rating).map((b: BlockListing, i) => {
+                    const isMine = !!myTeamId && b.team?.id === myTeamId
+                    return (
+                      <div key={`${b.playerId}-${i}`} style={{ ...row, ...mine(isMine) }}>
+                        <Pos>{b.position}</Pos>
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <NameGrade playerId={b.playerId} name={b.name} rating={b.rating} />
+                        </span>
+                        <Crest team={b.team} />
+                        <span style={{ width: isMobile ? 'auto' : '112px' }}>
+                          <TeamName team={b.team} mine={isMine} />
+                        </span>
                         <HoverTooltip text={REASON_TEXT[b.reason] || b.reason}>
                           {tag(REASON_LABEL[b.reason] || b.reason, TEXT.muted)}
                         </HoverTooltip>
+                      </div>
+                    )
+                  })}
+              </Pane>
+
+              <Pane title="Contract year" count={expiring.length}
+                note={leaving.length ? `${leaving.length} leaving for nothing` : undefined}>
+                {expiring.length === 0 ? emptyPane('Nobody is in the last year of a contract.') : (
+                  [...expiring].sort((a, b) => b.rating - a.rating).map((e: ExpiringPlayer, i) => {
+                    const isMine = !!myTeamId && e.team?.id === myTeamId
+                    return (
+                      <div key={`${e.playerId}-${i}`} style={{ ...row, ...mine(isMine) }}>
+                        <Pos>{e.position}</Pos>
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <NameGrade playerId={e.playerId} name={e.name} rating={e.rating} />
+                        </span>
+                        <Crest team={e.team} />
+                        <span style={{ width: isMobile ? 'auto' : '112px' }}>
+                          <TeamName team={e.team} mine={isMine} />
+                        </span>
+                        <span style={{ width: '70px', textAlign: 'right' }}>
+                          {e.cannotKeep && (
+                            <HoverTooltip text="His team is over its re-sign limit. He leaves for nothing unless somebody trades for him.">
+                              {tag('Walking', ACCENT.warning)}
+                            </HoverTooltip>
+                          )}
+                        </span>
+                      </div>
+                    )
+                  })
+                )}
+              </Pane>
+            </div>
+
+            {/* WHAT HAS ALREADY MOVED */}
+            <Pane title="Activity" count={trades.length + moves.length} height={300}>
+              {trades.length === 0 && moves.length === 0 ? emptyPane('Nothing has moved yet.') : (
+                <>
+                  {trades.map(t => (
+                    <div key={`t${t.id}`} style={{ ...row, flexWrap: 'wrap' }}>
+                      {tag('Trade', ACCENT.info)}
+                      <span style={{ ...font(500, 13), color: TEXT.secondary, flex: 1, minWidth: '180px' }}>
+                        {t.teamA?.name} and {t.teamB?.name}, {t.aGave.length + t.bGave.length} assets
+                      </span>
+                      <span style={{ ...font(400, 11), color: TEXT.muted }}>
+                        {t.phase === 'offseason' ? 'Offseason' : `Week ${t.week}`}
                       </span>
                     </div>
-                  )
-                })}
-              </div>
-            )
-        )}
-
-        {!loading && !error && tab === 'activity' && (
-          trades.length === 0 && moves.length === 0
-            ? empty('Nothing has moved yet.')
-            : (
-              <div style={panel}>
-                {trades.map(t => (
-                  <div key={`t${t.id}`} style={{ ...row, flexWrap: 'wrap' }}>
-                    {tag('Trade', ACCENT.info)}
-                    <span style={{ ...font(500, 13), color: TEXT.secondary, flex: 1, minWidth: '180px' }}>
-                      {t.teamA?.name} and {t.teamB?.name}, {t.aGave.length + t.bGave.length} assets
-                    </span>
-                    <span style={{ ...font(400, 10), color: TEXT.muted }}>
-                      {t.phase === 'offseason' ? 'Offseason' : `W${t.week}`}
-                    </span>
-                  </div>
-                ))}
-                {moves.map((m, i) => (
-                  <div key={`m${i}`} style={{ ...row, flexWrap: 'wrap' }}>
-                    {tag(m.type.replace(/_/g, ' '), TEXT.muted)}
-                    <span style={{ ...font(500, 13), color: TEXT.secondary, flex: 1, minWidth: '180px' }}>
-                      <PlayerLink playerId={m.playerId} playerName={m.player || 'Someone'}
-                        style={{ ...font(600, 13), color: TEXT.body }} />
-                      {m.team?.name ? <span style={{ color: TEXT.muted }}> {m.team.name}</span> : null}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )
+                  ))}
+                  {moves.map((m, i) => (
+                    <div key={`m${i}`} style={{ ...row, flexWrap: 'wrap' }}>
+                      {tag(m.type.replace(/_/g, ' '), TEXT.muted)}
+                      <span style={{ ...font(500, 13), color: TEXT.secondary, flex: 1, minWidth: '180px' }}>
+                        <PlayerLink playerId={m.playerId} playerName={m.player || 'Someone'}
+                          style={{ ...font(600, 13), color: TEXT.body }} />
+                        {m.team?.name ? <span style={{ color: TEXT.muted }}> {m.team.name}</span> : null}
+                      </span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </Pane>
+          </div>
         )}
       </div>
     </>
