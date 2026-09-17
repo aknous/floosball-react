@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing } from '@/hooks/useTransactions'
+import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing, TradeRow, TradeAsset, TeamBlob } from '@/hooks/useTransactions'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
@@ -152,6 +152,98 @@ const PosFilter: React.FC<{ value: PositionFilter; onChange: (p: PositionFilter)
       })}
     </div>
   )
+
+/**
+ * One settled trade: a headline you can read at a glance, and the full manifest underneath.
+ *
+ * ⚠️ THE COLLAPSED LINE IS THE TRADE, NOT A COUNT OF IT. It read "Rocks and Bees, 3 assets",
+ * which says two clubs did something and refuses to say what — a reader has to open every
+ * row to find the one they care about, which is the opposite of a summary. It now names who
+ * sent whom to whom, and what came back.
+ *
+ * ⚠️ EXPANDED, THE REASONING IS THE POINT. The assets are already in the headline; what the
+ * row adds is why each side did it, which is the only part of a trade the standings can
+ * never tell you. Trades settled before those columns existed carry no reasoning, so the
+ * block is omitted rather than rendered empty.
+ */
+const TradeRowView: React.FC<{
+  trade: TradeRow
+  row: React.CSSProperties
+  tag: (text: string, color: string) => React.ReactNode
+}> = ({ trade: t, row, tag }) => {
+  const [open, setOpen] = useState(false)
+  const names = (list: TradeAsset[]) =>
+    list.map(a => a.name).filter(Boolean).join(', ') || 'nothing'
+  const when = t.phase === 'offseason' ? 'Offseason' : `Week ${t.week}`
+  const hasWhy = !!(t.sellerWhy || t.buyerWhy)
+
+  const piece = (a: TradeAsset, i: number) => (
+    <li key={`${a.kind}-${a.id ?? i}`} style={{
+      display: 'flex', alignItems: 'baseline', gap: '8px', padding: '3px 0',
+    }}>
+      <span style={{ ...font(700, 10, 1, '0.06em'), color: TEXT.dim, width: '58px', flexShrink: 0 }}>
+        {(a.kind || 'asset').toUpperCase()}
+      </span>
+      <span style={{ ...font(600, 12), color: TEXT.body }}>{a.name}</span>
+      {a.detail && <span style={{ ...font(400, 11), color: TEXT.muted }}>{a.detail}</span>}
+    </li>
+  )
+
+  const side = (team: TeamBlob | null, gave: TradeAsset[], why: string | null) => (
+    <div style={{ minWidth: 0 }}>
+      <div style={{ ...font(700, 11), color: TEXT.secondary, marginBottom: '5px' }}>
+        {team?.name} sent
+      </div>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{gave.map(piece)}</ul>
+      {why && (
+        <div style={{
+          ...font(400, 12, 1.5), color: TEXT.muted, marginTop: '7px',
+          borderLeft: `2px solid ${BORDER.raised}`, paddingLeft: '9px',
+        }}>{why}</div>
+      )}
+    </div>
+  )
+
+  return (
+    <div style={{ borderBottom: `1px solid ${BORDER.subtle}` }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        style={{
+          ...row, borderBottom: 'none', width: '100%', textAlign: 'left',
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          fontFamily: FONT, color: 'inherit',
+        }}>
+        <span style={{
+          ...font(700, 11), color: TEXT.dim, width: '10px', flexShrink: 0,
+          transform: open ? 'rotate(90deg)' : 'none', display: 'inline-block',
+        }}>&rsaquo;</span>
+        {tag('Trade', ACCENT.info)}
+        <span style={{ ...font(500, 13, 1.4), color: TEXT.secondary, flex: 1, minWidth: 0 }}>
+          <b style={{ color: TEXT.body }}>{t.teamA?.name}</b> sent{' '}
+          <b style={{ color: TEXT.body }}>{names(t.aGave)}</b> to{' '}
+          <b style={{ color: TEXT.body }}>{t.teamB?.name}</b> for{' '}
+          <b style={{ color: TEXT.body }}>{names(t.bGave)}</b>
+        </span>
+        <span style={{ ...font(400, 11), color: TEXT.muted, whiteSpace: 'nowrap' }}>{when}</span>
+      </button>
+      {open && (
+        <div style={{
+          display: 'grid', gap: '22px', padding: '4px 14px 16px 36px',
+          gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
+        }}>
+          {side(t.teamA, t.aGave, t.sellerWhy)}
+          {side(t.teamB, t.bGave, t.buyerWhy)}
+          {!hasWhy && (
+            <div style={{ ...font(400, 11), color: TEXT.dim, gridColumn: '1 / -1' }}>
+              No reasoning was recorded for this trade.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 /**
  * TRANSACTIONS — the front office, as a dashboard rather than a set of tabs.
@@ -432,15 +524,7 @@ const TransactionsPage: React.FC = () => {
               {trades.length === 0 && moves.length === 0 ? emptyPane('Nothing has moved yet.') : (
                 <>
                   {trades.map(t => (
-                    <div key={`t${t.id}`} style={{ ...row, flexWrap: 'wrap' }}>
-                      {tag('Trade', ACCENT.info)}
-                      <span style={{ ...font(500, 13), color: TEXT.secondary, flex: 1, minWidth: '180px' }}>
-                        {t.teamA?.name} and {t.teamB?.name}, {t.aGave.length + t.bGave.length} assets
-                      </span>
-                      <span style={{ ...font(400, 11), color: TEXT.muted }}>
-                        {t.phase === 'offseason' ? 'Offseason' : `Week ${t.week}`}
-                      </span>
-                    </div>
+                    <TradeRowView key={`t${t.id}`} trade={t} row={row} tag={tag} />
                   ))}
                   {moves.map((m, i) => (
                     <div key={`m${i}`} style={{ ...row, flexWrap: 'wrap' }}>

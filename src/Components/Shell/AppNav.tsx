@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAchievements } from '@/contexts/AchievementsContext'
 import { useGames } from '@/contexts/GamesContext'
+import { useRecentTrades } from '@/hooks/useRecentTrades'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { SiDiscord } from 'react-icons/si'
 import { VersionPill } from '@/Components/Footer'
@@ -210,6 +211,7 @@ const AppNav: React.FC = () => {
   const favoriteTeamId = user?.favoriteTeamId ?? null
   const liveGames = Array.from(games.values()).filter(g => g.status === 'Active')
   const { unclaimed: supporterUnclaimed } = useSupporterDividend()
+  const recentTrades = useRecentTrades()
   const teamHasAction = favoriteTeamId != null && supporterUnclaimed > 0
 
   const [favTeamName, setFavTeamName] = useState<string | null>(null)
@@ -312,6 +314,11 @@ const AppNav: React.FC = () => {
 
     let trailing: React.ReactNode = null
     if (item.key === 'games' && liveGames.length > 0) trailing = <AmbientCount value={liveGames.length} />
+    // ⚠️ AN AMBIENT COUNT, NOT A DOT, and the rule above is why. A gold dot on this nav
+    // means "something is waiting for you to collect it"; a trade between two other teams
+    // is league activity the reader owes nothing on, which is exactly what Games carries a
+    // plain number for.
+    else if (item.key === 'transactions' && recentTrades > 0) trailing = <AmbientCount value={recentTrades} />
     else if (item.key === 'achievements' && unclaimedCount > 0) trailing = <NotificationDot color={ACCENT.warning} count={unclaimedCount} />
     // Gold, matching Achievements: on this nav a gold dot means "something is waiting for
     // you to collect it", whichever tab it is on.

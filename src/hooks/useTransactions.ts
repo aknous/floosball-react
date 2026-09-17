@@ -69,21 +69,27 @@ export interface BlockListing {
 }
 
 export interface TradeAsset {
+  /** 'player' | 'prospect' | 'pick' */
   kind?: string
+  id?: number | null
   name?: string
-  position?: string
-  rating?: number
-  label?: string
+  /** Position for a player, slot for a pick. Whatever identifies it at a glance. */
+  detail?: string
 }
 
 export interface TradeRow {
   id: number
   week: number | null
   phase: string
+  /** The side that listed the player. `aGave` is what it sent. */
   teamA: TeamBlob | null
   teamB: TeamBlob | null
   aGave: TradeAsset[]
   bGave: TradeAsset[]
+  /** The seller's category. Null on trades settled before the column existed. */
+  trigger: string | null
+  sellerWhy: string | null
+  buyerWhy: string | null
 }
 
 export interface MoveRow {
