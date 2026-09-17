@@ -5,7 +5,7 @@ import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing } fr
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
-import Potential, { ceilingLabel } from '@/Components/Potential'
+import Potential, { PotentialAxis, ceilingLabel } from '@/Components/Potential'
 import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -327,14 +327,18 @@ const TransactionsPage: React.FC = () => {
               </Pane>
 
               <Pane title="Incoming class" count={shownProspects.length}
-                note={classPos === 'ALL' ? 'solid = now, hollow = scouted' : `of ${prospects.length}`}
+                note={classPos === 'ALL' ? 'solid = now, hatched = scouted' : `of ${prospects.length}`}
                 control={<PosFilter value={classPos} onChange={setClassPos} />}>
                 {prospects.length === 0 ? emptyPane('No class generated yet.')
                   : shownProspects.length === 0 ? emptyPane(`No ${classPos} in this class.`) : (
                   <>
-                    <div style={headRow}>
+                    <div style={{ ...headRow, alignItems: 'flex-end' }}>
                       <span style={{ width: '22px' }}>#</span>
-                      <span style={{ flex: 1 }}>Prospect &amp; potential</span>
+                      <span style={{ flex: 1 }}>Prospect</span>
+                      <span style={{ width: '170px' }}>
+                        <span style={{ display: 'block', marginBottom: '3px' }}>Now &amp; potential</span>
+                        <PotentialAxis />
+                      </span>
                     </div>
                     {/* ⚠️ RANKED, NOT PAIRED TO A SLOT. Lining prospect N up against pick N
                         would read as a prediction, and every team drafts off its own board. */}
@@ -344,15 +348,15 @@ const TransactionsPage: React.FC = () => {
                           {i + 1}
                         </span>
                         <Pos>{p.position}</Pos>
-                        <span style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ flex: 1, minWidth: 0 }}>
                           <PlayerLink playerId={p.playerId} playerName={p.name}
                             style={{ ...font(600, 14), color: TEXT.body }} />
-                          <HoverTooltip text={`Plays at ${Math.round(p.rating)} today. Your team scouts him to ${ceilingLabel(p.ceilingRange) || 'no clear ceiling'}. Another team sees a different range.`}>
-                            <span style={{ display: 'inline-block' }}>
-                              <Potential rating={p.rating} range={p.ceilingRange} size={16} />
-                            </span>
-                          </HoverTooltip>
                         </span>
+                        <HoverTooltip text={`Plays at ${Math.round(p.rating)} today. Your team scouts him to ${ceilingLabel(p.ceilingRange) || 'no clear ceiling'}. Another team sees a different range.`}>
+                          <span style={{ width: '170px', display: 'inline-block' }}>
+                            <Potential rating={p.rating} range={p.ceilingRange} />
+                          </span>
+                        </HoverTooltip>
                       </div>
                     ))}
                   </>

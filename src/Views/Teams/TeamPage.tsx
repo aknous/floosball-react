@@ -652,8 +652,8 @@ const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p }) => {
           scouted band. Solid is what he plays at today; hollow is what this team's scouts
           think he could still add. The exact range stays on hover. */}
       <HoverTooltip text={`Plays at ${Math.round(p.rating)} today. This team scouts him to ${ceilingLabel(p.ceilingRange) || 'no clear ceiling'}.`}>
-        <span style={{ display: 'inline-block' }}>
-          <Potential rating={p.rating} range={p.ceilingRange} size={16} />
+        <span style={{ width: '150px', display: 'inline-block', flexShrink: 0 }}>
+          <Potential rating={p.rating} range={p.ceilingRange} />
         </span>
       </HoverTooltip>
       <HoverTooltip text={lastChance
