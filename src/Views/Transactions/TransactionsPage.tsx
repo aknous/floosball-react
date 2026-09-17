@@ -5,6 +5,7 @@ import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing } fr
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import CeilingBand, { ceilingLabel } from '@/Components/CeilingBand'
 
 const INK = '#e2e8f0'
 const BODY = '#cbd5e1'
@@ -80,27 +81,6 @@ function Rating({ value }: { value: number }) {
       fontVariantNumeric: 'tabular-nums', minWidth: '28px', textAlign: 'right',
       display: 'inline-block',
     }}>{Math.round(value)}</span>
-  )
-}
-
-/** A prospect's scouted ceiling, drawn as the band it actually is. */
-function CeilingBar({ rating, low, high }: { rating: number; low: number; high: number }) {
-  const floor = Math.max(40, Math.min(rating, low) - 4)
-  const span = Math.max(1, 100 - floor)
-  const left = ((low - floor) / span) * 100
-  const width = Math.max(2, ((high - low) / span) * 100)
-  const now = ((rating - floor) / span) * 100
-  return (
-    <div style={{ position: 'relative', height: '8px', background: '#1e293b', borderRadius: '2px' }}>
-      <div style={{
-        position: 'absolute', left: `${left}%`, width: `${width}%`, top: 0, bottom: 0,
-        background: `linear-gradient(90deg, ${ACCENT}44, ${ACCENT}aa)`, borderRadius: '2px',
-      }} />
-      <div style={{
-        position: 'absolute', left: `${now}%`, top: '-2px', bottom: '-2px', width: '2px',
-        background: INK, borderRadius: '1px', transform: 'translateX(-1px)',
-      }} />
-    </div>
   )
 }
 
@@ -259,14 +239,10 @@ const TransactionsPage: React.FC = () => {
                 </div>
                 {p.ceilingRange && (
                   <>
-                    <CeilingBar rating={p.rating} low={p.ceilingRange.low} high={p.ceilingRange.high} />
+                    <CeilingBand rating={p.rating} range={p.ceilingRange} accent={ACCENT} />
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '11px', color: MUTED }}>
                       <span>plays at {Math.round(p.rating)}</span>
-                      <span style={{ color: ACCENT, fontWeight: 600 }}>
-                        {p.ceilingRange.exact != null
-                          ? `ceiling ${p.ceilingRange.exact}`
-                          : `could reach ${p.ceilingRange.low}–${p.ceilingRange.high}`}
-                      </span>
+                      <span style={{ color: ACCENT, fontWeight: 600 }}>{ceilingLabel(p.ceilingRange)}</span>
                     </div>
                   </>
                 )}

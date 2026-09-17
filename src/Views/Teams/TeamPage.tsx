@@ -7,6 +7,7 @@ import { useFloosball } from '@/contexts/FloosballContext'
 import { useGames } from '@/contexts/GamesContext'
 import { Stars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
+import PlayerLink from '@/Components/PlayerLink'
 import TeamNavStrip from '@/Components/TeamNavStrip'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { useOpenGame } from '@/hooks/useOpenGame'
@@ -18,6 +19,8 @@ import PlayerRating from '@/Components/Sentiment/PlayerRating'
 import TeamFeed from '@/Components/Sentiment/TeamFeed'
 import FrontOfficeBand from './FrontOfficeBand'
 import SectionRail, { RailSection } from './SectionRail'
+import CeilingBand, { ceilingLabel } from '@/Components/CeilingBand'
+import { useTeamProspects, TeamProspect } from '@/hooks/useTeamProspects'
 import { quipAt } from '@/Views/FrontOffice/FacilitiesSection'
 import { fmtFramesWon } from '@/utils/framesWon'
 
@@ -618,6 +621,59 @@ const MoodBar: React.FC<{ label: string; value: number; color: string }> = ({ la
 
 // ── Roster plate ────────────────────────────────────────────────────────────
 
+/**
+ * THE PIPELINE — the prospects stashed behind the roster.
+ *
+ * ⚠️ POTENTIAL IS SCOUTED AND THIS IS THIS TEAM'S OWN READ. The endpoint resolves
+ * the band through the team whose page this is, so the same player shows a
+ * different range on the draft-class tab. That is the feature, not a bug, and
+ * the copy says so rather than leaving a reader to spot the discrepancy.
+ *
+ * ⚠️ A LAST WINDOW IS THE STORY. A prospect who does not get promoted inside his
+ * window walks for nothing, so the final year is called out rather than being
+ * left as a number a reader has to do arithmetic on.
+ */
+const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p, accent }) => {
+  const lastChance = p.seasonsRemaining <= 1
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px',
+      borderBottom: '1px solid #1e293b', minWidth: 0,
+    }}>
+      <span style={{
+        fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em',
+        width: '26px', flexShrink: 0,
+      }}>{p.position}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <PlayerLink playerId={p.playerId} playerName={p.name}
+            style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '13.5px' }} />
+          <span style={{
+            fontSize: '13px', fontWeight: 700, color: '#cbd5e1',
+            fontVariantNumeric: 'tabular-nums', marginLeft: 'auto',
+          }}>{Math.round(p.rating)}</span>
+        </div>
+        <div style={{ marginTop: '5px' }}>
+          <CeilingBand rating={p.rating} range={p.ceilingRange} accent={accent} height={6} />
+        </div>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', gap: '8px',
+          marginTop: '4px', fontSize: '11px', color: '#94a3b8',
+        }}>
+          <HoverTooltip text={lastChance
+            ? 'His last window. If he is not promoted to the roster this offseason he leaves for nothing.'
+            : `${p.seasonsRemaining} more windows to win a roster spot. A prospect who never gets promoted walks for nothing.`}>
+            <span style={{ color: lastChance ? '#f59e0b' : '#94a3b8', fontWeight: lastChance ? 700 : 400 }}>
+              {lastChance ? 'last window' : `${p.seasonsRemaining} windows left`}
+            </span>
+          </HoverTooltip>
+          <span style={{ color: accent, fontWeight: 600 }}>{ceilingLabel(p.ceilingRange)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const RosterPlate: React.FC<{
   slot: string
   player: RosterPlayer | null
@@ -891,6 +947,8 @@ export default function TeamPage() {
     const half = Math.ceil(schedule.length / 2)
     return [schedule.slice(0, half), schedule.slice(half)]
   }, [schedule])
+
+  const pipeline = useTeamProspects(team?.id ?? null)
 
   // Memoised: the rail keys effects off this array, so a fresh one each render
   // would tear down and rebuild the observer continuously.
@@ -1391,6 +1449,45 @@ export default function TeamPage() {
               )
             })}
           </div>
+
+          {/* ── THE PIPELINE ────────────────────────────────────────────────
+              Under the roster because that is the question it answers: having
+              seen who plays, who is behind them. Shown for every team, not just
+              your own — the band is THIS team's scouting either way, so a rival
+              page is a rival's read rather than a leak of yours. */}
+          {!pipeline.loading && pipeline.prospects.length > 0 && (
+            <div style={{ marginTop: '22px' }}>
+              <SectionHead
+                label="Pipeline"
+                note={`${pipeline.prospects.length} prospect${pipeline.prospects.length === 1 ? '' : 's'}`}
+                style={{ marginBottom: '10px' }}
+              />
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', maxWidth: '58ch' }}>
+                What each one plays at today is a fact. What he might become is
+                this team&rsquo;s own scouting, so it is shown as a range.
+              </div>
+              {/* ⚠️ CAPPED. The roster plates earn the full column width because they
+                  carry stat bars across it; a prospect row is a name and a number, so at
+                  795px it reads as two things stranded at opposite edges. A narrow list
+                  looks deliberate whether the pipeline holds one player or ten. */}
+              <div style={{
+                background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px',
+                overflow: 'hidden', maxWidth: '520px',
+              }}>
+                {pipeline.prospects.map(p => (
+                  <ProspectRow key={p.playerId} p={p} accent={readableOnDark(accent)} />
+                ))}
+              </div>
+            </div>
+          )}
+          {!pipeline.loading && pipeline.prospects.length === 0 && (
+            <div style={{ marginTop: '22px' }}>
+              <SectionHead label="Pipeline" style={{ marginBottom: '10px' }} />
+              <div style={{ fontSize: '13px', color: '#94a3b8' }}>
+                Nobody in the pipeline. Everything this team has is on the field.
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ minWidth: 0 }}>
