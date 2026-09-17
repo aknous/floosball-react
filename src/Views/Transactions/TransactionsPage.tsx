@@ -177,6 +177,14 @@ const TradeRowView: React.FC<{
   const when = t.phase === 'offseason' ? 'Offseason' : `Week ${t.week}`
   const hasWhy = !!(t.sellerWhy || t.buyerWhy)
 
+  /** A team's crest and name, so a reader recognises the shield before the word. */
+  const club = (team: TeamBlob | null, weight = 700) => (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', verticalAlign: 'middle' }}>
+      <Crest team={team} size={15} />
+      <b style={{ ...font(weight, 13), color: TEXT.body }}>{team?.name}</b>
+    </span>
+  )
+
   const piece = (a: TradeAsset, i: number) => (
     <li key={`${a.kind}-${a.id ?? i}`} style={{
       display: 'flex', alignItems: 'baseline', gap: '8px', padding: '3px 0',
@@ -184,15 +192,26 @@ const TradeRowView: React.FC<{
       <span style={{ ...font(700, 10, 1, '0.06em'), color: TEXT.dim, width: '58px', flexShrink: 0 }}>
         {(a.kind || 'asset').toUpperCase()}
       </span>
-      <span style={{ ...font(600, 12), color: TEXT.body }}>{a.name}</span>
+      <span style={{ ...font(600, 13), color: TEXT.body }}>{a.name}</span>
       {a.detail && <span style={{ ...font(400, 11), color: TEXT.muted }}>{a.detail}</span>}
+      {/* ⚠️ ONLY WHERE THERE IS A PLAYER. A pick has no rating and a player who has since
+          left the league cannot be resolved, so the stars are absent rather than drawn
+          at some default that would read as a one-star player. */}
+      {a.rating != null && (
+        <HoverTooltip text={`Rated ${Math.round(a.rating)} now`}>
+          <span style={{ display: 'inline-block' }}>
+            <Stars stars={calcStars(a.rating)} size={13} tracking={2} />
+          </span>
+        </HoverTooltip>
+      )}
     </li>
   )
 
   const side = (team: TeamBlob | null, gave: TradeAsset[], why: string | null) => (
     <div style={{ minWidth: 0 }}>
-      <div style={{ ...font(700, 11), color: TEXT.secondary, marginBottom: '5px' }}>
-        {team?.name} sent
+      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '7px' }}>
+        {club(team, 700)}
+        <span style={{ ...font(400, 11), color: TEXT.muted }}>sent</span>
       </div>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{gave.map(piece)}</ul>
       {why && (
@@ -219,11 +238,9 @@ const TradeRowView: React.FC<{
           transform: open ? 'rotate(90deg)' : 'none', display: 'inline-block',
         }}>&rsaquo;</span>
         {tag('Trade', ACCENT.info)}
-        <span style={{ ...font(500, 13, 1.4), color: TEXT.secondary, flex: 1, minWidth: 0 }}>
-          <b style={{ color: TEXT.body }}>{t.teamA?.name}</b> sent{' '}
-          <b style={{ color: TEXT.body }}>{names(t.aGave)}</b> to{' '}
-          <b style={{ color: TEXT.body }}>{t.teamB?.name}</b> for{' '}
-          <b style={{ color: TEXT.body }}>{names(t.bGave)}</b>
+        <span style={{ ...font(500, 13, 1.7), color: TEXT.secondary, flex: 1, minWidth: 0 }}>
+          {club(t.teamA)} sent <b style={{ color: TEXT.body }}>{names(t.aGave)}</b> to{' '}
+          {club(t.teamB)} for <b style={{ color: TEXT.body }}>{names(t.bGave)}</b>
         </span>
         <span style={{ ...font(400, 11), color: TEXT.muted, whiteSpace: 'nowrap' }}>{when}</span>
       </button>
@@ -380,7 +397,11 @@ const TransactionsPage: React.FC = () => {
 
             {/* THE BOARD */}
             <div style={pair}>
-              <Pane title="Rookie draft order" count={draftOrder.length}
+              {/* ⚠️ NO COUNT. It is one slot per team, so it is always the size of the
+                  league and tells a reader nothing — unlike the block or the free agents,
+                  where the number IS the news. The class keeps its count because the
+                  filter turns it into "3 of 32". */}
+              <Pane title="Rookie draft order"
                 note={tradedCount ? `${tradedCount} traded` : undefined}
 >
                 {draftOrder.length === 0 ? emptyPane('No order yet.') : (
@@ -425,7 +446,7 @@ const TransactionsPage: React.FC = () => {
               </Pane>
 
               <Pane title="Rookie class" count={shownProspects.length}
-                note={classPos === 'ALL' ? 'faded = scouted upside' : `of ${prospects.length}`}
+                note={classPos === 'ALL' ? undefined : `of ${prospects.length}`}
                 control={<PosFilter value={classPos} onChange={setClassPos} />}>
                 {prospects.length === 0 ? emptyPane('No class generated yet.')
                   : shownProspects.length === 0 ? emptyPane(`No ${classPos} in this class.`) : (

@@ -75,6 +75,12 @@ export interface TradeAsset {
   name?: string
   /** Position for a player, slot for a pick. Whatever identifies it at a glance. */
   detail?: string
+  /**
+   * Resolved at read time from the live roster, so it is what they are rated NOW rather
+   * than at the moment of the trade — nothing snapshots a rating per trade. Absent for
+   * picks, and for a player who has since left the league.
+   */
+  rating?: number
 }
 
 export interface TradeRow {
