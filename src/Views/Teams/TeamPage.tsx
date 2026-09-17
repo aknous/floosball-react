@@ -5,7 +5,7 @@ import { GiLaurelsTrophy, GiTrophy, GiFlyingFlag } from 'react-icons/gi'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useGames } from '@/contexts/GamesContext'
-import { Stars, calcStars } from '@/Components/Stars'
+import { Stars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import PlayerLink from '@/Components/PlayerLink'
 import TeamNavStrip from '@/Components/TeamNavStrip'
@@ -19,7 +19,7 @@ import PlayerRating from '@/Components/Sentiment/PlayerRating'
 import TeamFeed from '@/Components/Sentiment/TeamFeed'
 import FrontOfficeBand from './FrontOfficeBand'
 import SectionRail, { RailSection } from './SectionRail'
-import CeilingBand, { ceilingLabel } from '@/Components/CeilingBand'
+import Potential, { ceilingLabel } from '@/Components/Potential'
 import { useTeamProspects, TeamProspect } from '@/hooks/useTeamProspects'
 import { quipAt } from '@/Views/FrontOffice/FacilitiesSection'
 import { fmtFramesWon } from '@/utils/framesWon'
@@ -633,46 +633,39 @@ const MoodBar: React.FC<{ label: string; value: number; color: string }> = ({ la
  * window walks for nothing, so the final year is called out rather than being
  * left as a number a reader has to do arithmetic on.
  */
-const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p, accent }) => {
+const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p }) => {
   const lastChance = p.seasonsRemaining <= 1
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px',
+      display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 12px',
       borderBottom: '1px solid #1e293b', minWidth: 0,
     }}>
       <span style={{
-        fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em',
-        width: '26px', flexShrink: 0,
+        fontSize: '12px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.06em',
+        width: '28px', flexShrink: 0,
       }}>{p.position}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-          <PlayerLink playerId={p.playerId} playerName={p.name}
-            style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '13.5px' }} />
-          {/* Stars, matching the roster plates above and the draft board. The raw
-              number stays on hover for comparing two players inside one band. */}
-          <HoverTooltip text={`Rated ${Math.round(p.rating)}`}>
-            <span style={{ marginLeft: 'auto', display: 'inline-block' }}>
-              <Stars stars={calcStars(p.rating)} size={11} tracking={2} />
-            </span>
-          </HoverTooltip>
-        </div>
-        <div style={{ marginTop: '5px' }}>
-          <CeilingBand rating={p.rating} range={p.ceilingRange} accent={accent} height={6} />
-        </div>
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', gap: '8px',
-          marginTop: '4px', fontSize: '11px', color: '#94a3b8',
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <PlayerLink playerId={p.playerId} playerName={p.name}
+          style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '15px' }} />
+      </span>
+      {/* ⚠️ BESIDE THE NAME, and POTENTIAL as hollow stars rather than a bar chart of the
+          scouted band. Solid is what he plays at today; hollow is what this team's scouts
+          think he could still add. The exact range stays on hover. */}
+      <HoverTooltip text={`Plays at ${Math.round(p.rating)} today. This team scouts him to ${ceilingLabel(p.ceilingRange) || 'no clear ceiling'}.`}>
+        <span style={{ display: 'inline-block' }}>
+          <Potential rating={p.rating} range={p.ceilingRange} size={16} />
+        </span>
+      </HoverTooltip>
+      <HoverTooltip text={lastChance
+        ? 'His last window. If he is not promoted to the roster this offseason he leaves for nothing.'
+        : `${p.seasonsRemaining} windows left to win a roster spot. A prospect who is never promoted walks for nothing.`}>
+        <span style={{
+          fontSize: '12px', width: '104px', textAlign: 'right', display: 'inline-block',
+          color: lastChance ? '#f59e0b' : '#94a3b8', fontWeight: lastChance ? 700 : 400,
         }}>
-          <HoverTooltip text={lastChance
-            ? 'His last window. If he is not promoted to the roster this offseason he leaves for nothing.'
-            : `${p.seasonsRemaining} windows left to win a roster spot. A prospect who is never promoted walks for nothing.`}>
-            <span style={{ color: lastChance ? '#f59e0b' : '#94a3b8', fontWeight: lastChance ? 700 : 400 }}>
-              {lastChance ? 'last window' : `${p.seasonsRemaining} windows left`}
-            </span>
-          </HoverTooltip>
-          <span style={{ color: accent, fontWeight: 600 }}>{ceilingLabel(p.ceilingRange)}</span>
-        </div>
-      </div>
+          {lastChance ? 'last window' : `${p.seasonsRemaining} windows left`}
+        </span>
+      </HoverTooltip>
     </div>
   )
 }

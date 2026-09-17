@@ -5,7 +5,7 @@ import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing } fr
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
-import CeilingBand, { ceilingLabel } from '@/Components/CeilingBand'
+import Potential, { ceilingLabel } from '@/Components/Potential'
 import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -39,29 +39,39 @@ function TeamName({ team, mine }: { team: { id: number; name: string } | null; m
   if (!team) return <span style={{ color: TEXT.dim }}>&ndash;</span>
   return (
     <Link to={`/team/${team.id}`} style={{
-      ...font(mine ? 800 : 500, 12), color: mine ? ACCENT.ownTeam : TEXT.body,
+      ...font(mine ? 800 : 500, 13), color: mine ? ACCENT.ownTeam : TEXT.body,
       textDecoration: 'none',
     }}>{team.name}</Link>
   )
 }
 
 const Pos: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span style={{ ...font(700, 10, 1, '0.08em'), color: TEXT.muted, width: '24px', flexShrink: 0 }}>
+  <span style={{ ...font(700, 11, 1, '0.08em'), color: TEXT.muted, width: '28px', flexShrink: 0 }}>
     {children}
   </span>
 )
 
 /**
- * A player's quality as STARS, the same 1-5 bands the rest of the app uses
- * (`calcStars`: 1* 60-67, 2* 68-75, 3* 76-83, 4* 84-91, 5* 92-100). The raw number
- * stays available on hover for anyone comparing two players inside one band.
+ * A player's name with his grade beside it.
+ *
+ * ⚠️ THE STARS BELONG NEXT TO THE NAME, not in a column of their own on the far side of
+ * the row. They are how you read a player, so putting them a few hundred pixels away
+ * made the row two separate facts that had to be joined by eye.
  */
-const Rating: React.FC<{ value: number }> = ({ value }) => (
-  <HoverTooltip text={`Rated ${Math.round(value)}`}>
-    <span style={{ width: '58px', display: 'inline-block', textAlign: 'right' }}>
-      <Stars stars={calcStars(value)} size={11} />
-    </span>
-  </HoverTooltip>
+const NameGrade: React.FC<{
+  playerId: number | null
+  name: string
+  rating: number
+}> = ({ playerId, name, rating }) => (
+  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
+    <PlayerLink playerId={playerId} playerName={name}
+      style={{ ...font(600, 14), color: TEXT.body }} />
+    <HoverTooltip text={`Rated ${Math.round(rating)}`}>
+      <span style={{ display: 'inline-block' }}>
+        <Stars stars={calcStars(rating)} size={15} tracking={2} />
+      </span>
+    </HoverTooltip>
+  </span>
 )
 
 const TransactionsPage: React.FC = () => {
@@ -82,7 +92,11 @@ const TransactionsPage: React.FC = () => {
     // alone answers half a question: who picks where means nothing without who is there
     // to be picked. Side by side they are the draft board.
     { key: 'draft', label: 'Draft', count: draftOrder.length },
-    { key: 'expiring', label: 'Expiring', count: expiring.length },
+    // ⚠️ NOT "Expiring", and not "Free agents" either. They are not free agents yet, and
+    // "Expiring" describes the contract rather than the players. "Contract year" is what
+    // the batch actually is: everyone in the last year of a deal, whether or not his team
+    // intends to keep him.
+    { key: 'expiring', label: 'Contract year', count: expiring.length },
     { key: 'block', label: 'Block', count: block.length },
     { key: 'activity', label: 'Activity', count: trades.length + moves.length },
   ]
@@ -94,26 +108,30 @@ const TransactionsPage: React.FC = () => {
   // its record end up at opposite ends of an empty row. Left-aligned under the header
   // rather than centred, so it still reads as part of the same page.
   const panel: React.CSSProperties = {
-    background: BG.panel, border: `1px solid ${BORDER.hairline}`, maxWidth: '860px',
+    // ⚠️ SIZED TO ITS CONTENT, not to the viewport. Standings earns a full bleed with ten
+    // columns of numbers; these lists carry four, and stretched wide the player and his
+    // team end up at opposite ends of an empty row.
+    background: BG.panel, border: `1px solid ${BORDER.hairline}`, maxWidth: '720px',
   }
   const row: React.CSSProperties = {
-    display: 'flex', alignItems: 'center', gap: '9px',
-    padding: '8px 12px', borderBottom: `1px solid ${BORDER.subtle}`,
+    display: 'flex', alignItems: 'center', gap: '10px',
+    padding: '11px 14px', borderBottom: `1px solid ${BORDER.subtle}`,
   }
   const headRow: React.CSSProperties = {
-    ...row, background: BG.shell, ...font(700, 10, 1, '0.08em'), color: TEXT.muted,
+    ...row, background: BG.shell, ...font(700, 11, 1, '0.08em'), color: TEXT.muted,
+    padding: '9px 14px',
     textTransform: 'uppercase',
   }
   const mine = (on: boolean): React.CSSProperties =>
     on ? { background: BG.cardOwn, boxShadow: `inset 2px 0 0 ${ACCENT.ownTeam}` } : {}
   const empty = (text: string) => (
-    <div style={{ ...panel, padding: '40px', textAlign: 'center', ...font(400, 12), color: TEXT.muted }}>
+    <div style={{ ...panel, padding: '40px', textAlign: 'center', ...font(400, 13), color: TEXT.muted }}>
       {text}
     </div>
   )
   const tag = (text: string, color: string) => (
     <span style={{
-      ...font(700, 10, 1, '0.04em'), color,
+      ...font(700, 11, 1, '0.04em'), color,
       border: `1px solid ${color}55`, padding: '2px 5px', whiteSpace: 'nowrap',
     }}>{text}</span>
   )
@@ -217,33 +235,29 @@ const TransactionsPage: React.FC = () => {
                 <div style={{ background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
                   <div style={headRow}>
                     <span style={{ width: '22px' }}>&nbsp;</span>
-                    <span style={{ flex: 1 }}>Prospect</span>
-                    <span style={{ width: '58px', textAlign: 'right' }}>Now</span>
-                    <span style={{ width: '104px', textAlign: 'right' }}>Ceiling</span>
+                    <span style={{ flex: 1 }}>Prospect &amp; potential</span>
                   </div>
                   {/* ⚠️ RANKED, NOT PAIRED TO A SLOT. Lining prospect N up against pick N
                       would read as a prediction, and every team drafts off its own board —
                       the sim makes no such claim and neither should this. */}
                   {prospects.map((p: Prospect, i) => (
                     <div key={p.playerId} style={row}>
-                      <span style={{ ...font(700, 11), ...TABULAR, width: '22px', color: TEXT.faint }}>
+                      <span style={{ ...font(700, 12), ...TABULAR, width: '24px', color: TEXT.faint }}>
                         {i + 1}
                       </span>
                       <Pos>{p.position}</Pos>
-                      <span style={{ flex: 1, minWidth: 0 }}>
+                      {/* ⚠️ THE STARS SIT WITH THE NAME. In a column of their own on the
+                          far side of the row they were a second fact to be joined to the
+                          player by eye. */}
+                      <span style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
                         <PlayerLink playerId={p.playerId} playerName={p.name}
-                          style={{ ...font(600, 12), color: TEXT.body }} />
-                      </span>
-                      <Rating value={p.rating} />
-                      <HoverTooltip text="Your team's scouted ceiling. Another team sees a different range.">
-                        <span style={{ width: '104px', display: 'inline-block' }}>
-                          <CeilingBand rating={p.rating} range={p.ceilingRange} accent={ACCENT.info} height={5} />
-                          {/* 10px is the floor for metadata in this app; 9px reads as broken. */}
-                          <span style={{ ...font(400, 10), color: TEXT.muted, display: 'block', marginTop: '3px', textAlign: 'right' }}>
-                            {ceilingLabel(p.ceilingRange)}
+                          style={{ ...font(600, 14), color: TEXT.body }} />
+                        <HoverTooltip text={`Plays at ${Math.round(p.rating)} today. Your team scouts him to ${ceilingLabel(p.ceilingRange) || 'no clear ceiling'}. Another team sees a different range.`}>
+                          <span style={{ display: 'inline-block' }}>
+                            <Potential rating={p.rating} range={p.ceilingRange} size={16} />
                           </span>
-                        </span>
-                      </HoverTooltip>
+                        </HoverTooltip>
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -255,8 +269,8 @@ const TransactionsPage: React.FC = () => {
         {!loading && !error && tab === 'expiring' && (
           expiring.length === 0 ? empty('Nobody is in the last year of a contract.') : (
             <>
-              <div style={{ ...font(400, 11, 1.5), color: TEXT.muted, marginBottom: '10px', maxWidth: '860px' }}>
-                A team may re-sign two of these each offseason. Anyone marked WALKING is past that limit.
+              <div style={{ ...font(400, 11, 1.5), color: TEXT.muted, marginBottom: '10px', maxWidth: '720px' }}>
+                Everyone in the last year of a contract. A team may re-sign two each offseason, so anyone marked WALKING leaves for nothing unless somebody trades for him.
               </div>
               <div style={panel}>
                 {[...expiring].sort((a, b) => b.rating - a.rating).map((e: ExpiringPlayer, i) => {
@@ -265,14 +279,12 @@ const TransactionsPage: React.FC = () => {
                     <div key={`${e.playerId}-${i}`} style={{ ...row, ...mine(isMine) }}>
                       <Pos>{e.position}</Pos>
                       <span style={{ flex: 1, minWidth: 0 }}>
-                        <PlayerLink playerId={e.playerId} playerName={e.name}
-                          style={{ ...font(600, 12), color: TEXT.body }} />
+                        <NameGrade playerId={e.playerId} name={e.name} rating={e.rating} />
                       </span>
                       <Crest team={e.team} />
-                      <span style={{ width: isMobile ? 'auto' : '110px' }}>
+                      <span style={{ width: isMobile ? 'auto' : '130px' }}>
                         <TeamName team={e.team} mine={isMine} />
                       </span>
-                      <Rating value={e.rating} />
                       <span style={{ width: '68px', textAlign: 'right' }}>
                         {e.cannotKeep && (
                           <HoverTooltip text="His team is over its re-sign limit. He leaves for nothing unless somebody trades for him.">
@@ -299,14 +311,12 @@ const TransactionsPage: React.FC = () => {
                     <div key={`${b.playerId}-${i}`} style={{ ...row, ...mine(isMine) }}>
                       <Pos>{b.position}</Pos>
                       <span style={{ flex: 1, minWidth: 0 }}>
-                        <PlayerLink playerId={b.playerId} playerName={b.name}
-                          style={{ ...font(600, 12), color: TEXT.body }} />
+                        <NameGrade playerId={b.playerId} name={b.name} rating={b.rating} />
                       </span>
                       <Crest team={b.team} />
-                      <span style={{ width: isMobile ? 'auto' : '110px' }}>
+                      <span style={{ width: isMobile ? 'auto' : '130px' }}>
                         <TeamName team={b.team} mine={isMine} />
                       </span>
-                      <Rating value={b.rating} />
                       <span style={{ width: '92px', textAlign: 'right' }}>
                         <HoverTooltip text={REASON_TEXT[b.reason] || b.reason}>
                           {tag(REASON_LABEL[b.reason] || b.reason, TEXT.muted)}
@@ -327,7 +337,7 @@ const TransactionsPage: React.FC = () => {
                 {trades.map(t => (
                   <div key={`t${t.id}`} style={{ ...row, flexWrap: 'wrap' }}>
                     {tag('Trade', ACCENT.info)}
-                    <span style={{ ...font(500, 12), color: TEXT.secondary, flex: 1, minWidth: '180px' }}>
+                    <span style={{ ...font(500, 13), color: TEXT.secondary, flex: 1, minWidth: '180px' }}>
                       {t.teamA?.name} and {t.teamB?.name}, {t.aGave.length + t.bGave.length} assets
                     </span>
                     <span style={{ ...font(400, 10), color: TEXT.muted }}>
@@ -338,9 +348,9 @@ const TransactionsPage: React.FC = () => {
                 {moves.map((m, i) => (
                   <div key={`m${i}`} style={{ ...row, flexWrap: 'wrap' }}>
                     {tag(m.type.replace(/_/g, ' '), TEXT.muted)}
-                    <span style={{ ...font(500, 12), color: TEXT.secondary, flex: 1, minWidth: '180px' }}>
+                    <span style={{ ...font(500, 13), color: TEXT.secondary, flex: 1, minWidth: '180px' }}>
                       <PlayerLink playerId={m.playerId} playerName={m.player || 'Someone'}
-                        style={{ ...font(600, 12), color: TEXT.body }} />
+                        style={{ ...font(600, 13), color: TEXT.body }} />
                       {m.team?.name ? <span style={{ color: TEXT.muted }}> {m.team.name}</span> : null}
                     </span>
                   </div>

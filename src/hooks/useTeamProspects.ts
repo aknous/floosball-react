@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CeilingRange } from '@/Components/CeilingBand'
+import { CeilingRange } from '@/Components/Potential'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
