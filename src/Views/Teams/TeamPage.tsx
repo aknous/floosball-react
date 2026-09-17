@@ -5,7 +5,7 @@ import { GiLaurelsTrophy, GiTrophy, GiFlyingFlag } from 'react-icons/gi'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { useGames } from '@/contexts/GamesContext'
-import { Stars } from '@/Components/Stars'
+import { Stars, calcStars } from '@/Components/Stars'
 import PlayerHoverCard from '@/Components/PlayerHoverCard'
 import PlayerLink from '@/Components/PlayerLink'
 import TeamNavStrip from '@/Components/TeamNavStrip'
@@ -648,10 +648,13 @@ const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p, accent 
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
           <PlayerLink playerId={p.playerId} playerName={p.name}
             style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '13.5px' }} />
-          <span style={{
-            fontSize: '13px', fontWeight: 700, color: '#cbd5e1',
-            fontVariantNumeric: 'tabular-nums', marginLeft: 'auto',
-          }}>{Math.round(p.rating)}</span>
+          {/* Stars, matching the roster plates above and the draft board. The raw
+              number stays on hover for comparing two players inside one band. */}
+          <HoverTooltip text={`Rated ${Math.round(p.rating)}`}>
+            <span style={{ marginLeft: 'auto', display: 'inline-block' }}>
+              <Stars stars={calcStars(p.rating)} size={11} tracking={2} />
+            </span>
+          </HoverTooltip>
         </div>
         <div style={{ marginTop: '5px' }}>
           <CeilingBand rating={p.rating} range={p.ceilingRange} accent={accent} height={6} />
@@ -662,7 +665,7 @@ const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p, accent 
         }}>
           <HoverTooltip text={lastChance
             ? 'His last window. If he is not promoted to the roster this offseason he leaves for nothing.'
-            : `${p.seasonsRemaining} more windows to win a roster spot. A prospect who never gets promoted walks for nothing.`}>
+            : `${p.seasonsRemaining} windows left to win a roster spot. A prospect who is never promoted walks for nothing.`}>
             <span style={{ color: lastChance ? '#f59e0b' : '#94a3b8', fontWeight: lastChance ? 700 : 400 }}>
               {lastChance ? 'last window' : `${p.seasonsRemaining} windows left`}
             </span>
@@ -1463,8 +1466,7 @@ export default function TeamPage() {
                 style={{ marginBottom: '10px' }}
               />
               <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', maxWidth: '58ch' }}>
-                What each one plays at today is a fact. What he might become is
-                this team&rsquo;s own scouting, so it is shown as a range.
+                Rating is what he plays at. The bar is this team&rsquo;s scouted ceiling.
               </div>
               {/* ⚠️ CAPPED. The roster plates earn the full column width because they
                   carry stat bars across it; a prospect row is a name and a number, so at
@@ -1484,7 +1486,7 @@ export default function TeamPage() {
             <div style={{ marginTop: '22px' }}>
               <SectionHead label="Pipeline" style={{ marginBottom: '10px' }} />
               <div style={{ fontSize: '13px', color: '#94a3b8' }}>
-                Nobody in the pipeline. Everything this team has is on the field.
+                Nobody in the pipeline.
               </div>
             </div>
           )}
