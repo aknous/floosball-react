@@ -9,7 +9,7 @@ import Potential, { potentialTooltip } from '@/Components/Potential'
 import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
-/** Why a team put this player on the block. Short: the row is scanned, not read. */
+/** Why a team put this player on the trading block. Short: the row is scanned, not read. */
 const REASON_LABEL: Record<string, string> = {
   expiring_surplus: 'Walking',
   expiring_keeper: 'Costly',
@@ -170,7 +170,8 @@ const PosFilter: React.FC<{ value: PositionFilter; onChange: (p: PositionFilter)
  *                  is NOT showing. The picks it overlays come from `draft_picks`, which
  *                  are rookie picks; a reader who reads "draft order" as the FA draft
  *                  would take the traded-pick markers to mean something they do not.
- *   THE MARKET     the block beside contract-year players. Who we could get.
+ *   THE MARKET     the trading block beside players about to reach free agency. Who we
+ *                  could get, and by which route.
  *   ACTIVITY       what has already moved.
  *
  * ⚠️ EACH PANE SCROLLS INSIDE ITSELF rather than growing the page. The free-agent pane
@@ -368,10 +369,10 @@ const TransactionsPage: React.FC = () => {
 
             {/* THE MARKET */}
             <div style={pair}>
-              <Pane title="On the block" count={block.length}>
+              <Pane title="Trading block" count={block.length}>
                 {block.length === 0
                   ? emptyPane(tradingEnabled
-                      ? 'Nobody is on the block. Teams start listing in week 15.'
+                      ? 'Nothing is being shopped. Teams start listing in week 15.'
                       : 'Trading is closed.')
                   : [...block].sort((a, b) => b.rating - a.rating).map((b: BlockListing, i) => {
                     const isMine = !!myTeamId && b.team?.id === myTeamId

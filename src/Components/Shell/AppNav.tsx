@@ -70,7 +70,7 @@ const LEAGUE_ITEMS: NavEntry[] = [
   // An open book, since the Record Book is what a reader comes here for.
   { key: 'history', label: 'History', path: '/history', icon: ICON('M2 4h6a2 2 0 012 2v10a2 2 0 00-2-2H2V4zm16 0h-6a2 2 0 00-2 2v10a2 2 0 012-2h6V4z') },
   // The front-office desk: draft order, the incoming class, who is out of contract, who is
-  // on the block. A league view rather than a personal one, so it sits here and not under
+  // on the trading block. A league view rather than a personal one, so it sits here and not under
   // Yours — your own team is highlighted inside it. Two arrows passing: assets changing hands.
   {
     key: 'transactions', label: 'Transactions', path: '/transactions',
