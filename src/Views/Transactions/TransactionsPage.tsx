@@ -27,6 +27,13 @@ const REASON_TEXT: Record<string, string> = {
   inquiry: 'Nobody listed him. Another team called to ask.',
 }
 
+/** 1st, 2nd, 3rd, 4th. A pick is a position in a queue, so it reads as one. */
+function ordinal(n: number): string {
+  const rem100 = n % 100
+  if (rem100 >= 11 && rem100 <= 13) return `${n}th`
+  return `${n}${['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`
+}
+
 function Crest({ team, size = 18 }: { team: { id: number; name: string } | null; size?: number }) {
   if (!team) return null
   return <img src={`/avatars/${team.id}.png`} alt="" width={size} height={size}
@@ -135,14 +142,20 @@ const TransactionsPage: React.FC = () => {
     children: React.ReactNode
   }> = ({ title, count, note, height = 360, children }) => (
     <section style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '9px', marginBottom: '7px' }}>
-        <h2 style={{ ...font(800, 12, 1, '0.08em'), color: TEXT.secondary, margin: 0, textTransform: 'uppercase' }}>
+      {/* ⚠️ SENTENCE CASE, NOT UPPERCASE. This app reserves uppercase for FIELD LABELS —
+          table heads and the facts-grid cells — and a section title is not one; the team
+          page's `SectionHead` sets the pattern ("Roster", "The Bleachers", "Pipeline"),
+          down to the rule that runs out to the right. Uppercasing them also made every
+          pane shout at the same volume as the column heads inside it. */}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '9px' }}>
+        <h2 style={{ ...font(800, 13, 1, '0.08em'), color: TEXT.strong, margin: 0, whiteSpace: 'nowrap' }}>
           {title}
         </h2>
         {count != null && (
-          <span style={{ ...font(600, 12), ...TABULAR, color: TEXT.dim }}>{count}</span>
+          <span style={{ ...font(600, 12), ...TABULAR, color: TEXT.muted }}>{count}</span>
         )}
-        {note && <span style={{ ...font(400, 11), color: TEXT.muted, marginLeft: 'auto' }}>{note}</span>}
+        {note && <span style={{ ...font(400, 12), color: TEXT.muted, whiteSpace: 'nowrap' }}>{note}</span>}
+        <span style={{ flex: 1, height: '2px', background: BORDER.hairline }} />
       </div>
       {/* ⚠️ A FLOOR AS WELL AS A CEILING. Paired panes sit on `alignItems: start`, so an
           empty one collapsed to a single line of text beside a full one and the row read
@@ -166,16 +179,22 @@ const TransactionsPage: React.FC = () => {
     </div>
   )
 
-  /** One number and what it counts. The dashboard's summary, read before any detail. */
+  /**
+   * A supporting figure. Deliberately quiet.
+   *
+   * ⚠️ SIX STATS AT ONE VOLUME IS NOT A SUMMARY, IT IS A ROW OF NUMBERS. The strip was
+   * six identical big-number/small-label cells, so nothing led and the eye had to read
+   * all six to find the one that mattered — and in the opening weeks four of them are
+   * zero, which made the whole page look empty. The lead is the reader's OWN pick,
+   * stated as a sentence; everything else sits underneath it at a smaller size.
+   */
   const Stat: React.FC<{ value: React.ReactNode; label: string; color?: string; hint?: string }> =
-    ({ value, label, color = TEXT.primary, hint }) => {
+    ({ value, label, color = TEXT.secondary, hint }) => {
       const cell = (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
-          <span style={{ ...font(800, 20), ...TABULAR, color }}>{value}</span>
-          <span style={{ ...font(600, 10, 1, '0.08em'), color: TEXT.muted, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-            {label}
-          </span>
-        </div>
+        <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px', minWidth: 0 }}>
+          <span style={{ ...font(700, 14), ...TABULAR, color }}>{value}</span>
+          <span style={{ ...font(400, 12), color: TEXT.muted, whiteSpace: 'nowrap' }}>{label}</span>
+        </span>
       )
       return hint ? <HoverTooltip text={hint}>{cell}</HoverTooltip> : cell
     }
@@ -217,26 +236,30 @@ const TransactionsPage: React.FC = () => {
 
             {/* SUMMARY. The numbers that decide whether anything below is worth reading. */}
             <div style={{
-              display: 'flex', gap: isMobile ? '22px' : '40px', flexWrap: 'wrap',
               background: BG.panel, border: `1px solid ${BORDER.hairline}`,
-              padding: isMobile ? '14px' : '15px 22px',
+              padding: isMobile ? '16px' : '18px 22px',
+              display: 'flex', flexDirection: 'column', gap: '10px',
             }}>
-              {myPick && (
-                <Stat value={`#${myPick.slot}`} label="Your pick" color={ACCENT.ownTeam}
-                  hint={`${myPick.owner?.name} picks ${myPick.slot} of ${draftOrder.length}.`} />
-              )}
-              <Stat value={prospects.length} label="In the class"
-                hint="Prospects entering the league this offseason." />
-              <Stat value={tradedCount} label="Picks traded"
-                color={tradedCount ? ACCENT.warning : TEXT.primary}
-                hint="Slots whose pick now belongs to another team." />
-              <Stat value={block.length} label="On the block"
-                color={block.length ? ACCENT.info : TEXT.primary}
-                hint="Players their team would move right now." />
-              <Stat value={leaving.length} label="Walking"
-                color={leaving.length ? ACCENT.warning : TEXT.primary}
-                hint="Past their team's re-sign limit. They leave for nothing unless traded." />
-              <Stat value={trades.length} label="Trades" hint="Completed this season." />
+              {/* The one thing a reader came for, said as a sentence rather than a tile. */}
+              <div style={{ ...font(700, isMobile ? 17 : 21, 1.25), color: TEXT.primary }}>
+                {myPick
+                  ? <>You pick <span style={{ color: ACCENT.ownTeam }}>{ordinal(myPick.slot)}</span> of {draftOrder.length}</>
+                  : <>{draftOrder.length} teams in the draft order</>}
+              </div>
+              <div style={{ display: 'flex', gap: isMobile ? '14px' : '26px', flexWrap: 'wrap' }}>
+                <Stat value={prospects.length} label="in the class"
+                  hint="Prospects entering the league this offseason." />
+                <Stat value={tradedCount} label="picks traded"
+                  color={tradedCount ? ACCENT.warning : TEXT.secondary}
+                  hint="Slots whose pick now belongs to another team." />
+                <Stat value={block.length} label="on the block"
+                  color={block.length ? ACCENT.info : TEXT.secondary}
+                  hint="Players their team would move right now." />
+                <Stat value={leaving.length} label="walking"
+                  color={leaving.length ? ACCENT.warning : TEXT.secondary}
+                  hint="Past their team's re-sign limit. They leave for nothing unless traded." />
+                <Stat value={trades.length} label="trades" hint="Completed this season." />
+              </div>
             </div>
 
             {/* THE BOARD */}
