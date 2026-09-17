@@ -164,12 +164,17 @@ const PosFilter: React.FC<{ value: PositionFilter; onChange: (p: PositionFilter)
  * the block is a story that a tab hides by construction.
  *
  * Four panes in two pairs, plus the ledger:
- *   THE BOARD      draft order beside the class. Where we pick, and who is there.
+ *   THE BOARD      rookie draft order beside the rookie class. Where we pick, and who is
+ *                  there. ⚠️ THE ROOKIE DRAFT SPECIFICALLY — this league runs two drafts,
+ *                  and the free-agency draft has its own worst-first order that this pane
+ *                  is NOT showing. The picks it overlays come from `draft_picks`, which
+ *                  are rookie picks; a reader who reads "draft order" as the FA draft
+ *                  would take the traded-pick markers to mean something they do not.
  *   THE MARKET     the block beside contract-year players. Who we could get.
  *   ACTIVITY       what has already moved.
  *
- * ⚠️ EACH PANE SCROLLS INSIDE ITSELF rather than growing the page. Contract year alone
- * runs to 150 rows on a mature league; laid out flat, the dashboard becomes a document
+ * ⚠️ EACH PANE SCROLLS INSIDE ITSELF rather than growing the page. The free-agent pane
+ * alone runs to 150 rows on a mature league; laid out flat, the dashboard becomes a document
  * you scroll for a minute, which is the thing it exists not to be. Bounded panes keep
  * every region on screen at once, which is the whole argument for dropping the tabs.
  */
@@ -282,7 +287,7 @@ const TransactionsPage: React.FC = () => {
 
             {/* THE BOARD */}
             <div style={pair}>
-              <Pane title="Draft order" count={draftOrder.length}
+              <Pane title="Rookie draft order" count={draftOrder.length}
                 note={tradedCount ? `${tradedCount} traded` : undefined}
 >
                 {draftOrder.length === 0 ? emptyPane('No order yet.') : (
@@ -307,7 +312,7 @@ const TransactionsPage: React.FC = () => {
                           <span style={{ flex: 1, minWidth: 0 }}>
                             <TeamName team={d.owner} mine={!!myTeamId && d.owner?.id === myTeamId} />
                           </span>
-                          <HoverTooltip text={`${d.originalTeam?.name ?? ''} finished here. The slot follows that record, whoever holds the pick.`}>
+                          <HoverTooltip text={`${d.originalTeam?.name ?? ''} finished here. The rookie slot follows that record, whoever holds the pick.`}>
                             <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted, width: '42px', textAlign: 'right', display: 'inline-block' }}>
                               {d.record ? `${d.record.wins}-${d.record.losses}` : '\u2013'}
                             </span>
@@ -326,7 +331,7 @@ const TransactionsPage: React.FC = () => {
                 )}
               </Pane>
 
-              <Pane title="Incoming class" count={shownProspects.length}
+              <Pane title="Rookie class" count={shownProspects.length}
                 note={classPos === 'ALL' ? 'faded = scouted upside' : `of ${prospects.length}`}
                 control={<PosFilter value={classPos} onChange={setClassPos} />}>
                 {prospects.length === 0 ? emptyPane('No class generated yet.')
@@ -388,13 +393,13 @@ const TransactionsPage: React.FC = () => {
                   })}
               </Pane>
 
-              <Pane title="Contract year" count={shownExpiring.length}
+              <Pane title="Potential free agents" count={shownExpiring.length}
                 note={contractPos === 'ALL'
                   ? (leaving.length ? `${leaving.length} leaving for nothing` : undefined)
                   : `of ${expiring.length}`}
                 control={<PosFilter value={contractPos} onChange={setContractPos} />}>
                 {expiring.length === 0 ? emptyPane('Nobody is in the last year of a contract.')
-                  : shownExpiring.length === 0 ? emptyPane(`No ${contractPos} is in a contract year.`) : (
+                  : shownExpiring.length === 0 ? emptyPane(`No ${contractPos} is out of contract.`) : (
                   [...shownExpiring].sort((a, b) => b.rating - a.rating).map((e: ExpiringPlayer, i) => {
                     const isMine = !!myTeamId && e.team?.id === myTeamId
                     return (
