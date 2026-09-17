@@ -16,16 +16,16 @@ export interface CeilingRange {
  * chart — first a band on a per-row scale, then a fixed 60-100 window with star-band
  * gridlines — and both were wrong for the same reason: the app already draws ratings as a
  * gauge on every roster plate, hover card and player page, so a prospect drawn any other
- * way cannot be compared with the players he is competing against. Same track colour, same
+ * way cannot be compared with the players they are competing against. Same track colour, same
  * 2px radius, same green/amber/red bands, same RAW 0-100 width.
  *
- * The one thing added is the part that is specific to a prospect: what he is now is a
- * FACT and where he might get to is a BELIEF, so the belief continues the same bar at
- * lower opacity rather than arriving as a second visual language. Read it as "he is here,
- * and the faint part is what the scouts think is still in there".
+ * The one thing added is the part that is specific to a prospect: what they are now is a
+ * FACT and where they might get to is a BELIEF, so the belief continues the same bar at
+ * lower opacity rather than arriving as a second visual language. Read it as "they are
+ * here, and the faint part is what the scouts think is still in there".
  *
  * ⚠️ THE FAINT SEGMENT STARTS AT HIS CURRENT RATING, not at the band's low end. The low end
- * is frequently below where he already plays, and a range that starts behind him would
+ * is frequently below where they already play, and a range that starts behind them would
  * draw backwards. The range's real information is its TOP.
  */
 const Potential: React.FC<{
@@ -65,7 +65,7 @@ export function ceilingLabel(range: CeilingRange | null): string {
 /**
  * The gauge's tooltip: three numbers, no prose.
  *
- * ⚠️ IT USED TO BE A SENTENCE — "Plays at 78 today. Your team scouts him to could reach
+ * ⚠️ IT USED TO BE A SENTENCE — "Plays at 78 today. Your team scouts them to could reach
  * 84-92. Another team sees a different range." — which is three facts and a caveat wrapped
  * in grammar you have to read to extract them from. A hover on a chart is a lookup, not a
  * paragraph.

@@ -620,7 +620,7 @@ const MoodBar: React.FC<{ label: string; value: number; color: string }> = ({ la
  * different range on the draft-class tab. That is the feature, not a bug, and
  * the copy says so rather than leaving a reader to spot the discrepancy.
  *
- * ⚠️ A LAST WINDOW IS THE STORY. A prospect who does not get promoted inside his
+ * ⚠️ A LAST WINDOW IS THE STORY. A prospect who is not promoted inside their
  * window walks for nothing, so the final year is called out rather than being
  * left as a number a reader has to do arithmetic on.
  */
@@ -640,15 +640,15 @@ const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p }) => {
           style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '15px' }} />
       </span>
       {/* ⚠️ BESIDE THE NAME, and POTENTIAL as hollow stars rather than a bar chart of the
-          scouted band. Solid is what he plays at today; hollow is what this team's scouts
-          think he could still add. The exact range stays on hover. */}
+          scouted band. Solid is what they play at today; hollow is what this team's scouts
+          think they could still add. The exact range stays on hover. */}
       <HoverTooltip content={potentialTooltip(p.rating, p.ceilingRange)}>
         <span style={{ width: '150px', display: 'inline-block', flexShrink: 0 }}>
           <Potential rating={p.rating} range={p.ceilingRange} />
         </span>
       </HoverTooltip>
       <HoverTooltip text={lastChance
-        ? 'His last window. If he is not promoted to the roster this offseason he leaves for nothing.'
+        ? 'Last window. A prospect not promoted to the roster this offseason leaves for nothing.'
         : `${p.seasonsRemaining} windows left to win a roster spot. A prospect who is never promoted walks for nothing.`}>
         <span style={{
           fontSize: '12px', width: '104px', textAlign: 'right', display: 'inline-block',
@@ -1450,7 +1450,7 @@ export default function TeamPage() {
                 style={{ marginBottom: '10px' }}
               />
               <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', maxWidth: '58ch' }}>
-                Rating is what he plays at. The bar is this team&rsquo;s scouted ceiling.
+                Rating is what they play at now. The bar is this team&rsquo;s scouted ceiling.
               </div>
               {/* ⚠️ CAPPED. The roster plates earn the full column width because they
                   carry stat bars across it; a prospect row is a name and a number, so at

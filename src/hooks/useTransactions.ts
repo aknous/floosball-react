@@ -41,10 +41,10 @@ export interface Prospect {
   playerId: number
   name: string
   position: string
-  /** A fact: what he plays at today. */
+  /** A fact: what they play at today. */
   rating: number
   tier: string | null
-  /** Scouted, and different for every team looking at him. */
+  /** Scouted, and different for every team looking at them. */
   ceilingRange: CeilingRange | null
 }
 

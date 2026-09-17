@@ -19,12 +19,12 @@ const REASON_LABEL: Record<string, string> = {
   inquiry: 'Asked about',
 }
 const REASON_TEXT: Record<string, string> = {
-  expiring_surplus: 'Out of contract and past the re-sign limit. He leaves for nothing unless someone moves.',
-  expiring_keeper: 'Out of contract but the team could keep him, so it will take a real return.',
+  expiring_surplus: 'Out of contract and past the re-sign limit. They leave for nothing unless someone moves.',
+  expiring_keeper: 'Out of contract but the team could keep them, so it will take a real return.',
   horizon_mismatch: 'Under contract for longer than this team can use, or a rental it cannot keep.',
-  locker_room: 'His attitude drags the room down every week he stays.',
-  blocked_prospect: 'A prospect is ready and stuck behind him.',
-  inquiry: 'Nobody listed him. Another team called to ask.',
+  locker_room: 'Their attitude drags the room down every week they stay.',
+  blocked_prospect: 'A prospect is ready and stuck behind them.',
+  inquiry: 'Nobody listed them. Another team called to ask.',
 }
 
 /**
@@ -61,7 +61,7 @@ const Pos: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 )
 
 /**
- * A player's name with his grade beside it.
+ * A player's name with their grade beside it.
  *
  * ⚠️ THE STARS BELONG NEXT TO THE NAME, not in a column of their own on the far side of
  * the row. They are how you read a player, so putting them a few hundred pixels away
@@ -415,7 +415,7 @@ const TransactionsPage: React.FC = () => {
                         </span>
                         <span style={{ width: '70px', textAlign: 'right' }}>
                           {e.cannotKeep && (
-                            <HoverTooltip text="His team is over its re-sign limit. He leaves for nothing unless somebody trades for him.">
+                            <HoverTooltip text="This team is over its re-sign limit. They leave for nothing unless somebody trades for them.">
                               {tag('Walking', ACCENT.warning)}
                             </HoverTooltip>
                           )}

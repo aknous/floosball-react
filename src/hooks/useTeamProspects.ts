@@ -7,11 +7,11 @@ export interface TeamProspect {
   playerId: number
   name: string
   position: string
-  /** What he plays at today. A fact. */
+  /** What they play at today. A fact. */
   rating: number
   tier: string | null
   prospectSeasons: number
-  /** Windows left before he walks. 0 means this is his last chance. */
+  /** Windows left before they walk. 0 means this is their last chance. */
   seasonsRemaining: number
   draftSeason: number | null
   isUndrafted: boolean
