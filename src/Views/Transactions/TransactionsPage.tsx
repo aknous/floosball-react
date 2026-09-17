@@ -161,10 +161,12 @@ const PosFilter: React.FC<{ value: PositionFilter; onChange: (p: PositionFilter)
  * row to find the one they care about, which is the opposite of a summary. It now names who
  * sent whom to whom, and what came back.
  *
- * ⚠️ EXPANDED, THE REASONING IS THE POINT. The assets are already in the headline; what the
- * row adds is why each side did it, which is the only part of a trade the standings can
- * never tell you. Trades settled before those columns existed carry no reasoning, so the
- * block is omitted rather than rendered empty.
+ * ⚠️ NO REASONING, DELIBERATELY (owner). The sim records why each side did it and this
+ * showed it, which turns out to be the wrong call for a FAN surface: "part of being a fan
+ * is wondering why a team made a move". Reading a trade and arguing about it is the point,
+ * and an authoritative explanation under every one removes the argument. The `seller_why`
+ * and `buyer_why` columns stay written — they cost nothing and the market harness reads
+ * them — they are simply not shown.
  */
 const TradeRowView: React.FC<{
   trade: TradeRow
@@ -175,10 +177,9 @@ const TradeRowView: React.FC<{
   const names = (list: TradeAsset[]) =>
     list.map(a => a.name).filter(Boolean).join(', ') || 'nothing'
   const when = t.phase === 'offseason' ? 'Offseason' : `Week ${t.week}`
-  const hasWhy = !!(t.sellerWhy || t.buyerWhy)
 
   /** A team's crest and name, so a reader recognises the shield before the word. */
-  const club = (team: TeamBlob | null, weight = 700) => (
+  const teamChip = (team: TeamBlob | null, weight = 700) => (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', verticalAlign: 'middle' }}>
       <Crest team={team} size={15} />
       <b style={{ ...font(weight, 13), color: TEXT.body }}>{team?.name}</b>
@@ -207,19 +208,13 @@ const TradeRowView: React.FC<{
     </li>
   )
 
-  const side = (team: TeamBlob | null, gave: TradeAsset[], why: string | null) => (
+  const side = (team: TeamBlob | null, gave: TradeAsset[]) => (
     <div style={{ minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '7px' }}>
-        {club(team, 700)}
+        {teamChip(team, 700)}
         <span style={{ ...font(400, 11), color: TEXT.muted }}>sent</span>
       </div>
       <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{gave.map(piece)}</ul>
-      {why && (
-        <div style={{
-          ...font(400, 12, 1.5), color: TEXT.muted, marginTop: '7px',
-          borderLeft: `2px solid ${BORDER.raised}`, paddingLeft: '9px',
-        }}>{why}</div>
-      )}
     </div>
   )
 
@@ -239,8 +234,8 @@ const TradeRowView: React.FC<{
         }}>&rsaquo;</span>
         {tag('Trade', ACCENT.info)}
         <span style={{ ...font(500, 13, 1.7), color: TEXT.secondary, flex: 1, minWidth: 0 }}>
-          {club(t.teamA)} sent <b style={{ color: TEXT.body }}>{names(t.aGave)}</b> to{' '}
-          {club(t.teamB)} for <b style={{ color: TEXT.body }}>{names(t.bGave)}</b>
+          {teamChip(t.teamA)} sent <b style={{ color: TEXT.body }}>{names(t.aGave)}</b> to{' '}
+          {teamChip(t.teamB)} for <b style={{ color: TEXT.body }}>{names(t.bGave)}</b>
         </span>
         <span style={{ ...font(400, 11), color: TEXT.muted, whiteSpace: 'nowrap' }}>{when}</span>
       </button>
@@ -249,13 +244,8 @@ const TradeRowView: React.FC<{
           display: 'grid', gap: '22px', padding: '4px 14px 16px 36px',
           gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
         }}>
-          {side(t.teamA, t.aGave, t.sellerWhy)}
-          {side(t.teamB, t.bGave, t.buyerWhy)}
-          {!hasWhy && (
-            <div style={{ ...font(400, 11), color: TEXT.dim, gridColumn: '1 / -1' }}>
-              No reasoning was recorded for this trade.
-            </div>
-          )}
+          {side(t.teamA, t.aGave)}
+          {side(t.teamB, t.bGave)}
         </div>
       )}
     </div>
