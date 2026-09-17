@@ -20,6 +20,7 @@ import TeamFeed from '@/Components/Sentiment/TeamFeed'
 import FrontOfficeBand from './FrontOfficeBand'
 import SectionRail, { RailSection } from './SectionRail'
 import Potential, { ceilingLabel } from '@/Components/Potential'
+import { GAUGE_TRACK, barWidth, gaugeColor } from '@/Components/Gauge'
 import { useTeamProspects, TeamProspect } from '@/hooks/useTeamProspects'
 import { quipAt } from '@/Views/FrontOffice/FacilitiesSection'
 import { fmtFramesWon } from '@/utils/framesWon'
@@ -205,17 +206,7 @@ function rgba(hex: string, alpha: number): string {
 // half-full bar and left anything under 60 (common for a non-primary
 // defender) completely empty. The bar has to agree with the number printed
 // next to it.
-const GAUGE_TRACK = '#334155'
 
-function barWidth(rating: number): number {
-  return Math.max(0, Math.min(100, rating))
-}
-
-function gaugeColor(rating: number): string {
-  if (rating >= 85) return '#22c55e'
-  if (rating >= 72) return '#f59e0b'
-  return '#ef4444'
-}
 
 /** Career status in one word — what a fan actually reads. Detail lives on the
  *  player page. */

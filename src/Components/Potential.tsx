@@ -1,5 +1,5 @@
 import React from 'react'
-import { STAR_COLORS, calcStars } from '@/Components/Stars'
+import { GAUGE_TRACK, barWidth, gaugeColor } from '@/Components/Gauge'
 
 export interface CeilingRange {
   low: number
@@ -10,95 +10,49 @@ export interface CeilingRange {
 }
 
 /**
- * The scale every prospect is drawn against.
+ * A prospect's rating gauge, with the scouted ceiling drawn on the same track.
  *
- * ⚠️ FIXED, AND SHARED BY EVERY ROW. The first version of this chart set each row's floor
- * from that row's own numbers (`min(rating, low) - 4`), which meant two bars of identical
- * length described different players and the column could not be scanned at all — the one
- * thing a chart in a list is for. A 60 is the generation floor and 100 the ceiling, so the
- * axis is the rating scale itself.
- */
-const FLOOR = 60
-const ROOF = 100
-const pct = (v: number) => ((Math.max(FLOOR, Math.min(ROOF, v)) - FLOOR) / (ROOF - FLOOR)) * 100
-
-/**
- * ⚠️ THE GRIDLINES ARE THE STAR BANDS, which is what gives the chart a meaning rather than
- * a length. `calcStars` splits the scale at these four points, so a reader can see that a
- * ceiling crosses into four-star territory instead of judging it by pixels — and the chart
- * says the same thing as the stars used everywhere else in the app, in a form that also
- * shows how much of the gap is still unproven.
- */
-const BANDS = [68, 76, 84, 92]
-
-/**
- * What a prospect is now, and where his scouts think he could get to.
+ * ⚠️ THIS IS THE HOUSE GAUGE, NOT A NEW ONE. Two earlier attempts invented their own
+ * chart — first a band on a per-row scale, then a fixed 60-100 window with star-band
+ * gridlines — and both were wrong for the same reason: the app already draws ratings as a
+ * gauge on every roster plate, hover card and player page, so a prospect drawn any other
+ * way cannot be compared with the players he is competing against. Same track colour, same
+ * 2px radius, same green/amber/red bands, same RAW 0-100 width.
  *
- *   solid      what he plays at today. A FACT.
- *   hatched    the scouted range. NOT a fact, and drawn as a span rather than a point
- *              because the band is the honest shape of it.
+ * The one thing added is the part that is specific to a prospect: what he is now is a
+ * FACT and where he might get to is a BELIEF, so the belief continues the same bar at
+ * lower opacity rather than arriving as a second visual language. Read it as "he is here,
+ * and the faint part is what the scouts think is still in there".
  *
- * ⚠️ THE TWO ARE DIFFERENT MATERIALS, not two shades of one. Fact versus belief is the
- * distinction the whole prospect feature rests on, so the solid bar is filled and the
- * range is a translucent, outlined span sitting past the end of it.
+ * ⚠️ THE FAINT SEGMENT STARTS AT HIS CURRENT RATING, not at the band's low end. The low end
+ * is frequently below where he already plays, and a range that starts behind him would
+ * draw backwards. The range's real information is its TOP.
  */
 const Potential: React.FC<{
   rating: number
   range: CeilingRange | null
   height?: number
-}> = ({ rating, range, height = 12 }) => {
-  const now = pct(rating)
-  const tier = STAR_COLORS[calcStars(rating)]
-  const low = range ? pct(Math.max(range.exact ?? range.low, rating)) : null
-  const high = range ? pct(Math.max(range.exact ?? range.high, rating)) : null
-  const ceilingTier = range ? STAR_COLORS[calcStars(range.exact ?? range.high)] : tier
+}> = ({ rating, range, height = 6 }) => {
+  const now = barWidth(rating)
+  const ceiling = range ? Math.max(range.exact ?? range.high, rating) : rating
+  const upside = barWidth(ceiling) - now
 
   return (
-    <div style={{
-      position: 'relative', height: `${height}px`, background: '#111a2b',
-      border: '1px solid #1e293b', minWidth: '120px',
+    <span style={{
+      display: 'block', height: `${height}px`, backgroundColor: GAUGE_TRACK,
+      borderRadius: '2px', overflow: 'hidden', minWidth: 0,
     }}>
-      {BANDS.map(b => (
-        <span key={b} style={{
-          position: 'absolute', left: `${pct(b)}%`, top: 0, bottom: 0, width: '1px',
-          background: '#22304a',
-        }} />
-      ))}
-      {/* the scouted range, past where he is today */}
-      {low != null && high != null && high > low && (
-        <span style={{
-          position: 'absolute', left: `${low}%`, width: `${high - low}%`, top: 0, bottom: 0,
-          background: `repeating-linear-gradient(115deg, ${ceilingTier}55 0 3px, transparent 3px 6px)`,
-          borderLeft: `1px solid ${ceilingTier}99`,
-          borderRight: `1px solid ${ceilingTier}99`,
-        }} />
-      )}
-      {/* what he plays at now */}
-      <span style={{
-        position: 'absolute', left: 0, width: `${now}%`, top: 0, bottom: 0,
-        background: tier, opacity: 0.85,
-      }} />
-    </div>
+      <span style={{ display: 'flex', height: '100%' }}>
+        <span style={{ width: `${now}%`, backgroundColor: gaugeColor(rating) }} />
+        {upside > 0 && (
+          <span style={{
+            width: `${upside}%`, backgroundColor: gaugeColor(ceiling), opacity: 0.35,
+          }} />
+        )}
+      </span>
+    </span>
   )
 }
-
-/**
- * The axis, drawn ONCE in the column header rather than under every row.
- *
- * ⚠️ A CHART IN A TABLE NEEDS ITS SCALE STATED SOMEWHERE, or every row is a length with no
- * units — but repeating it per row is the clutter that made the first attempt unreadable
- * in a 104px column. Labelling the star bands here does both jobs at once.
- */
-export const PotentialAxis: React.FC = () => (
-  <div style={{ position: 'relative', height: '12px', minWidth: '120px' }}>
-    {BANDS.map((b, i) => (
-      <span key={b} style={{
-        position: 'absolute', left: `${pct(b)}%`, top: 0,
-        fontSize: '10px', color: '#64748b', transform: 'translateX(-50%)', whiteSpace: 'nowrap',
-      }}>{i + 2}&#9733;</span>
-    ))}
-  </div>
-)
 
 /** "could reach 79-100", or the exact figure once scouting has settled on one. */
 export function ceilingLabel(range: CeilingRange | null): string {

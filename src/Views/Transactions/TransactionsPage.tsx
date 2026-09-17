@@ -5,7 +5,7 @@ import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing } fr
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
-import Potential, { PotentialAxis, ceilingLabel } from '@/Components/Potential'
+import Potential, { ceilingLabel } from '@/Components/Potential'
 import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
@@ -327,18 +327,15 @@ const TransactionsPage: React.FC = () => {
               </Pane>
 
               <Pane title="Incoming class" count={shownProspects.length}
-                note={classPos === 'ALL' ? 'solid = now, hatched = scouted' : `of ${prospects.length}`}
+                note={classPos === 'ALL' ? 'faded = scouted upside' : `of ${prospects.length}`}
                 control={<PosFilter value={classPos} onChange={setClassPos} />}>
                 {prospects.length === 0 ? emptyPane('No class generated yet.')
                   : shownProspects.length === 0 ? emptyPane(`No ${classPos} in this class.`) : (
                   <>
-                    <div style={{ ...headRow, alignItems: 'flex-end' }}>
+                    <div style={headRow}>
                       <span style={{ width: '22px' }}>#</span>
                       <span style={{ flex: 1 }}>Prospect</span>
-                      <span style={{ width: '170px' }}>
-                        <span style={{ display: 'block', marginBottom: '3px' }}>Now &amp; potential</span>
-                        <PotentialAxis />
-                      </span>
+                      <span style={{ width: '150px' }}>Now &amp; potential</span>
                     </div>
                     {/* ⚠️ RANKED, NOT PAIRED TO A SLOT. Lining prospect N up against pick N
                         would read as a prediction, and every team drafts off its own board. */}
@@ -353,7 +350,7 @@ const TransactionsPage: React.FC = () => {
                             style={{ ...font(600, 14), color: TEXT.body }} />
                         </span>
                         <HoverTooltip text={`Plays at ${Math.round(p.rating)} today. Your team scouts him to ${ceilingLabel(p.ceilingRange) || 'no clear ceiling'}. Another team sees a different range.`}>
-                          <span style={{ width: '170px', display: 'inline-block' }}>
+                          <span style={{ width: '150px', display: 'inline-block' }}>
                             <Potential rating={p.rating} range={p.ceilingRange} />
                           </span>
                         </HoverTooltip>
