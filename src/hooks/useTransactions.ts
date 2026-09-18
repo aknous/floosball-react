@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useFloosball } from '@/contexts/FloosballContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -116,6 +117,25 @@ export interface MoveRow {
   detail: string | null
 }
 
+/** A player in the offseason's actual free-agent pool (from `/api/offseason`). */
+export interface PoolFreeAgent {
+  id: number
+  name: string
+  position: string
+  rating: number
+  tier: string
+  /** No pro season played yet. */
+  isNewcomer?: boolean
+}
+
+/**
+ * ⚠️ THE OFFSEASON PHASES WHERE THE WALK-YEAR LIST IS NEXT YEAR'S. The front-office step
+ * decrements every contract and sends this year's walk-years to the pool, so from then on
+ * `expiring` (`termRemaining <= 1`) names the players who walk NEXT offseason. `post_bowl`
+ * is before that step, so its walk-year list is still this offseason's and stays.
+ */
+const POOL_PHASES = new Set(['frontoffice', 'rookie_draft', 'pre_fa', 'fa_draft', 'training'])
+
 interface UseTransactionsResult {
   loading: boolean
   error: string | null
@@ -130,6 +150,9 @@ interface UseTransactionsResult {
   block: BlockListing[]
   trades: TradeRow[]
   moves: MoveRow[]
+  /** True while the offseason is past the front office: show `freeAgentPool`, not `expiring`. */
+  showPool: boolean
+  freeAgentPool: PoolFreeAgent[]
   refetch: () => void
 }
 
@@ -143,6 +166,9 @@ interface UseTransactionsResult {
  */
 export function useTransactions(): UseTransactionsResult {
   const { getToken } = useAuth()
+  const { seasonState } = useFloosball()
+  const showPool = POOL_PHASES.has(seasonState?.offseasonPhase ?? '')
+  const [freeAgentPool, setFreeAgentPool] = useState<PoolFreeAgent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [season, setSeason] = useState(0)
@@ -162,9 +188,15 @@ export function useTransactions(): UseTransactionsResult {
     try {
       const tok = await getToken().catch(() => null)
       const headers: Record<string, string> = tok ? { Authorization: `Bearer ${tok}` } : {}
-      const [txnRes, classRes] = await Promise.all([
-        fetch(`${API_BASE}/transactions`, { headers, cache: 'reload' }),
+      // ⚠️ limit=200 (the endpoint's max): in pool mode the moves are where each free
+      // agent's OLD team comes from, and at the default 60 the free-agent draft's own picks
+      // push this offseason's walk-aways off the end.
+      const [txnRes, classRes, poolRes] = await Promise.all([
+        fetch(`${API_BASE}/transactions?limit=200`, { headers, cache: 'reload' }),
         fetch(`${API_BASE}/draft/class`, { headers, cache: 'reload' }),
+        showPool
+          ? fetch(`${API_BASE}/offseason?t=${Date.now()}`, { headers }).catch(() => null)
+          : Promise.resolve(null),
       ])
       // A stale response from an earlier render must never overwrite a newer one.
       if (id !== fetchId.current) return
@@ -191,18 +223,25 @@ export function useTransactions(): UseTransactionsResult {
         const d = (await classRes.json()).data
         setProspects(d.prospects ?? [])
       }
+      if (poolRes && poolRes.ok) {
+        const d = await poolRes.json()
+        setFreeAgentPool(d.freeAgents ?? [])
+      } else if (!showPool) {
+        setFreeAgentPool([])
+      }
     } catch {
       if (id === fetchId.current) setError('The front office is not answering right now.')
     } finally {
       if (id === fetchId.current) setLoading(false)
     }
-  }, [getToken])
+  }, [getToken, showPool])
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
   return {
     loading, error, season, week, tradingEnabled, tradeWindow,
     draftOrder, prospects, expiring, block, trades, moves,
+    showPool, freeAgentPool,
     refetch: fetchAll,
   }
 }
