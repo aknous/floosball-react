@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing, TradeRow, TradeAsset, TeamBlob } from '@/hooks/useTransactions'
+import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing, TradeRow, TradeAsset, TeamBlob, PoolFreeAgent } from '@/hooks/useTransactions'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
@@ -197,6 +197,21 @@ const PosFilter: React.FC<{ value: PositionFilter; onChange: (p: PositionFilter)
  * and `buyer_why` columns stay written — they cost nothing and the market harness reads
  * them — they are simply not shown.
  */
+/**
+ * How each kind of move reads. ⚠️ PLAIN WORDS (owner, 2026-09-18): "walked" is the
+ * sport's own term for an expiring contract and reads as jargon, so it says where the
+ * player went instead.
+ */
+const MOVE_KIND: Record<string, { label: string; color: string }> = {
+  walked:      { label: 'Free Agency', color: ACCENT.warning },
+  cut:         { label: 'Released',    color: ACCENT.negative },
+  resign:      { label: 'Re-signed',   color: ACCENT.info },
+  fa_pick:     { label: 'Signed',      color: ACCENT.success },
+  rookie_pick: { label: 'Drafted',     color: ACCENT.featured },
+  promotion:   { label: 'Promoted',    color: ACCENT.rules },
+  retirement:  { label: 'Retired',     color: TEXT.muted },
+}
+
 const TradeRowView: React.FC<{
   trade: TradeRow
   row: React.CSSProperties
@@ -313,7 +328,7 @@ const TransactionsPage: React.FC = () => {
   const myTeamId = (user as any)?.favoriteTeamId ?? null
   const {
     loading, error, season, week, tradeWindow,
-    draftOrder, prospects, expiring, block, trades, moves,
+    draftOrder, prospects, expiring, block, trades, moves, showPool, freeAgentPool,
   } = useTransactions()
 
   const [classPos, setClassPos] = useState<PositionFilter>('ALL')
@@ -324,6 +339,23 @@ const TransactionsPage: React.FC = () => {
   const shownExpiring = useMemo(
     () => (contractPos === 'ALL' ? expiring : expiring.filter(e => e.position === contractPos)),
     [expiring, contractPos])
+  const shownPool = useMemo(
+    () => (contractPos === 'ALL' ? freeAgentPool : freeAgentPool.filter(p => p.position === contractPos)),
+    [freeAgentPool, contractPos])
+  /**
+   * Who each free agent LEFT and who has since SIGNED them, from this season's moves.
+   * The pool itself carries neither: a free agent's team is just "Free Agent".
+   */
+  const { leftTeam, signedBy } = useMemo(() => {
+    const left = new Map<number, TeamBlob>()
+    const signed = new Map<number, TeamBlob>()
+    for (const m of moves) {
+      if (m.playerId == null || !m.team || !('id' in m.team)) continue
+      if (m.type === 'walked' || m.type === 'cut') left.set(m.playerId, m.team)
+      else if (m.type === 'fa_pick') signed.set(m.playerId, m.team)
+    }
+    return { leftTeam: left, signedBy: signed }
+  }, [moves])
 
   const tradedCount = useMemo(() => draftOrder.filter(d => d.traded).length, [draftOrder])
   /**
@@ -537,35 +569,77 @@ const TransactionsPage: React.FC = () => {
                   })}
               </Pane>
 
-              <Pane title="Potential free agents" count={shownExpiring.length}
-                note={contractPos === 'ALL' ? undefined : `of ${expiring.length}`}
+              {showPool ? (
+              <Pane title="Free agents" count={shownPool.length}
+                note={contractPos === 'ALL' ? undefined : `of ${freeAgentPool.length}`}
                 control={<PosFilter value={contractPos} onChange={setContractPos} />}>
-                {expiring.length === 0 ? emptyPane('Nobody is in the last year of a contract.')
-                  : shownExpiring.length === 0 ? emptyPane(`No ${contractPos} is out of contract.`) : (
-                  [...shownExpiring].sort((a, b) => b.rating - a.rating).map((e: ExpiringPlayer, i) => {
-                    const isMine = !!myTeamId && e.team?.id === myTeamId
+                {freeAgentPool.length === 0 ? emptyPane('The free-agent pool is empty.')
+                  : shownPool.length === 0 ? emptyPane(`No ${contractPos} is a free agent.`) : (
+                  [...shownPool].sort((a, b) => b.rating - a.rating).map((p: PoolFreeAgent, i) => {
+                    const from = leftTeam.get(p.id) ?? null
+                    const to = signedBy.get(p.id) ?? null
+                    const isMine = !!myTeamId && (from?.id === myTeamId || to?.id === myTeamId)
                     return (
-                      <div key={`${e.playerId}-${i}`} style={{ ...row, ...mine(isMine) }}>
-                        <Pos>{e.position}</Pos>
+                      <div key={`${p.id}-${i}`} style={{ ...row, ...mine(isMine) }}>
+                        <Pos>{p.position}</Pos>
                         <span style={{ flex: 1, minWidth: 0 }}>
-                          <NameGrade playerId={e.playerId} name={e.name} rating={e.rating} />
+                          <NameGrade playerId={p.id} name={p.name} rating={p.rating} />
                         </span>
-                        <Crest team={e.team} />
+                        <Crest team={to ?? from} />
                         <span style={teamCol}>
-                          <TeamName team={e.team} mine={isMine} />
+                          <TeamName team={to ?? from} mine={isMine} />
                         </span>
                         <span style={tagCol}>
-                          {e.cannotKeep && (
-                            <HoverTooltip text="This team is over its re-sign limit. Becomes a free agent unless traded.">
-                              {tag('Leaving', ACCENT.warning)}
+                          {to ? (
+                            <HoverTooltip text={from ? `Entered free agency from ${from.name}, signed by ${to.name}.` : `Signed by ${to.name}.`}>
+                              {tag('Signed', ACCENT.success)}
                             </HoverTooltip>
-                          )}
+                          ) : from ? (
+                            <HoverTooltip text={`Entered free agency from ${from.name} this offseason.`}>
+                              {tag('Free Agency', ACCENT.warning)}
+                            </HoverTooltip>
+                          ) : p.isNewcomer ? (
+                            <HoverTooltip text="New to the league. No pro season played yet.">
+                              {tag('New', ACCENT.info)}
+                            </HoverTooltip>
+                          ) : null}
                         </span>
                       </div>
                     )
                   })
                 )}
               </Pane>
+              ) : (
+                <Pane title="Potential free agents" count={shownExpiring.length}
+                  note={contractPos === 'ALL' ? undefined : `of ${expiring.length}`}
+                  control={<PosFilter value={contractPos} onChange={setContractPos} />}>
+                  {expiring.length === 0 ? emptyPane('Nobody is in the last year of a contract.')
+                    : shownExpiring.length === 0 ? emptyPane(`No ${contractPos} is out of contract.`) : (
+                    [...shownExpiring].sort((a, b) => b.rating - a.rating).map((e: ExpiringPlayer, i) => {
+                      const isMine = !!myTeamId && e.team?.id === myTeamId
+                      return (
+                        <div key={`${e.playerId}-${i}`} style={{ ...row, ...mine(isMine) }}>
+                          <Pos>{e.position}</Pos>
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <NameGrade playerId={e.playerId} name={e.name} rating={e.rating} />
+                          </span>
+                          <Crest team={e.team} />
+                          <span style={teamCol}>
+                            <TeamName team={e.team} mine={isMine} />
+                          </span>
+                          <span style={tagCol}>
+                            {e.cannotKeep && (
+                              <HoverTooltip text="This team is over its re-sign limit. Becomes a free agent unless traded.">
+                                {tag('Leaving', ACCENT.warning)}
+                              </HoverTooltip>
+                            )}
+                          </span>
+                        </div>
+                      )
+                    })
+                  )}
+                </Pane>
+              )}
             </div>
 
             {/* WHAT HAS ALREADY MOVED */}
@@ -575,16 +649,39 @@ const TransactionsPage: React.FC = () => {
                   {trades.map(t => (
                     <TradeRowView key={`t${t.id}`} trade={t} row={row} tag={tag} />
                   ))}
-                  {moves.map((m, i) => (
-                    <div key={`m${i}`} style={{ ...row, flexWrap: 'wrap' }}>
-                      {tag(m.type.replace(/_/g, ' '), TEXT.muted)}
-                      <span style={{ ...font(500, 13), color: TEXT.secondary, flex: 1, minWidth: '180px' }}>
-                        <PlayerLink playerId={m.playerId} playerName={m.player || 'Someone'}
-                          style={{ ...font(600, 13), color: TEXT.body }} />
-                        {m.team?.name ? <span style={{ color: TEXT.muted }}> {m.team.name}</span> : null}
-                      </span>
-                    </div>
-                  ))}
+                  {moves.map((m, i) => {
+                    const kind = MOVE_KIND[m.type] ?? { label: m.type.replace(/_/g, ' '), color: TEXT.muted }
+                    const team = m.team && 'id' in m.team ? m.team : null
+                    const isMine = !!myTeamId && team?.id === myTeamId
+                    return (
+                      <div key={`m${i}`} style={{
+                        ...row, flexWrap: 'wrap',
+                        boxShadow: `inset 3px 0 0 ${kind.color}`,
+                        // Your team's rows keep the own-team highlight over the move color.
+                        ...mine(isMine),
+                      }}>
+                        <span style={{ width: '112px', flexShrink: 0 }}>{tag(kind.label, kind.color)}</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '180px' }}>
+                          <PlayerLink playerId={m.playerId} playerName={m.player || 'Someone'}
+                            style={{ ...font(600, 13), color: TEXT.body }} />
+                          {m.rating != null && m.rating > 0 && (
+                            <Stars stars={calcStars(m.rating)} size={11} />
+                          )}
+                          {m.position && m.position !== '—' && (
+                            <span style={{ ...font(700, 11, 1, '0.02em'), color: TEXT.muted }}>{m.position}</span>
+                          )}
+                        </span>
+                        {team ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', ...teamCol }}>
+                            <Crest team={team} size={17} />
+                            <TeamName team={team} mine={isMine} />
+                          </span>
+                        ) : m.team?.name ? (
+                          <span style={{ ...font(500, 13), color: TEXT.muted, ...teamCol }}>{m.team.name}</span>
+                        ) : null}
+                      </div>
+                    )
+                  })}
                 </>
               )}
             </Pane>
