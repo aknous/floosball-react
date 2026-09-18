@@ -27,7 +27,7 @@ const REASON_LABEL: Record<string, string> = {
 const REASON_TEXT: Record<string, string> = {
   expiring_surplus: 'Out of contract and past the re-sign limit. Becomes a free agent unless traded.',
   expiring_keeper: 'Out of contract but the team could keep them, so it will take a real return.',
-  horizon_mismatch: 'Under contract for longer than this team can use, or a rental it cannot keep.',
+  horizon_mismatch: 'Signed past the years this team is built to win in. Its core is aging out, so it wants help now.',
   locker_room: 'Their attitude drags the room down every week they stay.',
   blocked_prospect: 'A prospect is ready and stuck behind them.',
   inquiry: 'Nobody listed them. Another team called to ask.',
