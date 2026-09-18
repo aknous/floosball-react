@@ -50,7 +50,7 @@ interface FreeAgent {
   isNewcomer?: boolean
 }
 
-type TransactionType = 'pick' | 'cut' | 'expired' | 'rookie_pick' | 'rookie_skip' | 'resign' | 'promotion'
+type TransactionType = 'pick' | 'cut' | 'expired' | 'rookie_pick' | 'rookie_skip' | 'resign' | 'promotion' | 'trade'
 
 interface Transaction {
   type: TransactionType
@@ -63,6 +63,10 @@ interface Transaction {
   tier?: string
   offensiveRating?: number
   defensiveRating?: number
+  // Trades only: the other club, and what each side sent.
+  counterpartAbbr?: string
+  gave?: string
+  got?: string
 }
 
 interface SetupPlayer {
@@ -89,6 +93,11 @@ interface DraftTeam {
   color?: string
   complete?: boolean
   appeal?: number
+  // Draft position. A club holding a traded pick can appear in more than one slot.
+  slot?: number
+  traded?: boolean
+  // The club whose finish put the pick in this slot, when it has been traded away.
+  originalTeam?: { id?: number; name: string; abbr: string }
 }
 
 interface RosterPlayer {
@@ -102,6 +111,29 @@ interface RosterPlayer {
 
 type TeamRosterData = Record<string, RosterPlayer | null>
 
+interface RookieEntry {
+  id: number
+  name: string
+  position: string
+  rating: number
+  tier?: string | null
+}
+
+/** Offseason phases where the board is the ROOKIE draft order, so pick trades apply. */
+const ROOKIE_ORDER_PHASES = new Set(['post_bowl', 'frontoffice', 'rookie_draft'])
+
+/** A trade belongs to both clubs in it, so it files under either one. */
+const involvesTeam = (tx: Transaction, abbr: string): boolean =>
+  tx.teamAbbr === abbr || tx.counterpartAbbr === abbr
+
+/** "sends X to ABC for Y". Rows written before trades carried both sides
+ *  fall back to the names the old entry held. */
+const tradeSummary = (tx: Transaction, withTeam: boolean): string => {
+  const lead = withTeam && tx.teamAbbr ? `${tx.teamAbbr} ` : ''
+  if (!tx.counterpartAbbr) return `${lead}traded ${tx.playerName}`
+  return `${lead}sends ${tx.gave ?? tx.playerName} to ${tx.counterpartAbbr} for ${tx.got ?? 'nothing'}`
+}
+
 export const OffseasonPanel: React.FC = () => {
   const { event } = useSeasonWebSocket()
   const { user, getToken } = useAuth()
@@ -114,7 +146,15 @@ export const OffseasonPanel: React.FC = () => {
   // Which phase of the offseason is actively streaming picks. Set by
   // offseason_predraft_start, fa_draft_order_update.
   // Drives the header label, team-row grouping, and right-panel content.
-  const [currentPhase, setCurrentPhase] = useState<'predraft' | 'free_agency' | null>(null)
+  const [currentPhase, setCurrentPhase] = useState<'predraft' | 'rookie_draft' | 'free_agency' | null>(null)
+  // Rookie draft progress, by BOARD ROW rather than by team: a team holding a traded
+  // pick has two rows, so "is this team on the clock" cannot tell them apart.
+  // `resolved` = rows already picked or skipped; the row on the clock is the next one.
+  const [rookieClass, setRookieClass] = useState<RookieEntry[]>([])
+  const [rookieResolved, setRookieResolved] = useState(0)
+  const [rookieOnClock, setRookieOnClock] = useState(false)
+  const rookieResolvedRef = useRef(0)
+  const setResolved = (n: number) => { rookieResolvedRef.current = n; setRookieResolved(n) }
   const [predraftSetups, setPredraftSetups] = useState<Record<string, TeamSetup>>({})
   // Once the user manually expands a team, auto-expand during the predraft
   // roll-through stops taking over — they're reading the UI on their terms.
@@ -164,10 +204,13 @@ export const OffseasonPanel: React.FC = () => {
   useEffect(() => {
     const NEXT_LABEL: Record<string, string> = {
       post_bowl: 'Offseason',
-      frontoffice: 'Free Agency',
+      // The front office holds until draft day, and the rookie draft runs first.
+      // Matches the Navbar's labels.
+      frontoffice: 'Rookie Draft',
       pre_fa: 'Free Agency',
     }
     const ACTIVE_LABEL: Record<string, string> = {
+      rookie_draft: 'Rookie Draft',
       fa_draft: 'Free Agency',
       training: 'Offseason Training',
     }
@@ -246,7 +289,50 @@ export const OffseasonPanel: React.FC = () => {
     fetchScouting()
   }, [faWindowOpen, getToken])
 
-  // Initial load from REST
+  /**
+   * ⚠️ TRADED PICKS, FROM THE TRANSACTIONS DESK. `/api/offseason` serves the rookie order
+   * as a list of teams in standings order, which cannot say who OWNS each pick; the draft
+   * itself hands a traded slot to its buyer. `/api/transactions` already resolves
+   * ownership per original team, so the board takes the owner from there. A backend that
+   * resolves it itself sends `traded` on each row, and then this does nothing.
+   * ⚠️ Only good until the draft starts: the desk ignores picks once they are spent, so a
+   * reload mid-draft falls back to standings order. The live on-the-clock events still
+   * name the right team.
+   */
+  const overlayPickOwnership = async (order: DraftTeam[], headers: Record<string, string>): Promise<DraftTeam[]> => {
+    const numbered = order.map((r, i) => ({ ...r, slot: r.slot ?? i + 1 }))
+    if (order.some(r => r.traded !== undefined)) return numbered
+    try {
+      const res = await fetch(`${API_BASE}/transactions`, { headers, cache: 'reload' })
+      if (!res.ok) return numbered
+      const slots: Array<{ originalTeam: { id: number } | null; owner: { id: number; name: string; abbr: string; color: string | null } | null; traded: boolean }> =
+        (await res.json()).data?.draftOrder ?? []
+      const ownerByOriginal = new Map<number, { id: number; name: string; abbr: string; color: string | null }>()
+      for (const s of slots) {
+        if (s.traded && s.originalTeam && s.owner) ownerByOriginal.set(s.originalTeam.id, s.owner)
+      }
+      return numbered.map(r => {
+        const owner = r.id != null ? ownerByOriginal.get(r.id) : undefined
+        if (!owner) return r
+        const ownerRow = order.find(t => t.id === owner.id)
+        return {
+          ...r,
+          id: owner.id, abbr: owner.abbr, name: ownerRow?.name ?? owner.name,
+          city: ownerRow?.city ?? '', color: owner.color ?? ownerRow?.color,
+          complete: ownerRow?.complete ?? false,
+          traded: true,
+          originalTeam: { id: r.id, name: r.name, abbr: r.abbr },
+        }
+      })
+    } catch {
+      return numbered
+    }
+  }
+
+  const offseasonPhaseForBoard = seasonState?.offseasonPhase ?? null
+
+  // Initial load from REST. Re-runs when the offseason phase moves, so the board
+  // picks up the order the new phase uses.
   useEffect(() => {
     const fetchOffseason = async () => {
       try {
@@ -256,7 +342,10 @@ export const OffseasonPanel: React.FC = () => {
         const res = await fetch(`${API_BASE}/offseason?t=${Date.now()}`, { headers })
         const data = await res.json()
         setFreeAgents(data.freeAgents || [])
-        const order: DraftTeam[] = data.draftOrder || []
+        let order: DraftTeam[] = data.draftOrder || []
+        if (order.length > 0 && ROOKIE_ORDER_PHASES.has(offseasonPhaseForBoard ?? '')) {
+          order = await overlayPickOwnership(order, headers)
+        }
         setDraftOrder(order)
         // Restore completed teams from backend state
         const done = new Set<string>(order.filter(t => t.complete).map(t => t.abbr))
@@ -300,6 +389,9 @@ export const OffseasonPanel: React.FC = () => {
               position: entry.position,
               rating: entry.rating,
               tier: entry.tier,
+              counterpartAbbr: entry.counterpartAbbr,
+              gave: entry.gave,
+              got: entry.got,
             })
           }
           setPredraftSetups(setupMap)
@@ -329,6 +421,23 @@ export const OffseasonPanel: React.FC = () => {
         if (data.phase && (data.phase === 'predraft' || data.phase === 'free_agency')) {
           setCurrentPhase(data.phase)
         }
+        if (data.phase === 'rookie_draft') {
+          // Mid-draft reload: every pick or skip so far resolved one board row.
+          setCurrentPhase('rookie_draft')
+          const resolved = (data.transactions || []).filter(
+            (t: { type?: string }) => t.type === 'rookie_pick' || t.type === 'rookie_skip').length
+          setResolved(resolved)
+          // The class list only rides the start event; after a reload, the players
+          // still undrafted come from the draft-class endpoint.
+          fetch(`${API_BASE}/draft/class`, { headers, cache: 'reload' })
+            .then(r => (r.ok ? r.json() : null))
+            .then(d => {
+              const ps = d?.data?.prospects ?? []
+              setRookieClass(ps.map((p: { playerId: number; name: string; position: string; rating: number; tier?: string | null }) => (
+                { id: p.playerId, name: p.name, position: p.position, rating: p.rating, tier: p.tier })))
+            })
+            .catch(() => {})
+        }
         // If draft already finished, mark complete and clear on-the-clock
         if (data.draftComplete) {
           setIsComplete(true)
@@ -339,7 +448,8 @@ export const OffseasonPanel: React.FC = () => {
       }
     }
     fetchOffseason()
-  }, [getToken])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getToken, offseasonPhaseForBoard])
 
   // Auto-fetch roster when a team is expanded and not yet cached
   useEffect(() => {
@@ -547,6 +657,68 @@ export const OffseasonPanel: React.FC = () => {
           })
         }
       }
+    } else if (e.event === 'rookie_draft_start') {
+      const ev = e as { rookies?: RookieEntry[] }
+      setCurrentPhase('rookie_draft')
+      setRookieClass(ev.rookies || [])
+      setResolved(0)
+      setRookieOnClock(false)
+      setCurrentTeamAbbr(null)
+      setIsComplete(false)
+    } else if (e.event === 'rookie_draft_on_clock') {
+      const ev = e as { teamAbbr: string }
+      setCurrentPhase('rookie_draft')
+      setRookieOnClock(true)
+      setCurrentTeamAbbr(ev.teamAbbr)
+    } else if (e.event === 'rookie_draft_pick') {
+      const ev = e as { team: string; teamAbbr: string; playerId?: number; player: string; position: string; rating: number; tier?: string }
+      setTransactions(prev => [{
+        type: 'rookie_pick', teamName: ev.team, teamAbbr: ev.teamAbbr,
+        playerId: ev.playerId, playerName: ev.player, position: ev.position,
+        rating: ev.rating, tier: ev.tier,
+      }, ...prev])
+      setTabNotify(prev => prev.transactions ? prev : { ...prev, transactions: rightTab !== 'transactions' })
+      setResolved(rookieResolvedRef.current + 1)
+      setRookieOnClock(false)
+    } else if (e.event === 'rookie_draft_skip') {
+      const ev = e as { team: string; teamAbbr: string; reason?: string }
+      setTransactions(prev => [{
+        type: 'rookie_skip', teamName: ev.team, teamAbbr: ev.teamAbbr,
+        playerName: ev.reason === 'pipeline_full' ? '(pipeline full, forfeited pick)' : '(no eligible rookies)',
+        position: '—', rating: 0,
+      }, ...prev])
+      setResolved(rookieResolvedRef.current + 1)
+      setRookieOnClock(false)
+    } else if (e.event === 'rookie_draft_pick_traded') {
+      // A team that could not use its slot sold it mid-draft. The buyer picks from the
+      // same row, so the row changes hands rather than resolving.
+      const ev = e as { team: string; teamAbbr: string; to: string; toAbbr: string; forSeason: number }
+      setTransactions(prev => [{
+        type: 'trade', teamName: ev.team, teamAbbr: ev.teamAbbr, counterpartAbbr: ev.toAbbr,
+        gave: 'their draft slot', got: `a Season ${ev.forSeason} pick`,
+        playerName: 'their draft slot', position: '—', rating: 0,
+      }, ...prev])
+      setTabNotify(prev => prev.transactions ? prev : { ...prev, transactions: rightTab !== 'transactions' })
+      const rowIdx = rookieResolvedRef.current
+      setDraftOrder(prev => {
+        const row = prev[rowIdx]
+        if (!row) return prev
+        const buyer = prev.find(t => t.abbr === ev.toAbbr)
+        const next = [...prev]
+        next[rowIdx] = {
+          ...row,
+          id: buyer?.id, name: buyer?.name ?? ev.to, city: buyer?.city ?? '',
+          abbr: ev.toAbbr, color: buyer?.color,
+          traded: true,
+          originalTeam: row.originalTeam ?? { id: row.id, name: row.name, abbr: row.abbr },
+        }
+        return next
+      })
+      setCurrentTeamAbbr(ev.toAbbr)
+    } else if (e.event === 'rookie_draft_complete') {
+      setResolved(Number.MAX_SAFE_INTEGER)
+      setRookieOnClock(false)
+      setCurrentTeamAbbr(null)
     } else if (e.event === 'offseason_predraft_complete') {
       setCurrentPhase(null)
       setCurrentTeamAbbr(null)
@@ -620,6 +792,19 @@ export const OffseasonPanel: React.FC = () => {
     [cyclicOrder]
   )
 
+  // Rookie class, best first, with who took each one (from the live pick stream).
+  const draftedBy = useMemo(() => {
+    const m = new Map<number, string>()
+    for (const tx of transactions) {
+      if (tx.type === 'rookie_pick' && tx.playerId != null) m.set(tx.playerId, tx.teamAbbr)
+    }
+    return m
+  }, [transactions])
+  const filteredRookies = useMemo(() => {
+    const list = posFilter === 'ALL' ? rookieClass : rookieClass.filter(r => r.position === posFilter)
+    return [...list].sort((a, b) => b.rating - a.rating)
+  }, [rookieClass, posFilter])
+
   const filteredAgents = posFilter === 'ALL'
     ? freeAgents
     : freeAgents.filter(fa => fa.position === posFilter)
@@ -643,22 +828,26 @@ export const OffseasonPanel: React.FC = () => {
     const seen = new Set<string>()
     const ordered: { abbr: string; name: string }[] = []
     for (const t of draftOrder) {
-      if (!seen.has(t.abbr) && transactions.some(tx => tx.teamAbbr === t.abbr)) {
+      if (!seen.has(t.abbr) && transactions.some(tx => involvesTeam(tx, t.abbr))) {
         seen.add(t.abbr)
         ordered.push({ abbr: t.abbr, name: t.name })
       }
     }
     for (const tx of transactions) {
-      if (!seen.has(tx.teamAbbr)) {
+      if (tx.teamAbbr && !seen.has(tx.teamAbbr)) {
         seen.add(tx.teamAbbr)
         ordered.push({ abbr: tx.teamAbbr, name: tx.teamName })
+      }
+      if (tx.counterpartAbbr && !seen.has(tx.counterpartAbbr)) {
+        seen.add(tx.counterpartAbbr)
+        ordered.push({ abbr: tx.counterpartAbbr, name: tx.counterpartAbbr })
       }
     }
     return ordered
   }, [transactions, draftOrder])
 
   const filteredTransactions = teamFilter
-    ? transactions.filter(tx => tx.teamAbbr === teamFilter)
+    ? transactions.filter(tx => involvesTeam(tx, teamFilter))
     : transactions
 
   const posPillStyle = (pos: string): React.CSSProperties => ({
@@ -685,10 +874,10 @@ export const OffseasonPanel: React.FC = () => {
           {currentPhase && (
             <span style={{
               fontSize: '12px', fontWeight: '700',
-              color: currentPhase === 'predraft' ? '#38bdf8' : '#f59e0b',
+              color: currentPhase === 'predraft' ? '#38bdf8' : currentPhase === 'rookie_draft' ? '#a78bfa' : '#f59e0b',
               letterSpacing: '0.02em', textTransform: 'uppercase' as const,
             }}>
-              · {currentPhase === 'predraft' ? 'Team Setup' : 'Free Agency'}
+              · {currentPhase === 'predraft' ? 'Team Setup' : currentPhase === 'rookie_draft' ? 'Rookie Draft' : 'Free Agency'}
             </span>
           )}
           {!currentPhase && phaseLabel && (
@@ -790,7 +979,11 @@ export const OffseasonPanel: React.FC = () => {
             <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
               Teams
             </span>
-            {!isComplete && completedTeams.size > 0 && (
+            {currentPhase === 'rookie_draft' ? (
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                {Math.min(rookieResolved, draftOrder.length)}/{draftOrder.length} picks
+              </span>
+            ) : !isComplete && completedTeams.size > 0 && (
               <span style={{ fontSize: '12px', color: '#94a3b8' }}>
                 {completedTeams.size}/{draftOrder.length} done
               </span>
@@ -809,20 +1002,28 @@ export const OffseasonPanel: React.FC = () => {
                 <>Waiting for the offseason to begin…</>
               )}
               <div style={{ marginTop: '8px', fontSize: '11px', color: '#64748b' }}>
-                Coach decisions, re-signs, cuts, and the FA pool have been resolved. Free agency is next.
+                Coach decisions, re-signs, cuts, and the FA pool have been resolved. The rookie draft is next, then free agency.
               </div>
             </div>
           ) : (
             teamGroups.map(group => (
               <React.Fragment key={group.tier ?? 'flat'}>
                 {group.teams.map((team, i) => {
-              const isCurrent = team.abbr === currentTeamAbbr && !isComplete
-              const isDone = completedTeams.has(team.abbr) || isComplete
+              const inRookieDraft = currentPhase === 'rookie_draft'
+              const isCurrent = inRookieDraft
+                ? rookieOnClock && i === rookieResolved
+                : team.abbr === currentTeamAbbr && !isComplete
+              const isDone = inRookieDraft
+                ? i < rookieResolved
+                : completedTeams.has(team.abbr) || isComplete
+              // A club holding a traded pick has more than one row. Expansion is
+              // keyed by club, so only its first row opens.
               const isExpanded = expandedTeam === team.abbr
+                && group.teams.findIndex(t => t.abbr === team.abbr) === i
               const isFavorite = team.abbr === favoriteTeamAbbr
               const roster = rosterCache[team.abbr]
               const loading = rosterLoading.has(team.abbr)
-              const teamTxs = transactions.filter(tx => tx.teamAbbr === team.abbr)
+              const teamTxs = transactions.filter(tx => involvesTeam(tx, team.abbr))
               // Map player name → most-recent transaction type so the
               // roster slot badge reflects the latest action. transactions
               // is stored newest-first (new entries are prepended), so we
@@ -839,7 +1040,7 @@ export const OffseasonPanel: React.FC = () => {
               }
 
               return (
-                <div key={team.abbr}>
+                <div key={`${team.slot ?? i}-${team.abbr}`}>
 
                   {/* Team row (clickable) */}
                   <div
@@ -864,6 +1065,11 @@ export const OffseasonPanel: React.FC = () => {
                       userSelect: 'none',
                     }}
                   >
+                    {team.slot != null && (
+                      <span style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8', minWidth: '18px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        {team.slot}
+                      </span>
+                    )}
                     <img
                       src={`/avatars/${team.id ?? team.abbr}.png`}
                       alt={team.abbr}
@@ -883,6 +1089,15 @@ export const OffseasonPanel: React.FC = () => {
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {team.city ? `${team.city} ${team.name}` : team.name}
                       </span>
+                      {team.traded && team.originalTeam && (
+                        <span style={{
+                          fontSize: '10px', fontWeight: '700', color: '#2dd4bf', flexShrink: 0,
+                          backgroundColor: 'rgba(45,212,191,0.12)', border: '1px solid rgba(45,212,191,0.3)',
+                          padding: '2px 6px', borderRadius: '3px', letterSpacing: '0.02em',
+                        }}>
+                          VIA {team.originalTeam.abbr}
+                        </span>
+                      )}
                     </span>
                     {isCurrent && (
                       <span style={{
@@ -982,14 +1197,15 @@ export const OffseasonPanel: React.FC = () => {
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                             {teamTxs.map((tx, idx) => {
-                              const badge = tx.type === 'cut' ? { label: 'CUT', color: '#ef4444' }
+                              const badge = tx.type === 'trade' ? { label: 'TRADE', color: '#2dd4bf' }
+                                : tx.type === 'cut' ? { label: 'CUT', color: '#ef4444' }
                                 : tx.type === 'expired' ? { label: 'TO FA', color: '#a16207' }
                                 : tx.type === 'rookie_skip' ? { label: 'SKIP', color: '#64748b' }
                                 : tx.type === 'rookie_pick' ? { label: 'DRAFT', color: '#a78bfa' }
                                 : tx.type === 'promotion' ? { label: 'PROMOTED', color: '#f59e0b' }
                                 : tx.type === 'resign' ? { label: 'RE-SIGN', color: '#38bdf8' }
                                 : { label: 'SIGN', color: '#22c55e' }
-                              const showStars = tx.type !== 'rookie_skip'
+                              const showStars = tx.type !== 'rookie_skip' && tx.type !== 'trade'
                               return (
                                 <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px' }}>
                                   <span style={{
@@ -1005,12 +1221,18 @@ export const OffseasonPanel: React.FC = () => {
                                       <Stars stars={calcStars(tx.rating)} size={10} />
                                     )
                                   )}
-                                  <PlayerLink
-                                    playerId={tx.playerId}
-                                    playerName={tx.playerName}
-                                    style={{ flex: 1, color: '#e2e8f0' }}
-                                  />
-                                  <span style={{ color: '#64748b', fontSize: '12px' }}>{tx.position}</span>
+                                  {tx.type === 'trade' ? (
+                                    <span style={{ flex: 1, color: '#e2e8f0' }}>{tradeSummary(tx, true)}</span>
+                                  ) : (
+                                    <>
+                                      <PlayerLink
+                                        playerId={tx.playerId}
+                                        playerName={tx.playerName}
+                                        style={{ flex: 1, color: '#e2e8f0' }}
+                                      />
+                                      <span style={{ color: '#64748b', fontSize: '12px' }}>{tx.position}</span>
+                                    </>
+                                  )}
                                 </div>
                               )
                             })}
@@ -1039,7 +1261,9 @@ export const OffseasonPanel: React.FC = () => {
           <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px', flexShrink: 0 }}>
             {(['players', 'directives', 'transactions'] as const).map(tab => {
               const isActive = rightTab === tab
-              const playersLabel = `Players${freeAgents.length > 0 ? ` (${freeAgents.length})` : ''}`
+              const playersLabel = currentPhase === 'rookie_draft'
+                ? `Rookies${rookieClass.length > 0 ? ` (${rookieClass.length})` : ''}`
+                : `Players${freeAgents.length > 0 ? ` (${freeAgents.length})` : ''}`
               const label = tab === 'players' ? playersLabel
                 : tab === 'directives' ? 'Directives'
                 : `Transactions${transactions.length > 0 ? ` (${transactions.length})` : ''}`
@@ -1076,8 +1300,53 @@ export const OffseasonPanel: React.FC = () => {
             })}
           </div>
 
+          {/* Players tab during the rookie draft: the class, with who took each rookie */}
+          {rightTab === 'players' && currentPhase === 'rookie_draft' && (
+            <>
+              <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px' }}>
+                {POSITIONS.map(pos => (
+                  <button key={pos} style={posPillStyle(pos)} onClick={() => setPosFilter(pos)}>
+                    {pos}
+                  </button>
+                ))}
+              </div>
+              <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '640px', overflowY: 'auto' }}>
+                {filteredRookies.length === 0 ? (
+                  <div style={{ color: '#94a3b8', fontSize: '13px', padding: '10px 6px' }}>
+                    {rookieClass.length === 0 ? 'The rookie class appears here when the draft starts.' : 'No rookies at this position.'}
+                  </div>
+                ) : (
+                  filteredRookies.map((r, i) => {
+                    const takenBy = draftedBy.get(r.id) ?? null
+                    return (
+                      <div
+                        key={`${r.id}-${i}`}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '4px', padding: '5px 8px', fontSize: '13px', opacity: takenBy ? 0.5 : 1 }}
+                      >
+                        <Stars stars={calcStars(r.rating)} />
+                        <span style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                          <PlayerLink playerId={r.id} playerName={r.name} style={{ color: '#e2e8f0' }} />
+                        </span>
+                        {takenBy && (
+                          <span style={{
+                            fontSize: '10px', fontWeight: '700', color: '#a78bfa',
+                            backgroundColor: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.3)',
+                            padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.02em', flexShrink: 0,
+                          }}>
+                            {takenBy}
+                          </span>
+                        )}
+                        <span style={{ fontSize: '12px', color: '#64748b', minWidth: '22px', textAlign: 'right' }}>{r.position}</span>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </>
+          )}
+
           {/* Players tab — the free agent pool */}
-          {rightTab === 'players' && (
+          {rightTab === 'players' && currentPhase !== 'rookie_draft' && (
             <>
               <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px' }}>
                 {POSITIONS.map(pos => (
@@ -1291,14 +1560,15 @@ export const OffseasonPanel: React.FC = () => {
                   </div>
                   <div style={{ maxHeight: '640px', overflowY: 'auto' }}>
                     {filteredTransactions.map((tx, i) => {
-                      const badge = tx.type === 'cut' ? { label: 'CUT', color: '#ef4444', bg: 'rgba(239,68,68,0.04)' }
+                      const badge = tx.type === 'trade' ? { label: 'TRADE', color: '#2dd4bf', bg: 'rgba(45,212,191,0.05)' }
+                        : tx.type === 'cut' ? { label: 'CUT', color: '#ef4444', bg: 'rgba(239,68,68,0.04)' }
                         : tx.type === 'expired' ? { label: 'TO FA', color: '#a16207', bg: 'rgba(161,98,7,0.05)' }
                         : tx.type === 'rookie_skip' ? { label: 'SKIP', color: '#64748b', bg: 'transparent' }
                         : tx.type === 'rookie_pick' ? { label: 'DRAFT', color: '#a78bfa', bg: 'rgba(167,139,250,0.05)' }
                         : tx.type === 'promotion' ? { label: 'PROMOTED', color: '#f59e0b', bg: 'rgba(245,158,11,0.06)' }
                         : tx.type === 'resign' ? { label: 'RE-SIGN', color: '#38bdf8', bg: 'rgba(56,189,248,0.05)' }
                         : { label: 'SIGN', color: '#22c55e', bg: 'rgba(34,197,94,0.04)' }
-                      const showStars = tx.type !== 'rookie_skip'
+                      const showStars = tx.type !== 'rookie_skip' && tx.type !== 'trade'
                       return (
                         <div
                           key={i}
@@ -1317,11 +1587,15 @@ export const OffseasonPanel: React.FC = () => {
                           <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', minWidth: '34px' }}>
                             {tx.teamAbbr}
                           </span>
-                          <PlayerLink
-                            playerId={tx.playerId}
-                            playerName={tx.playerName}
-                            style={{ flex: 1, fontSize: '13px', color: '#e2e8f0' }}
-                          />
+                          {tx.type === 'trade' ? (
+                            <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0' }}>{tradeSummary(tx, false)}</span>
+                          ) : (
+                            <PlayerLink
+                              playerId={tx.playerId}
+                              playerName={tx.playerName}
+                              style={{ flex: 1, fontSize: '13px', color: '#e2e8f0' }}
+                            />
+                          )}
                           {showStars && (
                             tx.offensiveRating != null && tx.defensiveRating != null ? (
                               <DualStars offensiveStars={calcStars(tx.offensiveRating)} defensiveStars={calcStars(tx.defensiveRating)} size={10} />
@@ -1329,7 +1603,9 @@ export const OffseasonPanel: React.FC = () => {
                               <Stars stars={calcStars(tx.rating)} size={13} />
                             )
                           )}
-                          <span style={{ fontSize: '12px', color: '#64748b' }}>{tx.position}</span>
+                          {tx.type !== 'trade' && (
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>{tx.position}</span>
+                          )}
                         </div>
                       )
                     })}
