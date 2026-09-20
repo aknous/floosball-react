@@ -27,7 +27,7 @@ const REASON_LABEL: Record<string, string> = {
 const REASON_TEXT: Record<string, string> = {
   expiring_surplus: 'Out of contract and past the re-sign limit. Becomes a free agent unless traded.',
   expiring_keeper: 'Out of contract but the team could keep them, so it will take a real return.',
-  horizon_mismatch: 'Under contract for longer than this team can use, or a rental it cannot keep.',
+  horizon_mismatch: 'Signed past the years this team is built to win in. Its core is aging out, so it wants help now.',
   locker_room: 'Their attitude drags the room down every week they stay.',
   blocked_prospect: 'A prospect is ready and stuck behind them.',
   inquiry: 'Nobody listed them. Another team called to ask.',
@@ -346,16 +346,34 @@ const TransactionsPage: React.FC = () => {
    * Who each free agent LEFT and who has since SIGNED them, from this season's moves.
    * The pool itself carries neither: a free agent's team is just "Free Agent".
    */
+  /**
+   * ⚠️ A SIGNING'S TEAM ARRIVES WITH NO ID, so its crest had nothing to load while every
+   * other move had one: `fa_pick` recap events are written without the team id and fall
+   * back to a bare name. The draft order carries every club's full blob, so the name
+   * resolves to one here.
+   */
+  const teamByName = useMemo(() => {
+    const m = new Map<string, TeamBlob>()
+    for (const d of draftOrder) {
+      for (const t of [d.originalTeam, d.owner]) {
+        if (t?.name) m.set(t.name, t)
+      }
+    }
+    return m
+  }, [draftOrder])
+
   const { leftTeam, signedBy } = useMemo(() => {
     const left = new Map<number, TeamBlob>()
     const signed = new Map<number, TeamBlob>()
     for (const m of moves) {
-      if (m.playerId == null || !m.team || !('id' in m.team)) continue
-      if (m.type === 'walked' || m.type === 'cut') left.set(m.playerId, m.team)
-      else if (m.type === 'fa_pick') signed.set(m.playerId, m.team)
+      const team = m.team && 'id' in m.team ? m.team
+        : m.team?.name ? teamByName.get(m.team.name) ?? null : null
+      if (m.playerId == null || !team) continue
+      if (m.type === 'walked' || m.type === 'cut') left.set(m.playerId, team)
+      else if (m.type === 'fa_pick') signed.set(m.playerId, team)
     }
     return { leftTeam: left, signedBy: signed }
-  }, [moves])
+  }, [moves, teamByName])
 
   const tradedCount = useMemo(() => draftOrder.filter(d => d.traded).length, [draftOrder])
   /**
@@ -651,7 +669,8 @@ const TransactionsPage: React.FC = () => {
                   ))}
                   {moves.map((m, i) => {
                     const kind = MOVE_KIND[m.type] ?? { label: m.type.replace(/_/g, ' '), color: TEXT.muted }
-                    const team = m.team && 'id' in m.team ? m.team : null
+                    const team = m.team && 'id' in m.team ? m.team
+                      : m.team?.name ? teamByName.get(m.team.name) ?? null : null
                     const isMine = !!myTeamId && team?.id === myTeamId
                     return (
                       <div key={`m${i}`} style={{
