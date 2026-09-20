@@ -800,8 +800,10 @@ const PlayerPage: React.FC = () => {
       {player.isProspect ? (
         <div style={{ ...PANEL, padding: '22px 20px' }}>
           <span style={{ ...font(400, 12, 1.6), color: TEXT.muted }}>
-            A prospect, drafted{player.draftClass ? ` in the Season ${player.draftClass} class` : ''}. No career
-            numbers until he plays.
+            {player.draftClass
+              ? `Drafted in the Season ${player.draftClass} class. `
+              : 'Still a prospect. '}
+            No career stats until they play their first game.
           </span>
         </div>
       ) : (
