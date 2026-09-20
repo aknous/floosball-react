@@ -329,6 +329,46 @@ export const OffseasonPanel: React.FC = () => {
     }
   }
 
+  /**
+   * ⚠️ THE OFFSEASON'S OWN TRADE ROWS CARRY ONE SIDE AND NO ABBREVIATION, so they read as
+   * "traded S7 R1 pick" filed under no club. The transactions desk has the same trades in
+   * full — both teams, both sides — so they are matched up by the seller and what it sent.
+   * A backend that records both sides itself sends `counterpartAbbr`, and then this leaves
+   * the row alone.
+   */
+  const fillTradeSides = async (txs: Transaction[], headers: Record<string, string>): Promise<Transaction[]> => {
+    if (!txs.some(t => t.type === 'trade' && !t.counterpartAbbr)) return txs
+    try {
+      const res = await fetch(`${API_BASE}/transactions?limit=200`, { headers, cache: 'reload' })
+      if (!res.ok) return txs
+      const rows: Array<{
+        teamA: { name: string; abbr: string } | null
+        teamB: { name: string; abbr: string } | null
+        aGave: Array<{ name?: string }>
+        bGave: Array<{ name?: string }>
+      }> = (await res.json()).data?.trades ?? []
+      const names = (list: Array<{ name?: string }>) =>
+        list.map(a => a.name).filter(Boolean).join(', ')
+      const bySeller = new Map<string, { abbr: string; toAbbr: string; gave: string; got: string }>()
+      for (const r of rows) {
+        if (!r.teamA || !r.teamB) continue
+        bySeller.set(`${r.teamA.name}|${names(r.aGave)}`, {
+          abbr: r.teamA.abbr, toAbbr: r.teamB.abbr,
+          gave: names(r.aGave) || 'nothing', got: names(r.bGave) || 'nothing',
+        })
+      }
+      return txs.map(t => {
+        if (t.type !== 'trade' || t.counterpartAbbr) return t
+        const hit = bySeller.get(`${t.teamName}|${t.playerName}`)
+        if (!hit) return t
+        return { ...t, teamAbbr: t.teamAbbr || hit.abbr, counterpartAbbr: hit.toAbbr,
+                 gave: hit.gave, got: hit.got }
+      })
+    } catch {
+      return txs
+    }
+  }
+
   const offseasonPhaseForBoard = seasonState?.offseasonPhase ?? null
 
   // Initial load from REST. Re-runs when the offseason phase moves, so the board
@@ -395,7 +435,7 @@ export const OffseasonPanel: React.FC = () => {
             })
           }
           setPredraftSetups(setupMap)
-          setTransactions(txs.reverse())
+          setTransactions(await fillTradeSides(txs.reverse(), headers))
           // Only restore "on the clock" highlight if we're in an active
           // draft round-robin. Outside those phases (front-office setup,
           // pre-FA wait, post-draft training) there's no clock running —
