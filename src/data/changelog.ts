@@ -33,20 +33,17 @@ export const CHANGELOG: ChangelogEntry[] = [
         items: [
           '[Front Office] Trading is live. Teams buy and sell players through the season up to the deadline in week 22, and again in the offseason. Contenders buy, teams going nowhere sell, and a star can move for a real return instead of walking for nothing.',
           "[Front Office] Transactions, a new page: the live draft order with traded picks marked, this season's rookie class, who is out of contract, the trading block, and every signing, cut and trade as it lands.",
-          '[Prospects] The rookie draft is back. One prospect per team enters each season, and every team scouts potential for itself, so you and your rivals can rate the same player differently.',
-          '[Teams] Every team page has a Pipeline: the prospects behind the roster, and how long each has left to earn a spot.',
+          '[Prospects] The rookie draft is back. One prospect per team enters each season, and every team scouts potential.',
+          '[Teams] Every team page has a Pipeline, the prospects behind the roster, and how long each has left to earn a spot.',
           '[Games] The current drive reads as a field on the game card, so you can see where the ball is without opening the game.',
-          '[Pick-em] Prognosticate straight from the game card. The win probability is the pick control, with the odds on the buttons.',
         ],
       },
       {
         label: 'Changes',
         items: [
-          '[Simulation] Play calling was rebuilt against five seasons of real football. Down and distance, protecting a late lead, chasing two scores, fourth down and going for two all follow what real teams do.',
-          '[Simulation] The passing game was recalibrated with it. Expect more deep balls, coverage that decides more catches, and more interceptions.',
+          '[Simulation] Play calling was recalibrated against real football play calls.',
           '[Simulation] A leading team on defense no longer spends timeouts it has no way to use, including in overtime, where a score can end the game outright.',
           '[Front Office] Star players sign long contracts again, so a team can build around one.',
-          '[Front Office] A free agent can turn a team down, and the team says so.',
           '[Front Office] The Scouting Department helps at every level. At levels 1 and 2 it did nothing at all.',
           '[Cards] Nose Picker moves to Prismatic. It sat a tier below every other streak card while being the one streak you can guarantee.',
           '[Achievements] Capstone achievements grant a Synthesis Component.',
