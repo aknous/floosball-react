@@ -23,6 +23,52 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.04',
+    date: '2026-09-20',
+    feature: true,
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Front Office] Trading is live. Teams buy and sell players through the season up to the deadline in week 22, and again in the offseason. Contenders buy, teams going nowhere sell, and a star can move for a real return instead of walking for nothing.',
+          "[Front Office] Transactions, a new page: the live draft order with traded picks marked, this season's rookie class, who is out of contract, the trading block, and every signing, cut and trade as it lands.",
+          '[Prospects] The rookie draft is back. One prospect per team enters each season, and every team scouts potential.',
+          '[Teams] Every team page has a Pipeline, the prospects behind the roster, and how long each has left to earn a spot.',
+          '[Games] The current drive reads as a field on the game card, so you can see where the ball is without opening the game.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Simulation] Play calling was recalibrated against real football play calls.',
+          '[Simulation] A leading team on defense no longer spends timeouts it has no way to use, including in overtime, where a score can end the game outright.',
+          '[Front Office] Star players sign long contracts again, so a team can build around one.',
+          '[Front Office] The Scouting Department helps at every level. At levels 1 and 2 it did nothing at all.',
+          '[Cards] Nose Picker moves to Prismatic. It sat a tier below every other streak card while being the one streak you can guarantee.',
+          '[Achievements] Capstone achievements grant a Synthesis Component.',
+          '[Players] A player the Cores have cleansed shows it on their profile, and an awakening clears when the season ends.',
+          '[Games] The line score shows which periods were played, and says when a game went to overtime.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Games] A touchdown could end a game before its own extra point was kicked, so a tying kick landed on a game already called final.',
+          '[Games] A pick six handed the ball back to the team that scored it.',
+          '[Games] A fresh set of downs inside the 10 read as first and 10 instead of first and goal.',
+          '[Games] A tied frame could be decided by a rounding error.',
+          '[Fantasy] Highlight Reel had never paid a Floobit.',
+          '[Shop] The shop could refuse to sell anything, reporting a pack limit that had not been reached.',
+          '[Shop] Accession could be bought at times when it would do nothing.',
+          '[Front Office] A prospect could be drafted, promoted and cut inside the same offseason.',
+          '[League] A new season could be scheduled to start a week late.',
+          '[League] A rule vote could outlive the game day it governed.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v1.03',
     date: '2026-08-30',
     feature: true,

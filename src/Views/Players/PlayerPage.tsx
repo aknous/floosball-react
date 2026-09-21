@@ -10,7 +10,7 @@ import { statRampColor } from '@/utils/ratingColors'
 import RatingProgression, { RatingPoint } from './RatingProgression'
 import {
   PANEL, PanelHeader, PanelTab, Plate, SegmentedControl, CareerTable, TrophyCase,
-  AttrBar, BackArrow, BoltIcon, SwordGlyph, ShieldGlyph,
+  AttrBar, BackArrow, BoltIcon, CleansedIcon, SwordGlyph, ShieldGlyph,
   num, pct, sumOver,
   type StatColumn, type TrophyEntry,
 } from './playerPieces'
@@ -69,7 +69,11 @@ interface PlayerAttributes {
   defensiveAttributes?: Record<string, { value: number; stars: number }>
   mood?: string
   moodTier?: string
-  /** Has this player ever awakened. The profile shows a badge and nothing more. */
+  /** Where this player sits on the anomaly ladder THIS season, or null. Only the two
+   *  terminal rungs reach the profile — the climb stays off it, since every public
+   *  anomaly surface is qualitative and a ladder position would be a progress bar. */
+  anomalyState?: 'awakened' | 'cleansed' | null
+  /** Kept for the other surfaces that read it; equivalent to anomalyState === 'awakened'. */
   isAwakened?: boolean
   // Retained on the type because other surfaces read them; this page does not.
   attitudeValue?: number
@@ -606,11 +610,17 @@ const PlayerPage: React.FC = () => {
   if (att?.hometown) flavourRows.push(['Hometown', att.hometown])
   if (att?.favorite_item) flavourRows.push(['Favorite', att.favorite_item])
 
-  // Mood and the awakened badge both belong to a playing career, so a retired
+  // Mood and the anomaly badge both belong to a playing career, so a retired
   // player's character panel is only the flavour and the motto.
+  //
+  // CLEANSED IS A STATE, NOT THE ABSENCE OF ONE. The badge used to key off a lone
+  // `isAwakened` boolean, so a player the Cores purged simply lost the badge — the more
+  // dramatic half of the story rendered as nothing at all. It falls back to the old
+  // boolean so an older payload still lights the awakened badge.
+  const anomalyState = att?.anomalyState ?? (att?.isAwakened ? 'awakened' : null)
   const showMood = !isRetired && !!att?.mood
-  const showAwakened = !isRetired && !!att?.isAwakened
-  const hasCharacter = showMood || showAwakened || flavourRows.length > 0 || !!att?.motto
+  const showAnomaly = !isRetired && !!anomalyState
+  const hasCharacter = showMood || showAnomaly || flavourRows.length > 0 || !!att?.motto
 
   const characterPanel = hasCharacter && (
     <div style={PANEL}>
@@ -624,19 +634,26 @@ const PlayerPage: React.FC = () => {
             </span>
           </div>
         )}
-        {showAwakened && (
+        {showAnomaly && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span className="pulse" style={{
+            {/* Awakened pulses because the power is live; cleansed is deliberately
+                still and cold, because it is the power being gone. */}
+            <span className={anomalyState === 'awakened' ? 'pulse' : undefined} style={{
               display: 'flex', alignItems: 'center', gap: '7px',
-              background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(251,191,36,0.45)',
+              background: anomalyState === 'awakened'
+                ? 'rgba(245,158,11,0.07)' : 'rgba(100,116,139,0.09)',
+              border: anomalyState === 'awakened'
+                ? '1px solid rgba(251,191,36,0.45)' : '1px solid rgba(148,163,184,0.4)',
               padding: '5px 9px',
             }}>
-              <BoltIcon />
-              <span style={{ ...font(700, 12), color: '#fde68a' }}>Awakened</span>
+              {anomalyState === 'awakened' ? <BoltIcon /> : <CleansedIcon />}
+              <span style={{ ...font(700, 12), color: anomalyState === 'awakened' ? '#fde68a' : '#cbd5e1' }}>
+                {anomalyState === 'awakened' ? 'Awakened' : 'Cleansed'}
+              </span>
             </span>
           </div>
         )}
-        {(flavourRows.length > 0 || att?.motto) && (showMood || showAwakened) && (
+        {(flavourRows.length > 0 || att?.motto) && (showMood || showAnomaly) && (
           <span style={{ height: '1px', background: BORDER.hairline }} />
         )}
         {flavourRows.length > 0 && (

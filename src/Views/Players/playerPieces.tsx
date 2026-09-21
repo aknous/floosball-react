@@ -36,6 +36,15 @@ export const BoltIcon: React.FC<{ size?: number; color?: string }> = ({ size = 1
   </svg>
 )
 
+// The same bolt, struck through. Cleansed is the END of the awakened story rather than a
+// separate condition, so it reads as that glyph spent instead of an unrelated mark.
+export const CleansedIcon: React.FC<{ size?: number; color?: string }> = ({ size = 13, color = '#cbd5e1' }) => (
+  <svg width={size} height={size} viewBox="0 0 20 20" fill="none" style={{ display: 'block', flexShrink: 0 }}>
+    <path d="M11 1L3 11h5l-1 8 8-10h-5l1-8z" fill={color} opacity="0.4" />
+    <path d="M3.5 16.5L16.5 3.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+  </svg>
+)
+
 export const SwordGlyph: React.FC<{ size?: number; color?: string }> = ({ size = 11, color = TEXT.muted }) => (
   <svg width={size} height={size} viewBox="0 0 20 20" fill={color} style={{ display: 'block', flexShrink: 0 }}>
     <path d="M17 2l1 1-9 9-1-1 9-9zM3 15l3 3-3 1v-4z" />
