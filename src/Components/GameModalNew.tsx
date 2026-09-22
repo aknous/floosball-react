@@ -977,11 +977,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
           `${ordinal(play.down)} & ${play.distance}`)
         : null
 
-    // Determine which team has possession for this play
-    const offenseTeamId = play.offensiveTeam === gameData.homeTeam.abbr ? 
-      gameData.homeTeam.id : 
-      play.offensiveTeam === gameData.awayTeam.abbr ? 
-        gameData.awayTeam.id : 
+    // The row's crest is the team that had the ball — unless the DEFENSE scored on
+    // it. A pick-six or scoop-and-score (or a safety) is the defense's play, and
+    // wearing the offense's crest read as the offense scoring (prod game 2891).
+    // Plays recorded before `scoringTeam` existed fall back on the turnover flag.
+    const rowScorer = (play as any).scoringTeam
+      ?? (play.isTouchdown && play.isTurnover ? play.defensiveTeam : null)
+    const rowTeamAbbr = rowScorer && rowScorer === play.defensiveTeam
+      ? play.defensiveTeam : play.offensiveTeam
+    const rowTeamId = rowTeamAbbr === gameData.homeTeam.abbr ?
+      gameData.homeTeam.id :
+      rowTeamAbbr === gameData.awayTeam.abbr ?
+        gameData.awayTeam.id :
         null
 
     const isBigPlay = !!play.isBigPlay
@@ -1056,10 +1063,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
           }}
         >
           {/* Team Avatar */}
-          {offenseTeamId && (
+          {rowTeamId && (
             <img
-              src={`/avatars/${offenseTeamId}.png`}
-              alt={play.offensiveTeam}
+              src={`/avatars/${rowTeamId}.png`}
+              alt={rowTeamAbbr}
               crossOrigin="anonymous"
               style={{
                 width: '40px',
@@ -2136,9 +2143,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               // of 0. Override the visual ball position to the endzone
               // the scoring team was attacking so the trajectory ends
               // where the TD actually happened.
+              // ⚠️ THE END ZONE IS THE SCORING TEAM'S, NOT THE OFFENSE'S. On a pick-six
+              // or scoop-and-score the DEFENSE scores, running back toward the
+              // offense's own goal; anchoring on the offense's direction drew the
+              // return into the wrong end zone (prod game 2891). A play recorded
+              // before `scoringTeam` existed falls back on the turnover flag.
+              const scoringAbbr = (lastPlay as any)?.scoringTeam
+                ?? (isTurnover ? lastPlay?.defensiveTeam : lastPlay?.offensiveTeam)
+              const scoreDir = scoringAbbr === homeTeam.abbr ? 1 : -1
               let ballAbsYfl: number | null
               if (isTD && lastPlay) {
-                ballAbsYfl = lastPlayDir === 1 ? 110 : 10
+                ballAbsYfl = scoreDir === 1 ? 110 : 10
               } else {
                 ballAbsYfl = dBallYardsToEndzone != null
                   ? (isHomePoss ? 110 - dBallYardsToEndzone : 10 + dBallYardsToEndzone)

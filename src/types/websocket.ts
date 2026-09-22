@@ -417,6 +417,9 @@ export interface PlayEvent {
   playResult: string | null
   isTouchdown: boolean
   isTurnover: boolean
+  // Who the points went to: the DEFENSE on a pick-six / scoop-and-score.
+  // Absent on plays recorded before the field existed.
+  scoringTeam?: string | null
   isSack: boolean
   scoreChange: boolean
   homeTeamScore: number | null
@@ -608,6 +611,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
     playResult: string | null
     isTouchdown: boolean
     isTurnover: boolean
+    scoringTeam?: string | null
     isSack: boolean
     scoreChange: boolean
     homeTeamScore: number | null
@@ -636,6 +640,7 @@ export interface GameStateEvent extends BaseWebSocketEvent {
     playResult: string | null
     isTouchdown: boolean
     isTurnover: boolean
+    scoringTeam?: string | null
     isSack: boolean
     scoreChange: boolean
     homeTeamScore: number | null
