@@ -977,11 +977,18 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
           `${ordinal(play.down)} & ${play.distance}`)
         : null
 
-    // Determine which team has possession for this play
-    const offenseTeamId = play.offensiveTeam === gameData.homeTeam.abbr ? 
-      gameData.homeTeam.id : 
-      play.offensiveTeam === gameData.awayTeam.abbr ? 
-        gameData.awayTeam.id : 
+    // The row's crest is the team that had the ball — unless the DEFENSE scored on
+    // it. A pick-six or scoop-and-score (or a safety) is the defense's play, and
+    // wearing the offense's crest read as the offense scoring (prod game 2891).
+    // Plays recorded before `scoringTeam` existed fall back on the turnover flag.
+    const rowScorer = (play as any).scoringTeam
+      ?? (play.isTouchdown && play.isTurnover ? play.defensiveTeam : null)
+    const rowTeamAbbr = rowScorer && rowScorer === play.defensiveTeam
+      ? play.defensiveTeam : play.offensiveTeam
+    const rowTeamId = rowTeamAbbr === gameData.homeTeam.abbr ?
+      gameData.homeTeam.id :
+      rowTeamAbbr === gameData.awayTeam.abbr ?
+        gameData.awayTeam.id :
         null
 
     const isBigPlay = !!play.isBigPlay
@@ -1056,10 +1063,10 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
           }}
         >
           {/* Team Avatar */}
-          {offenseTeamId && (
+          {rowTeamId && (
             <img
-              src={`/avatars/${offenseTeamId}.png`}
-              alt={play.offensiveTeam}
+              src={`/avatars/${rowTeamId}.png`}
+              alt={rowTeamAbbr}
               crossOrigin="anonymous"
               style={{
                 width: '40px',
