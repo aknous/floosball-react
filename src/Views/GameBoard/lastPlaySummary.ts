@@ -132,6 +132,18 @@ export function lastPlaySummary(game: CurrentGame): PlaySummary | null {
     tagColor = ACCENT.negative
   }
 
+  // ⚠️ A DEFENSIVE TOUCHDOWN NAMES ITS SCORER. The card leads with the team that
+  // had the ball, so a bare TOUCHDOWN beside the offense read as the offense
+  // scoring on a pick-six or scoop-and-score (prod game 2891). Plays recorded
+  // before `scoringTeam` existed fall back on the turnover flag.
+  if (play.isTouchdown) {
+    const scorer = play.scoringTeam ?? (play.isTurnover ? play.defensiveTeam : null)
+    if (scorer && scorer !== play.offensiveTeam) {
+      tag = `${scorer} TOUCHDOWN`
+      tagColor = ACCENT.live
+    }
+  }
+
   // The action already says PUNT; a "Punt" badge beside it is the same word twice.
   if (tag === null && result === 'Punt') tag = null
 

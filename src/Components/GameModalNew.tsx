@@ -2136,9 +2136,17 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               // of 0. Override the visual ball position to the endzone
               // the scoring team was attacking so the trajectory ends
               // where the TD actually happened.
+              // ⚠️ THE END ZONE IS THE SCORING TEAM'S, NOT THE OFFENSE'S. On a pick-six
+              // or scoop-and-score the DEFENSE scores, running back toward the
+              // offense's own goal; anchoring on the offense's direction drew the
+              // return into the wrong end zone (prod game 2891). A play recorded
+              // before `scoringTeam` existed falls back on the turnover flag.
+              const scoringAbbr = (lastPlay as any)?.scoringTeam
+                ?? (isTurnover ? lastPlay?.defensiveTeam : lastPlay?.offensiveTeam)
+              const scoreDir = scoringAbbr === homeTeam.abbr ? 1 : -1
               let ballAbsYfl: number | null
               if (isTD && lastPlay) {
-                ballAbsYfl = lastPlayDir === 1 ? 110 : 10
+                ballAbsYfl = scoreDir === 1 ? 110 : 10
               } else {
                 ballAbsYfl = dBallYardsToEndzone != null
                   ? (isHomePoss ? 110 - dBallYardsToEndzone : 10 + dBallYardsToEndzone)
