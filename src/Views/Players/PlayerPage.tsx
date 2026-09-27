@@ -266,6 +266,9 @@ const OFFENSE_COLUMNS: Record<string, StatColumn[]> = {
     { key: 'yds',  label: 'YDS',  width: 62, strong: true, cell: r => num(r.receiving?.yards), total: c => num(c?.receiving?.yards) },
     { key: 'ypr',  label: 'YPR',  width: 52, cell: r => num(r.receiving?.ypr, 1), total: c => num(c?.receiving?.ypr, 1) },
     { key: 'td',   label: 'TD',   width: 44, cell: r => num(r.receiving?.tds), total: c => num(c?.receiving?.tds) },
+    // Punts muffed and recovered by the kicking team: a returner's lost fumbles. In the main
+    // table, not the card-stats view, which lists only stats cards score off.
+    { key: 'muf',  label: 'MUF',  width: 46, cell: r => num(r.returning?.muffsLost), total: (_c, rows) => num(sumOver(rows, r => r.returning?.muffsLost)) },
     perfColumn('performanceRating', 'PERF'),
     pointsColumn,
   ],
@@ -377,10 +380,6 @@ const CARD_STAT_COLUMNS: Record<string, StatColumn[]> = {
     { key: 'pryd', label: 'PR YDS', width: 62,
       cell: r => num(r.returning?.puntReturnYards),
       total: (_c, rows) => num(sumOver(rows, r => r.returning?.puntReturnYards)) },
-    // Punts muffed and recovered by the kicking team: a receiver's lost fumbles on returns.
-    { key: 'muf', label: 'MUF', width: 46,
-      cell: r => num(r.returning?.muffsLost),
-      total: (_c, rows) => num(sumOver(rows, r => r.returning?.muffsLost)) },
   ],
   K: [
     gamesColumn,
