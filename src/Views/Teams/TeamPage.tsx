@@ -1393,19 +1393,23 @@ export default function TeamPage() {
               /* No next game means one of three quite different things, and
                  "Season over" was wrong for two of them. A team knocked out in
                  round 2 is not in the same position as the one holding the
-                 trophy. */
+                 trophy.
+
+                 ⚠️ ELIMINATED IS CHECKED FIRST. `floosbowlChampion` means REIGNING
+                 champion: last season's winner holds it all year, so a reigning
+                 champion knocked out of the playoffs read "Champions" (reported on
+                 prod: the Strangers). This season's winner is never eliminated. */
               <div style={{ marginTop: '7px' }}>
                 <div style={{
                   fontSize: '23px', lineHeight: 1.15, fontWeight: 800,
-                  color: team.floosbowlChampion ? '#f59e0b'
-                    : team.eliminated ? '#cbd5e1' : '#cbd5e1',
+                  color: !team.eliminated && team.floosbowlChampion ? '#f59e0b' : '#cbd5e1',
                 }}>
-                  {team.floosbowlChampion ? 'Champions'
-                    : team.eliminated ? 'Eliminated' : 'Season over'}
+                  {team.eliminated ? 'Eliminated'
+                    : team.floosbowlChampion ? 'Champions' : 'Season over'}
                 </div>
                 <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '5px' }}>
-                  {team.floosbowlChampion ? 'Floos Bowl winners'
-                    : team.eliminated ? 'Out of the running'
+                  {team.eliminated ? 'Out of the running'
+                    : team.floosbowlChampion ? 'Floos Bowl winners'
                     : 'No games scheduled'}
                 </div>
               </div>

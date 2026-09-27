@@ -56,14 +56,19 @@ export const TeamNavStrip: React.FC<TeamNavStripProps> = ({ currentTeamId }) => 
         WebkitOverflowScrolling: 'touch',
         scrollbarWidth: 'thin',
         display: 'flex',
-        justifyContent: 'center',
       }}
     >
+      {/* ⚠️ CENTERED WITH AUTO MARGINS, NOT `justifyContent: 'center'`. A centered flex
+          row wider than its container overflows BOTH sides, and the left overflow sits
+          before scroll position 0 where no scroll can reach it, so the first crest was
+          clipped off the left edge, reading as hidden behind the nav. Auto margins center
+          a row that fits and fall to zero on one that does not. */}
       <div style={{
         display: 'flex',
         gap: isMobile ? '4px' : '6px',
         padding: isMobile ? '8px 12px' : '10px 16px',
         flexShrink: 0,
+        margin: '0 auto',
       }}>
         {teams.map(team => {
           const isCurrent = team.id === currentTeamId
