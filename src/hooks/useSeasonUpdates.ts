@@ -24,6 +24,9 @@ export interface SeasonState {
   offseasonPhase: OffseasonPhase | null
   offseasonPhaseTargetTime: string | null
   bracketAvailable: boolean
+  // The Transactions page opens with the in-season trade window (week 15) and stays
+  // open through the offseason. The backend owns the rule.
+  transactionsAvailable: boolean
 }
 
 export const useSeasonUpdates = () => {
@@ -43,6 +46,7 @@ export const useSeasonUpdates = () => {
     offseasonPhase: null,
     offseasonPhaseTargetTime: null,
     bracketAvailable: false,
+    transactionsAvailable: false,
   })
 
   const fetchSeasonData = useCallback(async () => {
@@ -64,6 +68,7 @@ export const useSeasonUpdates = () => {
           seasonComplete: result.data.is_complete || false,
           regularSeasonOver: result.data.regular_season_over || false,
           bracketAvailable: result.data.bracket_available ?? false,
+          transactionsAvailable: result.data.transactions_available ?? false,
         }))
       }
     } catch (err) {
@@ -99,6 +104,8 @@ export const useSeasonUpdates = () => {
           completedGames: [],
           seasonComplete: false,
           regularSeasonOver: false,
+          // A new season opens with the market closed again.
+          transactionsAvailable: false,
         }))
         break
 
@@ -215,6 +222,14 @@ export const useSeasonUpdates = () => {
         break
     }
   }, [event, fetchSeasonData])
+
+  // The Transactions gate opens mid-season, and nothing on the socket says so. While it
+  // is closed, ask again each new week rather than re-deriving the week-15 rule here; the
+  // backend owns it. Once open it stays open for the season, so this goes quiet.
+  useEffect(() => {
+    if (seasonState.currentWeek > 0 && !seasonState.transactionsAvailable) fetchSeasonData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seasonState.currentWeek])
 
   return {
     seasonState,

@@ -16,7 +16,9 @@ const RANK_STYLE: Record<number, { label: string; color: string; bg: string }> =
   3: { label: '3rd', color: '#cd7f32', bg: 'rgba(205,127,50,0.15)' },
 }
 
-const WEEKLY_PRIZES: Record<number, number> = { 1: 30, 2: 20, 3: 15 }
+// ⚠️ MIRRORS `constants.WEEKLY_LEADERBOARD_PRIZES` / `SEASON_LEADERBOARD_PRIZES` in the
+// backend (5x on 2026-09-27, so an FP build is not a net Floobit loss). Change both.
+const WEEKLY_PRIZES: Record<number, number> = { 1: 150, 2: 100, 3: 75 }
 /**
  * The board scrolls rather than truncating.
  *
@@ -57,9 +59,9 @@ const listStyle: React.CSSProperties = {
   overflowY: 'auto', overflowX: 'hidden',
 }
 
-const WEEKLY_TOP_PCT_PRIZE = 5
-const SEASON_PRIZES: Record<number, number> = { 1: 200, 2: 125, 3: 75 }
-const SEASON_TOP_PCT_PRIZE = 25
+const WEEKLY_TOP_PCT_PRIZE = 30
+const SEASON_PRIZES: Record<number, number> = { 1: 1000, 2: 650, 3: 400 }
+const SEASON_TOP_PCT_PRIZE = 150
 
 interface WeeklyPlayer {
   slot: string
@@ -220,7 +222,7 @@ export const FantasyLeaderboard: React.FC<{ seasonOnly?: boolean }> = ({ seasonO
           <span style={{ fontSize: '10px', color: '#94a3b8' }}>
             {/* One mark for the set — a prize LADDER, not three separate amounts. */}
             <FloobitSymbol size={11} color="currentColor" />
-            {mode === 'season' ? '200 / 125 / 75' : '30 / 20 / 15'}
+            {[1, 2, 3].map(r => (mode === 'season' ? SEASON_PRIZES : WEEKLY_PRIZES)[r]).join(' / ')}
           </span>
         )}
       </div>

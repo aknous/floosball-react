@@ -23,6 +23,42 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.05',
+    date: '2026-09-27',
+    feature: true,
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          "[Teams] Every team page shows its trade history, with what it sent, what it got and why, beside its draft picks for the upcoming rookie drafts, including picks acquired from other teams and its own picks traded away.",
+          '[Front Office] Promoted prospects are protected. Until the contract they were promoted onto ends, their team can keep them or trade them but cannot cut them, and they wear a PROSPECT tag on their team page and profile.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Fantasy] Floobit cards and FP cards now pay on even terms. Trust Fund stops growing after 4 unchanged weeks, and Gold Rush and Highlight Reel pay half as much.',
+          '[Fantasy] Leaderboard prizes are five times bigger. Weekly: 150, 100 and 75 for the top three, 30 for the rest of the top quarter. Season: 1000, 650 and 400, and 150.',
+          '[Economy] Weekly FP pays 20% more Floobits up to 1,000 FP, easing off to the usual rate by 1,500. Bigger weeks pay what they did before.',
+          "[Prospects] A prospect's expected and ceiling ratings are their true numbers everywhere they appear, and match between their team page and their profile.",
+          '[Prospects] Promoted prospects sign for at least the seasons they had left as a prospect, so their team cannot let them walk before they develop.',
+          '[Prospects] Players develop the same way whether they are in the pipeline or on a roster.',
+          '[Front Office] The Transactions page opens in week 15, with the trade window.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Games] A muffed punt recovered by the kicking team now counts as a turnover in the box score and on the returner.',
+          '[Games] Ordinary punts took a few extra seconds off the game clock.',
+          '[Teams] The previous champion kept reading "Champions" on its team page after being knocked out of the playoffs.',
+          '[Teams] The first team in the row of crests at the top of a team page could not be scrolled into view.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v1.04',
     date: '2026-09-20',
     feature: true,

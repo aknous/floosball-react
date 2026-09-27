@@ -12,6 +12,7 @@ import TeamNavStrip from '@/Components/TeamNavStrip'
 import { GameModalNew } from '@/Components/GameModalNew'
 import { useOpenGame } from '@/hooks/useOpenGame'
 import CareerStageBadge from '@/Components/CareerStageBadge'
+import ProtectedProspectTag from '@/Components/ProtectedProspectTag'
 import HoverTooltip from '@/Components/HoverTooltip'
 import { CoachProfileTags } from '@/Components/CoachProfile'
 import { getContrastTextColor, readableOnDark } from '@/utils/colors'
@@ -22,6 +23,7 @@ import SectionRail, { RailSection } from './SectionRail'
 import Potential, { potentialTooltip } from '@/Components/Potential'
 import { GAUGE_TRACK, barWidth, gaugeColor } from '@/Components/Gauge'
 import { useTeamProspects, TeamProspect } from '@/hooks/useTeamProspects'
+import { useTeamTrades, PickStock, TradeHistory } from './TeamTrades'
 import { quipAt } from '@/Views/FrontOffice/FacilitiesSection'
 import { fmtFramesWon } from '@/utils/framesWon'
 
@@ -88,6 +90,8 @@ interface RosterPlayer {
   offensiveRating?: number
   defensiveRating?: number
   termRemaining?: number
+  /** Promoted prospect on their promotion contract: kept or traded, never cut. */
+  protectedProspect?: boolean
   serviceTime?: string
   fatigue?: number
   // Floosball players go both ways: QB→S, RB→LB, WR→CB, TE→DE. Kickers don't
@@ -643,12 +647,11 @@ const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p }) => {
         <PlayerLink playerId={p.playerId} playerName={p.name}
           style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '15px' }} />
       </span>
-      {/* ⚠️ BESIDE THE NAME, and POTENTIAL as hollow stars rather than a bar chart of the
-          scouted band. Solid is what they play at today; hollow is what this team's scouts
-          think they could still add. The exact range stays on hover. */}
-      <HoverTooltip content={potentialTooltip(p.rating, p.ceilingRange)}>
+      {/* Beside the name: solid is what they play at today, faint is their ceiling.
+          Current, expected and ceiling on hover. */}
+      <HoverTooltip content={potentialTooltip(p.rating, p.projection)}>
         <span style={{ width: '150px', display: 'inline-block', flexShrink: 0 }}>
-          <Potential rating={p.rating} range={p.ceilingRange} />
+          <Potential rating={p.rating} projection={p.projection} />
         </span>
       </HoverTooltip>
       <HoverTooltip text={lastChance
@@ -737,9 +740,10 @@ const RosterPlate: React.FC<{
             color: term === 1 ? '#f59e0b' : '#cbd5e1',
           }}>{term}yr remaining</div>
         )}
-        {stage && (
-          <div style={{ marginTop: '4px' }}>
-            <CareerStageBadge stage={stage} full />
+        {(stage || player.protectedProspect) && (
+          <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+            {stage && <CareerStageBadge stage={stage} full />}
+            {player.protectedProspect && <ProtectedProspectTag />}
           </div>
         )}
       </div>
@@ -940,6 +944,7 @@ export default function TeamPage() {
   }, [schedule])
 
   const pipeline = useTeamProspects(team?.id ?? null)
+  const tradeDesk = useTeamTrades(team?.id ?? null)
 
   // Memoised: the rail keys effects off this array, so a fresh one each render
   // would tear down and rebuild the observer continuously.
@@ -947,6 +952,7 @@ export default function TeamPage() {
     { id: 'tp-overview', label: 'Overview' },
     { id: 'tp-squad', label: 'Squad' },
     { id: 'tp-record', label: 'Record' },
+    { id: 'tp-trades', label: 'Trades' },
     ...(isMyTeam ? [{ id: 'tp-frontoffice', label: 'Front office' }] : []),
   ], [isMyTeam])
 
@@ -1387,19 +1393,23 @@ export default function TeamPage() {
               /* No next game means one of three quite different things, and
                  "Season over" was wrong for two of them. A team knocked out in
                  round 2 is not in the same position as the one holding the
-                 trophy. */
+                 trophy.
+
+                 ⚠️ ELIMINATED IS CHECKED FIRST. `floosbowlChampion` means REIGNING
+                 champion: last season's winner holds it all year, so a reigning
+                 champion knocked out of the playoffs read "Champions" (reported on
+                 prod: the Strangers). This season's winner is never eliminated. */
               <div style={{ marginTop: '7px' }}>
                 <div style={{
                   fontSize: '23px', lineHeight: 1.15, fontWeight: 800,
-                  color: team.floosbowlChampion ? '#f59e0b'
-                    : team.eliminated ? '#cbd5e1' : '#cbd5e1',
+                  color: !team.eliminated && team.floosbowlChampion ? '#f59e0b' : '#cbd5e1',
                 }}>
-                  {team.floosbowlChampion ? 'Champions'
-                    : team.eliminated ? 'Eliminated' : 'Season over'}
+                  {team.eliminated ? 'Eliminated'
+                    : team.floosbowlChampion ? 'Champions' : 'Season over'}
                 </div>
                 <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '5px' }}>
-                  {team.floosbowlChampion ? 'Floos Bowl winners'
-                    : team.eliminated ? 'Out of the running'
+                  {team.eliminated ? 'Out of the running'
+                    : team.floosbowlChampion ? 'Floos Bowl winners'
                     : 'No games scheduled'}
                 </div>
               </div>
@@ -1608,6 +1618,30 @@ export default function TeamPage() {
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* ── TRADES AND PICKS ───────────────────────────────────────────────
+          Pick stock beside the trade ledger. Shown for every team, not just
+          your own: a trade is public, and where a rival picks is half the
+          reason to look at its page. */}
+      <div id="tp-trades" className="tp-section" style={{
+        maxWidth: PAGE_MAX, margin: '0 auto', padding: `30px ${pad}px 0`,
+        display: 'grid',
+        gridTemplateColumns: stacked ? 'minmax(0,1fr)' : `minmax(0,${RAIL}px) minmax(0,1fr)`,
+        gap: '36px', alignItems: 'start',
+      }}>
+        <div style={{ minWidth: 0 }}>
+          <SectionHead label="Draft picks" note="Upcoming rookie drafts" style={{ marginBottom: '10px' }} />
+          {!tradeDesk.loading && <PickStock drafts={tradeDesk.drafts} />}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <SectionHead
+            label="Trade history"
+            note={tradeDesk.trades.length ? `${tradeDesk.trades.length} trade${tradeDesk.trades.length === 1 ? '' : 's'}` : undefined}
+            style={{ marginBottom: '10px' }}
+          />
+          {!tradeDesk.loading && <TradeHistory trades={tradeDesk.trades} narrow={narrowPlates} />}
         </div>
       </div>
 

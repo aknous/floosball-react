@@ -548,9 +548,9 @@ const TransactionsPage: React.FC = () => {
                           <PlayerLink playerId={p.playerId} playerName={p.name}
                             style={{ ...font(600, 14), color: TEXT.body }} />
                         </span>
-                        <HoverTooltip content={potentialTooltip(p.rating, p.ceilingRange)}>
+                        <HoverTooltip content={potentialTooltip(p.rating, p.projection)}>
                           <span style={{ width: '150px', display: 'inline-block' }}>
-                            <Potential rating={p.rating} range={p.ceilingRange} />
+                            <Potential rating={p.rating} projection={p.projection} />
                           </span>
                         </HoverTooltip>
                       </div>

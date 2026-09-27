@@ -300,9 +300,12 @@ const AppNav: React.FC = () => {
   // running the bracket is a settled result, and stacking two postseason entries pushes
   // the standing pages down for a reader who still wants them.
   const isOffseason = seasonState.currentWeekText === 'Offseason'
-  const leagueItems = isOffseason ? [...LEAGUE_ITEMS, OFFSEASON_ITEM]
-    : inPlayoffs ? [...LEAGUE_ITEMS, BRACKET_ITEM]
-      : LEAGUE_ITEMS
+  // Transactions is hidden until the in-season trade window opens (week 15), then stays
+  // through the playoffs and the offseason (owner). The backend owns the rule.
+  const baseLeagueItems = LEAGUE_ITEMS.filter(i => i.key !== 'transactions' || seasonState.transactionsAvailable)
+  const leagueItems = isOffseason ? [...baseLeagueItems, OFFSEASON_ITEM]
+    : inPlayoffs ? [...baseLeagueItems, BRACKET_ITEM]
+      : baseLeagueItems
   // Awards voting is season's-end only, and it DOES notify — so it takes the dot
   // treatment, and it takes it at the end of the group.
   if (awardsOpen) yoursItems.push(AWARDS_ITEM)
