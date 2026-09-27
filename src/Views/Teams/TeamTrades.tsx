@@ -25,8 +25,6 @@ export interface TeamTrade {
   gave: TradeAsset[]
   /** What arrived. */
   got: TradeAsset[]
-  /** This team's own reason. Null on trades settled before reasons were stored. */
-  why: string | null
 }
 
 export interface PickEntry {
@@ -222,11 +220,6 @@ export const TradeHistory: React.FC<{ trades: TeamTrade[]; narrow: boolean }> = 
             <AssetList label="Sent" assets={t.gave} />
             <AssetList label="Received" assets={t.got} />
           </div>
-          {t.why && (
-            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px', lineHeight: 1.5 }}>
-              {t.why}
-            </div>
-          )}
         </div>
       ))}
     </div>
