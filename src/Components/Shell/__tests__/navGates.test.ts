@@ -36,8 +36,15 @@ describe('nav gates', () => {
   it('the Offseason entry replaces the Bracket rather than joining it', () => {
     // Two postseason entries push the standing pages down, and once the drafts run the
     // bracket is a settled result.
-    expect(NAV).toMatch(/isOffseason\s*\?\s*\[\.\.\.LEAGUE_ITEMS,\s*OFFSEASON_ITEM\]/)
-    expect(NAV).toMatch(/:\s*inPlayoffs\s*\?\s*\[\.\.\.LEAGUE_ITEMS,\s*BRACKET_ITEM\]/)
+    expect(NAV).toMatch(/isOffseason\s*\?\s*\[\.\.\.baseLeagueItems,\s*OFFSEASON_ITEM\]/)
+    expect(NAV).toMatch(/:\s*inPlayoffs\s*\?\s*\[\.\.\.baseLeagueItems,\s*BRACKET_ITEM\]/)
+  })
+
+  it('Transactions reads the backend flag rather than week arithmetic', () => {
+    // Hidden until the in-season trade window opens (owner, 2026-09-27). `/api/season`
+    // answers it with `transactions_available`, off the same predicate the market gates
+    // on, so the page and the market cannot open on different weeks.
+    expect(NAV).toMatch(/i\.key !== 'transactions' \|\| seasonState\.transactionsAvailable/)
   })
 
   it('the Offseason gate matches the one the front page uses', () => {

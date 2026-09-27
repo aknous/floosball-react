@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CeilingRange } from '@/Components/Potential'
+import { Projection } from '@/Components/Potential'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -16,12 +16,8 @@ export interface TeamProspect {
   draftSeason: number | null
   isUndrafted: boolean
   ratingHistory: { season: number; rating: number }[]
-  /**
-   * ⚠️ THIS TEAM'S OWN READ, not the truth and not the viewer's. The endpoint
-   * resolves the band through the team whose page you are on, so the same
-   * prospect shows a different range on the draft-class tab.
-   */
-  ceilingRange: CeilingRange | null
+  /** True expected and ceiling. */
+  projection: Projection | null
 }
 
 interface UseTeamProspectsResult {

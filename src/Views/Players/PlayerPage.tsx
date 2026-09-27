@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import ProtectedProspectTag from '@/Components/ProtectedProspectTag'
 import { useParams, Link } from 'react-router-dom'
 import { Stars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
@@ -108,6 +109,8 @@ interface PlayerData {
   teamId: number | null
   teamAbbr: string | null
   isProspect?: boolean
+  /** Promoted prospect on his promotion contract: kept or traded, never cut. */
+  protectedProspect?: boolean
   draftingTeamId?: number | null
   draftingTeamName?: string | null
   draftingTeamCity?: string | null
@@ -246,7 +249,10 @@ const OFFENSE_COLUMNS: Record<string, StatColumn[]> = {
     { key: 'yds',  label: 'YDS',  width: 62, strong: true, cell: r => num(r.rushing?.yards), total: c => num(c?.rushing?.yards) },
     { key: 'ypc',  label: 'YPC',  width: 50, cell: r => num(r.rushing?.ypc, 1), total: c => num(c?.rushing?.ypc, 1) },
     { key: 'td',   label: 'TD',   width: 44, cell: r => num(r.rushing?.tds), total: c => num(c?.rushing?.tds) },
-    { key: 'fum',  label: 'FUM',  width: 44, cell: r => num(r.rushing?.fumblesLost), total: c => num(c?.rushing?.fumblesLost) },
+    // Fumbles LOST: on a carry, or a punt muffed and recovered by the kicking team.
+    { key: 'fum',  label: 'FUM',  width: 44,
+      cell: r => num((r.rushing?.fumblesLost ?? 0) + (r.returning?.muffsLost ?? 0)),
+      total: (c, rows) => num((c?.rushing?.fumblesLost ?? 0) + sumOver(rows, r => r.returning?.muffsLost)) },
     { key: 'rec',  label: 'REC',  width: 44, cell: r => num(r.receiving?.receptions), total: c => num(c?.receiving?.receptions) },
     { key: 'ryds', label: 'RYDS', width: 56, cell: r => num(r.receiving?.yards), total: c => num(c?.receiving?.yards) },
     perfColumn('performanceRating', 'PERF'),
@@ -368,6 +374,13 @@ const CARD_STAT_COLUMNS: Record<string, StatColumn[]> = {
     { key: 'big', label: '20+', width: 46,
       cell: r => num(r.receiving?.['20+']),
       total: (_c, rows) => num(sumOver(rows, r => r.receiving?.['20+'])) },
+    { key: 'pryd', label: 'PR YDS', width: 62,
+      cell: r => num(r.returning?.puntReturnYards),
+      total: (_c, rows) => num(sumOver(rows, r => r.returning?.puntReturnYards)) },
+    // Punts muffed and recovered by the kicking team: a receiver's lost fumbles on returns.
+    { key: 'muf', label: 'MUF', width: 46,
+      cell: r => num(r.returning?.muffsLost),
+      total: (_c, rows) => num(sumOver(rows, r => r.returning?.muffsLost)) },
   ],
   K: [
     gamesColumn,
@@ -568,6 +581,7 @@ const PlayerPage: React.FC = () => {
             {player.isProspect ? 'Prospect' : player.rank}
           </span>
         </span>
+        {player.protectedProspect && <ProtectedProspectTag size="md" />}
         {player.isHof && (
           <span style={{
             display: 'flex', alignItems: 'center', gap: '6px',

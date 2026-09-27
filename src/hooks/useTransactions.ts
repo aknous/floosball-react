@@ -1,3 +1,4 @@
+import { Projection } from '@/Components/Potential'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useFloosball } from '@/contexts/FloosballContext'
@@ -38,13 +39,6 @@ export interface DraftSlot {
   record: TeamRecord | null
 }
 
-export interface CeilingRange {
-  low: number
-  high: number
-  /** Set only when the band has collapsed to a single number. */
-  exact: number | null
-  band: number
-}
 
 export interface Prospect {
   playerId: number
@@ -53,8 +47,8 @@ export interface Prospect {
   /** A fact: what they play at today. */
   rating: number
   tier: string | null
-  /** Scouted, and different for every team looking at them. */
-  ceilingRange: CeilingRange | null
+  /** True expected and ceiling. */
+  projection: Projection | null
 }
 
 export interface ExpiringPlayer {
@@ -160,9 +154,8 @@ interface UseTransactionsResult {
  * The front-office desk: the draft order, this season's class, who is out of
  * contract, who is available, and everything that has already moved.
  *
- * Two endpoints rather than one because the draft class is scouted PER TEAM —
- * `/api/draft/class` resolves the viewing team's own belief about each prospect's
- * ceiling, so two fans genuinely see different ranges for the same player.
+ * The draft class comes from its own endpoint, `/api/draft/class`, with each
+ * prospect's true expected and ceiling.
  */
 export function useTransactions(): UseTransactionsResult {
   const { getToken } = useAuth()
