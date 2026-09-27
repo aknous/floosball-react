@@ -109,7 +109,7 @@ interface PlayerData {
   teamId: number | null
   teamAbbr: string | null
   isProspect?: boolean
-  /** Promoted prospect on his promotion contract: kept or traded, never cut. */
+  /** Promoted prospect on their promotion contract: kept or traded, never cut. */
   protectedProspect?: boolean
   draftingTeamId?: number | null
   draftingTeamName?: string | null

@@ -14,7 +14,7 @@ export interface Projection {
 }
 
 /**
- * A prospect's rating gauge, with his ceiling drawn on the same track.
+ * A prospect's rating gauge, with their ceiling drawn on the same track.
  *
  * ⚠️ THIS IS THE HOUSE GAUGE, NOT A NEW ONE. Two earlier attempts invented their own
  * chart — first a band on a per-row scale, then a fixed 60-100 window with star-band

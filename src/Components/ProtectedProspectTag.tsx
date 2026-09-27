@@ -2,17 +2,17 @@ import React from 'react'
 import HoverTooltip from '@/Components/HoverTooltip'
 
 /**
- * A promoted prospect still on the contract he was promoted onto.
+ * A promoted prospect still on the contract they were promoted onto.
  *
- * Until that contract ends his team can keep him or trade him, and nothing else: no
+ * Until that contract ends their team can keep them or trade them, and nothing else: no
  * cut to make room for a trade, an upgrade or another prospect (owner, 2026-09-27).
- * The contract runs at least the seasons he had left in the pipeline, so the tag is
- * the reason a team with a weak starter at his position is not simply replacing him.
+ * The contract runs at least the seasons they had left in the pipeline, so the tag is
+ * the reason a team with a weak starter at that position is not simply replacing them.
  *
  * Teal, the color the Transactions page uses for a promotion.
  */
 const ProtectedProspectTag: React.FC<{ size?: 'sm' | 'md' }> = ({ size = 'sm' }) => (
-  <HoverTooltip text="Promoted prospect. His team can keep him or trade him, but can't cut him until this contract ends.">
+  <HoverTooltip text="Promoted prospect. Their team can keep them or trade them, but can't cut them until this contract ends.">
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '4px',
       fontSize: size === 'md' ? '11px' : '10px',

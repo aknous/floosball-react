@@ -90,7 +90,7 @@ interface RosterPlayer {
   offensiveRating?: number
   defensiveRating?: number
   termRemaining?: number
-  /** Promoted prospect on his promotion contract: kept or traded, never cut. */
+  /** Promoted prospect on their promotion contract: kept or traded, never cut. */
   protectedProspect?: boolean
   serviceTime?: string
   fatigue?: number
