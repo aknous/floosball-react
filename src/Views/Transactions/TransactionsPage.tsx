@@ -187,8 +187,8 @@ const PosFilter: React.FC<{ value: PositionFilter; onChange: (p: PositionFilter)
  *
  * ⚠️ THE COLLAPSED LINE IS THE TRADE, NOT A COUNT OF IT. It read "Rocks and Bees, 3 assets",
  * which says two clubs did something and refuses to say what — a reader has to open every
- * row to find the one they care about, which is the opposite of a summary. It now names who
- * sent whom to whom, and what came back.
+ * row to find the one they care about, which is the opposite of a summary. It now names what
+ * each team received (owner, 2026-09-30: read by who received what, not who sent it).
  *
  * ⚠️ NO REASONING, DELIBERATELY (owner). The sim records why each side did it and this
  * showed it, which turns out to be the wrong call for a FAN surface: "part of being a fan
@@ -268,7 +268,7 @@ const TradeRowView: React.FC<{
       <span style={{ ...font(600, 13), color: TEXT.body }}>{m.name}</span>
       {m.detail && <span style={{ ...font(400, 11), color: TEXT.muted }}>{m.detail}</span>}
       {m.rating != null && (
-        <HoverTooltip text={`Rated ${Math.round(m.rating)} at the time`}>
+        <HoverTooltip text={`Rated ${Math.round(m.rating)} ${m.ratingNow ? 'now' : 'at the time'}`}>
           <span style={{ display: 'inline-block' }}>
             <Stars stars={calcStars(m.rating)} size={13} tracking={2} />
           </span>
@@ -282,15 +282,16 @@ const TradeRowView: React.FC<{
     </li>
   )
 
-  const side = (team: TeamBlob | null, gave: TradeAsset[]) => {
+  /** One team's column: what it RECEIVED (the other side's package), then its own moves. */
+  const side = (team: TeamBlob | null, received: TradeAsset[]) => {
     const own = moves.filter(m => team && m.team?.id === team.id)
     return (
       <div style={{ minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '7px' }}>
           {teamChip(team, 700)}
-          <span style={{ ...font(400, 11), color: TEXT.muted }}>sent</span>
+          <span style={{ ...font(400, 11), color: TEXT.muted }}>received</span>
         </div>
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{gave.map(piece)}</ul>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{received.map(piece)}</ul>
         {own.length > 0 && (
           <>
             <div style={{ ...font(400, 11), color: TEXT.muted, margin: '8px 0 3px' }}>and</div>
@@ -317,8 +318,11 @@ const TradeRowView: React.FC<{
         }}>&rsaquo;</span>
         {tag('Trade', ACCENT.info)}
         <span style={{ ...font(500, 13, 1.7), color: TEXT.secondary, flex: 1, minWidth: 0 }}>
-          {teamChip(t.teamA)} sent <b style={{ color: TEXT.body }}>{names(t.aGave)}</b> to{' '}
-          {teamChip(t.teamB)} for <b style={{ color: TEXT.body }}>{names(t.bGave)}</b>
+          {/* Read by who RECEIVED what (owner): team B took the listed player, team A
+              took the package. The manifest stores what each side GAVE. */}
+          {teamChip(t.teamB)} received <b style={{ color: TEXT.body }}>{names(t.aGave)}</b>
+          <span style={{ color: TEXT.muted }}> &middot; </span>
+          {teamChip(t.teamA)} received <b style={{ color: TEXT.body }}>{names(t.bGave)}</b>
           {/* The forced moves live in the expanded view; say they exist, or a reader has
               no reason to open a trade that released or signed somebody. */}
           {moves.length > 0 && (
@@ -334,8 +338,8 @@ const TradeRowView: React.FC<{
           display: 'grid', gap: '22px', padding: '4px 14px 16px 36px',
           gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
         }}>
-          {side(t.teamA, t.aGave)}
-          {side(t.teamB, t.bGave)}
+          {side(t.teamB, t.aGave)}
+          {side(t.teamA, t.bGave)}
         </div>
       )}
     </div>

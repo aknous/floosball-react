@@ -224,6 +224,13 @@ const TradeMoves: React.FC<{ moves: TradeMove[]; partnerId?: number }> = ({ move
             <span style={{ fontSize: '13px', fontWeight: 600, color: '#e2e8f0' }}>{m.name}</span>
           )}
           {m.detail && <span style={{ fontSize: '11px', color: '#94a3b8' }}>{m.detail}</span>}
+          {m.rating != null && m.rating > 0 && (
+            <HoverTooltip text={`Rated ${Math.round(m.rating)} ${m.ratingNow ? 'now' : 'at the time'}`}>
+              <span style={{ display: 'inline-block' }}>
+                <Stars stars={calcStars(m.rating)} size={12} tracking={2} />
+              </span>
+            </HoverTooltip>
+          )}
           {(m.note || m.fee) && (
             <span style={{ fontSize: '11px', color: '#94a3b8' }}>
               {[m.note, m.fee ? `${m.fee}F cut fee` : null].filter(Boolean).join(' · ')}
@@ -257,8 +264,9 @@ export const TradeHistory: React.FC<{ trades: TeamTrade[]; narrow: boolean }> = 
             display: 'grid', gap: '16px',
             gridTemplateColumns: narrow ? 'minmax(0,1fr)' : 'repeat(2, minmax(0,1fr))',
           }}>
-            <AssetList label="Sent" assets={t.gave} />
+            {/* Read by who RECEIVED what (owner): this team's haul first, then the partner's. */}
             <AssetList label="Received" assets={t.got} />
+            <AssetList label={`${t.partner?.name ?? 'Partner'} received`} assets={t.gave} />
           </div>
           {(t.moves?.length ?? 0) > 0 && <TradeMoves moves={t.moves!} partnerId={t.partner?.id} />}
         </div>
