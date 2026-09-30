@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing, TradeRow, TradeAsset, TeamBlob, PoolFreeAgent } from '@/hooks/useTransactions'
+import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing, TradeRow, TradeAsset, TradeMove, TRADE_MOVE_LABEL, TeamBlob, PoolFreeAgent } from '@/hooks/useTransactions'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
@@ -252,15 +252,54 @@ const TradeRowView: React.FC<{
     </li>
   )
 
-  const side = (team: TeamBlob | null, gave: TradeAsset[]) => (
-    <div style={{ minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '7px' }}>
-        {teamChip(team, 700)}
-        <span style={{ ...font(400, 11), color: TEXT.muted }}>sent</span>
-      </div>
-      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{gave.map(piece)}</ul>
-    </div>
+  const moves = t.moves ?? []
+
+  /** A roster move this team made because of the trade: a release, a signing, a promotion. */
+  const move = (m: TradeMove, i: number) => (
+    <li key={`move-${m.kind}-${m.id ?? i}`} style={{
+      display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', columnGap: '8px', padding: '3px 0',
+    }}>
+      <span style={{
+        ...font(700, 10, 1, '0.02em'), width: '58px', flexShrink: 0,
+        color: m.kind === 'cut' ? ACCENT.negative : m.kind === 'promotion' ? ACCENT.rules : ACCENT.success,
+      }}>
+        {(TRADE_MOVE_LABEL[m.kind] ?? m.kind).toUpperCase()}
+      </span>
+      <span style={{ ...font(600, 13), color: TEXT.body }}>{m.name}</span>
+      {m.detail && <span style={{ ...font(400, 11), color: TEXT.muted }}>{m.detail}</span>}
+      {m.rating != null && (
+        <HoverTooltip text={`Rated ${Math.round(m.rating)} at the time`}>
+          <span style={{ display: 'inline-block' }}>
+            <Stars stars={calcStars(m.rating)} size={13} tracking={2} />
+          </span>
+        </HoverTooltip>
+      )}
+      {(m.note || m.fee) && (
+        <span style={{ ...font(400, 11), color: TEXT.muted, flexBasis: '100%', paddingLeft: '66px' }}>
+          {[m.note, m.fee ? `${m.fee}F cut fee` : null].filter(Boolean).join(' · ')}
+        </span>
+      )}
+    </li>
   )
+
+  const side = (team: TeamBlob | null, gave: TradeAsset[]) => {
+    const own = moves.filter(m => team && m.team?.id === team.id)
+    return (
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '7px' }}>
+          {teamChip(team, 700)}
+          <span style={{ ...font(400, 11), color: TEXT.muted }}>sent</span>
+        </div>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{gave.map(piece)}</ul>
+        {own.length > 0 && (
+          <>
+            <div style={{ ...font(400, 11), color: TEXT.muted, margin: '8px 0 3px' }}>and</div>
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>{own.map(move)}</ul>
+          </>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div style={{ borderBottom: `1px solid ${BORDER.subtle}` }}>
@@ -280,6 +319,13 @@ const TradeRowView: React.FC<{
         <span style={{ ...font(500, 13, 1.7), color: TEXT.secondary, flex: 1, minWidth: 0 }}>
           {teamChip(t.teamA)} sent <b style={{ color: TEXT.body }}>{names(t.aGave)}</b> to{' '}
           {teamChip(t.teamB)} for <b style={{ color: TEXT.body }}>{names(t.bGave)}</b>
+          {/* The forced moves live in the expanded view; say they exist, or a reader has
+              no reason to open a trade that released or signed somebody. */}
+          {moves.length > 0 && (
+            <span style={{ ...font(400, 12), color: TEXT.muted, whiteSpace: 'nowrap' }}>
+              {' '}&middot; {moves.length} roster move{moves.length === 1 ? '' : 's'}
+            </span>
+          )}
         </span>
         <span style={{ ...font(400, 11), color: TEXT.muted, whiteSpace: 'nowrap' }}>{when}</span>
       </button>
@@ -424,6 +470,9 @@ const TransactionsPage: React.FC = () => {
   }
   const mine = (on: boolean): React.CSSProperties =>
     on ? { background: BG.cardOwn, boxShadow: `inset 2px 0 0 ${ACCENT.ownTeam}` } : {}
+  const fmtRecord = (r?: { wins: number; losses: number } | null) =>
+    r ? `${r.wins}-${r.losses}` : '\u2013'
+
   const tag = (text: string, color: string) => (
     <span style={{
       ...font(700, 11, 1, '0.01em'), color,
@@ -490,7 +539,7 @@ const TransactionsPage: React.FC = () => {
                       <span style={{ width: '22px' }}>#</span>
                       <span style={{ flex: 1 }}>Team</span>
                       <span style={{ width: '42px', textAlign: 'right' }}>Rec</span>
-                      <span style={{ width: '46px', textAlign: 'right' }}>Via</span>
+                      <span style={{ width: '92px', textAlign: 'right' }}>Via</span>
                     </div>
                     {draftOrder.map((d: DraftSlot) => {
                       const isMine = !!myTeamId && (d.owner?.id === myTeamId || d.originalTeam?.id === myTeamId)
@@ -506,15 +555,23 @@ const TransactionsPage: React.FC = () => {
                           <span style={{ flex: 1, minWidth: 0 }}>
                             <TeamName team={d.owner} mine={!!myTeamId && d.owner?.id === myTeamId} />
                           </span>
-                          <HoverTooltip text={`${d.originalTeam?.name ?? ''} finished here. The rookie slot follows that record, whoever holds the pick.`}>
+                          {/* The Rec column is the PICKING team's own record, so it reads as the
+                              record of the name beside it. On a traded pick the original team's
+                              record, which is what set the slot, rides with the "via" tag. */}
+                          <HoverTooltip text={d.traded
+                            ? `${d.owner?.name ?? ''}'s record. This pick's slot follows ${d.originalTeam?.name ?? ''}'s finish.`
+                            : `${d.originalTeam?.name ?? ''} finished here. The rookie slot follows that record, whoever holds the pick.`}>
                             <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted, width: '42px', textAlign: 'right', display: 'inline-block' }}>
-                              {d.record ? `${d.record.wins}-${d.record.losses}` : '\u2013'}
+                              {fmtRecord(d.ownerRecord ?? d.record)}
                             </span>
                           </HoverTooltip>
-                          <span style={{ width: '46px', textAlign: 'right' }}>
+                          <span style={{ width: '92px', textAlign: 'right' }}>
                             {d.traded && d.originalTeam
-                              ? <HoverTooltip text={`Traded. ${d.owner?.name} picks on ${d.originalTeam.name}'s finish.`}>
-                                  {tag(d.originalTeam.abbr, ACCENT.warning)}
+                              ? <HoverTooltip text={`Traded. ${d.owner?.name} picks on ${d.originalTeam.name}'s ${fmtRecord(d.record)} finish.`}>
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                    {tag(d.originalTeam.abbr, ACCENT.warning)}
+                                    <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted }}>{fmtRecord(d.record)}</span>
+                                  </span>
                                 </HoverTooltip>
                               : <span style={{ color: TEXT.faint, ...font(400, 12) }}>&ndash;</span>}
                           </span>

@@ -34,9 +34,15 @@ export interface DraftSlot {
   traded: boolean
   /**
    * The ORIGINAL team's record, which is what put the slot here — the owner's record
-   * explains nothing about why the pick sits where it does.
+   * explains nothing about why the pick sits where it does. Shown beside the "via" tag
+   * on a traded pick.
    */
   record: TeamRecord | null
+  /**
+   * The PICKING team's own record, shown beside its name. Equal to `record` for an
+   * untraded pick; absent from older backends, which fall back to `record`.
+   */
+  ownerRecord?: TeamRecord | null
 }
 
 
@@ -86,6 +92,30 @@ export interface TradeAsset {
   rating?: number
 }
 
+/**
+ * A roster move a trade FORCED, beyond the assets: the buyer releasing a player to make
+ * room, or the seller signing a free agent / promoting a prospect to fill the hole.
+ * Absent on trades settled before these were recorded, and a same-position swap has none.
+ */
+export interface TradeMove {
+  kind: 'cut' | 'signing' | 'promotion' | string
+  team: TeamBlob | null
+  id: number | null
+  name: string | null
+  /** Position. */
+  detail: string | null
+  /** Rating at the time of the move. */
+  rating: number | null
+  /** Treasury paid to release a player with term left. */
+  fee?: number | null
+  /** The reason only, e.g. "to make room for X"; the verb is the label. */
+  note: string | null
+}
+
+export const TRADE_MOVE_LABEL: Record<string, string> = {
+  cut: 'Released', signing: 'Signed', promotion: 'Promoted',
+}
+
 export interface TradeRow {
   id: number
   week: number | null
@@ -99,6 +129,8 @@ export interface TradeRow {
   trigger: string | null
   sellerWhy: string | null
   buyerWhy: string | null
+  /** The roster moves the trade forced. Empty or absent on older trades and swaps. */
+  moves?: TradeMove[]
 }
 
 export interface MoveRow {
