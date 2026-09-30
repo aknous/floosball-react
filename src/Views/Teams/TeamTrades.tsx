@@ -264,8 +264,9 @@ export const TradeHistory: React.FC<{ trades: TeamTrade[]; narrow: boolean }> = 
             display: 'grid', gap: '16px',
             gridTemplateColumns: narrow ? 'minmax(0,1fr)' : 'repeat(2, minmax(0,1fr))',
           }}>
-            <AssetList label="Sent" assets={t.gave} />
+            {/* Read by who RECEIVED what (owner): this team's haul first, then the partner's. */}
             <AssetList label="Received" assets={t.got} />
+            <AssetList label={`${t.partner?.name ?? 'Partner'} received`} assets={t.gave} />
           </div>
           {(t.moves?.length ?? 0) > 0 && <TradeMoves moves={t.moves!} partnerId={t.partner?.id} />}
         </div>
