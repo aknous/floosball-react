@@ -539,7 +539,7 @@ const TransactionsPage: React.FC = () => {
                       <span style={{ width: '22px' }}>#</span>
                       <span style={{ flex: 1 }}>Team</span>
                       <span style={{ width: '42px', textAlign: 'right' }}>Rec</span>
-                      <span style={{ width: '92px', textAlign: 'right' }}>Via</span>
+                      <span style={{ width: '46px', textAlign: 'right' }}>Via</span>
                     </div>
                     {draftOrder.map((d: DraftSlot) => {
                       const isMine = !!myTeamId && (d.owner?.id === myTeamId || d.originalTeam?.id === myTeamId)
@@ -557,7 +557,8 @@ const TransactionsPage: React.FC = () => {
                           </span>
                           {/* The Rec column is the PICKING team's own record, so it reads as the
                               record of the name beside it. On a traded pick the original team's
-                              record, which is what set the slot, rides with the "via" tag. */}
+                              record, which is what set the slot, is in the "via" tag's tooltip
+                              (owner: in the table it crowded the row). */}
                           <HoverTooltip text={d.traded
                             ? `${d.owner?.name ?? ''}'s record. This pick's slot follows ${d.originalTeam?.name ?? ''}'s finish.`
                             : `${d.originalTeam?.name ?? ''} finished here. The rookie slot follows that record, whoever holds the pick.`}>
@@ -565,13 +566,10 @@ const TransactionsPage: React.FC = () => {
                               {fmtRecord(d.ownerRecord ?? d.record)}
                             </span>
                           </HoverTooltip>
-                          <span style={{ width: '92px', textAlign: 'right' }}>
+                          <span style={{ width: '46px', textAlign: 'right' }}>
                             {d.traded && d.originalTeam
                               ? <HoverTooltip text={`Traded. ${d.owner?.name} picks on ${d.originalTeam.name}'s ${fmtRecord(d.record)} finish.`}>
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                                    {tag(d.originalTeam.abbr, ACCENT.warning)}
-                                    <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted }}>{fmtRecord(d.record)}</span>
-                                  </span>
+                                  {tag(d.originalTeam.abbr, ACCENT.warning)}
                                 </HoverTooltip>
                               : <span style={{ color: TEXT.faint, ...font(400, 12) }}>&ndash;</span>}
                           </span>
