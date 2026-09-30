@@ -104,8 +104,10 @@ export interface TradeMove {
   name: string | null
   /** Position. */
   detail: string | null
-  /** Rating at the time of the move. */
+  /** Rating at the time of the move, or the current one when `ratingNow`. */
   rating: number | null
+  /** True for a move backfilled from the game log, whose rating was never stored. */
+  ratingNow?: boolean
   /** Treasury paid to release a player with term left. */
   fee?: number | null
   /** The reason only, e.g. "to make room for X"; the verb is the label. */

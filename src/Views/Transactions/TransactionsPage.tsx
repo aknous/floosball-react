@@ -268,7 +268,7 @@ const TradeRowView: React.FC<{
       <span style={{ ...font(600, 13), color: TEXT.body }}>{m.name}</span>
       {m.detail && <span style={{ ...font(400, 11), color: TEXT.muted }}>{m.detail}</span>}
       {m.rating != null && (
-        <HoverTooltip text={`Rated ${Math.round(m.rating)} at the time`}>
+        <HoverTooltip text={`Rated ${Math.round(m.rating)} ${m.ratingNow ? 'now' : 'at the time'}`}>
           <span style={{ display: 'inline-block' }}>
             <Stars stars={calcStars(m.rating)} size={13} tracking={2} />
           </span>
