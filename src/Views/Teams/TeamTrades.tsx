@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
 import { Stars, calcStars } from '@/Components/Stars'
-import type { TradeAsset } from '@/hooks/useTransactions'
+import { TRADE_MOVE_LABEL } from '@/hooks/useTransactions'
+import type { TradeAsset, TradeMove } from '@/hooks/useTransactions'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -25,6 +26,8 @@ export interface TeamTrade {
   gave: TradeAsset[]
   /** What arrived. */
   got: TradeAsset[]
+  /** Roster moves the trade forced, on either side. Absent on older trades and swaps. */
+  moves?: TradeMove[]
 }
 
 export interface PickEntry {
@@ -195,6 +198,43 @@ const AssetList: React.FC<{ label: string; assets: TradeAsset[] }> = ({ label, a
   </div>
 )
 
+/**
+ * The roster moves the trade forced: this team's release, signing or promotion, and the
+ * partner's. A partner's move names the partner, since it happened on the other roster.
+ */
+const TradeMoves: React.FC<{ moves: TradeMove[]; partnerId?: number }> = ({ moves, partnerId }) => (
+  <div style={{ marginTop: '10px' }}>
+    <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.02em', marginBottom: '4px' }}>
+      Roster moves
+    </div>
+    {moves.map((m, i) => {
+      const partner = partnerId != null && m.team?.id === partnerId
+      return (
+        <div key={`${m.kind}-${m.id ?? i}`} style={{
+          display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px', padding: '2px 0', minWidth: 0,
+        }}>
+          {partner && <Crest team={m.team} size={14} />}
+          <span style={{ fontSize: '12px', fontWeight: 700, color: '#cbd5e1' }}>
+            {partner ? `${m.team?.name} ${(TRADE_MOVE_LABEL[m.kind] ?? m.kind).toLowerCase()}` : (TRADE_MOVE_LABEL[m.kind] ?? m.kind)}
+          </span>
+          {m.id != null ? (
+            <PlayerLink playerId={m.id} playerName={m.name ?? ''}
+              style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '13px' }} />
+          ) : (
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#e2e8f0' }}>{m.name}</span>
+          )}
+          {m.detail && <span style={{ fontSize: '11px', color: '#94a3b8' }}>{m.detail}</span>}
+          {(m.note || m.fee) && (
+            <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+              {[m.note, m.fee ? `${m.fee}F cut fee` : null].filter(Boolean).join(' · ')}
+            </span>
+          )}
+        </div>
+      )
+    })}
+  </div>
+)
+
 /** Every trade the team has made, newest first, from this team's side of it. */
 export const TradeHistory: React.FC<{ trades: TeamTrade[]; narrow: boolean }> = ({ trades, narrow }) => {
   if (trades.length === 0) {
@@ -220,6 +260,7 @@ export const TradeHistory: React.FC<{ trades: TeamTrade[]; narrow: boolean }> = 
             <AssetList label="Sent" assets={t.gave} />
             <AssetList label="Received" assets={t.got} />
           </div>
+          {(t.moves?.length ?? 0) > 0 && <TradeMoves moves={t.moves!} partnerId={t.partner?.id} />}
         </div>
       ))}
     </div>

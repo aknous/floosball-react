@@ -6,8 +6,9 @@ import { FloobitSymbol } from '@/Components/Icons/Floobit'
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
 // The Transplant: graft one card's effect onto another player card you own. Both cards
-// must be the SAME edition and SAME position; the target keeps its identity + upgrade
-// tier and takes on the donor's effect, the donor is consumed. Cost scales with edition.
+// must be the SAME edition and SAME position; the target keeps its identity and takes on
+// the donor's effect AND the donor's upgrade tier (the tier travels with the effect), the
+// donor is consumed. Cost scales with edition.
 
 interface TransplantModalProps {
   visible: boolean
@@ -295,7 +296,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', background: 'rgba(167,139,250,0.08)', borderTop: '1px solid rgba(167,139,250,0.25)', borderBottom: '1px solid rgba(167,139,250,0.25)', flexShrink: 0 }}>
                 <div style={{ fontSize: 12, color: '#cbd5e1' }}>
                   Graft <b style={{ color: accent }}>{effectLabel(donor)}</b> onto <b style={{ color: '#e2e8f0' }}>{target.playerName}</b>
-                  <span style={{ color: '#94a3b8' }}> · keeps tier {target.tier ?? 1}</span>
+                  <span style={{ color: '#94a3b8' }}> · tier {donor.tier ?? 1}</span>
                 </div>
                 <button
                   onClick={confirm}
