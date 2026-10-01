@@ -4,6 +4,7 @@ import { calcStars, STAR_COLORS } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { POSITION_COLORS } from '@/Components/Cards/positionColors'
 import GlitchMark from './GlitchMark'
+import HoverTooltip from '@/Components/HoverTooltip'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -386,6 +387,8 @@ interface TradingCardProps {
   onClick?: () => void
   onLevelUp?: () => void  // shows a "Level Up" affordance (collection view)
   onTrash?: () => void    // shows a "Trash" affordance (vault view — permanent delete)
+  onFindDupes?: () => void  // shows a "duplicates" affordance (collection view)
+  dupeCount?: number      // OTHER owned cards with this effect; the affordance hides at 0
   showSellValue?: boolean
   glowColor?: string  // persistent outline/glow (e.g. team color for roster match)
   staticGlow?: boolean  // if true, glow without pulse animation (for deck cards)
@@ -942,7 +945,7 @@ const DiamondEdgeShimmer: React.FC = () => (
 )
 
 const TradingCard: React.FC<TradingCardProps> = ({
-  card, size = 'md', selected = false, onSelect, onClick, onLevelUp, onTrash, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState, gateFP,
+  card, size = 'md', selected = false, onSelect, onClick, onLevelUp, onTrash, onFindDupes, dupeCount = 0, showSellValue = false, glowColor, staticGlow, noHoverLift, onHoverChange, forceFlipped, apSwapState, gateFP,
 }) => {
   const [hovered, setHovered] = useState(false)
   const [flipped, setFlipped] = useState(false)
@@ -1445,16 +1448,44 @@ const TradingCard: React.FC<TradingCardProps> = ({
             </button>
           )}
 
-          {/* Level-Up affordance (collection) — gold pill, bottom-left on hover */}
-          {onLevelUp && !card.vaulted && showActions && (
+          {/* Bottom-left hover actions (collection): the duplicates finder stacked above
+              Level Up. Stacked rather than side by side because the sell value owns the
+              bottom-right, and on a small card the three do not fit on one line. */}
+          {!card.vaulted && showActions && (onLevelUp || (onFindDupes && dupeCount > 0)) && (
+          <div style={{
+            position: 'absolute', bottom: d.pad - 2, left: d.pad - 2, zIndex: 4,
+            display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px',
+          }}>
+          {onFindDupes && dupeCount > 0 && (
+            <HoverTooltip text={`Show your ${dupeCount} other ${card.displayName || card.effectConfig?.displayName || ''} card${dupeCount === 1 ? '' : 's'}`}>
+              <button
+                onClick={(e) => { e.stopPropagation(); onFindDupes() }}
+                aria-label={`Show ${dupeCount} duplicate${dupeCount === 1 ? '' : 's'}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '4px',
+                  padding: '3px 7px',
+                  borderRadius: '5px',
+                  border: '1px solid rgba(94,234,212,0.55)',
+                  background: 'rgba(15,23,42,0.88)',
+                  color: '#5eead4',
+                  fontSize: d.font - 3, fontWeight: 800,
+                  fontFamily: 'pressStart', cursor: 'pointer',
+                }}
+              >
+                <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <rect x="1" y="3" width="6.5" height="8" rx="1" stroke="#5eead4" strokeWidth="1.4"/>
+                  <path d="M4 1.2h5.6a1 1 0 011 1v7" stroke="#5eead4" strokeWidth="1.4" strokeLinecap="round"/>
+                </svg>
+                &times;{dupeCount}
+              </button>
+            </HoverTooltip>
+          )}
+          {/* Level-Up affordance (collection) — gold pill */}
+          {onLevelUp && (
             <button
               onClick={(e) => { e.stopPropagation(); onLevelUp() }}
               aria-label="Level Up"
               style={{
-                position: 'absolute',
-                bottom: d.pad - 2,
-                left: d.pad - 2,
-                zIndex: 4,
                 display: 'flex', alignItems: 'center', gap: '3px',
                 padding: '3px 7px',
                 borderRadius: '5px',
@@ -1471,6 +1502,8 @@ const TradingCard: React.FC<TradingCardProps> = ({
               </svg>
               Level Up
             </button>
+          )}
+          </div>
           )}
 
           {/* Trash affordance (vault) — red icon button, bottom-right on hover */}
