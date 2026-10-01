@@ -104,6 +104,10 @@ const CardCollection: React.FC = () => {
   const [behaviorFilter, setBehaviorFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<string>('recent')
+  // Same-effect copies per effect across the whole scope (from the server, ignoring
+  // filters), and the effect currently being shown by the duplicate finder.
+  const [effectCounts, setEffectCounts] = useState<Record<string, number>>({})
+  const [dupeEffect, setDupeEffect] = useState<{ name: string; label: string } | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [selling, setSelling] = useState(false)
   const [currentSeason, setCurrentSeason] = useState(0)
@@ -122,7 +126,7 @@ const CardCollection: React.FC = () => {
   // Search + output narrow client-side (instant, no refetch); everything else is
   // server-side. Reorder needs display order == server order, so it's disabled
   // whenever a client-side narrowing is active.
-  const searchActive = search.trim() !== '' || outputFilter !== 'all' || behaviorFilter !== 'all'
+  const searchActive = search.trim() !== '' || outputFilter !== 'all' || behaviorFilter !== 'all' || dupeEffect !== null
   // Native HTML5 drag doesn't work on touch, so reordering is desktop-only.
   const canReorder = inVault && sortBy === 'manual' && !isMobile && !searchActive
   // Any filter narrowing the list — so an empty result reads as "no matches" rather
@@ -152,6 +156,7 @@ const CardCollection: React.FC = () => {
       const json = await res.json()
       setCards(json.data?.cards ?? [])
       setCurrentSeason(json.data?.currentSeason ?? 0)
+      setEffectCounts(json.data?.effectCounts ?? {})
     } catch {
       // silent
     } finally {
@@ -177,8 +182,23 @@ const CardCollection: React.FC = () => {
     if (behaviorFilter !== 'all') {
       list = list.filter(c => getBehaviorTag(c) === behaviorFilter)
     }
+    // Duplicate finder: EXACT effect match. The search box substring-matches, so it would
+    // also catch other effects whose names contain this one.
+    if (dupeEffect) {
+      list = list.filter(c => c.effectName === dupeEffect.name)
+    }
     return list
-  }, [cards, search, outputFilter, behaviorFilter])
+  }, [cards, search, outputFilter, behaviorFilter, dupeEffect])
+
+  /** Show every copy of this card's effect. Clears the other filters first, since a
+   *  position / equipped / search filter would hide some of the copies being asked for. */
+  const showDupes = (card: CardData) => {
+    if (!card.effectName) return
+    setEditionFilter('all'); setPositionFilter(0); setClassificationFilter('all')
+    setActiveOnly(false); setEquippedOnly(false); setOutputFilter('all')
+    setBehaviorFilter('all'); setSearch('')
+    setDupeEffect({ name: card.effectName, label: card.displayName || card.effectConfig?.displayName || card.effectName })
+  }
 
   useEffect(() => { setLoading(true); fetchCards() }, [fetchCards])
 
@@ -186,6 +206,7 @@ const CardCollection: React.FC = () => {
   // order (Vault opens in manual/arrangeable order; Collection in newest-first).
   useEffect(() => {
     setSelectedIds(new Set())
+    setDupeEffect(null)
     // Equipped/output only apply to the live collection; clear them entering the Vault.
     if (view === 'vault') { setSortBy('manual'); setEquippedOnly(false); setOutputFilter('all'); setBehaviorFilter('all') }
     else if (view === 'collection') setSortBy('recent')
@@ -578,6 +599,28 @@ const CardCollection: React.FC = () => {
         </select>
       </div>
 
+      {/* Duplicate finder chip — what is being shown, and the way back out. */}
+      {dupeEffect && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+          marginBottom: '12px', padding: '8px 12px',
+          backgroundColor: 'rgba(94,234,212,0.08)', border: '1px solid rgba(94,234,212,0.35)',
+        }}>
+          <span style={{ fontSize: '13px', color: '#cbd5e1' }}>
+            Duplicates of <b style={{ color: '#5eead4' }}>{dupeEffect.label}</b>
+            <span style={{ color: '#94a3b8' }}> &middot; {displayedCards.length} card{displayedCards.length === 1 ? '' : 's'}</span>
+          </span>
+          <span style={{ flex: 1 }} />
+          <button
+            onClick={() => setDupeEffect(null)}
+            style={{
+              background: 'none', border: '1px solid #334155', color: '#cbd5e1',
+              fontSize: '12px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >Show all cards</button>
+        </div>
+      )}
+
       {/* Card grid */}
       {loading ? (
         <div style={{ color: '#64748b', fontSize: '13px', padding: '40px 0', textAlign: 'center' }}>
@@ -624,6 +667,8 @@ const CardCollection: React.FC = () => {
                 onSelect={inVault ? undefined : () => toggleSelect(card.id)}
                 onLevelUp={inVault ? undefined : () => setLevelUpCard(card)}
                 onTrash={inVault ? () => setTrashTarget(card) : undefined}
+                onFindDupes={inVault ? undefined : () => showDupes(card)}
+                dupeCount={inVault ? 0 : Math.max(0, (effectCounts[card.effectName ?? ''] ?? 1) - 1)}
                 noHoverLift={canReorder}
                 showSellValue={!inVault}
               />
