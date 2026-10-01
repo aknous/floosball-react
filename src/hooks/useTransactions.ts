@@ -173,6 +173,10 @@ interface UseTransactionsResult {
   /** Why the market is open or shut. The sim owns the rule; this page owns the wording. */
   tradeWindow: TradeWindow
   draftOrder: DraftSlot[]
+  /** False until the Floos Bowl is played; the playoff slots keep moving until then. */
+  draftOrderFinal: boolean
+  /** First slot held by a playoff team (17 in a 32-team league). */
+  draftPlayoffSlotsFrom: number | null
   prospects: Prospect[]
   expiring: ExpiringPlayer[]
   block: BlockListing[]
@@ -203,6 +207,9 @@ export function useTransactions(): UseTransactionsResult {
   const [tradingEnabled, setTradingEnabled] = useState(false)
   const [tradeWindow, setTradeWindow] = useState<TradeWindow>({ open: false, state: 'disabled', deadlineWeek: 22 })
   const [draftOrder, setDraftOrder] = useState<DraftSlot[]>([])
+  // Missing from an older backend: read as final so no caveat is shown on a guess.
+  const [draftOrderFinal, setDraftOrderFinal] = useState(true)
+  const [draftPlayoffSlotsFrom, setDraftPlayoffSlotsFrom] = useState<number | null>(null)
   const [prospects, setProspects] = useState<Prospect[]>([])
   const [expiring, setExpiring] = useState<ExpiringPlayer[]>([])
   const [block, setBlock] = useState<BlockListing[]>([])
@@ -238,6 +245,8 @@ export function useTransactions(): UseTransactionsResult {
           open: !!d.tradingEnabled, state: d.tradingEnabled ? 'open' : 'disabled', deadlineWeek: 22,
         })
         setDraftOrder(d.draftOrder ?? [])
+        setDraftOrderFinal(d.draftOrderFinal !== false)
+        setDraftPlayoffSlotsFrom(d.draftPlayoffSlotsFrom ?? null)
         setExpiring(d.expiring ?? [])
         setBlock(d.block ?? [])
         setTrades(d.trades ?? [])
@@ -267,7 +276,7 @@ export function useTransactions(): UseTransactionsResult {
 
   return {
     loading, error, season, week, tradingEnabled, tradeWindow,
-    draftOrder, prospects, expiring, block, trades, moves,
+    draftOrder, draftOrderFinal, draftPlayoffSlotsFrom, prospects, expiring, block, trades, moves,
     showPool, freeAgentPool,
     refetch: fetchAll,
   }
