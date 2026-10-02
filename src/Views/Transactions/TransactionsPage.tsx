@@ -378,7 +378,7 @@ const TransactionsPage: React.FC = () => {
   const myTeamId = (user as any)?.favoriteTeamId ?? null
   const {
     loading, error, season, week, tradeWindow,
-    draftOrder, prospects, expiring, block, trades, moves, showPool, freeAgentPool,
+    draftOrder, draftOrderFinal, draftPlayoffSlotsFrom, prospects, expiring, block, trades, moves, showPool, freeAgentPool,
   } = useTransactions()
 
   const [classPos, setClassPos] = useState<PositionFilter>('ALL')
@@ -539,6 +539,12 @@ const TransactionsPage: React.FC = () => {
 >
                 {draftOrder.length === 0 ? emptyPane('No order yet.') : (
                   <>
+                    {/* The playoff teams' slots move with every round until the Floos Bowl. */}
+                    {!draftOrderFinal && draftPlayoffSlotsFrom != null && draftPlayoffSlotsFrom <= draftOrder.length && (
+                      <div style={{ ...font(400, 12, 1.5), color: TEXT.muted, padding: '2px 0 8px' }}>
+                        Picks {draftPlayoffSlotsFrom}&ndash;{draftOrder.length} are approximate and won&rsquo;t settle until the season is over.
+                      </div>
+                    )}
                     <div style={headRow}>
                       <span style={{ width: '22px' }}>#</span>
                       <span style={{ flex: 1 }}>Team</span>
