@@ -270,6 +270,23 @@ function _playerColumns(position: string, careerScope: boolean,
         count('pyds', 'YDS', 'Passing yards', W.volume, r => r.passing.yards),
         count('ptd', 'TD', 'Passing touchdowns', W.count, r => r.passing.tds),
         count('pint', 'INT', 'Interceptions thrown', W.count, r => r.passing.ints),
+        {
+          key: 'tdint', label: 'TD:INT', width: W.rate,
+          help: 'Touchdown passes per interception thrown (\u221e with no interceptions)',
+          // A ratio, so the per-game toggle leaves it alone: dividing both sides by games
+          // played changes nothing.
+          cell: r => {
+            const td = Number(r.passing.tds ?? 0), ints = Number(r.passing.ints ?? 0)
+            if (!ints) return td ? '\u221e' : dash
+            return (td / ints).toFixed(1)
+          },
+          // No interceptions ranks above every real ratio, more touchdowns first. Finite on
+          // purpose: the table sorts by subtraction, and Infinity - Infinity is NaN.
+          sort: r => {
+            const td = Number(r.passing.tds ?? 0), ints = Number(r.passing.ints ?? 0)
+            return ints ? td / ints : (td ? 1e6 + td : -1)
+          },
+        },
         count('sacked', 'SACK', 'Times sacked', 48, r => r.passing.sacked),
         { key: 'air', label: 'AIR', help: 'Average Air Yards Per Throw', width: W.rate, cell: r => n(aDot(r), 1), sort: r => aDot(r) ?? -1 },
         rating, perf, wpa, points,
