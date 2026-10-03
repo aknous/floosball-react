@@ -2,6 +2,7 @@ import { ACCENT, TEXT } from '@/Components/Shell/tokens'
 import { statRampColor } from '@/utils/ratingColors'
 import { W, type Column } from './statsShell'
 import type { StatsPlayerRow, StatsTeamRow } from './statsTypes'
+import { formatTdIntRatio, tdIntRatioSortValue } from '@/utils/tdIntRatio'
 
 /**
  * Column sets. The shell never changes; only these do.
@@ -273,19 +274,9 @@ function _playerColumns(position: string, careerScope: boolean,
         {
           key: 'tdint', label: 'TD:INT', width: W.rate,
           help: 'Touchdown passes per interception thrown (\u221e with no interceptions)',
-          // A ratio, so the per-game toggle leaves it alone: dividing both sides by games
-          // played changes nothing.
-          cell: r => {
-            const td = Number(r.passing.tds ?? 0), ints = Number(r.passing.ints ?? 0)
-            if (!ints) return td ? '\u221e' : dash
-            return (td / ints).toFixed(1)
-          },
-          // No interceptions ranks above every real ratio, more touchdowns first. Finite on
-          // purpose: the table sorts by subtraction, and Infinity - Infinity is NaN.
-          sort: r => {
-            const td = Number(r.passing.tds ?? 0), ints = Number(r.passing.ints ?? 0)
-            return ints ? td / ints : (td ? 1e6 + td : -1)
-          },
+          // A ratio, so the per-game toggle leaves it alone.
+          cell: r => formatTdIntRatio(r.passing.tds, r.passing.ints),
+          sort: r => tdIntRatioSortValue(r.passing.tds, r.passing.ints),
         },
         count('sacked', 'SACK', 'Times sacked', 48, r => r.passing.sacked),
         { key: 'air', label: 'AIR', help: 'Average Air Yards Per Throw', width: W.rate, cell: r => n(aDot(r), 1), sort: r => aDot(r) ?? -1 },

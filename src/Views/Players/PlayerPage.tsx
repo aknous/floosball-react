@@ -15,6 +15,7 @@ import {
   num, pct, sumOver,
   type StatColumn, type TrophyEntry,
 } from './playerPieces'
+import { formatTdIntRatio } from '@/utils/tdIntRatio'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -240,6 +241,10 @@ const OFFENSE_COLUMNS: Record<string, StatColumn[]> = {
     { key: 'ypc',  label: 'YPA',  width: 50, cell: r => num(r.passing?.ypc, 1), total: c => num(c?.passing?.ypc, 1) },
     { key: 'td',   label: 'TD',   width: 44, cell: r => num(r.passing?.tds),  total: c => num(c?.passing?.tds) },
     { key: 'int',  label: 'INT',  width: 44, cell: r => num(r.passing?.ints), total: c => num(c?.passing?.ints) },
+    // The career row is the ratio of career totals, not an average of season ratios.
+    { key: 'tdint', label: 'TD:INT', width: 56,
+      cell: r => formatTdIntRatio(r.passing?.tds, r.passing?.ints),
+      total: c => formatTdIntRatio(c?.passing?.tds, c?.passing?.ints) },
     perfColumn('performanceRating', 'PERF'),
     pointsColumn,
   ],
