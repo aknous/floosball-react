@@ -31,8 +31,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         label: 'New Features',
         items: [
-          "[Teams] Every team page shows its trade history, with what it sent, what it got and why, beside its draft picks for the upcoming rookie drafts, including picks acquired from other teams and its own picks traded away.",
-          '[Front Office] Promoted prospects are protected. Until the contract they were promoted onto ends, their team can keep them or trade them but cannot cut them, and they wear a PROSPECT tag on their team page and profile.',
+          '[Front Office] Promoted prospects are protected. Until the contract they were promoted onto ends, their team cannot cut them, and they wear a PROSPECT tag on their team page and profile.',
         ],
       },
       {
@@ -44,7 +43,6 @@ export const CHANGELOG: ChangelogEntry[] = [
           "[Prospects] A prospect's expected and ceiling ratings are their true numbers everywhere they appear, and match between their team page and their profile.",
           '[Prospects] Promoted prospects sign for at least the seasons they had left as a prospect, so their team cannot let them walk before they develop.',
           '[Prospects] Players develop the same way whether they are in the pipeline or on a roster.',
-          '[Front Office] The Transactions page opens in week 15, with the trade window.',
         ],
       },
       {
@@ -67,8 +65,6 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         label: 'New Features',
         items: [
-          '[Front Office] Trading is live. Teams buy and sell players through the season up to the deadline in week 22, and again in the offseason. Contenders buy, teams going nowhere sell, and a star can move for a real return instead of walking for nothing.',
-          "[Front Office] Transactions, a new page: the live draft order with traded picks marked, this season's rookie class, who is out of contract, the trading block, and every signing, cut and trade as it lands.",
           '[Prospects] The rookie draft is back. One prospect per team enters each season, and every team scouts potential.',
           '[Teams] Every team page has a Pipeline, the prospects behind the roster, and how long each has left to earn a spot.',
           '[Games] The current drive reads as a field on the game card, so you can see where the ball is without opening the game.',
