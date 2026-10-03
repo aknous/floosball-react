@@ -90,6 +90,23 @@ export interface TradeAsset {
    * picks, and for a player who has since left the league.
    */
   rating?: number
+  /**
+   * For a pick: the team it ORIGINALLY belonged to, whose finish sets its slot. Resolved
+   * by the API from the pick row, so older trades carry it too. The manifest name alone
+   * ("S8 R1 pick") cannot say whether a team traded its own pick or one it had bought.
+   */
+  originalTeam?: TeamBlob | null
+}
+
+/**
+ * How a traded asset reads on every surface: a player or prospect by name, a pick as
+ * "Season 8 pick (Rocks)", naming the team whose pick it originally was.
+ */
+export const tradeAssetName = (a: TradeAsset): string => {
+  if (a.kind !== 'pick') return a.name ?? ''
+  const m = /^S(\d+)\s+R(\d+)/.exec(a.name ?? '')
+  const base = m ? `Season ${m[1]} pick` : (a.name ?? 'Pick')
+  return a.originalTeam?.name ? `${base} (${a.originalTeam.name})` : base
 }
 
 /**

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
 import { Stars, calcStars } from '@/Components/Stars'
-import { TRADE_MOVE_LABEL } from '@/hooks/useTransactions'
+import { TRADE_MOVE_LABEL, tradeAssetName } from '@/hooks/useTransactions'
 import type { TradeAsset, TradeMove } from '@/hooks/useTransactions'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -156,14 +156,9 @@ const PickRow: React.FC<{ pick: PickEntry; away?: boolean }> = ({ pick, away }) 
 
 // ── Trade history ───────────────────────────────────────────────────────────
 
-const assetLabel = (a: TradeAsset): string => {
-  if (a.kind === 'pick') {
-    // The manifest names a pick "S9 R1 pick"; read it the way the rest of the page does.
-    const m = /^S(\d+)\s+R(\d+)/.exec(a.name ?? '')
-    return m ? `Season ${m[1]} pick` : (a.name ?? 'Pick')
-  }
-  return a.name ?? ''
-}
+// The manifest names a pick "S9 R1 pick"; the shared label reads it as "Season 9 pick"
+// and names the team it originally belonged to.
+const assetLabel = (a: TradeAsset): string => tradeAssetName(a)
 
 const AssetList: React.FC<{ label: string; assets: TradeAsset[] }> = ({ label, assets }) => (
   <div style={{ minWidth: 0 }}>
