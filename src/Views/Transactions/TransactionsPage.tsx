@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing, TradeRow, TradeAsset, TradeMove, TRADE_MOVE_LABEL, TeamBlob, PoolFreeAgent } from '@/hooks/useTransactions'
+import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, BlockListing, TradeRow, TradeAsset, TradeMove, TRADE_MOVE_LABEL, TeamBlob, PoolFreeAgent, tradeAssetName } from '@/hooks/useTransactions'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import HoverTooltip from '@/Components/HoverTooltip'
 import PlayerLink from '@/Components/PlayerLink'
@@ -219,7 +219,7 @@ const TradeRowView: React.FC<{
 }> = ({ trade: t, row, tag }) => {
   const [open, setOpen] = useState(false)
   const names = (list: TradeAsset[]) =>
-    list.map(a => a.name).filter(Boolean).join(', ') || 'nothing'
+    list.map(tradeAssetName).filter(Boolean).join(', ') || 'nothing'
   const when = t.phase === 'offseason' ? 'Offseason' : `Week ${t.week}`
 
   /** A team's crest and name, so a reader recognises the shield before the word. */
@@ -237,8 +237,10 @@ const TradeRowView: React.FC<{
       <span style={{ ...font(700, 10, 1, '0.02em'), color: TEXT.dim, width: '58px', flexShrink: 0 }}>
         {(a.kind || 'asset').toUpperCase()}
       </span>
-      <span style={{ ...font(600, 13), color: TEXT.body }}>{a.name}</span>
-      {a.detail && <span style={{ ...font(400, 11), color: TEXT.muted }}>{a.detail}</span>}
+      <span style={{ ...font(600, 13), color: TEXT.body }}>{tradeAssetName(a)}</span>
+      {/* A pick's stored detail is the slot it was priced at when traded, which can
+          differ from where it lands once the draft order is final. Players keep theirs. */}
+      {a.detail && a.kind !== 'pick' && <span style={{ ...font(400, 11), color: TEXT.muted }}>{a.detail}</span>}
       {/* ⚠️ ONLY WHERE THERE IS A PLAYER. A pick has no rating and a player who has since
           left the league cannot be resolved, so the stars are absent rather than drawn
           at some default that would read as a one-star player. */}
