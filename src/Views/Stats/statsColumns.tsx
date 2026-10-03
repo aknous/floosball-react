@@ -2,6 +2,7 @@ import { ACCENT, TEXT } from '@/Components/Shell/tokens'
 import { statRampColor } from '@/utils/ratingColors'
 import { W, type Column } from './statsShell'
 import type { StatsPlayerRow, StatsTeamRow } from './statsTypes'
+import { formatTdIntRatio, tdIntRatioSortValue } from '@/utils/tdIntRatio'
 
 /**
  * Column sets. The shell never changes; only these do.
@@ -270,6 +271,13 @@ function _playerColumns(position: string, careerScope: boolean,
         count('pyds', 'YDS', 'Passing yards', W.volume, r => r.passing.yards),
         count('ptd', 'TD', 'Passing touchdowns', W.count, r => r.passing.tds),
         count('pint', 'INT', 'Interceptions thrown', W.count, r => r.passing.ints),
+        {
+          key: 'tdint', label: 'TD:INT', width: W.rate,
+          help: 'Touchdown passes per interception thrown (\u221e with no interceptions)',
+          // A ratio, so the per-game toggle leaves it alone.
+          cell: r => formatTdIntRatio(r.passing.tds, r.passing.ints),
+          sort: r => tdIntRatioSortValue(r.passing.tds, r.passing.ints),
+        },
         count('sacked', 'SACK', 'Times sacked', 48, r => r.passing.sacked),
         { key: 'air', label: 'AIR', help: 'Average Air Yards Per Throw', width: W.rate, cell: r => n(aDot(r), 1), sort: r => aDot(r) ?? -1 },
         rating, perf, wpa, points,
