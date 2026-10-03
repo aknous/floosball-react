@@ -14,11 +14,11 @@ const roman = (n: number) => ROMAN[n] || String(n)
 // Concrete per-level perk copy (mirrors the backend FACILITY effect curves;
 // keep in sync if the curves are retuned). '' = no active bonus at that level.
 const PERK: Record<string, string[]> = {
-  training:    ['', 'Young players develop a little faster', 'Young players develop faster', 'Young players develop notably faster', 'Young players develop much faster', 'Young players develop dramatically faster'],
-  locker_room: ['', '', '', 'Small pre-game morale boost', 'Moderate pre-game morale boost', 'Strong pre-game morale boost'],
-  recovery:    ['', '', '', 'Players tire 15% slower', 'Players tire 30% slower', 'Players tire 35% slower'],
-  scouting:    ['', '', '', 'Clearer read on draft prospects', 'Sharper read on draft prospects', 'Precise read on draft prospects'],
-  stadium:     ['', 'Small home crowd', 'Bigger home crowd', 'Large home crowd', 'Major home crowd', 'Elite home crowd'],
+  training:    ['', 'Young players develop a little faster', 'Young players develop faster', 'Young players develop notably faster', 'Young players develop much faster', 'Young players develop as if under an elite coach'],
+  locker_room: ['', '+0.4% team rating every game', '+0.8% team rating every game', '+1.2% team rating every game', '+1.6% team rating every game', '+2% team rating every game'],
+  recovery:    ['', 'Players tire 5% slower', 'Players tire 10% slower', 'Players tire 15% slower', 'Players tire 30% slower', 'Players tire 35% slower'],
+  scouting:    ['', 'GM judges players a little better', 'GM judges players better', 'GM judges players notably better', 'GM judges players much better', 'A poor GM judges players like a good one'],
+  stadium:     ['', '+0.8% team rating at home', '+1.6% team rating at home', '+2.4% team rating at home', '+3.2% team rating at home', '+4% team rating at home'],
 }
 const perkAt = (key: string, lvl: number) => (PERK[key] || [])[lvl] || ''
 const SHORT_FAC: Record<string, string> = {
