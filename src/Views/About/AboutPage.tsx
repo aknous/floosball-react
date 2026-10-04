@@ -1272,14 +1272,15 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>The Five Facilities</p>
             <p style={textStyle}>
-              Each facility levels from 0 to 5, with the real effects arriving around level 3.
+              Each facility levels from 0 to 5, and every level adds to its effect. A fully built set is
+              worth about three extra wins a season.
             </p>
             {bulletList([
-              'Training Facility: faster player development',
-              'Locker Room: higher player morale',
-              'Recovery Center: quicker fatigue recovery',
-              'Scouting Department: clearer rookie scouting',
-              'Stadium: home-field morale (new, effect coming in a later update)',
+              'Training Facility: young players develop faster',
+              'Locker Room: a team rating edge in every game, up to +2%',
+              'Recovery Center: players tire more slowly, up to 35%',
+              'Scouting Department: the GM judges players better when drafting, signing and re-signing',
+              'Stadium: a team rating edge in home games, up to +4%',
             ])}
 
             <p style={labelStyle}>The Treasury and Upkeep</p>

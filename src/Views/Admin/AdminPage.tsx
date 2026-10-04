@@ -924,9 +924,9 @@ const AdminContent: React.FC<{
   const [settingsForm, setSettingsForm] = useState<{
     feedback_url: string; feedback_visible: boolean; survey_url: string; survey_visible: boolean; survey_text: string
     halftime_show_url: string; halftime_show_pause_seconds: string
-    anomalies_enabled: boolean; criticality_enabled: boolean; awakened_powers_enabled: boolean; anomaly_intensity: string
+    anomalies_enabled: boolean; criticality_enabled: boolean; awakened_powers_enabled: boolean; trading_enabled: boolean; anomaly_intensity: string
     awakened_involve_qb: string; awakened_involve_rb: string; awakened_involve_wr: string; awakened_involve_te: string; awakened_involve_k: string; awakened_def_fire_chance: string
-  }>({ feedback_url: '', feedback_visible: true, survey_url: '', survey_visible: false, survey_text: '', halftime_show_url: '', halftime_show_pause_seconds: '120', anomalies_enabled: false, criticality_enabled: false, awakened_powers_enabled: false, anomaly_intensity: 'normal', awakened_involve_qb: '16', awakened_involve_rb: '13', awakened_involve_wr: '5.5', awakened_involve_te: '5.5', awakened_involve_k: '0.5', awakened_def_fire_chance: '35' })
+  }>({ feedback_url: '', feedback_visible: true, survey_url: '', survey_visible: false, survey_text: '', halftime_show_url: '', halftime_show_pause_seconds: '120', anomalies_enabled: false, criticality_enabled: false, awakened_powers_enabled: false, trading_enabled: false, anomaly_intensity: 'normal', awakened_involve_qb: '16', awakened_involve_rb: '13', awakened_involve_wr: '5.5', awakened_involve_te: '5.5', awakened_involve_k: '0.5', awakened_def_fire_chance: '35' })
   const [settingsLoading, setSettingsLoading] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
@@ -948,6 +948,7 @@ const AdminContent: React.FC<{
         halftime_show_pause_seconds: data.halftime_show_pause_seconds || '120',
         anomalies_enabled: data.anomalies_enabled === true || data.anomalies_enabled === 'true',
         criticality_enabled: data.criticality_enabled === true || data.criticality_enabled === 'true',
+        trading_enabled: data.trading_enabled === true || data.trading_enabled === 'true',
         awakened_powers_enabled: data.awakened_powers_enabled === true || data.awakened_powers_enabled === 'true',
         anomaly_intensity: data.anomaly_intensity || 'normal',
         awakened_involve_qb: data.awakened_involve_qb != null ? String(data.awakened_involve_qb) : '16',
@@ -2754,6 +2755,18 @@ const AdminContent: React.FC<{
                   style={{ width: '14px', height: '14px', cursor: 'pointer' }}
                 />
                 Awakened powers
+              </label>
+
+              {/* Off hides every trade surface on the site; the trade records stay. */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#cbd5e1', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={settingsForm.trading_enabled}
+                  onChange={e => setSettingsForm(s => ({ ...s, trading_enabled: e.target.checked }))}
+                  disabled={settingsLoading}
+                  style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                />
+                Trading
               </label>
             </div>
 
