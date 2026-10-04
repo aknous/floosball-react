@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import HoverTooltip from '@/Components/HoverTooltip'
+import SeasonStartControl from '@/Views/Admin/SeasonStartControl'
 import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -2567,6 +2568,7 @@ const AdminContent: React.FC<{
 
       {/* Settings */}
       {activeSection === 'settings' && <div style={sectionStyle}>
+        <SeasonStartControl buildHeaders={buildHeaders} />
         <h2 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 16px 0' }}>App Settings</h2>
         <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '16px' }}>
           Runtime-editable settings. Changes apply on the next page load for any user (cached client-side per session).
