@@ -444,6 +444,9 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
   // possession budget) so teams DO call timeouts there; only the truly clock-less
   // formats (innings / play_limit) have none.
   const hasTimeouts = effectiveFormat !== 'innings' && effectiveFormat !== 'play_limit'
+  // Frames hands each team 2 timeouts at the start of every frame (backend
+  // FRAMES_TIMEOUTS_PER_FRAME); every other format has 3 a half.
+  const timeoutSlots = effectiveFormat === 'frames' ? [0, 1] : [0, 1, 2]
 
   // Effective away-team display color: when the two primaries are basically the
   // same, swap the away team to its secondary so they're distinguishable — but
@@ -1636,7 +1639,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               {/* Home timeouts */}
               {!asPage && gameData.status === 'Active' && gameData.homeTimeouts != null && hasTimeouts && (
                 <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingBottom: '8px' }}>
-                  {[0, 1, 2].map(i => (
+                  {timeoutSlots.map(i => (
                     <div key={i} style={{
                       width: '8px', height: '8px', borderRadius: '50%',
                       backgroundColor: i < gameData.homeTimeouts! ? '#f59e0b' : '#334155',
@@ -1684,7 +1687,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
               {/* Away timeouts */}
               {!asPage && gameData.status === 'Active' && gameData.awayTimeouts != null && hasTimeouts && (
                 <div style={{ display: 'flex', gap: '5px', paddingLeft: '50px', paddingTop: '8px' }}>
-                  {[0, 1, 2].map(i => (
+                  {timeoutSlots.map(i => (
                     <div key={i} style={{
                       width: '8px', height: '8px', borderRadius: '50%',
                       backgroundColor: i < gameData.awayTimeouts! ? '#f59e0b' : '#334155',
