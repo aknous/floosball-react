@@ -267,7 +267,10 @@ export default function AwardsPage() {
     else if (hofOpen) setTab('hof')
   }, [mvpOpen, hofOpen])
 
-  const wrap: React.CSSProperties = { maxWidth: '880px', margin: '0 auto', padding: '24px 16px' }
+  // ⚠️ `width: '100%'` is load-bearing: AppShell's <main> is a column flex container, so
+  // without it the page sizes to its content and the tab row (and everything else)
+  // changed width when switching between the MVP and Hall of Fame ballots.
+  const wrap: React.CSSProperties = { width: '100%', boxSizing: 'border-box', maxWidth: '880px', margin: '0 auto', padding: '24px 16px' }
 
   if (loading) {
     return <div style={wrap}><div style={{ color: '#94a3b8', textAlign: 'center', padding: '40px' }}>Loading the Awards Hall...</div></div>
