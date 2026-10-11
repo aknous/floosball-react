@@ -23,6 +23,37 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.06',
+    date: '2026-10-11',
+    feature: true,
+    changes: [],
+    sections: [
+      {
+        label: 'Changes',
+        items: [
+          '[Criticality] Each Core now boosts a different part of your score. Pyre boosts your FPx, Cassian your card FP, Halverson your players\' points, and Aris a little of everything. A Criticality week can be worth up to four times a normal week.',
+          '[Criticality] Weekly modifiers no longer apply during a Criticality.',
+          '[Fantasy] The Grounded modifier is retired.',
+          '[Cards] Card balance pass. The strongest cards for their edition were brought down, the weakest were brought up, and diamonds were rebalanced around the hands they are built for.',
+          '[Cards] Sharpshooter, Advantage and Catalyst have reworked effects that pair with more of your hand.',
+          '[Cards] Nose Picker keeps its streak when you make at least three quarters of your picks yourself. One auto-filled game no longer breaks it.',
+          '[Cards] Complacency is retired. Copies you own keep working.',
+          '[Front Office] When deciding whether to keep a starter, re-sign them or promote a prospect, teams now weigh how the starter played last season and whether they are past their peak. Players signed or re-signed this offseason cannot be cut.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Cards] Copycat was doubled twice on Frenzy weeks.',
+          '[Cards] Metronome could grow its streak in a week it paid nothing.',
+          '[Cards] Lemons showed "× 1.0" when its own player missed their bar. It now says it did not clear the bar.',
+          '[Cards] Lineup projections now account for the week\'s modifier and for Advantage.',
+          '[Cards] Group Project no longer counts Captain for a boost that did not happen.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v1.05',
     date: '2026-09-27',
     feature: true,
