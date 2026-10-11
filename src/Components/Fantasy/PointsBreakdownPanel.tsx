@@ -524,7 +524,12 @@ export const PointsBreakdownPanel: React.FC<{
                     ))}
                     {syn.chance.hasAdvantage && (
                       <div style={{ paddingLeft: '12px', fontSize: '10px', color: '#94a3b8' }}>
-                        Advantage: rolling twice
+                        Advantage: rolling {syn.chance.advantageRolls || 2}x, pays twice on two hits
+                      </div>
+                    )}
+                    {(syn.chance.catalystJackpotBoost || 0) > 0 && (
+                      <div style={{ paddingLeft: '12px', fontSize: '10px', color: '#94a3b8' }}>
+                        Catalyst: jackpots +{((syn.chance.catalystJackpotBoost || 0) * 100).toFixed(0)}%
                       </div>
                     )}
                   </div>
