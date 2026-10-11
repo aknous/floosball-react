@@ -92,6 +92,8 @@ export interface HandSynergies {
     amplifiers: ChanceAmplifier[]
     totalBonus: number
     hasAdvantage: boolean
+    advantageRolls?: number
+    catalystJackpotBoost?: number
   }
   streak: {
     count: number
