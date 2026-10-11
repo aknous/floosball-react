@@ -1377,7 +1377,7 @@ const AboutPage: React.FC = () => {
             <p style={labelStyle}>Weekly Modifiers</p>
             <p style={textStyle}>
               A random modifier is applied each week that changes how card effects work for everyone.
-              The active modifier is shown on the Fantasy page. Modifiers don't repeat within 3 weeks.
+              The active modifier is shown on the Fantasy page. Every modifier comes up once before any of them repeats. During a Criticality no modifier applies: the controlling Core's equation decides the week.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '10px' }}>
               {[
@@ -1388,7 +1388,6 @@ const AboutPage: React.FC = () => {
                 { name: 'Fortunate', color: '#38bdf8', desc: 'Chance card trigger rates increased by 15%' },
                 { name: 'Synergy', color: '#f472b6', desc: 'Same-team stack FPx is doubled this week' },
                 { name: 'Payday', color: '#eab308', desc: 'Floobits earned are tripled' },
-                { name: 'Grounded', color: '#ef4444', desc: 'All FPx effects disabled' },
                 { name: 'Steady', color: '#94a3b8', desc: 'No special effect. All normal rules apply' },
               ].map(m => (
                 <div key={m.name} style={{
