@@ -34,7 +34,6 @@ export const CHANGELOG: ChangelogEntry[] = [
           '[Criticality] Each Core now boosts a different part of your score. Pyre boosts your FPx, Cassian your card FP, Halverson your players\' points, and Aris a little of everything. A Criticality week can be worth up to four times a normal week.',
           '[Criticality] Weekly modifiers no longer apply during a Criticality.',
           '[Fantasy] The Grounded modifier is retired.',
-          '[Cards] Power bars are back where they were before September, so cards trigger a little less often.',
           '[Cards] Card balance pass. The strongest cards for their edition were brought down, the weakest were brought up, and diamonds were rebalanced around the hands they are built for.',
           '[Cards] Sharpshooter, Advantage and Catalyst have reworked effects that pair with more of your hand.',
           '[Cards] Nose Picker keeps its streak when you make at least three quarters of your picks yourself. One auto-filled game no longer breaks it.',
