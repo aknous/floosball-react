@@ -40,9 +40,10 @@ describe('nav gates', () => {
     expect(NAV).toMatch(/:\s*inPlayoffs\s*\?\s*\[\.\.\.baseLeagueItems,\s*BRACKET_ITEM\]/)
   })
 
-  it('there is no Transactions entry while trading is off', () => {
-    // Trading is off and the site carries no trade surfaces (owner, 2026-10-03).
-    expect(NAV).not.toMatch(/key: 'transactions'/)
+  it('Transactions reads the backend flag rather than week arithmetic', () => {
+    // Hidden until week 15 (owner, 2026-09-27; kept with trading off, 2026-10-16).
+    // `/api/season` answers it with `transactions_available`.
+    expect(NAV).toMatch(/i\.key !== 'transactions' \|\| seasonState\.transactionsAvailable/)
   })
 
   it('the Offseason gate matches the one the front page uses', () => {
