@@ -176,6 +176,25 @@ const formatAchievementValue = (key: string, value: number): string => {
   return unit ? `${value.toLocaleString()} ${unit}` : value.toLocaleString()
 }
 
+const NAME_SOURCE_LABEL: Record<string, string> = {
+  pool: 'in the pool', held: 'held for reuse', player: 'player', retired: 'retired player',
+  coach: 'coach', suggested: 'Discord suggestion', batch: 'this batch',
+}
+
+const NameMatches: React.FC<{ matches: { name: string; source: string; score: number; sameLineage: boolean }[] }> =
+  ({ matches }) => (
+    <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '3px', lineHeight: 1.6 }}>
+      {matches.map(m => (
+        <span key={`${m.source}-${m.name}`} style={{ marginRight: '12px', whiteSpace: 'nowrap' }}>
+          {m.name}
+          <span style={{ color: '#94a3b8' }}>
+            {' '}({NAME_SOURCE_LABEL[m.source] ?? m.source}, {m.sameLineage ? 'same name' : `${Math.round(m.score * 100)}%`})
+          </span>
+        </span>
+      ))}
+    </div>
+  )
+
 const SESSION_KEY = 'floosball_admin_pw'
 
 const PasswordGate: React.FC<{ onAuth: (pw: string) => void }> = ({ onAuth }) => {
@@ -306,10 +325,25 @@ const AdminContent: React.FC<{
   }, [getToken, password])
 
   // Name pool
+  type NameMatch = { name: string; source: string; score: number; sameLineage: boolean }
+  type NameCheck = { name: string; status: 'clear' | 'similar' | 'blocked'; matches: NameMatch[] }
+  type AddResult = {
+    added: number; total: number
+    rejectedInUse?: string[]; rejectedInPool?: string[]; duplicatesInBatch?: string[]
+  }
   const [namesInput, setNamesInput] = useState('')
-  const [namesResult, setNamesResult] = useState<{ added: number; total: number } | null>(null)
+  const [namesResult, setNamesResult] = useState<AddResult | null>(null)
   const [namesError, setNamesError] = useState<string | null>(null)
   const [namesLoading, setNamesLoading] = useState(false)
+  // A typed batch is checked against every name in the league before it is added. Anything
+  // close to an existing name waits here for a decision instead of going straight in.
+  const [nameChecks, setNameChecks] = useState<NameCheck[] | null>(null)
+  const [nameChoices, setNameChoices] = useState<Record<string, boolean>>({})
+  // The pool itself, for browsing.
+  const [poolNames, setPoolNames] = useState<string[]>([])
+  const [poolHeld, setPoolHeld] = useState<{ name: string; availableSeason: number }[]>([])
+  const [poolFilter, setPoolFilter] = useState('')
+  const [poolError, setPoolError] = useState<string | null>(null)
 
   // ── League news announcements ─────────────────────────────────────────────
   type ConversationTurn = { core: string; text: string; turnIndex: number | null }
@@ -472,6 +506,33 @@ const AdminContent: React.FC<{
     } catch { /* list refresh will show the truth */ }
   }
 
+  const loadPool = React.useCallback(async () => {
+    setPoolError(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/names/pool`, { headers: await buildHeaders() })
+      if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+      const data = await res.json()
+      setPoolNames(data.names || [])
+      setPoolHeld(data.held || [])
+    } catch (e: any) {
+      setPoolError(e.message)
+    }
+  }, [buildHeaders])
+
+  const addNames = async (names: string[]) => {
+    const res = await fetch(`${API_BASE}/admin/names`, {
+      method: 'POST', headers: await buildHeaders(), body: JSON.stringify({ names }),
+    })
+    if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
+    setNamesResult(await res.json())
+    setNamesInput('')
+    setNameChecks(null)
+    setNameChoices({})
+    loadPool()
+  }
+
+  /** Check the typed names first. A batch where nothing is close goes straight in;
+   *  otherwise the matches are shown and only the names left ticked are added. */
   const handleAddNames = async () => {
     const names = namesInput.split('\n').map(n => n.trim()).filter(Boolean)
     if (!names.length) return
@@ -479,12 +540,32 @@ const AdminContent: React.FC<{
     setNamesError(null)
     setNamesResult(null)
     try {
-      const res = await fetch(`${API_BASE}/admin/names`, {
+      const res = await fetch(`${API_BASE}/admin/names/check`, {
         method: 'POST', headers: await buildHeaders(), body: JSON.stringify({ names }),
       })
       if (!res.ok) throw new Error((await res.json()).detail || 'Request failed')
-      setNamesResult(await res.json())
-      setNamesInput('')
+      const checks: NameCheck[] = (await res.json()).results || []
+      if (checks.every(c => c.status === 'clear')) {
+        await addNames(checks.map(c => c.name))
+      } else {
+        setNameChecks(checks)
+        setNameChoices(Object.fromEntries(checks.map(c => [c.name, c.status === 'clear'])))
+      }
+    } catch (e: any) {
+      setNamesError(e.message)
+    } finally {
+      setNamesLoading(false)
+    }
+  }
+
+  const handleAddChosen = async () => {
+    const names = (nameChecks || []).filter(c => c.status !== 'blocked' && nameChoices[c.name])
+      .map(c => c.name)
+    if (!names.length) return
+    setNamesLoading(true)
+    setNamesError(null)
+    try {
+      await addNames(names)
     } catch (e: any) {
       setNamesError(e.message)
     } finally {
@@ -496,6 +577,7 @@ const AdminContent: React.FC<{
   type NameSubmission = {
     id: number; name: string; status: string
     submittedBy: string | null; createdAt: string | null
+    similar?: NameMatch[]
   }
   const [subs, setSubs] = useState<NameSubmission[]>([])
   const [subCounts, setSubCounts] = useState<Record<string, number>>({})
@@ -536,6 +618,7 @@ const AdminContent: React.FC<{
         setSubsError(`No longer available (left pending): ${data.unavailable.join(', ')}`)
       }
       await fetchSubmissions(subFilter)
+      if (action === 'approve') loadPool()
     } catch (e: any) {
       setSubsError(e.message)
     } finally {
@@ -856,6 +939,10 @@ const AdminContent: React.FC<{
     if (activeSection === 'names') fetchSubmissions(subFilter)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSection, subFilter])
+
+  React.useEffect(() => {
+    if (activeSection === 'names') loadPool()
+  }, [activeSection, loadPool])
 
   // Same lazy pattern for the announcement list.
   React.useEffect(() => {
@@ -1748,16 +1835,127 @@ const AdminContent: React.FC<{
           disabled={namesLoading || !namesInput.trim()}
           style={{ ...btnStyle, opacity: namesLoading || !namesInput.trim() ? 0.5 : 1 }}
         >
-          {namesLoading ? 'Adding…' : 'Add Names'}
+          {namesLoading ? 'Checking…' : 'Add Names'}
         </button>
+        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>
+          Each name is checked first against the pool, players past and present, coaches and
+          Discord suggestions. If any read close to an existing name you choose which to add.
+        </div>
+
+        {nameChecks && (
+          <div style={{ marginTop: '14px', padding: '12px', background: '#1e293b', borderRadius: '6px' }}>
+            <div style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: 600, marginBottom: '8px' }}>
+              Some of these are close to names already in the league. Tick the ones to add.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {nameChecks.map(c => (
+                <label key={c.name} style={{
+                  display: 'flex', gap: '10px', alignItems: 'flex-start',
+                  cursor: c.status === 'blocked' ? 'default' : 'pointer',
+                }}>
+                  <input
+                    type="checkbox"
+                    disabled={c.status === 'blocked'}
+                    checked={c.status !== 'blocked' && !!nameChoices[c.name]}
+                    onChange={e => setNameChoices(prev => ({ ...prev, [c.name]: e.target.checked }))}
+                    style={{ marginTop: '3px' }}
+                  />
+                  <div style={{ minWidth: 0 }}>
+                    <span style={{ fontSize: '14px', fontWeight: 600,
+                      color: c.status === 'blocked' ? '#94a3b8' : '#e2e8f0' }}>{c.name}</span>
+                    <span style={{ marginLeft: '8px', fontSize: '11px', fontWeight: 600,
+                      color: c.status === 'clear' ? '#22c55e' : c.status === 'similar' ? '#f59e0b' : '#f87171' }}>
+                      {c.status === 'clear' ? 'No close names' : c.status === 'similar' ? 'Close to' : "Can't add, already taken"}
+                    </span>
+                    {c.matches.length > 0 && <NameMatches matches={c.matches} />}
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+              {(() => {
+                const n = nameChecks.filter(c => c.status !== 'blocked' && nameChoices[c.name]).length
+                return (
+                  <button onClick={handleAddChosen} disabled={namesLoading || n === 0}
+                    style={{ ...btnStyle, opacity: namesLoading || n === 0 ? 0.5 : 1 }}>
+                    Add {n} name{n !== 1 ? 's' : ''}
+                  </button>
+                )
+              })()}
+              <button onClick={() => { setNameChecks(null); setNameChoices({}) }}
+                style={{ ...btnStyle, background: '#334155' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         {namesResult && (
           <div style={{ marginTop: '10px', fontSize: '13px', color: '#22c55e' }}>
             Added {namesResult.added} name{namesResult.added !== 1 ? 's' : ''}. Pool total: {namesResult.total}
+            {(namesResult.rejectedInPool?.length || 0) > 0 && (
+              <div style={{ color: '#f59e0b' }}>Already in the pool: {namesResult.rejectedInPool!.join(', ')}</div>
+            )}
+            {(namesResult.rejectedInUse?.length || 0) > 0 && (
+              <div style={{ color: '#f59e0b' }}>Already taken: {namesResult.rejectedInUse!.join(', ')}</div>
+            )}
           </div>
         )}
         {namesError && (
           <div style={{ marginTop: '10px', fontSize: '13px', color: '#ef4444' }}>{namesError}</div>
         )}
+
+        {/* The pool itself */}
+        <div style={{ borderTop: '1px solid #334155', marginTop: '24px', paddingTop: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px', flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '700' }}>
+              Unused Names <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: 500 }}>{poolNames.length}</span>
+            </h2>
+            <input
+              value={poolFilter}
+              onChange={e => setPoolFilter(e.target.value)}
+              placeholder="Filter"
+              style={{ ...inputStyle, width: '220px', padding: '6px 10px' }}
+            />
+          </div>
+          {poolError && <div style={{ fontSize: '13px', color: '#ef4444' }}>{poolError}</div>}
+          {(() => {
+            const q = poolFilter.trim().toLowerCase()
+            const shown = q ? poolNames.filter(n => n.toLowerCase().includes(q)) : poolNames
+            return (
+              <>
+                {q && <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px' }}>{shown.length} of {poolNames.length}</div>}
+                <div style={{
+                  display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                  gap: '2px 16px', maxHeight: '320px', overflowY: 'auto',
+                  padding: '8px 10px', background: '#1e293b', borderRadius: '6px',
+                }}>
+                  {shown.length === 0
+                    ? <div style={{ fontSize: '13px', color: '#94a3b8' }}>No names{q ? ' match' : ''}.</div>
+                    : shown.map(n => (
+                      <div key={n} style={{ fontSize: '13px', color: '#cbd5e1', padding: '2px 0',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n}</div>
+                    ))}
+                </div>
+              </>
+            )
+          })()}
+          {poolHeld.length > 0 && (
+            <details style={{ marginTop: '10px' }}>
+              <summary style={{ fontSize: '13px', color: '#cbd5e1', cursor: 'pointer' }}>
+                {poolHeld.length} held for reuse (recently retired, not drawn until their season)
+              </summary>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                gap: '2px 16px', marginTop: '6px', padding: '8px 10px', background: '#1e293b', borderRadius: '6px' }}>
+                {poolHeld.map(h => (
+                  <div key={h.name} style={{ fontSize: '13px', color: '#cbd5e1' }}>
+                    {h.name} <span style={{ color: '#94a3b8' }}>· season {h.availableSeason}</span>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
+        </div>
 
         {/* Discord suggestions — these do NOT enter the pool until approved here. */}
         <div style={{ borderTop: '1px solid #334155', marginTop: '24px', paddingTop: '16px' }}>
@@ -1821,6 +2019,12 @@ const AdminContent: React.FC<{
                       {s.submittedBy || 'unknown'}
                       {s.createdAt ? ` · ${new Date(s.createdAt).toLocaleDateString()}` : ''}
                     </div>
+                    {s.status === 'pending' && (s.similar?.length || 0) > 0 && (
+                      <div style={{ fontSize: '11px', color: '#f59e0b', marginTop: '2px' }}>
+                        Close to:
+                        <NameMatches matches={s.similar!} />
+                      </div>
+                    )}
                   </div>
                   {s.status === 'pending' ? (
                     <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>

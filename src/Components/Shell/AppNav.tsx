@@ -69,6 +69,16 @@ const LEAGUE_ITEMS: NavEntry[] = [
   // know. Reported as the record book having disappeared; it had not, it had no door.
   // An open book, since the Record Book is what a reader comes here for.
   { key: 'history', label: 'History', path: '/history', icon: ICON('M2 4h6a2 2 0 012 2v10a2 2 0 00-2-2H2V4zm16 0h-6a2 2 0 00-2 2v10a2 2 0 012-2h6V4z') },
+  // The front-office desk: draft order, the incoming class, who is out of contract, and
+  // every signing and cut. A league view rather than a personal one, so it sits here and
+  // not under Yours; your own team is highlighted inside it. Two arrows passing: players
+  // changing hands.
+  {
+    key: 'transactions', label: 'Transactions', path: '/transactions',
+    // ⚠️ LINE_ICON, not ICON — `ICON` fills its path with currentColor and no stroke, so a
+    // line drawing handed to it renders as a solid blob.
+    icon: LINE_ICON(['M3 7h14M14 4l3 3-3 3', 'M21 17H7M10 14l-3 3 3 3']),
+  },
 ]
 
 const YOURS_ITEMS: NavEntry[] = [
@@ -289,9 +299,9 @@ const AppNav: React.FC = () => {
   // running the bracket is a settled result, and stacking two postseason entries pushes
   // the standing pages down for a reader who still wants them.
   const isOffseason = seasonState.currentWeekText === 'Offseason'
-  // No Transactions entry: trading is off and the site carries no trade surfaces
-  // (owner, 2026-10-03).
-  const baseLeagueItems = LEAGUE_ITEMS
+  // Transactions is hidden until week 15, then stays through the playoffs and the
+  // offseason (owner). The backend owns the rule (`transactions_available`).
+  const baseLeagueItems = LEAGUE_ITEMS.filter(i => i.key !== 'transactions' || seasonState.transactionsAvailable)
   const leagueItems = isOffseason ? [...baseLeagueItems, OFFSEASON_ITEM]
     : inPlayoffs ? [...baseLeagueItems, BRACKET_ITEM]
       : baseLeagueItems
