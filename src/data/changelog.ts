@@ -23,6 +23,43 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.07',
+    date: '2026-10-18',
+    feature: true,
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Transactions] The Transactions page is back from week 15, with the rookie draft order, the incoming rookie class and the players heading to free agency. Trade boards stay hidden while trading is off.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Simulation] Catches, interceptions and goal-line plays were recalibrated against NFL tracking data. Defenses are tougher close to the end zone, and two-point tries succeed about half the time.',
+          '[Simulation] Coaches pick their conversion try by what gives them the best chance to win, and weigh how well their defense has been holding up. Under the Conversion Ladder the two-point try is the default, and the 3-point try moves to the 3-yard line.',
+          '[Games] Win probability was rebuilt from the league\'s own results. It reacts more to field position and down, and a turnover moves it on the play that caused it.',
+          '[Games] Momentum\'s effect on players fades when a team loses it and no longer carries into the next game.',
+          '[Prospects] Teams take a last look at prospects about to run out of time before letting them go. Open roster spots are filled in the free agent draft, where a prospect gets the spot unless a free agent is better.',
+          '[Prospects] Only the top two picks take the best prospect available. After that, teams draft for the positions they need.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Schedule] Teams played the same four opponents from the other league every season. The pairing now rotates, so a team meets every team in the other league over four seasons.',
+          '[Simulation] Under a drive clock, offenses deep in their own territory threw the ball away on expiring drives instead of punting.',
+          '[Simulation] In overtime, teams could choose a conversion try that lost the game even when they made it.',
+          '[Cards] Full House could not fire with cross-card effects in the lineup. It now checks every card\'s power bar.',
+          '[Cards] A card that missed its power bar counted as triggered for Group Project and Chain Reaction, and not as failed for Last Resort.',
+          '[Games] Kneel-downs were sometimes tagged as big plays.',
+          '[Front Office] A prospect in their final season could be released even with an open spot at their position.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v1.06',
     date: '2026-10-11',
     feature: true,
