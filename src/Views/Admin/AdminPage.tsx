@@ -897,6 +897,11 @@ const AdminContent: React.FC<{
     timing: { mode: string | null; catchingUp: boolean }
     counts: { teams: number; activePlayers: number; freeAgents: number; retiredPlayers: number; hallOfFame: number }
     memory: { rssMb: number; totalMb?: number; scheduleGames: number; gamesWithPlays: number; totalPlaysInMemory: number; pid: number }
+    disk?: {
+      path: string; totalMb: number; usedMb: number; freeMb: number
+      dbMb: number; backupsMb: number; backupCount: number; backupKeep: number
+      nextBackupNeedsMb: number; nextBackupFits: boolean
+    } | null
     websockets: Record<string, any>
     personality?: {
       total: number
@@ -1163,7 +1168,7 @@ const AdminContent: React.FC<{
           <div style={{ fontSize: '13px', color: '#ef4444', marginBottom: '12px' }}>{monitorError}</div>
         )}
         {monitorData && (() => {
-          const { deploySafety, simulation, season, liveGames, timing, counts, memory, websockets, personality } = monitorData
+          const { deploySafety, simulation, season, liveGames, timing, counts, memory, disk, websockets, personality } = monitorData
           const statBox: React.CSSProperties = {
             backgroundColor: '#0f172a', borderRadius: '6px', padding: '12px 14px',
           }
@@ -1180,6 +1185,14 @@ const AdminContent: React.FC<{
           const totalMemMb = memory.totalMb || 2048
           const memoryPct = memory.rssMb > 0 ? Math.round((memory.rssMb / totalMemMb) * 100) : 0
           const memoryColor = memoryPct > 80 ? '#ef4444' : memoryPct > 60 ? '#f59e0b' : '#22c55e'
+          // The backup needs a full DB copy of free space, so "will the next one fit" is
+          // the number that matters, not the percentage: the volume filled on
+          // 2026-10-20 with a backup in progress and took sign-in down.
+          const diskPct = disk && disk.totalMb > 0 ? Math.round((disk.usedMb / disk.totalMb) * 100) : 0
+          const diskColor = !disk ? '#94a3b8'
+            : !disk.nextBackupFits || disk.freeMb < disk.totalMb * 0.1 ? '#ef4444'
+            : disk.freeMb < disk.nextBackupNeedsMb * 2 ? '#f59e0b'
+            : '#22c55e'
 
           return <>
             {/* Deploy Safety Banner */}
@@ -1200,7 +1213,7 @@ const AdminContent: React.FC<{
             </div>
 
             {/* Memory + Season Overview */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '10px', marginBottom: '16px' }}>
               <div style={statBox}>
                 <div style={statLabel}>Memory (RSS)</div>
                 <div style={{ ...statValue, color: memoryColor }}>{memory.rssMb} MB</div>
@@ -1213,6 +1226,35 @@ const AdminContent: React.FC<{
                   }} />
                 </div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{memoryPct}% of {totalMemMb} MB</div>
+              </div>
+              <div style={statBox}>
+                <div style={statLabel}>DB Volume</div>
+                {disk ? (
+                  <>
+                    <div style={{ ...statValue, color: diskColor }}>{Math.round(disk.freeMb)} MB free</div>
+                    <div style={{ marginTop: '6px', height: '4px', backgroundColor: '#1e293b', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', borderRadius: '2px',
+                        backgroundColor: diskColor,
+                        width: `${Math.min(100, diskPct)}%`,
+                        transition: 'width 0.3s ease',
+                      }} />
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+                      {diskPct}% of {Math.round(disk.totalMb)} MB used
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                      DB {Math.round(disk.dbMb)} MB · Backups {Math.round(disk.backupsMb)} MB ({disk.backupCount}/{disk.backupKeep})
+                    </div>
+                    <div style={{ fontSize: '11px', marginTop: '2px', color: disk.nextBackupFits ? '#94a3b8' : '#fca5a5', fontWeight: disk.nextBackupFits ? 400 : 600 }}>
+                      {disk.nextBackupFits
+                        ? `Next backup fits (needs ${Math.round(disk.nextBackupNeedsMb)} MB)`
+                        : `Next backup won't fit (needs ${Math.round(disk.nextBackupNeedsMb)} MB)`}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ ...statValue, color: '#94a3b8' }}>—</div>
+                )}
               </div>
               <div style={statBox}>
                 <div style={statLabel}>Season</div>
