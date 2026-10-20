@@ -383,7 +383,8 @@ interface TradingCardProps {
   card: CardData
   size?: 'xs' | 'sm' | 'md' | 'lg'
   selected?: boolean
-  onSelect?: () => void
+  /** Toggles selection. Gets the click so a caller can read shift for range select. */
+  onSelect?: (e: React.MouseEvent) => void
   onClick?: () => void
   onLevelUp?: () => void  // shows a "Level Up" affordance (collection view)
   onTrash?: () => void    // shows a "Trash" affordance (vault view — permanent delete)
@@ -1421,7 +1422,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
           {/* Select overlay for collection selling — visible on hover or when selected */}
           {onSelect && !card.isEquipped && !card.vaulted && (showActions || selected) && (
             <button
-              onClick={(e) => { e.stopPropagation(); onSelect() }}
+              onClick={(e) => { e.stopPropagation(); onSelect(e) }}
               style={{
                 position: 'absolute',
                 top: d.pad - 2,
