@@ -109,6 +109,8 @@ const CardCollection: React.FC = () => {
   const [effectCounts, setEffectCounts] = useState<Record<string, number>>({})
   const [dupeEffect, setDupeEffect] = useState<{ name: string; label: string } | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  // Last card clicked, the start point for a shift-click range.
+  const selectAnchor = useRef<number | null>(null)
   const [selling, setSelling] = useState(false)
   const [currentSeason, setCurrentSeason] = useState(0)
   const [showCombine, setShowCombine] = useState(false)
@@ -154,7 +156,15 @@ const CardCollection: React.FC = () => {
       })
       if (!res.ok) return
       const json = await res.json()
-      setCards(json.data?.cards ?? [])
+      const fetched: CardData[] = json.data?.cards ?? []
+      setCards(fetched)
+      // Keep only selections still in the loaded set. The Sell and Vault buttons count
+      // and price from this list, so a selected card outside it would be sold uncounted.
+      const loadedIds = new Set(fetched.map(c => c.id))
+      setSelectedIds(prev => {
+        const kept = new Set(Array.from(prev).filter(id => loadedIds.has(id)))
+        return kept.size === prev.size ? prev : kept
+      })
       setCurrentSeason(json.data?.currentSeason ?? 0)
       setEffectCounts(json.data?.effectCounts ?? {})
     } catch {
@@ -206,6 +216,7 @@ const CardCollection: React.FC = () => {
   // order (Vault opens in manual/arrangeable order; Collection in newest-first).
   useEffect(() => {
     setSelectedIds(new Set())
+    selectAnchor.current = null
     setDupeEffect(null)
     // Equipped/output only apply to the live collection; clear them entering the Vault.
     if (view === 'vault') { setSortBy('manual'); setEquippedOnly(false); setOutputFilter('all'); setBehaviorFilter('all') }
@@ -274,12 +285,52 @@ const CardCollection: React.FC = () => {
 
   const equippedIds = new Set(cards.filter(c => c.isEquipped).map(c => c.id))
 
-  const toggleSelect = (id: number) => {
+  // Equipped cards can't be sold or vaulted, so nothing selects them.
+  const selectable = (c: CardData) => !c.isEquipped && !c.vaulted
+  const selectableShown = displayedCards.filter(selectable)
+  const expiredShown = selectableShown.filter(c => !c.isActive)
+  const allShownSelected = selectableShown.length > 0 && selectableShown.every(c => selectedIds.has(c.id))
+
+  const toggleSelect = (id: number, e?: React.MouseEvent) => {
     if (equippedIds.has(id)) return  // Can't select equipped cards
+    const anchor = selectAnchor.current
+    selectAnchor.current = id
+    // Shift-click: every card between the last one clicked and this one takes
+    // this card's new state, in the order they're shown.
+    if (e?.shiftKey && anchor !== null && anchor !== id) {
+      const from = displayedCards.findIndex(c => c.id === anchor)
+      const to = displayedCards.findIndex(c => c.id === id)
+      if (from >= 0 && to >= 0) {
+        const range = displayedCards.slice(Math.min(from, to), Math.max(from, to) + 1).filter(selectable)
+        const turnOn = !selectedIds.has(id)
+        setSelectedIds(prev => {
+          const next = new Set(prev)
+          range.forEach(c => { if (turnOn) next.add(c.id); else next.delete(c.id) })
+          return next
+        })
+        return
+      }
+    }
     setSelectedIds(prev => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
+      return next
+    })
+  }
+
+  const selectCards = (list: CardData[]) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      list.forEach(c => next.add(c.id))
+      return next
+    })
+  }
+
+  const deselectCards = (list: CardData[]) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      list.forEach(c => next.delete(c.id))
       return next
     })
   }
@@ -621,6 +672,45 @@ const CardCollection: React.FC = () => {
         </div>
       )}
 
+      {/* Quick select: works off whatever the filters above are showing. */}
+      {!inVault && !loading && selectableShown.length > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap',
+          marginBottom: '12px',
+        }}>
+          <button
+            onClick={() => allShownSelected ? deselectCards(selectableShown) : selectCards(selectableShown)}
+            style={pillStyle(allShownSelected)}
+          >
+            {allShownSelected ? 'Deselect shown' : `Select shown (${selectableShown.length})`}
+          </button>
+          {expiredShown.length > 0 && expiredShown.length < selectableShown.length && (
+            <button onClick={() => selectCards(expiredShown)} style={pillStyle(false)}>
+              Select expired ({expiredShown.length})
+            </button>
+          )}
+          {selectedIds.size > 0 && (
+            <>
+              <span style={{ fontSize: '12px', color: '#cbd5e1', marginLeft: '4px' }}>
+                {selectedIds.size} selected
+              </span>
+              <button
+                onClick={() => { setSelectedIds(new Set()); selectAnchor.current = null }}
+                style={{
+                  background: 'none', border: 'none', color: '#94a3b8', fontSize: '12px',
+                  cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline', padding: '2px 4px',
+                }}
+              >Clear</button>
+            </>
+          )}
+          {!isMobile && (
+            <span style={{ flex: 1, textAlign: 'right', fontSize: '11px', color: '#94a3b8' }}>
+              Shift-click to select a range
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Card grid */}
       {loading ? (
         <div style={{ color: '#64748b', fontSize: '13px', padding: '40px 0', textAlign: 'center' }}>
@@ -664,7 +754,7 @@ const CardCollection: React.FC = () => {
                 card={card}
                 size={isMobile ? 'sm' : 'md'}
                 selected={!inVault && selectedIds.has(card.id)}
-                onSelect={inVault ? undefined : () => toggleSelect(card.id)}
+                onSelect={inVault ? undefined : (e) => toggleSelect(card.id, e)}
                 onLevelUp={inVault ? undefined : () => setLevelUpCard(card)}
                 onTrash={inVault ? () => setTrashTarget(card) : undefined}
                 onFindDupes={inVault ? undefined : () => showDupes(card)}
