@@ -269,7 +269,7 @@ const TransactionsPage: React.FC = () => {
     width: isMobile ? 'auto' : '112px', flexShrink: isMobile ? 1 : 0,
   }
   const tagCol: React.CSSProperties = {
-    width: isMobile ? 'auto' : '92px', flexShrink: isMobile ? 1 : 0, textAlign: 'right',
+    width: isMobile ? 'auto' : '124px', flexShrink: isMobile ? 1 : 0, textAlign: 'right',
   }
   const headRow: React.CSSProperties = {
     ...row, padding: '8px 14px', background: BG.shell,
@@ -466,9 +466,9 @@ const TransactionsPage: React.FC = () => {
                             <TeamName team={e.team} mine={isMine} />
                           </span>
                           <span style={tagCol}>
-                            {e.cannotKeep && (
-                              <HoverTooltip text="More of this team's contracts end than it can re-sign in one offseason, and this is one of its weakest. Likely to become a free agent.">
-                                {tag('Leaving', ACCENT.warning)}
+                            {(e.mayLeave ?? e.cannotKeep) && (
+                              <HoverTooltip text="The GM isn't expected to re-sign this player, so they may become a free agent. Re-signings are decided at the start of the offseason, so this can still change.">
+                                {tag('Possibly Leaving', ACCENT.warning)}
                               </HoverTooltip>
                             )}
                           </span>
