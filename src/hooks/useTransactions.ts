@@ -44,7 +44,10 @@ export interface ExpiringPlayer {
   position: string
   rating: number
   team: TeamBlob | null
-  /** The team has more walk-years than it can re-sign, and this is one of its weakest. */
+  /** The GM is not projected to re-sign him. A projection: the decision is made at the
+   *  start of the offseason. Older backends send only `cannotKeep`. */
+  mayLeave?: boolean
+  /** @deprecated the old name for `mayLeave`. */
   cannotKeep: boolean
 }
 
