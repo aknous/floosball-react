@@ -1293,13 +1293,17 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>Projects</p>
             <p style={textStyle}>
-              Raising a facility a level is a project. Fans vote on which project to chase next, then fund it.
+              Raising a facility a level is a project, and every facility always has its next level open.
+              Fans rank the facilities in order of priority, and the team builds in the order its fans
+              ranked them. Fund a project in full yourself and it builds right away. Each facility can go
+              up one level a year.
             </p>
 
-            <p style={labelStyle}>Season End</p>
+            <p style={labelStyle}>The Payment Run</p>
             <p style={textStyle}>
-              The Treasury pays out in order: upkeep first so no facility slips a level, then active projects,
-              oldest first. Any upkeep left unfunded drops that facility a level; fully funded projects get built.
+              After the free agent draft, the Treasury pays out: upkeep first so no facility slips a level,
+              then projects in the fans' ranked order until the money runs out. Any upkeep left unfunded
+              drops that facility a level.
             </p>
 
             <p style={labelStyle}>Appeal</p>
