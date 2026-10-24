@@ -6,6 +6,7 @@ import { Stars, calcStars, DualStars } from './Stars'
 import PlayerHoverCard from './PlayerHoverCard'
 import PlayerLink from './PlayerLink'
 import HoverTooltip from './HoverTooltip'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import type {
   OffseasonStartEvent,
   OffseasonPickEvent,
@@ -182,6 +183,14 @@ export const OffseasonPanel: React.FC = () => {
   const [tabNotify, setTabNotify] = useState<{ directives: boolean; transactions: boolean }>({ directives: false, transactions: false })
   const [faTimeLeft, setFaTimeLeft] = useState('')
   const [openSlots, setOpenSlots] = useState<{ slot: string; position: string }[]>([])
+
+  // On a phone the two columns become one pane at a time, picked from one tab strip
+  // with Teams first. Desktop keeps both side by side.
+  const isMobile = useIsMobile()
+  const [mobilePane, setMobilePane] = useState<'teams' | 'list'>('teams')
+  // Inner scroll areas only on desktop, where the two columns share a fixed height.
+  // On a phone the page scrolls, so a box inside it that also scrolls traps the thumb.
+  const listScroll: React.CSSProperties = isMobile ? {} : { maxHeight: '640px', overflowY: 'auto' }
 
   // Find favorite team's abbr and color from draft order
   const favoriteTeam = useMemo(() => {
@@ -915,20 +924,73 @@ export const OffseasonPanel: React.FC = () => {
     color: teamFilter === abbr ? '#e2e8f0' : '#64748b',
   })
 
+  const tabButtonStyle = (active: boolean): React.CSSProperties => ({
+    padding: isMobile ? '7px 12px' : '4px 10px',
+    fontSize: isMobile ? '12px' : '11px',
+    fontWeight: '600',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    backgroundColor: active
+      ? (isMobile ? '#334155' : 'rgba(255,255,255,0.1)')
+      : (isMobile ? '#1e293b' : 'transparent'),
+    color: active ? '#e2e8f0' : (isMobile ? '#94a3b8' : '#64748b'),
+    position: 'relative',
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
+    fontFamily: 'inherit',
+  })
+
+  /** The list tabs. On a phone they sit in one strip after Teams and also switch panes. */
+  const renderTabButtons = (mobile: boolean) =>
+    (['prospects', 'players', 'directives', 'transactions'] as const).map(tab => {
+      const isActive = rightTab === tab && (!mobile || mobilePane === 'list')
+      const label = tab === 'prospects' ? `Prospects${rookieClass.length > 0 ? ` (${rookieClass.length})` : ''}`
+        : tab === 'players' ? `Free Agents${freeAgents.length > 0 ? ` (${freeAgents.length})` : ''}`
+        : tab === 'directives' ? 'Directives'
+        : `Transactions${transactions.length > 0 ? ` (${transactions.length})` : ''}`
+      const hasNotify = (tab === 'directives' || tab === 'transactions') && tabNotify[tab]
+      return (
+        <button
+          key={tab}
+          onClick={e => {
+            setRightTab(tab)
+            if (mobile) {
+              setMobilePane('list')
+              // The strip scrolls sideways; keep the tab just picked on screen.
+              e.currentTarget.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' })
+            }
+            if (tab === 'directives' || tab === 'transactions') setTabNotify(prev => ({ ...prev, [tab]: false }))
+          }}
+          style={tabButtonStyle(isActive)}
+        >
+          {label}
+          {hasNotify && (
+            <span style={{
+              position: 'absolute', top: '2px', right: '2px',
+              width: '6px', height: '6px', borderRadius: '50%',
+              backgroundColor: tab === 'directives' ? '#f59e0b' : '#22c55e',
+            }} />
+          )}
+        </button>
+      )
+    })
+
   return (
     <div style={{ color: '#e2e8f0' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' as const }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>Offseason</h2>
+          {/* The page already titles itself "Offseason"; on a phone the repeat costs a line. */}
+          {!isMobile && <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>Offseason</h2>}
           {currentPhase && (
             <span style={{
               fontSize: '12px', fontWeight: '700',
               color: currentPhase === 'predraft' ? '#38bdf8' : currentPhase === 'rookie_draft' ? '#a78bfa' : '#f59e0b',
               letterSpacing: '0.02em', textTransform: 'uppercase' as const,
             }}>
-              · {currentPhase === 'predraft' ? 'Team Setup' : currentPhase === 'rookie_draft' ? 'Rookie Draft' : 'Free Agency'}
+              {currentPhase === 'predraft' ? 'Team Setup' : currentPhase === 'rookie_draft' ? 'Rookie Draft' : 'Free Agency'}
             </span>
           )}
           {!currentPhase && phaseLabel && (
@@ -936,7 +998,7 @@ export const OffseasonPanel: React.FC = () => {
               fontSize: '12px', fontWeight: '700', color: '#f59e0b',
               letterSpacing: '0.02em', textTransform: 'uppercase' as const,
             }}>
-              · {phaseLabel}
+              {phaseLabel}
             </span>
           )}
           {phaseCountdown && (
@@ -963,6 +1025,8 @@ export const OffseasonPanel: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '6px',
         }}>
           <span style={{ fontSize: '12px', fontWeight: '600', color: '#22c55e' }}>
             Your team is on the clock! {faWindowOpen ? 'Submit your ballot to influence the pick.' : ''}
@@ -994,6 +1058,8 @@ export const OffseasonPanel: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '6px',
         }}>
           <span style={{ fontSize: '12px', color: '#f59e0b' }}>
             FA voting window is open. Submit your requisition ballot.
@@ -1019,12 +1085,24 @@ export const OffseasonPanel: React.FC = () => {
           component doesn't grow with the team list — the team accordion
           scrolls its content within the shared height, and the right
           panel's internal lists already scroll within their own caps. */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'start' }}>
+      {isMobile && (
+        <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', scrollbarWidth: 'none', marginBottom: '10px', paddingBottom: '2px' }}>
+          <button onClick={() => setMobilePane('teams')} style={tabButtonStyle(mobilePane === 'teams')}>
+            Teams{draftOrder.length > 0 ? ` (${draftOrder.length})` : ''}
+          </button>
+          {renderTabButtons(true)}
+        </div>
+      )}
+
+      <div style={isMobile
+        ? { display: 'block' }
+        : { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignItems: 'start' }}>
 
         {/* Team Accordion */}
         <div style={{
           backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden',
-          maxHeight: '720px', display: 'flex', flexDirection: 'column' as const,
+          maxHeight: isMobile ? undefined : '720px', flexDirection: 'column' as const,
+          display: isMobile && mobilePane !== 'teams' ? 'none' : 'flex',
         }}>
           <div style={{ padding: '10px 14px', borderBottom: '1px solid #0f172a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
@@ -1041,7 +1119,7 @@ export const OffseasonPanel: React.FC = () => {
             )}
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto' as const }}>
+          <div style={{ flex: 1, overflowY: isMobile ? 'visible' as const : 'auto' as const }}>
           {cyclicOrder.length === 0 ? (
             <div style={{ padding: '16px 14px', fontSize: '13px', color: '#94a3b8' }}>
               {phaseCountdown ? (
@@ -1102,8 +1180,8 @@ export const OffseasonPanel: React.FC = () => {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '10px',
-                      padding: '7px 14px 7px 11px',
+                      padding: isMobile ? '9px 10px 9px 8px' : '7px 14px 7px 11px',
+                      gap: isMobile ? '8px' : '10px',
                       borderLeft: isCurrent ? '3px solid #22c55e' : isFavorite ? `3px solid ${favoriteTeamColor}` : '3px solid transparent',
                       borderBottom: '1px solid #0f172a',
                       backgroundColor: isCurrent
@@ -1138,7 +1216,7 @@ export const OffseasonPanel: React.FC = () => {
                       minWidth: 0,
                     }}>
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {team.city ? `${team.city} ${team.name}` : team.name}
+                        {team.city && !isMobile ? `${team.city} ${team.name}` : team.name}
                       </span>
                       {team.traded && team.originalTeam && (
                         <span style={{
@@ -1156,7 +1234,7 @@ export const OffseasonPanel: React.FC = () => {
                         letterSpacing: '0.02em', backgroundColor: 'rgba(34,197,94,0.12)',
                         border: '1px solid rgba(34,197,94,0.35)', padding: '3px 7px', borderRadius: '3px',
                       }}>
-                        ON THE CLOCK
+                        {isMobile ? 'ON CLOCK' : 'ON THE CLOCK'}
                       </span>
                     )}
                     {isDone && !isCurrent && (
@@ -1178,7 +1256,7 @@ export const OffseasonPanel: React.FC = () => {
                     <div style={{
                       backgroundColor: '#0f1e30',
                       borderBottom: '1px solid #0f172a',
-                      padding: '12px 14px',
+                      padding: isMobile ? '12px 10px' : '12px 14px',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '12px',
@@ -1258,9 +1336,9 @@ export const OffseasonPanel: React.FC = () => {
                                 : { label: 'SIGN', color: '#22c55e' }
                               const showStars = tx.type !== 'rookie_skip' && tx.type !== 'trade'
                               return (
-                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px' }}>
+                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', minWidth: 0 }}>
                                   <span style={{
-                                    fontSize: '10px', fontWeight: '700', minWidth: '62px',
+                                    fontSize: '10px', fontWeight: '700', minWidth: isMobile ? '54px' : '62px', flexShrink: 0,
                                     color: badge.color,
                                   }}>
                                     {badge.label}
@@ -1273,7 +1351,7 @@ export const OffseasonPanel: React.FC = () => {
                                     )
                                   )}
                                   {tx.type === 'trade' ? (
-                                    <span style={{ flex: 1, color: '#e2e8f0' }}>{tradeSummary(tx, true)}</span>
+                                    <span style={{ flex: 1, minWidth: 0, color: '#e2e8f0' }}>{tradeSummary(tx, true)}</span>
                                   ) : (
                                     <>
                                       <PlayerLink
@@ -1306,60 +1384,26 @@ export const OffseasonPanel: React.FC = () => {
         {/* Right column: Tabbed panel */}
         <div style={{
           backgroundColor: '#1e293b', borderRadius: '8px', overflow: 'hidden', minWidth: 0,
-          maxHeight: '720px', display: 'flex', flexDirection: 'column' as const,
+          maxHeight: isMobile ? undefined : '720px', flexDirection: 'column' as const,
+          display: isMobile && mobilePane !== 'list' ? 'none' : 'flex',
         }}>
-          {/* Tab bar */}
+          {/* Tab bar (on a phone it lives in the shared strip above) */}
+          {!isMobile && (
           <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px', flexShrink: 0 }}>
-            {(['prospects', 'players', 'directives', 'transactions'] as const).map(tab => {
-              const isActive = rightTab === tab
-              const label = tab === 'prospects' ? `Prospects${rookieClass.length > 0 ? ` (${rookieClass.length})` : ''}`
-                : tab === 'players' ? `Free Agents${freeAgents.length > 0 ? ` (${freeAgents.length})` : ''}`
-                : tab === 'directives' ? 'Directives'
-                : `Transactions${transactions.length > 0 ? ` (${transactions.length})` : ''}`
-              const hasNotify = (tab === 'directives' || tab === 'transactions') && tabNotify[tab]
-              return (
-                <button
-                  key={tab}
-                  onClick={() => {
-                    setRightTab(tab)
-                    if (tab === 'directives' || tab === 'transactions') setTabNotify(prev => ({ ...prev, [tab]: false }))
-                  }}
-                  style={{
-                    padding: '4px 10px',
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    backgroundColor: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
-                    color: isActive ? '#e2e8f0' : '#64748b',
-                    position: 'relative',
-                  }}
-                >
-                  {label}
-                  {hasNotify && (
-                    <span style={{
-                      position: 'absolute', top: '2px', right: '2px',
-                      width: '6px', height: '6px', borderRadius: '50%',
-                      backgroundColor: tab === 'directives' ? '#f59e0b' : '#22c55e',
-                    }} />
-                  )}
-                </button>
-              )
-            })}
+            {renderTabButtons(false)}
           </div>
-
+          )}
           {/* Prospects tab: this offseason's draft class, with who took each rookie */}
           {rightTab === 'prospects' && (
             <>
-              <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px' }}>
+              <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                 {POSITIONS.map(pos => (
                   <button key={pos} style={posPillStyle(pos)} onClick={() => setPosFilter(pos)}>
                     {pos}
                   </button>
                 ))}
               </div>
-              <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '640px', overflowY: 'auto' }}>
+              <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', ...listScroll }}>
                 {filteredRookies.length === 0 ? (
                   <div style={{ color: '#94a3b8', fontSize: '13px', padding: '10px 6px' }}>
                     {rookieClass.length === 0 ? 'No draft class this offseason.' : 'No prospects at this position.'}
@@ -1409,14 +1453,14 @@ export const OffseasonPanel: React.FC = () => {
           {/* Free Agents tab — the free agent pool */}
           {rightTab === 'players' && (
             <>
-              <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px' }}>
+              <div style={{ padding: '6px 10px', borderBottom: '1px solid #0f172a', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                 {POSITIONS.map(pos => (
                   <button key={pos} style={posPillStyle(pos)} onClick={() => setPosFilter(pos)}>
                     {pos}
                   </button>
                 ))}
               </div>
-              <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '640px', overflowY: 'auto' }}>
+              <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: '3px', ...listScroll }}>
                 {filteredAgents.length === 0 ? (
                   <div style={{ color: '#94a3b8', fontSize: '13px', padding: '10px 6px' }}>
                     {freeAgents.length === 0
@@ -1470,7 +1514,7 @@ export const OffseasonPanel: React.FC = () => {
 
           {/* Directives tab */}
           {rightTab === 'directives' && (
-            <div style={{ maxHeight: '640px', overflowY: 'auto' }}>
+            <div style={listScroll}>
               {/* Board Directives */}
               {faDirectives.length > 0 && (
                 <div>
@@ -1588,6 +1632,16 @@ export const OffseasonPanel: React.FC = () => {
               {transactions.length > 0 ? (
                 <>
                   <div style={{ padding: '8px 14px', borderBottom: '1px solid #0f172a', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    {isMobile ? (
+                      <select
+                        value={teamFilter ?? ''}
+                        onChange={e => setTeamFilter(e.target.value || null)}
+                        style={{ fontSize: '13px', padding: '5px 8px', borderRadius: '4px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#e2e8f0', fontFamily: 'inherit' }}
+                      >
+                        <option value="">All teams</option>
+                        {teamOptions.map(t => <option key={t.abbr} value={t.abbr}>{t.name}</option>)}
+                      </select>
+                    ) : (
                     <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                       <button style={teamPillStyle(null)} onClick={() => setTeamFilter(null)}>ALL</button>
                       {teamOptions.map(t => (
@@ -1596,11 +1650,12 @@ export const OffseasonPanel: React.FC = () => {
                         </button>
                       ))}
                     </div>
+                    )}
                     <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: 'auto' }}>
                       {filteredTransactions.length} move{filteredTransactions.length !== 1 ? 's' : ''}
                     </span>
                   </div>
-                  <div style={{ maxHeight: '640px', overflowY: 'auto' }}>
+                  <div style={listScroll}>
                     {filteredTransactions.map((tx, i) => {
                       const badge = tx.type === 'trade' ? { label: 'TRADE', color: '#2dd4bf', bg: 'rgba(45,212,191,0.05)' }
                         : tx.type === 'cut' ? { label: 'CUT', color: '#ef4444', bg: 'rgba(239,68,68,0.04)' }
@@ -1618,34 +1673,35 @@ export const OffseasonPanel: React.FC = () => {
                         <div
                           key={i}
                           style={{
-                            display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px',
+                            display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '8px',
+                            padding: isMobile ? '7px 10px' : '6px 14px', minWidth: 0,
                             borderBottom: '1px solid #0f172a',
                             backgroundColor: badge.bg,
                           }}
                         >
                           <span style={{
-                            fontSize: '10px', fontWeight: '700', letterSpacing: '0.02em', minWidth: '62px',
-                            color: badge.color,
+                            fontSize: '10px', fontWeight: '700', letterSpacing: '0.02em', minWidth: isMobile ? '54px' : '62px',
+                            flexShrink: 0, color: badge.color,
                           }}>
                             {badge.label}
                           </span>
-                          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', minWidth: '34px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: '600', color: '#94a3b8', minWidth: '34px', flexShrink: 0 }}>
                             {tx.teamAbbr}
                           </span>
                           {tx.type === 'trade' ? (
-                            <span style={{ flex: 1, fontSize: '13px', color: '#e2e8f0' }}>{tradeSummary(tx, false)}</span>
+                            <span style={{ flex: 1, minWidth: 0, fontSize: '13px', color: '#e2e8f0' }}>{tradeSummary(tx, false)}</span>
                           ) : (
                             <PlayerLink
                               playerId={tx.playerId}
                               playerName={tx.playerName}
-                              style={{ flex: 1, fontSize: '13px', color: '#e2e8f0' }}
+                              style={{ flex: 1, minWidth: 0, fontSize: '13px', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                             />
                           )}
                           {showStars && (
                             tx.offensiveRating != null && tx.defensiveRating != null ? (
                               <DualStars offensiveStars={calcStars(tx.offensiveRating)} defensiveStars={calcStars(tx.defensiveRating)} size={10} />
                             ) : (
-                              <Stars stars={calcStars(tx.rating)} size={13} />
+                              <Stars stars={calcStars(tx.rating)} size={isMobile ? 10 : 13} />
                             )
                           )}
                           {tx.type !== 'trade' && (

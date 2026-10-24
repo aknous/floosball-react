@@ -12,6 +12,7 @@ import type {
   RecapLeagueStandings, RecapLeaderCategory, RecapUserLeaderboards, RecapUserLbEntry, RecapShowcaseEntry,
 } from '@/types/recap'
 import { FloobitSymbol } from '@/Components/Icons/Floobit'
+import { careerSeasons, groupCoachChanges, type CoachChange } from './coachChanges'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 const CARD: React.CSSProperties = { backgroundColor: '#1e2d3d', border: '1px solid #2a3a4e', borderRadius: '10px' }
@@ -387,7 +388,7 @@ const ShowcaseLbCol: React.FC<{ rows: RecapShowcaseEntry[] }> = ({ rows }) => (
               <img src={`/avatars/${r.favoriteTeam.teamId}.png`} alt={r.favoriteTeam.teamAbbr} crossOrigin="anonymous" style={{ width: 16, height: 16, flexShrink: 0 }} />
             )}
             <span style={{ flex: 1, fontSize: '14px', color: '#cbd5e1', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.username}</span>
-            <HoverTooltip text={`Grade ${r.grade} · ${r.cardCount} cards · ${r.weeklyDividend} Floobits / week`} color="#c084fc">
+            <HoverTooltip text={`Grade ${r.grade}, ${r.cardCount} cards, ${r.weeklyDividend} Floobits a week`} color="#c084fc">
               <span style={{ fontSize: '18px', fontWeight: 800, color: '#c084fc', minWidth: '22px', textAlign: 'right', display: 'inline-block' }}>{r.grade}</span>
             </HoverTooltip>
           </div>
@@ -423,12 +424,71 @@ const FansTab: React.FC<{ userLeaderboards: RecapUserLeaderboards }> = ({ userLe
 }
 
 // ── Transactions & Announcements ──
+
+const RetirementTile: React.FC<{ t: RecapTransaction; inHof: boolean }> = ({ t, inHof }) => {
+  const seasons = careerSeasons(t.detail)
+  return (
+    <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#162231', display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+        <PosBadge pos={t.position} />
+        <PlayerLink playerId={t.playerId} playerName={t.playerName || '—'}
+          style={{ flex: 1, minWidth: 0, fontSize: '14px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} />
+        <Stars rating={t.rating} size={11} />
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#94a3b8', minWidth: 0 }}>
+        {t.teamId != null
+          ? <TeamLink teamId={t.teamId} name={t.teamName ?? t.teamAbbr} avatar avatarSize={16} style={{ color: '#94a3b8', minWidth: 0 }} />
+          : <span>Free agent</span>}
+        {seasons > 0 && <span style={{ flexShrink: 0 }}>{seasons} {seasons === 1 ? 'season' : 'seasons'}</span>}
+        {inHof && (
+          <span style={{ marginLeft: 'auto', flexShrink: 0, fontSize: '10px', fontWeight: 700, color: '#fde68a', backgroundColor: 'rgba(234,179,8,0.14)', border: '1px solid rgba(234,179,8,0.35)', padding: '1px 6px', borderRadius: '3px' }}>
+            Hall of Fame
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const OUT_COLOR: Record<string, string> = { Fired: '#f87171', Retired: '#94a3b8', 'Stepped down': '#fbbf24' }
+
+const CoachLine: React.FC<{ tag: string; tagColor: string; name: string; note: string | null; noteColor?: string }> = ({ tag, tagColor, name, note, noteColor = '#94a3b8' }) => (
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', minWidth: 0 }}>
+    <span style={{ fontSize: '10px', fontWeight: 700, color: tagColor, minWidth: '26px', flexShrink: 0, letterSpacing: '0.04em' }}>{tag}</span>
+    <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+    {note && <span style={{ fontSize: '12px', color: noteColor, flexShrink: 0 }}>{note}</span>}
+  </div>
+)
+
+const CoachChangeCard: React.FC<{ change: CoachChange }> = ({ change: c }) => {
+  const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`
+  return (
+    <div style={{ padding: '10px 12px', borderRadius: '8px', backgroundColor: '#162231', display: 'flex', flexDirection: 'column', gap: '7px', minWidth: 0 }}>
+      <TeamLink teamId={c.teamId} name={c.teamName ?? c.teamAbbr} avatar avatarSize={18}
+        style={{ fontSize: '14px', fontWeight: 700, color: '#e2e8f0' }} />
+      {c.outName && (
+        <CoachLine tag="OUT" tagColor="#64748b" name={c.outName}
+          note={c.outHow && c.outSeasons != null ? `${c.outHow} after ${plural(c.outSeasons, 'season')}` : c.outHow}
+          noteColor={OUT_COLOR[c.outHow ?? ''] ?? '#94a3b8'} />
+      )}
+      {c.inName && (
+        <CoachLine tag="IN" tagColor="#4ade80" name={c.inName}
+          note={c.inPriorSeasons > 0 ? plural(c.inPriorSeasons, 'prior season') : 'First job'} />
+      )}
+      {c.raw.map((r, i) => <div key={i} style={{ fontSize: '13px', color: '#cbd5e1' }}>{r}</div>)}
+    </div>
+  )
+}
+
 const TransactionsTab: React.FC<{ transactions: RecapTransaction[] }> = ({ transactions }) => {
   const isMobile = useIsMobile()
   const groups = useMemo(() => {
+    // Biggest names first: final rating, then career length.
     const retirements = transactions.filter(t => t.type === 'retirement')
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || careerSeasons(b.detail) - careerSeasons(a.detail))
     const hof = transactions.filter(t => t.type === 'hof_induction')
-    const coach = transactions.filter(t => t.type === 'coach_fire' || t.type === 'coach_hire')
+    const hofIds = new Set(hof.map(t => t.playerId).filter((id): id is number => id != null))
+    const coach = groupCoachChanges(transactions)
     const moveTypes: RecapEventType[] = ['rookie_pick', 'fa_pick', 'resign', 'promotion', 'cut', 'walked']
     const byTeam = new Map<string, RecapTransaction[]>()
     for (const t of transactions) {
@@ -437,7 +497,7 @@ const TransactionsTab: React.FC<{ transactions: RecapTransaction[] }> = ({ trans
       if (!byTeam.has(key)) byTeam.set(key, [])
       byTeam.get(key)!.push(t)
     }
-    return { retirements, hof, coach, byTeam }
+    return { retirements, hof, hofIds, coach, byTeam }
   }, [transactions])
 
   if (transactions.length === 0) {
@@ -453,18 +513,18 @@ const TransactionsTab: React.FC<{ transactions: RecapTransaction[] }> = ({ trans
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {announce('RETIREMENTS', groups.retirements, t => (
-        <div key={`ret-${t.playerId}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
-          <PosBadge pos={t.position} />
-          <PlayerLink playerId={t.playerId} playerName={t.playerName || '—'} style={{ fontWeight: 600, color: '#e2e8f0' }} />
-          <Stars rating={t.rating} />
-          <TeamLink teamId={t.teamId} abbr={t.teamAbbr} style={{ color: '#94a3b8', fontSize: '13px' }} />
-          {t.detail && <span style={{ color: '#64748b', fontSize: '13px' }}>· {t.detail}</span>}
-        </div>
-      ))}
+      {groups.retirements.length > 0 && (
+        <CollapsibleSection title="RETIREMENTS" count={groups.retirements.length}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(250px, 1fr))', gap: '8px' }}>
+            {groups.retirements.map(t => (
+              <RetirementTile key={`ret-${t.playerId}`} t={t} inHof={t.playerId != null && groups.hofIds.has(t.playerId)} />
+            ))}
+          </div>
+        </CollapsibleSection>
+      )}
 
       {announce('HALL OF FAME', groups.hof, t => (
-        <div key={`hof-${t.playerId}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+        <div key={`hof-${t.playerId}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', flexWrap: 'wrap' }}>
           <PosBadge pos={t.position} />
           <PlayerLink playerId={t.playerId} playerName={t.playerName || '—'} style={{ fontWeight: 700, color: '#fde68a' }} />
           <Stars rating={t.rating} />
@@ -472,15 +532,13 @@ const TransactionsTab: React.FC<{ transactions: RecapTransaction[] }> = ({ trans
         </div>
       ))}
 
-      {announce('COACHING CHANGES', groups.coach, t => (
-        <div key={`coach-${t.type}-${t.teamId}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: '#cbd5e1' }}>
-          <span style={{ color: t.type === 'coach_fire' ? '#f87171' : '#4ade80', fontWeight: 700 }}>
-            {t.type === 'coach_fire' ? 'Fired' : 'Hired'}
-          </span>
-          <span>{t.detail || 'coach'}</span>
-          <TeamLink teamId={t.teamId} name={t.teamName} style={{ color: '#94a3b8', fontSize: '13px' }} />
-        </div>
-      ))}
+      {groups.coach.length > 0 && (
+        <CollapsibleSection title="COACHING CHANGES" count={groups.coach.length}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: '8px' }}>
+            {groups.coach.map(c => <CoachChangeCard key={`coach-${c.teamId ?? c.teamName}`} change={c} />)}
+          </div>
+        </CollapsibleSection>
+      )}
 
       {groups.byTeam.size > 0 && (
         <CollapsibleSection title="ROSTER MOVES" count={Array.from(groups.byTeam.values()).reduce((n, a) => n + a.length, 0)}>

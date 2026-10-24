@@ -4,6 +4,7 @@ import { OffseasonPanel } from '@/Components/OffseasonPanel'
 import { SeasonRecap } from '@/Components/Recap/SeasonRecap'
 import { useFloosball } from '@/contexts/FloosballContext'
 import { BG, BORDER, TEXT, FONT, font } from '@/Components/Shell/tokens'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 /**
  * The season-end home: the Season Recap and the live Draft Board.
@@ -38,23 +39,28 @@ export const OffseasonPage: React.FC = () => {
   const navigate = useNavigate()
   const { seasonState } = useFloosball()
   const isOffseason = seasonState?.currentWeekText === 'Offseason'
+  const isMobile = useIsMobile()
 
   const raw = params.get('view')
   const view: View = raw === 'draft' ? 'draft' : 'recap'
 
   // Out of the offseason this page has nothing live to show and no nav entry pointing at
   // it, so a stale link or a back button lands on the front page rather than on an empty
-  // draft board. Waits for season state to arrive first — `seasonState` is null on the
-  // very first render and bouncing then would fire on every cold load.
+  // draft board. Waits for season state to arrive first.
+  // ⚠️ `seasonState` is never null: it starts as a default object (season 0, no week
+  // text), so testing it for truthiness bounced every reload of this page, and every
+  // shared link to it, to the front page before /api/season had answered. Season 0 is
+  // the not-loaded-yet marker.
+  const seasonLoaded = (seasonState?.seasonNumber ?? 0) > 0
   useEffect(() => {
-    if (seasonState && !isOffseason) navigate('/', { replace: true })
-  }, [seasonState, isOffseason, navigate])
+    if (seasonLoaded && !isOffseason) navigate('/', { replace: true })
+  }, [seasonLoaded, isOffseason, navigate])
 
   const setView = (next: View) => setParams(next === 'recap' ? {} : { view: next },
                                             { replace: true })
 
   return (
-    <div style={{ padding: '26px 28px 40px', fontFamily: FONT, minWidth: 0 }}>
+    <div style={{ padding: isMobile ? '18px 16px 32px' : '26px 28px 40px', fontFamily: FONT, minWidth: 0 }}>
       <div style={{ marginBottom: '18px' }}>
         <div style={{ ...font(700, 22), color: TEXT.primary }}>Offseason</div>
         <div style={{ ...font(400, 13, 1.5), color: TEXT.muted, marginTop: '4px' }}>
