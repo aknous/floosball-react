@@ -21,6 +21,7 @@ import CardsPage from './Views/Cards/CardsPage'
 import AchievementsPage from './Views/Achievements/AchievementsPage'
 import FrontOfficeRedirect from '@/Views/FrontOffice/FrontOfficeRedirect'
 import OffseasonPage from '@/Views/Offseason/OffseasonPage'
+import TransactionsPage from '@/Views/Transactions/TransactionsPage'
 import AwardsPage from './Views/Awards/AwardsPage'
 import BracketView from './Views/Bracket/BracketView'
 import Dashboard from './Views/Dashboard/Dashboard'
@@ -84,8 +85,7 @@ function AppRoutes() {
       <Route exact path='/awards' element={<AwardsPage />} />
       <Route exact path='/bracket' element={<BracketView />} />
       <Route exact path='/offseason' element={<OffseasonPage />} />
-      {/* Trading is off and the site carries no trade surfaces (owner, 2026-10-03). */}
-      <Route exact path='/transactions' element={<Navigate to='/' replace />} />
+      <Route exact path='/transactions' element={<TransactionsPage />} />
       <Route exact path='/history' element={<HistoryPage />} />
       <Route exact path='/about' element={<AboutPage />} />
       <Route exact path='/admin' element={<AdminPage />} />

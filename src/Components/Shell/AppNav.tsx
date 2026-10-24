@@ -69,6 +69,16 @@ const LEAGUE_ITEMS: NavEntry[] = [
   // know. Reported as the record book having disappeared; it had not, it had no door.
   // An open book, since the Record Book is what a reader comes here for.
   { key: 'history', label: 'History', path: '/history', icon: ICON('M2 4h6a2 2 0 012 2v10a2 2 0 00-2-2H2V4zm16 0h-6a2 2 0 00-2 2v10a2 2 0 012-2h6V4z') },
+  // The front-office desk: draft order, the incoming class, who is out of contract, and
+  // every signing and cut. A league view rather than a personal one, so it sits here and
+  // not under Yours; your own team is highlighted inside it. Two arrows passing: players
+  // changing hands.
+  {
+    key: 'transactions', label: 'Transactions', path: '/transactions',
+    // ⚠️ LINE_ICON, not ICON — `ICON` fills its path with currentColor and no stroke, so a
+    // line drawing handed to it renders as a solid blob.
+    icon: LINE_ICON(['M3 7h14M14 4l3 3-3 3', 'M21 17H7M10 14l-3 3 3 3']),
+  },
 ]
 
 const YOURS_ITEMS: NavEntry[] = [
@@ -242,9 +252,11 @@ const AppNav: React.FC = () => {
   // the challenge was unreachable during the window it exists for. Reported as the
   // Bracket tab simply not appearing.
   //
-  // `seasonComplete` is kept as a fallback so the entry survives the gap between the
-  // Floos Bowl and the next season, where the frozen seeds have been cleared.
+  // The frozen seeds are stored per season and never cleared, and the offseason runs
+  // under the number of the season it follows, so the flag holds until the next season
+  // starts. `seasonComplete` is a fallback for a response that lacks it.
   const inPlayoffs = seasonState.bracketAvailable || seasonState.seasonComplete
+  const isOffseason = seasonState.currentWeekText === 'Offseason'
 
   /**
    * A dot on Bracket until a ballot is in.
@@ -284,17 +296,19 @@ const AppNav: React.FC = () => {
       window.removeEventListener('floosball:bracket-submitted', onSubmitted)
     }
   }, [inPlayoffs, user, getToken])
-  const bracketDue = inPlayoffs && !!user && !hasBracket
-  // The offseason entry replaces the bracket rather than joining it: once the drafts are
-  // running the bracket is a settled result, and stacking two postseason entries pushes
-  // the standing pages down for a reader who still wants them.
-  const isOffseason = seasonState.currentWeekText === 'Offseason'
-  // No Transactions entry: trading is off and the site carries no trade surfaces
-  // (owner, 2026-10-03).
-  const baseLeagueItems = LEAGUE_ITEMS
-  const leagueItems = isOffseason ? [...baseLeagueItems, OFFSEASON_ITEM]
-    : inPlayoffs ? [...baseLeagueItems, BRACKET_ITEM]
-      : baseLeagueItems
+  // No dot in the offseason: the bracket is a settled result by then, nothing to fill in.
+  const bracketDue = inPlayoffs && !isOffseason && !!user && !hasBracket
+  // The bracket stays in the nav through the offseason, beside the Offseason entry, until
+  // the next season starts (owner, 2026-10-23). It used to be replaced by Offseason, which
+  // hid the final bracket and its leaderboard the moment the drafts began.
+  // Transactions is hidden until week 15, then stays through the playoffs and the
+  // offseason (owner). The backend owns the rule (`transactions_available`).
+  const baseLeagueItems = LEAGUE_ITEMS.filter(i => i.key !== 'transactions' || seasonState.transactionsAvailable)
+  const leagueItems = [
+    ...baseLeagueItems,
+    ...(inPlayoffs ? [BRACKET_ITEM] : []),
+    ...(isOffseason ? [OFFSEASON_ITEM] : []),
+  ]
   // Awards voting is season's-end only, and it DOES notify — so it takes the dot
   // treatment, and it takes it at the end of the group.
   if (awardsOpen) yoursItems.push(AWARDS_ITEM)
