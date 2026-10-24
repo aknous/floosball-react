@@ -227,7 +227,7 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontFamily: FONT }}>
         <span style={{ ...font(700, 11, 1, '0.02em'), color: accent, whiteSpace: 'nowrap' }}>
-          SPECTATING{status?.cappedOut ? ' · MAXED' : earning ? '' : ' · PAUSED'}
+          SPECTATING{status?.cappedOut ? ' (MAXED)' : earning ? '' : ' (PAUSED)'}
         </span>
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <div style={{ width: 132, height: 8, background: BORDER.hairline, overflow: 'hidden', boxShadow: barGlow, transition: 'box-shadow 0.25s ease' }}>
@@ -256,7 +256,7 @@ const CheerBar: React.FC<CheerBarProps> = ({ gameId, isLive, playCount = 0, scor
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.02em', color: accent, textTransform: 'uppercase' }}>
-          Spectating{status?.cappedOut ? ' · maxed' : earning ? '' : ' · paused'}
+          Spectating{status?.cappedOut ? ' (maxed)' : earning ? '' : ' (paused)'}
         </span>
         <span style={{ fontSize: 10, color: C.gold, fontWeight: 600 }}>
           {flash ? <span style={{ fontWeight: 700 }}>+<FloobitSymbol size={10} color="currentColor" />{status?.segmentPayout}!</span>

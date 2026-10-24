@@ -320,8 +320,8 @@ const StatsPage: React.FC = () => {
   // capitalise the word after the separator ("192 Shown").
   const positionWord = POSITION_PLURAL[position] ?? 'players'
   const contextLine = mode === 'players'
-    ? `${positionWord.charAt(0).toUpperCase()}${positionWord.slice(1)} · ${playerRows.length} shown`
-    : `${side === 'offense' ? 'Offense' : 'Defense'} · ${teamRows.length} teams`
+    ? `${positionWord.charAt(0).toUpperCase()}${positionWord.slice(1)}, ${playerRows.length} shown`
+    : `${side === 'offense' ? 'Offense' : 'Defense'}, ${teamRows.length} teams`
 
   return (
     <div style={{ fontFamily: FONT }}>
@@ -478,7 +478,7 @@ const StatsPage: React.FC = () => {
                     ...(row.awakened ? AWAKENED_NAME : {}),
                   }}>{row.name}</span>
                   <span style={{ ...font(500, 10), color: TEXT.muted }}>
-                    {row.position}{row.teamAbbr ? ` · ${row.teamAbbr}` : ''}
+                    {row.position}{row.teamAbbr ? `, ${row.teamAbbr}` : ''}
                   </span>
                 </span>
               </span>
@@ -550,7 +550,7 @@ const StatsPage: React.FC = () => {
             Showing {mode === 'players' ? playerRows.length : teamRows.length} of{' '}
             {mode === 'players' ? (players?.total ?? 0) : (teams?.length ?? 0)}{' '}
             {mode === 'players' ? (POSITION_PLURAL[position] ?? 'players') : 'teams'}
-            {mode === 'players' && careerScope ? ' · career' : ''}
+            {mode === 'players' && careerScope ? ', career' : ''}
           </span>
         </div>
       )}

@@ -111,7 +111,6 @@ export const Plaque: React.FC<{ p: Inductee }> = ({ p }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0, flexWrap: 'wrap' }}>
             {teams.map((t, i) => (t.abbr || t.id != null) && (
               <span key={`${t.abbr}-${i}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                {i > 0 && <span style={{ color: TEXT.faint, fontSize: '11px' }}>&middot;</span>}
                 {t.id != null && <img src={`/avatars/${t.id}.png`} alt={t.abbr || ''} style={{ width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0 }} />}
                 {t.abbr && <span style={{ ...font(700, 12, 1, '0.02em'), color: readableTeamColor(t.color || TEXT.muted, BG.card), whiteSpace: 'nowrap' }}>{t.abbr}</span>}
               </span>

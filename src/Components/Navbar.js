@@ -781,7 +781,7 @@ export default function Navbar() {
                 )}
                 {user?.floobits != null && (
                   <HoverTooltip
-                    text={endowment ? `Endowment active — +${endowment.boostPercent ?? 25}% on all Floobit income${endowment.weeksRemaining ? ` · ${endowment.weeksRemaining}w left` : ''}` : undefined}
+                    text={endowment ? `Endowment active: +${endowment.boostPercent ?? 25}% on all Floobit income${endowment.weeksRemaining ? `, ${endowment.weeksRemaining} ${endowment.weeksRemaining === 1 ? 'week' : 'weeks'} left` : ''}` : undefined}
                     color="#eab308"
                   >
                     <button onClick={() => setShowShop(true)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '6px', backgroundColor: 'rgba(234,179,8,0.12)', fontFamily: 'inherit', border: endowment ? '1px solid rgba(234,179,8,0.55)' : '1px solid transparent', boxShadow: endowment ? '0 0 9px rgba(234,179,8,0.35)' : 'none' }}>

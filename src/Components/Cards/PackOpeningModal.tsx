@@ -363,7 +363,7 @@ const PackOpeningModal: React.FC<PackOpeningModalProps> = ({
             <div style={{
               fontSize: '12px', color: '#94a3b8', textAlign: 'center', marginBottom: '20px',
             }}>
-              Pick {keepCount} of {cards.length} to keep ·{' '}
+              Pick {keepCount} of {cards.length} to keep:{' '}
               <span style={{ color: selected.size === keepCount ? '#22c55e' : '#eab308', fontWeight: 700 }}>
                 {selected.size}/{keepCount} selected
               </span>

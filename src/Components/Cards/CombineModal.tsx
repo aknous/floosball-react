@@ -137,7 +137,7 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
           <div style={{ fontSize: '13px', fontWeight: '700', color: '#e2e8f0' }}>{title}</div>
           <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>
             {displayed.length} of {rawCount} cards
-            {selectedCount > 0 && ` \u00b7 ${selectedCount} selected`}
+            {selectedCount > 0 && `, ${selectedCount} selected`}
           </div>
         </div>
         <button onClick={onCancel} style={{
@@ -281,7 +281,7 @@ function CardPicker({ cards, onConfirm, onCancel, title, filter }: CardPickerPro
       }}>
         <div style={{ fontSize: '11px', color: '#94a3b8' }}>
           {selectedCount > 0
-            ? `${selectedCount} card${selectedCount === 1 ? '' : 's'} \u00b7 value ${selectedValue}`
+            ? `${selectedCount} card${selectedCount === 1 ? '' : 's'}, value ${selectedValue}`
             : 'Click cards to select'}
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>

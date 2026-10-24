@@ -161,7 +161,7 @@ export const PlayerRating: React.FC<Props> = ({
       color: '#cbd5e1', fontVariantNumeric: 'tabular-nums',
     }}>
       {data!.average!.toFixed(1)}
-      <span style={{ color: '#94a3b8' }}> · {data!.raters}{countSuffix}</span>
+      <span style={{ color: '#94a3b8' }}> ({data!.raters}{countSuffix})</span>
     </span>
   ) : null
 

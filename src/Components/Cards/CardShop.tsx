@@ -219,7 +219,7 @@ const CardShop: React.FC = () => {
               <div style={{ fontSize: '11px', color: '#64748b' }}>
                 {pack.cardsPerPack} cards
                 {pack.guaranteedRarity && (
-                  <span style={{ color: colors.accent }}> &middot; 1+ {pack.guaranteedRarity}</span>
+                  <span style={{ color: colors.accent }}>, 1+ {pack.guaranteedRarity}</span>
                 )}
               </div>
               {pack.dailyLimit != null && (

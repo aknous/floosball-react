@@ -155,7 +155,7 @@ const PlayerRow: React.FC<{
         </PlayerHoverCard>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-        <span style={{ fontSize: '13px', color: '#94a3b8' }}>{player.position} · {player.teamAbbr}</span>
+        <span style={{ fontSize: '13px', color: '#94a3b8' }}>{player.position}, {player.teamAbbr}</span>
         <Stars stars={player.ratingStars} size={20} />
       </div>
       {cards && cards.length > 0 && (

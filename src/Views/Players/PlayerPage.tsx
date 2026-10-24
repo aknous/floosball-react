@@ -576,7 +576,7 @@ const PlayerPage: React.FC = () => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px', textAlign: 'center' }}>
         <span style={{ ...font(500, 11, 1, '0.02em'), color: TEXT.muted }}>
           {POSITION_FULL[player.position] ?? player.position}
-          {player.defensivePosition && ` · ${DEF_POSITION_FULL[player.defensivePosition] ?? player.defensivePosition}`}
+          {player.defensivePosition && ` / ${DEF_POSITION_FULL[player.defensivePosition] ?? player.defensivePosition}`}
         </span>
         <span style={{ ...font(800, 26, 1.1, '-0.03em'), color: TEXT.primary }}>{player.name}</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -593,7 +593,7 @@ const PlayerPage: React.FC = () => {
             padding: '4px 9px',
           }}>
             <span style={{ ...font(700, 10, 1, '0.02em'), color: '#fde68a' }}>
-              HALL OF FAME{player.hofSeason ? ` · CLASS OF S${player.hofSeason}` : ''}
+              HALL OF FAME{player.hofSeason ? ` | CLASS OF S${player.hofSeason}` : ''}
             </span>
           </span>
         )}
@@ -883,7 +883,7 @@ const PlayerPage: React.FC = () => {
         <span style={{ width: '1px', height: '22px', background: BORDER.hairline }} />
         <span style={{ ...font(500, 12, 1.4), color: TEXT.muted }}>
           {standingSpec ? standingSpec.plural : 'Players'}
-          {standing != null && ` · ranked ${ordinal(standing)} by ${standingSpec!.label}`}
+          {standing != null && `, ranked ${ordinal(standing)} by ${standingSpec!.label}`}
         </span>
         <span style={{ flex: 1 }} />
         {user && playerId != null && (

@@ -229,7 +229,7 @@ export const PlayerLeaders: React.FC<{ embedded?: boolean }> = ({ embedded = fal
                 </PlayerHoverCard>
                 <div style={{ fontSize: '12px', color: '#cbd5e1' }}>
                   {player.teamAbbr}
-                  {position === 'ALL' && <span style={{ marginLeft: '4px', color: '#94a3b8' }}>· {player.position}</span>}
+                  {position === 'ALL' && <span style={{ marginLeft: '6px', color: '#94a3b8' }}>{player.position}</span>}
                 </div>
                 <div style={{ marginTop: '-2px' }}>
                   <Stars stars={player.ratingStars} size={11} />

@@ -133,7 +133,7 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
         <div style={{ marginBottom: '12px' }}>
           <div style={{ fontSize: '16px', fontWeight: '700', color: '#e2e8f0', lineHeight: 1.2 }}>{data.name}</div>
           <div style={{ fontSize: '13px', color: '#94a3b8', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
-            <span>{POSITION_FULL[data.position] ?? data.position}{data.defensivePosition ? ` · ${DEF_POSITION_FULL[data.defensivePosition] ?? data.defensivePosition}` : ''}</span>
+            <span>{POSITION_FULL[data.position] ?? data.position}{data.defensivePosition ? ` / ${DEF_POSITION_FULL[data.defensivePosition] ?? data.defensivePosition}` : ''}</span>
             <ArchetypeBadge archetype={data.archetype} size={13} />
           </div>
           <div style={{ marginTop: '3px' }}><Stars stars={data.ratingStars} size={20} /></div>

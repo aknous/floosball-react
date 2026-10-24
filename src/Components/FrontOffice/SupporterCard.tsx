@@ -98,7 +98,7 @@ function formatParts(bd: PendingDividend['breakdown']): string {
   if (!bd?.parts) return ''
   // Show every part as +X so the line reads as a sum, then the ×multiplier.
   const segs = PART_ORDER.filter(k => bd.parts[k]).map(k => `${PART_LABELS[k]} +${bd.parts[k]}`)
-  return `${segs.join(' · ')} ×${bd.mult}`
+  return `${segs.join(', ')} ×${bd.mult}`
 }
 
 const SupporterInner: React.FC = () => {
@@ -249,7 +249,7 @@ const SupporterInner: React.FC = () => {
         <span style={{ fontSize: 10 }}>{showBreakdown ? '▾' : '▸'}</span>
         {showBreakdown ? 'Hide the detail' : 'How it\'s worked out'}
         {(status.pending?.length ?? 0) > 0 && (
-          <span>· {status.pending!.length} {status.pending!.length === 1 ? 'week' : 'weeks'} banked</span>
+          <span>({status.pending!.length} {status.pending!.length === 1 ? 'week' : 'weeks'} banked)</span>
         )}
       </button>
 

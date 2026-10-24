@@ -386,7 +386,7 @@ const AchievementsPage: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '11px', minWidth: 0 }}>
           <h1 style={{ ...font(800, 24, 1, '-0.025em'), color: TEXT.primary, margin: 0 }}>Achievements</h1>
           <span style={{ ...font(400, 13), color: TEXT.muted, whiteSpace: 'nowrap' }}>
-            {currentSeason > 0 ? `Season ${currentSeason}${currentWeek > 0 ? ` · Week ${currentWeek}` : ''}` : 'Off-season'}
+            {currentSeason > 0 ? `Season ${currentSeason}${currentWeek > 0 ? `, Week ${currentWeek}` : ''}` : 'Off-season'}
           </span>
         </div>
         {achievements.length > 0 && (
@@ -1063,7 +1063,7 @@ const PendingRewardsSection: React.FC<{
                   {sourceText}
                   {deferred && (
                     <span style={{ color: ACCENT.warning, marginLeft: '6px' }}>
-                      · Held for season {r.deferUntilSeason}
+                      Held for season {r.deferUntilSeason}
                     </span>
                   )}
                 </div>

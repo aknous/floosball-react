@@ -391,7 +391,7 @@ const FrontPage: React.FC = () => {
         label: 'SHOWCASE',
         to: '/cards?view=showcase',
         note: showcase
-          ? `${showcase.score} pts · ${showcase.slotCount} of ${showcase.maxSlots} slots`
+          ? `${showcase.score} pts, ${showcase.slotCount} of ${showcase.maxSlots} slots`
           : 'Nothing on show',
       },
       {
@@ -406,7 +406,7 @@ const FrontPage: React.FC = () => {
         // actually watching, so this week's record leads and the season follows.
         note: pickem
           ? (pickem.weekTotal > 0
-            ? `${pickem.weekCorrect}/${pickem.weekTotal} this week · ${pickem.total} picks this season`
+            ? `${pickem.weekCorrect}/${pickem.weekTotal} this week, ${pickem.total} picks this season`
             : `${pickem.total} picks this season`)
           : 'No picks yet',
       },

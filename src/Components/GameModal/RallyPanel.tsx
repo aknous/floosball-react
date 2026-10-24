@@ -133,7 +133,7 @@ const RallyButton: React.FC<RallyButtonProps> = ({ game, teamId, teamColor }) =>
   const tooltipContent: React.ReactNode = !user
     ? <span>Sign in to cheer</span>
     : lockoutLeft > 0
-      ? <span>Locked out · {lockoutLeft}s</span>
+      ? <span>Locked out ({lockoutLeft}s)</span>
       : <span>Cheer on the {teamName}</span>
 
   // Bottom-of-scoreboard CTA — full-width button per team. Idle state

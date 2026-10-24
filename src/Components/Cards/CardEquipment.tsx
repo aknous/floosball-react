@@ -545,7 +545,7 @@ const CardEquipment: React.FC = () => {
             fontWeight: extraSlotPowerup.expiring ? '700' : '400',
           }}>
             {extraSlotPowerup.pending
-              ? `Starts next week \u00b7 ${extraSlotPowerup.weeksRemaining} week${extraSlotPowerup.weeksRemaining !== 1 ? 's' : ''}`
+              ? `Starts next week, ${extraSlotPowerup.weeksRemaining} week${extraSlotPowerup.weeksRemaining !== 1 ? 's' : ''}`
               : extraSlotPowerup.expiring
                 ? 'Expires after this week'
                 : `${extraSlotPowerup.weeksRemaining} week${extraSlotPowerup.weeksRemaining !== 1 ? 's' : ''} remaining`}

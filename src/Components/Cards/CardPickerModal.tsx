@@ -316,7 +316,7 @@ const CardPickerModal: React.FC<CardPickerModalProps> = ({
                 {showPool
                   ? `${displayed.length} of ${pool.length} players`
                   : `${displayed.length} of ${totalCount} cards`}
-                {!showPool && matchingCount > 0 && ` · ${matchingCount} match roster`}
+                {!showPool && matchingCount > 0 && `, ${matchingCount} match roster`}
               </div>
             </div>
             <button

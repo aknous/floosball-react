@@ -414,11 +414,11 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
       <div style={{ ...QUIP_STYLE, minHeight: '32px', marginTop: '11px' }}>{quip}</div>
       <div style={{ fontSize: '12px', fontWeight: 700, color: perk ? '#e2e8f0' : '#5b6b7d', marginTop: '3px' }}>{perk || 'No bonus yet'}</div>
       {f.upgrading ? (
-        <div style={{ fontSize: '12px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>UPKEEP PAUSED · UPGRADING</div>
+        <div style={{ fontSize: '12px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>UPGRADING | UPKEEP PAUSED</div>
       ) : covered ? (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '10px 0 5px' }}>
-            <span>Upkeep</span><span><b style={{ color: '#fbbf24' }}><FloobitSymbol size={11} color="#fbbf24" />{f.upkeepCost}/season</b> · <span style={{ color: '#34d399', fontWeight: 700 }}>FUNDED</span></span>
+            <span>Upkeep</span><span><b style={{ color: '#fbbf24' }}><FloobitSymbol size={11} color="#fbbf24" />{f.upkeepCost}/season</b>, <span style={{ color: '#34d399', fontWeight: 700 }}>FUNDED</span></span>
           </div>
           <div style={{ height: '6px', background: '#334155', borderRadius: '4px', overflow: 'hidden' }}>
             <div style={{ width: '100%', height: '100%', background: '#22c55e' }} />
@@ -478,7 +478,7 @@ function BallotCard({ c, accent, selected, totalVotes, onVote }: { c: Candidate;
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '11px', color: '#7e93a8', marginTop: '8px' }}>
         <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Fan votes</span>
-        <b style={{ color: '#e2e8f0', fontSize: '12px' }}>{c.votes}{totalVotes > 0 ? ` · ${Math.round((c.votes / totalVotes) * 100)}%` : ''}</b>
+        <b style={{ color: '#e2e8f0', fontSize: '12px' }}>{c.votes}{totalVotes > 0 ? ` (${Math.round((c.votes / totalVotes) * 100)}%)` : ''}</b>
       </div>
       <div style={{ height: '5px', background: '#334155', borderRadius: '4px', overflow: 'hidden', marginTop: '4px' }}>
         <div style={{ width: `${totalVotes > 0 ? (c.votes / totalVotes) * 100 : 0}%`, height: '100%', background: accent, opacity: 0.85 }} />

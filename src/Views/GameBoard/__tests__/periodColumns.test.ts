@@ -21,13 +21,13 @@ describe('periodColumns', () => {
   it('blanks the quarters the game has not reached', () => {
     const g = base({ quarter: 2, quarterScores: {
       home: { q1: 7, q2: 0, q3: 0, q4: 0 }, away: { q1: 3, q2: 0, q3: 0, q4: 0 } } })
-    expect(vals(g)).toEqual(['Q1:7', 'Q2:0', 'Q3:·', 'Q4:·'])
+    expect(vals(g)).toEqual(['Q1:7', 'Q2:0', 'Q3:-', 'Q4:-'])
   })
 
   it('a scoreless quarter the game DID play still reads 0', () => {
     // ⚠️ The point of the blank is to distinguish "not yet" from "nobody scored".
     const g = base({ quarter: 3 })
-    expect(vals(g)).toEqual(['Q1:0', 'Q2:0', 'Q3:0', 'Q4:·'])
+    expect(vals(g)).toEqual(['Q1:0', 'Q2:0', 'Q3:0', 'Q4:-'])
   })
 
   it('a regulation final shows four quarters and NO OT column', () => {
@@ -52,21 +52,21 @@ describe('periodColumns', () => {
 
   it('a scheduled game has played nothing', () => {
     const g = base({ status: 'Scheduled', quarter: 0 })
-    expect(vals(g)).toEqual(['Q1:·', 'Q2:·', 'Q3:·', 'Q4:·'])
+    expect(vals(g)).toEqual(['Q1:-', 'Q2:-', 'Q3:-', 'Q4:-'])
   })
 
   it('innings blank the innings not yet reached', () => {
     const g = base({ innings: { active: true, inning: 2, half: 'top', tries: 1, triesPerInning: 3,
                                 inningsPerGame: 4,
                                 lineScore: { innings: [1, 2, 3, 4], home: [3, 0], away: [0, 1] } } })
-    expect(vals(g)).toEqual(['1:3', '2:0', '3:·', '4:·'])
+    expect(vals(g)).toEqual(['1:3', '2:0', '3:-', '4:-'])
   })
 
   it('frames blank the frames not yet played', () => {
     const g = base({ frames: { active: true, currentFrame: 2, framesPerGame: 4,
                                framesWonHome: 1, framesWonAway: 0,
                                frameResults: [{ home: 7, away: 3, winner: 'home' }] } })
-    expect(vals(g)).toEqual(['1:7', '2:·', '3:·', '4:·'])
+    expect(vals(g)).toEqual(['1:7', '2:-', '3:-', '4:-'])
   })
 })
 

@@ -341,7 +341,7 @@ export const HighlightFeed: React.FC<HighlightFeedProps> = ({ onPlayClick = () =
                   </span>
                   {item.teamAbbr && (
                     <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600' }}>
-                      · {item.teamAbbr}
+                      {item.teamAbbr}
                     </span>
                   )}
                 </div>

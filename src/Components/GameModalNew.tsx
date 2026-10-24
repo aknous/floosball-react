@@ -1088,7 +1088,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                   {play.inning != null ? (
                     // Innings: the clock loop is inert, so show the at-bat context instead
                     // of a meaningless quarter/clock + start-stop icon.
-                    `${play.inningHalf === 'bottom' ? 'BOT' : 'TOP'} ${play.inning} · Try ${play.inningTry}${gameData.innings?.triesPerInning ? `/${gameData.innings.triesPerInning}` : ''}`
+                    `${play.inningHalf === 'bottom' ? 'BOT' : 'TOP'} ${play.inning}, Try ${play.inningTry}${gameData.innings?.triesPerInning ? `/${gameData.innings.triesPerInning}` : ''}`
                   ) : play.frame != null ? (
                     // Frames: 10-min frames don't line up with quarters — show the frame +
                     // time remaining in it.
@@ -1961,7 +1961,7 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 return (
                   <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
                                 letterSpacing: '0.02em', textTransform: 'uppercase' }}>
-                    First to {tgt}{gameData.status === 'Active' && toGo > 0 ? ` · ${formatScore(toGo)} to go` : ''}
+                    First to {tgt}{gameData.status === 'Active' && toGo > 0 ? `, ${formatScore(toGo)} to go` : ''}
                   </div>
                 )
               })()}
@@ -1984,19 +1984,19 @@ export const GameModalNew: React.FC<GameModalNewProps> = ({ onClose, gameId, lay
                 return (
                   <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700, marginTop: '3px',
                                 letterSpacing: '0.02em', textTransform: 'uppercase' }}>
-                    Darts · land on {tgt}
+                    Darts: land on {tgt}
                     {gameData.status === 'Active' && (
-                      <span style={{ color: '#94a3b8' }}> ({gameData.homeTeam?.abbr} needs {hGo} · {gameData.awayTeam?.abbr} needs {aGo})</span>
+                      <span style={{ color: '#94a3b8' }}> ({gameData.homeTeam?.abbr} needs {hGo}, {gameData.awayTeam?.abbr} needs {aGo})</span>
                     )}
                     {/* On a final, how it was decided — landing on the number is winning
                         the FORMAT; running out of clock is merely leading. The scores
                         alone cannot tell those apart without knowing the target. */}
                     {gameData.status === 'Final' && info && (
                       <span style={{ color: '#94a3b8' }}>
-                        {info.overtime ? ' · decided in overtime'
-                          : info.landed ? ' · landed'
-                          : ' · decided on the clock'}
-                        {hoops > 0 ? ` · ${hoops} hoop${hoops === 1 ? '' : 's'}` : ''}
+                        {info.overtime ? ', decided in overtime'
+                          : info.landed ? ', landed'
+                          : ', decided on the clock'}
+                        {hoops > 0 ? `, ${hoops} hoop${hoops === 1 ? '' : 's'}` : ''}
                       </span>
                     )}
                   </div>

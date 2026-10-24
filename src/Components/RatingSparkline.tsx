@@ -65,7 +65,7 @@ export const RatingSparkline: React.FC<Props> = ({
   const lastX = xFor(history.length - 1)
   const lastY = yFor(last.rating)
 
-  const tooltipText = title || history.map(h => `S${h.season}: ${h.rating}`).join(' · ')
+  const tooltipText = title || history.map(h => `S${h.season}: ${h.rating}`).join(', ')
 
   return (
     <svg

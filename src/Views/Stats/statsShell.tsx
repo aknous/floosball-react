@@ -348,8 +348,8 @@ export function StatsTable<Row extends { id: number }>({
                   width: col.flexible ? undefined : `${col.width}px`,
                   // ⚠️ basis 0, NOT auto. With `1 1 auto` a flexible column sizes to
                   // ITS OWN TEXT plus a share of the slack — and the header's text
-                  // ("STAT LINE") is far shorter than a body cell's ("21/22 rec · 215
-                  // yd · 3 TD"). The two rows therefore computed different widths for
+                  // ("STAT LINE") is far shorter than a body cell's ("21/22 rec, 215
+                  // yd, 3 TD"). The two rows therefore computed different widths for
                   // the same column, and every fixed column to its left was pushed out
                   // of line by the difference (measured: 48px). Basis 0 makes the split
                   // depend only on the row width, which header and body share.

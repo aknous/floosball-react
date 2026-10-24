@@ -12,20 +12,20 @@ export function compactStatLine(stats: PlayerGameStats | null | undefined, pos: 
   if (!stats) return null
   if (pos === 'QB') {
     const p = stats.passing ?? {}
-    const base = `${p.comp ?? 0}/${p.att ?? 0} · ${p.yards ?? 0} yd · ${p.tds ?? 0} TD`
-    return (p.ints ?? 0) ? `${base} · ${p.ints} INT` : base
+    const base = `${p.comp ?? 0}/${p.att ?? 0}, ${p.yards ?? 0} yd, ${p.tds ?? 0} TD`
+    return (p.ints ?? 0) ? `${base}, ${p.ints} INT` : base
   }
   if (pos === 'RB') {
     const r = stats.rushing ?? {}
-    return `${r.carries ?? 0} car · ${r.yards ?? 0} yd · ${r.tds ?? 0} TD`
+    return `${r.carries ?? 0} car, ${r.yards ?? 0} yd, ${r.tds ?? 0} TD`
   }
   if (pos === 'WR' || pos === 'TE') {
     const rc = stats.receiving ?? {}
-    return `${rc.receptions ?? 0}/${rc.targets ?? 0} rec · ${rc.yards ?? 0} yd · ${rc.tds ?? 0} TD`
+    return `${rc.receptions ?? 0}/${rc.targets ?? 0} rec, ${rc.yards ?? 0} yd, ${rc.tds ?? 0} TD`
   }
   if (pos === 'K') {
     const k = stats.kicking ?? {}
-    return `${k.fgs ?? 0}/${k.fgAtt ?? 0} FG · ${k.longest ?? 0} yd`
+    return `${k.fgs ?? 0}/${k.fgAtt ?? 0} FG, ${k.longest ?? 0} yd`
   }
   return null
 }
@@ -75,7 +75,7 @@ export function trackedStatLine(
       const blob = (stats as any)?.[t.group] as Record<string, number> | undefined
       return `${Number(blob?.[t.dbKey] ?? 0)} ${t.label.toLowerCase()}`
     })
-  return parts.length ? parts.join(' · ') : null
+  return parts.length ? parts.join(', ') : null
 }
 
 /** Brighter than the game line: this is the number the card is being paid on. */

@@ -246,7 +246,7 @@ const Side: React.FC<{
       }}>
         <span style={{ ...font(400, 11), color: TEXT.muted, ...TABULAR, whiteSpace: 'nowrap' }}>
           {standing ? `${standing.wins}-${standing.losses}` : team.record}
-          {!compact && <>{' · '}{Math.round(standing?.elo ?? team.elo)}</>}
+          {!compact && <>{', '}{Math.round(standing?.elo ?? team.elo)} ELO</>}
         </span>
         <span style={{
           display: 'flex', alignItems: 'baseline', gap: '5px', flexShrink: 0,

@@ -171,8 +171,8 @@ const PrognosticationsPage: React.FC = () => {
               only discoverable by picking something and looking at the number that
               came back. */}
           <span style={{ display: 'block', ...font(400, 12), color: TEXT.muted, marginTop: '6px' }}>
-            {day != null ? `Day ${day + 1}` : 'Today'}
-            {' · '}Picks lock at kickoff.
+            {day != null ? `Day ${day + 1}.` : 'Today.'}
+            {' '}Picks lock at kickoff.
           </span>
           {/* ⚠️ Stated in POINTS, not multipliers (owner) — the card already shows each
               team's points, so a multiplier here asks the reader to redo that sum. Cut

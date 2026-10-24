@@ -278,7 +278,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
             {/* Slots */}
             <div style={{ display: 'flex', alignItems: 'stretch', gap: 10, padding: '14px 18px', flexShrink: 0 }}>
               <Slot label="Player to keep" active={selecting === 'target'} card={target}
-                    sub={target ? `${POS_LABEL[target.position]} · ${EDITION_LABEL[target.edition] || target.edition}` : 'Its effect gets replaced'}
+                    sub={target ? `${POS_LABEL[target.position]}, ${EDITION_LABEL[target.edition] || target.edition}` : 'Its effect gets replaced'}
                     onClick={() => setSelecting('target')} />
               <div style={{ alignSelf: 'center', color: accent, fontSize: 20, fontWeight: 800 }}>←</div>
               <Slot label="Effect to graft on" active={selecting === 'donor'} card={donor} accentEffect
@@ -296,7 +296,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 18px', background: 'rgba(167,139,250,0.08)', borderTop: '1px solid rgba(167,139,250,0.25)', borderBottom: '1px solid rgba(167,139,250,0.25)', flexShrink: 0 }}>
                 <div style={{ fontSize: 12, color: '#cbd5e1' }}>
                   Graft <b style={{ color: accent }}>{effectLabel(donor)}</b> onto <b style={{ color: '#e2e8f0' }}>{target.playerName}</b>
-                  <span style={{ color: '#94a3b8' }}> · tier {donor.tier ?? 1}</span>
+                  <span style={{ color: '#94a3b8' }}>, tier {donor.tier ?? 1}</span>
                 </div>
                 <button
                   onClick={confirm}
@@ -313,8 +313,8 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
                     : target.fromPool
                       // ⚠️ Synthesis costs a component ON TOP of the Floobit fee, so the
                       // button has to name both or it promises a price the till refuses.
-                      ? <>Build{'\u00a0·\u00a0'}<FloobitSymbol size={12} color="currentColor" />{cost} + 1 Synthesis Component</>
-                      : <>Transplant{'\u00a0·\u00a0'}<FloobitSymbol size={12} color="currentColor" />{cost}</>}
+                      ? <>Build for{'\u00a0'}<FloobitSymbol size={12} color="currentColor" />{cost} + 1 Synthesis Component</>
+                      : <>Transplant for{'\u00a0'}<FloobitSymbol size={12} color="currentColor" />{cost}</>}
                 </button>
               </div>
             )}
@@ -324,7 +324,7 @@ const TransplantModal: React.FC<TransplantModalProps> = ({ visible, onClose, onC
             <div style={{ padding: '10px 18px 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.02em', textTransform: 'uppercase', color: selecting === 'donor' ? accent : '#94a3b8', flexShrink: 0 }}>
               {selecting === 'target'
                 ? 'Choose the card to keep'
-                : `Choose an effect · ${target ? EDITION_LABEL[target.edition] || target.edition : ''}`}
+                : (target ? `Choose a ${EDITION_LABEL[target.edition] || target.edition} effect` : 'Choose an effect')}
             </div>
 
             {/* Filter + sort toolbar (mirrors The Combine) */}

@@ -1180,8 +1180,8 @@ const TradingCard: React.FC<TradingCardProps> = ({
             because that is the corner a collector reads first. The edition is still in the
             tooltip.
             ⚠️ The tooltip builds from `rawEdStyle`, NOT `edStyle` — `syntheticStyle`
-            already appends " · SNTH" to the label, so the styled one reads
-            "SYNTHETIC DIAMOND · SNTH". */}
+            already appends " SNTH" to the label, so the styled one reads
+            "SYNTHETIC DIAMOND SNTH". */}
         <EditionBadge
           label={edStyle.label}
           rarity={edStyle.rarity}
@@ -1547,7 +1547,7 @@ const TradingCard: React.FC<TradingCardProps> = ({
               {posLabel}
               {card.playerStats?.teamName && (
                 <>
-                  {' · '}
+                  {', '}
                   <span style={{ color: card.playerStats.teamColor || edStyle.labelColor }}>
                     {card.playerStats.teamName}
                   </span>

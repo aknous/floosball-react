@@ -48,7 +48,7 @@ const Column: React.FC<{
             </span>
             <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {e.name || `#${e.playerId}`}
-              {e.position && <span style={{ color: '#94a3b8' }}> · {e.position}</span>}
+              {e.position && <span style={{ color: '#94a3b8' }}> {e.position}</span>}
             </span>
             <span style={{ color: accent, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
               {e.average.toFixed(1)}

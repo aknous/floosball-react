@@ -380,7 +380,7 @@ const FantasyTicker: React.FC<{ userId?: number }> = ({ userId }) => {
 
   return (
     <HoverTooltip
-      text={`${season.toFixed(1)} FP this season${myEntry.rank ? ` · ranked ${myEntry.rank}` : ''}`}
+      text={`${season.toFixed(1)} FP this season${myEntry.rank ? `, ranked ${myEntry.rank}` : ''}`}
       color={ACCENT.live}
     >
       <NavLink
