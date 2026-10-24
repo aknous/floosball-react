@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import HoverTooltip from '@/Components/HoverTooltip'
 import SeasonRolloverControl from '@/Views/Admin/SeasonRolloverControl'
+import AdminRulesSection from '@/Views/Admin/AdminRulesSection'
 import { useAuth } from '@/contexts/AuthContext'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
@@ -934,7 +935,7 @@ const AdminContent: React.FC<{
     }
   }, [password])
 
-  type Section = 'monitor' | 'analytics' | 'achievements' | 'names' | 'news' | 'players' | 'cards' | 'floobits' | 'users' | 'settings'
+  type Section = 'monitor' | 'analytics' | 'achievements' | 'names' | 'news' | 'players' | 'cards' | 'floobits' | 'users' | 'rules' | 'settings'
   const [activeSection, setActiveSection] = useState<Section>('monitor')
 
   // Load the Discord submission queue lazily — only when the Names tab is open, and
@@ -1017,9 +1018,9 @@ const AdminContent: React.FC<{
   const [settingsForm, setSettingsForm] = useState<{
     feedback_url: string; feedback_visible: boolean; survey_url: string; survey_visible: boolean; survey_text: string
     halftime_show_url: string; halftime_show_pause_seconds: string
-    anomalies_enabled: boolean; criticality_enabled: boolean; awakened_powers_enabled: boolean; trading_enabled: boolean; anomaly_intensity: string
+    anomalies_enabled: boolean; criticality_enabled: boolean; awakened_powers_enabled: boolean; trading_enabled: boolean; rule_votes_enabled: boolean; anomaly_intensity: string
     awakened_involve_qb: string; awakened_involve_rb: string; awakened_involve_wr: string; awakened_involve_te: string; awakened_involve_k: string; awakened_def_fire_chance: string
-  }>({ feedback_url: '', feedback_visible: true, survey_url: '', survey_visible: false, survey_text: '', halftime_show_url: '', halftime_show_pause_seconds: '120', anomalies_enabled: false, criticality_enabled: false, awakened_powers_enabled: false, trading_enabled: false, anomaly_intensity: 'normal', awakened_involve_qb: '16', awakened_involve_rb: '13', awakened_involve_wr: '5.5', awakened_involve_te: '5.5', awakened_involve_k: '0.5', awakened_def_fire_chance: '35' })
+  }>({ feedback_url: '', feedback_visible: true, survey_url: '', survey_visible: false, survey_text: '', halftime_show_url: '', halftime_show_pause_seconds: '120', anomalies_enabled: false, criticality_enabled: false, awakened_powers_enabled: false, trading_enabled: false, rule_votes_enabled: true, anomaly_intensity: 'normal', awakened_involve_qb: '16', awakened_involve_rb: '13', awakened_involve_wr: '5.5', awakened_involve_te: '5.5', awakened_involve_k: '0.5', awakened_def_fire_chance: '35' })
   const [settingsLoading, setSettingsLoading] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
@@ -1042,6 +1043,7 @@ const AdminContent: React.FC<{
         anomalies_enabled: data.anomalies_enabled === true || data.anomalies_enabled === 'true',
         criticality_enabled: data.criticality_enabled === true || data.criticality_enabled === 'true',
         trading_enabled: data.trading_enabled === true || data.trading_enabled === 'true',
+        rule_votes_enabled: data.rule_votes_enabled === true || data.rule_votes_enabled === 'true',
         awakened_powers_enabled: data.awakened_powers_enabled === true || data.awakened_powers_enabled === 'true',
         anomaly_intensity: data.anomaly_intensity || 'normal',
         awakened_involve_qb: data.awakened_involve_qb != null ? String(data.awakened_involve_qb) : '16',
@@ -1129,6 +1131,7 @@ const AdminContent: React.FC<{
     { id: 'cards', label: 'Cards' },
     { id: 'floobits', label: 'Floobits' },
     { id: 'users', label: 'Users' },
+    { id: 'rules', label: 'Rules' },
     { id: 'settings', label: 'Settings' },
   ]
 
@@ -2813,6 +2816,10 @@ const AdminContent: React.FC<{
       </div>}
 
       {/* Settings */}
+      {activeSection === 'rules' && <div style={sectionStyle}>
+        <AdminRulesSection buildHeaders={buildHeaders} />
+      </div>}
+
       {activeSection === 'settings' && <div style={sectionStyle}>
         <SeasonRolloverControl buildHeaders={buildHeaders} />
         <h2 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 16px 0' }}>App Settings</h2>
@@ -3016,6 +3023,22 @@ const AdminContent: React.FC<{
                 />
                 Trading
               </label>
+
+              {/* Off: no Cores rule vote opens and an open one closes with no change, so the
+                  league stays on standard rules. Criticality still randomizes each game's rules. */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#cbd5e1', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={settingsForm.rule_votes_enabled}
+                  onChange={e => setSettingsForm(s => ({ ...s, rule_votes_enabled: e.target.checked }))}
+                  disabled={settingsLoading}
+                  style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                />
+                Rule votes
+              </label>
+              <div style={{ fontSize: '11px', color: '#94a3b8', margin: '-4px 0 0 22px' }}>
+                Off keeps the league on its current rules (standard from the next season start). Criticality still randomizes rules per game.
+              </div>
             </div>
 
             <div style={{ marginTop: '14px' }}>
