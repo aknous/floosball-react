@@ -94,7 +94,7 @@ const YourTeamCard: React.FC<{
               {team.city} {team.name}
             </div>
             <div style={{ ...font(700, 10, 1, '0.02em'), color: onTeamColorMuted, marginTop: '6px' }}>
-              {team.wins}-{team.losses} · {ordinal(team.rankLastWeek && team.seed == null ? team.rankLastWeek : team.seed ?? 0).toUpperCase()} IN THE {leagueName.split(' ')[0].toUpperCase()}
+              {team.wins}-{team.losses}, {ordinal(team.rankLastWeek && team.seed == null ? team.rankLastWeek : team.seed ?? 0).toUpperCase()} IN THE {leagueName.split(' ')[0].toUpperCase()}
             </div>
           </div>
         </div>
@@ -111,7 +111,7 @@ const YourTeamCard: React.FC<{
           }}
         >
           <div style={{ ...font(700, 10, 1, '0.02em'), color: ACCENT.info }}>
-            LIVE · Q{liveGame.quarter} {liveGame.timeRemaining} · {isHome ? 'HOME' : 'AWAY'}
+            LIVE: Q{liveGame.quarter} {liveGame.timeRemaining}, {isHome ? 'HOME' : 'AWAY'}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '11px', marginTop: '11px' }}>
             <Crest teamId={opponent?.id} size={30} />

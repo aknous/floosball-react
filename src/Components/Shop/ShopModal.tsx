@@ -651,7 +651,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                         <div style={{ fontSize: '11px', color: '#94a3b8' }}>
                           Reveal {pack.cardsPerPack}
                           {pack.cardsKept != null && pack.cardsKept < pack.cardsPerPack && (
-                            <span> · keep {pack.cardsKept}</span>
+                            <span>, keep {pack.cardsKept}</span>
                           )}
                         </div>
                         <button
@@ -926,11 +926,11 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                           }}
                         >
                           <GiPerspectiveDiceSixFacesRandom size={16} />
-                          {/* The first reroll each day is free. Showing "Reroll \u00b7 0"
+                          {/* The first reroll each day is free. Showing "Reroll 0"
                               reads as a bug rather than a gift, so name it. */}
                           {rerolling ? 'Rerolling...'
-                            : rerollCost === 0 ? 'Reroll \u00b7 Free'
-                            : <>Reroll{'\u00a0\u00b7\u00a0'}<Floobits amount={rerollCost} color="currentColor" /></>}
+                            : rerollCost === 0 ? 'Reroll for free'
+                            : <>Reroll for{'\u00a0'}<Floobits amount={rerollCost} color="currentColor" /></>}
                         </button>
                       </div>
                     </>
@@ -1002,7 +1002,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                             {starter.description}
                           </div>
                           <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                            5 cards · once per season
+                            5 cards, once per season
                           </div>
                           <button
                             onClick={handleClaimStarter}
@@ -1049,7 +1049,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                       title="Reroll the rotating slots. Cost rises with each reroll this cycle."
                     >
                       <GiPerspectiveDiceSixFacesRandom size={14} />
-                      {themedRerolling ? 'Rerolling...' : `Reroll \u00b7 ${themedRerollCost}`}
+                      {themedRerolling ? 'Rerolling...' : `Reroll for ${themedRerollCost}`}
                     </button>
                   </div>
                 )}
@@ -1323,7 +1323,7 @@ const ShopModal: React.FC<ShopModalProps> = ({ isOpen, onClose }) => {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                             <span style={{ fontSize: '12px', color: '#94a3b8' }}>
                               {pu.purchased}/{pu.limit} {pu.limitLabel}
-                              {pu.durationWeeks ? ` \u00b7 ${pu.durationWeeks}wk` : ''}
+                              {pu.durationWeeks ? `, ${pu.durationWeeks} wk` : ''}
                             </span>
                             <button
                               onClick={() => handleBuyPowerup(pu.slug)}

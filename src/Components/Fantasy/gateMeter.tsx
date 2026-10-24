@@ -3,9 +3,9 @@ import HoverTooltip from '@/Components/HoverTooltip'
 
 // Shared FP power-bar tooltip + meter, used by both the lineup performance block and the
 // scoring breakdown so they never drift. Two bar modes:
-//   * on/off gate — "6/8 FP · Effect Active"; the fill ramps to the threshold.
+//   * on/off gate — "6/8 FP, effect active"; the fill ramps to the threshold.
 //   * CHANCE cards — the bar IS the trigger probability: its fill = the odds, filled by the
-//     player's FP plus the card's condition. Tooltip: "62% trigger chance · Missed".
+//     player's FP plus the card's condition. Tooltip: "62% trigger chance: Missed".
 
 // All-Pro accent (matches the AP classification badge). An All-Pro card's bar is lowered
 // 30%, so it's tinted purple to signal the reduced threshold at a glance.
@@ -30,10 +30,10 @@ export function gateTooltipText(o: GateTooltipOpts): string {
     // it "Missed" (chanceTriggered is just false-because-not-yet-rolled). Only a resolved
     // roll reads Triggered / Missed.
     const verdict = o.chanceTriggered ? 'Triggered' : o.chanceResolved ? 'Missed' : 'Pending'
-    return `${pct}trigger chance · ${verdict}`
+    return `${pct}trigger chance: ${verdict}`
   }
   const lines = [
-    `${o.playerFP != null ? `${o.playerFP.toFixed(0)}/${o.threshold}` : o.threshold} FP · Effect ${o.active ? 'Active' : 'Inactive'}`,
+    `${o.playerFP != null ? `${o.playerFP.toFixed(0)}/${o.threshold}` : o.threshold} FP, effect ${o.active ? 'active' : 'inactive'}`,
   ]
   if (o.inverse) lines.push(`Inverse: active while under ${o.threshold} FP`)
   if (o.allPro) lines.push('All-Pro: bar lowered 30%')

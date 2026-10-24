@@ -19,7 +19,7 @@ export interface CardProjection {
   projectedMult: number
   // Realistic ceiling — the output on a hot week (inflated stats,
   // chance cards triggering, team winning). When this diverges from
-  // the expected value the pill shows "est. X · up to Y" so the
+  // the expected value the pill shows "est. X, up to Y" so the
   // upside is visible for scaling cards (Odometer, Avalanche, etc.).
   bestCaseFP: number
   bestCaseFloobits: number

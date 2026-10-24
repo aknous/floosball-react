@@ -212,13 +212,13 @@ const statLineColumn = (perGame: boolean): Column<StatsPlayerRow> => {
       const p = r.passing, ru = r.rushing, rc = r.receiving, k = r.kicking
       const v = (x: any) => n(per(x, r), d)
       if (r.position === 'QB') {
-        const base = `${v(p.comp)}/${v(p.att)} \u00b7 ${v(p.yards)} yd \u00b7 ${v(p.tds)} TD`
-        return p.ints ? `${base} \u00b7 ${v(p.ints)} INT` : base
+        const base = `${v(p.comp)}/${v(p.att)}, ${v(p.yards)} yd, ${v(p.tds)} TD`
+        return p.ints ? `${base}, ${v(p.ints)} INT` : base
       }
-      if (r.position === 'RB') return `${v(ru.carries)} car \u00b7 ${v(ru.yards)} yd \u00b7 ${v(ru.tds)} TD`
+      if (r.position === 'RB') return `${v(ru.carries)} car, ${v(ru.yards)} yd, ${v(ru.tds)} TD`
       // LNG is a maximum, so it stays whole in both modes.
-      if (r.position === 'K') return `${v(k.fgs)}/${v(k.fgAtt)} FG \u00b7 ${n(k.longest)} yd`
-      return `${v(rc.receptions)}/${v(rc.targets)} rec \u00b7 ${v(rc.yards)} yd \u00b7 ${v(rc.tds)} TD`
+      if (r.position === 'K') return `${v(k.fgs)}/${v(k.fgAtt)} FG, ${n(k.longest)} yd`
+      return `${v(rc.receptions)}/${v(rc.targets)} rec, ${v(rc.yards)} yd, ${v(rc.tds)} TD`
     },
   }
 }

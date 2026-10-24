@@ -204,7 +204,7 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
         borderBottom: '1px solid rgba(51,65,85,0.4)',
       }}>
         {/* Left group (fixed 50% so the divider aligns across every row):
-            slot · player · player FP */}
+            slot, player, player FP */}
         <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ width: isMobile ? 30 : 38, color: '#64748b', fontWeight: 700, fontSize: isMobile ? '10px' : '11px', flexShrink: 0 }}>
             {opts.slot}
@@ -231,7 +231,7 @@ export const LeaderboardExpandedBody: React.FC<Props> = ({ userId, season, week,
         {/* Divider */}
         <span style={{ width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(71,85,105,0.5)', flexShrink: 0 }} />
 
-        {/* Right group (fixed 50%): effect name · effect output */}
+        {/* Right group (fixed 50%): effect name, effect output */}
         <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
           {opts.hasEffectSource ? (
             <>

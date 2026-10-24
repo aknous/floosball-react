@@ -100,7 +100,7 @@ const CommandPalette: React.FC<{ open: boolean; onClose: () => void }> = ({ open
       .slice(0, 8)
       .map(p => ({
         key: `p${p.id}`, label: p.name,
-        hint: [p.position, p.teamAbbr ?? p.team].filter(Boolean).join(' · ') || undefined,
+        hint: [p.position, p.teamAbbr ?? p.team].filter(Boolean).join(', ') || undefined,
         group: 'PLAYERS', path: `/players/${p.id}`,
       }))
     return [...pages, ...teamItems, ...playerItems]

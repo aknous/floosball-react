@@ -80,9 +80,9 @@ interface PlayerSummary {
   playerName: string
   position: string
   weekFP: number
-  statLine?: string   // the player's this-week game line (e.g. "9/9 rec · 47 yd · 0 TD")
+  statLine?: string   // the player's this-week game line (e.g. "9/9 rec, 47 yd, 0 TD")
   // The stat the equipped card is scoring off, when it is not already in `statLine`
-  // (e.g. "19 well-placed · 2 bad throws"). Undefined for roster-wide effects.
+  // (e.g. "19 well-placed, 2 bad throws"). Undefined for roster-wide effects.
   trackedLine?: string
 }
 
@@ -509,7 +509,7 @@ export const PointsBreakdownPanel: React.FC<{
                 {hasChance && (
                   <div style={{ marginBottom: '3px' }}>
                     <div style={{ ...rowStyle }}>
-                      <span style={labelStyle}>Chance · {syn.chance.count} card{syn.chance.count !== 1 ? 's' : ''}</span>
+                      <span style={labelStyle}>Chance: {syn.chance.count} card{syn.chance.count !== 1 ? 's' : ''}</span>
                       <span style={{ ...valStyle, color: '#a78bfa' }}>+{(syn.chance.totalBonus * 100).toFixed(0)}% boost</span>
                     </div>
                     {syn.chance.innateBonus > 0 && (
@@ -536,20 +536,20 @@ export const PointsBreakdownPanel: React.FC<{
                 )}
                 {hasStreak && (
                   <div style={{ ...rowStyle, marginBottom: '3px' }}>
-                    <span style={labelStyle}>Streak · {syn.streak.count} cards</span>
+                    <span style={labelStyle}>Streak: {syn.streak.count} cards</span>
                     <span style={{ ...valStyle, color: '#fb923c' }}>{syn.streak.activeCount} active</span>
                   </div>
                 )}
                 {hasMatch && (
                   <div style={{ ...rowStyle }}>
                     <span style={labelStyle}>Match bonus</span>
-                    <span style={{ ...valStyle, color: '#60a5fa' }}>{syn.match.count}/{syn.match.total} matched · 1.5x each</span>
+                    <span style={{ ...valStyle, color: '#60a5fa' }}>{syn.match.count}/{syn.match.total} matched, 1.5x each</span>
                   </div>
                 )}
                 {hasStack && (
                   <div style={{ ...rowStyle }}>
                     <span style={labelStyle}>
-                      {syn.stack!.champions >= syn.stack!.size ? 'Dynasty' : 'Team Stack'} · {syn.stack!.size} same-team
+                      {syn.stack!.champions >= syn.stack!.size ? 'Dynasty' : 'Team Stack'}: {syn.stack!.size} same-team
                       {syn.stack!.champions > 0 ? ` (${syn.stack!.champions} champ${syn.stack!.champions !== 1 ? 's' : ''})` : ''}
                     </span>
                     <span style={{ ...valStyle, color: '#fbbf24' }}>+{syn.stack!.bonus.toFixed(2)} FPx</span>
@@ -599,7 +599,7 @@ export const PointsBreakdownPanel: React.FC<{
               borderBottom: '2px solid rgba(245,158,11,0.5)',
             }}>
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.4px', color: '#f59e0b', marginBottom: '6px', textTransform: 'uppercase' }}>
-                Criticality &middot; {coreName}&rsquo;s Equation
+                Criticality: {coreName}&rsquo;s Equation
               </div>
               <div style={{ fontSize: '12px', color: '#e2e8f0', fontFamily: 'monospace', lineHeight: '1.7', wordBreak: 'break-word' }}>
                 {critEq}

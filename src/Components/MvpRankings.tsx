@@ -184,7 +184,7 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
                 {crownedMvp.name}
               </Link>
               <div style={{ fontSize: '12px', color: '#f59e0b' }}>
-                {crownedMvp.teamAbbr} · {crownedMvp.position} · Season {crownedMvp.seasonNumber} MVP
+                Season {crownedMvp.seasonNumber} MVP: {crownedMvp.position}, {crownedMvp.teamAbbr}
               </div>
             </div>
           </div>
@@ -231,7 +231,7 @@ export const MvpRankings: React.FC<{ embedded?: boolean }> = ({ embedded = false
                 )}
                 <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                   {player.teamAbbr}
-                  <span style={{ marginLeft: '4px', color: '#94a3b8' }}>· {player.position}</span>
+                  <span style={{ marginLeft: '6px', color: '#94a3b8' }}>{player.position}</span>
                 </div>
                 <div style={{ marginTop: '1px' }}>
                   <Stars stars={player.ratingStars} size={11} />

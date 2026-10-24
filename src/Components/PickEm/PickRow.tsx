@@ -103,7 +103,7 @@ export const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
           <span>{game.homeTeam.abbr}</span>
         </div>
         <div style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: '500', marginTop: '2px' }}>
-          {game.homeTeam.record} · {winPct.home}%
+          {game.homeTeam.record}, {winPct.home}%
         </div>
       </button>
 
@@ -195,7 +195,7 @@ export const PickRow: React.FC<PickRowProps> = ({ game, onPick }) => {
           <span>{game.awayTeam.abbr}</span>
         </div>
         <div style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: '500', marginTop: '2px' }}>
-          {game.awayTeam.record} · {winPct.away}%
+          {game.awayTeam.record}, {winPct.away}%
         </div>
       </button>
     </div>

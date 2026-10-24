@@ -63,8 +63,8 @@ export function periodColumns(game: CurrentGame): { label: string; periods: Peri
         const played = n < innings.inning || (n === innings.inning && game.status !== 'Scheduled')
         return {
           label: String(n),
-          homeValue: played ? String(home ?? 0) : '·',
-          awayValue: played ? String(away ?? 0) : '·',
+          homeValue: played ? String(home ?? 0) : '-',
+          awayValue: played ? String(away ?? 0) : '-',
           played,
         }
       }),
@@ -91,8 +91,8 @@ export function periodColumns(game: CurrentGame): { label: string; periods: Peri
           // summing artifact in full (22.800000000000004) and even a clean 8.8 overflows
           // a column sized for two digits. Cleaning to one decimal is exactly what
           // formatScore exists for; every other score site already goes through it.
-          homeValue: result ? formatScore(result.home) : '·',
-          awayValue: result ? formatScore(result.away) : '·',
+          homeValue: result ? formatScore(result.home) : '-',
+          awayValue: result ? formatScore(result.away) : '-',
           played: !!result,
           // A drawn frame is HALVED rather than won, so neither side is emphasised.
           homeWon: result?.winner === 'home',
@@ -112,8 +112,8 @@ export function periodColumns(game: CurrentGame): { label: string; periods: Peri
         label,
         // Same as the frames line above — a quarter score is fractional under the same
         // rules, so it cannot be stringified raw either.
-        homeValue: played && home != null ? formatScore(home) : '·',
-        awayValue: played && away != null ? formatScore(away) : '·',
+        homeValue: played && home != null ? formatScore(home) : '-',
+        awayValue: played && away != null ? formatScore(away) : '-',
         played,
       }
     }),
@@ -206,7 +206,7 @@ export const FormatClock: React.FC<{
     const left = playLimit.playsRemaining
     return (
       <span style={{ ...textStyle, color: left <= 3 ? ACCENT.negative : ACCENT.live }}>
-        Q{game.quarter} · {left} PLAY{left === 1 ? '' : 'S'}
+        Q{game.quarter}, {left} PLAY{left === 1 ? '' : 'S'}
       </span>
     )
   }

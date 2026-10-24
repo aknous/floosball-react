@@ -35,7 +35,7 @@ export interface PlaySummary {
    * ⚠️ In that gap the game's down and distance are NOT a live down — the ball
    * is spotted for the try (or waiting on a kickoff) while the down fields still
    * hold whatever they held before the score. Observed on the board as
-   * "2-PT FAILED" sitting beside "2nd & 9 · COL 2", which cannot both be true.
+   * "2-PT FAILED" sitting beside "2nd & 9, COL 2", which cannot both be true.
    * `GameModalNew` already works around this by printing "Npt Try" in place of
    * down and distance; the card suppresses the situation instead, since it has
    * no room to explain itself.

@@ -1244,7 +1244,7 @@ const AdminContent: React.FC<{
                       {diskPct}% of {Math.round(disk.totalMb)} MB used
                     </div>
                     <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                      DB {Math.round(disk.dbMb)} MB · Backups {Math.round(disk.backupsMb)} MB ({disk.backupCount}/{disk.backupKeep})
+                      DB {Math.round(disk.dbMb)} MB, backups {Math.round(disk.backupsMb)} MB ({disk.backupCount}/{disk.backupKeep})
                     </div>
                     <div style={{ fontSize: '11px', marginTop: '2px', color: disk.nextBackupFits ? '#94a3b8' : '#fca5a5', fontWeight: disk.nextBackupFits ? 400 : 600 }}>
                       {disk.nextBackupFits
@@ -1537,7 +1537,7 @@ const AdminContent: React.FC<{
                     <div style={statLabel}>Last Weekly Payout</div>
                     <div style={statValue}>avg {economy.avgWeeklyPayout ?? 0}F</div>
                     <div style={smallStat}>
-                      max {economy.maxWeeklyPayout ?? 0}F · {economy.weeklyPayoutRecipients ?? 0} users
+                      max {economy.maxWeeklyPayout ?? 0}F, {economy.weeklyPayoutRecipients ?? 0} users
                       {economy.lastPayoutWeek ? ` (wk ${economy.lastPayoutWeek})` : ''}
                     </div>
                   </div>
@@ -1991,7 +1991,7 @@ const AdminContent: React.FC<{
                 gap: '2px 16px', marginTop: '6px', padding: '8px 10px', background: '#1e293b', borderRadius: '6px' }}>
                 {poolHeld.map(h => (
                   <div key={h.name} style={{ fontSize: '13px', color: '#cbd5e1' }}>
-                    {h.name} <span style={{ color: '#94a3b8' }}>· season {h.availableSeason}</span>
+                    {h.name} <span style={{ color: '#94a3b8' }}>(season {h.availableSeason})</span>
                   </div>
                 ))}
               </div>
@@ -2059,7 +2059,7 @@ const AdminContent: React.FC<{
                     <div style={{ fontSize: '14px', color: '#e2e8f0', fontWeight: '600' }}>{s.name}</div>
                     <div style={{ fontSize: '11px', color: '#94a3b8' }}>
                       {s.submittedBy || 'unknown'}
-                      {s.createdAt ? ` · ${new Date(s.createdAt).toLocaleDateString()}` : ''}
+                      {s.createdAt ? `, ${new Date(s.createdAt).toLocaleDateString()}` : ''}
                     </div>
                     {s.status === 'pending' && (s.similar?.length || 0) > 0 && (
                       <div style={{ fontSize: '11px', color: '#f59e0b', marginTop: '2px' }}>
@@ -2357,7 +2357,7 @@ const AdminContent: React.FC<{
               )}
               <div style={{ fontSize: '11px', color: '#64748b', marginTop: '5px' }}>
                 Season {a.season}, week {a.week}
-                {a.core ? ` · ${a.core}` : a.teamId ? ` · team ${a.teamId}` : ''}
+                {a.core ? `, ${a.core}` : a.teamId ? `, team ${a.teamId}` : ''}
               </div>
             </div>
             <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
@@ -2605,7 +2605,7 @@ const AdminContent: React.FC<{
           <h2 style={{ fontSize: '16px', fontWeight: '700' }}>Achievements</h2>
           {achMetrics && (
             <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-              {achMetrics.totalUsers} users · Season {achMetrics.season || '—'} (per-season counts)
+              {achMetrics.totalUsers} users, Season {achMetrics.season || '—'} (per-season counts)
             </div>
           )}
         </div>

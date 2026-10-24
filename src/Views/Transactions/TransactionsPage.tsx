@@ -313,7 +313,7 @@ const TransactionsPage: React.FC = () => {
           Transactions
         </h1>
         {!isMobile && <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />}
-        <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted }}>Season {season} &middot; Week {week}</span>
+        <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted }}>Season {season}, Week {week}</span>
       </div>
 
       <div style={{ padding: isMobile ? '14px 10px 30px' : '18px 28px 40px', fontFamily: FONT }}>

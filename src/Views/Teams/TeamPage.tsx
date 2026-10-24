@@ -432,7 +432,7 @@ function seasonFinishDetail(h: HistoryRow): string | null {
   if (h.topSeed) parts.push('Top seed')
   if (h.playoffOutcome) parts.push(h.playoffOutcome)
   else if (!h.madePlayoffs && h.divisionRank) parts.push('Missed playoffs')
-  return parts.length > 1 ? parts.join(' · ') : null
+  return parts.length > 1 ? parts.join(', ') : null
 }
 
 const FOCUS_RING = (secondary: string): React.CSSProperties => ({
@@ -1059,8 +1059,8 @@ export default function TeamPage() {
               fontSize: '13px', letterSpacing: '0.02em', fontWeight: 700,
               color: 'rgba(255,255,255,0.92)',
             }}>
-              {team.city} &middot; {team.league}
-              {team.division && <> &middot; {team.division}</>}
+              {team.city}, {team.league}
+              {team.division && <>, {team.division}</>}
             </div>
             <h1 style={{
               margin: '4px 0 0', fontSize: `${heroName}px`, lineHeight: 0.94,
@@ -1138,7 +1138,7 @@ export default function TeamPage() {
               return (
                 <React.Fragment key={tier.kind}>
                   {shown.map(t => (
-                    <HoverTooltip key={`${t.season}-${t.label}`} text={`${t.season} · ${t.label}`} color={tone.icon}>
+                    <HoverTooltip key={`${t.season}-${t.label}`} text={`${t.season}: ${t.label}`} color={tone.icon}>
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: '5px',
                         backgroundColor: tone.bg,
@@ -1164,13 +1164,13 @@ export default function TeamPage() {
                           <span style={{
                             fontSize: '10px', fontWeight: 800, letterSpacing: '0.02em',
                             color: tone.icon, textTransform: 'uppercase',
-                          }}>{tier.heading} · {tier.items.length}</span>
+                          }}>{tier.heading} ({tier.items.length})</span>
                           {tier.items.map(t => (
                             <span key={`${t.season}-${t.label}`} style={{ fontSize: '11px', color: '#e2e8f0' }}>
                               <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
                                 {seasonShort(t.season)}
                               </span>
-                              {' · '}{t.label}
+                              {' '}{t.label}
                             </span>
                           ))}
                         </div>
@@ -1336,9 +1336,9 @@ export default function TeamPage() {
                   color: '#38bdf8', marginTop: '7px',
                 }}>
                   {weekTitle(nextGame.week)}
-                  {' · '}
+                  {', '}
                   {nextGame.status === 'Active' ? 'Live' : nextGame.status === 'Final' ? 'Final' : nextGame.isHome ? 'Home' : 'Away'}
-                  {nextGame.status !== 'Scheduled' && (nextGame.isHome ? ' · Home' : ' · Away')}
+                  {nextGame.status !== 'Scheduled' && (nextGame.isHome ? ', Home' : ', Away')}
                 </div>
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: '12px', marginTop: '7px',

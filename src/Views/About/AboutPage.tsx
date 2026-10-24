@@ -1605,7 +1605,7 @@ const AboutPage: React.FC = () => {
                     {p.name}
                   </div>
                   <div style={{ fontSize: '11px', color: '#cbd5e1', lineHeight: 1.6 }}>
-                    Reveal {p.cards}, keep {p.kept} &middot; {p.price} Floobits
+                    Reveal {p.cards}, keep {p.kept}, {p.price} Floobits
                   </div>
                 </div>
               ))}

@@ -659,7 +659,7 @@ const CardCollection: React.FC = () => {
         }}>
           <span style={{ fontSize: '13px', color: '#cbd5e1' }}>
             Duplicates of <b style={{ color: '#5eead4' }}>{dupeEffect.label}</b>
-            <span style={{ color: '#94a3b8' }}> &middot; {displayedCards.length} card{displayedCards.length === 1 ? '' : 's'}</span>
+            <span style={{ color: '#94a3b8' }}>, {displayedCards.length} card{displayedCards.length === 1 ? '' : 's'}</span>
           </span>
           <span style={{ flex: 1 }} />
           <button

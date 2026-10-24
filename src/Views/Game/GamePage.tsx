@@ -395,7 +395,7 @@ const GamePage: React.FC = () => {
    * The period and the clock as one string.
    *
    * Innings and frames have no quarter clock at all and say so in their own
-   * words; everything else reads "Q3 · 8:21", with OT past regulation.
+   * words; everything else reads "Q3 8:21", with OT past regulation.
    */
   const periodClock = (() => {
     if (gameData.innings?.active) {
@@ -406,12 +406,12 @@ const GamePage: React.FC = () => {
       // The frame clock is the only clock a frames game has, so it belongs beside
       // the frame the same way a quarter clock belongs beside its quarter.
       return [`Frame ${gameData.frames.currentFrame}`, gameData.frames.frameClock]
-        .filter(Boolean).join(' · ')
+        .filter(Boolean).join(' ')
     }
     const q = Number(gameData.quarter) || 0
     const label = q > 4 ? 'OT' : q > 0 ? `Q${q}` : null
     const clock = gameData.timeRemaining
-    return [label, clock].filter(Boolean).join(' · ') || '—'
+    return [label, clock].filter(Boolean).join(' ') || '—'
   })()
 
   /**
@@ -715,7 +715,7 @@ const GamePage: React.FC = () => {
                     )}
                     <span style={framesWon
                       ? { ...font(700, 10, 1, '0.02em'), color: TEXT.muted, textAlign: 'right' }
-                      : undefined}>{framesWon ? 'FRAMES · PTS' : null}</span>
+                      : undefined}>{framesWon ? 'FRAMES / PTS' : null}</span>
                   </>
                 )}
                 {teamRow('away')}
@@ -747,7 +747,7 @@ const GamePage: React.FC = () => {
                       ? `${ordinal(Number(gameData.down))} & ${gameData.yardsToFirstDown}`
                       : null,
                     gameData.yardLine,
-                  ].filter(Boolean).join(' · ')}
+                  ].filter(Boolean).join(', ')}
                 </span>
               </div>
             </div>

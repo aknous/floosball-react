@@ -90,7 +90,7 @@ const TopPlayers: React.FC<{
               {!narrow && fantasy && <RelationTag label="FANTASY" color={ACCENT.success} />}
               {!narrow && (
                 <span style={{ ...font(500, 11, 1, '0.02em'), color: TEXT.muted, whiteSpace: 'nowrap' }}>
-                  {row.position} · {row.teamAbbr}
+                  {row.position}, {row.teamAbbr}
                 </span>
               )}
               <span style={{ flex: 1 }} />

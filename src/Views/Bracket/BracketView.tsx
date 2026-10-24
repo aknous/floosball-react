@@ -242,7 +242,7 @@ const BracketView: React.FC = () => {
       }}>
         <span>{ROUND_LABEL[round]}</span>
         <span style={{ color: C.muted, fontWeight: 600 }}>
-          {mode === 'results' && pr && pr.predicted > 0 ? `${pr.correct}/${pr.predicted} · ` : ''}{ROUND_POINTS[round]}pt
+          {mode === 'results' && pr && pr.predicted > 0 ? `${pr.correct}/${pr.predicted}, ` : ''}{ROUND_POINTS[round]}pt
         </span>
       </div>
     )
@@ -303,7 +303,7 @@ const BracketView: React.FC = () => {
             {ROUND_LABEL.floosbowl}
           </div>
           <div style={{ fontSize: 10, color: C.muted, fontWeight: 600, marginTop: 2 }}>
-            {mode === 'results' && pr && pr.predicted > 0 ? `${pr.correct}/${pr.predicted} · ` : ''}{ROUND_POINTS.floosbowl}pt
+            {mode === 'results' && pr && pr.predicted > 0 ? `${pr.correct}/${pr.predicted}, ` : ''}{ROUND_POINTS.floosbowl}pt
           </div>
         </div>
         {ms.length === 0 ? (
@@ -410,9 +410,9 @@ const BracketStandings: React.FC<{ rows: import('@/types/playoffBracket').Bracke
     {/* Prize structure (awarded after the Floos Bowl). */}
     <div style={{ fontSize: 11, color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>
       Prizes:{' '}
-      <span style={{ color: GOLD, fontWeight: 700 }}>1st <FloobitSymbol size={11} color={GOLD} />{BRACKET_PRIZES[1]}</span> ·{' '}
-      <span style={{ color: GOLD, fontWeight: 700 }}>2nd <FloobitSymbol size={11} color={GOLD} />{BRACKET_PRIZES[2]}</span> ·{' '}
-      <span style={{ color: GOLD, fontWeight: 700 }}>3rd <FloobitSymbol size={11} color={GOLD} />{BRACKET_PRIZES[3]}</span> ·{' '}
+      <span style={{ color: GOLD, fontWeight: 700 }}>1st <FloobitSymbol size={11} color={GOLD} />{BRACKET_PRIZES[1]}</span>,{' '}
+      <span style={{ color: GOLD, fontWeight: 700 }}>2nd <FloobitSymbol size={11} color={GOLD} />{BRACKET_PRIZES[2]}</span>,{' '}
+      <span style={{ color: GOLD, fontWeight: 700 }}>3rd <FloobitSymbol size={11} color={GOLD} />{BRACKET_PRIZES[3]}</span>,{' '}
       top 25% <span style={{ color: GOLD, fontWeight: 700 }}><FloobitSymbol size={11} color={GOLD} />{BRACKET_TOP_PCT_PRIZE}</span>
     </div>
     {rows.length === 0 ? (

@@ -70,7 +70,7 @@ function MvpCard({ c, picked, onPick }: { c: MvpCandidate; picked: boolean; onPi
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <PlayerLink playerId={c.id} playerName={c.name}
                 style={{ fontSize: '17px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} />
-          <span style={{ fontSize: '13px', color: '#94a3b8', flexShrink: 0 }}>{c.position} · {c.teamAbbr}</span>
+          <span style={{ fontSize: '13px', color: '#94a3b8', flexShrink: 0 }}>{c.position}, {c.teamAbbr}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '6px', flexWrap: 'wrap' }}>
           <Stars stars={c.ratingStars} size={13} />
@@ -122,7 +122,7 @@ function MvpResults({ winner, candidates, tally, voterCount }: {
           <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.02em', color: GOLD }}>SEASON MVP</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
             <PlayerLink playerId={winner.id} playerName={winner.name} style={{ fontSize: '20px', fontWeight: 800, color: '#e2e8f0' }} />
-            <span style={{ fontSize: '13px', color: '#94a3b8' }}>{winner.position} · {winner.teamAbbr}</span>
+            <span style={{ fontSize: '13px', color: '#94a3b8' }}>{winner.position}, {winner.teamAbbr}</span>
           </div>
           <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
             {winner.viaVote
@@ -148,7 +148,7 @@ function MvpResults({ winner, candidates, tally, voterCount }: {
               )}
               <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: '8px', overflow: 'hidden' }}>
                 <PlayerLink playerId={c.id} playerName={c.name} style={{ fontSize: '15px', fontWeight: 700, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }} />
-                <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>{c.position} · {c.teamAbbr}</span>
+                <span style={{ fontSize: '12px', color: '#94a3b8', flexShrink: 0 }}>{c.position}, {c.teamAbbr}</span>
               </div>
               <span style={{ fontSize: '15px', fontWeight: 800, color: isWinner ? GOLD : '#cbd5e1', fontVariantNumeric: 'tabular-nums' }}>{v}</span>
               <span style={{ fontSize: '11px', color: '#94a3b8', flexShrink: 0 }}>{v === 1 ? 'vote' : 'votes'}</span>
