@@ -455,8 +455,13 @@ const OUT_COLOR: Record<string, string> = { Fired: '#f87171', Retired: '#94a3b8'
 const CoachLine: React.FC<{ tag: string; tagColor: string; name: string; note: string | null; noteColor?: string }> = ({ tag, tagColor, name, note, noteColor = '#94a3b8' }) => (
   <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', minWidth: 0 }}>
     <span style={{ fontSize: '10px', fontWeight: 700, color: tagColor, minWidth: '26px', flexShrink: 0, letterSpacing: '0.04em' }}>{tag}</span>
-    <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: 600, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-    {note && <span style={{ fontSize: '12px', color: noteColor, flexShrink: 0 }}>{note}</span>}
+    {/* Name and note share a wrapping row: when both don't fit, the note drops to its
+        own line (still right-aligned, still indented past the tag) rather than the
+        name being cut off. A name too long for the card wraps instead of truncating. */}
+    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', columnGap: '8px', rowGap: '1px' }}>
+      <span style={{ flex: '1 1 auto', fontSize: '13px', fontWeight: 600, color: '#e2e8f0', overflowWrap: 'anywhere' }}>{name}</span>
+      {note && <span style={{ marginLeft: 'auto', fontSize: '12px', color: noteColor, whiteSpace: 'nowrap' }}>{note}</span>}
+    </div>
   </div>
 )
 
