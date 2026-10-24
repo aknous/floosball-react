@@ -1333,6 +1333,7 @@ export const OffseasonPanel: React.FC = () => {
                                 : tx.type === 'rookie_pick' ? { label: 'DRAFT', color: '#a78bfa' }
                                 : tx.type === 'promotion' ? { label: 'PROMOTED', color: '#f59e0b' }
                                 : tx.type === 'resign' ? { label: 'RE-SIGN', color: '#38bdf8' }
+                                : tx.type === 'prospect_release' ? { label: 'RELEASED', color: '#a16207' }
                                 : { label: 'SIGN', color: '#22c55e' }
                               const showStars = tx.type !== 'rookie_skip' && tx.type !== 'trade'
                               return (
