@@ -593,7 +593,7 @@ const PlayerPage: React.FC = () => {
             padding: '4px 9px',
           }}>
             <span style={{ ...font(700, 10, 1, '0.02em'), color: '#fde68a' }}>
-              HALL OF FAME{player.hofSeason ? `, CLASS OF S${player.hofSeason}` : ''}
+              HALL OF FAME{player.hofSeason ? ` | CLASS OF S${player.hofSeason}` : ''}
             </span>
           </span>
         )}

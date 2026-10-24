@@ -414,7 +414,7 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
       <div style={{ ...QUIP_STYLE, minHeight: '32px', marginTop: '11px' }}>{quip}</div>
       <div style={{ fontSize: '12px', fontWeight: 700, color: perk ? '#e2e8f0' : '#5b6b7d', marginTop: '3px' }}>{perk || 'No bonus yet'}</div>
       {f.upgrading ? (
-        <div style={{ fontSize: '12px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>UPGRADING, UPKEEP PAUSED</div>
+        <div style={{ fontSize: '12px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>UPGRADING | UPKEEP PAUSED</div>
       ) : covered ? (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '10px 0 5px' }}>

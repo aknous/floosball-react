@@ -206,7 +206,7 @@ export const FormatClock: React.FC<{
     const left = playLimit.playsRemaining
     return (
       <span style={{ ...textStyle, color: left <= 3 ? ACCENT.negative : ACCENT.live }}>
-        Q{game.quarter}, {left} PLAY{left === 1 ? '' : 'S'}
+        Q{game.quarter} | {left} PLAY{left === 1 ? '' : 'S'}
       </span>
     )
   }
