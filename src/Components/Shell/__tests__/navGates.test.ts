@@ -28,16 +28,16 @@ describe('nav gates', () => {
   })
 
   it('the Bracket survives the gap after the Floos Bowl', () => {
-    // Frozen seeds are cleared at season end, so `seasonComplete` keeps the entry alive
-    // between the last game and the next season.
+    // `seasonComplete` is a fallback beside the backend flag.
     expect(NAV).toMatch(/bracketAvailable \|\| seasonState\.seasonComplete/)
   })
 
-  it('the Offseason entry replaces the Bracket rather than joining it', () => {
-    // Two postseason entries push the standing pages down, and once the drafts run the
-    // bracket is a settled result.
-    expect(NAV).toMatch(/isOffseason\s*\?\s*\[\.\.\.baseLeagueItems,\s*OFFSEASON_ITEM\]/)
-    expect(NAV).toMatch(/:\s*inPlayoffs\s*\?\s*\[\.\.\.baseLeagueItems,\s*BRACKET_ITEM\]/)
+  it('the Bracket stays beside the Offseason entry until the next season', () => {
+    // Owner, 2026-10-23: the bracket persists through the offseason rather than being
+    // replaced by the Offseason entry, and its dot is off once the bracket is settled.
+    expect(NAV).toMatch(/\(inPlayoffs \? \[BRACKET_ITEM\] : \[\]\)/)
+    expect(NAV).toMatch(/\(isOffseason \? \[OFFSEASON_ITEM\] : \[\]\)/)
+    expect(NAV).toMatch(/bracketDue = inPlayoffs && !isOffseason/)
   })
 
   it('Transactions reads the backend flag rather than week arithmetic', () => {
