@@ -91,7 +91,9 @@ function driveClockDetail(rules: any): string | undefined {
   const lim = rules.driveClockLimit
   const unit = rules.driveClockUnit === 'plays' ? (lim === 1 ? 'play' : 'plays') : 'sec'
   const reset = rules.driveClockReset === 'series' ? 'resets each 1st down' : 'whole drive'
-  return `${lim} ${unit}, ${reset}`
+  // A plays clock does not count a snap that gains a first down or makes a sideline goal.
+  const free = rules.driveClockUnit === 'plays' ? "; first downs and sideline goals don't count" : ''
+  return `${lim} ${unit}, ${reset}${free}`
 }
 
 const RuleRow: React.FC<{ meta: RuleMeta; value: any; def: any; changed: boolean; glitched?: boolean }> =
