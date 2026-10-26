@@ -23,6 +23,47 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.08',
+    date: '2026-10-26',
+    feature: true,
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Discord] The Discord bot has a live scoreboard, division standings after each game day, team roles that follow your favorite team, and /me, /lineup and /teaminfo commands. It can also remind you about open votes and an empty Showcase.',
+          '[Cards] Quick select in your collection: select every card shown, select your expired cards, or shift-click to select a range.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Awards] Performance ratings, which drive the MVP ballot, are now based on how well a player played rather than season totals. Tackles by linebackers, corners and safeties no longer count toward them.',
+          '[Simulation] Under a plays drive clock, a snap that gains a first down or makes a sideline goal does not count against the clock, and offenses look for bigger gains from the start of the drive. The last snap of a drive is played like a fourth down.',
+          '[Simulation] In Frames, teams manage the end of every frame like the end of a game. Clock management, play calls, conversion tries and sideline goals all go by the frame score.',
+          '[Simulation] Late in a game, a team tied or within a field goal and already in easy kicking range runs the clock down before kicking.',
+          '[Simulation] At the end of the half, teams throw a Hail Mary on the last snap when they are out of field goal range.',
+          '[Front Office] The Transactions page tags a walk-year player as Possibly Leaving based on whether their GM is expected to re-sign them.',
+          '[Front Office] Promoting a prospect in the free agent draft no longer uses up the team\'s pick.',
+          '[Bracket] The Bracket stays in the menu through the offseason.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Site] A server storage problem on October 20 signed everyone out for about an hour, which could make your ratings and picks look missing. Backups can no longer fill the server.',
+          '[Discord] Linking a Discord account now needs a code sent to your site notifications, so nobody can link to an account that is not theirs.',
+          '[Games] A made sideline goal and the opening snap moved win probability the wrong way, and sometimes gave momentum to the team that did not score.',
+          '[Simulation] In Frames, the clock could run past the end of a frame and take time from the next one.',
+          '[Simulation] Under a drive clock, a team ahead late could throw a Hail Mary on its last snap instead of punting, and teams spiked or took sideline goals with too few snaps left.',
+          '[Simulation] Defenses could stop calling timeouts in the middle of a late drive, and could call one after the game was over.',
+          '[Games] A fair catch past midfield read "at the 60" instead of naming the side of the field.',
+          '[Offseason] A team releasing a prospect showed as a signing in its moves.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v1.07',
     date: '2026-10-18',
     feature: true,
