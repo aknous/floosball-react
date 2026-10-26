@@ -33,14 +33,12 @@ export const CHANGELOG: ChangelogEntry[] = [
         items: [
           '[Discord] The Discord bot has a live scoreboard, division standings after each game day, team roles that follow your favorite team, and /me, /lineup and /teaminfo commands. It can also remind you about open votes and an empty Showcase.',
           '[Cards] Quick select in your collection: select every card shown, select your expired cards, or shift-click to select a range.',
-          '[Offseason] The recap shows retirements and coaching changes as cards, and the draft board fits on a phone.',
         ],
       },
       {
         label: 'Changes',
         items: [
           '[Awards] Performance ratings, which drive the MVP ballot, are now based on how well a player played rather than season totals. Tackles by linebackers, corners and safeties no longer count toward them.',
-          '[Stats] Each tackle now goes to the one defender who made it. Tackle totals will be lower than in past seasons.',
           '[Simulation] Under a plays drive clock, a snap that gains a first down or makes a sideline goal does not count against the clock, and offenses look for bigger gains from the start of the drive. The last snap of a drive is played like a fourth down.',
           '[Simulation] In Frames, teams manage the end of every frame like the end of a game. Clock management, play calls, conversion tries and sideline goals all go by the frame score.',
           '[Simulation] Late in a game, a team tied or within a field goal and already in easy kicking range runs the clock down before kicking.',
@@ -59,9 +57,7 @@ export const CHANGELOG: ChangelogEntry[] = [
           '[Simulation] In Frames, the clock could run past the end of a frame and take time from the next one.',
           '[Simulation] Under a drive clock, a team ahead late could throw a Hail Mary on its last snap instead of punting, and teams spiked or took sideline goals with too few snaps left.',
           '[Simulation] Defenses could stop calling timeouts in the middle of a late drive, and could call one after the game was over.',
-          '[Cards] Unequipping your whole lineup between weeks brought your old lineup back at the next lock.',
           '[Games] A fair catch past midfield read "at the 60" instead of naming the side of the field.',
-          '[Offseason] Reloading the Offseason page sent you to the front page.',
           '[Offseason] A team releasing a prospect showed as a signing in its moves.',
         ],
       },
