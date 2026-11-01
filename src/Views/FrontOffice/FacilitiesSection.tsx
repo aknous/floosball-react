@@ -15,7 +15,7 @@ const roman = (n: number) => ROMAN[n] || String(n)
 // keep in sync if the curves are retuned). '' = no active bonus at that level.
 const PERK: Record<string, string[]> = {
   training:    ['', 'Young players develop a little faster and reach more of their ceiling', 'Young players develop faster and reach more of their ceiling', 'Young players develop notably faster, and fewer prospects stall', 'Young players develop much faster, and far fewer prospects stall', 'Young players develop better than under the best coach without one'],
-  locker_room: ['', '+0.4% team rating every game', '+0.8% team rating every game', '+1.2% team rating every game', '+1.6% team rating every game', '+2% team rating every game'],
+  locker_room: ['', '+0.7% team rating every game, setbacks hit 10% softer', '+1.4% team rating every game, setbacks hit 20% softer', '+2.1% team rating every game, setbacks hit 30% softer', '+2.8% team rating every game, setbacks hit 40% softer', '+3.5% team rating every game, setbacks hit half as hard'],
   recovery:    ['', 'Players tire 15% slower', 'Players tire 35% slower', 'Players tire 55% slower', 'Players tire 75% slower', 'Players stay nearly fresh all season (90% slower)'],
   scouting:    ['', 'GM judges players a little better', 'GM judges players better and spots some hidden prospects', 'GM judges players notably better and spots more hidden prospects', 'GM judges players much better and sees through most hype', 'Sees through the hype: spots hidden gems and avoids busts'],
   stadium:     ['', '+0.8% team rating at home', '+1.6% team rating at home', '+2.4% team rating at home', '+3.2% team rating at home', '+4% team rating at home'],
@@ -89,18 +89,19 @@ const FAC_CSS = `
 .facChip { font: inherit; cursor: pointer; transition: all .12s; }
 .facChip:disabled { cursor: not-allowed; }
 .facChip:hover:not(:disabled) { border-color:#3b82f6 !important; background:#1d3654 !important; color:#bfdbfe !important; box-shadow:0 0 10px rgba(59,130,246,.28); }
-.facVote { transition: border-color .14s, box-shadow .14s, background .14s; }
-.facVote:hover { border-color:#3a506e; }
 .facRow { transition: background .12s; }
 .facRow:hover { background:#16263d !important; }
 .facStripes { background-image: repeating-linear-gradient(45deg,#a78bfa 0 9px,#8b6ef0 9px 18px); background-size:36px 36px; animation: facStripes .9s linear infinite; }
 `
 
 // ── types ─────────────────────────────────────────────────────────────────
-interface Facility { key: string; name: string; level: number; maxLevel: number; effect: string; upgrading: boolean; upkeepCost: number; upkeepFunded: number; upgradeCost: number }
-interface Project { id: number; facilityKey: string; kind: string; targetLevel: number; cost: number; funded: number }
-interface TeamFacilities { teamId: number; treasury: number; appeal: number; shareUnit: number; facilities: Facility[]; projects: Project[] }
-interface Candidate { key: string; name: string; currentLevel: number; targetLevel: number; kind: string; cost: number; upkeep: number; votes: number }
+interface Facility { key: string; name: string; level: number; maxLevel: number; effect: string; upgrading: boolean; builtThisYear?: boolean; upkeepCost: number; upkeepFunded: number; upgradeCost: number }
+// buildsAt: when a fully funded bar builds. 'now' = the moment it fills; 'payment_run' = the
+// facility already had its upgrade this year from the payment run; 'next_season' = fans already
+// built it this season, or this offseason's payment run has happened.
+interface Project { id: number; facilityKey: string; kind: string; targetLevel: number; cost: number; funded: number; rank?: number | null; buildsAt?: 'now' | 'payment_run' | 'next_season' }
+interface TeamFacilities { teamId: number; treasury: number; appeal: number; shareUnit: number; facilities: Facility[]; projects: Project[]; order?: string[] }
+interface RankFacility { key: string; name: string; level: number; maxLevel: number; maxed: boolean; cost: number; upkeep: number }
 interface LeagueTeam { id: number; name: string; city: string; abbr: string; color: string; appeal: number; levels: Record<string, number>; fanCount: number; activeFanCount?: number; marketTier: string }
 
 // ── small UI bits ─────────────────────────────────────────────────────────
@@ -166,8 +167,10 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
   const { user, getToken, updateFloobits } = useAuth()
   const favId = (user as any)?.favoriteTeamId ?? null
   const [data, setData] = useState<TeamFacilities | null>(null)
-  const [candidates, setCandidates] = useState<Candidate[]>([])
-  const [myVote, setMyVote] = useState<string | null>(null)
+  const [rankFacs, setRankFacs] = useState<RankFacility[]>([])
+  const [teamOrder, setTeamOrder] = useState<string[]>([])
+  const [ballots, setBallots] = useState(0)
+  const [myRanking, setMyRanking] = useState<string[] | null>(null)
   const [league, setLeague] = useState<LeagueTeam[]>([])
   const [catalog, setCatalog] = useState<Record<string, string>>({})
   const [balance, setBalance] = useState<number>((user as any)?.floobits ?? 0)
@@ -184,12 +187,17 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
     if (favId) {
       reqs.push(fetch(`${API_BASE}/teams/${favId}/facilities`).then(r => r.json()).catch(() => null))
       const tok = await getToken().catch(() => null)
-      reqs.push(fetch(`${API_BASE}/teams/${favId}/facilities/vote`, tok ? { headers: { Authorization: `Bearer ${tok}` } } : {}).then(r => r.json()).catch(() => null))
+      reqs.push(fetch(`${API_BASE}/teams/${favId}/facilities/ranking`, tok ? { headers: { Authorization: `Bearer ${tok}` } } : {}).then(r => r.json()).catch(() => null))
     }
-    const [lg, fac, vote] = await Promise.all(reqs)
+    const [lg, fac, rank] = await Promise.all(reqs)
     if (lg?.success) { setLeague(lg.data.teams || []); setCatalog(lg.data.facilityCatalog || {}) }
     if (fac?.success) setData(fac.data)
-    if (vote?.success) { setCandidates(vote.data.candidates || []); setMyVote(vote.data.myVote ?? null) }
+    if (rank?.success) {
+      setRankFacs(rank.data.facilities || [])
+      setTeamOrder(rank.data.order || [])
+      setBallots(rank.data.ballots || 0)
+      setMyRanking(rank.data.myRanking ?? null)
+    }
     setLoading(false)
   }, [favId, getToken])
 
@@ -239,17 +247,18 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
     }).catch(() => {})
   }, [getToken])
 
-  const castVote = useCallback(async (facilityKey: string) => {
+  // Save on every move, so a ballot is never left half-changed.
+  const saveRanking = useCallback(async (ranking: string[]) => {
     if (!favId || busy) return
-    setBusy(true); setMyVote(facilityKey)   // optimistic radio selection
+    setBusy(true); setMyRanking(ranking)   // optimistic
     try {
       const tok = await getToken()
-      await fetch(`${API_BASE}/teams/${favId}/facilities/vote`, {
+      await fetch(`${API_BASE}/teams/${favId}/facilities/ranking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(tok ? { Authorization: `Bearer ${tok}` } : {}) },
-        body: JSON.stringify({ facilityKey }),
+        body: JSON.stringify({ ranking }),
       })
-      await load()   // refetch so the vote tallies reflect the change
+      await load()   // refetch so the team order and project ranks reflect the change
     } finally { setBusy(false) }
   }, [favId, busy, getToken, load])
 
@@ -279,7 +288,7 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
               ['Appeal', appealRank(data.appeal), '#34d399', 'Facility quality',
                 'How strong your facilities are overall, from your combined facility levels.'],
               ['Treasury', <><FloobitSymbol size={19} color="#fbbf24" />{data.treasury.toLocaleString()}</>, '#fbbf24', 'Project fund',
-                'Floobits your fanbase has banked. At season end it covers any facility upkeep and projects that are not already funded, upkeep first, then projects.'],
+                'Floobits your fanbase has banked. After the free agent draft it pays facility upkeep first, then builds projects in your fans\' ranked order.'],
             // ⚠️ The value slot is a NODE now — Treasury carries the currency mark, and the
             // other two rows are plain strings, which a ReactNode accepts unchanged.
             ] as [string, React.ReactNode, string, string, string][]).map(([l, v, c, sub, tip]) => (
@@ -311,7 +320,7 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
             <FundChips onFund={(amt) => contribute(amt, 'treasury')} balance={balance} max={Number.MAX_SAFE_INTEGER} topGap={0} allowCustom />
           </div>
 
-          {/* kanban: facilities | in progress | vote */}
+          {/* kanban: facilities | build order | your ranking */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(270px,1fr))', gap: '16px', alignItems: 'start' }}>
             {/* current facilities */}
             <section>
@@ -321,20 +330,27 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
               </div>
             </section>
 
-            {/* active projects */}
+            {/* projects, in the team's build order */}
             <section>
-              <SectionHead title="Active Projects" hint="Fund to complete projects" accent={BUILD} />
+              <SectionHead title="Build Order" hint="Fund any project directly" accent={BUILD} />
               {data.projects.length ? data.projects.map(p => {
                 const fac = data.facilities.find(x => x.key === p.facilityKey)
                 return <ProjectCard key={p.id} p={p} name={catalog[p.facilityKey] || p.facilityKey} fromLvl={fac?.level ?? p.targetLevel - 1} balance={balance} onFund={(amt) => contribute(amt, 'project', { projectId: p.id })} />
-              }) : <div style={{ fontSize: '12.5px', color: '#7e93a8', padding: '12px 14px', borderRadius: '9px', border: '1px dashed #2c3a4d', background: 'rgba(20,29,41,.5)' }}>No active projects. Vote for a project to build next season.</div>}
+              }) : <div style={{ fontSize: '12.5px', color: '#7e93a8', padding: '12px 14px', borderRadius: '9px', border: '1px dashed #2c3a4d', background: 'rgba(20,29,41,.5)' }}>Every facility is at its top level.</div>}
             </section>
 
-            {/* ballot */}
+            {/* the fan's own ranked ballot */}
             <section>
-              <SectionHead title="Available Projects" hint="Vote on the next project" accent={accent} />
-              {candidates.map(c => <BallotCard key={c.key} c={c} accent={accent} selected={myVote === c.key} totalVotes={candidates.reduce((s, x) => s + (x.votes || 0), 0)} onVote={() => castVote(c.key)} />)}
-              {!candidates.length && <div style={{ fontSize: '12px', color: '#64748b', padding: '6px 2px' }}>Every facility is maxed or in progress.</div>}
+              <SectionHead title="Your Ranking" hint="Order every facility by priority" accent={accent} />
+              <RankingList
+                facilities={rankFacs}
+                ranking={myRanking || teamOrder}
+                saved={!!myRanking}
+                ballots={ballots}
+                accent={accent}
+                busy={busy}
+                onChange={saveRanking}
+              />
             </section>
           </div>
 
@@ -342,7 +358,7 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
           <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.55, background: '#15202d', border: '1px solid #2c3a4d', borderRadius: '9px', padding: '12px 15px' }}>
             <b style={{ color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '.06em', fontSize: '11px' }}>How funding works</b>
             <div style={{ marginTop: '6px' }}>
-              Chip in to any facility's upkeep, an active project, or the <span style={{ color: '#fbbf24' }}>Treasury</span> directly, or set a <span style={{ color: '#cbd5e1' }}>season-end deposit</span> above to funnel your leftover Floobits into the Treasury at season end. When the season ends, the Treasury covers whatever's left in a waterfall: <span style={{ color: '#3b82f6', fontWeight: 700 }}>upkeep first</span> so no facility slips a level, then <span style={{ color: '#a78bfa', fontWeight: 700 }}>active projects</span> from oldest to newest. Unfunded upkeep drops a facility a level; fully funded projects get built.
+              Chip in to any facility's upkeep, any project, or the <span style={{ color: '#fbbf24' }}>Treasury</span> directly, or set a <span style={{ color: '#cbd5e1' }}>season-end deposit</span> above to send your leftover Floobits to the Treasury at season end. A project you fund in full builds right away. After the free agent draft, the Treasury pays <span style={{ color: '#3b82f6', fontWeight: 700 }}>upkeep first</span> so no facility slips a level, then builds <span style={{ color: '#a78bfa', fontWeight: 700 }}>projects in your fans' ranked order</span> until the money runs out. Each facility can go up one level a year. Unfunded upkeep drops a facility a level.
             </div>
           </div>
         </>
@@ -403,7 +419,8 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
   const perk = perkAt(f.key, f.level)
   const quip = quipAt(f.key, f.level)
   const covered = f.upkeepFunded >= f.upkeepCost
-  const c = f.upgrading ? BUILD : accent
+  const waived = f.builtThisYear ?? f.upgrading
+  const c = waived ? BUILD : accent
   return (
     <div className="facRow" style={{
       background: '#1e293b',
@@ -413,8 +430,8 @@ function FacilityTile({ f, accent, balance, onFund }: { f: Facility; accent: str
       </div>
       <div style={{ ...QUIP_STYLE, minHeight: '32px', marginTop: '11px' }}>{quip}</div>
       <div style={{ fontSize: '12px', fontWeight: 700, color: perk ? '#e2e8f0' : '#5b6b7d', marginTop: '3px' }}>{perk || 'No bonus yet'}</div>
-      {f.upgrading ? (
-        <div style={{ fontSize: '12px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>UPGRADING | UPKEEP PAUSED</div>
+      {waived ? (
+        <div style={{ fontSize: '12px', color: BUILD, fontWeight: 600, letterSpacing: '.03em', marginTop: '10px' }}>BUILT THIS YEAR | NO UPKEEP DUE</div>
       ) : covered ? (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '10px 0 5px' }}>
@@ -444,7 +461,10 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
   const full = p.funded >= p.cost
   return (
     <div style={{ background: '#1a1730', border: '1px solid #3a2d5c', borderTop: `2px solid ${BUILD}`, borderRadius: '9px', padding: '13px 15px', marginBottom: '10px' }}>
-      <div style={{ fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em' }}>{name} {roman(fromLvl)} → {roman(p.targetLevel)}</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+        {p.rank != null && <span style={{ fontSize: '12px', fontWeight: 800, color: BUILD }}>#{p.rank}</span>}
+        <span style={{ fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em' }}>{name} {roman(fromLvl)} → {roman(p.targetLevel)}</span>
+      </div>
       <div style={{ ...QUIP_STYLE, marginTop: '8px' }}>{quipAt(p.facilityKey, p.targetLevel)}</div>
       <div style={{ fontSize: '12.5px', marginTop: '4px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(p.facilityKey, p.targetLevel) || 'Foundational level'}</span></div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8', margin: '11px 0 5px' }}>
@@ -454,35 +474,67 @@ function ProjectCard({ p, name, fromLvl, balance, onFund }: { p: Project; name: 
         <div className={full ? '' : 'facStripes'} style={{ width: `${pct}%`, height: '100%',
           background: full ? '#22c55e' : undefined }} />
       </div>
-      {full ? <div style={{ fontSize: '12px', fontWeight: 700, color: BUILD, marginTop: '7px' }}>Funded ✓ builds next season</div>
+      {full ? <div style={{ fontSize: '12px', fontWeight: 700, color: BUILD, marginTop: '7px' }}>Funded, {BUILDS_AT_TEXT[p.buildsAt || 'next_season']}</div>
             : <FundChips onFund={onFund} balance={balance} max={p.cost - p.funded} />}
+      {!full && p.buildsAt && p.buildsAt !== 'now' && (
+        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '7px' }}>Already upgraded this year: {BUILDS_AT_TEXT[p.buildsAt]} once funded</div>
+      )}
     </div>
   )
 }
 
-function BallotCard({ c, accent, selected, totalVotes, onVote }: { c: Candidate; accent: string; selected: boolean; totalVotes: number; onVote: () => void }) {
+const BUILDS_AT_TEXT: Record<string, string> = {
+  now: 'building now',
+  payment_run: 'builds after the free agent draft',
+  next_season: 'builds when next season starts',
+}
+
+// A fan's ranked ballot. Up/down buttons rather than drag, so it works by keyboard and on
+// a phone. Every move saves at once.
+function RankingList({ facilities, ranking, saved, ballots, accent, busy, onChange }: {
+  facilities: RankFacility[]; ranking: string[]; saved: boolean; ballots: number
+  accent: string; busy: boolean; onChange: (r: string[]) => void
+}) {
+  const byKey = Object.fromEntries(facilities.map(f => [f.key, f]))
+  const order = ranking.filter(k => byKey[k])
+  const move = (i: number, d: number) => {
+    const j = i + d
+    if (busy || j < 0 || j >= order.length) return
+    const next = [...order]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    onChange(next)
+  }
+  const arrow = (disabled: boolean): React.CSSProperties => ({
+    font: 'inherit', fontSize: '12px', fontWeight: 700, width: '28px', height: '26px', borderRadius: '6px',
+    cursor: disabled ? 'default' : 'pointer', border: `1px solid ${disabled ? '#1e293b' : '#2f4a6b'}`,
+    background: disabled ? 'transparent' : '#15293f', color: disabled ? '#475569' : '#93c5fd',
+  })
   return (
-    <div className="facVote" onClick={onVote} style={{ position: 'relative', cursor: 'pointer', marginBottom: '10px',
-      background: selected ? '#16243a' : '#1e293b',
-      border: `1px solid ${selected ? accent : '#2c3a4d'}`, borderRadius: '9px', padding: '12px 14px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <span style={{ width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0,
-          border: `2px solid ${selected ? accent : '#3a4d63'}`,
-          background: selected ? `radial-gradient(${accent} 38%,transparent 44%)` : 'transparent' }} />
-        <span style={{ fontSize: '13.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em' }}>{c.name} {roman(c.currentLevel)} → {roman(c.targetLevel)}</span>
+    <div>
+      <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, marginBottom: '10px' }}>
+        {saved ? 'Your ranking counts toward the team\'s build order and stays until you change it.'
+               : 'You haven\'t ranked yet. This is the team\'s current order; move anything to save your own.'}
+        {' '}{ballots === 1 ? '1 fan has' : `${ballots} fans have`} ranked.
       </div>
-      <div style={{ ...QUIP_STYLE, marginTop: '8px' }}>{quipAt(c.key, c.targetLevel)}</div>
-      <div style={{ fontSize: '12.5px', marginTop: '4px' }}>Unlocks: <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{perkAt(c.key, c.targetLevel) || 'Foundational level'}</span></div>
-      <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '5px' }}>
-        Build <b style={{ color: '#fbbf24' }}><FloobitSymbol size={11} color="#fbbf24" />{c.cost.toLocaleString()}</b>, then upkeep <b style={{ color: '#fbbf24' }}><FloobitSymbol size={11} color="#fbbf24" />{c.upkeep.toLocaleString()}/season</b>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '11px', color: '#7e93a8', marginTop: '8px' }}>
-        <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Fan votes</span>
-        <b style={{ color: '#e2e8f0', fontSize: '12px' }}>{c.votes}{totalVotes > 0 ? ` (${Math.round((c.votes / totalVotes) * 100)}%)` : ''}</b>
-      </div>
-      <div style={{ height: '5px', background: '#334155', borderRadius: '4px', overflow: 'hidden', marginTop: '4px' }}>
-        <div style={{ width: `${totalVotes > 0 ? (c.votes / totalVotes) * 100 : 0}%`, height: '100%', background: accent, opacity: 0.85 }} />
-      </div>
+      {order.map((k, i) => {
+        const f = byKey[k]
+        return (
+          <div key={k} className="facRow" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px',
+            background: '#1e293b', border: `1px solid ${i === 0 && saved ? accent : '#2c3a4d'}`, borderRadius: '9px', padding: '9px 11px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 800, color: accent, width: '22px' }}>{i + 1}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.03em' }}>
+                {f.name} {f.maxed ? roman(f.level) : <>{roman(f.level)} → {roman(f.level + 1)}</>}
+              </div>
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '3px' }}>
+                {f.maxed ? 'At its top level' : <>Build <b style={{ color: '#fbbf24' }}><FloobitSymbol size={11} color="#fbbf24" />{f.cost.toLocaleString()}</b>, then <b style={{ color: '#fbbf24' }}><FloobitSymbol size={11} color="#fbbf24" />{f.upkeep.toLocaleString()}/season</b></>}
+              </div>
+            </div>
+            <button aria-label={`Move ${f.name} up`} disabled={busy || i === 0} onClick={() => move(i, -1)} style={arrow(busy || i === 0)}>&uarr;</button>
+            <button aria-label={`Move ${f.name} down`} disabled={busy || i === order.length - 1} onClick={() => move(i, 1)} style={arrow(busy || i === order.length - 1)}>&darr;</button>
+          </div>
+        )
+      })}
     </div>
   )
 }

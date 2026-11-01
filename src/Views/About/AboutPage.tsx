@@ -1273,11 +1273,11 @@ const AboutPage: React.FC = () => {
             <p style={labelStyle}>The Five Facilities</p>
             <p style={textStyle}>
               Each facility levels from 0 to 5, and every level adds to its effect. A fully built set is
-              worth about six extra wins a season.
+              worth about eight extra wins a season.
             </p>
             {bulletList([
               'Training Facility: young players develop faster, and more of them reach their ceiling instead of stalling. It counts for more than the coach does',
-              'Locker Room: a team rating edge in every game, up to +2%',
+              'Locker Room: a team rating edge in every game, up to +3.5%, and it softens setbacks by up to half: a losing streak, a costly mistake, a cold stretch, a toxic teammate, or a winning team getting comfortable',
               'Recovery Center: players tire more slowly, up to 90%. Without one, a roster is badly worn down by the end of the season',
               'Scouting Department: the GM judges players better when drafting, signing and re-signing. Some prospects are better or worse than the public thinks, and a good department sees which. It counts for more than the coach does',
               'Stadium: a team rating edge in home games, up to +4%',
@@ -1293,13 +1293,17 @@ const AboutPage: React.FC = () => {
 
             <p style={labelStyle}>Projects</p>
             <p style={textStyle}>
-              Raising a facility a level is a project. Fans vote on which project to chase next, then fund it.
+              Raising a facility a level is a project, and every facility always has its next level open.
+              Fans rank the facilities in order of priority, and the team builds in the order its fans
+              ranked them. Fund a project in full yourself and it builds right away. Each facility can go
+              up one level a year.
             </p>
 
-            <p style={labelStyle}>Season End</p>
+            <p style={labelStyle}>The Payment Run</p>
             <p style={textStyle}>
-              The Treasury pays out in order: upkeep first so no facility slips a level, then active projects,
-              oldest first. Any upkeep left unfunded drops that facility a level; fully funded projects get built.
+              After the free agent draft, the Treasury pays out: upkeep first so no facility slips a level,
+              then projects in the fans' ranked order until the money runs out. Any upkeep left unfunded
+              drops that facility a level.
             </p>
 
             <p style={labelStyle}>Appeal</p>
