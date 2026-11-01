@@ -100,7 +100,15 @@ interface Facility { key: string; name: string; level: number; maxLevel: number;
 // facility already had its upgrade this year from the payment run; 'next_season' = fans already
 // built it this season, or this offseason's payment run has happened.
 interface Project { id: number; facilityKey: string; kind: string; targetLevel: number; cost: number; funded: number; rank?: number | null; buildsAt?: 'now' | 'payment_run' | 'next_season' }
-interface TeamFacilities { teamId: number; treasury: number; appeal: number; shareUnit: number; facilities: Facility[]; projects: Project[]; order?: string[] }
+interface PayrollOutlook { owedNextSeason: number; projectedBalance: number; shortBy: number }
+interface TeamFacilities {
+  teamId: number; treasury: number; appeal: number; shareUnit: number; facilities: Facility[]; projects: Project[]; order?: string[]
+  /** This season's salaries, paid first at the payment run. */
+  payroll?: number
+  /** In season only: whether the team is on course to fall short of next season's payroll. */
+  payrollOutlook?: PayrollOutlook | null
+  salaryEnabled?: boolean
+}
 interface RankFacility { key: string; name: string; level: number; maxLevel: number; maxed: boolean; cost: number; upkeep: number }
 interface LeagueTeam { id: number; name: string; city: string; abbr: string; color: string; appeal: number; levels: Record<string, number>; fanCount: number; activeFanCount?: number; marketTier: string }
 
@@ -143,12 +151,39 @@ function FundChips({ onFund, balance, max, topGap = 8, allowCustom = false }: { 
   )
 }
 
+/** The Treasury's job in one sentence, shared by the Facilities readout and the
+ *  team page's summary strip so the two never describe different rules. */
+export const treasuryTip = (salaries: boolean) => salaries
+  ? 'Floobits your fanbase has banked. After the free agent draft it pays player salaries first, then facility upkeep, then builds projects in your fans\' ranked order.'
+  : 'Floobits your fanbase has banked. After the free agent draft it pays facility upkeep first, then builds projects in your fans\' ranked order.'
+
+/** On course to fall short of next season's payroll: the season-end check will cut
+ *  players to close the gap unless the Treasury grows. */
+function PayrollWarning({ shortBy, owed }: { shortBy: number; owed: number }) {
+  return (
+    <HoverTooltip
+      color="#f87171"
+      text={`Next season's contracts cost ${owed.toLocaleString()} Floobits. At season end, a team that can't cover them has to cut players, and the free agent draft fills the slots. This counts the gate revenue still to come and what fans' season-end deposits would bring at today's balances.`}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 14px', borderRadius: '9px',
+        background: 'rgba(248,113,113,.08)', border: '1px solid rgba(248,113,113,.45)', color: '#fecaca', fontSize: '12.5px' }}>
+        <span style={{ fontWeight: 800, color: '#f87171', textTransform: 'uppercase', letterSpacing: '.06em', fontSize: '11px' }}>Payroll short</span>
+        <span>
+          Short by <b style={{ color: '#fbbf24' }}><FloobitSymbol size={11} color="#fbbf24" />{shortBy.toLocaleString()}</b>. Fund the team or lose a player at season end.
+        </span>
+      </div>
+    </HoverTooltip>
+  )
+}
+
 // ── main ──────────────────────────────────────────────────────────────────
 export interface FrontOfficeSummary {
   treasury: number
   appeal: number
   marketTier: string
   teamColor?: string
+  payroll?: number
+  salaryEnabled?: boolean
 }
 
 interface FacilitiesProps {
@@ -213,6 +248,8 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
       appeal: data.appeal,
       marketTier: mine?.marketTier || 'MID_MARKET',
       teamColor: mine?.color,
+      payroll: data.payroll,
+      salaryEnabled: data.salaryEnabled,
     })
   }, [data, league, onSummary])
 
@@ -287,11 +324,12 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
                 'How big your fanbase is compared to the rest of the league, from SMALL up to MEGA.'],
               ['Appeal', appealRank(data.appeal), '#34d399', 'Facility quality',
                 'How strong your facilities are overall, from your combined facility levels.'],
-              ['Treasury', <><FloobitSymbol size={19} color="#fbbf24" />{data.treasury.toLocaleString()}</>, '#fbbf24', 'Project fund',
-                'Floobits your fanbase has banked. After the free agent draft it pays facility upkeep first, then builds projects in your fans\' ranked order.'],
+              ['Treasury', <><FloobitSymbol size={19} color="#fbbf24" />{data.treasury.toLocaleString()}</>, '#fbbf24',
+                data.salaryEnabled ? <>Payroll <FloobitSymbol size={10} color="#94a3b8" />{(data.payroll ?? 0).toLocaleString()} a season</> : 'Project fund',
+                treasuryTip(!!data.salaryEnabled)],
             // ⚠️ The value slot is a NODE now — Treasury carries the currency mark, and the
             // other two rows are plain strings, which a ReactNode accepts unchanged.
-            ] as [string, React.ReactNode, string, string, string][]).map(([l, v, c, sub, tip]) => (
+            ] as [string, React.ReactNode, string, React.ReactNode, string][]).map(([l, v, c, sub, tip]) => (
               <HoverTooltip key={l} content={tip} color={c}>
                 <div style={{ background: '#1e293b', padding: '13px 15px', height: '100%', boxSizing: 'border-box' }}>
                   <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '.1em', color: '#94a3b8', fontWeight: 700 }}>{l}</div>
@@ -302,6 +340,10 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
               </HoverTooltip>
             ))}
           </div>
+          )}
+
+          {data.salaryEnabled && (data.payrollOutlook?.shortBy ?? 0) > 0 && (
+            <PayrollWarning shortBy={data.payrollOutlook!.shortBy} owed={data.payrollOutlook!.owedNextSeason} />
           )}
 
           {/* Treasury funding: season-end auto-deposit % + direct contribution, one row.
@@ -358,7 +400,7 @@ const FacilitiesSection: React.FC<FacilitiesProps> = ({ variant = 'page', onSumm
           <div style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.55, background: '#15202d', border: '1px solid #2c3a4d', borderRadius: '9px', padding: '12px 15px' }}>
             <b style={{ color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '.06em', fontSize: '11px' }}>How funding works</b>
             <div style={{ marginTop: '6px' }}>
-              Chip in to any facility's upkeep, any project, or the <span style={{ color: '#fbbf24' }}>Treasury</span> directly, or set a <span style={{ color: '#cbd5e1' }}>season-end deposit</span> above to send your leftover Floobits to the Treasury at season end. A project you fund in full builds right away. After the free agent draft, the Treasury pays <span style={{ color: '#3b82f6', fontWeight: 700 }}>upkeep first</span> so no facility slips a level, then builds <span style={{ color: '#a78bfa', fontWeight: 700 }}>projects in your fans' ranked order</span> until the money runs out. Each facility can go up one level a year. Unfunded upkeep drops a facility a level.
+              Chip in to any facility's upkeep, any project, or the <span style={{ color: '#fbbf24' }}>Treasury</span> directly, or set a <span style={{ color: '#cbd5e1' }}>season-end deposit</span> above to send your leftover Floobits to the Treasury at season end. A project you fund in full builds right away. After the free agent draft, the Treasury pays {data.salaryEnabled && <><span style={{ color: '#fbbf24', fontWeight: 700 }}>player salaries first</span>, then </>}<span style={{ color: '#3b82f6', fontWeight: 700 }}>upkeep{data.salaryEnabled ? '' : ' first'}</span> so no facility slips a level, then builds <span style={{ color: '#a78bfa', fontWeight: 700 }}>projects in your fans' ranked order</span> until the money runs out. Each facility can go up one level a year. Unfunded upkeep drops a facility a level.
             </div>
           </div>
         </>

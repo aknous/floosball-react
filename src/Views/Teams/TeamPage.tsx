@@ -25,6 +25,7 @@ import { GAUGE_TRACK, barWidth, gaugeColor } from '@/Components/Gauge'
 import { useTeamProspects, TeamProspect } from '@/hooks/useTeamProspects'
 import { quipAt } from '@/Views/FrontOffice/FacilitiesSection'
 import { fmtFramesWon } from '@/utils/framesWon'
+import { FloobitSymbol } from '@/Components/Icons/Floobit'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -89,6 +90,8 @@ interface RosterPlayer {
   offensiveRating?: number
   defensiveRating?: number
   termRemaining?: number
+  /** Floobits a season, locked at signing. 0 = a contract from before salaries. */
+  salary?: number
   /** Promoted prospect on their promotion contract: kept or traded, never cut. */
   protectedProspect?: boolean
   serviceTime?: string
@@ -738,6 +741,13 @@ const RosterPlate: React.FC<{
             // notice without being told.
             color: term === 1 ? '#f59e0b' : '#cbd5e1',
           }}>{term}yr remaining</div>
+        )}
+        {(player.salary ?? 0) > 0 && (
+          <HoverTooltip text="Salary, paid from the team Treasury every season of the contract.">
+            <div style={{ fontSize: '11px', marginTop: '2px', color: '#fbbf24', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+              <FloobitSymbol size={10} color="currentColor" />{(player.salary ?? 0).toLocaleString()} a season
+            </div>
+          </HoverTooltip>
         )}
         {(stage || player.protectedProspect) && (
           <div style={{ marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
