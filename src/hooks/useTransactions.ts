@@ -34,7 +34,7 @@ export interface Prospect {
   /** A fact: what they play at today. */
   rating: number
   tier: string | null
-  /** True expected and ceiling. */
+  /** Public consensus expected and ceiling (hidden talent is not in it). */
   projection: Projection | null
 }
 
@@ -103,7 +103,7 @@ interface UseTransactionsResult {
  * no trading block, and this page shows neither.
  *
  * The draft class comes from its own endpoint, `/api/draft/class`, with each
- * prospect's true expected and ceiling.
+ * prospect's public consensus expected and ceiling.
  */
 export function useTransactions(): UseTransactionsResult {
   const { getToken } = useAuth()

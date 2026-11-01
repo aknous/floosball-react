@@ -1276,10 +1276,10 @@ const AboutPage: React.FC = () => {
               worth about six extra wins a season.
             </p>
             {bulletList([
-              'Training Facility: young players develop faster',
+              'Training Facility: young players develop faster, and more of them reach their ceiling instead of stalling. It counts for more than the coach does',
               'Locker Room: a team rating edge in every game, up to +2%',
               'Recovery Center: players tire more slowly, up to 90%. Without one, a roster is badly worn down by the end of the season',
-              'Scouting Department: the GM judges players better when drafting, signing and re-signing',
+              'Scouting Department: the GM judges players better when drafting, signing and re-signing. Some prospects are better or worse than the public thinks, and a good department sees which. It counts for more than the coach does',
               'Stadium: a team rating edge in home games, up to +4%',
             ])}
 
