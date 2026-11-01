@@ -1273,11 +1273,11 @@ const AboutPage: React.FC = () => {
             <p style={labelStyle}>The Five Facilities</p>
             <p style={textStyle}>
               Each facility levels from 0 to 5, and every level adds to its effect. A fully built set is
-              worth about six extra wins a season.
+              worth about eight extra wins a season.
             </p>
             {bulletList([
               'Training Facility: young players develop faster',
-              'Locker Room: a team rating edge in every game, up to +2%',
+              'Locker Room: a team rating edge in every game, up to +3.5%, and it softens setbacks by up to half: a losing streak, a costly mistake, a cold stretch, a toxic teammate, or a winning team getting comfortable',
               'Recovery Center: players tire more slowly, up to 90%. Without one, a roster is badly worn down by the end of the season',
               'Scouting Department: the GM judges players better when drafting, signing and re-signing',
               'Stadium: a team rating edge in home games, up to +4%',
