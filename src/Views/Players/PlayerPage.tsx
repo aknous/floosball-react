@@ -60,6 +60,12 @@ const ordinal = (n: number): string => {
   return `${n}${suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]}`
 }
 
+type PlayerDraft =
+  | { status: 'drafted'; season: number; pick: number; teamId: number; teamName: string | null
+      teamCity: string | null; teamAbbr: string | null; teamColor: string | null }
+  | { status: 'class'; season: number | null }
+  | { status: 'undrafted' }
+
 interface PlayerAttributes {
   att1?: string; att1Value?: number; att1stars?: number
   att2?: string; att2Value?: number; att2stars?: number
@@ -117,6 +123,8 @@ interface PlayerData {
   draftingTeamCity?: string | null
   draftingTeamColor?: string | null
   draftClass?: number | null
+  /** Who drafted them and when (owner, 2026-11-02). Null for players from before the draft. */
+  draft?: PlayerDraft | null
   seasonsPlayed: number
   ratingStars: number
   playerRating: number
@@ -617,9 +625,10 @@ const PlayerPage: React.FC = () => {
           </Link>
         ) : (
           <span style={{ ...font(600, 13), color: TEXT.muted, marginTop: '2px' }}>
-            {isRetired ? 'Retired' : 'Free Agent'}
+            {isRetired ? 'Retired' : player.draft?.status === 'class' ? 'Draft Class' : 'Free Agent'}
           </span>
         )}
+        <DraftLine draft={player.draft} />
       </div>
     </div>
   )
@@ -923,6 +932,27 @@ const PlayerPage: React.FC = () => {
         )}
       </div>
     </>
+  )
+}
+
+/** Who drafted the player and when, under the team on the profile. */
+function DraftLine({ draft }: { draft?: PlayerDraft | null }) {
+  if (!draft) return null
+  const style = { ...font(500, 12), color: TEXT.muted }
+  if (draft.status === 'class') {
+    return <span style={style}>{draft.season ? `Season ${draft.season} draft class` : 'Draft class'}</span>
+  }
+  if (draft.status === 'undrafted') return <span style={style}>Undrafted</span>
+  return (
+    <span style={{ ...style, display: 'flex', alignItems: 'center', gap: '6px' }}>
+      Drafted Season {draft.season}, pick {draft.pick}, by
+      <Link to={`/team/${draft.teamId}`} style={{ display: 'flex', alignItems: 'center', gap: '5px', textDecoration: 'none' }}>
+        <Crest teamId={draft.teamId} size={16} />
+        <span style={{ ...font(600, 12), color: readableTeamColor(draft.teamColor || TEXT.dim) }}>
+          {draft.teamName}
+        </span>
+      </Link>
+    </span>
   )
 }
 

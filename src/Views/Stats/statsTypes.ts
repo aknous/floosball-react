@@ -9,7 +9,7 @@ export interface StatsPlayerRow {
   teamId: number | null
   teamAbbr: string | null
   teamColor: string | null
-  status: 'active' | 'fa' | 'prospect' | 'retired'
+  status: 'active' | 'fa' | 'prospect' | 'class' | 'retired'
   playerRating: number
   ratingStars: number
   /** Currently AWAKENED — the name is lit, same as the leader boards. */
@@ -53,7 +53,7 @@ export interface StatsPlayerRow {
 export interface StatsPlayersResponse {
   rows: StatsPlayerRow[]
   total: number
-  facets: { active: number; fa: number; prospects: number; retired: number; followed: number }
+  facets: { active: number; fa: number; prospects: number; class: number; retired: number; followed: number }
   season: number | 'career'
   currentSeason: number
 }
