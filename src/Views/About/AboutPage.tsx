@@ -1280,7 +1280,7 @@ const AboutPage: React.FC = () => {
               'Locker Room: a team rating edge in every game, up to +3.5%, and it softens setbacks by up to half: a losing streak, a costly mistake, a cold stretch, a toxic teammate, or a winning team getting comfortable',
               'Recovery Center: players tire more slowly, up to 90%. Without one, a roster is badly worn down by the end of the season',
               'Scouting Department: the GM judges players better when drafting, signing and re-signing. Some prospects are better or worse than the public thinks, and a good department sees which. It counts for more than the coach does',
-              'Stadium: a team rating edge in home games, up to +4%',
+              'Stadium: a team rating edge in home games, up to +4%, and more gate revenue from the team\'s fans every week, up to +50%',
             ])}
 
             <p style={labelStyle}>The Treasury and Upkeep</p>
