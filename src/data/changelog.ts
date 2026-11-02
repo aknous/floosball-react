@@ -49,6 +49,7 @@ export const CHANGELOG: ChangelogEntry[] = [
           '[Facilities] Fatigue wears down players\' physical ratings less, so the Recovery Center no longer outweighs the other facilities.',
           '[Facilities] The Training Facility and Scouting Department now count for more than the coach in how players develop and how well a team reads them.',
           '[Prospects] Fans see the league\'s consensus projection for a prospect. Teams with good scouting may know more.',
+          '[Cards] Loyalty Bonus is no longer minted starting next season, since it paid the same way as Bandwagon Express. Copies you already own keep scoring.',
           '[Front Office] No trades happen between the rookie draft and the free agent draft. Teams get a trade window after the free agent draft instead.',
           '[Front Office] A team with a full roster can release a player in the free agent draft to sign a better one, as long as that player was not signed this offseason. The release costs a cut fee from the Treasury, and a team that cannot pay it keeps its player.',
         ],
