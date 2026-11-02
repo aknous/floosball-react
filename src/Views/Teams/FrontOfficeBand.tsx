@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react'
 
 import HoverTooltip from '@/Components/HoverTooltip'
-import FacilitiesSection, { FrontOfficeSummary } from '@/Views/FrontOffice/FacilitiesSection'
+import FacilitiesSection, { FrontOfficeSummary, treasuryTip } from '@/Views/FrontOffice/FacilitiesSection'
 import SupporterCard from '@/Components/FrontOffice/SupporterCard'
 import { appealRank } from '@/utils/facilities'
 import { readableOnDark } from '@/utils/colors'
@@ -99,7 +99,7 @@ const FrontOfficeBand: React.FC<Props> = ({ pad, pageMax, stacked, accent }) => 
         }}>
           <div>
             <HoverTooltip
-              text="Floobits your fanbase has banked. At season end it covers unfunded upkeep first, then active projects."
+              text={treasuryTip(!!summary?.salaryEnabled)}
               color="#fbbf24"
             >
               <StatLabel>Treasury</StatLabel>
@@ -110,7 +110,9 @@ const FrontOfficeBand: React.FC<Props> = ({ pad, pageMax, stacked, accent }) => 
                 : '—'}
             </StatValue>
             <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
-              The project fund
+              {summary?.salaryEnabled
+                ? <>Payroll <FloobitSymbol size={10} color="currentColor" />{(summary.payroll ?? 0).toLocaleString()} a season</>
+                : 'The project fund'}
             </div>
           </div>
 
