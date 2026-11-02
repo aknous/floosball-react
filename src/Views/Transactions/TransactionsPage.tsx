@@ -8,6 +8,8 @@ import PlayerLink from '@/Components/PlayerLink'
 import Potential, { potentialTooltip } from '@/Components/Potential'
 import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useTradeVotes } from '@/hooks/useTradeVotes'
+import TradeVotes from './TradeVotes'
 
 /**
  * The six roster positions, in roster order rather than alphabetical, because that is
@@ -185,6 +187,7 @@ const TransactionsPage: React.FC = () => {
     loading, error, season, week,
     draftOrder, draftOrderFinal, draftPlayoffSlotsFrom, prospects, expiring, moves, showPool, freeAgentPool,
   } = useTransactions()
+  const tradeVotes = useTradeVotes()
 
   const [classPos, setClassPos] = useState<PositionFilter>('ALL')
   const [contractPos, setContractPos] = useState<PositionFilter>('ALL')
@@ -329,6 +332,13 @@ const TransactionsPage: React.FC = () => {
           }}>{error}</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '22px' : '28px' }}>
+
+            {/* TRADES WAITING ON THE FANS. Only while trading and its votes are on. */}
+            {tradeVotes.enabled && (
+              <TradeVotes open={tradeVotes.open} closed={tradeVotes.closed} myTeamId={myTeamId}
+                signedIn={!!user} voting={tradeVotes.voting} voteError={tradeVotes.voteError}
+                onVote={tradeVotes.vote} />
+            )}
 
             {/* THE BOARD */}
             <div style={pair}>
