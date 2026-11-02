@@ -2,19 +2,28 @@ import React from 'react'
 import { GAUGE_TRACK, barWidth, gaugeColor } from '@/Components/Gauge'
 
 /**
- * A player's TRUE projection: overall at trueSkill (expected) and at potential (ceiling).
+ * Where a player is projected to settle: a RANGE, not a forecast (owner, 2026-11-02).
  *
- * ⚠️ FANS SEE THE TRUTH (owner, 2026-09-27). Each team's scouted read is what its own GM
- * acts on and is never presented; blurred bands made sense only while fans voted on
- * prospects as the GM.
+ * It is the public consensus (`expected`) widened by the hidden talent nobody outside can see
+ * yet, so it is widest on draft day and closes to one number as the player develops; for a
+ * veteran `low`, `expected` and `high` are the same. It replaced a ceiling that was below the
+ * true ceiling for about half of all prospects.
  */
 export interface Projection {
   expected: number
-  ceiling: number
+  low: number
+  high: number
+}
+
+/** "74-86", or one number once the range has closed. Never below today's rating. */
+export function projectionText(rating: number, projection: Projection): string {
+  const low = Math.round(Math.max(projection.low ?? projection.expected ?? rating, rating))
+  const high = Math.round(Math.max(projection.high ?? projection.expected ?? rating, rating))
+  return low === high ? String(high) : `${low}-${high}`
 }
 
 /**
- * A prospect's rating gauge, with their ceiling drawn on the same track.
+ * A prospect's rating gauge, with the top of their projected range drawn on the same track.
  *
  * ⚠️ THIS IS THE HOUSE GAUGE, NOT A NEW ONE. Two earlier attempts invented their own
  * chart — first a band on a per-row scale, then a fixed 60-100 window with star-band
@@ -25,7 +34,7 @@ export interface Projection {
  *
  * The one thing added is the part that is specific to a prospect: what they are now is
  * solid and how far they could still go continues the same bar at lower opacity, rather
- * than arriving as a second visual language. Expected and ceiling are on hover.
+ * than arriving as a second visual language. The range is on hover.
  */
 const Potential: React.FC<{
   rating: number
@@ -33,8 +42,9 @@ const Potential: React.FC<{
   height?: number
 }> = ({ rating, projection, height = 6 }) => {
   const now = barWidth(rating)
-  const ceiling = projection ? Math.max(projection.ceiling, rating) : rating
-  const upside = barWidth(ceiling) - now
+  // `?? expected`: a payload from before the range (2026-11-02) has no `high`.
+  const top = projection ? Math.max(projection.high ?? projection.expected ?? rating, rating) : rating
+  const upside = barWidth(top) - now
 
   return (
     <span style={{
@@ -45,7 +55,7 @@ const Potential: React.FC<{
         <span style={{ width: `${now}%`, backgroundColor: gaugeColor(rating) }} />
         {upside > 0 && (
           <span style={{
-            width: `${upside}%`, backgroundColor: gaugeColor(ceiling), opacity: 0.35,
+            width: `${upside}%`, backgroundColor: gaugeColor(top), opacity: 0.35,
           }} />
         )}
       </span>
@@ -54,15 +64,12 @@ const Potential: React.FC<{
 }
 
 /**
- * The gauge's tooltip: three numbers, no prose. A hover on a chart is a lookup, not a
+ * The gauge's tooltip: two lines, no prose. A hover on a chart is a lookup, not a
  * paragraph.
  */
 export function potentialTooltip(rating: number, projection: Projection | null): React.ReactNode {
-  const rows: [string, number][] = [['Current', Math.round(rating)]]
-  if (projection) {
-    rows.push(['Expected', Math.round(Math.max(projection.expected, rating))])
-    rows.push(['Ceiling', Math.round(Math.max(projection.ceiling, rating))])
-  }
+  const rows: [string, string][] = [['Current', String(Math.round(rating))]]
+  if (projection) rows.push(['Projected', projectionText(rating, projection)])
   return (
     <span style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '2px 12px' }}>
       {rows.map(([label, value]) => (

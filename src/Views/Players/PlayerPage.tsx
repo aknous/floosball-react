@@ -446,8 +446,8 @@ const PlayerPage: React.FC = () => {
 
   const [player, setPlayer] = useState<PlayerData | null>(null)
   const [ratingHistory, setRatingHistory] = useState<RatingPoint[]>([])
-  const [ratingCeiling, setRatingCeiling] = useState<number | null>(null)
-  const [ratingExpected, setRatingExpected] = useState<number | null>(null)
+  const [ratingLow, setRatingLow] = useState<number | null>(null)
+  const [ratingHigh, setRatingHigh] = useState<number | null>(null)
   const [quotes, setQuotes] = useState<Array<{ text: string; event?: string; personality?: string; timestamp?: string }>>([])
   const [standing, setStanding] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -472,8 +472,8 @@ const PlayerPage: React.FC = () => {
       if (playerRes?.success && playerRes.data) setPlayer(playerRes.data)
       if (historyRes?.success && historyRes.data?.history) setRatingHistory(historyRes.data.history)
       if (historyRes?.success) {
-        setRatingCeiling(historyRes.data?.ceiling ?? null)
-        setRatingExpected(historyRes.data?.expected ?? null)
+        setRatingLow(historyRes.data?.low ?? null)
+        setRatingHigh(historyRes.data?.high ?? null)
       }
       if (quotesRes?.success && Array.isArray(quotesRes.data)) setQuotes(quotesRes.data)
     }).finally(() => setLoading(false))
@@ -791,8 +791,8 @@ const PlayerPage: React.FC = () => {
           <RatingProgression
             history={ratingHistory}
             teamColor={teamColor}
-            ceiling={ratingCeiling}
-            expected={ratingExpected}
+            low={ratingLow}
+            high={ratingHigh}
           />
         </div>
       )}

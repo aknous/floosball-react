@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { projectionText } from '@/Components/Potential'
 import ReactDOM from 'react-dom'
 import { Stars, SwordIcon, ShieldIcon } from './Stars'
 import ArchetypeBadge from './ArchetypeBadge'
@@ -18,8 +19,9 @@ interface PlayerDetail {
   teamAbbr: string | null
   rank?: string | null   // service time ('Retired', 'Veteran', ...) — distinguishes retired from FA
   playerRating: number
-  ceiling?: number | null   // projected top rating at full skill potential
-  expected?: number | null  // projected rating at natural development (trueSkill)
+  expected?: number | null        // consensus projected rating (where they settle)
+  projectionLow?: number | null   // the projected range: wide for a new prospect, one
+  projectionHigh?: number | null  // number once a player's talent is known
   ratingStars: number
   offensiveRating?: number
   defensiveRating?: number
@@ -199,21 +201,27 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
             <span style={{ fontSize: '13px', color: '#94a3b8' }}>Overall</span>
             <span style={{ fontSize: '13px', color: '#e2e8f0', fontWeight: '700' }}>
               {data.playerRating}
-              {data.ceiling != null && data.ceiling > data.playerRating && (
-                <span style={{ color: '#facc15', fontWeight: 600 }}> / {data.ceiling}</span>
+              {data.projectionHigh != null && data.projectionHigh > data.playerRating && (
+                <span style={{ color: '#facc15', fontWeight: 600 }}>
+                  {' '}/ {projectionText(data.playerRating, {
+                    expected: data.expected ?? data.playerRating,
+                    low: data.projectionLow ?? data.playerRating,
+                    high: data.projectionHigh,
+                  })}
+                </span>
               )}
             </span>
           </div>
-          {/* Track + fill, with a teal tick for the expected (trueSkill) level and
-              an amber tick for the projected ceiling (potential). */}
+          {/* Track + fill, with the projected range as a faint band beyond today's rating. */}
           <div style={{ height: '4px', backgroundColor: '#334155', borderRadius: '2px', position: 'relative' }}>
             <div style={{ width: `${Math.min(100, data.playerRating)}%`, height: '100%', backgroundColor: data.playerRating >= 85 ? '#22c55e' : data.playerRating >= 72 ? '#f59e0b' : '#ef4444', borderRadius: '2px' }} />
-            {data.expected != null && data.expected > data.playerRating && (
-              <div style={{ position: 'absolute', left: `${Math.min(100, data.expected)}%`, top: '-2px', bottom: '-2px', width: '2px', backgroundColor: '#38bdf8', transform: 'translateX(-1px)', borderRadius: '1px' }} />
-            )}
-            {data.ceiling != null && data.ceiling > data.playerRating && (
-              <div style={{ position: 'absolute', left: `${Math.min(100, data.ceiling)}%`, top: '-2px', bottom: '-2px', width: '2px', backgroundColor: '#facc15', transform: 'translateX(-1px)', borderRadius: '1px' }} />
-            )}
+            {data.projectionHigh != null && data.projectionHigh > data.playerRating && (() => {
+              const from = Math.min(100, Math.max(data.projectionLow ?? data.playerRating, data.playerRating))
+              const to = Math.min(100, data.projectionHigh)
+              return (
+                <div style={{ position: 'absolute', left: `${from}%`, width: `${Math.max(0.5, to - from)}%`, top: '-1px', bottom: '-1px', backgroundColor: '#facc15', opacity: 0.45, borderRadius: '1px' }} />
+              )
+            })()}
           </div>
         </div>
 

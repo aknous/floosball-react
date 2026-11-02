@@ -16,7 +16,7 @@ export interface TeamProspect {
   draftSeason: number | null
   isUndrafted: boolean
   ratingHistory: { season: number; rating: number }[]
-  /** Public consensus expected and ceiling (hidden talent is not in it). */
+  /** The public projection: a range around the consensus, widest for a new prospect. */
   projection: Projection | null
 }
 

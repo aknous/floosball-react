@@ -649,8 +649,8 @@ const ProspectRow: React.FC<{ p: TeamProspect; accent: string }> = ({ p }) => {
         <PlayerLink playerId={p.playerId} playerName={p.name}
           style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '15px' }} />
       </span>
-      {/* Beside the name: solid is what they play at today, faint is their ceiling.
-          Current, expected and ceiling on hover. */}
+      {/* Beside the name: solid is what they play at today, faint runs to the top of their
+          projected range. Current and the range on hover. */}
       <HoverTooltip content={potentialTooltip(p.rating, p.projection)}>
         <span style={{ width: '150px', display: 'inline-block', flexShrink: 0 }}>
           <Potential rating={p.rating} projection={p.projection} />
