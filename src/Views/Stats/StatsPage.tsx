@@ -25,6 +25,7 @@ const DEFENSIVE_POSITIONS = ['S', 'LB', 'CB', 'DE'] as const
 const STATUSES = [
   { key: 'active', label: 'Active' },
   { key: 'fa', label: 'Free agents' },
+  { key: 'class', label: 'Undrafted prospects' },
   { key: 'retired', label: 'Retired' },
   { key: 'followed', label: 'Followed' },
 ] as const
@@ -276,7 +277,7 @@ const StatsPage: React.FC = () => {
       // brand colors down a dense table is noise.
       render: row => (
         <span style={{ ...font(600, 11, 1, '0.02em'), color: TEXT.muted }}>
-          {row.teamAbbr || (row.status === 'retired' ? '—' : 'FA')}
+          {row.teamAbbr || (row.status === 'retired' || row.status === 'class' ? '—' : 'FA')}
         </span>
       ),
     },
