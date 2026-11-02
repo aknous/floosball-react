@@ -37,7 +37,7 @@ export const CHANGELOG: ChangelogEntry[] = [
           '[Team Funding] The league matches part of what fans give their team, both direct contributions and season-end deposits.',
           '[Prospects] Prospects are a gamble. Some have more talent than anyone can see on draft day and some have less. It shows as they develop, and teams with better scouting see it sooner.',
           '[Prospects] Development has some luck in it each offseason. A strong Training Facility tilts the luck in your team\'s favor.',
-          '[Prospects] Starting next season, each draft class has more prospects than teams. Undrafted prospects leave the league unless a position needs more players, in which case they become free agents.',
+          '[Prospects] Draft classes now have more prospects than teams, starting with this season\'s class. Undrafted prospects leave the league unless a position needs more players, in which case they become free agents.',
           '[Front Office] Fans vote on every trade before it goes through. A trade needs more yes votes than no across the league, and enough of each team\'s own fans approving it.',
         ],
       },
