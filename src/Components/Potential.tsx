@@ -17,8 +17,8 @@ export interface Projection {
 
 /** "74-86", or one number once the range has closed. Never below today's rating. */
 export function projectionText(rating: number, projection: Projection): string {
-  const low = Math.round(Math.max(projection.low, rating))
-  const high = Math.round(Math.max(projection.high, rating))
+  const low = Math.round(Math.max(projection.low ?? projection.expected ?? rating, rating))
+  const high = Math.round(Math.max(projection.high ?? projection.expected ?? rating, rating))
   return low === high ? String(high) : `${low}-${high}`
 }
 
@@ -42,7 +42,8 @@ const Potential: React.FC<{
   height?: number
 }> = ({ rating, projection, height = 6 }) => {
   const now = barWidth(rating)
-  const top = projection ? Math.max(projection.high, rating) : rating
+  // `?? expected`: a payload from before the range (2026-11-02) has no `high`.
+  const top = projection ? Math.max(projection.high ?? projection.expected ?? rating, rating) : rating
   const upside = barWidth(top) - now
 
   return (
