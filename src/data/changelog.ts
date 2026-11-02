@@ -23,6 +23,38 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.09',
+    date: '2026-11-02',
+    feature: true,
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Facilities] Fans rank their team\'s facilities instead of voting once a season. Your ranking carries over from season to season, and your team builds in the order its fans choose.',
+          '[Facilities] Each offseason, after the free agent draft, the Treasury pays every facility\'s upkeep, then builds one level on each facility it can afford, in your team\'s ranked order. A facility fans fund in full during the season still builds right away.',
+          '[Team Funding] Teams earn gate revenue every week of the regular season from their active fans, and more when those fans play that week. A bigger Stadium earns more.',
+          '[Team Funding] The league matches part of what fans give their team, both direct contributions and season-end deposits.',
+          '[Prospects] Prospects are a gamble. Some have more talent than anyone can see on draft day and some have less. It shows as they develop, and teams with better scouting see it sooner.',
+          '[Prospects] Development has some luck in it each offseason. A strong Training Facility tilts the luck in your team\'s favor.',
+          '[Front Office] Fans vote on every trade before it goes through. A trade needs more yes votes than no across the league, and enough of each team\'s own fans approving it.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Team Funding] The league pays every team a much larger baseline each season.',
+          '[Facilities] The Locker Room\'s in-game edge rises to 3.5%, and it now softens confidence and determination losses for its players.',
+          '[Facilities] Fatigue wears down players\' physical ratings less, so the Recovery Center no longer outweighs the other facilities.',
+          '[Facilities] The Training Facility and Scouting Department now count for more than the coach in how players develop and how well a team reads them.',
+          '[Prospects] Fans see the league\'s consensus projection for a prospect. Teams with good scouting may know more.',
+          '[Front Office] No trades happen between the rookie draft and the free agent draft. Teams get a trade window after the free agent draft instead.',
+          '[Front Office] A team with a full roster can release a player in the free agent draft to sign a better one, as long as that player was not signed this offseason.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v1.08',
     date: '2026-10-26',
     feature: true,
