@@ -18,7 +18,7 @@ const PERK: Record<string, string[]> = {
   locker_room: ['', '+0.7% team rating every game, setbacks hit 10% softer', '+1.4% team rating every game, setbacks hit 20% softer', '+2.1% team rating every game, setbacks hit 30% softer', '+2.8% team rating every game, setbacks hit 40% softer', '+3.5% team rating every game, setbacks hit half as hard'],
   recovery:    ['', 'Players tire 15% slower', 'Players tire 35% slower', 'Players tire 55% slower', 'Players tire 75% slower', 'Players stay nearly fresh all season (90% slower)'],
   scouting:    ['', 'GM judges players a little better', 'GM judges players better and spots some hidden prospects', 'GM judges players notably better and spots more hidden prospects', 'GM judges players much better and sees through most hype', 'Sees through the hype: spots hidden gems and avoids busts'],
-  stadium:     ['', '+0.8% team rating at home', '+1.6% team rating at home', '+2.4% team rating at home', '+3.2% team rating at home', '+4% team rating at home'],
+  stadium:     ['', '+0.8% team rating at home, +8% gate revenue', '+1.6% team rating at home, +16% gate revenue', '+2.4% team rating at home, +26% gate revenue', '+3.2% team rating at home, +38% gate revenue', '+4% team rating at home, +50% gate revenue'],
 }
 const perkAt = (key: string, lvl: number) => (PERK[key] || [])[lvl] || ''
 const SHORT_FAC: Record<string, string> = {
