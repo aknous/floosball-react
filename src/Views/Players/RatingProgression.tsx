@@ -14,9 +14,11 @@ export interface RatingPoint { season: number; rating: number }
 const RatingProgression: React.FC<{
   history: RatingPoint[]
   teamColor: string
-  ceiling?: number | null
-  expected?: number | null
-}> = ({ history, teamColor, ceiling, expected }) => {
+  /** The projected range (owner, 2026-11-02): wide for a new prospect, one number once the
+   *  player's talent is known. */
+  low?: number | null
+  high?: number | null
+}> = ({ history, teamColor, low, high }) => {
   const PAD_LEFT = 36
   const PAD_RIGHT = 16
   const PAD_TOP = 20
@@ -72,29 +74,22 @@ const RatingProgression: React.FC<{
         </g>
       ))}
 
-      {/* Where the player naturally develops to, when that is still ahead of him. */}
-      {expected != null && expected > 0 && expected > currentRating && (() => {
-        const ey = yFor(expected)
-        const collides = ceiling != null && ceiling > 0 && Math.abs(yFor(ceiling) - ey) < 12
-        const labelY = ey < PAD_TOP + 14 ? ey + 14 : ey + (collides ? 13 : -5)
+      {/* Where the player is projected to settle, when that is still ahead of him: a band
+          while his talent is still partly unknown, a line once it is one number. */}
+      {high != null && high > currentRating && (() => {
+        const lo = Math.max(low ?? high, currentRating)
+        const top = yFor(high)
+        const bottom = yFor(lo)
+        const text = `Projected ${Math.round(lo) === Math.round(high) ? Math.round(high) : `${Math.round(lo)}-${Math.round(high)}`}`
+        const labelY = top < PAD_TOP + 14 ? top + 14 : top - 5
         return (
           <g>
-            <line x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT} y1={ey} y2={ey} stroke="#38bdf8" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.8} />
-            <rect x={PAD_LEFT + 2} y={labelY - 10} width={74} height={13} fill={BG.panel} opacity={0.9} />
-            <text x={PAD_LEFT + 6} y={labelY} fontSize="11" fill="#38bdf8" fontWeight={700}>Expected {Math.round(expected)}</text>
-          </g>
-        )
-      })()}
-
-      {/* The top he can reach at full potential. */}
-      {ceiling != null && ceiling > 0 && (() => {
-        const cy = yFor(ceiling)
-        const labelY = cy < PAD_TOP + 14 ? cy + 14 : cy - 5
-        return (
-          <g>
-            <line x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT} y1={cy} y2={cy} stroke="#facc15" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
-            <rect x={PAD_LEFT + 2} y={labelY - 10} width={68} height={13} fill={BG.panel} opacity={0.9} />
-            <text x={PAD_LEFT + 6} y={labelY} fontSize="11" fill="#facc15" fontWeight={700}>Ceiling {Math.round(ceiling)}</text>
+            {bottom - top > 1 && (
+              <rect x={PAD_LEFT} y={top} width={plotW} height={bottom - top} fill="#facc15" opacity={0.1} />
+            )}
+            <line x1={PAD_LEFT} x2={WIDTH - PAD_RIGHT} y1={top} y2={top} stroke="#facc15" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.85} />
+            <rect x={PAD_LEFT + 2} y={labelY - 10} width={text.length * 6.6 + 8} height={13} fill={BG.panel} opacity={0.9} />
+            <text x={PAD_LEFT + 6} y={labelY} fontSize="11" fill="#facc15" fontWeight={700}>{text}</text>
           </g>
         )
       })()}
