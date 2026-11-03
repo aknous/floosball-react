@@ -23,6 +23,7 @@ import SectionRail, { RailSection } from './SectionRail'
 import Potential, { potentialTooltip } from '@/Components/Potential'
 import { GAUGE_TRACK, barWidth, gaugeColor } from '@/Components/Gauge'
 import { useTeamProspects, TeamProspect } from '@/hooks/useTeamProspects'
+import { useTeamTrades, PickStock, TradeHistory } from './TeamTrades'
 import { quipAt } from '@/Views/FrontOffice/FacilitiesSection'
 import { fmtFramesWon } from '@/utils/framesWon'
 import { FloobitSymbol } from '@/Components/Icons/Floobit'
@@ -953,6 +954,7 @@ export default function TeamPage() {
   }, [schedule])
 
   const pipeline = useTeamProspects(team?.id ?? null)
+  const tradeDesk = useTeamTrades(team?.id ?? null)
 
   // Memoised: the rail keys effects off this array, so a fresh one each render
   // would tear down and rebuild the observer continuously.
@@ -960,8 +962,9 @@ export default function TeamPage() {
     { id: 'tp-overview', label: 'Overview' },
     { id: 'tp-squad', label: 'Squad' },
     { id: 'tp-record', label: 'Record' },
+    ...(tradeDesk.available ? [{ id: 'tp-trades', label: 'Trades' }] : []),
     ...(isMyTeam ? [{ id: 'tp-frontoffice', label: 'Front office' }] : []),
-  ], [isMyTeam])
+  ], [isMyTeam, tradeDesk.available])
 
   // The strip stays up even while the team is loading or missing, so you can
   // always navigate on to another team rather than hitting a dead end.
@@ -1627,6 +1630,33 @@ export default function TeamPage() {
           )}
         </div>
       </div>
+
+      {/* ── TRADES AND PICKS ───────────────────────────────────────────────
+          Pick stock beside the trade ledger. Shown for every team, not just
+          your own: a trade is public, and where a rival picks is half the
+          reason to look at its page. Hidden while trading is off, when the API
+          serves neither. */}
+      {tradeDesk.available && (
+        <div id="tp-trades" className="tp-section" style={{
+          maxWidth: PAGE_MAX, margin: '0 auto', padding: `30px ${pad}px 0`,
+          display: 'grid',
+          gridTemplateColumns: stacked ? 'minmax(0,1fr)' : `minmax(0,${RAIL}px) minmax(0,1fr)`,
+          gap: '36px', alignItems: 'start',
+        }}>
+          <div style={{ minWidth: 0 }}>
+            <SectionHead label="Draft picks" note="Upcoming rookie drafts" style={{ marginBottom: '10px' }} />
+            {!tradeDesk.loading && <PickStock drafts={tradeDesk.drafts} />}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <SectionHead
+              label="Trade history"
+              note={tradeDesk.trades.length ? `${tradeDesk.trades.length} trade${tradeDesk.trades.length === 1 ? '' : 's'}` : undefined}
+              style={{ marginBottom: '10px' }}
+            />
+            {!tradeDesk.loading && <TradeHistory trades={tradeDesk.trades} narrow={narrowPlates} />}
+          </div>
+        </div>
+      )}
 
       {/* ── FRONT OFFICE ───────────────────────────────────────────────────
           The seam between the public page and your own controls, drawn on
