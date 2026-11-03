@@ -18,6 +18,10 @@ export interface VoteAsset {
   detail?: string
   rating?: number
   originalTeam?: { id: number; name: string } | null
+  /** Seasons left on a player's contract, now. */
+  termRemaining?: number
+  /** A prospect's public projected range, now. */
+  projection?: { low: number; high: number }
 }
 
 export interface TeamTally {
