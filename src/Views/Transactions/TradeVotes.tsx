@@ -89,8 +89,6 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: st
       const lo = Math.round(c.low), hi = Math.round(c.high)
       notes.push(`The ${ordinal(c.rank)} best prospect in this class projects to `
         + (lo === hi ? `${lo}.` : `${lo}-${hi}.`))
-    } else if (o && o.draftsOut > 0) {
-      notes.push('That draft class does not exist yet.')
     }
     if (o?.typical) {
       const t = o.typical
@@ -120,8 +118,10 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: st
   if (a.rating) bits.push(`Rated ${Math.round(a.rating)}`)
   if (a.careerStage) bits.push(STAGE[a.careerStage])
   if (a.termRemaining != null) {
-    bits.push(a.termRemaining <= 1 ? 'contract ends this season'
-      : `${a.termRemaining} seasons left`)
+    // The offseason belongs to the season that just ended: contracts have already ticked
+    // down, so one season left means the coming one, not the season just played.
+    if (a.termRemaining <= 1) bits.push(phase === 'in_season' ? 'contract ends this season' : 'one season left')
+    else bits.push(`${a.termRemaining} seasons left`)
   }
   if (a.projection) {
     const lo = Math.round(a.projection.low), hi = Math.round(a.projection.high)
