@@ -495,9 +495,9 @@ const TradeVotes: React.FC<{
     <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
         <h2 style={{ ...font(800, 15, 1, '0.02em'), color: TEXT.strong, margin: 0, whiteSpace: 'nowrap' }}>
-          Trade votes
+          Open votes
         </h2>
-        {open.length > 0 && <span style={{ ...font(600, 13), ...TABULAR, color: TEXT.muted }}>{open.length} open</span>}
+        <span style={{ ...font(600, 13), ...TABULAR, color: TEXT.muted }}>{open.length}</span>
         <span style={{ flex: 1, height: '2px', background: BORDER.hairline }} />
         <button onClick={() => howRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })} style={{
           ...font(600, 13), fontFamily: FONT, color: ACCENT.info, background: 'none', border: 'none',
