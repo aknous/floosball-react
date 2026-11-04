@@ -31,6 +31,10 @@ export interface VoteAsset {
   windowLeft?: number
   /** What a pick is likely to fetch (open votes only). */
   outlook?: PickOutlook
+  /** What the piece can be expected to be, as a rating: shown as stars. */
+  expectedRating?: number
+  /** A player's or prospect's position. */
+  position?: string
 }
 
 /** What a pick around this slot typically becomes, on the current prospect model. */
@@ -55,6 +59,8 @@ export interface PickOutlook {
   expectedSlot?: number
   /** What a pick around that slot typically becomes. */
   typical?: PickTypical
+  /** The rating the pick can be expected to become (class prospect, else typical). */
+  expected?: number
 }
 
 export interface TeamTally {

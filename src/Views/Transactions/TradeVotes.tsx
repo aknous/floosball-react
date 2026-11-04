@@ -41,16 +41,17 @@ function pickLabel(a: VoteAsset): string {
 
 function assetTag(a: VoteAsset): string {
   if (a.kind === 'pick') return 'PICK'
+  if (a.position && POS_RE.test(a.position)) return a.position
   if (a.kind === 'prospect') return 'PROS'
   return a.detail && POS_RE.test(a.detail) ? a.detail : ''
 }
 
 const STAGE: Record<NonNullable<VoteAsset['careerStage']>, string> = {
-  developing: 'still developing',
-  prime: 'in their prime',
-  aging: 'past their peak',
-  near_retirement: 'near retirement',
-  retiring: 'retiring this offseason',
+  developing: 'Still developing',
+  prime: 'In their prime',
+  aging: 'Past their peak',
+  near_retirement: 'Near retirement',
+  retiring: 'Retiring this offseason',
 }
 
 function ordinal(n: number): string {
@@ -90,7 +91,9 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: st
       notes.push(`The ${ordinal(c.rank)} best prospect in this class projects to `
         + (lo === hi ? `${lo}.` : `${lo}-${hi}.`))
     }
-    if (o?.typical) {
+    // The class prospect is the better read where the class exists; the generic line
+    // would contradict the stars beside it.
+    if (o?.typical && !o.classProspect) {
       const t = o.typical
       const head = `Picks ${ordinal(t.band[0])}-${ordinal(t.band[1])} typically become `
         + `${t.medianBest}-rated players`
@@ -101,27 +104,28 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: st
     return { detail: [whose, at].filter(Boolean).join(', '), notes }
   }
   if (a.kind === 'prospect') {
-    let detail = 'Prospect'
     if (a.projection) {
       const lo = Math.round(a.projection.low), hi = Math.round(a.projection.high)
-      detail = lo === hi ? `Prospect, projected ${lo}` : `Prospect, projected ${lo}-${hi}`
-    } else if (a.rating) {
-      detail = `Prospect, rated ${Math.round(a.rating)}`
+      notes.push(lo === hi ? `Projected to settle at ${lo}.` : `Projected to settle at ${lo}-${hi}.`)
     }
     if (a.windowLeft != null) {
       notes.push(a.windowLeft <= 1 ? 'Last season to make the roster before release.'
         : `${a.windowLeft} seasons left to make the roster before release.`)
     }
-    return { detail, notes }
+    return { detail: 'Prospect', notes }
   }
   const bits: string[] = []
   if (a.rating) bits.push(`Rated ${Math.round(a.rating)}`)
-  if (a.careerStage) bits.push(STAGE[a.careerStage])
   if (a.termRemaining != null) {
     // The offseason belongs to the season that just ended: contracts have already ticked
     // down, so one season left means the coming one, not the season just played.
     if (a.termRemaining <= 1) bits.push(phase === 'in_season' ? 'contract ends this season' : 'one season left')
     else bits.push(`${a.termRemaining} seasons left`)
+  }
+  if (a.careerStage) {
+    const n = a.seasonsPlayed ?? 0
+    notes.push(n > 0 ? `${STAGE[a.careerStage]}, ${n} season${n === 1 ? '' : 's'} in the league.`
+      : `${STAGE[a.careerStage]}.`)
   }
   if (a.projection) {
     const lo = Math.round(a.projection.low), hi = Math.round(a.projection.high)
@@ -131,35 +135,45 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: st
     notes.push(next === now ? `Expected to hold at ${now} next season.`
       : `Expected ${next} next season.`)
   }
-  if (a.seasonsPlayed != null && a.seasonsPlayed > 0) {
-    notes.push(`${a.seasonsPlayed} season${a.seasonsPlayed === 1 ? '' : 's'} in the league.`)
-  }
   return { detail: bits.join(', '), notes }
 }
 
-function Asset({ a, p }: { a: VoteAsset; p: TradeProposal }) {
+/** What the star column means for this piece, in words. */
+function expectedTip(a: VoteAsset): string {
+  const n = calcStars(a.expectedRating ?? 0)
+  const what = `a ${n}-star player`
+  if (a.kind === 'pick') {
+    return a.outlook?.classProspect
+      ? `Expected to be ${what}: the prospect ranked at this slot in the class.`
+      : `Expected to be ${what}: the prospect usually projected at this slot.`
+  }
+  if (a.kind === 'prospect' || a.projection) return `Expected to become ${what} once developed.`
+  return `Expected to be ${what} next season.`
+}
+
+function Asset({ a, p, showNotes }: { a: VoteAsset; p: TradeProposal; showNotes: boolean }) {
   const { detail, notes } = assetLines(a, p)
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
       <span style={{ ...font(800, 11, 1, '0.03em'), color: TEXT.muted, minWidth: '36px', paddingTop: '3px' }}>
         {assetTag(a)}
       </span>
-      <span style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {a.kind === 'pick' || a.id == null ? (
-            <span style={{ ...font(650, 14), color: TEXT.strong }}>{pickLabel(a)}</span>
-          ) : (
-            <PlayerLink playerId={a.id} playerName={a.name} style={{ ...font(650, 14), color: TEXT.strong }} />
-          )}
-          {a.kind === 'player' && a.rating != null && a.rating > 0 && (
-            <Stars stars={calcStars(a.rating)} size={11} />
-          )}
-        </span>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, flex: 1 }}>
+        {a.kind === 'pick' || a.id == null ? (
+          <span style={{ ...font(650, 14), color: TEXT.strong }}>{pickLabel(a)}</span>
+        ) : (
+          <PlayerLink playerId={a.id} playerName={a.name} style={{ ...font(650, 14), color: TEXT.strong }} />
+        )}
         {detail && <span style={{ ...font(400, 12), color: TEXT.secondary }}>{detail}</span>}
-        {notes.map((n, i) => (
+        {showNotes && notes.map((n, i) => (
           <span key={i} style={{ ...font(400, 12, 1.4), color: TEXT.muted }}>{n}</span>
         ))}
       </span>
+      {a.expectedRating != null && a.expectedRating > 0 && (
+        <HoverTooltip text={expectedTip(a)} style={{ flexShrink: 0 }}>
+          <Stars stars={calcStars(a.expectedRating)} size={16} />
+        </HoverTooltip>
+      )}
     </div>
   )
 }
@@ -169,24 +183,30 @@ function Side({ team, gives, why, p, isMobile, last }: {
   p: TradeProposal; isMobile: boolean; last?: boolean
 }) {
   const [showWhy, setShowWhy] = useState(false)
+  const hasNotes = gives.some(a => assetLines(a, p).notes.length > 0)
   return (
     <div style={{
       padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0,
       ...(last ? {} : isMobile ? { borderBottom: `1px solid ${BORDER.hairline}` }
         : { borderRight: `1px solid ${BORDER.hairline}` }),
     }}>
-      <div style={{ ...font(700, 12, 1, '0.04em'), color: TEXT.muted }}>
-        {(team?.name ?? 'This team').toUpperCase()} SEND
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', ...font(700, 12, 1, '0.04em'), color: TEXT.muted }}>
+        <span>{(team?.name ?? 'This team').toUpperCase()} SEND</span>
+        {gives.some(a => (a.expectedRating ?? 0) > 0) && (
+          <HoverTooltip text="What each piece can be expected to be: a player's rating next season, a prospect's once developed, and for a pick the prospect projected at that slot.">
+            <span>EXPECTED</span>
+          </HoverTooltip>
+        )}
       </div>
-      {gives.length ? gives.map((a, i) => <Asset key={`${a.kind}${a.id}${i}`} a={a} p={p} />)
+      {gives.length ? gives.map((a, i) => <Asset key={`${a.kind}${a.id}${i}`} a={a} p={p} showNotes={showWhy} />)
         : <div style={{ ...font(400, 13), color: TEXT.muted }}>Nothing</div>}
-      {why && (
+      {(why || hasNotes) && (
         <>
           <button onClick={() => setShowWhy(v => !v)} aria-expanded={showWhy} style={{
             ...font(600, 12), fontFamily: FONT, color: ACCENT.info, background: 'none', border: 'none',
             padding: 0, cursor: 'pointer', alignSelf: 'flex-start',
           }}>{showWhy ? 'Hide why' : 'Why?'}</button>
-          {showWhy && <p style={{ ...font(400, 13, 1.5), color: TEXT.secondary, margin: 0 }}>{why}</p>}
+          {showWhy && why && <p style={{ ...font(400, 13, 1.5), color: TEXT.secondary, margin: 0 }}>{why}</p>}
         </>
       )}
     </div>
