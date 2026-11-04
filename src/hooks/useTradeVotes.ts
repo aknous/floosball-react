@@ -20,8 +20,41 @@ export interface VoteAsset {
   originalTeam?: { id: number; name: string } | null
   /** Seasons left on a player's contract, now. */
   termRemaining?: number
-  /** A prospect's public projected range, now. */
+  /** A prospect's (or a developing player's) public projected range, now. */
   projection?: { low: number; high: number }
+  /** A roster player's career stage, as on the profile. */
+  careerStage?: 'developing' | 'prime' | 'aging' | 'near_retirement' | 'retiring'
+  seasonsPlayed?: number
+  /** The rating a roster player is expected to carry next season. */
+  nextSeason?: number
+  /** A prospect's seasons left to make the roster before release. */
+  windowLeft?: number
+  /** What a pick is likely to fetch (open votes only). */
+  outlook?: PickOutlook
+}
+
+/** What a pick around this slot typically becomes, on the current prospect model. */
+export interface PickTypical {
+  band: [number, number]
+  /** Median best rating reached within five seasons. */
+  medianBest: number
+  threeStarShare: number
+  fourStarShare: number
+}
+
+export interface PickOutlook {
+  draftSeason: number
+  /** 0 for the upcoming draft. */
+  draftsOut: number
+  /** Upcoming draft: the original team's place in the draft order. */
+  slot?: number
+  slotFinal?: boolean
+  /** Upcoming draft: the class prospect at that rank by the public consensus. */
+  classProspect?: { rank: number; classSize: number; expected: number; low: number; high: number }
+  /** A later draft: where the pick is expected to land. */
+  expectedSlot?: number
+  /** What a pick around that slot typically becomes. */
+  typical?: PickTypical
 }
 
 export interface TeamTally {

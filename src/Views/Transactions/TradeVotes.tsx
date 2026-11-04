@@ -45,38 +45,103 @@ function assetTag(a: VoteAsset): string {
   return a.detail && POS_RE.test(a.detail) ? a.detail : ''
 }
 
-function assetDetail(a: VoteAsset, p: TradeProposal): string {
+const STAGE: Record<NonNullable<VoteAsset['careerStage']>, string> = {
+  developing: 'still developing',
+  prime: 'in their prime',
+  aging: 'past their peak',
+  near_retirement: 'near retirement',
+  retiring: 'retiring this offseason',
+}
+
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100
+  return n + (s[(v - 20) % 10] || s[v] || s[0])
+}
+
+/** A share as a voter reads it; the ends are a model, not a promise. */
+function share(x: number, lower = false): string {
+  if (x >= 0.985) return lower ? 'nearly all' : 'Nearly all'
+  if (x <= 0.015) return lower ? 'almost none' : 'Almost none'
+  return `${Math.round(x * 100)}%`
+}
+
+/** The asset's main line, then notes a voter needs to judge it. */
+function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: string[] } {
   const phase = p.phase
+  const notes: string[] = []
   if (a.kind === 'pick') {
-    // Only the upcoming draft (this trade's own season) has a slot worth showing. A future
-    // pick's "slot" is just where that team sits today, which says nothing about that draft.
-    const pickSeason = Number(a.name.match(/^S(\d+) /)?.[1])
-    const slot = pickSeason === p.season ? a.detail?.match(/slot (\d+)/)?.[1] : undefined
+    const o = a.outlook
     const whose = a.originalTeam ? `${a.originalTeam.name} pick` : ''
-    const at = slot ? `${phase === 'in_season' ? 'projected ' : ''}#${slot}` : ''
-    return [whose, at].filter(Boolean).join(', ')
+    let at = ''
+    if (o?.slot != null) {
+      at = `${o.slotFinal ? '' : 'projected '}#${o.slot}`
+    } else if (o?.expectedSlot != null) {
+      at = `expected around #${o.expectedSlot}, ${o.draftsOut === 1 ? 'next' : `${o.draftsOut} drafts out`}`
+    } else {
+      // Only the upcoming draft (this trade's own season) has a slot worth showing. A future
+      // pick's "slot" is just where that team sits today, which says nothing about that draft.
+      const pickSeason = Number(a.name.match(/^S(\d+) /)?.[1])
+      const slot = pickSeason === p.season ? a.detail?.match(/slot (\d+)/)?.[1] : undefined
+      if (slot) at = `${phase === 'in_season' ? 'projected ' : ''}#${slot}`
+    }
+    if (o?.classProspect) {
+      const c = o.classProspect
+      const lo = Math.round(c.low), hi = Math.round(c.high)
+      notes.push(`The ${ordinal(c.rank)} best prospect in this class projects to `
+        + (lo === hi ? `${lo}.` : `${lo}-${hi}.`))
+    } else if (o && o.draftsOut > 0) {
+      notes.push('That draft class does not exist yet.')
+    }
+    if (o?.typical) {
+      const t = o.typical
+      const head = `Picks ${ordinal(t.band[0])}-${ordinal(t.band[1])} typically become `
+        + `${t.medianBest}-rated players`
+      notes.push(t.threeStarShare >= 0.985
+        ? `${head}, and ${share(t.fourStarShare, true)} reach 4 stars.`
+        : `${head}. ${share(t.threeStarShare)} reach 3 stars and ${share(t.fourStarShare, true)} reach 4.`)
+    }
+    return { detail: [whose, at].filter(Boolean).join(', '), notes }
   }
-  if (a.kind === 'prospect' || a.projection) {
+  if (a.kind === 'prospect') {
+    let detail = 'Prospect'
     if (a.projection) {
       const lo = Math.round(a.projection.low), hi = Math.round(a.projection.high)
-      return lo === hi ? `Prospect, projected ${lo}` : `Prospect, projected ${lo}-${hi}`
+      detail = lo === hi ? `Prospect, projected ${lo}` : `Prospect, projected ${lo}-${hi}`
+    } else if (a.rating) {
+      detail = `Prospect, rated ${Math.round(a.rating)}`
     }
-    return a.rating ? `Prospect, rated ${Math.round(a.rating)}` : 'Prospect'
+    if (a.windowLeft != null) {
+      notes.push(a.windowLeft <= 1 ? 'Last season to make the roster before release.'
+        : `${a.windowLeft} seasons left to make the roster before release.`)
+    }
+    return { detail, notes }
   }
   const bits: string[] = []
   if (a.rating) bits.push(`Rated ${Math.round(a.rating)}`)
+  if (a.careerStage) bits.push(STAGE[a.careerStage])
   if (a.termRemaining != null) {
     bits.push(a.termRemaining <= 1 ? 'contract ends this season'
       : `${a.termRemaining} seasons left`)
   }
-  return bits.join(', ')
+  if (a.projection) {
+    const lo = Math.round(a.projection.low), hi = Math.round(a.projection.high)
+    notes.push(`Projected to settle at ${lo}-${hi}.`)
+  } else if (a.nextSeason != null && a.rating && a.careerStage !== 'retiring') {
+    const next = Math.round(a.nextSeason), now = Math.round(a.rating)
+    notes.push(next === now ? `Expected to hold at ${now} next season.`
+      : `Expected ${next} next season.`)
+  }
+  if (a.seasonsPlayed != null && a.seasonsPlayed > 0) {
+    notes.push(`${a.seasonsPlayed} season${a.seasonsPlayed === 1 ? '' : 's'} in the league.`)
+  }
+  return { detail: bits.join(', '), notes }
 }
 
 function Asset({ a, p }: { a: VoteAsset; p: TradeProposal }) {
-  const detail = assetDetail(a, p)
+  const { detail, notes } = assetLines(a, p)
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-      <span style={{ ...font(800, 11, 1, '0.03em'), color: TEXT.muted, minWidth: '36px' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+      <span style={{ ...font(800, 11, 1, '0.03em'), color: TEXT.muted, minWidth: '36px', paddingTop: '3px' }}>
         {assetTag(a)}
       </span>
       <span style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
@@ -90,7 +155,10 @@ function Asset({ a, p }: { a: VoteAsset; p: TradeProposal }) {
             <Stars stars={calcStars(a.rating)} size={11} />
           )}
         </span>
-        {detail && <span style={{ ...font(400, 12), color: TEXT.muted }}>{detail}</span>}
+        {detail && <span style={{ ...font(400, 12), color: TEXT.secondary }}>{detail}</span>}
+        {notes.map((n, i) => (
+          <span key={i} style={{ ...font(400, 12, 1.4), color: TEXT.muted }}>{n}</span>
+        ))}
       </span>
     </div>
   )
