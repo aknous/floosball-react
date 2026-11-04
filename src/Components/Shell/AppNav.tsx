@@ -82,13 +82,6 @@ const LEAGUE_ITEMS: NavEntry[] = [
   },
 ]
 
-// Trade votes have their own page (owner, 2026-11-04). Shown only while trading and its
-// votes are on; a check in a box, since fans approve or reject each trade.
-const TRADE_VOTES_ITEM: NavEntry = {
-  key: 'tradevotes', label: 'Trade Votes', path: '/trade-votes',
-  icon: LINE_ICON(['M5 3h14v18H5z', 'M8.5 12l2.5 2.5L16 9.5']),
-}
-
 const YOURS_ITEMS: NavEntry[] = [
   { key: 'team', label: 'Your team', path: '/front-office', icon: ICON('M4 2h12v16h-4v-4h-4v4H4V2z') },
   { key: 'pickem', label: 'Prognostications', path: '/prognostications', icon: ICON('M2 12l4-6 4 4 4-7 4 9v4H2v-4z') },
@@ -192,7 +185,7 @@ const AppNav: React.FC = () => {
   const { games } = useGames()
   const { seasonState } = useFloosball()
   const tradeVotes = useTradeVotes()
-  const votesWaiting = tradeVotes.open.filter(p => p.myVote == null).length
+  const votesWaiting = tradeVotes.enabled ? tradeVotes.open.filter(p => p.myVote == null).length : 0
 
   const [awardsOpen, setAwardsOpen] = useState(false)
   useEffect(() => {
@@ -316,7 +309,6 @@ const AppNav: React.FC = () => {
   const baseLeagueItems = LEAGUE_ITEMS.filter(i => i.key !== 'transactions' || seasonState.transactionsAvailable)
   const leagueItems = [
     ...baseLeagueItems,
-    ...(tradeVotes.enabled ? [TRADE_VOTES_ITEM] : []),
     ...(inPlayoffs ? [BRACKET_ITEM] : []),
     ...(isOffseason ? [OFFSEASON_ITEM] : []),
   ]
@@ -332,9 +324,9 @@ const AppNav: React.FC = () => {
     let trailing: React.ReactNode = null
     if (item.key === 'games' && liveGames.length > 0) trailing = <AmbientCount value={liveGames.length} />
     else if (item.key === 'achievements' && unclaimedCount > 0) trailing = <NotificationDot color={ACCENT.warning} count={unclaimedCount} />
-    // Open trade votes this reader has not cast yet: a queue you empty by voting, so it
-    // takes the dot and a count, like Achievements.
-    else if (item.key === 'tradevotes' && votesWaiting > 0) trailing = <NotificationDot color={ACCENT.warning} count={votesWaiting} />
+    // Open trade votes this reader has not cast yet (the Trade votes tab on Transactions):
+    // a queue you empty by voting, so it takes the dot and a count, like Achievements.
+    else if (item.key === 'transactions' && votesWaiting > 0) trailing = <NotificationDot color={ACCENT.warning} count={votesWaiting} />
     // Gold, matching Achievements: on this nav a gold dot means "something is waiting for
     // you to collect it", whichever tab it is on.
     else if (item.key === 'team' && teamHasAction) trailing = <NotificationDot color={ACCENT.warning} />

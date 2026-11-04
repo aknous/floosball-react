@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, TeamBlob, PoolFreeAgent } from '@/hooks/useTransactions'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
@@ -8,6 +8,8 @@ import PlayerLink from '@/Components/PlayerLink'
 import Potential, { potentialTooltip } from '@/Components/Potential'
 import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { useTradeVotes } from '@/hooks/useTradeVotes'
+import TradeVotes from './TradeVotes'
 
 /**
  * The six roster positions, in roster order rather than alphabetical, because that is
@@ -176,6 +178,12 @@ const MOVE_KIND: Record<string, { label: string; color: string }> = {
  * alone runs to 150 rows on a mature league; laid out flat, the dashboard becomes a document
  * you scroll for a minute, which is the thing it exists not to be. Bounded panes keep
  * every region on screen at once, which is the whole argument for dropping the tabs.
+ *
+ * ⚠️ THE ONE TAB IS TRADE VOTES (owner, 2026-11-04). It is a different job from the desk
+ * (voting on a queue rather than reading the league), and on top of the page it pushed the
+ * draft board below the fold. Shown only while trading and its votes are on; it carries a
+ * gold count of open votes the reader has not cast, as does the Transactions nav entry.
+ * `?view=votes` opens it.
  */
 const TransactionsPage: React.FC = () => {
   const { user } = useAuth()
@@ -185,6 +193,16 @@ const TransactionsPage: React.FC = () => {
     loading, error, season, week,
     draftOrder, draftOrderFinal, draftPlayoffSlotsFrom, prospects, expiring, moves, showPool, freeAgentPool,
   } = useTransactions()
+  const tradeVotes = useTradeVotes()
+  const votesWaiting = tradeVotes.open.filter(p => p.myVote == null).length
+  const [params, setParams] = useSearchParams()
+  const view: 'desk' | 'votes' = tradeVotes.enabled && params.get('view') === 'votes' ? 'votes' : 'desk'
+  const setView = (v: 'desk' | 'votes') => {
+    const next = new URLSearchParams(params)
+    if (v === 'votes') next.set('view', 'votes')
+    else next.delete('view')
+    setParams(next, { replace: true })
+  }
 
   const [classPos, setClassPos] = useState<PositionFilter>('ALL')
   const [contractPos, setContractPos] = useState<PositionFilter>('ALL')
@@ -314,10 +332,45 @@ const TransactionsPage: React.FC = () => {
         </h1>
         {!isMobile && <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />}
         <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted }}>Season {season}, Week {week}</span>
+        {tradeVotes.enabled && (
+          <div style={{ display: 'flex', marginLeft: isMobile ? 0 : 'auto', background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
+            {([['desk', 'Front office'], ['votes', 'Trade votes']] as const).map(([key, label], i) => {
+              const active = view === key
+              return (
+                <button key={key} onClick={() => setView(key)} style={{
+                  display: 'flex', alignItems: 'center', gap: '7px',
+                  ...font(active ? 800 : 500, 11, 1, '0.08em'), fontFamily: FONT, textTransform: 'uppercase',
+                  color: active ? BG.shell : TEXT.muted, background: active ? TEXT.secondary : 'transparent',
+                  border: 'none', borderLeft: i > 0 ? `1px solid ${BORDER.hairline}` : 'none',
+                  padding: '8px 13px', cursor: 'pointer',
+                }}>
+                  {label}
+                  {key === 'votes' && votesWaiting > 0 && (
+                    <span style={{
+                      ...font(800, 10), ...TABULAR, color: BG.shell, background: ACCENT.warning,
+                      padding: '2px 5px', minWidth: '16px', textAlign: 'center',
+                    }}>{votesWaiting}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <div style={{ padding: isMobile ? '14px 10px 30px' : '18px 28px 40px', fontFamily: FONT }}>
-        {loading ? (
+        {view === 'votes' ? (
+          tradeVotes.open.length > 0 || tradeVotes.closed.length > 0 ? (
+            <TradeVotes open={tradeVotes.open} closed={tradeVotes.closed} myTeamId={myTeamId}
+              signedIn={!!user} voting={tradeVotes.voting} voteError={tradeVotes.voteError}
+              onVote={tradeVotes.vote} />
+          ) : (
+            <div style={{
+              background: BG.panel, border: `1px solid ${BORDER.hairline}`,
+              padding: '40px', textAlign: 'center', ...font(400, 13), color: TEXT.muted,
+            }}>No trades are waiting on a vote.</div>
+          )
+        ) : loading ? (
           <div style={{
             background: BG.panel, border: `1px solid ${BORDER.hairline}`,
             padding: '40px', textAlign: 'center', ...font(400, 13), color: TEXT.muted,
@@ -329,8 +382,6 @@ const TransactionsPage: React.FC = () => {
           }}>{error}</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '22px' : '28px' }}>
-
-            {/* Trade votes have their own page (`TradeVotesPage`, owner 2026-11-04). */}
 
             {/* THE BOARD */}
             <div style={pair}>
