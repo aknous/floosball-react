@@ -17,6 +17,7 @@ import {
 } from './playerPieces'
 import { formatTdIntRatio } from '@/utils/tdIntRatio'
 import { Projection, ProjectionDetail, hasRange, projectionText } from '@/Components/Potential'
+import ScoutingReport, { ScoutingReportData } from '@/Components/ScoutingReport'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -139,6 +140,8 @@ interface PlayerData {
   projectionLow?: number | null
   projectionHigh?: number | null
   projectionDetail?: ProjectionDetail | null
+  /** Prospects only: where they project to stand against the starters at their position. */
+  scoutingReport?: ScoutingReportData | null
   rank: string
   number: number
   championships: any[]
@@ -458,7 +461,7 @@ const PlayerPage: React.FC = () => {
   const [standing, setStanding] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const [attrTab, setAttrTab] = useState<'attributes' | 'progression'>('attributes')
+  const [attrTab, setAttrTab] = useState<'attributes' | 'progression' | 'scouting'>('attributes')
   const [statsSide, setStatsSide] = useState<'offense' | 'defense' | 'cards'>('offense')
 
   const narrow = useIsMobile(1100)
@@ -775,6 +778,9 @@ const PlayerPage: React.FC = () => {
         {ratingHistory.length > 0 && (
           <PanelTab label="PROGRESSION" active={attrTab === 'progression'} onClick={() => setAttrTab('progression')} />
         )}
+        {player.scoutingReport && (
+          <PanelTab label="SCOUTING REPORT" active={attrTab === 'scouting'} onClick={() => setAttrTab('scouting')} />
+        )}
       </div>
       {attrTab === 'attributes' ? (
         <div style={{
@@ -799,6 +805,10 @@ const PlayerPage: React.FC = () => {
               {defAttrs.map(a => <AttrBar key={a.label} label={a.label} value={a.value} projection={a.projection} />)}
             </div>
           )}
+        </div>
+      ) : attrTab === 'scouting' && player.scoutingReport ? (
+        <div style={{ padding: '16px 18px' }}>
+          <ScoutingReport report={player.scoutingReport} narrow={veryNarrow} />
         </div>
       ) : (
         <div style={{ padding: '16px 18px' }}>

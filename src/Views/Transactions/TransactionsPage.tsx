@@ -10,6 +10,7 @@ import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useTradeVotes } from '@/hooks/useTradeVotes'
 import TradeVotes from './TradeVotes'
+import ScoutingReport from '@/Components/ScoutingReport'
 import { tradeAssetName, TradeAsset } from '@/Views/Teams/TeamTrades'
 
 /**
@@ -211,6 +212,13 @@ const TransactionsPage: React.FC = () => {
   const shownProspects = useMemo(
     () => (classPos === 'ALL' ? prospects : prospects.filter(p => p.position === classPos)),
     [prospects, classPos])
+  // Prospect rows opened to show their scouting report.
+  const [openReports, setOpenReports] = useState<Set<number>>(new Set())
+  const toggleReport = (id: number) => setOpenReports(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id); else next.add(id)
+    return next
+  })
   const shownExpiring = useMemo(
     () => (contractPos === 'ALL' ? expiring : expiring.filter(e => e.position === contractPos)),
     [expiring, contractPos])
@@ -443,13 +451,19 @@ const TransactionsPage: React.FC = () => {
                       <span style={{ flex: 1 }}>Prospect</span>
                       <span style={{ width: '150px' }}>Now &amp; potential</span>
                     </div>
-                    {shownProspects.map((p: Prospect) => (
-                      <div key={p.playerId} style={row}>
+                    {shownProspects.map((p: Prospect) => {
+                      const open = openReports.has(p.playerId)
+                      const report = p.scoutingReport
+                      return (
+                      <React.Fragment key={p.playerId}>
+                      <div style={{ ...row, cursor: report ? 'pointer' : undefined }}
+                        onClick={report ? () => toggleReport(p.playerId) : undefined}
+                        aria-expanded={report ? open : undefined}>
                         <span style={{ ...font(700, 12), ...TABULAR, width: '22px', color: TEXT.faint }}>
                           {prospects.indexOf(p) + 1}
                         </span>
                         <Pos>{p.position}</Pos>
-                        <span style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ flex: 1, minWidth: 0 }} onClick={e => e.stopPropagation()}>
                           <PlayerLink playerId={p.playerId} playerName={p.name}
                             style={{ ...font(600, 14), color: TEXT.body }} />
                         </span>
@@ -458,8 +472,22 @@ const TransactionsPage: React.FC = () => {
                             <Potential rating={p.rating} projection={p.projection} />
                           </span>
                         </HoverTooltip>
+                        {report && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={TEXT.muted}
+                            strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                            style={{ flexShrink: 0, transform: open ? 'none' : 'rotate(-90deg)', transition: 'transform 120ms' }}>
+                            <path d="M6 9l6 6 6-6" />
+                          </svg>
+                        )}
                       </div>
-                    ))}
+                      {open && report && (
+                        <div style={{ padding: '14px 18px 16px 46px', borderBottom: `1px solid ${BORDER.subtle}`, background: BG.shell }}>
+                          <ScoutingReport report={report} narrow={isMobile} />
+                        </div>
+                      )}
+                      </React.Fragment>
+                      )
+                    })}
                   </>
                 )}
               </Pane>

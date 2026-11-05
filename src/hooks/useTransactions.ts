@@ -1,3 +1,4 @@
+import { ScoutingReportData } from '@/Components/ScoutingReport'
 import { TradeAsset } from '@/Views/Teams/TeamTrades'
 import { Projection } from '@/Components/Potential'
 import { useState, useEffect, useCallback, useRef } from 'react'
@@ -37,6 +38,8 @@ export interface Prospect {
   tier: string | null
   /** The public projection: a range around the consensus, widest for a new prospect. */
   projection: Projection | null
+  /** Where they project to stand against the starters at their position. */
+  scoutingReport?: ScoutingReportData | null
 }
 
 export interface ExpiringPlayer {
