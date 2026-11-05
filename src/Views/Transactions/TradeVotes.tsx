@@ -78,9 +78,15 @@ function starsPhrase(lo: number, hi: number): string {
 }
 
 /** The asset's main line, then notes a voter needs to judge it. */
-function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: string[] } {
+/** One fact under a piece when Why? is open: a short label and its value (owner,
+ * 2026-11-05: the notes as stacked sentences read as clutter). */
+interface Fact { label: string; value: string }
+
+function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: Fact[] } {
   const phase = p.phase
-  const notes: string[] = []
+  const notes: Fact[] = []
+  // "a 2 to 3-star player" reads as a value without its article.
+  const stars = (lo: number, hi: number) => starsPhrase(lo, hi).replace(/^a /, '')
   if (a.kind === 'pick') {
     const o = a.outlook
     const whose = a.originalTeam ? `${a.originalTeam.name} pick` : ''
@@ -98,28 +104,29 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: st
     }
     if (o?.classProspect) {
       const c = o.classProspect
-      notes.push(`The ${ordinal(c.rank)} best prospect in this class projects as `
-        + `${starsPhrase(c.low, c.high)}.`)
+      notes.push({ label: 'This class',
+        value: `The ${ordinal(c.rank)} best prospect projects as ${starsPhrase(c.low, c.high)}` })
     }
     // The class prospect is the better read where the class exists; the generic line
     // would contradict the stars beside it.
     if (o?.typical && !o.classProspect) {
       const t = o.typical
-      const head = `Picks ${ordinal(t.band[0])}-${ordinal(t.band[1])} typically become `
-        + `${calcStars(t.medianBest)}-star players`
-      notes.push(t.threeStarShare >= 0.985
-        ? `${head}, and ${share(t.fourStarShare, true)} reach 4 stars.`
-        : `${head}. ${share(t.threeStarShare)} reach 3 stars and ${share(t.fourStarShare, true)} reach 4.`)
+      const head = `Typically ${calcStars(t.medianBest)}-star players`
+      notes.push({ label: `Picks ${ordinal(t.band[0])}-${ordinal(t.band[1])}`,
+        value: t.threeStarShare >= 0.985
+          ? `${head}, and ${share(t.fourStarShare, true)} reach 4 stars`
+          : `${head}. ${share(t.threeStarShare)} reach 3 stars and ${share(t.fourStarShare, true)} reach 4` })
     }
     return { detail: [whose, at].filter(Boolean).join(', '), notes }
   }
   if (a.kind === 'prospect') {
     if (a.projection) {
-      notes.push(`Projected to become ${starsPhrase(a.projection.low, a.projection.high)}.`)
+      notes.push({ label: 'Projected', value: stars(a.projection.low, a.projection.high) })
     }
     if (a.windowLeft != null) {
-      notes.push(a.windowLeft <= 1 ? 'Last season to make the roster before release.'
-        : `${a.windowLeft} seasons left to make the roster before release.`)
+      notes.push({ label: 'Roster window', value: a.windowLeft <= 1
+        ? 'Last season to make the roster before release'
+        : `${a.windowLeft} seasons left to make the roster before release` })
     }
     return { detail: 'Prospect', notes }
   }
@@ -132,16 +139,17 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: st
   }
   if (a.careerStage) {
     const n = a.seasonsPlayed ?? 0
-    notes.push(n > 0 ? `${STAGE[a.careerStage]}, ${n} season${n === 1 ? '' : 's'} in the league.`
-      : `${STAGE[a.careerStage]}.`)
+    notes.push({ label: 'Career', value: n > 0
+      ? `${STAGE[a.careerStage]}, ${n} season${n === 1 ? '' : 's'} in the league`
+      : STAGE[a.careerStage] })
   }
   if (a.projection) {
-    notes.push(`Projected to become ${starsPhrase(a.projection.low, a.projection.high)}.`)
+    notes.push({ label: 'Projected', value: stars(a.projection.low, a.projection.high) })
   } else if (a.nextSeason != null && a.rating && a.careerStage !== 'retiring') {
     // The direction, not the number (owner, 2026-11-04).
     const change = Math.round(a.nextSeason) - Math.round(a.rating)
-    notes.push(change > 0 ? 'Expected to improve next season.'
-      : change < 0 ? 'Expected to regress next season.' : 'Expected to hold steady next season.')
+    notes.push({ label: 'Next season', value: change > 0 ? 'Expected to improve'
+      : change < 0 ? 'Expected to regress' : 'Expected to hold steady' })
   }
   const detail = bits.join(', ')
   return { detail: detail ? detail[0].toUpperCase() + detail.slice(1) : '', notes }
@@ -181,9 +189,20 @@ function Asset({ a, p, showNotes }: { a: VoteAsset; p: TradeProposal; showNotes:
           <PlayerLink playerId={a.id} playerName={a.name} style={{ ...font(650, 14), color: TEXT.strong }} />
         )}
         {detail && <span style={{ ...font(400, 12), color: TEXT.secondary }}>{detail}</span>}
-        {showNotes && notes.map((n, i) => (
-          <span key={i} style={{ ...font(400, 12, 1.4), color: TEXT.muted }}>{n}</span>
-        ))}
+        {showNotes && notes.length > 0 && (
+          <span style={{
+            // A fixed label column, so values line up from piece to piece down the card.
+            display: 'grid', gridTemplateColumns: '104px minmax(0, 1fr)',
+            gap: '4px 12px', marginTop: '4px', alignItems: 'baseline',
+          }}>
+            {notes.map((n, i) => (
+              <React.Fragment key={i}>
+                <span style={{ ...font(700, 10, 1.4, '0.04em'), color: TEXT.muted, textTransform: 'uppercase' }}>{n.label}</span>
+                <span style={{ ...font(400, 12, 1.4), color: TEXT.secondary }}>{n.value}</span>
+              </React.Fragment>
+            ))}
+          </span>
+        )}
       </span>
       {a.expectedRating != null && a.expectedRating > 0 && (
         <HoverTooltip text={expectedTip(a)} style={{ flexShrink: 0 }}>
@@ -228,7 +247,15 @@ function Side({ team, gives, why, p, isMobile, last }: {
             ...font(600, 12), fontFamily: FONT, color: ACCENT.info, background: 'none', border: 'none',
             padding: 0, cursor: 'pointer', alignSelf: 'flex-start',
           }}>{showWhy ? 'Hide why' : 'Why?'}</button>
-          {showWhy && why && <p style={{ ...font(400, 13, 1.5), color: TEXT.secondary, margin: 0 }}>{why}</p>}
+          {showWhy && why && (
+            <div style={{
+              display: 'flex', flexDirection: 'column', gap: '4px',
+              borderLeft: `2px solid ${team?.color ?? BORDER.hairline}`, paddingLeft: '10px',
+            }}>
+              <span style={{ ...font(700, 10, 1, '0.04em'), color: TEXT.muted }}>WHY</span>
+              <p style={{ ...font(400, 13, 1.5), color: TEXT.secondary, margin: 0 }}>{why}</p>
+            </div>
+          )}
         </>
       )}
     </div>
