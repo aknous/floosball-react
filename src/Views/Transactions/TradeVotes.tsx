@@ -26,10 +26,10 @@ function closesText(p: TradeProposal): string {
   const ms = new Date(p.closesAt).getTime() - Date.now()
   if (isNaN(ms)) return 'Closes soon'
   if (ms <= 0) return 'Closing'
+  // Votes close within a day or two (the deadline, the rookie draft, the season start),
+  // so hours read better than "2 days" (owner).
   const mins = Math.round(ms / 60000)
-  const hours = Math.round(ms / 3600000)
-  const days = Math.round(ms / 86400000)
-  const rel = mins < 60 ? `${Math.max(1, mins)}m` : hours < 36 ? `${hours}h` : `${days} days`
+  const rel = mins < 60 ? `${Math.max(1, mins)}m` : `${Math.round(ms / 3600000)}h`
   return `Closes in ${rel}`
 }
 
