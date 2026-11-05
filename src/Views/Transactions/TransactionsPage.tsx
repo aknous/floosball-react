@@ -448,7 +448,15 @@ const TransactionsPage: React.FC = () => {
                         prospect beside a team read as that team's pick. */}
                     <div style={headRow}>
                       <span style={{ width: '22px' }}>#</span>
-                      <span style={{ flex: 1 }}>Prospect</span>
+                      <span style={{ flex: 1, display: 'inline-flex', alignItems: 'baseline', gap: '10px' }}>
+                        Prospect
+                        {/* The rows open on click, which nothing else on the page does (owner, 2026-11-05). */}
+                        {prospects.some(p => p.scoutingReport) && (
+                          <span style={{ ...font(500, 11), textTransform: 'none', color: TEXT.muted }}>
+                            Click a row for the scouting report
+                          </span>
+                        )}
+                      </span>
                       <span style={{ width: '150px' }}>Now &amp; potential</span>
                     </div>
                     {shownProspects.map((p: Prospect) => {
