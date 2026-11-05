@@ -10,7 +10,7 @@ import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useTradeVotes } from '@/hooks/useTradeVotes'
 import TradeVotes from './TradeVotes'
-import ScoutingReport from '@/Components/ScoutingReport'
+import ScoutingReport, { LeanBadge } from '@/Components/ScoutingReport'
 import { tradeAssetName, TradeAsset } from '@/Views/Teams/TeamTrades'
 
 /**
@@ -463,9 +463,13 @@ const TransactionsPage: React.FC = () => {
                           {prospects.indexOf(p) + 1}
                         </span>
                         <Pos>{p.position}</Pos>
-                        <span style={{ flex: 1, minWidth: 0 }} onClick={e => e.stopPropagation()}>
-                          <PlayerLink playerId={p.playerId} playerName={p.name}
-                            style={{ ...font(600, 14), color: TEXT.body }} />
+                        <span style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                          <span onClick={e => e.stopPropagation()}>
+                            <PlayerLink playerId={p.playerId} playerName={p.name}
+                              style={{ ...font(600, 14), color: TEXT.body }} />
+                          </span>
+                          {/* Which side of the ball they project to help most (owner, 2026-11-04). */}
+                          <LeanBadge lean={report?.lean} size={13} />
                         </span>
                         <HoverTooltip content={potentialTooltip(p.rating, p.projection)}>
                           <span style={{ width: '150px', display: 'inline-block' }}>
