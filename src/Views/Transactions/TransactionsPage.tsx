@@ -211,14 +211,6 @@ const TransactionsPage: React.FC = () => {
   const shownProspects = useMemo(
     () => (classPos === 'ALL' ? prospects : prospects.filter(p => p.position === classPos)),
     [prospects, classPos])
-  // The mock draft's prospect at each pick, and the class it leaves on the board.
-  const boardProspectBySlot = useMemo(() => {
-    const m = new Map<number, Prospect>()
-    for (const p of prospects) if (p.mockPick) m.set(p.mockPick.pick, p)
-    return m
-  }, [prospects])
-  const boardLeftOver = useMemo(
-    () => shownProspects.filter(p => !p.mockPick), [shownProspects])
   const shownExpiring = useMemo(
     () => (contractPos === 'ALL' ? expiring : expiring.filter(e => e.position === contractPos)),
     [expiring, contractPos])
@@ -394,81 +386,85 @@ const TransactionsPage: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '22px' : '28px' }}>
 
             {/* THE BOARD */}
-            {/* ⚠️ ONE TABLE WHILE THE MOCK RUNS (owner, 2026-11-04): the draft order and the
-                mock draft showed the same picks twice. Each pick's row carries the team on
-                the clock and the prospect the public mock has it taking. Once the real
-                draft starts the mock is off and the two panes come back. */}
-            {mockDraft && draftOrder.length > 0 ? (
-              <Pane title="Draft board" height={520}
-                control={<PosFilter value={classPos} onChange={setClassPos} />}>
-                {!draftOrderFinal && draftPlayoffSlotsFrom != null && draftPlayoffSlotsFrom <= draftOrder.length && (
-                  <div style={{ ...font(400, 12, 1.5), color: TEXT.muted, padding: '8px 14px' }}>
-                    Picks {draftPlayoffSlotsFrom}&ndash;{draftOrder.length} are approximate and won&rsquo;t settle until the season is over.
-                  </div>
-                )}
-                <div style={headRow}>
-                  <span style={{ width: '22px' }}>#</span>
-                  <span style={{ width: isMobile ? 'auto' : '200px', flexShrink: isMobile ? 1 : 0 }}>Team</span>
-                  <span style={{ width: '42px', textAlign: 'right' }}>Rec</span>
-                  <span style={{ flex: 1, paddingLeft: '14px' }}>Mock pick</span>
-                  <span style={{ width: '150px' }}>Now &amp; potential</span>
-                </div>
-                {draftOrder.map((d: DraftSlot) => {
-                  const picker = d.owner ?? d.originalTeam
-                  const via = d.originalTeam && picker && d.originalTeam.id !== picker.id ? d.originalTeam : null
-                  const p = boardProspectBySlot.get(d.slot) ?? null
-                  if (classPos !== 'ALL' && p?.position !== classPos) return null
-                  const isMine = !!myTeamId && picker?.id === myTeamId
-                  return (
-                    <div key={d.slot} ref={isMine ? revealOwnRow : undefined}
-                      style={{ ...row, ...mine(isMine) }}>
-                      <span style={{
-                        ...font(700, 13), ...TABULAR, width: '22px', flexShrink: 0,
-                        color: d.slot <= 3 ? ACCENT.info : TEXT.dim,
-                      }}>{d.slot}</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', minWidth: 0,
-                        width: isMobile ? 'auto' : '200px', flexShrink: isMobile ? 1 : 0 }}>
-                        <Crest team={picker} size={17} />
-                        <TeamName team={picker} mine={isMine} />
-                        {via && (
-                          <span style={{ ...font(500, 11), color: TEXT.muted, whiteSpace: 'nowrap' }}>via {via.name}</span>
-                        )}
-                      </span>
-                      <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted, width: '42px', textAlign: 'right', display: 'inline-block', flexShrink: 0 }}>
-                        {fmtRecord(d.ownerRecord ?? d.record)}
-                      </span>
-                      <span style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: '8px', paddingLeft: '14px' }}>
-                        {p ? (
-                          <>
-                            <Pos>{p.position}</Pos>
-                            <PlayerLink playerId={p.playerId} playerName={p.name}
-                              style={{ ...font(600, 14), color: TEXT.body }} />
-                          </>
-                        ) : <span style={{ ...font(400, 13), color: TEXT.faint }}>&ndash;</span>}
-                      </span>
-                      <span style={{ width: '150px', flexShrink: 0 }}>
-                        {p && (
-                          <HoverTooltip content={potentialTooltip(p.rating, p.projection)}>
-                            <span style={{ width: '150px', display: 'inline-block' }}>
-                              <Potential rating={p.rating} projection={p.projection} />
-                            </span>
-                          </HoverTooltip>
-                        )}
-                      </span>
-                    </div>
-                  )
-                })}
-                {boardLeftOver.length > 0 && (
+            <div style={pair}>
+              {/* ⚠️ NO COUNT. It is one slot per team, so it is always the size of the
+                  league and tells a reader nothing — unlike the free agents,
+                  where the number IS the news. The class keeps its count because the
+                  filter turns it into "3 of 32". */}
+              <Pane title="Rookie draft order">
+                {draftOrder.length === 0 ? emptyPane('No order yet.') : (
                   <>
-                    <div style={{ ...headRow, position: 'static' }}>
-                      <span style={{ flex: 1 }}>Left on the board</span>
+                    {/* The playoff teams' slots move with every round until the Floos Bowl. */}
+                    {!draftOrderFinal && draftPlayoffSlotsFrom != null && draftPlayoffSlotsFrom <= draftOrder.length && (
+                      <div style={{ ...font(400, 12, 1.5), color: TEXT.muted, padding: '2px 0 8px' }}>
+                        Picks {draftPlayoffSlotsFrom}&ndash;{draftOrder.length} are approximate and won&rsquo;t settle until the season is over.
+                      </div>
+                    )}
+                    <div style={headRow}>
+                      <span style={{ width: '22px' }}>#</span>
+                      <span style={{ flex: 1 }}>Team</span>
+                      <span style={{ width: '42px', textAlign: 'right' }}>Rec</span>
                     </div>
-                    {boardLeftOver.map((p: Prospect) => (
-                      <div key={p.playerId} style={row}>
-                        {/* Under the Mock pick column: past the pick, team and record. */}
-                        {!isMobile && <span style={{ width: '284px', flexShrink: 0 }} />}
-                        <span style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: '8px', paddingLeft: isMobile ? 0 : '14px' }}>
-                          <Pos>{p.position}</Pos>
+                    {draftOrder.map((d: DraftSlot) => {
+                      const team = d.originalTeam ?? d.owner
+                      const isMine = !!myTeamId && team?.id === myTeamId
+                      return (
+                        <div key={d.slot} ref={isMine ? revealOwnRow : undefined}
+                          style={{ ...row, ...mine(isMine) }}>
+                          <span style={{
+                            ...font(700, 13), ...TABULAR, width: '22px',
+                            color: d.slot <= 3 ? ACCENT.info : TEXT.dim,
+                          }}>{d.slot}</span>
+                          <Crest team={team} size={17} />
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <TeamName team={team} mine={isMine} />
+                          </span>
+                          <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted, width: '42px', textAlign: 'right', display: 'inline-block' }}>
+                            {fmtRecord(d.record ?? d.ownerRecord)}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </>
+                )}
+              </Pane>
+
+              <Pane title={mockDraft ? 'Mock draft' : 'Rookie class'} count={shownProspects.length}
+                note={classPos === 'ALL' ? undefined : `of ${prospects.length}`}
+                control={<PosFilter value={classPos} onChange={setClassPos} />}>
+                {prospects.length === 0 ? emptyPane('No class generated yet.')
+                  : shownProspects.length === 0 ? emptyPane(`No ${classPos} in this class.`) : (
+                  <>
+                    {/* A MOCK DRAFT, FROM THE PUBLIC PROJECTIONS (owner, 2026-11-04). The real
+                        draft runs the same pick rules with each team's own scouting. */}
+                    <div style={headRow}>
+                      <span style={{ width: mockDraft ? '52px' : '22px' }}>{mockDraft ? 'Pick' : '#'}</span>
+                      <span style={{ flex: 1 }}>Prospect</span>
+                      <span style={{ width: '150px' }}>Now &amp; potential</span>
+                    </div>
+                    {shownProspects.map((p: Prospect, i) => {
+                      const mp = p.mockPick
+                      const isMine = !!myTeamId && mp?.team.id === myTeamId
+                      return (
+                      <div key={p.playerId} style={{ ...row, ...mine(isMine) }}>
+                        {mockDraft ? (
+                          <span style={{ width: '52px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ ...font(700, 12), ...TABULAR, width: '20px', color: mp ? TEXT.secondary : TEXT.faint }}>
+                              {mp ? mp.pick : '\u2013'}
+                            </span>
+                            {mp && (
+                              <HoverTooltip text={`Projected to go to the ${mp.team.name} at pick ${mp.pick}.`}>
+                                <Crest team={mp.team} size={17} />
+                              </HoverTooltip>
+                            )}
+                          </span>
+                        ) : (
+                          <span style={{ ...font(700, 12), ...TABULAR, width: '22px', color: TEXT.faint }}>
+                            {i + 1}
+                          </span>
+                        )}
+                        <Pos>{p.position}</Pos>
+                        <span style={{ flex: 1, minWidth: 0 }}>
                           <PlayerLink playerId={p.playerId} playerName={p.name}
                             style={{ ...font(600, 14), color: TEXT.body }} />
                         </span>
@@ -478,106 +474,12 @@ const TransactionsPage: React.FC = () => {
                           </span>
                         </HoverTooltip>
                       </div>
-                    ))}
+                      )
+                    })}
                   </>
                 )}
               </Pane>
-            ) : (
-            <div style={pair}>
-                {/* ⚠️ NO COUNT. It is one slot per team, so it is always the size of the
-                    league and tells a reader nothing — unlike the free agents,
-                    where the number IS the news. The class keeps its count because the
-                    filter turns it into "3 of 32". */}
-                <Pane title="Rookie draft order">
-                  {draftOrder.length === 0 ? emptyPane('No order yet.') : (
-                    <>
-                      {/* The playoff teams' slots move with every round until the Floos Bowl. */}
-                      {!draftOrderFinal && draftPlayoffSlotsFrom != null && draftPlayoffSlotsFrom <= draftOrder.length && (
-                        <div style={{ ...font(400, 12, 1.5), color: TEXT.muted, padding: '2px 0 8px' }}>
-                          Picks {draftPlayoffSlotsFrom}&ndash;{draftOrder.length} are approximate and won&rsquo;t settle until the season is over.
-                        </div>
-                      )}
-                      <div style={headRow}>
-                        <span style={{ width: '22px' }}>#</span>
-                        <span style={{ flex: 1 }}>Team</span>
-                        <span style={{ width: '42px', textAlign: 'right' }}>Rec</span>
-                      </div>
-                      {draftOrder.map((d: DraftSlot) => {
-                        const team = d.originalTeam ?? d.owner
-                        const isMine = !!myTeamId && team?.id === myTeamId
-                        return (
-                          <div key={d.slot} ref={isMine ? revealOwnRow : undefined}
-                            style={{ ...row, ...mine(isMine) }}>
-                            <span style={{
-                              ...font(700, 13), ...TABULAR, width: '22px',
-                              color: d.slot <= 3 ? ACCENT.info : TEXT.dim,
-                            }}>{d.slot}</span>
-                            <Crest team={team} size={17} />
-                            <span style={{ flex: 1, minWidth: 0 }}>
-                              <TeamName team={team} mine={isMine} />
-                            </span>
-                            <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted, width: '42px', textAlign: 'right', display: 'inline-block' }}>
-                              {fmtRecord(d.record ?? d.ownerRecord)}
-                            </span>
-                          </div>
-                        )
-                      })}
-                    </>
-                  )}
-                </Pane>
-  
-                <Pane title={mockDraft ? 'Mock draft' : 'Rookie class'} count={shownProspects.length}
-                  note={classPos === 'ALL' ? undefined : `of ${prospects.length}`}
-                  control={<PosFilter value={classPos} onChange={setClassPos} />}>
-                  {prospects.length === 0 ? emptyPane('No class generated yet.')
-                    : shownProspects.length === 0 ? emptyPane(`No ${classPos} in this class.`) : (
-                    <>
-                      {/* A MOCK DRAFT, FROM THE PUBLIC PROJECTIONS (owner, 2026-11-04). The real
-                          draft runs the same pick rules with each team's own scouting. */}
-                      <div style={headRow}>
-                        <span style={{ width: mockDraft ? '52px' : '22px' }}>{mockDraft ? 'Pick' : '#'}</span>
-                        <span style={{ flex: 1 }}>Prospect</span>
-                        <span style={{ width: '150px' }}>Now &amp; potential</span>
-                      </div>
-                      {shownProspects.map((p: Prospect, i) => {
-                        const mp = p.mockPick
-                        const isMine = !!myTeamId && mp?.team.id === myTeamId
-                        return (
-                        <div key={p.playerId} style={{ ...row, ...mine(isMine) }}>
-                          {mockDraft ? (
-                            <span style={{ width: '52px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ ...font(700, 12), ...TABULAR, width: '20px', color: mp ? TEXT.secondary : TEXT.faint }}>
-                                {mp ? mp.pick : '\u2013'}
-                              </span>
-                              {mp && (
-                                <HoverTooltip text={`Projected to go to the ${mp.team.name} at pick ${mp.pick}.`}>
-                                  <Crest team={mp.team} size={17} />
-                                </HoverTooltip>
-                              )}
-                            </span>
-                          ) : (
-                            <span style={{ ...font(700, 12), ...TABULAR, width: '22px', color: TEXT.faint }}>
-                              {i + 1}
-                            </span>
-                          )}
-                          <Pos>{p.position}</Pos>
-                          <span style={{ flex: 1, minWidth: 0 }}>
-                            <PlayerLink playerId={p.playerId} playerName={p.name}
-                              style={{ ...font(600, 14), color: TEXT.body }} />
-                          </span>
-                          <HoverTooltip content={potentialTooltip(p.rating, p.projection)}>
-                            <span style={{ width: '150px', display: 'inline-block' }}>
-                              <Potential rating={p.rating} projection={p.projection} />
-                            </span>
-                          </HoverTooltip>
-                        </div>
-                        )
-                      })}
-                    </>
-                  )}
-                </Pane>
-              </div>
-            )}
+            </div>
 
             {/* CONTRACTS */}
             <div style={pair}>
