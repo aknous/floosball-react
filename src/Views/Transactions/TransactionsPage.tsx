@@ -193,7 +193,7 @@ const TransactionsPage: React.FC = () => {
   const myTeamId = (user as any)?.favoriteTeamId ?? null
   const {
     loading, error, season, week,
-    draftOrder, draftOrderFinal, draftPlayoffSlotsFrom, mockDraft, prospects, expiring, moves, showPool, freeAgentPool,
+    draftOrder, draftOrderFinal, draftPlayoffSlotsFrom, prospects, expiring, moves, showPool, freeAgentPool,
   } = useTransactions()
   const tradeVotes = useTradeVotes()
   const votesWaiting = tradeVotes.open.filter(p => p.myVote == null).length
@@ -429,40 +429,25 @@ const TransactionsPage: React.FC = () => {
                 )}
               </Pane>
 
-              <Pane title={mockDraft ? 'Mock draft' : 'Rookie class'} count={shownProspects.length}
+              <Pane title="Prospect rankings" count={shownProspects.length}
                 note={classPos === 'ALL' ? undefined : `of ${prospects.length}`}
                 control={<PosFilter value={classPos} onChange={setClassPos} />}>
                 {prospects.length === 0 ? emptyPane('No class generated yet.')
                   : shownProspects.length === 0 ? emptyPane(`No ${classPos} in this class.`) : (
                   <>
-                    {/* A MOCK DRAFT, FROM THE PUBLIC PROJECTIONS (owner, 2026-11-04). The real
-                        draft runs the same pick rules with each team's own scouting. */}
+                    {/* ⚠️ A RANKING, NOT A MOCK DRAFT (owner, 2026-11-04): ordered by the public
+                        read of what each prospect is worth, like a published prospect list. A
+                        prospect beside a team read as that team's pick. */}
                     <div style={headRow}>
-                      <span style={{ width: mockDraft ? '52px' : '22px' }}>{mockDraft ? 'Pick' : '#'}</span>
+                      <span style={{ width: '22px' }}>#</span>
                       <span style={{ flex: 1 }}>Prospect</span>
                       <span style={{ width: '150px' }}>Now &amp; potential</span>
                     </div>
-                    {shownProspects.map((p: Prospect, i) => {
-                      const mp = p.mockPick
-                      const isMine = !!myTeamId && mp?.team.id === myTeamId
-                      return (
-                      <div key={p.playerId} style={{ ...row, ...mine(isMine) }}>
-                        {mockDraft ? (
-                          <span style={{ width: '52px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ ...font(700, 12), ...TABULAR, width: '20px', color: mp ? TEXT.secondary : TEXT.faint }}>
-                              {mp ? mp.pick : '\u2013'}
-                            </span>
-                            {mp && (
-                              <HoverTooltip text={`Projected to go to the ${mp.team.name} at pick ${mp.pick}.`}>
-                                <Crest team={mp.team} size={17} />
-                              </HoverTooltip>
-                            )}
-                          </span>
-                        ) : (
-                          <span style={{ ...font(700, 12), ...TABULAR, width: '22px', color: TEXT.faint }}>
-                            {i + 1}
-                          </span>
-                        )}
+                    {shownProspects.map((p: Prospect) => (
+                      <div key={p.playerId} style={row}>
+                        <span style={{ ...font(700, 12), ...TABULAR, width: '22px', color: TEXT.faint }}>
+                          {prospects.indexOf(p) + 1}
+                        </span>
                         <Pos>{p.position}</Pos>
                         <span style={{ flex: 1, minWidth: 0 }}>
                           <PlayerLink playerId={p.playerId} playerName={p.name}
@@ -474,8 +459,7 @@ const TransactionsPage: React.FC = () => {
                           </span>
                         </HoverTooltip>
                       </div>
-                      )
-                    })}
+                    ))}
                   </>
                 )}
               </Pane>

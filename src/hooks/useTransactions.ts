@@ -37,8 +37,6 @@ export interface Prospect {
   tier: string | null
   /** The public projection: a range around the consensus, widest for a new prospect. */
   projection: Projection | null
-  /** Where the public mock draft has them going; null if the mock leaves them on the board. */
-  mockPick?: { pick: number; team: TeamBlob } | null
 }
 
 export interface ExpiringPlayer {
@@ -99,8 +97,6 @@ interface UseTransactionsResult {
   draftOrderFinal: boolean
   /** First slot held by a playoff team (17 in a 32-team league). */
   draftPlayoffSlotsFrom: number | null
-  /** True while the class is shown as a mock draft (until the real draft starts). */
-  mockDraft: boolean
   prospects: Prospect[]
   expiring: ExpiringPlayer[]
   moves: MoveRow[]
@@ -132,7 +128,6 @@ export function useTransactions(): UseTransactionsResult {
   const [draftOrderFinal, setDraftOrderFinal] = useState(true)
   const [draftPlayoffSlotsFrom, setDraftPlayoffSlotsFrom] = useState<number | null>(null)
   const [prospects, setProspects] = useState<Prospect[]>([])
-  const [mockDraft, setMockDraft] = useState(false)
   const [expiring, setExpiring] = useState<ExpiringPlayer[]>([])
   const [moves, setMoves] = useState<MoveRow[]>([])
   const fetchId = useRef(0)
@@ -170,7 +165,6 @@ export function useTransactions(): UseTransactionsResult {
       if (classRes.ok) {
         const d = (await classRes.json()).data
         setProspects(d.prospects ?? [])
-        setMockDraft(!!d.mockDraft)
       }
       if (poolRes && poolRes.ok) {
         const d = await poolRes.json()
@@ -189,7 +183,7 @@ export function useTransactions(): UseTransactionsResult {
 
   return {
     loading, error, season, week,
-    draftOrder, draftOrderFinal, draftPlayoffSlotsFrom, mockDraft, prospects, expiring, moves,
+    draftOrder, draftOrderFinal, draftPlayoffSlotsFrom, prospects, expiring, moves,
     showPool, freeAgentPool,
     refetch: fetchAll,
   }
