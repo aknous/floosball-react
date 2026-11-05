@@ -93,7 +93,7 @@ function TraitList({ title, traits, empty }: { title: string; traits: ScoutingTr
 /** A projected star range in the app's star colors (`Stars`): the solid stars are a
  * rating of the low end, colored for that count; the faint ones run up to the high end in
  * its count's color; the rest are the usual empty stars. */
-function StarRange({ range, size = 15 }: { range: [number, number]; size?: number }) {
+function StarRange({ range, size = 20 }: { range: [number, number]; size?: number }) {
   const lo = Math.max(1, Math.min(5, range[0]))
   const hi = Math.max(lo, Math.min(5, range[1]))
   return (
