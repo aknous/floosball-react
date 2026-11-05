@@ -22,8 +22,6 @@ export type ScoutingLean = 'offense' | 'defense' | 'two_way'
 export interface ScoutingReportData {
   /** Projected star range `[low, high]` per side; defense is null for a kicker. */
   stars: { overall: [number, number]; offense: [number, number] | null; defense: [number, number] | null }
-  /** The style on each side, from the skills that stand out; null when nothing does. */
-  archetypes: { offense: string | null; defense: string | null }
   /** The side of the ball they project to help most; null for a kicker. */
   lean?: ScoutingLean | null
   strengths: ScoutingTrait[]
@@ -109,8 +107,8 @@ function StarRange({ range, size = 15 }: { range: [number, number]; size?: numbe
   )
 }
 
-function StarCell({ label, icon, range, archetype }: {
-  label: string; icon?: React.ReactNode; range: [number, number] | null; archetype?: string | null
+function StarCell({ label, icon, range }: {
+  label: string; icon?: React.ReactNode; range: [number, number] | null
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
@@ -118,17 +116,12 @@ function StarCell({ label, icon, range, archetype }: {
         {icon}{label.toUpperCase()}
       </span>
       {range ? <StarRange range={range} /> : <span style={{ ...font(400, 13), color: TEXT.faint }}>&ndash;</span>}
-      {archetype !== undefined && (
-        <span style={{ ...font(600, 13), color: archetype ? TEXT.body : TEXT.faint }}>
-          {archetype ?? 'No standout style yet'}
-        </span>
-      )}
     </div>
   )
 }
 
-/** Projected stars per side with each side's style, then strengths and weaknesses
- * (owner, 2026-11-04: stars and archetypes read cleaner than a projection sentence). */
+/** Projected stars per side, then strengths and weaknesses (owner, 2026-11-04: stars read
+ * cleaner than a projection sentence; archetypes were tried and dropped as corny). */
 const ScoutingReport: React.FC<{ report: ScoutingReportData; narrow?: boolean }> = ({ report, narrow }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
     <div style={{
@@ -137,10 +130,10 @@ const ScoutingReport: React.FC<{ report: ScoutingReportData; narrow?: boolean }>
     }}>
       <StarCell label="Overall" range={report.stars.overall} />
       <StarCell label="Offense" icon={<GiBroadsword size={12} color={OFFENSE_COLOR} />}
-        range={report.stars.offense} archetype={report.archetypes.offense} />
+        range={report.stars.offense} />
       {report.stars.defense && (
         <StarCell label="Defense" icon={<GiShield size={12} color={DEFENSE_COLOR} />}
-          range={report.stars.defense} archetype={report.archetypes.defense} />
+          range={report.stars.defense} />
       )}
     </div>
     <div style={{
