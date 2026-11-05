@@ -71,6 +71,12 @@ function share(x: number, lower = false): string {
   return `${Math.round(x * 100)}%`
 }
 
+/** A rating range in stars, the way fans read talent (owner: no rating numbers on a card). */
+function starsPhrase(lo: number, hi: number): string {
+  const a = calcStars(lo), b = calcStars(hi)
+  return a === b ? `a ${a}-star player` : `a ${a} to ${b}-star player`
+}
+
 /** The asset's main line, then notes a voter needs to judge it. */
 function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: string[] } {
   const phase = p.phase
@@ -92,16 +98,15 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: st
     }
     if (o?.classProspect) {
       const c = o.classProspect
-      const lo = Math.round(c.low), hi = Math.round(c.high)
-      notes.push(`The ${ordinal(c.rank)} best prospect in this class projects to `
-        + (lo === hi ? `${lo}.` : `${lo}-${hi}.`))
+      notes.push(`The ${ordinal(c.rank)} best prospect in this class projects as `
+        + `${starsPhrase(c.low, c.high)}.`)
     }
     // The class prospect is the better read where the class exists; the generic line
     // would contradict the stars beside it.
     if (o?.typical && !o.classProspect) {
       const t = o.typical
       const head = `Picks ${ordinal(t.band[0])}-${ordinal(t.band[1])} typically become `
-        + `${t.medianBest}-rated players`
+        + `${calcStars(t.medianBest)}-star players`
       notes.push(t.threeStarShare >= 0.985
         ? `${head}, and ${share(t.fourStarShare, true)} reach 4 stars.`
         : `${head}. ${share(t.threeStarShare)} reach 3 stars and ${share(t.fourStarShare, true)} reach 4.`)
@@ -110,8 +115,7 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: st
   }
   if (a.kind === 'prospect') {
     if (a.projection) {
-      const lo = Math.round(a.projection.low), hi = Math.round(a.projection.high)
-      notes.push(lo === hi ? `Projected to settle at ${lo}.` : `Projected to settle at ${lo}-${hi}.`)
+      notes.push(`Projected to become ${starsPhrase(a.projection.low, a.projection.high)}.`)
     }
     if (a.windowLeft != null) {
       notes.push(a.windowLeft <= 1 ? 'Last season to make the roster before release.'
@@ -120,7 +124,6 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: st
     return { detail: 'Prospect', notes }
   }
   const bits: string[] = []
-  if (a.rating) bits.push(`Rated ${Math.round(a.rating)}`)
   if (a.termRemaining != null) {
     // The offseason belongs to the season that just ended: contracts have already ticked
     // down, so one season left means the coming one, not the season just played.
@@ -133,14 +136,15 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: st
       : `${STAGE[a.careerStage]}.`)
   }
   if (a.projection) {
-    const lo = Math.round(a.projection.low), hi = Math.round(a.projection.high)
-    notes.push(`Projected to settle at ${lo}-${hi}.`)
+    notes.push(`Projected to become ${starsPhrase(a.projection.low, a.projection.high)}.`)
   } else if (a.nextSeason != null && a.rating && a.careerStage !== 'retiring') {
-    const next = Math.round(a.nextSeason), now = Math.round(a.rating)
-    notes.push(next === now ? `Expected to hold at ${now} next season.`
-      : `Expected ${next} next season.`)
+    // The direction, not the number (owner, 2026-11-04).
+    const change = Math.round(a.nextSeason) - Math.round(a.rating)
+    notes.push(change > 0 ? 'Expected to improve next season.'
+      : change < 0 ? 'Expected to regress next season.' : 'Expected to hold steady next season.')
   }
-  return { detail: bits.join(', '), notes }
+  const detail = bits.join(', ')
+  return { detail: detail ? detail[0].toUpperCase() + detail.slice(1) : '', notes }
 }
 
 /** What the star column means for this piece, in words. */
