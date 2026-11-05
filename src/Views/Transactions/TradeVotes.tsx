@@ -191,9 +191,11 @@ function Asset({ a, p, showNotes }: { a: VoteAsset; p: TradeProposal; showNotes:
         {detail && <span style={{ ...font(400, 12), color: TEXT.secondary }}>{detail}</span>}
         {showNotes && notes.length > 0 && (
           <span style={{
-            // A fixed label column, so values line up from piece to piece down the card.
+            // A fixed label column, so values line up from piece to piece down the card,
+            // set off by a rule like the GM reasoning block (owner, 2026-11-05).
             display: 'grid', gridTemplateColumns: '104px minmax(0, 1fr)',
-            gap: '4px 12px', marginTop: '4px', alignItems: 'baseline',
+            gap: '4px 12px', marginTop: '6px', alignItems: 'baseline',
+            borderLeft: `2px solid ${BORDER.raised}`, paddingLeft: '10px',
           }}>
             {notes.map((n, i) => (
               <React.Fragment key={i}>
@@ -252,7 +254,7 @@ function Side({ team, gives, why, p, isMobile, last }: {
               display: 'flex', flexDirection: 'column', gap: '4px',
               borderLeft: `2px solid ${team?.color ?? BORDER.hairline}`, paddingLeft: '10px',
             }}>
-              <span style={{ ...font(700, 10, 1, '0.04em'), color: TEXT.muted }}>WHY</span>
+              <span style={{ ...font(700, 10, 1, '0.04em'), color: TEXT.muted }}>GM REASONING</span>
               <p style={{ ...font(400, 13, 1.5), color: TEXT.secondary, margin: 0 }}>{why}</p>
             </div>
           )}
