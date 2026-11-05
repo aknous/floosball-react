@@ -2,6 +2,7 @@ import React from 'react'
 import { GiBroadsword, GiShield } from 'react-icons/gi'
 import { TEXT, ACCENT, font } from '@/Components/Shell/tokens'
 import HoverTooltip from '@/Components/HoverTooltip'
+import { STAR_COLORS } from '@/Components/Stars'
 
 /**
  * A prospect's scouting report (owner, 2026-11-04): where they project to stand against
@@ -19,7 +20,10 @@ export interface ScoutingTrait {
 export type ScoutingLean = 'offense' | 'defense' | 'two_way'
 
 export interface ScoutingReportData {
-  summary: string
+  /** Projected star range `[low, high]` per side; defense is null for a kicker. */
+  stars: { overall: [number, number]; offense: [number, number] | null; defense: [number, number] | null }
+  /** The style on each side, from the skills that stand out; null when nothing does. */
+  archetypes: { offense: string | null; defense: string | null }
   /** The side of the ball they project to help most; null for a kicker. */
   lean?: ScoutingLean | null
   strengths: ScoutingTrait[]
@@ -88,11 +92,54 @@ function TraitList({ title, traits, empty }: { title: string; traits: ScoutingTr
   )
 }
 
+/** A projected star range: solid to the low end, faint up to the high end. */
+function StarRange({ range, size = 15 }: { range: [number, number]; size?: number }) {
+  const [lo, hi] = range
+  const color = STAR_COLORS[Math.max(1, Math.min(5, hi))]
+  return (
+    <HoverTooltip text={lo === hi ? `Projects as ${lo} stars.` : `Projects as ${lo} to ${hi} stars.`}>
+      <span style={{ fontSize: `${size}px`, letterSpacing: '1px', lineHeight: 1, cursor: 'help' }}>
+        <span style={{ color }}>{'★'.repeat(lo)}</span>
+        <span style={{ color, opacity: 0.35 }}>{'★'.repeat(Math.max(0, hi - lo))}</span>
+        <span style={{ color: '#1e3a52' }}>{'★'.repeat(Math.max(0, 5 - hi))}</span>
+      </span>
+    </HoverTooltip>
+  )
+}
+
+function StarCell({ label, icon, range, archetype }: {
+  label: string; icon?: React.ReactNode; range: [number, number] | null; archetype?: string | null
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', ...font(700, 10, 1, '0.04em'), color: TEXT.muted }}>
+        {icon}{label.toUpperCase()}
+      </span>
+      {range ? <StarRange range={range} /> : <span style={{ ...font(400, 13), color: TEXT.faint }}>&ndash;</span>}
+      {archetype !== undefined && (
+        <span style={{ ...font(600, 13), color: archetype ? TEXT.body : TEXT.faint }}>
+          {archetype ?? 'No standout style yet'}
+        </span>
+      )}
+    </div>
+  )
+}
+
+/** Projected stars per side with each side's style, then strengths and weaknesses
+ * (owner, 2026-11-04: stars and archetypes read cleaner than a projection sentence). */
 const ScoutingReport: React.FC<{ report: ScoutingReportData; narrow?: boolean }> = ({ report, narrow }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-      <LeanBadge lean={report.lean} size={15} label />
-      <p style={{ ...font(500, 14, 1.5), color: TEXT.primary, margin: 0, flex: 1, minWidth: '200px' }}>{report.summary}</p>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={{
+      display: 'grid', gap: '14px 32px',
+      gridTemplateColumns: narrow ? 'repeat(2, minmax(0,1fr))' : 'repeat(3, minmax(0,1fr))',
+    }}>
+      <StarCell label="Overall" range={report.stars.overall} />
+      <StarCell label="Offense" icon={<GiBroadsword size={12} color={OFFENSE_COLOR} />}
+        range={report.stars.offense} archetype={report.archetypes.offense} />
+      {report.stars.defense && (
+        <StarCell label="Defense" icon={<GiShield size={12} color={DEFENSE_COLOR} />}
+          range={report.stars.defense} archetype={report.archetypes.defense} />
+      )}
     </div>
     <div style={{
       display: 'grid', gap: '16px 48px',
