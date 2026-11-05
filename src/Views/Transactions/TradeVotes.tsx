@@ -420,7 +420,7 @@ function OpenCard({ p, myTeamId, signedIn, busy, onVote, isMobile }: {
               <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
                 <VoteButton label={p.myVote === true ? 'Approved' : 'Approve'} active={p.myVote === true}
                   color={ACCENT.success} disabled={busy} onClick={() => onVote(p.myVote === true ? null : true)} />
-                <VoteButton label={p.myVote === false ? 'Rejected' : 'Reject'} active={p.myVote === false}
+                <VoteButton label={p.myVote === false ? 'Vetoed' : 'Veto'} active={p.myVote === false}
                   color={ACCENT.negative} disabled={busy} onClick={() => onVote(p.myVote === false ? null : false)} />
               </div>
             </>
@@ -615,8 +615,8 @@ const TradeVotes: React.FC<{
         <h3 style={{ ...font(800, 13), color: TEXT.strong, margin: 0 }}>How voting works</h3>
         <p style={{ ...font(400, 13, 1.55), color: TEXT.secondary, margin: 0 }}>
           A trade goes through when the vote closes if more of the league approves it than
-          rejects it, and each team in it gets about a third of its active fans to approve.
-          If a team&rsquo;s own fans vote more no than yes, the trade fails. Active fans are
+          vetoes it, and each team in it gets about a third of its active fans to approve.
+          If more of a team&rsquo;s own fans veto it than approve it, the trade fails. Active fans are
           fans who signed in within the last two weeks. A team with no active fans leaves its
           side to everyone else. A trade with no votes, or a tie, does not go through.
         </p>
