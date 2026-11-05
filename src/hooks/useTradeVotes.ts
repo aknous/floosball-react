@@ -99,6 +99,8 @@ export interface TradeProposal {
 }
 
 /** Fan approval votes on trades (backend `managers/tradeVotes.py`). */
+const VOTES_CHANGED = 'floosball:tradeVotesChanged'
+
 export function useTradeVotes() {
   const { getToken } = useAuth()
   const { seasonState, lastEvent } = useFloosball()
@@ -135,6 +137,14 @@ export function useTradeVotes() {
     if ((lastEvent as { event?: string } | null)?.event === 'trade_votes_open') refetch()
   }, [lastEvent, refetch])
 
+  // A vote cast anywhere refreshes every reader: the page and the nav count each hold their
+  // own copy, and the nav would otherwise show the old count until its next poll.
+  useEffect(() => {
+    const onChange = () => { refetch() }
+    window.addEventListener(VOTES_CHANGED, onChange)
+    return () => window.removeEventListener(VOTES_CHANGED, onChange)
+  }, [refetch])
+
   // While a vote is open, keep the tally current.
   useEffect(() => {
     if (open.length === 0) return
@@ -159,7 +169,7 @@ export function useTradeVotes() {
       if (!res.ok) {
         setVoteError(res.status === 409 ? 'This vote has closed.' : 'Your vote did not go through.')
       }
-      await refetch()
+      window.dispatchEvent(new Event(VOTES_CHANGED))
     } catch {
       setVoteError('Your vote did not go through.')
     } finally {

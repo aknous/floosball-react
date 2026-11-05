@@ -605,7 +605,7 @@ const TransactionsPage: React.FC = () => {
                       )
                       return (
                         <div key={`t${t.id}`} style={{
-                          ...row, alignItems: 'flex-start',
+                          ...row, alignItems: 'flex-start', flexWrap: 'wrap',
                           boxShadow: `inset 3px 0 0 ${kind.color}`,
                           ...mine(isMine),
                         }}>

@@ -218,7 +218,7 @@ function Side({ team, gives, why, p, isMobile, last }: {
     <div style={{
       padding: '14px 18px 16px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0,
       // The team's color across the top of its side, so who sends what reads at a glance.
-      borderTop: `3px solid ${team?.color ?? BORDER.hairline}`,
+      borderTop: `3px solid ${team?.color || BORDER.hairline}`,
       ...(last ? {} : isMobile ? { borderBottom: `1px solid ${BORDER.hairline}` }
         : { borderRight: `1px solid ${BORDER.hairline}` }),
     }}>
