@@ -7,6 +7,11 @@ import { Stars, calcStars } from '@/Components/Stars'
 import { Crest } from '@/Views/GameBoard/boardPieces'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { TradeProposal, TeamTally, VoteAsset, VoteTeam } from '@/hooks/useTradeVotes'
+import { readableTeamColor } from '@/utils/colors'
+
+/** A team's color, lifted to read on the dark card (owner: color and crests carry who is who). */
+const teamColor = (team?: { color?: string | null } | null): string =>
+  team?.color ? readableTeamColor(team.color) : TEXT.strong
 
 /**
  * Fan approval votes on trades. Every trade the teams agree waits here until the fans
@@ -160,7 +165,14 @@ function Asset({ a, p, showNotes }: { a: VoteAsset; p: TradeProposal; showNotes:
       </span>
       <span style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, flex: 1 }}>
         {a.kind === 'pick' || a.id == null ? (
-          <span style={{ ...font(650, 14), color: TEXT.strong }}>{pickLabel(a)}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', ...font(650, 14), color: TEXT.strong }}>
+            {a.kind === 'pick' && a.originalTeam?.id != null && (
+              <HoverTooltip text={`The ${a.originalTeam.name}' pick: where they finish sets the slot.`}>
+                <Crest teamId={a.originalTeam.id} size={16} />
+              </HoverTooltip>
+            )}
+            {pickLabel(a)}
+          </span>
         ) : (
           <PlayerLink playerId={a.id} playerName={a.name} style={{ ...font(650, 14), color: TEXT.strong }} />
         )}
@@ -186,15 +198,21 @@ function Side({ team, gives, why, p, isMobile, last }: {
   const hasNotes = gives.some(a => assetLines(a, p).notes.length > 0)
   return (
     <div style={{
-      padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0,
+      padding: '14px 18px 16px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: 0,
+      // The team's color across the top of its side, so who sends what reads at a glance.
+      borderTop: `3px solid ${team?.color ?? BORDER.hairline}`,
       ...(last ? {} : isMobile ? { borderBottom: `1px solid ${BORDER.hairline}` }
         : { borderRight: `1px solid ${BORDER.hairline}` }),
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', ...font(700, 12, 1, '0.04em'), color: TEXT.muted }}>
-        <span>{(team?.name ?? 'This team').toUpperCase()} SEND</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+          <Crest teamId={team?.id} size={22} />
+          <span style={{ ...font(800, 15), color: teamColor(team) }}>{team?.name ?? 'This team'}</span>
+          <span style={{ ...font(600, 13), color: TEXT.muted }}>send</span>
+        </span>
         {gives.some(a => (a.expectedRating ?? 0) > 0) && (
           <HoverTooltip text="What each piece can be expected to be: a player's rating next season, a prospect's once developed, and for a pick the prospect projected at that slot.">
-            <span>EXPECTED</span>
+            <span style={{ ...font(700, 12, 1, '0.04em'), color: TEXT.muted }}>EXPECTED</span>
           </HoverTooltip>
         )}
       </div>
@@ -240,7 +258,7 @@ function TeamBar({ team, t }: { team: VoteTeam | null; t: TeamTally }) {
   const label = (
     <>
       <Crest teamId={team?.id} size={16} />
-      {name} fans
+      <span><span style={{ color: teamColor(team) }}>{name}</span> fans</span>
     </>
   )
   if (t.fans === 0) {
@@ -329,7 +347,7 @@ function VoteButton({ label, active, color, disabled, onClick }: {
 
 function TeamName({ team }: { team: VoteTeam | null }) {
   if (!team) return <span>?</span>
-  return <Link to={`/team/${team.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{team.name}</Link>
+  return <Link to={`/team/${team.id}`} style={{ color: teamColor(team), textDecoration: 'none' }}>{team.name}</Link>
 }
 
 function OpenCard({ p, myTeamId, signedIn, busy, onVote, isMobile }: {
