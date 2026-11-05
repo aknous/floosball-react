@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { projectionText } from '@/Components/Potential'
+import { projectionText, hasRange, Projection, ProjectionDetail } from '@/Components/Potential'
 import ReactDOM from 'react-dom'
 import { Stars, SwordIcon, ShieldIcon } from './Stars'
 import ArchetypeBadge from './ArchetypeBadge'
@@ -26,6 +26,8 @@ interface PlayerDetail {
   offensiveRating?: number
   defensiveRating?: number
   defensivePosition?: string | null
+  /** Offense and defense's projected ranges, like the overall's (owner, 2026-11-04). */
+  projectionDetail?: ProjectionDetail | null
   archetype?: string | null
   attributes: {
     att1?: string; att1Value?: number; att1stars?: number
@@ -231,10 +233,16 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
               <SwordIcon size={11} color="#94a3b8" />
               <span style={{ fontSize: '11px', color: '#94a3b8', flex: 1 }}>Offense</span>
-              <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '600' }}>{data.offensiveRating}</span>
+              <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '600' }}>
+                {data.offensiveRating}
+                {hasRange(data.offensiveRating, data.projectionDetail?.offense) && (
+                  <span style={{ color: '#facc15' }}> / {projectionText(data.offensiveRating, data.projectionDetail!.offense)}</span>
+                )}
+              </span>
             </div>
-            <div style={{ height: '3px', backgroundColor: '#334155', borderRadius: '2px' }}>
+            <div style={{ height: '3px', backgroundColor: '#334155', borderRadius: '2px', position: 'relative' }}>
               <div style={{ width: `${Math.min(100, data.offensiveRating)}%`, height: '100%', backgroundColor: data.offensiveRating >= 85 ? '#22c55e' : data.offensiveRating >= 72 ? '#f59e0b' : '#ef4444', borderRadius: '2px' }} />
+              <RangeBand value={data.offensiveRating} projection={data.projectionDetail?.offense} />
             </div>
           </div>
         )}
@@ -243,10 +251,16 @@ const Card: React.FC<CardProps> = ({ data, mouseX, mouseY }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
               <ShieldIcon size={11} color="#94a3b8" />
               <span style={{ fontSize: '11px', color: '#94a3b8', flex: 1 }}>Defense ({data.defensivePosition})</span>
-              <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '600' }}>{data.defensiveRating}</span>
+              <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '600' }}>
+                {data.defensiveRating}
+                {hasRange(data.defensiveRating, data.projectionDetail?.defense) && (
+                  <span style={{ color: '#facc15' }}> / {projectionText(data.defensiveRating, data.projectionDetail!.defense)}</span>
+                )}
+              </span>
             </div>
-            <div style={{ height: '3px', backgroundColor: '#334155', borderRadius: '2px' }}>
+            <div style={{ height: '3px', backgroundColor: '#334155', borderRadius: '2px', position: 'relative' }}>
               <div style={{ width: `${Math.min(100, data.defensiveRating)}%`, height: '100%', backgroundColor: data.defensiveRating >= 85 ? '#22c55e' : data.defensiveRating >= 72 ? '#f59e0b' : '#ef4444', borderRadius: '2px' }} />
+              <RangeBand value={data.defensiveRating} projection={data.projectionDetail?.defense} />
             </div>
           </div>
         )}
@@ -329,6 +343,17 @@ interface PlayerHoverCardProps {
   playerId: number
   playerName: string
   children: React.ReactNode
+}
+
+
+/** The projected range drawn faintly past today's value, as on the overall bar. */
+function RangeBand({ value, projection }: { value: number; projection?: Projection | null }) {
+  if (!hasRange(value, projection)) return null
+  const from = Math.min(100, Math.max(projection.low, value))
+  const to = Math.min(100, projection.high)
+  return (
+    <div style={{ position: 'absolute', left: `${from}%`, width: `${Math.max(0.5, to - from)}%`, top: '-1px', bottom: '-1px', backgroundColor: '#facc15', opacity: 0.45, borderRadius: '1px' }} />
+  )
 }
 
 const PlayerHoverCard: React.FC<PlayerHoverCardProps> = ({ playerId, playerName, children }) => {

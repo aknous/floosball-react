@@ -8,6 +8,9 @@ export const STAR_COLORS: Record<number, string> = {
   1: '#ef4444',  // red   — poor
 }
 
+/** An empty star's color, shared by every star display. */
+export const EMPTY_STAR = '#1e3a52'
+
 /** Convert a raw numeric rating (60–100) to a 1–5 star count.
  *  Matches backend bands: 1★60-67, 2★68-75, 3★76-83, 4★84-91, 5★92-100 */
 export const calcStars = (rating: number): number =>
@@ -28,7 +31,7 @@ export const Stars: React.FC<StarsProps> = ({ stars, size, tracking = 1 }) => {
   return (
     <span style={{ letterSpacing: `${tracking}px`, lineHeight: 1, ...(size != null ? { fontSize: `${size}px` } : {}) }}>
       <span style={{ color: STAR_COLORS[n] }}>{'★'.repeat(n)}</span>
-      {n < 5 && <span style={{ color: '#1e3a52' }}>{'★'.repeat(5 - n)}</span>}
+      {n < 5 && <span style={{ color: EMPTY_STAR }}>{'★'.repeat(5 - n)}</span>}
     </span>
   )
 }

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTransactions, DraftSlot, Prospect, ExpiringPlayer, TeamBlob, PoolFreeAgent } from '@/hooks/useTransactions'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
@@ -10,6 +10,8 @@ import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useTradeVotes } from '@/hooks/useTradeVotes'
 import TradeVotes from './TradeVotes'
+import ScoutingReport, { LeanBadge } from '@/Components/ScoutingReport'
+import { tradeAssetName, TradeAsset } from '@/Views/Teams/TeamTrades'
 
 /**
  * The six roster positions, in roster order rather than alphabetical, because that is
@@ -150,6 +152,7 @@ const MOVE_KIND: Record<string, { label: string; color: string }> = {
   rookie_pick: { label: 'Drafted',     color: ACCENT.featured },
   promotion:   { label: 'Promoted',    color: ACCENT.rules },
   retirement:  { label: 'Retired',     color: TEXT.muted },
+  trade:       { label: 'Traded',      color: ACCENT.upset },
 }
 
 /**
@@ -178,6 +181,12 @@ const MOVE_KIND: Record<string, { label: string; color: string }> = {
  * alone runs to 150 rows on a mature league; laid out flat, the dashboard becomes a document
  * you scroll for a minute, which is the thing it exists not to be. Bounded panes keep
  * every region on screen at once, which is the whole argument for dropping the tabs.
+ *
+ * ⚠️ THE ONE TAB IS TRADE VOTES (owner, 2026-11-04). It is a different job from the desk
+ * (voting on a queue rather than reading the league), and on top of the page it pushed the
+ * draft board below the fold. Shown only while trading and its votes are on; it carries a
+ * gold count of open votes the reader has not cast, as does the Transactions nav entry.
+ * `?view=votes` opens it.
  */
 const TransactionsPage: React.FC = () => {
   const { user } = useAuth()
@@ -188,12 +197,28 @@ const TransactionsPage: React.FC = () => {
     draftOrder, draftOrderFinal, draftPlayoffSlotsFrom, prospects, expiring, moves, showPool, freeAgentPool,
   } = useTransactions()
   const tradeVotes = useTradeVotes()
+  const votesWaiting = user ? tradeVotes.open.filter(p => p.myVote == null).length : 0
+  const [params, setParams] = useSearchParams()
+  const view: 'desk' | 'votes' = tradeVotes.enabled && params.get('view') === 'votes' ? 'votes' : 'desk'
+  const setView = (v: 'desk' | 'votes') => {
+    const next = new URLSearchParams(params)
+    if (v === 'votes') next.set('view', 'votes')
+    else next.delete('view')
+    setParams(next, { replace: true })
+  }
 
   const [classPos, setClassPos] = useState<PositionFilter>('ALL')
   const [contractPos, setContractPos] = useState<PositionFilter>('ALL')
   const shownProspects = useMemo(
     () => (classPos === 'ALL' ? prospects : prospects.filter(p => p.position === classPos)),
     [prospects, classPos])
+  // Prospect rows opened to show their scouting report.
+  const [openReports, setOpenReports] = useState<Set<number>>(new Set())
+  const toggleReport = (id: number) => setOpenReports(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id); else next.add(id)
+    return next
+  })
   const shownExpiring = useMemo(
     () => (contractPos === 'ALL' ? expiring : expiring.filter(e => e.position === contractPos)),
     [expiring, contractPos])
@@ -317,10 +342,45 @@ const TransactionsPage: React.FC = () => {
         </h1>
         {!isMobile && <span style={{ width: '1px', height: '24px', background: BORDER.hairline }} />}
         <span style={{ ...font(500, 12), ...TABULAR, color: TEXT.muted }}>Season {season}, Week {week}</span>
+        {tradeVotes.enabled && (
+          <div style={{ display: 'flex', marginLeft: isMobile ? 0 : 'auto', background: BG.panel, border: `1px solid ${BORDER.hairline}` }}>
+            {([['desk', 'Front office'], ['votes', 'Trade votes']] as const).map(([key, label], i) => {
+              const active = view === key
+              return (
+                <button key={key} onClick={() => setView(key)} style={{
+                  display: 'flex', alignItems: 'center', gap: '7px',
+                  ...font(active ? 800 : 500, 11, 1, '0.08em'), fontFamily: FONT, textTransform: 'uppercase',
+                  color: active ? BG.shell : TEXT.muted, background: active ? TEXT.secondary : 'transparent',
+                  border: 'none', borderLeft: i > 0 ? `1px solid ${BORDER.hairline}` : 'none',
+                  padding: '8px 13px', cursor: 'pointer',
+                }}>
+                  {label}
+                  {key === 'votes' && votesWaiting > 0 && (
+                    <span style={{
+                      ...font(800, 10), ...TABULAR, color: BG.shell, background: ACCENT.warning,
+                      padding: '2px 5px', minWidth: '16px', textAlign: 'center',
+                    }}>{votesWaiting}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <div style={{ padding: isMobile ? '14px 10px 30px' : '18px 28px 40px', fontFamily: FONT }}>
-        {loading ? (
+        {view === 'votes' ? (
+          tradeVotes.open.length > 0 || tradeVotes.closed.length > 0 ? (
+            <TradeVotes open={tradeVotes.open} closed={tradeVotes.closed} myTeamId={myTeamId}
+              signedIn={!!user} voting={tradeVotes.voting} voteError={tradeVotes.voteError}
+              onVote={tradeVotes.vote} />
+          ) : (
+            <div style={{
+              background: BG.panel, border: `1px solid ${BORDER.hairline}`,
+              padding: '40px', textAlign: 'center', ...font(400, 13), color: TEXT.muted,
+            }}>No trades are waiting on a vote.</div>
+          )
+        ) : loading ? (
           <div style={{
             background: BG.panel, border: `1px solid ${BORDER.hairline}`,
             padding: '40px', textAlign: 'center', ...font(400, 13), color: TEXT.muted,
@@ -332,13 +392,6 @@ const TransactionsPage: React.FC = () => {
           }}>{error}</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '22px' : '28px' }}>
-
-            {/* TRADES WAITING ON THE FANS. Only while trading and its votes are on. */}
-            {tradeVotes.enabled && (
-              <TradeVotes open={tradeVotes.open} closed={tradeVotes.closed} myTeamId={myTeamId}
-                signedIn={!!user} voting={tradeVotes.voting} voteError={tradeVotes.voteError}
-                onVote={tradeVotes.vote} />
-            )}
 
             {/* THE BOARD */}
             <div style={pair}>
@@ -384,36 +437,74 @@ const TransactionsPage: React.FC = () => {
                 )}
               </Pane>
 
-              <Pane title="Rookie class" count={shownProspects.length}
+              <Pane title="Prospect rankings" count={shownProspects.length}
                 note={classPos === 'ALL' ? undefined : `of ${prospects.length}`}
                 control={<PosFilter value={classPos} onChange={setClassPos} />}>
                 {prospects.length === 0 ? emptyPane('No class generated yet.')
                   : shownProspects.length === 0 ? emptyPane(`No ${classPos} in this class.`) : (
                   <>
+                    {/* ⚠️ A RANKING, NOT A MOCK DRAFT (owner, 2026-11-04): ordered by the public
+                        read of what each prospect is worth, like a published prospect list. A
+                        prospect beside a team read as that team's pick. */}
                     <div style={headRow}>
                       <span style={{ width: '22px' }}>#</span>
-                      <span style={{ flex: 1 }}>Prospect</span>
+                      <span style={{ flex: 1, display: 'inline-flex', alignItems: 'baseline', gap: '10px' }}>
+                        Prospect
+                        {/* The rows open on click, which nothing else on the page does (owner, 2026-11-05). */}
+                        {prospects.some(p => p.scoutingReport) && (
+                          <span style={{ ...font(500, 11), textTransform: 'none', color: TEXT.muted }}>
+                            Click a row for the scouting report
+                          </span>
+                        )}
+                      </span>
                       <span style={{ width: '150px' }}>Now &amp; potential</span>
                     </div>
-                    {/* ⚠️ RANKED, NOT PAIRED TO A SLOT. Lining prospect N up against pick N
-                        would read as a prediction, and every team drafts off its own board. */}
-                    {shownProspects.map((p: Prospect, i) => (
-                      <div key={p.playerId} style={row}>
+                    {shownProspects.map((p: Prospect) => {
+                      const open = openReports.has(p.playerId)
+                      const report = p.scoutingReport
+                      return (
+                      <React.Fragment key={p.playerId}>
+                      <div style={{ ...row, cursor: report ? 'pointer' : undefined }}
+                        onClick={report ? () => toggleReport(p.playerId) : undefined}
+                        role={report ? 'button' : undefined} tabIndex={report ? 0 : undefined}
+                        onKeyDown={report ? e => {
+                          if (e.target !== e.currentTarget) return
+                          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleReport(p.playerId) }
+                        } : undefined}
+                        aria-expanded={report ? open : undefined}>
                         <span style={{ ...font(700, 12), ...TABULAR, width: '22px', color: TEXT.faint }}>
-                          {i + 1}
+                          {prospects.indexOf(p) + 1}
                         </span>
                         <Pos>{p.position}</Pos>
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          <PlayerLink playerId={p.playerId} playerName={p.name}
-                            style={{ ...font(600, 14), color: TEXT.body }} />
+                        <span style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                          <span onClick={e => e.stopPropagation()}>
+                            <PlayerLink playerId={p.playerId} playerName={p.name}
+                              style={{ ...font(600, 14), color: TEXT.body }} />
+                          </span>
+                          {/* Which side of the ball they project to help most (owner, 2026-11-04). */}
+                          <LeanBadge lean={report?.lean} size={13} />
                         </span>
                         <HoverTooltip content={potentialTooltip(p.rating, p.projection)}>
                           <span style={{ width: '150px', display: 'inline-block' }}>
                             <Potential rating={p.rating} projection={p.projection} />
                           </span>
                         </HoverTooltip>
+                        {report && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={TEXT.muted}
+                            strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+                            style={{ flexShrink: 0, transform: open ? 'none' : 'rotate(-90deg)', transition: 'transform 120ms' }}>
+                            <path d="M6 9l6 6 6-6" />
+                          </svg>
+                        )}
                       </div>
-                    ))}
+                      {open && report && (
+                        <div style={{ padding: isMobile ? '14px 14px 16px' : '14px 18px 16px 46px', borderBottom: `1px solid ${BORDER.subtle}`, background: BG.shell }}>
+                          <ScoutingReport report={report} narrow={isMobile} />
+                        </div>
+                      )}
+                      </React.Fragment>
+                      )
+                    })}
                   </>
                 )}
               </Pane>
@@ -495,6 +586,42 @@ const TransactionsPage: React.FC = () => {
                 <>
                   {moves.map((m, i) => {
                     const kind = MOVE_KIND[m.type] ?? { label: m.type.replace(/_/g, ' '), color: TEXT.muted }
+                    if (m.type === 'trade' && m.trade) {
+                      // One row per settled trade: what each team sent (owner, 2026-11-04).
+                      const t = m.trade
+                      const isMine = !!myTeamId && (t.teamA?.id === myTeamId || t.teamB?.id === myTeamId)
+                      const side = (team: TeamBlob | null, gave: TradeAsset[]) => (
+                        <span style={{ display: 'flex', alignItems: 'baseline', gap: '7px', flexWrap: 'wrap' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', alignSelf: 'center' }}>
+                            <Crest team={team} size={17} />
+                            <TeamName team={team} mine={!!myTeamId && team?.id === myTeamId} />
+                          </span>
+                          <span style={{ ...font(500, 13), color: TEXT.muted }}>send</span>
+                          {gave.map((a, j) => (
+                            <span key={j} style={{ ...font(600, 13), color: TEXT.body }}>
+                              {a.kind !== 'pick' && a.id
+                                ? <PlayerLink playerId={a.id} playerName={tradeAssetName(a)}
+                                    style={{ ...font(600, 13), color: TEXT.body }} />
+                                : tradeAssetName(a)}
+                              {j < gave.length - 1 ? ',' : ''}
+                            </span>
+                          ))}
+                        </span>
+                      )
+                      return (
+                        <div key={`t${t.id}`} style={{
+                          ...row, alignItems: 'flex-start', flexWrap: 'wrap',
+                          boxShadow: `inset 3px 0 0 ${kind.color}`,
+                          ...mine(isMine),
+                        }}>
+                          <span style={{ width: '112px', flexShrink: 0 }}>{tag(kind.label, kind.color)}</span>
+                          <span style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, minWidth: '180px' }}>
+                            {side(t.teamA, t.aGave)}
+                            {side(t.teamB, t.bGave)}
+                          </span>
+                        </div>
+                      )
+                    }
                     const team = m.team && 'id' in m.team ? m.team
                       : m.team?.name ? teamByName.get(m.team.name) ?? null : null
                     const isMine = !!myTeamId && team?.id === myTeamId

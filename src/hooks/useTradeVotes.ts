@@ -18,6 +18,49 @@ export interface VoteAsset {
   detail?: string
   rating?: number
   originalTeam?: { id: number; name: string } | null
+  /** Seasons left on a player's contract, now. */
+  termRemaining?: number
+  /** A prospect's (or a developing player's) public projected range, now. */
+  projection?: { low: number; high: number }
+  /** A roster player's career stage, as on the profile. */
+  careerStage?: 'developing' | 'prime' | 'aging' | 'near_retirement' | 'retiring'
+  seasonsPlayed?: number
+  /** The rating a roster player is expected to carry next season. */
+  nextSeason?: number
+  /** A prospect's seasons left to make the roster before release. */
+  windowLeft?: number
+  /** What a pick is likely to fetch (open votes only). */
+  outlook?: PickOutlook
+  /** What the piece can be expected to be, as a rating: shown as stars. */
+  expectedRating?: number
+  /** A player's or prospect's position. */
+  position?: string
+}
+
+/** What a pick around this slot typically becomes, on the current prospect model. */
+export interface PickTypical {
+  band: [number, number]
+  /** Median best rating reached within five seasons. */
+  medianBest: number
+  threeStarShare: number
+  fourStarShare: number
+}
+
+export interface PickOutlook {
+  draftSeason: number
+  /** 0 for the upcoming draft. */
+  draftsOut: number
+  /** Upcoming draft: the original team's place in the draft order. */
+  slot?: number
+  slotFinal?: boolean
+  /** Upcoming draft: the class prospect at that rank by the public consensus. */
+  classProspect?: { rank: number; classSize: number; expected: number; low: number; high: number }
+  /** A later draft: where the pick is expected to land. */
+  expectedSlot?: number
+  /** What a pick around that slot typically becomes. */
+  typical?: PickTypical
+  /** The rating the pick can be expected to become (class prospect, else typical). */
+  expected?: number
 }
 
 export interface TeamTally {
@@ -56,6 +99,8 @@ export interface TradeProposal {
 }
 
 /** Fan approval votes on trades (backend `managers/tradeVotes.py`). */
+const VOTES_CHANGED = 'floosball:tradeVotesChanged'
+
 export function useTradeVotes() {
   const { getToken } = useAuth()
   const { seasonState, lastEvent } = useFloosball()
@@ -92,6 +137,14 @@ export function useTradeVotes() {
     if ((lastEvent as { event?: string } | null)?.event === 'trade_votes_open') refetch()
   }, [lastEvent, refetch])
 
+  // A vote cast anywhere refreshes every reader: the page and the nav count each hold their
+  // own copy, and the nav would otherwise show the old count until its next poll.
+  useEffect(() => {
+    const onChange = () => { refetch() }
+    window.addEventListener(VOTES_CHANGED, onChange)
+    return () => window.removeEventListener(VOTES_CHANGED, onChange)
+  }, [refetch])
+
   // While a vote is open, keep the tally current.
   useEffect(() => {
     if (open.length === 0) return
@@ -116,7 +169,10 @@ export function useTradeVotes() {
       if (!res.ok) {
         setVoteError(res.status === 409 ? 'This vote has closed.' : 'Your vote did not go through.')
       }
+      // This page's copy first, so the buttons never show the old state; then every
+      // other reader (the nav count). This copy refetches once more, cheaply.
       await refetch()
+      window.dispatchEvent(new Event(VOTES_CHANGED))
     } catch {
       setVoteError('Your vote did not go through.')
     } finally {

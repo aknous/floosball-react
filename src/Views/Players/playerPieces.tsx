@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { BG, BORDER, TEXT, ACCENT, FONT, TABULAR, font } from '@/Components/Shell/tokens'
 import { Crest } from '@/Views/GameBoard/boardPieces'
 import { attrBarColor, statRampColor } from '@/utils/ratingColors'
+import { Projection, hasRange, projectionText } from '@/Components/Potential'
 
 /** Every panel on the profile is the same flat plate. Radius 0, no shadow. */
 export const PANEL: React.CSSProperties = {
@@ -139,20 +140,41 @@ export const TrophyCase: React.FC<{ entries: TrophyEntry[]; seasonsLabel: string
 
 // ── Attribute bar ────────────────────────────────────────────────────────────
 
-export const AttrBar: React.FC<{ label: string; value: number }> = ({ label, value }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-      <span style={{ flex: 1, minWidth: 0, ...font(400, 12), color: TEXT.muted }}>{label}</span>
-      <span style={{ ...font(700, 15), color: TEXT.body, ...TABULAR }}>{value}</span>
+/** An attribute bar. With a `projection`, the range where it is projected to settle is
+ * drawn faintly past today's value, as the overall's is (owner, 2026-11-04). */
+export const AttrBar: React.FC<{ label: string; value: number; projection?: Projection | null }> = ({ label, value, projection }) => {
+  const ranged = hasRange(value, projection)
+  const from = ranged ? Math.min(100, Math.max(projection!.low, value)) : 0
+  const to = ranged ? Math.min(100, projection!.high) : 0
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+        <span style={{ flex: 1, minWidth: 0, ...font(400, 12), color: TEXT.muted }}>{label}</span>
+        <span style={{ ...font(700, 15), color: TEXT.body, ...TABULAR }}>
+          {value}
+          {ranged && (
+            <span style={{ ...font(600, 12), color: PROJECTION_COLOR }}> / {projectionText(value, projection!)}</span>
+          )}
+        </span>
+      </div>
+      <span style={{ height: '7px', background: BG.shell, display: 'flex', position: 'relative' }}>
+        <span style={{
+          width: `${Math.max(0, Math.min(100, value))}%`,
+          background: attrBarColor(value),
+        }} />
+        {ranged && (
+          <span style={{
+            position: 'absolute', left: `${from}%`, width: `${Math.max(0.5, to - from)}%`,
+            top: 0, bottom: 0, background: PROJECTION_COLOR, opacity: 0.45,
+          }} />
+        )}
+      </span>
     </div>
-    <span style={{ height: '7px', background: BG.shell, display: 'flex' }}>
-      <span style={{
-        width: `${Math.max(0, Math.min(100, value))}%`,
-        background: attrBarColor(value),
-      }} />
-    </span>
-  </div>
-)
+  )
+}
+
+/** The projected-range yellow the hover card's overall already uses. */
+export const PROJECTION_COLOR = '#facc15'
 
 // ── Career table ─────────────────────────────────────────────────────────────
 

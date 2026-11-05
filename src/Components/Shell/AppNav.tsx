@@ -9,6 +9,7 @@ import { VersionPill } from '@/Components/Footer'
 import { FaTrophy } from 'react-icons/fa'
 import { BG, BORDER, TEXT, ACCENT, FONT, NAV_WIDTH, font } from './tokens'
 import { useSupporterDividend } from '@/hooks/useSupporterDividend'
+import { useTradeVotes } from '@/hooks/useTradeVotes'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -183,6 +184,9 @@ const AppNav: React.FC = () => {
   const { unclaimedCount } = useAchievements()
   const { games } = useGames()
   const { seasonState } = useFloosball()
+  const tradeVotes = useTradeVotes()
+  // Signed in only (owner, 2026-11-05): a signed-out visitor has no vote to cast.
+  const votesWaiting = user && tradeVotes.enabled ? tradeVotes.open.filter(p => p.myVote == null).length : 0
 
   const [awardsOpen, setAwardsOpen] = useState(false)
   useEffect(() => {
@@ -321,6 +325,9 @@ const AppNav: React.FC = () => {
     let trailing: React.ReactNode = null
     if (item.key === 'games' && liveGames.length > 0) trailing = <AmbientCount value={liveGames.length} />
     else if (item.key === 'achievements' && unclaimedCount > 0) trailing = <NotificationDot color={ACCENT.warning} count={unclaimedCount} />
+    // Open trade votes this reader has not cast yet (the Trade votes tab on Transactions):
+    // a queue you empty by voting, so it takes the dot and a count, like Achievements.
+    else if (item.key === 'transactions' && votesWaiting > 0) trailing = <NotificationDot color={ACCENT.warning} count={votesWaiting} />
     // Gold, matching Achievements: on this nav a gold dot means "something is waiting for
     // you to collect it", whichever tab it is on.
     else if (item.key === 'team' && teamHasAction) trailing = <NotificationDot color={ACCENT.warning} />

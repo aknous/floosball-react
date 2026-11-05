@@ -1,3 +1,5 @@
+import { ScoutingReportData } from '@/Components/ScoutingReport'
+import { TradeAsset } from '@/Views/Teams/TeamTrades'
 import { Projection } from '@/Components/Potential'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -36,6 +38,8 @@ export interface Prospect {
   tier: string | null
   /** The public projection: a range around the consensus, widest for a new prospect. */
   projection: Projection | null
+  /** Where they project to stand against the starters at their position. */
+  scoutingReport?: ScoutingReportData | null
 }
 
 export interface ExpiringPlayer {
@@ -59,6 +63,14 @@ export interface MoveRow {
   position: string | null
   rating: number | null
   detail: string | null
+  /** On a `trade` row only: both sides of a settled trade, where it happened in the feed. */
+  trade?: {
+    id: number
+    teamA: TeamBlob | null
+    teamB: TeamBlob | null
+    aGave: TradeAsset[]
+    bGave: TradeAsset[]
+  }
 }
 
 /** A player in the offseason's actual free-agent pool (from `/api/offseason`). */
