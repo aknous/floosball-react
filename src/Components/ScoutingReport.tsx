@@ -2,7 +2,7 @@ import React from 'react'
 import { GiBroadsword, GiShield } from 'react-icons/gi'
 import { TEXT, ACCENT, font } from '@/Components/Shell/tokens'
 import HoverTooltip from '@/Components/HoverTooltip'
-import { STAR_COLORS } from '@/Components/Stars'
+import { STAR_COLORS, EMPTY_STAR } from '@/Components/Stars'
 
 /**
  * A prospect's scouting report (owner, 2026-11-04): where they project to stand against
@@ -92,16 +92,18 @@ function TraitList({ title, traits, empty }: { title: string; traits: ScoutingTr
   )
 }
 
-/** A projected star range: solid to the low end, faint up to the high end. */
+/** A projected star range in the app's star colors (`Stars`): the solid stars are a
+ * rating of the low end, colored for that count; the faint ones run up to the high end in
+ * its count's color; the rest are the usual empty stars. */
 function StarRange({ range, size = 15 }: { range: [number, number]; size?: number }) {
-  const [lo, hi] = range
-  const color = STAR_COLORS[Math.max(1, Math.min(5, hi))]
+  const lo = Math.max(1, Math.min(5, range[0]))
+  const hi = Math.max(lo, Math.min(5, range[1]))
   return (
     <HoverTooltip text={lo === hi ? `Projects as ${lo} stars.` : `Projects as ${lo} to ${hi} stars.`}>
       <span style={{ fontSize: `${size}px`, letterSpacing: '1px', lineHeight: 1, cursor: 'help' }}>
-        <span style={{ color }}>{'★'.repeat(lo)}</span>
-        <span style={{ color, opacity: 0.35 }}>{'★'.repeat(Math.max(0, hi - lo))}</span>
-        <span style={{ color: '#1e3a52' }}>{'★'.repeat(Math.max(0, 5 - hi))}</span>
+        <span style={{ color: STAR_COLORS[lo] }}>{'★'.repeat(lo)}</span>
+        <span style={{ color: STAR_COLORS[hi], opacity: 0.4 }}>{'★'.repeat(hi - lo)}</span>
+        <span style={{ color: EMPTY_STAR }}>{'★'.repeat(5 - hi)}</span>
       </span>
     </HoverTooltip>
   )
