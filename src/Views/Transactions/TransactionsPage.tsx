@@ -435,15 +435,8 @@ const TransactionsPage: React.FC = () => {
                 {prospects.length === 0 ? emptyPane('No class generated yet.')
                   : shownProspects.length === 0 ? emptyPane(`No ${classPos} in this class.`) : (
                   <>
-                    {/* ⚠️ A MOCK DRAFT, FROM THE PUBLIC PROJECTIONS (owner, 2026-11-04). The real
-                        draft runs the same pick rules with each team's own scouting, so the
-                        mock is a forecast, and it says so. */}
-                    {mockDraft && (
-                      <div style={{ ...font(400, 12, 1.5), color: TEXT.muted, padding: '8px 14px' }}>
-                        Where each prospect might go, from the public projections and each
-                        team&rsquo;s needs. It moves with the standings until the draft.
-                      </div>
-                    )}
+                    {/* A MOCK DRAFT, FROM THE PUBLIC PROJECTIONS (owner, 2026-11-04). The real
+                        draft runs the same pick rules with each team's own scouting. */}
                     <div style={headRow}>
                       <span style={{ width: mockDraft ? '52px' : '22px' }}>{mockDraft ? 'Pick' : '#'}</span>
                       <span style={{ flex: 1 }}>Prospect</span>
