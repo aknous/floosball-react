@@ -158,14 +158,9 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: Fa
 /** What the star column means for this piece, in words. */
 function expectedTip(a: VoteAsset): string {
   const n = calcStars(a.expectedRating ?? 0)
-  const what = `a ${n}-star player`
-  if (a.kind === 'pick') {
-    return a.outlook?.classProspect
-      ? `Expected to be ${what}: the prospect ranked at this slot in the class.`
-      : `Expected to be ${what}: the prospect usually projected at this slot.`
-  }
-  if (a.kind === 'prospect' || a.projection) return `Expected to become ${what} once developed.`
-  return `Expected to be ${what} next season.`
+  if (a.kind === 'pick') return `${n}-star player at this slot`
+  if (a.kind === 'prospect' || a.projection) return `${n}-star player once developed`
+  return `${n}-star player next season`
 }
 
 function Asset({ a, p, showNotes }: { a: VoteAsset; p: TradeProposal; showNotes: boolean }) {
@@ -179,7 +174,7 @@ function Asset({ a, p, showNotes }: { a: VoteAsset; p: TradeProposal; showNotes:
         {a.kind === 'pick' || a.id == null ? (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', ...font(650, 14), color: TEXT.strong }}>
             {a.kind === 'pick' && a.originalTeam?.id != null && (
-              <HoverTooltip text={`The ${a.originalTeam.name}' pick: where they finish sets the slot.`}>
+              <HoverTooltip text={`Slot set by where the ${a.originalTeam.name} finish.`}>
                 <Crest teamId={a.originalTeam.id} size={16} />
               </HoverTooltip>
             )}
@@ -236,7 +231,7 @@ function Side({ team, gives, why, p, isMobile, last }: {
           <span style={{ ...font(600, 13), color: TEXT.muted }}>send</span>
         </span>
         {gives.some(a => (a.expectedRating ?? 0) > 0) && (
-          <HoverTooltip text="What each piece can be expected to be: a player's rating next season, a prospect's once developed, and for a pick the prospect projected at that slot.">
+          <HoverTooltip text="A player next season, a prospect once developed, a pick by its slot.">
             <span style={{ ...font(700, 12, 1, '0.04em'), color: TEXT.muted }}>EXPECTED</span>
           </HoverTooltip>
         )}
@@ -296,7 +291,7 @@ function TeamBar({ team, t }: { team: VoteTeam | null; t: TeamTally }) {
   )
   if (t.fans === 0) {
     return (
-      <HoverTooltip text={`${name} have no active fans, so the rest of the league decides their side.`}
+      <HoverTooltip text="No active fans, so the league decides."
         style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
         <span style={{ ...font(650, 13), color: TEXT.body, display: 'inline-flex', alignItems: 'center', gap: '7px' }}>{label}</span>
         <span style={{ ...font(600, 13), color: TEXT.muted }}>None active</span>
@@ -308,10 +303,8 @@ function TeamBar({ team, t }: { team: VoteTeam | null; t: TeamTally }) {
   // Approvals fill from the left toward the bar's end (the approvals needed), no votes from the right.
   const scale = Math.max(1, t.need, t.yes + t.no)
   const tip = veto
-    ? `${t.no} ${name} fans against, ${t.yes} for. More against than for blocks the trade.`
-    // Approvals can pass the number needed, so never "3 of the 2" (owner, 2026-11-05).
-    : `${t.yes} ${name} fan approval${t.yes === 1 ? '' : 's'} so far, ${t.need} needed`
-      + `${t.no ? `, ${t.no} against` : ''}. More against than for would block it.`
+    ? `${t.no} no, ${t.yes} yes. More no than yes blocks the trade.`
+    : t.no ? `${t.no} no. More no than yes would block it.` : 'More no than yes would block it.'
   return (
     <Bar label={label} count={`${t.yes} yes, ${t.need} needed`}
       countColor={veto ? ACCENT.negative : met ? ACCENT.success : TEXT.secondary}
@@ -328,7 +321,7 @@ function LeagueBar({ yes, no }: { yes: number; no: number }) {
       countColor={yes + no === 0 ? TEXT.muted : ok ? ACCENT.success : ACCENT.negative}
       fill={Math.round((yes / total) * 100)} fillColor={ACCENT.success}
       against={Math.round((no / total) * 100)}
-      tip="Everyone signed in can vote. The trade needs more yes than no across the league." />
+      tip="Needs more yes than no." />
   )
 }
 
@@ -339,13 +332,12 @@ const TREND_FLAT = <><path d="M3 12h16" /><path d="M15 8l4 4-4 4" /></>
 
 function standing(p: TradeProposal): { text: string; color: string; icon: React.ReactNode } {
   const { teamA, teamB } = p.tally
-  const left = ` It can still change until voting closes ${CLOSES[p.closeKind]}.`
-  if (vetoed(teamA)) return { text: `Trending to fail: ${p.teamA?.name ?? 'Team'} fans are voting it down.${left}`, color: ACCENT.negative, icon: TREND_DOWN }
-  if (vetoed(teamB)) return { text: `Trending to fail: ${p.teamB?.name ?? 'Team'} fans are voting it down.${left}`, color: ACCENT.negative, icon: TREND_DOWN }
-  if (p.tally.yes + p.tally.no === 0) return { text: `No votes yet.${left}`, color: TEXT.muted, icon: TREND_FLAT }
-  if (p.tally.yes <= p.tally.no) return { text: `Trending to fail: the league is voting it down.${left}`, color: ACCENT.negative, icon: TREND_DOWN }
-  if (p.tally.passing) return { text: `Trending to pass.${left}`, color: ACCENT.success, icon: TREND_UP }
-  return { text: `Short of the approvals it needs so far.${left}`, color: ACCENT.warning, icon: TREND_FLAT }
+  if (vetoed(teamA)) return { text: `Trending to fail: ${p.teamA?.name ?? 'Team'} fans are voting it down.`, color: ACCENT.negative, icon: TREND_DOWN }
+  if (vetoed(teamB)) return { text: `Trending to fail: ${p.teamB?.name ?? 'Team'} fans are voting it down.`, color: ACCENT.negative, icon: TREND_DOWN }
+  if (p.tally.yes + p.tally.no === 0) return { text: `No votes yet.`, color: TEXT.muted, icon: TREND_FLAT }
+  if (p.tally.yes <= p.tally.no) return { text: `Trending to fail: the league is voting it down.`, color: ACCENT.negative, icon: TREND_DOWN }
+  if (p.tally.passing) return { text: `Trending to pass.`, color: ACCENT.success, icon: TREND_UP }
+  return { text: `Short of the approvals it needs so far.`, color: ACCENT.warning, icon: TREND_FLAT }
 }
 
 function StandingIcon({ p }: { p: TradeProposal }) {
@@ -395,7 +387,7 @@ function OpenCard({ p, myTeamId, signedIn, busy, onVote, isMobile }: {
 }) {
   const mine = myTeamId == null ? null
     : p.teamA?.id === myTeamId ? p.teamA : p.teamB?.id === myTeamId ? p.teamB : null
-  const myNote = mine ? `Your vote also counts toward the ${mine.name} fans' approvals.` : undefined
+  const myNote = mine ? `Also counts for the ${mine.name} fans.` : undefined
   return (
     <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}`, display: 'flex', flexDirection: 'column' }}>
       <div style={{
@@ -414,7 +406,7 @@ function OpenCard({ p, myTeamId, signedIn, busy, onVote, isMobile }: {
         </span>
         {mine && <Pill text="YOUR TEAM" color={ACCENT.ownTeam} />}
         <span style={{ flex: 1 }} />
-        <HoverTooltip text={`Voting closes ${CLOSES[p.closeKind]}. Votes can be changed until then.`}>
+        <HoverTooltip text={`Closes ${CLOSES[p.closeKind]}. You can change your vote until then.`}>
           <span style={{ ...font(400, 13), ...TABULAR, color: TEXT.muted }}>{closesText(p)}</span>
         </HoverTooltip>
         <StandingIcon p={p} />
