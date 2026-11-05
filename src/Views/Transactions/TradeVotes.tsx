@@ -261,10 +261,11 @@ function Side({ team, gives, why, p, isMobile, last }: {
 
 function Bar({ label, count, countColor, fill, fillColor, against, tip }: {
   label: React.ReactNode; count: string; countColor: string
-  fill: number; fillColor: string; against?: number; tip: string
+  fill: number; fillColor: string; against?: number; tip?: string
 }) {
-  return (
-    <HoverTooltip text={tip} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+  const style: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: '6px' }
+  const body = (
+    <>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
         <span style={{ ...font(650, 13), color: TEXT.body, display: 'inline-flex', alignItems: 'center', gap: '7px' }}>{label}</span>
         <span style={{ ...font(600, 13), ...TABULAR, color: countColor, textAlign: 'right' }}>{count}</span>
@@ -274,8 +275,9 @@ function Bar({ label, count, countColor, fill, fillColor, against, tip }: {
         <span style={{ flex: 1 }} />
         {!!against && <span style={{ width: `${against}%`, background: ACCENT.negative }} />}
       </div>
-    </HoverTooltip>
+    </>
   )
+  return tip ? <HoverTooltip text={tip} style={style}>{body}</HoverTooltip> : <div style={style}>{body}</div>
 }
 
 function vetoed(t: TeamTally) { return t.fans > 0 && t.no > t.yes }
@@ -320,8 +322,7 @@ function LeagueBar({ yes, no }: { yes: number; no: number }) {
     <Bar label="League" count={`${yes} yes, ${no} no`}
       countColor={yes + no === 0 ? TEXT.muted : ok ? ACCENT.success : ACCENT.negative}
       fill={Math.round((yes / total) * 100)} fillColor={ACCENT.success}
-      against={Math.round((no / total) * 100)}
-      tip="Needs more yes than no." />
+      against={Math.round((no / total) * 100)} />
   )
 }
 
