@@ -289,11 +289,10 @@ function TeamBar({ team, t }: { team: VoteTeam | null; t: TeamTally }) {
   )
   if (t.fans === 0) {
     return (
-      <HoverTooltip text="No active fans, so the league decides."
-        style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
         <span style={{ ...font(650, 13), color: TEXT.body, display: 'inline-flex', alignItems: 'center', gap: '7px' }}>{label}</span>
         <span style={{ ...font(600, 13), color: TEXT.muted }}>None active</span>
-      </HoverTooltip>
+      </div>
     )
   }
   const veto = vetoed(t)
@@ -381,7 +380,6 @@ function OpenCard({ p, myTeamId, signedIn, busy, onVote, isMobile }: {
 }) {
   const mine = myTeamId == null ? null
     : p.teamA?.id === myTeamId ? p.teamA : p.teamB?.id === myTeamId ? p.teamB : null
-  const myNote = mine ? `Also counts for the ${mine.name} fans.` : undefined
   return (
     <div style={{ background: BG.card, border: `1px solid ${BORDER.hairline}`, display: 'flex', flexDirection: 'column' }}>
       <div style={{
@@ -419,12 +417,12 @@ function OpenCard({ p, myTeamId, signedIn, busy, onVote, isMobile }: {
           <LeagueBar yes={p.tally.yes} no={p.tally.no} />
           {signedIn ? (
             <>
-              <HoverTooltip text={myNote} style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
                 <VoteButton label={p.myVote === true ? 'Approved' : 'Approve'} active={p.myVote === true}
                   color={ACCENT.success} disabled={busy} onClick={() => onVote(p.myVote === true ? null : true)} />
                 <VoteButton label={p.myVote === false ? 'Rejected' : 'Reject'} active={p.myVote === false}
                   color={ACCENT.negative} disabled={busy} onClick={() => onVote(p.myVote === false ? null : false)} />
-              </HoverTooltip>
+              </div>
             </>
           ) : (
             <span style={{ ...font(500, 13), color: TEXT.muted }}>Sign in to vote.</span>
