@@ -78,7 +78,7 @@ function starsPhrase(lo: number, hi: number): string {
 }
 
 /** The asset's main line, then notes a voter needs to judge it. */
-/** One fact under a piece when Why? is open: a short label and its value (owner,
+/** One fact under a piece when Details is open: a short label and its value (owner,
  * 2026-11-05: the notes as stacked sentences read as clutter). */
 interface Fact { label: string; value: string }
 
@@ -248,7 +248,7 @@ function Side({ team, gives, why, p, isMobile, last }: {
           <button onClick={() => setShowWhy(v => !v)} aria-expanded={showWhy} style={{
             ...font(600, 12), fontFamily: FONT, color: ACCENT.info, background: 'none', border: 'none',
             padding: 0, cursor: 'pointer', alignSelf: 'flex-start',
-          }}>{showWhy ? 'Hide why' : 'Why?'}</button>
+          }}>{showWhy ? 'Hide details' : 'Details'}</button>
           {showWhy && why && (
             <div style={{
               display: 'flex', flexDirection: 'column', gap: '4px',
