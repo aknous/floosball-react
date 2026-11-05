@@ -309,9 +309,11 @@ function TeamBar({ team, t }: { team: VoteTeam | null; t: TeamTally }) {
   const scale = Math.max(1, t.need, t.yes + t.no)
   const tip = veto
     ? `${t.no} ${name} fans against, ${t.yes} for. More against than for blocks the trade.`
-    : `${t.yes} of the ${t.need} ${name} fan approvals needed${t.no ? `, ${t.no} against` : ''}. More against than for would block it.`
+    // Approvals can pass the number needed, so never "3 of the 2" (owner, 2026-11-05).
+    : `${t.yes} ${name} fan approval${t.yes === 1 ? '' : 's'} so far, ${t.need} needed`
+      + `${t.no ? `, ${t.no} against` : ''}. More against than for would block it.`
   return (
-    <Bar label={label} count={`${t.yes} / ${t.need}`}
+    <Bar label={label} count={`${t.yes} yes, ${t.need} needed`}
       countColor={veto ? ACCENT.negative : met ? ACCENT.success : TEXT.secondary}
       fill={Math.round((t.yes / scale) * 100)} against={Math.round((t.no / scale) * 100)}
       fillColor={met ? ACCENT.success : ACCENT.warning} tip={tip} />
