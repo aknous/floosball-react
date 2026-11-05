@@ -125,7 +125,7 @@ function StarCell({ label, icon, range }: {
 const ScoutingReport: React.FC<{ report: ScoutingReportData; narrow?: boolean }> = ({ report, narrow }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
     <div style={{
-      display: 'grid', gap: '14px 32px',
+      display: 'grid', gap: narrow ? '14px 16px' : '14px 32px',
       gridTemplateColumns: narrow ? 'repeat(2, minmax(0,1fr))' : 'repeat(3, minmax(0,1fr))',
     }}>
       <StarCell label="Overall" range={report.stars.overall} />

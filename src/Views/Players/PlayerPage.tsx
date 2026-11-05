@@ -467,6 +467,8 @@ const PlayerPage: React.FC = () => {
   const narrow = useIsMobile(1100)
   const veryNarrow = useIsMobile(760)
   const playerId = id ? parseInt(id, 10) : null
+  // A tab one player has (the Scouting report) does not carry over to the next profile.
+  useEffect(() => { setAttrTab('attributes') }, [playerId])
   const isFollowing = playerId != null && followedPlayerIds.has(playerId)
 
   useEffect(() => {

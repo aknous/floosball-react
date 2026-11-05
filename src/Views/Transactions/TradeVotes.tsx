@@ -574,7 +574,9 @@ const TradeVotes: React.FC<{
   const [openFolded, toggleOpen] = useCollapsed('tradeVotes.openCollapsed', false)
   const [decidedFolded, toggleDecided] = useCollapsed('tradeVotes.decidedCollapsed', true)
   if (open.length === 0 && closed.length === 0) return null
-  const decided = closed.slice(0, 8)
+  // Every decided trade the backend sends: the section is folded by default, and a count of
+  // 8 beside 30 decided read wrong.
+  const decided = closed
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

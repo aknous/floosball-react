@@ -169,6 +169,9 @@ export function useTradeVotes() {
       if (!res.ok) {
         setVoteError(res.status === 409 ? 'This vote has closed.' : 'Your vote did not go through.')
       }
+      // This page's copy first, so the buttons never show the old state; then every
+      // other reader (the nav count). This copy refetches once more, cheaply.
+      await refetch()
       window.dispatchEvent(new Event(VOTES_CHANGED))
     } catch {
       setVoteError('Your vote did not go through.')

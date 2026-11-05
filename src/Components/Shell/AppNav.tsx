@@ -185,7 +185,8 @@ const AppNav: React.FC = () => {
   const { games } = useGames()
   const { seasonState } = useFloosball()
   const tradeVotes = useTradeVotes()
-  const votesWaiting = tradeVotes.enabled ? tradeVotes.open.filter(p => p.myVote == null).length : 0
+  // Signed in only (owner, 2026-11-05): a signed-out visitor has no vote to cast.
+  const votesWaiting = user && tradeVotes.enabled ? tradeVotes.open.filter(p => p.myVote == null).length : 0
 
   const [awardsOpen, setAwardsOpen] = useState(false)
   useEffect(() => {

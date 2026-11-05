@@ -197,7 +197,7 @@ const TransactionsPage: React.FC = () => {
     draftOrder, draftOrderFinal, draftPlayoffSlotsFrom, prospects, expiring, moves, showPool, freeAgentPool,
   } = useTransactions()
   const tradeVotes = useTradeVotes()
-  const votesWaiting = tradeVotes.open.filter(p => p.myVote == null).length
+  const votesWaiting = user ? tradeVotes.open.filter(p => p.myVote == null).length : 0
   const [params, setParams] = useSearchParams()
   const view: 'desk' | 'votes' = tradeVotes.enabled && params.get('view') === 'votes' ? 'votes' : 'desk'
   const setView = (v: 'desk' | 'votes') => {
@@ -466,6 +466,11 @@ const TransactionsPage: React.FC = () => {
                       <React.Fragment key={p.playerId}>
                       <div style={{ ...row, cursor: report ? 'pointer' : undefined }}
                         onClick={report ? () => toggleReport(p.playerId) : undefined}
+                        role={report ? 'button' : undefined} tabIndex={report ? 0 : undefined}
+                        onKeyDown={report ? e => {
+                          if (e.target !== e.currentTarget) return
+                          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleReport(p.playerId) }
+                        } : undefined}
                         aria-expanded={report ? open : undefined}>
                         <span style={{ ...font(700, 12), ...TABULAR, width: '22px', color: TEXT.faint }}>
                           {prospects.indexOf(p) + 1}
@@ -493,7 +498,7 @@ const TransactionsPage: React.FC = () => {
                         )}
                       </div>
                       {open && report && (
-                        <div style={{ padding: '14px 18px 16px 46px', borderBottom: `1px solid ${BORDER.subtle}`, background: BG.shell }}>
+                        <div style={{ padding: isMobile ? '14px 14px 16px' : '14px 18px 16px 46px', borderBottom: `1px solid ${BORDER.subtle}`, background: BG.shell }}>
                           <ScoutingReport report={report} narrow={isMobile} />
                         </div>
                       )}
