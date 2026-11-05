@@ -214,13 +214,13 @@ function Side({ team, gives, why, p, isMobile, last }: {
 }
 
 function Bar({ label, count, countColor, fill, fillColor, against, tip }: {
-  label: string; count: string; countColor: string
+  label: React.ReactNode; count: string; countColor: string
   fill: number; fillColor: string; against?: number; tip: string
 }) {
   return (
     <HoverTooltip text={tip} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-        <span style={{ ...font(650, 13), color: TEXT.body }}>{label}</span>
+        <span style={{ ...font(650, 13), color: TEXT.body, display: 'inline-flex', alignItems: 'center', gap: '7px' }}>{label}</span>
         <span style={{ ...font(600, 13), ...TABULAR, color: countColor, textAlign: 'right' }}>{count}</span>
       </div>
       <div style={{ height: '8px', background: BORDER.hairline, display: 'flex' }}>
@@ -237,11 +237,17 @@ function approved(t: TeamTally) { return t.fans === 0 || (t.yes >= t.need && !ve
 
 function TeamBar({ team, t }: { team: VoteTeam | null; t: TeamTally }) {
   const name = team?.name ?? 'This team'
+  const label = (
+    <>
+      <Crest teamId={team?.id} size={16} />
+      {name} fans
+    </>
+  )
   if (t.fans === 0) {
     return (
       <HoverTooltip text={`${name} have no active fans, so the rest of the league decides their side.`}
         style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-        <span style={{ ...font(650, 13), color: TEXT.body }}>{name} fans</span>
+        <span style={{ ...font(650, 13), color: TEXT.body, display: 'inline-flex', alignItems: 'center', gap: '7px' }}>{label}</span>
         <span style={{ ...font(600, 13), color: TEXT.muted }}>None active</span>
       </HoverTooltip>
     )
@@ -254,7 +260,7 @@ function TeamBar({ team, t }: { team: VoteTeam | null; t: TeamTally }) {
     ? `${t.no} ${name} fans against, ${t.yes} for. More against than for blocks the trade.`
     : `${t.yes} of the ${t.need} ${name} fan approvals needed${t.no ? `, ${t.no} against` : ''}. More against than for would block it.`
   return (
-    <Bar label={`${name} fans`} count={`${t.yes} / ${t.need}`}
+    <Bar label={label} count={`${t.yes} / ${t.need}`}
       countColor={veto ? ACCENT.negative : met ? ACCENT.success : TEXT.secondary}
       fill={Math.round((t.yes / scale) * 100)} against={Math.round((t.no / scale) * 100)}
       fillColor={met ? ACCENT.success : ACCENT.warning} tip={tip} />
@@ -478,6 +484,45 @@ function DecidedCard({ p, isMobile }: { p: TradeProposal; isMobile: boolean }) {
   )
 }
 
+/** Remembered per viewer; storage can throw (private mode), so it is a convenience only. */
+function useCollapsed(key: string, initial: boolean): [boolean, () => void] {
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try {
+      const v = window.localStorage.getItem(key)
+      return v == null ? initial : v === '1'
+    } catch { return initial }
+  })
+  const toggle = () => setCollapsed(c => {
+    try { window.localStorage.setItem(key, c ? '0' : '1') } catch { /* not persisted */ }
+    return !c
+  })
+  return [collapsed, toggle]
+}
+
+/** A section header that folds its section away (owner: so each section is one scroll away). */
+function SectionToggle({ title, count, collapsed, onToggle, strong }: {
+  title: string; count: number; collapsed: boolean; onToggle: () => void; strong?: boolean
+}) {
+  return (
+    <button onClick={onToggle} aria-expanded={!collapsed} style={{
+      display: 'flex', alignItems: 'center', gap: '10px', background: 'none', border: 'none',
+      padding: 0, cursor: 'pointer', fontFamily: FONT, textAlign: 'left',
+    }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={TEXT.muted} strokeWidth="3"
+        strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+        style={{ transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 120ms' }}>
+        <path d="M6 9l6 6 6-6" />
+      </svg>
+      <span style={strong
+        ? { ...font(800, 15, 1, '0.02em'), color: TEXT.strong, whiteSpace: 'nowrap' }
+        : { ...font(800, 12, 1, '0.06em'), color: TEXT.muted, whiteSpace: 'nowrap' }}>
+        {title}
+      </span>
+      <span style={{ ...font(600, 13), ...TABULAR, color: TEXT.muted }}>{count}</span>
+    </button>
+  )
+}
+
 const TradeVotes: React.FC<{
   open: TradeProposal[]
   closed: TradeProposal[]
@@ -489,15 +534,17 @@ const TradeVotes: React.FC<{
 }> = ({ open, closed, myTeamId, signedIn, voting, voteError, onVote }) => {
   const isMobile = useIsMobile()
   const howRef = useRef<HTMLDivElement>(null)
+  const [openFolded, toggleOpen] = useCollapsed('tradeVotes.openCollapsed', false)
+  const [decidedFolded, toggleDecided] = useCollapsed('tradeVotes.decidedCollapsed', true)
   if (open.length === 0 && closed.length === 0) return null
   const decided = closed.slice(0, 8)
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-        <h2 style={{ ...font(800, 15, 1, '0.02em'), color: TEXT.strong, margin: 0, whiteSpace: 'nowrap' }}>
-          Open votes
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <h2 style={{ margin: 0 }}>
+          <SectionToggle title="Open votes" count={open.length} collapsed={openFolded}
+            onToggle={toggleOpen} strong />
         </h2>
-        <span style={{ ...font(600, 13), ...TABULAR, color: TEXT.muted }}>{open.length}</span>
         <span style={{ flex: 1, height: '2px', background: BORDER.hairline }} />
         <button onClick={() => howRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })} style={{
           ...font(600, 13), fontFamily: FONT, color: ACCENT.info, background: 'none', border: 'none',
@@ -506,18 +553,21 @@ const TradeVotes: React.FC<{
       </div>
       {voteError && <div style={{ ...font(500, 13), color: ACCENT.warning }}>{voteError}</div>}
 
-      {open.map(p => (
+      {!openFolded && open.map(p => (
         <OpenCard key={p.id} p={p} myTeamId={myTeamId} signedIn={signedIn} isMobile={isMobile}
           busy={voting === p.id} onVote={approve => onVote(p.id, approve)} />
       ))}
 
       {decided.length > 0 && (
         <>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginTop: '6px' }}>
-            <h3 style={{ ...font(800, 12, 1, '0.06em'), color: TEXT.muted, margin: 0 }}>DECIDED</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }}>
+            <h3 style={{ margin: 0 }}>
+              <SectionToggle title="DECIDED" count={decided.length} collapsed={decidedFolded}
+                onToggle={toggleDecided} />
+            </h3>
             <span style={{ flex: 1, height: '1px', background: BORDER.hairline }} />
           </div>
-          {decided.map(p => <DecidedCard key={p.id} p={p} isMobile={isMobile} />)}
+          {!decidedFolded && decided.map(p => <DecidedCard key={p.id} p={p} isMobile={isMobile} />)}
         </>
       )}
 

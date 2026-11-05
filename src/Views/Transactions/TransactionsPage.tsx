@@ -10,6 +10,7 @@ import { Stars, calcStars } from '@/Components/Stars'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useTradeVotes } from '@/hooks/useTradeVotes'
 import TradeVotes from './TradeVotes'
+import { tradeAssetName, TradeAsset } from '@/Views/Teams/TeamTrades'
 
 /**
  * The six roster positions, in roster order rather than alphabetical, because that is
@@ -150,6 +151,7 @@ const MOVE_KIND: Record<string, { label: string; color: string }> = {
   rookie_pick: { label: 'Drafted',     color: ACCENT.featured },
   promotion:   { label: 'Promoted',    color: ACCENT.rules },
   retirement:  { label: 'Retired',     color: TEXT.muted },
+  trade:       { label: 'Traded',      color: ACCENT.upset },
 }
 
 /**
@@ -538,6 +540,42 @@ const TransactionsPage: React.FC = () => {
                 <>
                   {moves.map((m, i) => {
                     const kind = MOVE_KIND[m.type] ?? { label: m.type.replace(/_/g, ' '), color: TEXT.muted }
+                    if (m.type === 'trade' && m.trade) {
+                      // One row per settled trade: what each team sent (owner, 2026-11-04).
+                      const t = m.trade
+                      const isMine = !!myTeamId && (t.teamA?.id === myTeamId || t.teamB?.id === myTeamId)
+                      const side = (team: TeamBlob | null, gave: TradeAsset[]) => (
+                        <span style={{ display: 'flex', alignItems: 'baseline', gap: '7px', flexWrap: 'wrap' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', alignSelf: 'center' }}>
+                            <Crest team={team} size={17} />
+                            <TeamName team={team} mine={!!myTeamId && team?.id === myTeamId} />
+                          </span>
+                          <span style={{ ...font(500, 13), color: TEXT.muted }}>send</span>
+                          {gave.map((a, j) => (
+                            <span key={j} style={{ ...font(600, 13), color: TEXT.body }}>
+                              {a.kind !== 'pick' && a.id
+                                ? <PlayerLink playerId={a.id} playerName={tradeAssetName(a)}
+                                    style={{ ...font(600, 13), color: TEXT.body }} />
+                                : tradeAssetName(a)}
+                              {j < gave.length - 1 ? ',' : ''}
+                            </span>
+                          ))}
+                        </span>
+                      )
+                      return (
+                        <div key={`t${t.id}`} style={{
+                          ...row, alignItems: 'flex-start',
+                          boxShadow: `inset 3px 0 0 ${kind.color}`,
+                          ...mine(isMine),
+                        }}>
+                          <span style={{ width: '112px', flexShrink: 0 }}>{tag(kind.label, kind.color)}</span>
+                          <span style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1, minWidth: '180px' }}>
+                            {side(t.teamA, t.aGave)}
+                            {side(t.teamB, t.bGave)}
+                          </span>
+                        </div>
+                      )
+                    }
                     const team = m.team && 'id' in m.team ? m.team
                       : m.team?.name ? teamByName.get(m.team.name) ?? null : null
                     const isMine = !!myTeamId && team?.id === myTeamId

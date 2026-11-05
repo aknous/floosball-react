@@ -1,3 +1,4 @@
+import { TradeAsset } from '@/Views/Teams/TeamTrades'
 import { Projection } from '@/Components/Potential'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -59,6 +60,14 @@ export interface MoveRow {
   position: string | null
   rating: number | null
   detail: string | null
+  /** On a `trade` row only: both sides of a settled trade, where it happened in the feed. */
+  trade?: {
+    id: number
+    teamA: TeamBlob | null
+    teamB: TeamBlob | null
+    aGave: TradeAsset[]
+    bGave: TradeAsset[]
+  }
 }
 
 /** A player in the offseason's actual free-agent pool (from `/api/offseason`). */
