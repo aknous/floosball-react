@@ -158,7 +158,7 @@ function assetLines(a: VoteAsset, p: TradeProposal): { detail: string; notes: Fa
 /** What the star column means for this piece, in words. */
 function expectedTip(a: VoteAsset): string {
   const n = calcStars(a.expectedRating ?? 0)
-  if (a.kind === 'pick') return `${n}-star player at this slot`
+  if (a.kind === 'pick') return `${n}-star player at this pick`
   if (a.kind === 'prospect' || a.projection) return `${n}-star player once developed`
   return `${n}-star player next season`
 }
@@ -174,9 +174,7 @@ function Asset({ a, p, showNotes }: { a: VoteAsset; p: TradeProposal; showNotes:
         {a.kind === 'pick' || a.id == null ? (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', ...font(650, 14), color: TEXT.strong }}>
             {a.kind === 'pick' && a.originalTeam?.id != null && (
-              <HoverTooltip text={`Slot set by where the ${a.originalTeam.name} finish.`}>
-                <Crest teamId={a.originalTeam.id} size={16} />
-              </HoverTooltip>
+              <Crest teamId={a.originalTeam.id} size={16} />
             )}
             {pickLabel(a)}
           </span>
@@ -231,9 +229,7 @@ function Side({ team, gives, why, p, isMobile, last }: {
           <span style={{ ...font(600, 13), color: TEXT.muted }}>send</span>
         </span>
         {gives.some(a => (a.expectedRating ?? 0) > 0) && (
-          <HoverTooltip text="A player next season, a prospect once developed, a pick by its slot.">
-            <span style={{ ...font(700, 12, 1, '0.04em'), color: TEXT.muted }}>EXPECTED</span>
-          </HoverTooltip>
+          <span style={{ ...font(700, 12, 1, '0.04em'), color: TEXT.muted }}>EXPECTED</span>
         )}
       </div>
       {gives.length ? gives.map((a, i) => <Asset key={`${a.kind}${a.id}${i}`} a={a} p={p} showNotes={showWhy} />)
@@ -304,14 +300,11 @@ function TeamBar({ team, t }: { team: VoteTeam | null; t: TeamTally }) {
   const met = approved(t)
   // Approvals fill from the left toward the bar's end (the approvals needed), no votes from the right.
   const scale = Math.max(1, t.need, t.yes + t.no)
-  const tip = veto
-    ? `${t.no} no, ${t.yes} yes. More no than yes blocks the trade.`
-    : t.no ? `${t.no} no. More no than yes would block it.` : 'More no than yes would block it.'
   return (
     <Bar label={label} count={`${t.yes} yes, ${t.need} needed`}
       countColor={veto ? ACCENT.negative : met ? ACCENT.success : TEXT.secondary}
       fill={Math.round((t.yes / scale) * 100)} against={Math.round((t.no / scale) * 100)}
-      fillColor={met ? ACCENT.success : ACCENT.warning} tip={tip} />
+      fillColor={met ? ACCENT.success : ACCENT.warning} />
   )
 }
 
