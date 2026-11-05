@@ -15,6 +15,20 @@ export interface Projection {
   high: number
 }
 
+/** Offense, defense and each profile attribute's projected range, like the overall's
+ * (owner, 2026-11-04). Attributes are keyed `att1`.. as the profile reads them. */
+export interface ProjectionDetail {
+  offense: Projection
+  defense: Projection
+  attributes: Record<string, Projection>
+  defensive: Record<string, Projection>
+}
+
+/** Whether a projection reaches past today's value: only then is there a range to show. */
+export function hasRange(value: number | undefined | null, p?: Projection | null): p is Projection {
+  return value != null && !!p && Math.round(p.high) > Math.round(value)
+}
+
 /** "74-86", or one number once the range has closed. Never below today's rating. */
 export function projectionText(rating: number, projection: Projection): string {
   const low = Math.round(Math.max(projection.low ?? projection.expected ?? rating, rating))

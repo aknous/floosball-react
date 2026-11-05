@@ -11,11 +11,12 @@ import { statRampColor } from '@/utils/ratingColors'
 import RatingProgression, { RatingPoint } from './RatingProgression'
 import {
   PANEL, PanelHeader, PanelTab, Plate, SegmentedControl, CareerTable, TrophyCase,
-  AttrBar, BackArrow, BoltIcon, CleansedIcon, SwordGlyph, ShieldGlyph,
+  AttrBar, BackArrow, BoltIcon, CleansedIcon, SwordGlyph, ShieldGlyph, PROJECTION_COLOR,
   num, pct, sumOver,
   type StatColumn, type TrophyEntry,
 } from './playerPieces'
 import { formatTdIntRatio } from '@/utils/tdIntRatio'
+import { Projection, ProjectionDetail, hasRange, projectionText } from '@/Components/Potential'
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api'
 
@@ -133,6 +134,11 @@ interface PlayerData {
   defensiveRating?: number
   defensiveRatingStars?: number
   defensivePosition?: string | null
+  /** The public projected range: the overall's, and offense, defense and each attribute's. */
+  expected?: number | null
+  projectionLow?: number | null
+  projectionHigh?: number | null
+  projectionDetail?: ProjectionDetail | null
   rank: string
   number: number
   championships: any[]
@@ -500,21 +506,23 @@ const PlayerPage: React.FC = () => {
 
   const att = player?.attributes
   const offAttrs = useMemo(() => {
-    const out: { label: string; value: number }[] = []
+    const out: { label: string; value: number; projection?: Projection | null }[] = []
     if (!att) return out
-    if (att.att1 && att.att1Value != null) out.push({ label: att.att1, value: att.att1Value })
-    if (att.att2 && att.att2Value != null) out.push({ label: att.att2, value: att.att2Value })
-    if (att.att3 && att.att3Value != null) out.push({ label: att.att3, value: att.att3Value })
+    const proj = player?.projectionDetail?.attributes ?? {}
+    if (att.att1 && att.att1Value != null) out.push({ label: att.att1, value: att.att1Value, projection: proj.att1 })
+    if (att.att2 && att.att2Value != null) out.push({ label: att.att2, value: att.att2Value, projection: proj.att2 })
+    if (att.att3 && att.att3Value != null) out.push({ label: att.att3, value: att.att3Value, projection: proj.att3 })
     if (att.playmakingValue != null) out.push({ label: 'Playmaking', value: att.playmakingValue })
     if (att.xFactorValue != null) out.push({ label: 'X-Factor', value: att.xFactorValue })
     return out
-  }, [att])
+  }, [att, player])
 
   const defAttrs = useMemo(() => {
-    const out: { label: string; value: number }[] = []
+    const out: { label: string; value: number; projection?: Projection | null }[] = []
     if (!att?.defensiveAttributes || !player?.defensivePosition) return out
+    const proj = player.projectionDetail?.defensive ?? {}
     Object.entries(att.defensiveAttributes).forEach(([key, entry]) => {
-      out.push({ label: DEF_ATTR_NAMES[key] ?? key, value: entry.value })
+      out.push({ label: DEF_ATTR_NAMES[key] ?? key, value: entry.value, projection: proj[key] })
     })
     return out
   }, [att, player])
@@ -730,6 +738,7 @@ const PlayerPage: React.FC = () => {
     stars: number | undefined,
     context: React.ReactNode,
     icon?: React.ReactNode,
+    projection?: Projection | null,
   ) => (
     <div style={{ ...PANEL, padding: '15px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <span style={{ display: 'flex', alignItems: 'center', gap: '6px', ...font(700, 9, 1, '0.02em'), color: TEXT.muted }}>
@@ -739,6 +748,11 @@ const PlayerPage: React.FC = () => {
         <span style={{ ...font(800, 40, 1, '-0.03em'), color: TEXT.primary, ...TABULAR }}>{value ?? '—'}</span>
         {stars != null && <Stars stars={stars} size={13} tracking={2} />}
       </span>
+      {hasRange(value, projection) && (
+        <span style={{ ...font(600, 12), color: PROJECTION_COLOR, ...TABULAR }}>
+          Projected {projectionText(value!, projection!)}
+        </span>
+      )}
       <span style={{ ...font(500, 11, 1.4), color: TEXT.muted }}>{context}</span>
     </div>
   )
@@ -775,14 +789,14 @@ const PlayerPage: React.FC = () => {
             <span style={{ ...font(700, 9, 1, '0.02em'), color: '#5b9bd5' }}>
               {(POSITION_FULL[player.position] ?? player.position).toUpperCase()}
             </span>
-            {offAttrs.map(a => <AttrBar key={a.label} label={a.label} value={a.value} />)}
+            {offAttrs.map(a => <AttrBar key={a.label} label={a.label} value={a.value} projection={a.projection} />)}
           </div>
           {defAttrs.length > 0 && (
             <div style={{ padding: '15px 18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <span style={{ ...font(700, 9, 1, '0.02em'), color: ACCENT.negative }}>
                 {(DEF_POSITION_FULL[player.defensivePosition!] ?? player.defensivePosition!).toUpperCase()}
               </span>
-              {defAttrs.map(a => <AttrBar key={a.label} label={a.label} value={a.value} />)}
+              {defAttrs.map(a => <AttrBar key={a.label} label={a.label} value={a.value} projection={a.projection} />)}
             </div>
           )}
         </div>
@@ -828,14 +842,21 @@ const PlayerPage: React.FC = () => {
             : <span style={{ color: seasonDelta > 0 ? ACCENT.live : ACCENT.negative }}>
                 {seasonDelta > 0 ? '▲' : '▼'} {Math.abs(seasonDelta)} this season
               </span>,
+          undefined,
+          player.projectionHigh != null
+            ? { expected: player.expected ?? player.playerRating,
+                low: player.projectionLow ?? player.playerRating, high: player.projectionHigh }
+            : null,
         )}
         {ratingPlate(
           'OFFENSE', player.offensiveRating, player.offensiveRatingStars,
           impactContext(player.seasonImpact?.offenseTier), <SwordGlyph />,
+          player.projectionDetail?.offense,
         )}
         {player.defensivePosition && ratingPlate(
           'DEFENSE', player.defensiveRating, player.defensiveRatingStars,
           impactContext(player.seasonImpact?.defenseTier), <ShieldGlyph />,
+          player.projectionDetail?.defense,
         )}
       </div>
 
