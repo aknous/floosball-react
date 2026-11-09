@@ -23,6 +23,46 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: 'v1.10',
+    date: '2026-11-08',
+    feature: true,
+    changes: [],
+    sections: [
+      {
+        label: 'New Features',
+        items: [
+          '[Prospects] Every prospect has a scouting report: projected stars for overall, offense and defense, their strengths and weaknesses, and where they have the most room to grow. Open it from the prospect rankings or the Scouting report tab on their profile.',
+          '[Prospects] The incoming rookie class is shown as a prospect ranking, with a badge for the side of the ball each prospect projects to help most.',
+          '[Players] Profiles show a projected range for offense, defense and every attribute while a player is still developing, and say who drafted them and when.',
+          '[Front Office] Every team plans three seasons ahead at each position: who it is keeping, when its prospects take over, and what the free agent market will offer at its pick. Rookie draft picks and re-sign decisions follow that plan, and a prospect the team let a starter go for gets promoted as planned.',
+          '[Front Office] Teams try to trade a prospect they have no place for, during the season and after the free agent draft, instead of letting them wash out for nothing. Only a team that would promote them can buy them.',
+          '[Front Office] Trade votes have their own tab on the Transactions page, with a count in the menu. Each piece shows the stars it is expected to reach, with the details one tap away.',
+        ],
+      },
+      {
+        label: 'Changes',
+        items: [
+          '[Prospects] Prospects show a projected range instead of an expected rating and a ceiling.',
+          '[Front Office] Teams draft for need with every pick. They no longer draft behind a superstar starter they are keeping, or behind one of their own prospects who is as good.',
+          '[Front Office] GMs weigh a free agent\'s age the same way they weigh their own starter\'s.',
+          '[Front Office] The Transactions page is open all season, and settled trades show in its activity feed. Team pages show pick stock and trade history again while trading is on.',
+          '[Front Office] A team never trades away its last pick in its next two drafts, and a team short of picks looks to trade a veteran it does not need for one.',
+          '[Front Office] Trading for a top 3 pick takes an established star, and future picks are valued closer to what they usually become.',
+          '[Stats] The stats page has an Undrafted prospects filter.',
+        ],
+      },
+      {
+        label: 'Fixes',
+        items: [
+          '[Cards] A FLEX card no longer keeps scoring after Accession expires.',
+          '[Cards] Retired Loyalty Bonus cards can be used as transplant donors again.',
+          '[Players] Veteran profiles no longer show a projection climbing back up. Projections are shown only for players still developing.',
+          '[Front Office] A team that could not afford to release a player in the free agent draft could be left with an empty roster spot.',
+        ],
+      },
+    ],
+  },
+  {
     version: 'v1.09',
     date: '2026-11-02',
     feature: true,
