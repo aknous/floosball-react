@@ -48,7 +48,6 @@ export const CHANGELOG: ChangelogEntry[] = [
           '[Front Office] The Transactions page is open all season, and settled trades show in its activity feed. Team pages show pick stock and trade history again while trading is on.',
           '[Front Office] A team never trades away its last pick in its next two drafts, and a team short of picks looks to trade a veteran it does not need for one.',
           '[Front Office] Trading for a top 3 pick takes an established star, and future picks are valued closer to what they usually become.',
-          '[Front Office] A no vote on a trade is now a Veto, and the reasons for each trade read as plain facts.',
           '[Stats] The stats page has an Undrafted prospects filter.',
         ],
       },
