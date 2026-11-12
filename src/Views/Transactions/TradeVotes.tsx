@@ -21,7 +21,7 @@ const teamColor = (team?: { color?: string | null } | null): string =>
  */
 
 const CLOSES: Record<TradeProposal['closeKind'], string> = {
-  deadline: 'at the trade deadline',
+  deadline: 'when the first game of week 22 kicks off',
   rookie_draft: 'at the rookie draft',
   season_start: 'at the season start',
 }
@@ -619,8 +619,13 @@ const TradeVotes: React.FC<{
           A trade goes through when the vote closes if more of the league approves it than
           vetoes it, and each team in it gets about a third of its active fans to approve.
           If more of a team&rsquo;s own fans veto it than approve it, the trade fails. Active fans are
-          fans who signed in within the last two weeks. A team with no active fans leaves its
+          fans who have signed in this season (for an offseason trade, the season that just ended). A team with no active fans leaves its
           side to everyone else. A trade with no votes, or a tie, does not go through.
+        </p>
+        <p style={{ ...font(400, 13, 1.55), color: TEXT.secondary, margin: 0 }}>
+          In-season trades close when the first game of week 22 kicks off, so an approved trade
+          plays for its new team that day. Offseason trades close as the rookie draft begins,
+          or as the next season starts for trades made after the free agent draft.
         </p>
       </div>
     </section>
