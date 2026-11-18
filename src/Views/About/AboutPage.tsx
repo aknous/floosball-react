@@ -1875,7 +1875,7 @@ const AboutPage: React.FC = () => {
               'Card Packs: Humble (40), themed packs (60), Grand (70), Champion and All-Pro (85), Collection (90), Exquisite (100)',
               'Card Upgrades: Floobits to Level Up a card a tier',
               'Daily Selection cards and rerolls (escalating cost)',
-              'Power-Ups: Annulment, Accession, Patronage, Endowment',
+              'Power-Ups: Accession, Patronage, Endowment',
               'Season-end tax: 25% of unspent Floobits fund your favorite team between seasons. Teams with more funding become larger markets with better player development and morale',
             ])}
           </Section>
@@ -1892,8 +1892,8 @@ const AboutPage: React.FC = () => {
                 // ⚠️ Dispensation (extra_swap) and Conscription (temp_flex) are RETIRED —
                 // both left POWERUP_CATALOG with the fantasy/cards fusion, so the shop
                 // rejects them. Roster swaps no longer exist, and the FLEX slot is
-                // Accession's job now.
-                { name: 'Annulment', price: 60, color: '#eab308', desc: 'Your cards operate under Steady (no modifier effect) this week.' },
+                // Accession's job now. Annulment (modifier_nullifier) was retired on
+                // 2026-11-18.
                 { name: 'Accession', price: 200, color: '#67e8f9', desc: 'Unlocks the FLEX lineup slot (any position) for 4 weeks. Limit 2/season.' },
                 { name: 'Patronage', price: 125, color: '#f472b6', desc: 'Boosts all chance card trigger rates by 10% for 3 weeks. Limit 2/season.' },
                 { name: 'Endowment', price: 100, color: '#fbbf24', desc: '+25% on all Floobits you earn (fantasy, pick-em, showcase, supporter dividends) for 4 weeks. Limit 2/season.' },
