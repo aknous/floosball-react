@@ -40,6 +40,10 @@ export interface Prospect {
   projection: Projection | null
   /** Where they project to stand against the starters at their position. */
   scoutingReport?: ScoutingReportData | null
+  /** Place in the ranking; null for a kicker, who is not drafted. */
+  rank?: number | null
+  /** Kickers are not drafted: every one becomes a free agent after the draft. */
+  headedToFreeAgency?: boolean
 }
 
 export interface ExpiringPlayer {

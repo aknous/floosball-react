@@ -473,7 +473,14 @@ const TransactionsPage: React.FC = () => {
                         } : undefined}
                         aria-expanded={report ? open : undefined}>
                         <span style={{ ...font(700, 12), ...TABULAR, width: '22px', color: TEXT.faint }}>
-                          {prospects.indexOf(p) + 1}
+                          {/* Kickers are not drafted (owner, 2026-11-20), so they get no number. */}
+                          {p.headedToFreeAgency ? (
+                            <span onClick={e => e.stopPropagation()}>
+                              <HoverTooltip content="Kickers aren't drafted. Every kicker in the class becomes a free agent after the draft.">
+                                <span style={{ ...font(700, 10), color: TEXT.muted, letterSpacing: '0.04em' }}>FA</span>
+                              </HoverTooltip>
+                            </span>
+                          ) : (p.rank ?? prospects.indexOf(p) + 1)}
                         </span>
                         <Pos>{p.position}</Pos>
                         <span style={{ flex: 1, minWidth: 0, display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
